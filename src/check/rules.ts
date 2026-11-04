@@ -100,11 +100,22 @@ export function checkDecl(d: Decl, push: Push) {
 		if (/\bease-in\b(?!-)/.test(d.value)) push({ rule: 'motion', message: '`ease-in` easing', hint: 'Use var(--ds-easing-out) or var(--ds-easing-standard): interface motion never eases in.', offset: at() });
 		const looping = d.prop.startsWith('animation') && /infinite/.test(d.value);
 		const known = durationTokens();
-		for (const m of d.value.replace(/var\([^)]*\)/g, (s) => ' '.repeat(s.length)).matchAll(/(?<![\w.-])(\d*\.?\d+)(ms|s)\b/g)) {
+		// The first time in each comma-separated part is its duration; a second is a delay (a stagger), which is free.
+		// A duration token counts as the part's duration (0ms here, so it passes); other functions are blanked.
+		let masked = d.value.replace(/var\(--ds-duration-[\w-]+\)/g, (s) => `0ms${' '.repeat(s.length - 3)}`).replace(/var\([^()]*\)/g, (s) => ' '.repeat(s.length));
+		masked = masked.replace(/(?:calc|cubic-bezier|steps)\([^()]*\)/g, (s) => ' '.repeat(s.length));
+		const durationsOnly: RegExpMatchArray[] = [];
+		let partStart = 0;
+		for (const part of masked.split(',')) {
+			const first = [...part.matchAll(/(?<![\w.-])(\d*\.?\d+)(ms|s)\b/g)][0];
+			if (first) durationsOnly.push(Object.assign(first, { index: partStart + (first.index ?? 0) }));
+			partStart += part.length + 1;
+		}
+		for (const m of durationsOnly) {
 			const ms = Number(m[1]) * (m[2] === 's' ? 1000 : 1);
 			if (ms === 0 || looping) continue;
 			const exact = known.get(ms);
-			push({ rule: 'motion', message: `Duration \`${m[0]}\``, hint: exact ? `Use var(${exact}).` : 'Use var(--ds-duration-micro) (120ms), glide (160ms), enter (200ms), collapse (260ms) or entrance (320ms).', offset: at(m.index), length: m[0].length, fix: exact ? { start: at(m.index), end: at(m.index) + m[0].length, text: `var(${exact})` } : undefined });
+			push({ rule: 'motion', message: `Duration \`${m[0]}\``, hint: exact ? `Use var(${exact}).` : `Use a --ds-duration-* step (\`${cli()} tokens duration\`): micro 120ms for colour, glide 160ms for small moves, enter 200ms, exit 120ms.`, offset: at(m.index), length: m[0].length, fix: exact ? { start: at(m.index), end: at(m.index) + m[0].length, text: `var(${exact})` } : undefined });
 		}
 		if (/cubic-bezier\(/.test(d.value)) push({ rule: 'motion', message: 'Custom easing', hint: 'Use var(--ds-easing-out), var(--ds-easing-standard) or var(--ds-easing-swap).', offset: at() });
 	}
@@ -141,7 +152,7 @@ export function checkClass(token: string, offset: number, push: Push) {
 	else if (TW_UPPERCASE.test(cls) && !brand().type.caps && !/type-tag/.test(cls)) f('font', '`uppercase`', 'Capitals are for the site tag only (type-tag); everything else is sentence case.');
 	else {
 		const d = cls.match(TW_DURATION);
-		if (d && Number(d[1]) !== 0 && !durationTokens().has(Number(d[1]))) f('motion', `Duration \`${cls}\``, 'Use duration-120, duration-160, duration-200, duration-260 or duration-320.');
+		if (d && Number(d[1]) !== 0 && !durationTokens().has(Number(d[1]))) f('motion', `Duration \`${cls}\``, `Use a brand step (${[...durationTokens().keys()].filter(Boolean).map((ms) => `duration-${ms}`).join(', ')}).`);
 	}
 }
 

@@ -175,15 +175,24 @@
 
   /* Motion (tokens.css motion.*, console2.css): never ease-in, exits faster than entrances. */
   --ds-duration-instant: 0ms;
-  --ds-duration-micro: 120ms;
-  --ds-duration-glide: 160ms;
-  --ds-duration-enter: 200ms;
-  --ds-duration-exit: 120ms;
-  --ds-duration-collapse: 260ms;
-  --ds-duration-entrance: 320ms;
+  --ds-duration-press: 70ms; /* Pressed colour, from pointer-down. */
+  --ds-duration-cell: 80ms; /* One pixel cell of the dark button's fill, staggered across it. */
+  --ds-duration-micro: 120ms; /* Hover colour, border and background changes. */
+  --ds-duration-exit: 120ms; /* Menus and panels leaving, faster than they came. */
+  --ds-duration-fade: 140ms; /* A toast leaving. */
+  --ds-duration-swap: 150ms; /* Two words crossing in one cell (Copy, Copied). */
+  --ds-duration-glide: 160ms; /* Small moves: a thumb sliding, a label rolling, a chevron turning. */
+  --ds-duration-slide: 180ms; /* The segmented control's block gliding to the pick. */
+  --ds-duration-enter: 200ms; /* Menus, toasts and panels coming in. */
+  --ds-duration-settle: 220ms; /* A label or a check settling after a swap. */
+  --ds-duration-morph: 250ms; /* An icon turning into another. */
+  --ds-duration-collapse: 260ms; /* Disclosures opening. */
+  --ds-duration-draw: 300ms; /* A check drawing its stroke. */
+  --ds-duration-entrance: 320ms; /* A dialog rising in. */
   --ds-easing-standard: cubic-bezier(0.2, 0, 0, 1);
   --ds-easing-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ds-easing-swap: cubic-bezier(0.65, 0, 0.35, 1);
+  --ds-easing-decelerate: cubic-bezier(0, 0, 0.2, 1); /* A pixel cell lighting. */
 }
 
 /* Dark theme (theme.dark.tokens.json): the docs and the website's dark bands. */
