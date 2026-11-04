@@ -16,7 +16,7 @@ defineProps<{ icon?: Component, invalid?: boolean }>()
       v-model="model"
       v-bind="$attrs"
       :aria-invalid="invalid || undefined"
-      class="h-control-sm w-full border border-edge-strong bg-surface pr-2.5 pl-7 text-meta text-fg outline-none transition-[border-color] duration-120 ease-standard placeholder:text-fg-muted focus:border-edge-focus aria-invalid:border-action-danger disabled:cursor-not-allowed disabled:text-fg-muted max-md:h-control-touch max-md:text-input pointer-coarse:h-control-touch pointer-coarse:text-input"
+      class="h-control-sm w-full border border-edge-strong bg-surface pr-2.5 pl-7 text-meta leading-5 text-fg outline-none transition-[border-color] duration-120 ease-standard placeholder:text-fg-muted focus:border-edge-focus aria-invalid:border-action-danger disabled:cursor-not-allowed disabled:text-fg-muted max-md:h-control-touch max-md:text-input pointer-coarse:h-control-touch pointer-coarse:text-input"
     >
   </span>
   <input

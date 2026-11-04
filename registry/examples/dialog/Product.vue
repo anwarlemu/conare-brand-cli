@@ -1,12 +1,18 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { nextTick, onMounted, ref } from 'vue'
 import Button from '@/components/ui/Button.vue'
 import Dialog from '@/components/ui/Dialog.vue'
 import Field from '@/components/ui/Field.vue'
 import Input from '@/components/ui/Input.vue'
-// The new-organization dialog, opened as the frame loads; close it and the button opens it again.
+// The new-organization dialog, opened as the frame loads; close it and the button opens it again. Opening with the
+// page, focus rests on the window itself, so nothing shows selected until someone reaches for it.
 const open = ref(false)
-onMounted(() => { open.value = true })
+onMounted(async () => {
+  open.value = true
+  await nextTick()
+  await nextTick()
+  document.querySelector<HTMLElement>('dialog[open]')?.focus()
+})
 </script>
 
 <template>

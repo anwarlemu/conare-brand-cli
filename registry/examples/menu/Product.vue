@@ -20,10 +20,11 @@ onMounted(() => { if (menu.value) menu.value.open = true })
 
 <template>
   <div class="h-80 w-sidebar">
-    <div class="h-bar border border-edge bg-surface-subtle">
+    <div class="h-bar">
       <Menu
         ref="menu"
         label="workspaces"
+        offset="8px"
         class="!flex h-full w-full"
         trigger-class="relative isolate flex h-full w-full cursor-pointer items-center gap-2 px-3 text-left before:absolute before:inset-x-2 before:inset-y-1.5 before:-z-10 before:transition-colors before:duration-120 before:ease-standard hover:before:bg-edge/45 aria-expanded:before:bg-edge/45 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-focus"
       >

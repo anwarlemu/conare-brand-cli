@@ -121,5 +121,8 @@ if (existsSync(join(root, 'apps', 'www'))) {
 	mkdirSync(www, { recursive: true });
 	cpSync(join(out, 'fonts'), join(www, 'fonts'), { recursive: true });
 	cpSync(join(out, 'textures'), join(www, 'textures'), { recursive: true });
+	cpSync(join(brandDir, 'logo'), join(www, 'logo'), { recursive: true });
+	cpSync(join(brandDir, 'logo', 'favicon', 'favicon.ico'), join(root, 'apps', 'www', 'public', 'favicon.ico'));
+	cpSync(join(brandDir, 'logo', 'favicon', 'apple-touch-icon.png'), join(root, 'apps', 'www', 'public', 'apple-touch-icon.png'));
 }
 console.log(`build: ${names.length} tokens, ${brand.fonts.files.length} font files -> build/`);

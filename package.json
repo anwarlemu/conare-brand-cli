@@ -17,7 +17,7 @@
     "build": "tsc -p tsconfig.json && node scripts/build-brand.mjs",
     "registry": "bun scripts/build-registry.ts",
     "test": "vitest run",
-    "ci": "bun run build && bun run registry && vitest run",
+    "ci": "bun run build && node scripts/ci-limits.mjs && bun run registry && vitest run",
     "release": "sh scripts/release.sh",
     "www:build": "bun run --cwd apps/www build"
   },
@@ -25,6 +25,7 @@
     "@types/node": "^25.3.5",
     "@vue/compiler-sfc": "3.5.43",
     "lucide-vue-next": "^0.479.0",
+    "playwright-core": "1.63.0",
     "typescript": "5.9.3",
     "vitest": "^4.0.0",
     "vue": "3.5.43",

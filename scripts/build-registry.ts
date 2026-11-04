@@ -15,6 +15,10 @@ const reg = join(root, 'registry');
 const outDir = join(root, 'apps', 'www', 'public', 'r');
 const brand = JSON.parse(readFileSync(join(root, 'brand', 'brand.json'), 'utf8'));
 const errors: string[] = [];
+// Packages are pinned to the ranges this repository builds and type-checks against.
+const rootPkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+const ranges: Record<string, string> = { ...rootPkg.dependencies, ...rootPkg.devDependencies };
+const pinned = (p: string) => (ranges[p] ? `${p}@${ranges[p]}` : p);
 const fail = (msg: string) => errors.push(msg);
 
 type Example = { name: string; label: string; center: boolean; half: boolean };
@@ -138,9 +142,9 @@ for (const d of docs) {
 		const c = closure([path], d.name);
 		return { ...e, path, content: readFileSync(join(reg, path), 'utf8'), requires: c.requires, packages: c.packages };
 	});
-	const item = { name: d.name, title: d.title, type: d.type, group: d.group, description: d.description, use_for: d.use_for, never: d.never, source: d.source, requires, dependencies: packages, files: files.map((path) => ({ path, content: readFileSync(join(reg, path), 'utf8') })), examples };
+	const item = { name: d.name, title: d.title, type: d.type, group: d.group, description: d.description, use_for: d.use_for, never: d.never, source: d.source, requires, dependencies: packages.map(pinned), files: files.map((path) => ({ path, content: readFileSync(join(reg, path), 'utf8') })), examples };
 	writeFileSync(join(outDir, `${d.name}.json`), `${JSON.stringify(item, null, 2)}\n`);
-	index.push({ ...item, files: files, examples: d.examples.map((e) => e.name) });
+	index.push({ ...item, files, examples: d.examples.map((e) => e.name) });
 	site.push({ name: d.name, title: d.title, group: d.group, description: d.description, use_for: d.use_for, never: d.never, source: d.source, body: d.body, requires, dependencies: packages, files, examples: d.examples });
 }
 writeFileSync(join(outDir, 'index.json'), `${JSON.stringify({ name: brand.name, registryUrl: brand.registryUrl, items: index }, null, 2)}\n`);

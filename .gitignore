@@ -10,3 +10,6 @@ apps/www/public/conare-ds
 apps/www/app/registry.generated.json
 *.log
 .DS_Store
+apps/www/public/favicon.ico
+apps/www/public/apple-touch-icon.png
+.release

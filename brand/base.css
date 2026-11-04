@@ -5,6 +5,8 @@
     scrollbar-width: thin;
     scrollbar-color: var(--ds-color-neutral-600) transparent;
   }
+  /* A border with no colour is a hairline (main.css: every border defaults to the edge). */
+  *, ::before, ::after, ::backdrop { border-color: var(--ds-color-edge); }
   body {
     background-color: var(--ds-color-surface);
     color: var(--ds-color-fg);

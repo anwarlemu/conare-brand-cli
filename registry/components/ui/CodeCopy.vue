@@ -34,7 +34,6 @@ async function run(text: string) {
 .ds-codecopy-word > :not([data-on]) { opacity: 0; filter: blur(2px); }
 .ds-codecopy-word > :first-child:not([data-on]) { transform: translateY(-4px); }
 .ds-codecopy-word > :last-child:not([data-on]) { transform: translateY(4px); }
-@media (pointer: coarse), (max-width: 767px) { .ds-codecopy { height: var(--ds-size-control-touch); font-size: var(--ds-text-ui); } }
 @media (prefers-reduced-motion: reduce) {
   .ds-codecopy-icon > *, .ds-codecopy-word > * { filter: none; transform: none; transition: opacity var(--ds-duration-micro) ease; }
 }

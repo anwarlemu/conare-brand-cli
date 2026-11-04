@@ -30,8 +30,10 @@ withDefaults(defineProps<{ variant?: 'product' | 'settings', framed?: boolean, l
 .ds-table[data-variant="settings"] th::first-letter { text-transform: uppercase; }
 .ds-table[data-variant="settings"] td:last-child :is(button, a):only-child { width: 92px; }
 @media (pointer: coarse), (max-width: 767px) {
-  .ds-table td { height: 48px; }
-  .ds-table th { height: var(--ds-size-control-lg); }
-  .ds-table :is(th, td) { padding-inline: 8px; }
+  .ds-table[data-variant="product"] td { height: 48px; }
+  .ds-table[data-variant="product"] th { height: var(--ds-size-control-lg); }
 }
+@media (max-width: 359px) { .ds-table[data-variant="product"] :is(th, td) { padding-inline: 8px; } }
+/* Beside a sidebar, a tablet has less room than its width suggests. */
+@media (min-width: 768px) and (max-width: 1023px) { .ds-table :is(th, td) { padding-inline: 8px; } }
 </style>

@@ -44,7 +44,9 @@ export async function add(root: string, names: string[], opts: { dryRun?: boolea
 	if (kept.length) warnings.push(`Kept ${kept.length} local file(s) that differ from the library; pass --overwrite to replace them.`);
 
 	const have = { ...project.pkg.dependencies, ...project.pkg.devDependencies };
-	const packages = [...new Set(items.flatMap((i) => i.dependencies))].filter((p) => !have[p]);
+	// Dependencies are `name@range`; a package the app already has keeps its version.
+	const nameOf = (spec: string) => spec.replace(/(.)@.*$/, '$1');
+	const packages = [...new Set(items.flatMap((i) => i.dependencies))].filter((p) => !have[nameOf(p)]);
 	let installed = false;
 	if (packages.length && !opts.dryRun && opts.install !== false) {
 		const pm = project.packageManager;

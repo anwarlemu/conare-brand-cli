@@ -126,6 +126,7 @@ const verb = computed(() => props.label.toLowerCase())
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
+  gap: var(--ds-space-sm);
   overflow: hidden;
   padding: 0 10px;
   border: var(--ds-border-hairline) solid var(--ds-color-action-danger);

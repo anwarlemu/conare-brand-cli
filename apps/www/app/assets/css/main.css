@@ -1,0 +1,14 @@
+@import "tailwindcss";
+/* The brand, as apps install it (scripts/build-brand.mjs writes build/). */
+@import "../../../../../build/brand.css";
+@import "../../../../../build/theme.css";
+/* The library's components are scanned from the registry itself. */
+@source "../../../../../registry";
+
+/* The site's own few parts, in the console's look (conare-web app/assets/css/ds.css). */
+@layer components {
+  .ds-prose p + p { margin-top: var(--ds-space-lg); }
+  .ds-prose code { padding: 0 4px; background: var(--ds-color-surface-subtle); font-family: var(--ds-font-code); font-size: var(--ds-text-meta); }
+  .ds-prose a { text-decoration: underline; text-decoration-color: var(--ds-color-edge-strong); text-underline-offset: 4px; transition: text-decoration-color var(--ds-duration-enter) var(--ds-easing-standard); }
+  @media (hover: hover) and (pointer: fine) { .ds-prose a:hover { text-decoration-color: var(--ds-color-fg); } }
+}

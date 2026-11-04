@@ -5,8 +5,8 @@ import { useMenu } from '@/composables/useMenu'
 // A button that opens a short list of choices or actions (console2.css .v2-menu): a square panel in a hairline, no
 // shadow, 4px inside; rows from MenuItem. It comes in over 160ms, a 4px drop (a rise when it opens upward), and not at
 // all when opened from the keyboard. Arrows, Home, End, Escape, Tab and a click outside are handled (useMenu).
-// The trigger is the slot `trigger`, drawn as a secondary button unless `triggerClass` says otherwise.
-withDefaults(defineProps<{ label: string, up?: boolean, align?: 'start' | 'end', width?: string, triggerClass?: string, triggerLabel?: string }>(), { align: 'start', width: '264px' })
+// `offset` moves the panel in from its edge. The trigger is the slot `trigger`, drawn as a secondary button unless `triggerClass` says otherwise.
+withDefaults(defineProps<{ label: string, up?: boolean, align?: 'start' | 'end', width?: string, offset?: string, triggerClass?: string, triggerLabel?: string }>(), { align: 'start', width: '264px', offset: '0px' })
 const { open, root, trigger, close, toggle, onTriggerKey, onMenuKey } = useMenu()
 provide('ds-menu-close', () => close(true))
 defineExpose({ open, close })
@@ -33,7 +33,7 @@ const id = `menu-${useId()}`
       :id="id"
       class="ds-menu"
       :data-up="up || undefined"
-      :style="{ width, [align === 'end' ? 'right' : 'left']: '0', [up ? 'bottom' : 'top']: 'calc(100% + 4px)' }"
+      :style="{ width, [align === 'end' ? 'right' : 'left']: offset, [up ? 'bottom' : 'top']: 'calc(100% + 4px)' }"
       role="menu"
       :aria-label="label"
       @keydown="onMenuKey"
