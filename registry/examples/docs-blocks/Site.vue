@@ -1,0 +1,21 @@
+<script setup lang="ts">
+import DocsBlocks, { type DocsBlock } from '@/components/site/DocsBlocks.vue'
+// One of each block, as a docs page sets them.
+const blocks: DocsBlock[] = [
+  { kind: 'p', text: 'Search returns the passages that answer a question, from one namespace or several.' },
+  { kind: 'h2', id: 'request', text: 'Send a request' },
+  { kind: 'list', items: ['Pick the namespace', 'Write the question as a person would', 'Read the hits in order'] },
+  { kind: 'callout', tone: 'note', text: 'Each hit cites its document, and its page when it came from a file.' },
+  { kind: 'callout', tone: 'warning', text: 'A key is shown once. Store it before you close the page.' },
+  { kind: 'code', samples: [{ label: 'cURL', code: 'curl https://api.acme.dev/v1/search -d \'{ "query": "notice period" }\'' }] },
+  { kind: 'table', head: ['Field', 'Type', 'What it is'], rows: [['query', 'string', 'The question'], ['top_k', 'number', 'How many hits, 10 by default']] },
+  { kind: 'fields', fields: [{ name: 'query', type: 'string', required: true, text: 'The question, as a person would ask it.' }, { name: 'top_k', type: 'number', default: '10', text: 'How many hits to return.', notes: ['1 to 100'] }, { name: 'filters', type: 'object', text: 'Metadata the hits must have.', children: [{ name: 'app', type: 'string', text: 'Only hits from this app.' }] }] },
+  { kind: 'cards', items: [{ title: 'Namespaces', body: 'Group documents you search together.', href: '#namespaces' }, { title: 'Connect an agent', body: 'Give your agent search over `MCP`.', href: '#mcp-server' }] },
+]
+</script>
+
+<template>
+  <div class="max-w-180" data-theme="light">
+    <DocsBlocks :blocks="blocks" />
+  </div>
+</template>
