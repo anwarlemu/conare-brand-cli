@@ -1,0 +1,37 @@
+/* Base layer: what every Conare page sets once (main.css @layer base and console2.css .cv2). */
+@layer base {
+  html {
+    background-color: var(--ds-color-surface);
+    scrollbar-width: thin;
+    scrollbar-color: var(--ds-color-neutral-600) transparent;
+  }
+  body {
+    background-color: var(--ds-color-surface);
+    color: var(--ds-color-fg);
+    font-family: var(--ds-font-text);
+    font-size: var(--ds-text-ui);
+    line-height: var(--ds-text-ui-leading);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  :focus-visible {
+    outline: var(--ds-border-focus) solid var(--ds-color-edge-focus);
+    outline-offset: var(--ds-border-focus);
+  }
+  ::selection {
+    background: var(--ds-color-edge-accent);
+    color: var(--ds-color-off-white);
+  }
+  a,
+  button,
+  [role="button"],
+  [role="tab"] {
+    touch-action: manipulation;
+  }
+  /* Phones and touch: fields at 16px so iOS Safari does not zoom (console2.css). */
+  @media (pointer: coarse), (max-width: 767px) {
+    input:not([type="checkbox"], [type="radio"], [type="file"]), textarea, select {
+      font-size: var(--ds-text-input);
+    }
+  }
+}

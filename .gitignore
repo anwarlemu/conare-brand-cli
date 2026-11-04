@@ -1,0 +1,12 @@
+node_modules
+dist
+build
+r
+.nuxt
+.output
+.data
+apps/www/public/r
+apps/www/public/conare-ds
+apps/www/app/registry.generated.json
+*.log
+.DS_Store

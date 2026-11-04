@@ -1,0 +1,36 @@
+{
+  "name": "Conare",
+  "bin": "conare-ds",
+  "source": "github:anwarlemu/conare-brand-cli#release",
+  "registryUrl": "https://conare-ds.vercel.app",
+  "site": "https://conare.ai",
+  "framework": "vue",
+  "assetBase": "/conare-ds",
+  "fonts": {
+    "files": [
+      { "family": "Faculty Glyphic", "weight": 400, "file": "FacultyGlyphic-400.woff2", "role": "heading" },
+      { "family": "Geist", "weight": 400, "file": "Geist-400.woff2", "role": "text" },
+      { "family": "Geist", "weight": 500, "file": "Geist-500.woff2", "role": "text" },
+      { "family": "Geist Mono", "weight": 400, "file": "GeistMono-400.woff2", "role": "code" },
+      { "family": "Inter", "weight": 400, "file": "Inter-400.woff2", "role": "brand" },
+      { "family": "Inter", "weight": 500, "file": "Inter-500.woff2", "role": "brand" },
+      { "family": "Inter", "weight": 600, "file": "Inter-600.woff2", "role": "brand" }
+    ],
+    "css": "https://fonts.googleapis.com/css2?family=Faculty+Glyphic&family=Geist:wght@400;500&family=Geist+Mono&family=Inter:wght@400;500;600&display=swap"
+  },
+  "icons": {
+    "name": "Lucide",
+    "packages": ["lucide-vue-next"],
+    "stroke": 1.5
+  },
+  "type": {
+    "caps": false,
+    "bold": false
+  },
+  "groups": {
+    "ui": "Components",
+    "product": "Product",
+    "site": "Site",
+    "visuals": "Visuals"
+  }
+}

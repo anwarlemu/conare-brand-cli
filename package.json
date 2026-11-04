@@ -1,0 +1,33 @@
+{
+  "name": "conare-ds",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Components, design tokens and checks for building Conare pages and interfaces in Vue and Nuxt.",
+  "type": "module",
+  "bin": {
+    "conare-ds": "./bin.js"
+  },
+  "files": ["bin.js", "dist", "brand", "build", "r"],
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "bun@1.4.4",
+  "workspaces": ["apps/www"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node scripts/build-brand.mjs",
+    "registry": "bun scripts/build-registry.ts",
+    "test": "vitest run",
+    "ci": "bun run build && bun run registry && vitest run",
+    "release": "sh scripts/release.sh",
+    "www:build": "bun run --cwd apps/www build"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.5",
+    "@vue/compiler-sfc": "3.5.43",
+    "lucide-vue-next": "^0.479.0",
+    "typescript": "5.9.3",
+    "vitest": "^4.0.0",
+    "vue": "3.5.43",
+    "vue-tsc": "^2"
+  }
+}
