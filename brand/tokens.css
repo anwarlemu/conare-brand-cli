@@ -193,6 +193,16 @@
   --ds-easing-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ds-easing-swap: cubic-bezier(0.65, 0, 0.35, 1);
   --ds-easing-decelerate: cubic-bezier(0, 0, 0.2, 1); /* A pixel cell lighting. */
+
+  /* Tokens added by the parallel batches in PLAN.md: each adds only inside its own block. */
+  /* batch 1: start */
+  /* batch 1: end */
+
+  /* batch 2: start */
+  /* batch 2: end */
+
+  /* batch 3: start */
+  /* batch 3: end */
 }
 
 /* Dark theme (theme.dark.tokens.json): the docs and the website's dark bands. */
