@@ -4,7 +4,7 @@ Components, design tokens and checks for building Conare pages and interfaces in
 Every component is ported from Conare's own console and website (conare-web, branch `agencidev/console`), takes its
 data through props and slots, and is shown on the library site from the files apps install.
 
-Library site: https://conare-ds.vercel.app (the `apps/www` Nuxt app in this repository).
+Library site: https://conare-ds.agencidev.com (the `apps/www` Nuxt app in this repository).
 
 ## Use it in an app
 
