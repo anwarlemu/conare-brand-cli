@@ -199,6 +199,22 @@
   /* batch 1: end */
 
   /* batch 2: start */
+  --ds-duration-tip: 125ms; /* A tooltip coming in or leaving (Copy.vue version 1's tip). */
+  --ds-duration-drawer: 240ms; /* The phone sidebar sliding in (console2.css .v2-side[data-open]). */
+  --ds-duration-wait: 300ms; /* The pause before a tooltip or hover card shows under the pointer. */
+  --ds-color-scrim-light: color-mix(in srgb, var(--ds-color-off-black) 16%, transparent); /* .v2-sheet-backdrop, .v2-side-scrim */
+  --ds-color-scrim-palette: color-mix(in srgb, var(--ds-color-off-black) 24%, transparent); /* .v2-cmd-backdrop */
+  --ds-color-bar: color-mix(in srgb, var(--ds-color-surface) 92%, transparent); /* .v2-bar, under its 8px blur */
+  --ds-layout-sheet: 420px; /* The docs panel (.v2-docs). */
+  --ds-layout-palette: 560px; /* The command palette (.v2-cmd). */
+  --ds-duration-viz-card: 900ms; /* The agent's window settling in, once (docs-viz.css viz-card). */
+  --ds-duration-viz-in: 640ms; /* A line of the agent's window rising in (docs-viz.css viz-in). */
+  --ds-duration-viz-shimmer: 1400ms; /* Light crossing "Thinking" once (docs-viz.css viz-shimmer). */
+  --ds-duration-land: 240ms; /* A read region landing on the page, a score track filling (.v2-parse-land, .v2-evaltrack). */
+  --ds-duration-sweep: 900ms; /* The parse film's red line reading down a page, once (.v2-parse-sweep). */
+  --ds-duration-swap-out: 90ms; /* A window's content leaving as the next arrives (.v2-winswap). */
+  --ds-font-document: ui-serif, Georgia, "Times New Roman", serif; /* A sample document page as Parse draws it. */
+  --ds-font-scan: "Courier New", Courier, monospace; /* A scanned page as Parse draws it. */
   /* batch 2: end */
 
   /* batch 3: start */
