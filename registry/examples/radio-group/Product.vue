@@ -1,0 +1,24 @@
+<script setup lang="ts">
+import { ref } from 'vue'
+import RadioGroup from '@/components/ui/RadioGroup.vue'
+// How a namespace reads new files: one of three, each with its line.
+const mode = ref<'fast' | 'balanced' | 'thorough'>('balanced')
+const region = ref<'us' | 'eu'>('us')
+</script>
+
+<template>
+  <div class="grid items-start gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8">
+    <p class="type-meta leading-7 text-fg-muted">Reading</p>
+    <RadioGroup
+      v-model="mode"
+      label="reading"
+      :options="[
+        { value: 'fast', label: 'Fast', hint: 'Text only. Fine for chat and notes.' },
+        { value: 'balanced', label: 'Balanced', hint: 'Text and tables. The default.' },
+        { value: 'thorough', label: 'Thorough', hint: 'Text, tables, figures and scans.' },
+      ]"
+    />
+    <p class="mt-4 type-meta leading-7 text-fg-muted md:mt-0">In a row</p>
+    <RadioGroup v-model="region" label="region" inline :options="[{ value: 'us', label: 'United States' }, { value: 'eu', label: 'European Union' }]" />
+  </div>
+</template>

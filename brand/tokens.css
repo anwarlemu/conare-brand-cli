@@ -196,6 +196,30 @@
 
   /* Tokens added by the parallel batches in PLAN.md: each adds only inside its own block. */
   /* batch 1: start */
+  /* batch 1, controls and text motion */
+  --ds-duration-wipe: 420ms; /* The fix button's black wiping off once the source is back (console2.css .v2-fixbtn-ink). */
+  --ds-duration-reveal: 400ms; /* A headline letter settling from red to ink (home.css .hl-char). */
+  --ds-easing-reveal-fade: cubic-bezier(0.45, 0, 0.55, 1); /* A headline letter fading up (home.css .hl-char). */
+  --ds-easing-reveal-ink: cubic-bezier(0.215, 0.61, 0.355, 1); /* A headline letter settling to ink (home.css .hl-char). */
+  /* batch 1, site parts (button-link, prompt-bar, pages) */
+  --ds-color-warm-ink: #1E1B17; /* The prompt bar's warm dark glass (home.css .prompt-glass, at 52%). */
+  --ds-color-warm-ink-hover: #484440; /* The prompt bar's glass under the pointer (at 56%). */
+  --ds-color-warm-lift: #5C5854; /* A prompt bar suggestion under the pointer (at 60%). */
+  --ds-color-glass-ink: #F7F6F6; /* The prompt bar's text and send button on the glass. */
+  --ds-duration-dock: 280ms; /* The prompt bar rising into view; it leaves in 200ms. */
+  --ds-duration-word: 360ms; /* Each word of a prompt bar answer fading up, 22ms after the last. */
+  /* batch 1, viz windows */
+  /* The product, eval, price and step windows (home.css .viz-*): explanatory motion that plays once while on screen. */
+  --ds-text-viz-score: 36px; /* An eval window's score. */
+  --ds-text-viz-score-leading: 36px;
+  --ds-duration-viz-row: 380ms; /* A result row landing where it was found. */
+  --ds-duration-viz-tick: 400ms; /* One second of a window's timer. */
+  --ds-duration-viz-bar: 600ms; /* A bar growing to its value. */
+  --ds-duration-viz-in: 640ms; /* A window's part rising in. */
+  --ds-duration-viz-draw: 700ms; /* The price chart's crosshair drawing. */
+  --ds-duration-viz-card: 900ms; /* A window arriving. */
+  --ds-duration-viz-shimmer: 1400ms; /* One pass of light across a working status. */
+  --ds-easing-viz: cubic-bezier(0.16, 1, 0.3, 1); /* The windows' long ease-out. */
   /* batch 1: end */
 
   /* batch 2: start */
