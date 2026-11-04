@@ -5,6 +5,7 @@ import AccuracyDetail, { type AccuracyRow, type AccuracyView } from '@/component
 import AccuracyOpens from '@/components/product/AccuracyOpens.vue'
 import Button from '@/components/ui/Button.vue'
 import Table from '@/components/ui/Table.vue'
+import Count from '@/components/ui/Count.vue'
 
 // Accuracy, "Verdict first" (accuracy/Verdict.vue): a count read in five seconds in the double rule, beside a field of
 // a hundred squares, one a question, ink where the right page came back and red where it did not; pointing at one reads
@@ -33,7 +34,7 @@ function clicked(event: MouseEvent) {
 <template>
   <section class="m-1.25 grid grid-cols-[minmax(0,1fr)_240px] gap-8 border border-edge p-6 outline outline-offset-4 outline-edge max-md:grid-cols-1 max-md:p-4" aria-labelledby="eval-score">
     <div class="flex min-w-0 flex-col gap-1">
-      <p id="eval-score" class="font-heading text-display leading-14 tracking-display tabular-nums max-md:text-heading-1 max-md:leading-10">{{ view.right }} of {{ view.questions }}</p>
+      <p id="eval-score" class="font-heading text-display leading-14 tracking-display tabular-nums max-md:text-heading-1 max-md:leading-10"><Count :value="view.right" /> of {{ view.questions }}</p>
       <p class="text-input">{{ view.state === 'running' ? `Running. ${view.done} of ${view.questions} done.` : 'questions reached the right page.' }}</p>
       <p class="mt-auto type-meta text-fg-muted">{{ pointed ? pointed.question : `Run ${view.ran} by ${view.by}, ${view.seconds} s, $${view.cost.toFixed(2)}` }}</p>
     </div>

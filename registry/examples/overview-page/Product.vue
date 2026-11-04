@@ -16,7 +16,12 @@ const days = Array.from({ length: 90 }, (_, i) => {
   return { day: at.toISOString().slice(0, 10), value: Math.round((weekend ? 1800 : 5200) + i * 42 + ((i * 37) % 11) * 140) }
 })
 const thisMonth = days.filter(d => d.day.startsWith('2026-11')).reduce((a, d) => a + d.value, 0)
-const latency = Array.from({ length: 48 }, (_, i) => 140 + ((i * 29) % 17) * 6 + (i % 12 === 5 ? 90 : 0))
+// The last 24 hours, every 30 minutes: p50 and p95.
+const half = (i: number) => end - (47 - i) * 1800000
+const latency = [
+  { label: 'p50', points: Array.from({ length: 48 }, (_, i) => ({ t: half(i), v: 140 + ((i * 29) % 17) * 6 + (i % 12 === 5 ? 90 : 0) })) },
+  { label: 'p95', points: Array.from({ length: 48 }, (_, i) => ({ t: half(i), v: 260 + ((i * 31) % 13) * 8 + (i % 12 === 5 ? 120 : 0) })) },
+]
 const namespaces = [
   { name: 'contracts', documents: 412830, health: 'ready' as const, synced: '2 min ago', lastUsed: '2 min ago' },
   { name: 'support', documents: 2184920, health: 'syncing' as const, lastUsed: '1 min ago' },

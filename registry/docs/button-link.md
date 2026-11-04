@@ -28,7 +28,8 @@ turning red as red squares come in), `light` (off-white on a dark band) or `ghos
 makes the dark main call to action, black with red squares, and `arrow` adds the pixel arrow: lit squares on a 5 by 5
 of dim ones. On the website the arrow steps one grid to the right on hover; here it stays still, as icons never move on
 hover. Where the label changes colour over the fill (secondary and light), each column of squares carries its own
-off-white copy of the label, so the label turns as the squares land. `grain` lays the footer's grain under the label.
+off-white copy of the label, so the label turns as the squares land. `grain` lays the footer's grain under the label. `fill="black"` brings the squares in black: the light button on a
+red band (the closing call to action) takes it.
 
 The squares come in over 80ms each on a decelerating curve with a delay along the button (about half a second end to
 end) and leave over 120ms, a touch quicker. A press lights them at once. Reduced motion drops the delays, so the fill

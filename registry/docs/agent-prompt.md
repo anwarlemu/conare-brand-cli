@@ -20,4 +20,4 @@ examples:
 Build the prompt in your app (it names the MCP server and the namespaces connected) and pass it with the request
 `code`. `installs` are the one-click links the prompt can't do (Cursor's and VS Code's install links); without them the
 split has no arrow. `AgentWindow` plays the website's agent window once as it renders; `AgentSplit` works on its own.
-The branch's panel also scatters seeded cells over the dark panel (`cell-burst`, batch 3); this one shows the grain only.
+The dark panel carries the grain and a seeded sheet of cells (`cell-burst`) under the agent's window.

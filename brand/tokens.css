@@ -194,21 +194,18 @@
   --ds-easing-swap: cubic-bezier(0.65, 0, 0.35, 1);
   --ds-easing-decelerate: cubic-bezier(0, 0, 0.2, 1); /* A pixel cell lighting. */
 
-  /* Tokens added by the parallel batches in PLAN.md: each adds only inside its own block. */
-  /* batch 1: start */
-  /* batch 1, controls and text motion */
+  /* Controls and text motion. */
   --ds-duration-wipe: 420ms; /* The fix button's black wiping off once the source is back (console2.css .v2-fixbtn-ink). */
   --ds-duration-reveal: 400ms; /* A headline letter settling from red to ink (home.css .hl-char). */
   --ds-easing-reveal-fade: cubic-bezier(0.45, 0, 0.55, 1); /* A headline letter fading up (home.css .hl-char). */
   --ds-easing-reveal-ink: cubic-bezier(0.215, 0.61, 0.355, 1); /* A headline letter settling to ink (home.css .hl-char). */
-  /* batch 1, site parts (button-link, prompt-bar, pages) */
+  /* Site parts (button-link, prompt-bar, pages). */
   --ds-color-warm-ink: #1E1B17; /* The prompt bar's warm dark glass (home.css .prompt-glass, at 52%). */
   --ds-color-warm-ink-hover: #484440; /* The prompt bar's glass under the pointer (at 56%). */
   --ds-color-warm-lift: #5C5854; /* A prompt bar suggestion under the pointer (at 60%). */
   --ds-color-glass-ink: #F7F6F6; /* The prompt bar's text and send button on the glass. */
   --ds-duration-dock: 280ms; /* The prompt bar rising into view; it leaves in 200ms. */
   --ds-duration-word: 360ms; /* Each word of a prompt bar answer fading up, 22ms after the last. */
-  /* batch 1, viz windows */
   /* The product, eval, price and step windows (home.css .viz-*): explanatory motion that plays once while on screen. */
   --ds-text-viz-score: 36px; /* An eval window's score. */
   --ds-text-viz-score-leading: 36px;
@@ -220,9 +217,8 @@
   --ds-duration-viz-card: 900ms; /* A window arriving. */
   --ds-duration-viz-shimmer: 1400ms; /* One pass of light across a working status. */
   --ds-easing-viz: cubic-bezier(0.16, 1, 0.3, 1); /* The windows' long ease-out. */
-  /* batch 1: end */
 
-  /* batch 2: start */
+  /* Overlays, the console shell and its pages. */
   --ds-duration-tip: 125ms; /* A tooltip coming in or leaving (Copy.vue version 1's tip). */
   --ds-duration-drawer: 240ms; /* The phone sidebar sliding in (console2.css .v2-side[data-open]). */
   --ds-duration-wait: 300ms; /* The pause before a tooltip or hover card shows under the pointer. */
@@ -231,24 +227,19 @@
   --ds-color-bar: color-mix(in srgb, var(--ds-color-surface) 92%, transparent); /* .v2-bar, under its 8px blur */
   --ds-layout-sheet: 420px; /* The docs panel (.v2-docs). */
   --ds-layout-palette: 560px; /* The command palette (.v2-cmd). */
-  --ds-duration-viz-card: 900ms; /* The agent's window settling in, once (docs-viz.css viz-card). */
-  --ds-duration-viz-in: 640ms; /* A line of the agent's window rising in (docs-viz.css viz-in). */
-  --ds-duration-viz-shimmer: 1400ms; /* Light crossing "Thinking" once (docs-viz.css viz-shimmer). */
   --ds-duration-land: 240ms; /* A read region landing on the page, a score track filling (.v2-parse-land, .v2-evaltrack). */
   --ds-duration-sweep: 900ms; /* The parse film's red line reading down a page, once (.v2-parse-sweep). */
   --ds-duration-swap-out: 90ms; /* A window's content leaving as the next arrives (.v2-winswap). */
   --ds-font-document: ui-serif, Georgia, "Times New Roman", serif; /* A sample document page as Parse draws it. */
   --ds-font-scan: "Courier New", Courier, monospace; /* A scanned page as Parse draws it. */
-  /* batch 2: end */
 
-  /* batch 3: start */
   /* The website's art (home.css): slow on purpose, decorative, off for reduced motion. */
   --ds-duration-art: 480ms; /* The cells' hatch fading in as a panel nears the screen (.art-in). */
   --ds-duration-tile-lit: 600ms; /* A room-grid tile lighting on its own (.room-tiles [data-lit]). */
   --ds-duration-tile-fade: 1200ms; /* A room-grid tile going dark again. */
   /* search-results, written-answer, work-panel (console2.css .v2-rise, .v2-answer-in, .v2-agent-rise, .v2-flash). */
   --ds-duration-rise: 240ms; /* A result or a written answer rising in. */
-  --ds-duration-reveal: 500ms; /* A work panel's title and line rising in, blur clearing, once. */
+  --ds-duration-step-rise: 500ms; /* A work panel's title and line rising in, blur clearing, once. */
   --ds-duration-flash: 900ms; /* A result shown from its square flashing its red outline once. */
   /* faq (home.css .faq-panel, .faq-acc): the website's questions. */
   --ds-duration-answer-out: 100ms; /* An answer leaving as the next is picked. */
@@ -264,7 +255,6 @@
   --ds-text-docs-heading-leading: 36px;
   /* meter (console2.css .v2-meter[data-state]); a chart's bars rise on --ds-duration-rise. */
   --ds-duration-progress: 900ms; /* A live meter easing linearly to a job's next value. */
-  /* batch 3: end */
 }
 
 /* Dark theme (theme.dark.tokens.json): the docs and the website's dark bands. */

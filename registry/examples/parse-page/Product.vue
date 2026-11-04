@@ -37,7 +37,7 @@ const curl = `curl -X POST "https://api.conare.ai/v1/parse?layout=true" \\
 <template>
   <ConsoleFrame :groups="consoleGroups('')" :crumbs="[{ label: 'Overview', href: '#' }, { label: 'Parse' }]">
     <ConsolePage title="Parse">
-      <ParsePage v-model:chosen="chosen" :samples="PARSE_SAMPLES" :answer="answer" :reading="reading" :namespaces="['sec-filings', 'contracts', 'support']" :curl="curl" :own="own" @file="file" />
+      <ParsePage v-model:chosen="chosen" :samples="PARSE_SAMPLES" :answer="answer" :reading="reading" :namespaces="[{ name: 'sec-filings', documents: 2184920 }, { name: 'contracts', documents: 412830 }, { name: 'support', documents: 18240 }]" :curl="curl" :own="own" @file="file" />
     </ConsolePage>
   </ConsoleFrame>
 </template>

@@ -17,4 +17,6 @@ examples:
 
 ProductMenu renders an `<li>`: put it first in the header's list of links (SiteHeader does). Give each item its
 window through the `window` slot (`item`, `index`, `active`, `plays`, which changes each time a window should play
-again): the website uses its product windows (batch 1's `product-viz`, `eval-viz` and `price-viz`) over a cell burst.
+again): the website uses its product windows (`product-viz`, `eval-viz` and `price-viz`) over a `cell-burst`, as the
+example does. Without the slot each item shows a small plain window with its name and line. The highlight is
+`glide-mark`'s `useGlideMark`.

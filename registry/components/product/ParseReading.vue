@@ -5,22 +5,24 @@ import ParsePlain from '@/components/product/ParsePlain.vue'
 import ParseRegions from '@/components/product/ParseRegions.vue'
 import ParseSheet from '@/components/product/ParseSheet.vue'
 import { useParsePoint, type ParseAnswer } from '@/composables/useParse'
+import Count from '@/components/ui/Count.vue'
 
 // A file as Conare read it (parse/Reading.vue), three ways. 1 "Page beside text" (the one that ships): the page on the
-// paper beside the dark window of what was read, with four facts over it (how long, regions, tables, OCR), joined by
-// pointing. 2 "Regions": the page's structure, every region numbered with its confidence. 3 "Plain or Conare": a plain
-// reader's text and Conare's on the same page, one handle between them.
+// paper beside the dark window of what was read, with four facts over it (how long, regions, tables, OCR; the counts
+// roll up as they land), joined by pointing. 2 "Regions": the page's structure, every region numbered with its
+// confidence. 3 "Plain or Conare": a plain reader's text and Conare's on the same page, one handle between them.
 const props = withDefaults(defineProps<{ answer: ParseAnswer, version?: 1 | 2 | 3 }>(), { version: 1 })
 const { on, lit, pick } = useParsePoint()
 const facts = computed(() => {
   const p = props.answer.part
   const tables = p.blocks.filter(b => b.type === 'table').length
-  return [
+  const all: Array<{ label: string, value: string, count?: number }> = [
     { label: 'Read in', value: `${(props.answer.took_ms / 1000).toLocaleString('en-US', { maximumFractionDigits: 1 })} s` },
-    { label: 'Regions', value: String(p.blocks.length) },
-    { label: 'Tables', value: String(tables) },
+    { label: 'Regions', value: '', count: p.blocks.length },
+    { label: 'Tables', value: '', count: tables },
     { label: 'OCR', value: p.ocr ? `${Math.round((p.confidence ?? 0) * 100)}% sure` : 'Not needed' },
   ]
+  return all
 })
 </script>
 
@@ -34,7 +36,7 @@ const facts = computed(() => {
       <dl class="grid grid-cols-4 border-b border-code-edge max-md:grid-cols-2">
         <div v-for="(f, i) in facts" :key="f.label" class="min-w-0 px-4 py-3" :class="[i > 0 && 'border-code-edge md:border-l', i % 2 === 1 && 'max-md:border-l', i > 1 && 'max-md:border-t']">
           <dt class="type-meta text-code-muted">{{ f.label }}</dt>
-          <dd class="text-body tabular-nums">{{ f.value }}</dd>
+          <dd class="text-body tabular-nums"><Count v-if="f.count != null" :value="f.count" rolls /><template v-else>{{ f.value }}</template></dd>
         </div>
       </dl>
       <ParseOutput :answer="answer" :on="lit" plays @point="on = $event" @pick="pick" />

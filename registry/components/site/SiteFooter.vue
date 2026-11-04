@@ -4,9 +4,10 @@
 // md, four in a row from lg); then the wordmark in white, cut off by the page edge so the top 86% of the letters show.
 // Links ease to white under the pointer. `pinned` makes it sticky to the bottom of the viewport from md, under a page
 // that carries its own ground at a higher z, so the page scrolls off it. Uses role="contentinfo" and
-// role="navigation" rather than <footer> and <nav>, as the site does. The `link` slot renders each link's label (a
-// rolling label, for one).
+// role="navigation" rather than <footer> and <nav>, as the site does. Each label rolls up to a copy of itself under the
+// pointer or focus (roll-text, the site's pace); the `link` slot replaces a label.
 import Grain from '@/components/visuals/Grain.vue'
+import RollText from '@/components/visuals/RollText.vue'
 
 export type FooterLink = { label: string, href: string }
 withDefaults(defineProps<{
@@ -39,7 +40,7 @@ const WORDMARK = 'M211.683 40.2172C209.513 40.2172 207.742 40.5598 206.371 41.24
           </div>
           <div v-if="legal || legalLinks.length" class="ds-foot-legal flex flex-wrap items-center gap-x-6 gap-y-2 text-ui text-off-white/80">
             <span v-if="legal">{{ legal }}</span>
-            <a v-for="l in legalLinks" :key="l.href" :href="l.href" class="ds-foot-link"><slot name="link" :link="l">{{ l.label }}</slot></a>
+            <a v-for="l in legalLinks" :key="l.href" :href="l.href" class="ds-foot-link ds-roll-host"><slot name="link" :link="l"><RollText :text="l.label" pace="site" /></slot></a>
           </div>
         </div>
 
@@ -48,7 +49,7 @@ const WORDMARK = 'M211.683 40.2172C209.513 40.2172 207.742 40.5598 206.371 41.24
             <p class="type-ui">{{ col.title }}</p>
             <ul class="mt-6 flex flex-col gap-3">
               <li v-for="link in col.links" :key="link.label" class="flex">
-                <a :href="link.href" class="ds-foot-link text-meta leading-5 text-off-white/80"><slot name="link" :link="link">{{ link.label }}</slot></a>
+                <a :href="link.href" class="ds-foot-link ds-roll-host text-meta leading-5 text-off-white/80"><slot name="link" :link="link"><RollText :text="link.label" pace="site" /></slot></a>
               </li>
             </ul>
           </div>

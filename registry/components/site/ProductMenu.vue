@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
 import { ChevronDown } from 'lucide-vue-next'
+import Grain from '@/components/visuals/Grain.vue'
+import { useGlideMark } from '@/composables/useGlideMark'
 
 // The website header's Product dropdown (home/ProductMenu.vue): one column of the products with their one line, a
 // rule, then the extra links (benchmarks, pricing), beside a portrait of the one under the pointer or focus on the dark
 // grained panel, crossfading between items and playing again each time it shows (slot `window`). One highlight, the
-// paper with a red square at its left, glides between items (160ms) while the item's title eases right to clear the
+// paper with a red square at its left, glides between items (glide-mark's useGlideMark, 160ms) while the item's title eases right to clear the
 // square; it rests on the portrait's item when the pointer leaves the list. It opens on hover for a mouse and on
 // press for touch and the keyboard; Escape (focus back on the button) or a press outside closes it. `current` gives the
 // button the header's resting block and red square. Render it as an item of the header's link list.
@@ -18,13 +20,11 @@ const button = ref<HTMLButtonElement | null>(null)
 const list = ref<HTMLElement | null>(null)
 const id = `product-menu-${useId()}`
 
-const mark = ref<{ y: number, h: number } | null>(null)
-const shown = ref(false)
-const instant = ref(true)
-const hot = ref<number | null>(null)
 // The portrait's item: the last one pointed at, back to the first on each opening. Each change bumps `plays`.
 const pick = ref(0)
 const plays = ref(0)
+// One highlight for the list, resting on the portrait's item when the pointer leaves.
+const { mark, shown, instant, hot, point, leave: rest, settle } = useGlideMark(list, () => pick.value)
 watch(hot, (i) => {
   if (i === null || i === pick.value) return
   pick.value = i
@@ -37,19 +37,9 @@ watch(open, (o) => {
   opened.value = true
   pick.value = 0
   plays.value += 1
-  void nextTick(() => rest(true))
+  void nextTick(settle)
 })
 
-function place(i: number, instantly: boolean) {
-  const row = list.value?.querySelectorAll<HTMLElement>(':scope > li:not([aria-hidden])')[i]
-  if (!row) return
-  instant.value = instantly
-  mark.value = { y: row.offsetTop, h: row.offsetHeight }
-  shown.value = true
-  hot.value = i
-}
-function rest(instantly = false) { place(pick.value, instantly) }
-function point(i: number) { place(i, !shown.value) }
 function leave(event?: FocusEvent) {
   if (event && (event.currentTarget as HTMLElement).contains(event.relatedTarget as Node)) return
   rest()
@@ -114,7 +104,7 @@ const all = () => [...props.items, ...props.more]
             </li>
             <template v-for="(item, i) in all()" :key="item.label">
               <li v-if="i === items.length && more.length" aria-hidden="true" class="mx-3 my-1 border-t border-edge" />
-              <li class="relative">
+              <li class="relative" data-glide-row>
                 <a :href="item.href" class="block px-3 py-2 outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-focus" @mouseenter="point(i)" @focus="point(i)" @click="open = false">
                   <span class="ds-product-text block text-body leading-5 font-medium text-fg" :data-hot="hot === i || undefined">{{ item.label }}</span>
                   <span class="block text-ui leading-5 text-fg-muted">{{ item.desc }}</span>
@@ -126,7 +116,7 @@ const all = () => [...props.items, ...props.more]
         <!-- The portrait, as wide as the list: each item's window on the grained dark grey, crossfaded. -->
         <div class="bg-surface p-2">
           <div aria-hidden="true" class="relative grid h-full min-h-62.5 grid-cols-[minmax(0,1fr)] overflow-hidden bg-neutral-200 text-neutral-300">
-            <div class="ds-product-grain pointer-events-none absolute inset-0 opacity-30" />
+            <Grain />
             <template v-if="opened">
               <div v-for="(item, i) in all()" :key="item.label" class="ds-product-art relative flex items-center justify-center px-3 py-4 [grid-area:1/1]" :data-active="i === pick || undefined">
                 <slot name="window" :item="item" :index="i" :active="open && i === pick" :plays="plays">
@@ -163,7 +153,6 @@ const all = () => [...props.items, ...props.more]
 .ds-product-art { opacity: 0; transition: opacity var(--ds-duration-cell) ease; }
 .ds-product-art[data-active] { opacity: 1; transition-duration: var(--ds-duration-micro); }
 .ds-product-art:not([data-active]) * { animation-play-state: paused !important; }
-.ds-product-grain { background-image: url("/conare-ds/textures/grain.webp"); background-size: 12% auto; background-repeat: repeat; }
 @media (prefers-reduced-motion: reduce) {
   .ds-product-mark, .ds-product-dot { transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }
   .ds-product-text { transition: none; }

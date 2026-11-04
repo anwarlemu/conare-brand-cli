@@ -1,22 +1,21 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { Check, ChevronsUpDown, Code, FileUp } from 'lucide-vue-next'
+import { Check, FileUp } from 'lucide-vue-next'
 import ParseReading from '@/components/product/ParseReading.vue'
+import ScopeMenu, { type ScopeOption } from '@/components/product/ScopeMenu.vue'
 import Button from '@/components/ui/Button.vue'
-import CodeBlock from '@/components/ui/CodeBlock.vue'
+import CodePop from '@/components/ui/CodePop.vue'
 import CopyButton from '@/components/ui/CopyButton.vue'
 import DotMatrix from '@/components/ui/DotMatrix.vue'
-import Menu from '@/components/ui/Menu.vue'
-import MenuItem from '@/components/ui/MenuItem.vue'
 import type { ParseAnswer } from '@/composables/useParse'
 
 // Parse as a page (pages/dashboard/parse.vue): drop any file and see what Conare read, region by region. Nothing is
 // stored. A row of files to try and one of your own (a press or a drop; the row takes a red dashed edge while a file is
 // dragged over it), the picked one with a 2px red line along its top and the dot matrix while it reads. Then the reading
-// (ParseReading, `version` picks the take), and what comes next: into a namespace, the Markdown, or the API call opening
-// in place. The app reads the file: it answers `choose` and `file` and passes the `answer`.
+// (ParseReading, `version` picks the take), and what comes next: into a namespace (scope-menu, one must be chosen),
+// the Markdown, or the API call opening in place (code-pop). The app reads the file: it answers `choose` and `file` and passes the `answer`.
 export interface ParseSampleFile { id: string, what: string, line: string, pages: number }
-const props = withDefaults(defineProps<{ samples: ParseSampleFile[], answer: ParseAnswer | null, reading?: boolean, version?: 1 | 2 | 3, namespaces?: string[], curl?: string, own?: string }>(), { version: 1, namespaces: () => [], curl: '', own: '' })
+const props = withDefaults(defineProps<{ samples: ParseSampleFile[], answer: ParseAnswer | null, reading?: boolean, version?: 1 | 2 | 3, namespaces?: ScopeOption[], curl?: string, own?: string }>(), { version: 1, namespaces: () => [], curl: '', own: '' })
 const chosen = defineModel<string>('chosen', { required: true })
 const emit = defineEmits<{ file: [file: File], add: [namespace: string] }>()
 
@@ -30,9 +29,8 @@ function drop(event: DragEvent) {
   dragging.value = false
   take(event.dataTransfer?.files)
 }
-const into = ref(props.namespaces[0] ?? '')
+const into = ref(props.namespaces[0]?.name ?? '')
 const added = ref(false)
-const showCode = ref(false)
 watch(() => props.answer?.id, () => { added.value = false })
 function add() {
   added.value = true
@@ -66,16 +64,12 @@ function add() {
     <div class="flex flex-wrap items-center gap-2">
       <p v-if="added" class="inline-flex items-center gap-1.5 type-meta" role="status"><Check :size="12" :stroke-width="2" aria-hidden="true" />Added to <span class="font-code">{{ into }}</span></p>
       <template v-else-if="namespaces.length">
-        <Menu label="namespaces" width="220px">
-          <template #trigger><span class="font-code font-normal">{{ into }}</span><ChevronsUpDown :size="12" :stroke-width="1.5" class="text-fg-muted" aria-hidden="true" /></template>
-          <MenuItem v-for="n in namespaces" :key="n" :current="n === into" @select="into = n"><span class="min-w-0 flex-1 truncate font-code">{{ n }}</span><Check v-if="n === into" :size="14" :stroke-width="1.5" aria-label="current" /></MenuItem>
-        </Menu>
+        <ScopeMenu v-model="into" :options="namespaces" single />
         <Button press :disabled="!into" @click="add">Add to namespace</Button>
       </template>
       <CopyButton :text="answer.markdown" label="Copy Markdown" class="ml-auto" />
-      <Button v-if="curl" press :aria-expanded="showCode" @click="showCode = !showCode"><Code :size="12" :stroke-width="1.5" aria-hidden="true" />API call</Button>
+      <CodePop v-if="curl" :code="curl" label="API call" title="Parse this file from your code" />
     </div>
-    <div v-if="curl" class="ds-parsecode" :data-open="showCode || undefined" :inert="!showCode || undefined"><div><CodeBlock :code="curl" /></div></div>
     <p v-if="own && answer.name === own" class="type-meta text-fg-muted">This shows a sample reading, not your file.</p>
   </template>
 </template>
@@ -90,10 +84,5 @@ function add() {
 .ds-parsefile:active { background: color-mix(in srgb, var(--ds-color-fg) 8%, var(--ds-color-surface-subtle)); }
 .ds-parsefile:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }
 @media (hover: hover) and (pointer: fine) { .ds-parsefile:hover { background: var(--ds-color-surface-subtle); } }
-/* The API call opens in place, pushing what follows: 0fr to 1fr, 260ms opening and 180ms closing (.v2-collapse). */
-.ds-parsecode { display: grid; grid-template-rows: 0fr; margin-top: -24px; transition: grid-template-rows var(--ds-duration-slide) var(--ds-easing-out), margin-top var(--ds-duration-slide) var(--ds-easing-out); }
-.ds-parsecode[data-open] { grid-template-rows: 1fr; margin-top: 0; transition-duration: var(--ds-duration-collapse); }
-.ds-parsecode > div { min-height: 0; overflow: hidden; }
-@media (prefers-reduced-motion: reduce) { .ds-parsecode { transition: none; } }
 @media (prefers-reduced-motion: reduce) { .ds-parsefile::before { transition: none; } }
 </style>

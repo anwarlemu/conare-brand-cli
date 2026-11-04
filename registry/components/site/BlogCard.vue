@@ -7,9 +7,10 @@ import { useSeen } from '@/composables/useCellBurst'
 // A blog post as a card (BlogCard.vue): in its own ruled box, which takes the paper under the pointer, a picture (a
 // grained dark panel and a jumbled sheet of cells) with the category in red at its top right, then the title, its
 // line, and at the foot, each in a ruled tag, who it is from and the date. The `window` slot is what plays in the
-// picture once the card is on screen (the website puts a benchmark's leaderboard there): it is laid out at one size
-// on every card, 520 by 380, and scaled as a whole to fit, so every card's window matches and none reflows. It gets
-// `active` once 40% of the picture is on screen and stays hidden, not blank, until then.
+// picture once the card is on screen (the website puts a benchmark's leaderboard there, an EvalViz, which is stretched
+// to the box): it is laid out at one size on every card, 520 by 380, and scaled as a whole to fit, so every card's
+// window matches and none reflows. It gets `active` once 40% of the picture is on screen and stays hidden, not blank,
+// until then.
 const props = defineProps<{ href: string, title: string, dek?: string, category: string, author?: string, date?: string, seed?: number }>()
 
 const art = ref<HTMLElement | null>(null)
@@ -38,7 +39,7 @@ onBeforeUnmount(() => observer?.disconnect())
       <span class="pointer-events-none absolute inset-0 opacity-70"><CellBurst :seed="burstSeed" jumble /></span>
       <span
         v-if="$slots.window"
-        class="absolute top-1/2 left-1/2 flex"
+        class="absolute top-1/2 left-1/2 flex [&>.ds-viz]:h-full [&>.ds-viz]:max-w-none [&>.ds-viz>.ds-viz-card]:h-full"
         :class="!seen && 'invisible'"
         :style="{ width: `${VIZ_W}px`, height: `${VIZ_H}px`, transform: `translate(-50%, -50%) scale(${fit})` }"
       >

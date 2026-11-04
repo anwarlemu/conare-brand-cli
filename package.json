@@ -17,6 +17,7 @@
     "build": "tsc -p tsconfig.json && node scripts/build-brand.mjs",
     "registry": "bun scripts/build-registry.ts",
     "test": "vitest run",
+    "test:docs": "node scripts/check-docs.mjs",
     "ci": "bun run build && node scripts/ci-limits.mjs && bun run registry && vitest run",
     "release": "sh scripts/release.sh",
     "www:build": "bun run --cwd apps/www build"

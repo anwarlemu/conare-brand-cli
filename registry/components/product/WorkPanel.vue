@@ -40,7 +40,7 @@ withDefaults(defineProps<{ title: string, line?: string, seed?: number, tall?: b
 .ds-work-panel { position: relative; display: flex; min-height: 240px; align-items: center; overflow: hidden; background: var(--ds-color-neutral-200); color: var(--ds-color-neutral-300); }
 @container (min-width: 640px) { .ds-work-panel[data-tall] { min-height: 372px; } }
 /* Once, as the step opens: up 12px, a 3px blur clearing (.v2-agent-rise). */
-.ds-work-rise { animation: ds-work-rise var(--ds-duration-reveal) var(--ds-easing-out) both; animation-delay: calc(var(--i, 0) * 40ms); }
+.ds-work-rise { animation: ds-work-rise var(--ds-duration-step-rise) var(--ds-easing-out) both; animation-delay: calc(var(--i, 0) * 40ms); }
 @keyframes ds-work-rise { from { opacity: 0; filter: blur(3px); transform: translateY(12px); } }
 @media (pointer: coarse), (max-width: 767px) { .ds-work-act > :is(button, a) { height: var(--ds-size-control-touch); } }
 @media (prefers-reduced-motion: reduce) { .ds-work-rise { animation-name: ds-work-fade; } }

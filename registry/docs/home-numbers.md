@@ -17,5 +17,6 @@ examples:
   - "InTheTitle | In the title"
 ---
 
-`take` picks the layout: `strip`, `rule` or `line`. The numbers count up in the branch (count); here they are set.
-The search box in the examples is a plain stand-in for search-box.
+`take` picks the layout: `strip`, `rule` or `line`. The documents and this month's queries count up the first time
+they show in a session (`count`). The examples set them under Explorer's title (`highlight-text`) and its
+`search-box`.

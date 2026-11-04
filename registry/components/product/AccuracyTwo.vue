@@ -5,6 +5,7 @@ import AccuracyDetail, { type AccuracyRow, type AccuracyView } from '@/component
 import AccuracyOpens from '@/components/product/AccuracyOpens.vue'
 import Button from '@/components/ui/Button.vue'
 import Tabs from '@/components/ui/Tabs.vue'
+import Count from '@/components/ui/Count.vue'
 
 // Accuracy, "Two searches" (accuracy/Two.vue): Conare against the search the team uses today, the count of each over a
 // 6px track (Conare's red) in the double rule, then only the questions where they part, the first one open. Conare's
@@ -35,7 +36,7 @@ const share = (n: number) => `scaleX(${props.view.questions ? n / props.view.que
   <section class="m-1.25 grid grid-cols-2 gap-x-8 gap-y-6 border border-edge p-6 outline outline-offset-4 outline-edge max-md:gap-4 max-md:p-4" aria-label="your current search and Conare">
     <div v-for="side in [{ name: view.current_name, n: view.current_right, red: false }, { name: 'Conare', n: view.right, red: true }]" :key="side.name" class="min-w-0">
       <p class="type-meta text-fg-muted">{{ side.name }}</p>
-      <p class="font-heading text-display leading-14 tracking-display tabular-nums max-md:text-heading-1 max-md:leading-10">{{ side.n }} of {{ view.questions }}</p>
+      <p class="font-heading text-display leading-14 tracking-display tabular-nums max-md:text-heading-1 max-md:leading-10"><Count :value="side.n" /> of {{ view.questions }}</p>
       <div class="ds-evaltrack" :data-red="side.red || undefined" aria-hidden="true"><span :style="{ transform: share(side.n) }" /></div>
     </div>
     <p class="col-span-full text-body">Conare reached the right page on {{ gain }} more questions{{ lost ? `, and missed ${lost} your current search found` : '' }}.</p>

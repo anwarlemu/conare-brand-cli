@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref } from 'vue'
-import FilterChip from '@/components/product/FilterChip.vue'
+import ScopeMenu from '@/components/product/ScopeMenu.vue'
 import SearchBox, { type Attachment } from '@/components/product/SearchBox.vue'
 // The search box as Explorer has it: the question, the files attached, the plus for more data, the scope, the Enter cue
-// and the arrow, red once there is a question. Files stay here: each shows adding, then added. The scope here is a
-// filter chip; the console's scope menu drops into the same slot.
+// and the arrow, red once there is a question. Files stay here: each shows adding, then added. The scope is the
+// console's scope menu, in the box's `scope` slot.
 const text = ref('notice period to terminate a contract')
 const scope = ref('')
+const namespaces = [
+  { name: 'contracts', documents: 412830 },
+  { name: 'slack', documents: 96410 },
+  { name: 'crm', documents: 52660 },
+]
 const attached = ref<Attachment[]>([{ key: 'msa', name: 'acme-msa.pdf', state: 'added' }])
 const busy = ref(false)
 const timers: Array<ReturnType<typeof setTimeout>> = []
@@ -37,7 +42,7 @@ onBeforeUnmount(() => timers.forEach(clearTimeout))
       @remove="key => (attached = attached.filter(a => a.key !== key))"
     >
       <template #scope>
-        <FilterChip v-model="scope" label="In" any="All namespaces" :options="['contracts', 'slack', 'crm'].map(n => ({ value: n, label: n }))" />
+        <ScopeMenu v-model="scope" :options="namespaces" own-mark="/conare-ds/logo/svg/mark.svg" />
       </template>
     </SearchBox>
   </div>

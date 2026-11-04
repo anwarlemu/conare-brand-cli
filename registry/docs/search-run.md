@@ -3,7 +3,7 @@ name: search-run
 title: Search run
 type: registry:ui
 group: product
-description: "A search on the request's clock: Searching shimmers over the namespaces it reads while cells of the index flicker; then Found in, the namespaces with results keep a red square, each document found is a red square that names itself, and the footer gives the count, when it finished and the API's time."
+description: "A search on the request's clock: Searching shimmers over the namespaces it reads while cells of the index flicker; then Found in, the namespaces with results keep a red square, each document found is a red square that names itself, and the footer gives the count, when it finished, the API's time and Show code."
 use_for: "Home and the command palette, while a search runs and after, under the results."
 never:
   - "Fake delays: it follows the request"
@@ -15,3 +15,6 @@ files:
 examples:
   - "Product | In the product"
 ---
+
+Pass `code`, the request as your app sends it, and the footer ends on Show code (`code-pop`): the request opens under
+the footer in the dark code window. Without it the footer stops at the API's time.

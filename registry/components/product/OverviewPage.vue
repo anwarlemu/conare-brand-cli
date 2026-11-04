@@ -1,25 +1,32 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { ArrowRight, ChevronDown } from 'lucide-vue-next'
 import Button from '@/components/ui/Button.vue'
 import DotMatrix from '@/components/ui/DotMatrix.vue'
 import PixelButton from '@/components/ui/PixelButton.vue'
+import Count from '@/components/ui/Count.vue'
 import Table from '@/components/ui/Table.vue'
+import CellBurst from '@/components/visuals/CellBurst.vue'
+import Grain from '@/components/visuals/Grain.vue'
+import HighlightText from '@/components/visuals/HighlightText.vue'
+import VizWindow from '@/components/visuals/VizWindow.vue'
 import OverviewQueries, { type QueryDay } from '@/components/product/OverviewQueries.vue'
+import type { LineSeries } from '@/components/ui/LineChart.vue'
 
 // Overview as it ships (Home.vue, take 7 with lead 5): what a team running Conare checks, with no search box. The line
 // under the top bar while setup is unfinished; the greeting and how many documents agents search, with Create API key
 // and Read the docs, beside the API key's window on the dark panel, the two in the website's double rule; Queries
 // beside Credits; the five largest namespaces. Every value comes in through props; the buttons and rows emit.
-// The greeting's letter reveal, the counting number and the key window's playback belong to their own items; here
-// they are drawn still.
+// The greeting has the website's letter reveal (highlight-text); the documents count up the first time in a session
+// (count); the key window is built on the website's product window (VizWindow) over the grain and a sheet of cells,
+// and plays again every 9s while the tab shows (never for reduced motion).
 export interface OverviewNamespace { name: string, documents: number, health: 'ready' | 'syncing' | 'error' | 'api', synced?: string, lastUsed?: string }
 export interface OverviewSpender { name: string, cost: number, share: number }
 const props = defineProps<{
   greeting: string
   documents: number
   setup?: { done: number, total: number }
-  queries: { thisMonth: number, p50: number, p95: number, days: QueryDay[], latency: number[] }
+  queries: { thisMonth: number, p50: number, p95: number, days: QueryDay[], latency: LineSeries[] }
   credits: { left: number, total: number, spenders: OverviewSpender[] }
   namespaces: OverviewNamespace[]
 }>()
@@ -29,6 +36,15 @@ const usd = (n: number) => n.toLocaleString('en-US', { style: 'currency', curren
 const share = computed(() => (props.credits.total ? Math.max(0, Math.min(1, props.credits.left / props.credits.total)) : 0))
 const pct = (p: number) => (p > 0 && p < 0.01 ? '<1%' : `${Math.round(p * 100)}%`)
 const top = computed(() => [...props.namespaces].sort((a, b) => b.documents - a.documents).slice(0, 5))
+const keyRun = ref(0)
+let keyLoop: ReturnType<typeof setInterval> | undefined
+onMounted(() => {
+  keyLoop = setInterval(() => {
+    if (!document.hidden && !matchMedia('(prefers-reduced-motion: reduce)').matches) keyRun.value++
+  }, 9000)
+})
+onBeforeUnmount(() => clearInterval(keyLoop))
+const MATRIX = Array.from({ length: 9 }, (_, i) => ({ '--k': i + 1 }))
 </script>
 
 <template>
@@ -41,27 +57,40 @@ const top = computed(() => [...props.namespaces].sort((a, b) => b.documents - a.
     <div class="mx-auto flex w-full max-w-page-wide flex-col gap-6 px-4 pt-8 pb-16 md:px-8 md:pt-10 md:pb-20">
       <section class="ds-ovlead" aria-label="your platform">
         <div class="flex min-w-0 flex-col items-start gap-2 bg-surface p-5">
-          <h1 class="type-heading-2">{{ greeting }}<span class="text-edge-accent">.</span></h1>
-          <p class="max-w-[56ch] text-ui text-fg-muted">Help your agents search through <span class="tabular-nums">{{ num(documents) }}</span> documents.</p>
+          <HighlightText as="h1" :text="greeting" accent="." class="type-heading-2" />
+          <p class="max-w-[56ch] text-ui text-fg-muted">Help your agents search through <Count :value="documents" once="overview-documents" /> documents.</p>
           <div class="mt-auto flex w-full flex-row items-center gap-2 pt-6">
             <PixelButton @click="emit('createKey')">Create API key</PixelButton>
             <Button @click="emit('readDocs')">Read the docs</Button>
           </div>
         </div>
-        <div class="flex min-h-84 items-center justify-center bg-code-raised px-4 py-6" aria-hidden="true">
-          <div class="w-full max-w-100 border border-code-edge bg-code text-code-fg">
-            <div class="flex h-11 items-center gap-2 px-4">
-              <span class="size-2.5 bg-edge-accent" />
-              <span class="text-ui leading-4">Your code</span>
-              <span class="bg-code-raised px-1.5 py-0.5 text-caption text-code-muted">API</span>
-            </div>
-            <div class="flex flex-col gap-3 px-4 pt-1 pb-4">
-              <p class="ml-10 bg-code-raised px-3 py-2.5 text-ui"><span class="block type-code-sm text-code-muted">POST /query</span>How do refunds work?</p>
-              <p class="flex items-center justify-end gap-1.5 text-meta text-code-muted"><span class="text-neutral-600">API key</span> added to headers</p>
-              <p class="flex items-center gap-2 text-meta text-code-muted"><span class="size-2.5 shrink-0 bg-home-red" /><span class="flex-1">200 OK</span><span class="tabular-nums">62 ms</span></p>
-              <p class="text-ui leading-6">Refunds are available for 30 days.</p>
-              <p class="flex items-center gap-2 text-meta text-code-muted">Source <span class="inline-flex items-center gap-1.5 bg-code-raised px-1.5 py-0.5 text-code-fg"><span class="size-1.5 bg-home-red" />Refunds</span></p>
-            </div>
+        <div class="relative flex min-h-84 items-center justify-center overflow-hidden bg-code-raised text-neutral-300" aria-hidden="true">
+          <Grain />
+          <div class="pointer-events-none absolute inset-0 opacity-70"><CellBurst :seed="17" /></div>
+          <div class="relative flex w-full items-center justify-center px-4 py-6">
+            <VizWindow active class="max-w-100">
+              <template #title>
+                <span class="text-ui leading-4">Your code</span>
+                <span class="bg-neutral-200 px-1.5 py-0.5 text-caption text-neutral-500">API</span>
+              </template>
+              <div :key="keyRun" class="flex flex-col gap-3 px-4 pt-1 pb-4">
+                <p class="ds-viz-in ml-10 bg-neutral-200 px-3 py-2.5 text-ui" style="--d: 120"><span class="block type-code-sm text-neutral-500">POST /query</span>How do refunds work?</p>
+                <p class="ds-viz-in flex items-center justify-end gap-1.5 text-meta text-neutral-500" style="--d: 320"><span class="text-neutral-600">API key</span> added to headers</p>
+                <div class="ds-viz-in ds-viz-progress" style="--d: 500">
+                  <span class="grid size-2.5 shrink-0 place-items-center">
+                    <span class="ds-viz-swap-a ds-viz-matrix [grid-area:1/1]" style="--d: 960"><i v-for="k in 9" :key="k" :style="MATRIX[k - 1]" /></span>
+                    <span class="ds-viz-swap-b ds-viz-dot bg-home-red [grid-area:1/1]" style="--d: 960" />
+                  </span>
+                  <span class="grid flex-1">
+                    <span class="ds-viz-swap-a [grid-area:1/1]" style="--d: 960">Calling the API</span>
+                    <span class="ds-viz-swap-b [grid-area:1/1] text-neutral-500" style="--d: 960">200 OK</span>
+                  </span>
+                  <span class="ds-viz-swap-b shrink-0 text-neutral-500 tabular-nums" style="--d: 960">62 ms</span>
+                </div>
+                <p class="ds-viz-in text-ui leading-6" style="--d: 1080">Refunds are available for 30 days.</p>
+                <p class="ds-viz-in flex items-center gap-2 text-meta text-neutral-500" style="--d: 1240">Source <span class="ds-viz-chip text-off-white"><span class="ds-viz-dot bg-home-red" />Refunds</span></p>
+              </div>
+            </VizWindow>
           </div>
         </div>
       </section>

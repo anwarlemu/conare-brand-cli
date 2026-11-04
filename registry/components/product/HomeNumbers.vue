@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import Count from '@/components/ui/Count.vue'
+
 // The numbers on Explorer's first screen (search/Numbers.vue): the documents, the queries this month and the typical
 // search, each leading to its page. Three takes: `strip`, a strip fixed along the board's foot (from the sidebar's
 // edge; the full width on a phone); `rule`, three cells in the website's double rule with this month's queries as
 // bars that rise once, today's in red; `line`, a quiet line under the box, for when the title carries the documents.
-// Links are anchors with `hrefs`; `navigate` lets a router take them.
+// The documents and this month's queries count up the first time they show in a session (count). Links are anchors
+// with `hrefs`; `navigate` lets a router take them.
 export type HomeNumbersTake = 'strip' | 'rule' | 'line'
 export type HomeNumbersTarget = 'documents' | 'queries' | 'performance'
 const props = withDefaults(defineProps<{
@@ -26,20 +29,20 @@ const href = (t: HomeNumbersTarget) => props.hrefs[t] ?? '#'
 
 <template>
   <nav v-if="take === 'strip'" class="ds-homefoot" aria-label="key numbers">
-    <a :href="href('documents')" @click="emit('navigate', 'documents', $event)"><span class="ds-homefoot-num">{{ num(documents) }}</span> documents</a>
-    <a :href="href('queries')" @click="emit('navigate', 'queries', $event)"><span class="ds-homefoot-num">{{ num(queries) }}</span> queries this month</a>
+    <a :href="href('documents')" @click="emit('navigate', 'documents', $event)"><span class="ds-homefoot-num"><Count :value="documents" once="home-documents" /></span> documents</a>
+    <a :href="href('queries')" @click="emit('navigate', 'queries', $event)"><span class="ds-homefoot-num"><Count :value="queries" once="home-queries" /></span> queries this month</a>
     <a :href="href('performance')" @click="emit('navigate', 'performance', $event)"><span class="ds-homefoot-num">{{ typical }} ms</span> typical search</a>
   </nav>
 
   <section v-else-if="take === 'rule'" class="ds-homecards mx-auto w-full max-w-160" aria-label="key numbers">
     <a :href="href('documents')" @click="emit('navigate', 'documents', $event)">
       <span class="type-meta text-fg-muted">Documents</span>
-      <span class="ds-homecards-num">{{ num(documents) }}</span>
+      <span class="ds-homecards-num"><Count :value="documents" once="home-documents" /></span>
       <span class="type-meta text-fg-muted">In {{ namespaces }} namespaces</span>
     </a>
     <a :href="href('queries')" @click="emit('navigate', 'queries', $event)">
       <span class="type-meta text-fg-muted">Queries this month</span>
-      <span class="ds-homecards-num">{{ num(queries) }}</span>
+      <span class="ds-homecards-num"><Count :value="queries" once="home-queries" /></span>
       <span class="ds-homebars" :data-plays="plays || undefined" aria-hidden="true"><span v-for="(d, i) in days" :key="i" :style="{ height: `${Math.max(8, (d / peak()) * 100)}%`, '--i': i }" /></span>
     </a>
     <a :href="href('performance')" @click="emit('navigate', 'performance', $event)">

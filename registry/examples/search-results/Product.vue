@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import SearchResults from '@/components/product/SearchResults.vue'
-import type { SearchResult } from '@/composables/useSearchResults'
+import { resultKey, type SearchResult } from '@/composables/useSearchResults'
+import { useDocumentDownload } from '@/composables/useDocumentDownload'
 // The results alone, as Home shows them under the box: the best match in its card with the written answer, the pages
 // around its passage and its source, then the other matches, each opening in place. Press a citation to show its
-// result.
+// result; Download saves the document (sample text stands in for your API's bytes).
 const query = 'Acme renewal EU data'
 const results: SearchResult[] = [
   { namespace: 'contracts', id: 'acme-msa-2026', score: 0.94, page: { number: 9, count: 24, top: 0.3, file: 'acme-msa-2026.pdf' }, text: 'Acme may renew for twelve months with 60 days written notice. On renewal, all customer data stays in the EU region named in Schedule C.' },
@@ -12,8 +13,10 @@ const results: SearchResult[] = [
   { namespace: 'crm', id: 'acme-renewal-2026', score: 0.71, text: 'Renewal open. Blocker: data processing addendum for the EU region.' },
 ]
 const answer = 'Acme can renew for twelve months with 60 days written notice [1], and its data stays in the EU region named in Schedule C [1][2]. The open blocker is the data processing addendum [4].'
+const save = useDocumentDownload()
+const download = (r: SearchResult) => save(resultKey(r), () => new Promise<string>(done => setTimeout(() => done(r.text), 400)), `${r.id}.txt`)
 </script>
 
 <template>
-  <SearchResults :results="results" :query="query" :answer="answer" />
+  <SearchResults :results="results" :query="query" :answer="answer" :download="download" />
 </template>

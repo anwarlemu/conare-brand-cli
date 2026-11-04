@@ -27,11 +27,12 @@ const VARIANTS: Record<ButtonVariant, string> = {
 }
 
 const classes = computed(() => [
-  'inline-flex h-control-sm shrink-0 cursor-pointer items-center justify-center gap-1.5 border px-2.5 text-meta leading-5 font-medium whitespace-nowrap select-none',
+  'inline-flex h-control-sm shrink-0 cursor-pointer items-center justify-center gap-1.5 border text-meta leading-5 font-medium whitespace-nowrap select-none',
   'transition-[color,background-color,border-color] duration-120 ease-standard',
   'disabled:cursor-not-allowed disabled:border-edge disabled:bg-surface-sunken disabled:text-fg-soft',
   'max-md:h-control-touch max-md:text-ui pointer-coarse:h-control-touch pointer-coarse:text-ui',
-  props.icon && 'w-control-sm px-0 max-md:w-control-touch pointer-coarse:w-control-touch',
+  // One padding class, so the icon button's 0 never competes with the label's 10px in the stylesheet's order.
+  props.icon ? 'w-control-sm px-0 max-md:w-control-touch pointer-coarse:w-control-touch' : 'px-2.5',
   props.press && 'transition-[color,background-color,border-color,scale] ease-out active:enabled:scale-97 motion-reduce:active:enabled:scale-100',
   VARIANTS[props.variant],
 ])

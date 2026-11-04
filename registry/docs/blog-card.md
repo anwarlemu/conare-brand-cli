@@ -15,3 +15,6 @@ files:
 examples:
   - "Site | On the site"
 ---
+
+The `window` slot gets `active` once the card is on screen. The website puts a benchmark's leaderboard there: an
+`eval-viz` with `:limit="3"`, stretched to the 520 by 380 box and scaled with the card.

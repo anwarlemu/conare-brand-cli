@@ -23,5 +23,8 @@ examples:
 under it; `head` takes the workspace switcher and `foot` the account menu. `ConsolePage` is every other page's head:
 the title (Faculty Glyphic, or mono for an identifier), its actions on the right, the body in 24px steps.
 
-The greeting's letter reveal (highlight-text), the counting number (count), the key window's playback (step-viz) and
-the full chart (chart) are their own items; drop them in where the overview draws them still.
+The greeting is `highlight-text` (its letters settle from faint red to ink, once); the documents line counts up the
+first time in a session (`count`); the key window is the website's product window (`VizWindow`, as `step-viz` and the
+other viz items use it) over the grain and a sheet of cells (`cell-burst`), playing again every 9 seconds while the
+tab shows. `OverviewQueries` draws its charts with `chart`: `BarChart` for queries per day, `LineChart` for the last
+24 hours' latency (`latency` is its series, p50 and p95).

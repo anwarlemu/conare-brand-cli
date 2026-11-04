@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { ArrowRight } from 'lucide-vue-next'
+import Count from '@/components/ui/Count.vue'
 
 // What Conare is doing for a team, in one band above the numbers (overview/Band.vue), three answers to "is it
 // working?". `pipeline`: the website's four steps (connect, sync, retrieve, deliver) with the team's numbers in a
-// double rule, a broken step red where it broke. `questions`: what a buyer asks, each answered in a sentence. `live`:
+// double rule, a broken step red where it broke; a step's number counts up the first time it shows in a session (count),
+// with its `unit` after it. `questions`: what a buyer asks, each answered in a sentence. `live`:
 // the website's dark panel, the last searches landing one at a time, once, and holding (hidden tabs wait; reduced
 // motion shows them all). Each step, question and the live link goes where it points (`href`).
-export type OverviewStep = { name: string, value: string, line: string, href?: string, red?: boolean }
+export type OverviewStep = { name: string, value: number | string, unit?: string, line: string, href?: string, red?: boolean }
 export type OverviewQuestion = { question: string, answer: string, href?: string, red?: boolean }
 export type OverviewSearch = { id: string, question: string, agent: string, took_ms: number, outcome: 'strong' | 'weak' | 'none' | (string & {}) }
 
@@ -44,7 +46,7 @@ const ms = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)} s` : `${n} ms`)
   <section v-if="view === 'pipeline'" class="ds-pipeline" aria-label="what Conare is doing">
     <component :is="s.href ? 'a' : 'div'" v-for="s in steps" :key="s.name" :href="s.href" class="ds-pipeline-step" :data-red="s.red || undefined">
       <span class="type-meta text-fg-muted">{{ s.name }}</span>
-      <span class="ds-pipeline-num">{{ s.value }}</span>
+      <span class="ds-pipeline-num"><Count v-if="typeof s.value === 'number'" :value="s.value" :once="`pipeline-${s.name}`" /><template v-else>{{ s.value }}</template>{{ s.unit }}</span>
       <span class="ds-pipeline-line type-meta text-fg-muted">{{ s.line }}</span>
     </component>
   </section>

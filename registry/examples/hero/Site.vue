@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import PixelButton from '@/components/ui/PixelButton.vue'
+import ButtonLink from '@/components/site/ButtonLink.vue'
+import VizWindow from '@/components/visuals/VizWindow.vue'
 import Hero from '@/components/site/Hero.vue'
 // The home's first band on sample data: the teams take turns in the frame, each with its question and the answer in
-// the window. Pick a team, or let the timer hand over.
+// the window (the website's product window, its parts rising in turn each time a team takes over). Pick a team, or let
+// the timer hand over.
 const cells = (on: (x: number, y: number) => boolean) => {
   const lit: [number, number][] = []
   for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) if (on(x, y)) lit.push([x, y])
@@ -27,19 +29,19 @@ const active = ref(0)
     body="Conare finds the right answer in any data you bring, for your agents and the products you build on them."
     :tabs="teams"
   >
-    <template #action><PixelButton href="#" large>Book a call</PixelButton></template>
+    <template #action><ButtonLink href="#" grain pixels arrow>Book a call</ButtonLink></template>
     <template #window>
-      <div class="border border-neutral-300 bg-neutral-100 text-left text-off-white">
-        <div class="flex h-11 items-center gap-2 border-b border-neutral-300 px-4" aria-hidden="true">
+      <VizWindow active class="text-left">
+        <template #title>
           <span class="text-ui">Conare</span>
           <span class="bg-neutral-200 px-1.5 py-0.5 text-caption text-neutral-500">{{ teams[active]!.where }}</span>
+        </template>
+        <div :key="active" class="flex flex-col gap-4 px-4 pt-1 pb-5 sm:px-7 sm:pb-6">
+          <p class="ds-viz-in self-end bg-neutral-200 px-3 py-2 text-body" style="--d: 200">{{ teams[active]!.ask }}</p>
+          <p class="ds-viz-in text-body text-neutral-600" style="--d: 700">{{ teams[active]!.answer }}</p>
+          <p class="ds-viz-in flex items-center gap-2 text-meta text-neutral-500" style="--d: 900">Source <span class="ds-viz-chip text-off-white"><span class="ds-viz-dot bg-home-red" />{{ teams[active]!.source }}</span></p>
         </div>
-        <div class="flex flex-col gap-4 px-4 py-5 sm:px-7 sm:py-6">
-          <p class="self-end bg-neutral-200 px-3 py-2 text-body">{{ teams[active]!.ask }}</p>
-          <p class="text-body text-neutral-600">{{ teams[active]!.answer }}</p>
-          <p class="flex items-center gap-2 text-meta text-neutral-500"><span aria-hidden="true" class="size-1.5 bg-red-lift" />{{ teams[active]!.source }}</p>
-        </div>
-      </div>
+      </VizWindow>
     </template>
   </Hero>
 </template>

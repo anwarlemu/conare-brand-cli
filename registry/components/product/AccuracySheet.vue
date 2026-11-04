@@ -6,6 +6,7 @@ import AccuracyOpens from '@/components/product/AccuracyOpens.vue'
 import Button from '@/components/ui/Button.vue'
 import DotMatrix from '@/components/ui/DotMatrix.vue'
 import Table from '@/components/ui/Table.vue'
+import Count from '@/components/ui/Count.vue'
 
 // Accuracy, "Question sheet" (accuracy/Sheet.vue): the questions are the page, as teams keep them in a spreadsheet.
 // Right and wrong counted over a 2px line that fills as the run lands; a numbered sheet whose first row takes a new
@@ -38,8 +39,8 @@ const wrong = computed(() => props.view.done - props.view.right)
 
 <template>
   <section class="relative flex flex-wrap items-baseline gap-x-6 gap-y-1 pb-3" aria-live="polite">
-    <p><span class="font-heading text-heading-2 tabular-nums">{{ view.right }}</span> right</p>
-    <p><span class="font-heading text-heading-2 tabular-nums" :class="wrong > 0 && 'text-fg-accent'">{{ wrong }}</span> wrong</p>
+    <p><span class="font-heading text-heading-2 tabular-nums"><Count :value="view.right" /></span> right</p>
+    <p><span class="font-heading text-heading-2 tabular-nums" :class="wrong > 0 && 'text-fg-accent'"><Count :value="wrong" /></span> wrong</p>
     <p class="ml-auto type-meta text-fg-muted">{{ view.state === 'running' ? `${view.done} of ${view.questions} done` : `${view.questions} questions, run ${view.ran}` }}</p>
     <span class="ds-sheetline" aria-hidden="true"><span :style="{ transform: `scaleX(${view.questions ? view.done / view.questions : 0})` }" /></span>
   </section>

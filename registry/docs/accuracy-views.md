@@ -27,3 +27,6 @@ examples:
 
 Every view takes the run as `view` (`AccuracyView`, exported from `AccuracyDetail.vue`) and emits `fix`, `search` and
 `remove` with the question; the sheet also emits `add`. `AccuracyPanel` (accuracy-page) puts one under Performance's bar.
+
+The scores count to their new value as a run lands (`count`). Test at work's list moves one block between rows
+(`glide-mark`'s `useGlideMark`), and its dark window sits on the grain and a sheet of cells (`cell-burst`).

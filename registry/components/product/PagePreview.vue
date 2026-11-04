@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { ResultPage } from '@/composables/useSearchResults'
-import MarkedPassage from '@/components/product/MarkedPassage.vue'
+import MarkedText from '@/components/ui/MarkedText.vue'
 
 // A document's page drawn small, with the passage marked where it sits on it (search/PagePreview.vue). A result
 // carries only its passage, so the page's other lines are drawn as rules: at thumb and mid size the passage is a band
@@ -25,7 +25,7 @@ const lines = computed(() => {
   <div class="ds-pg" :data-size="size" :data-here="here || undefined" :aria-hidden="size === 'full' ? undefined : 'true'">
     <span class="ds-pg-head" />
     <template v-for="(l, i) in lines" :key="i">
-      <p v-if="size === 'full' && l.first" class="ds-pg-hit ds-pg-words"><MarkedPassage :text="text" :query="query" /></p>
+      <p v-if="size === 'full' && l.first" class="ds-pg-hit ds-pg-words"><MarkedText :text="text" :query="query" /></p>
       <span v-else-if="l.hit && size !== 'full' && l.first" class="ds-pg-hit">
         <span v-for="k in band" :key="k" class="ds-pg-line" :style="{ width: k === band ? '68%' : '100%' }" />
       </span>

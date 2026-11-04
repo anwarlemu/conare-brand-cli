@@ -78,6 +78,13 @@ const walk = (dir: string): string[] => readdirSync(join(reg, dir), { withFileTy
 for (const f of walk('components')) if (!owner.has(f)) fail(`${f} belongs to no item (add it to a docs entry's files)`);
 
 const IMPORT = /(?:^|\n)\s*import\s+(?:type\s+)?(?:[\s\S]*?\s+from\s+)?['"]([^'"]+)['"]/g;
+// The docs site bundles the library's raw source into its server build, where `typeof window` (and `typeof document`)
+// is folded away and the build fails; feature checks go through globalThis instead.
+const TYPEOF_GLOBAL = /\btypeof\s+(window|document)\b/;
+function guardGlobals(path: string, text: string) {
+	const m = text.match(TYPEOF_GLOBAL);
+	if (m) fail(`${path}: uses \`${m[0]}\`, which breaks the docs site's server build (it bundles raw source); check through globalThis instead (\`globalThis.matchMedia\`, \`'IntersectionObserver' in globalThis\`) or inside onMounted`);
+}
 const NUXT_ONLY = /from\s+['"](#app|#imports|#components|nuxt\/|@nuxt\/)|\b(useFetch|useAsyncData|useState|useRoute|useRouter|navigateTo|useRuntimeConfig|\$fetch|NuxtLink|useNuxtApp|definePageMeta)\b/;
 
 /** A file's `@/` imports as registry paths, and its bare package imports. */
@@ -130,6 +137,7 @@ for (const d of docs) {
 	for (const f of files) {
 		const text = readFileSync(join(reg, f), 'utf8');
 		if (NUXT_ONLY.test(text)) fail(`${f}: uses Nuxt-only code (${text.match(NUXT_ONLY)?.[0]}); components take data through props`);
+		guardGlobals(f, text);
 	}
 	const exDir = join(reg, 'examples', d.name);
 	const exFiles = existsSync(exDir) ? readdirSync(exDir).filter((f) => f.endsWith('.vue')).map((f) => f.slice(0, -4)) : [];
@@ -140,6 +148,7 @@ for (const d of docs) {
 	const examples = d.examples.map((e) => {
 		const path = `examples/${d.name}/${e.name}.vue`;
 		const c = closure([path], d.name);
+		guardGlobals(path, readFileSync(join(reg, path), 'utf8'));
 		return { ...e, path, content: readFileSync(join(reg, path), 'utf8'), requires: c.requires, packages: c.packages };
 	});
 	const item = { name: d.name, title: d.title, type: d.type, group: d.group, description: d.description, use_for: d.use_for, never: d.never, source: d.source, requires, dependencies: packages.map(pinned), files: files.map((path) => ({ path, content: readFileSync(join(reg, path), 'utf8') })), examples };

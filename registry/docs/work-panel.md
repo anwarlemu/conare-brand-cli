@@ -16,3 +16,7 @@ files:
 examples:
   - "Product | In the product"
 ---
+
+Put one window in the `window` slot: one of the website's product windows (`step-viz`, `eval-viz`, `product-viz`,
+`price-viz`) as Getting started does, or `WorkWindow`, the console's own small dark window (a bar with its title and a
+tag, the body, a foot line whose square turns red when the work is done), for work the app runs itself.

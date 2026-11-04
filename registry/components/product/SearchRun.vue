@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import CodePop from '@/components/ui/CodePop.vue'
 import type { SearchResult } from '@/composables/useSearchResults'
 
 // A search on the request's clock (SearchRun.vue), the website's demo window in the console's light colours:
@@ -7,8 +8,9 @@ import type { SearchResult } from '@/composables/useSearchResults'
 // takes its place, the namespaces that held a result keep a red square and the rest step back, each document found
 // lights as a red square on the index, and the count reads "4 of 2,749,690 documents", with when it finished and the
 // API's time. Each square names its document when pointed at or focused, and a press emits `reveal` with its key (for
-// SearchResults to show it). `nsHref` makes each namespace a link once the answer is in; the `code` slot sits at the
-// end of the footer (the search as code). It follows the request: never fake a delay.
+// SearchResults to show it). `nsHref` makes each namespace a link once the answer is in; `code` (the request as the
+// app would send it) puts Show code (code-pop) at the end of the footer, opening under it. It follows the request:
+// never fake a delay.
 const props = defineProps<{
   searching: boolean
   answer: { results: SearchResult[], took_ms: number } | null
@@ -16,6 +18,7 @@ const props = defineProps<{
   ns?: string
   logoOf?: (namespace: string) => string | null | undefined
   nsHref?: (namespace: string) => string
+  code?: string
 }>()
 const emit = defineEmits<{ reveal: [key: string] }>()
 
@@ -100,7 +103,7 @@ watch(found, (f) => {
         <span class="ds-run-in"><span class="text-home-red-press">{{ answer!.results.length }}</span><template v-if="total"> of {{ fmt(total) }}</template> documents</span>
         <span class="ds-run-in">Done {{ doneAt }}</span>
         <span class="ds-run-in">{{ answer!.took_ms }} ms</span>
-        <span v-if="$slots.code && answer!.results.length" class="ml-auto"><slot name="code" /></span>
+        <CodePop v-if="code && answer!.results.length" :code="code" />
       </template>
     </div>
   </section>

@@ -7,8 +7,9 @@ import { usePixelGrid } from '@/composables/usePixelGrid'
 // way; the label never changes size or weight. red is the flat red block (its squares come in black); secondary is
 // outlined (its border turns red, the squares red); light and ghost are for a dark band. `pixels` is the dark main
 // call to action (black, red squares); `arrow` adds the pixel arrow, lit and still. `grain` lays the footer's grain
-// over the button. Where the label changes colour over the fill (secondary, light), each column of squares carries its
-// own off-white copy of the label, so the label turns as the squares land and never fades through grey.
+// over the button. `fill="black"` brings the squares in black, for a light button on a red band. Where the label
+// changes colour over the fill (secondary, light), each column of squares carries its own off-white copy of the label,
+// so the label turns as the squares land and never fades through grey.
 export type ButtonLinkVariant = 'red' | 'secondary' | 'light' | 'ghost'
 
 const props = withDefaults(defineProps<{
@@ -18,6 +19,7 @@ const props = withDefaults(defineProps<{
   pixels?: boolean
   arrow?: boolean
   grain?: boolean
+  fill?: 'black'
 }>(), { variant: 'red', size: 'md' })
 
 const PX = 6
@@ -52,6 +54,7 @@ const CELL = 3
     :data-size="size"
     :data-grain="grain || undefined"
     :data-arrow="arrow || undefined"
+    :data-fill="fill"
     @pointerenter="arm"
     @pointerdown="arm"
     @focus="arm"
@@ -104,6 +107,7 @@ const CELL = 3
 .ds-btnlink[data-variant="light"] { background: var(--ds-color-off-white); color: var(--ds-color-off-black); }
 .ds-btnlink[data-variant="ghost"] { border: var(--ds-border-hairline) solid var(--ds-color-neutral-300); color: var(--ds-color-off-white); }
 .ds-btnlink[data-variant="dark"] { background: var(--ds-color-off-black); color: var(--ds-color-off-white); }
+.ds-btnlink[data-fill="black"] { --btnlink-fill: var(--ds-color-off-black); }
 @media (hover: hover) and (pointer: fine) {
   .ds-btnlink:is([data-variant="secondary"], [data-variant="ghost"]):hover { border-color: var(--ds-color-home-red); }
 }

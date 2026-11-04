@@ -3,8 +3,9 @@ import { computed, nextTick, ref, useId, watch } from 'vue'
 import { ChevronDown } from 'lucide-vue-next'
 import DotMatrix from '@/components/ui/DotMatrix.vue'
 import AnswerText from '@/components/product/AnswerText.vue'
-import MarkedPassage from '@/components/product/MarkedPassage.vue'
+import MarkedText from '@/components/ui/MarkedText.vue'
 import PagePreview from '@/components/product/PagePreview.vue'
+import DownloadButton from '@/components/product/DownloadButton.vue'
 import { resultKey, type ResultPage, type SearchResult } from '@/composables/useSearchResults'
 
 // Search results, "Best match" (search/BestMatch.vue): the top result is the answer most of the time, so it gets the
@@ -12,8 +13,10 @@ import { resultKey, type ResultPage, type SearchResult } from '@/composables/use
 // and its source; the rest follow as one quiet line each, to scan, and a line opens in place to its full passage.
 // `answer` puts a written answer in the card instead of the passage, citing results [1], [2]; `writing` holds the
 // card's room with the dot matrix while it is written. `reveal` (a result's key and a time) opens that result, brings
-// it into view and flashes it once, as the search run's squares do. `logoOf` gives a namespace's app mark; the
-// `actions` slot (with `result`) holds a result's buttons, such as a download. Results rise in, 60ms apart.
+// it into view and flashes it once, as the search run's squares do. `logoOf` gives a namespace's app mark. `download`
+// puts the document's dark Download button (document-download) under the best match and each opened match, keyed by
+// the result's key so it says Downloaded once it has; the `actions` slot (with `result`) adds other buttons beside it.
+// Results rise in, 60ms apart.
 const props = defineProps<{
   results: SearchResult[]
   query: string
@@ -21,6 +24,7 @@ const props = defineProps<{
   writing?: boolean
   reveal?: { key: string, at: number } | null
   logoOf?: (namespace: string) => string | null | undefined
+  download?: (result: SearchResult) => void
 }>()
 const emit = defineEmits<{ cite: [key: string] }>()
 defineSlots<{ actions?: (p: { result: SearchResult }) => unknown }>()
@@ -61,9 +65,9 @@ const around = (p: ResultPage) => [p.number - 1, p.number, p.number + 1].filter(
         <div v-if="answers" class="min-h-12" aria-live="polite">
           <p v-if="writing" class="inline-flex items-center gap-1.5 type-meta"><DotMatrix />Writing an answer</p>
           <AnswerText v-else-if="answer" :text="answer" @cite="cite" />
-          <p v-else class="ds-answer-text"><MarkedPassage :text="results[0].text" :query="query" /></p>
+          <p v-else class="ds-answer-text"><MarkedText :text="results[0].text" :query="query" /></p>
         </div>
-        <p v-else class="type-body-lg text-neutral-200"><MarkedPassage :text="results[0].text" :query="query" /></p>
+        <p v-else class="type-body-lg text-neutral-200"><MarkedText :text="results[0].text" :query="query" /></p>
         <div v-if="results[0].page" class="flex items-end gap-2">
           <PagePreview v-for="p in around(results[0].page)" :key="p.number" :page="p" size="thumb" :marked="p.here" :here="p.here" />
           <span class="ml-1 type-meta text-fg-muted">{{ pageLine(results[0].page) }} in <span class="type-code-sm">{{ results[0].page.file }}</span></span>
@@ -75,7 +79,7 @@ const around = (p: ResultPage) => [p.number - 1, p.number, p.number + 1].filter(
           <span class="truncate type-code-sm">{{ results[0].id }}</span>
           <span class="shrink-0 type-meta text-fg-muted">in <span class="type-code-sm">{{ results[0].namespace }}</span>, {{ results[0].score.toFixed(2) }}</span>
         </span>
-        <span v-if="$slots.actions" class="flex items-center gap-2"><slot name="actions" :result="results[0]" /></span>
+        <span v-if="$slots.actions || download" class="flex items-center gap-2"><slot name="actions" :result="results[0]" /><DownloadButton v-if="download" :id="resultKey(results[0])" @press="download(results[0])" /></span>
       </div>
     </article>
 
@@ -95,13 +99,13 @@ const around = (p: ResultPage) => [p.number - 1, p.number, p.number + 1].filter(
           <div :id="`${pre}-${i}`" class="ds-expand" :data-open="open === resultKey(r) || undefined" :inert="open !== resultKey(r)">
             <div class="min-h-0 overflow-hidden">
               <div class="flex min-w-0 flex-col gap-3 pt-1 pb-3">
-                <p class="leading-5.5 text-neutral-200"><MarkedPassage :text="r.text" :query="query" /></p>
+                <p class="leading-5.5 text-neutral-200"><MarkedText :text="r.text" :query="query" /></p>
                 <div class="flex flex-wrap items-center justify-between gap-3">
                   <span class="flex flex-wrap gap-x-4 gap-y-1 type-meta text-fg-muted">
                     <span>in <span class="type-code-sm">{{ r.namespace }}</span></span>
                     <span v-if="r.page">{{ pageLine(r.page) }}</span>
                   </span>
-                  <span v-if="$slots.actions" class="flex items-center gap-2"><slot name="actions" :result="r" /></span>
+                  <span v-if="$slots.actions || download" class="flex items-center gap-2"><slot name="actions" :result="r" /><DownloadButton v-if="download" :id="resultKey(r)" @press="download(r)" /></span>
                 </div>
               </div>
             </div>

@@ -16,5 +16,6 @@ examples:
 ---
 
 `ParsePage` takes the files to try (`samples`), the picked one (`v-model:chosen`), the `answer` and whether it is
-`reading`; it emits `file` for a file pressed or dropped and `add` with the namespace picked. Put it in a `ConsolePage`
-titled Parse.
+`reading`; it emits `file` for a file pressed or dropped and `add` with the namespace picked. `namespaces` (name and
+size) fill the `scope-menu` that picks where the file goes; `curl` opens under API call (`code-pop`). Put it in a
+`ConsolePage` titled Parse.

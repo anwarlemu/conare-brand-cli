@@ -4,7 +4,8 @@ import SearchRun from '@/components/product/SearchRun.vue'
 import type { SearchResult } from '@/composables/useSearchResults'
 // The run alone, on a loop: "Searching" over the namespaces while the index flickers, then where the answer was found,
 // each document a red square to point at. In the product it follows the request's real clock. It keeps the taller
-// state's height, so nothing under it moves, and holds still while the pointer or focus is in it.
+// state's height, so nothing under it moves, and holds still while the pointer or focus is in it. Once the answer is in,
+// Show code opens the request under the footer.
 const results: SearchResult[] = [
   { namespace: 'contracts', id: 'acme-msa-2026', score: 0.94, text: 'Acme may renew for twelve months with 60 days written notice.' },
   { namespace: 'slack', id: 'legal-thread-1182', score: 0.81, text: 'Legal confirmed that Acme needs EU data residency in the renewal.' },
@@ -18,6 +19,10 @@ const namespaces = [
   { name: 'crm', documents: 52660 },
   { name: 'sales-calls', documents: 2870 },
 ]
+const code = `curl https://api.conare.ai/v1/query \\
+  -H "Authorization: Bearer $CONARE_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"query": "Acme renewal EU data", "top_k": 10}'`
 
 const searching = ref(true)
 const answer = computed(() => (searching.value ? null : { results, took_ms: 312 }))
@@ -51,6 +56,6 @@ onBeforeUnmount(() => { clearTimeout(timer); sizer?.disconnect() })
 
 <template>
   <div ref="root" :style="tallest ? { minHeight: `${tallest}px` } : undefined" @pointerenter="pointed = true" @pointerleave="pointed = false" @focusin="focused = true" @focusout="leave">
-    <SearchRun :searching="searching" :answer="answer" :namespaces="namespaces" />
+    <SearchRun :searching="searching" :answer="answer" :namespaces="namespaces" :code="code" />
   </div>
 </template>

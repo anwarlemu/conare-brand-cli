@@ -15,5 +15,5 @@ examples:
   - "Product | Search filters"
 ---
 
-Pass `groups` (`key`, `label`, `options`) and a v-model object with one value per key (`''` or `0` for none). The
-chips that show what is on under the box are batch 1's `filter-chip`.
+Pass `groups` (`key`, `label`, `options`) and a v-model object with one value per key (`''` or `0` for none). For one
+button per filter, each naming its pick, use `filter-chip` instead: the console ships one or the other, not both.

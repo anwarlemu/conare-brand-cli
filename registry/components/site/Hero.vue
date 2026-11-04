@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, useId } from 'vue'
 import SiteTag from '@/components/ui/SiteTag.vue'
+import HighlightText from '@/components/visuals/HighlightText.vue'
 import Burst from '@/components/visuals/Burst.vue'
 import Grain from '@/components/visuals/Grain.vue'
 import RoomGrid from '@/components/visuals/RoomGrid.vue'
 
-// The home's first band (Hero.vue, UseCases.vue): the eyebrow tag, the headline in Faculty Glyphic with its red stop,
-// one line, the one action, then the red frame: a room in one-point perspective with the burst's slabs, under the
+// The home's first band (Hero.vue, UseCases.vue): the eyebrow tag, the headline in Faculty Glyphic with its red stop
+// and its letter reveal (highlight-text: faint red letters settling to ink, once, as it comes on screen), one line, the
+// one action (a button-link), then the red frame: a room in one-point perspective with the burst's slabs, under the
 // grain, in a triple grey rule, with the window (the `window` slot) in front at up to 600px. The parts above settle up
 // 12px in turn (320ms, 60ms apart). With `tabs`, the teams stand on the frame's top as stepped-corner tabs; the picked
 // one is red, and a line along its foot fills over `turn` ms as the timer, handing over to the next team. The timer
@@ -67,9 +69,8 @@ const timed = computed(() => props.tabs.length > 1 && props.turn > 0)
   <section :aria-labelledby="`${uid}-title`" class="ds-hero mx-auto max-w-[1440px] px-4 pt-24 pb-24 sm:px-6 lg:px-10 lg:pt-32">
     <div class="flex flex-col items-center text-center">
       <p v-if="eyebrow" class="ds-settle mb-4 flex justify-center"><SiteTag>{{ eyebrow }}</SiteTag></p>
-      <h1 :id="`${uid}-title`" class="ds-hero-title font-heading text-hero font-normal tracking-display sm:text-display">
-        <slot name="title">{{ title }}<span v-if="accent" class="text-fg-accent-display">{{ accent }}</span></slot>
-      </h1>
+      <h1 v-if="$slots.title" :id="`${uid}-title`" class="ds-hero-title font-heading text-hero font-normal tracking-display sm:text-display"><slot name="title" /></h1>
+      <HighlightText v-else :id="`${uid}-title`" as="h1" :text="title" :accent="accent" class="ds-hero-title font-heading text-hero font-normal tracking-display sm:text-display" />
       <p v-if="body" class="ds-settle mt-4 max-w-[600px] text-input text-balance text-fg-muted" style="--i: 1">{{ body }}</p>
       <div v-if="$slots.action" class="ds-settle mt-8" style="--i: 2"><slot name="action" /></div>
     </div>

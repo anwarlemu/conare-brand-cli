@@ -16,4 +16,4 @@ examples:
   - "Product | In the product"
 ---
 
-`v-model` is the question; Enter searches and Shift+Enter breaks the line. `attached` lists files (`adding`, `added`, `failed`) that the app owns: the box emits `files` when they are picked or dropped, `paste` with pasted text, `remove` with a key, `connect` for Connect an app, and `submit` with the question. The add menu names `target`; turn it off with `:add-menu="false"`. The `scope` slot takes the scope picker (a FilterChip, or the console's scope menu). `busy` shows the dot matrix in the arrow while the search runs.
+`v-model` is the question; Enter searches and Shift+Enter breaks the line. `attached` lists files (`adding`, `added`, `failed`) that the app owns: the box emits `files` when they are picked or dropped, `paste` with pasted text, `remove` with a key, `connect` for Connect an app, and `submit` with the question. The add menu names `target`; turn it off with `:add-menu="false"`. The `scope` slot takes where it looks: the console's `scope-menu`. `busy` shows the dot matrix in the arrow while the search runs.

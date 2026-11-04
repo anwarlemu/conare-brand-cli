@@ -5,7 +5,11 @@ import type { AccuracyRow, AccuracyView } from '@/components/product/AccuracyDet
 import AccuracyThumb from '@/components/product/AccuracyThumb.vue'
 import Button from '@/components/ui/Button.vue'
 import DotMatrix from '@/components/ui/DotMatrix.vue'
+import Count from '@/components/ui/Count.vue'
 import PixelButton from '@/components/ui/PixelButton.vue'
+import CellBurst from '@/components/visuals/CellBurst.vue'
+import Grain from '@/components/visuals/Grain.vue'
+import { useGlideMark } from '@/composables/useGlideMark'
 
 // Accuracy, "Test at work" (accuracy/AtWork.vue, the version that ships): the website's benchmarks on the team's own
 // questions. Four tiles in the double rule carry the results and filter the list on a click (a 2px red line runs across
@@ -40,38 +44,26 @@ const shown = ref(12)
 watch(show, () => { pickedId.value = list.value[0]?.id ?? ''; shown.value = 12 })
 const pick = (row: AccuracyRow) => { pickedId.value = row.id }
 
-// The list's block (the glide mark): one block for the whole list, gliding to the row pointed at or picked.
+// The list's block (glide-mark's useGlideMark): one block for the whole list, gliding to the row pointed at or picked.
 const listEl = ref<HTMLElement | null>(null)
-const mark = ref<{ y: number, h: number } | null>(null)
-const markShown = ref(false)
-const markInstant = ref(true)
-function moveTo(i: number | null) {
-  const el = i == null ? null : listEl.value?.querySelectorAll<HTMLElement>('[data-glide-row]')[i]
-  if (!el) {
-    markShown.value = false
-    return
-  }
-  markInstant.value = !markShown.value
-  mark.value = { y: el.offsetTop, h: el.offsetHeight }
-  markShown.value = true
-}
 const restAt = () => {
   const i = list.value.slice(0, shown.value).findIndex(r => r.id === picked.value?.id)
   return i < 0 ? null : i
 }
+const { mark, shown: markShown, instant: markInstant, point, leave, settle } = useGlideMark(listEl, restAt)
 let resting: ReturnType<typeof setTimeout> | undefined
 function onRow(row: AccuracyRow, i: number, event: PointerEvent) {
   if (event.pointerType !== 'mouse') return
-  moveTo(i)
+  point(i)
   clearTimeout(resting)
   // ds-latency: the window waits for the pointer to rest on a row; the block under it moved at once.
   resting = setTimeout(() => pick(row), 80)
 }
 function offList() {
   clearTimeout(resting)
-  moveTo(restAt())
+  leave()
 }
-watch([() => picked.value?.id, show, shown, () => rows.value.length], () => nextTick(() => moveTo(restAt())), { immediate: true })
+watch([() => picked.value?.id, show, shown, () => rows.value.length], () => nextTick(settle))
 onBeforeUnmount(() => clearTimeout(resting))
 
 // The field, twenty squares to a row, with a crosshair and a bracket on the question on show.
@@ -115,7 +107,7 @@ const answers = computed(() => (picked.value ? [{ id: 'current', label: props.vi
   <section class="m-1.25 grid grid-cols-4 gap-px border border-edge bg-edge outline outline-offset-4 outline-edge max-lg:grid-cols-2" aria-label="results">
     <button v-for="t in tiles" :key="t.id" type="button" class="ds-testtile" :aria-pressed="show === t.id" :data-red="t.id === 'look' && t.value > 0 || undefined" @click="show = t.id">
       <span class="block type-meta">{{ t.label }}</span>
-      <span class="ds-testtile-num">{{ t.value }}<span v-if="t.of" class="ds-testtile-of"> of {{ t.of }}</span></span>
+      <span class="ds-testtile-num"><Count :value="t.value" :once="`accuracy-${t.id}`" /><span v-if="t.of" class="ds-testtile-of"> of {{ t.of }}</span></span>
       <span class="block type-meta">{{ t.line }}</span>
     </button>
   </section>
@@ -133,7 +125,7 @@ const answers = computed(() => (picked.value ? [{ id: 'current', label: props.vi
         class="ds-testrow"
         :aria-current="picked?.id === r.id || undefined"
         @pointerenter="onRow(r, i, $event)"
-        @focus="pick(r)"
+        @focus="pick(r); point(i)"
         @click="tap(r)"
       >
         <span class="min-w-0 flex-1 truncate max-sm:whitespace-normal">{{ r.question }}</span>
@@ -147,6 +139,8 @@ const answers = computed(() => (picked.value ? [{ id: 'current', label: props.vi
     </div>
 
     <section ref="panel" class="ds-testpanel m-1.25" aria-label="the question on show">
+      <Grain />
+      <div class="pointer-events-none absolute inset-0 opacity-70" aria-hidden="true"><CellBurst :seed="31" jumble /></div>
       <div class="relative w-full border border-code-edge bg-code text-code-fg">
         <div class="flex h-11 items-center gap-2 px-4 text-ui leading-4">
           <span class="size-2 shrink-0 bg-surface-accent" aria-hidden="true" />

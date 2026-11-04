@@ -5,7 +5,7 @@ import Grain from '@/components/visuals/Grain.vue'
 // The band before the website's footer (Cta.vue): the closing line and one action, centred on the red under the grain
 // and a jumbled sheet of cells whose grid keeps redrawing itself (CellBurst jumble strong trace). A triple rule, the
 // FAQ's width: the panel's border, an outline 4px out, and the frame's border 4px beyond that. Put the one action in
-// the default slot; on the red its pixels should come in black.
+// the default slot: a light button-link with fill="black", so its squares come in black on the red.
 withDefaults(defineProps<{ title: string, seed?: number, titleId?: string }>(), { seed: 53, titleId: 'cta-title' })
 </script>
 

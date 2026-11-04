@@ -4,12 +4,14 @@ import { ChevronDown } from 'lucide-vue-next'
 import AgentSplit from '@/components/product/AgentSplit.vue'
 import AgentWindow from '@/components/product/AgentWindow.vue'
 import CodePop from '@/components/ui/CodePop.vue'
+import CellBurst from '@/components/visuals/CellBurst.vue'
+import Grain from '@/components/visuals/Grain.vue'
 
 // Connect a coding agent over MCP (the console's agents/Connect.vue): one column in the double-rule frame. The agent
-// at work, large, on the dark panel with its grain; then the title with its red stop, the prompt in a paper box that
-// shows its first lines and opens the rest in place (Show all: to its height in 200ms, back in 140ms, from wherever
-// it is), and under it Copy prompt with the one-click installs, and the API call opening from its own button. The
-// agent signs in with OAuth, so no key is shown. The prompt, the request and the installs come through props.
+// at work, large, on the dark panel with its grain and a sheet of cells; then the title with its red stop, the prompt
+// in a paper box that shows its first lines and opens the rest in place (Show all: to its height in 200ms, back in
+// 140ms, from wherever it is), and under it Copy prompt with the one-click installs, and the API call opening from its
+// own button. The agent signs in with OAuth, so no key is shown. The prompt, the request and the installs come through props.
 const props = withDefaults(defineProps<{ prompt: string, code: string, installs?: { label: string, href: string }[], title?: string }>(), { title: 'Give this prompt into your agent' })
 const emit = defineEmits<{ copied: [], install: [label: string] }>()
 
@@ -38,7 +40,8 @@ async function toggle() {
   <div class="ds-agentstep">
     <section class="ds-agentwork" :aria-labelledby="`${textId}-title`">
       <div class="ds-agentwork-panel" aria-hidden="true">
-        <div class="ds-agentwork-grain" />
+        <Grain />
+        <div class="pointer-events-none absolute inset-0 opacity-70"><CellBurst :seed="17" /></div>
         <div class="relative flex w-full justify-center px-4 py-8"><AgentWindow /></div>
       </div>
       <div class="ds-agentwork-card">
@@ -68,7 +71,6 @@ async function toggle() {
 /* ds-override: 5px of margin holds the double rule (a 1px outline 4px out) inside the frame, as measured. */
 .ds-agentwork { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); gap: 1px; margin: 5px; border: var(--ds-border-hairline) solid var(--ds-color-edge); outline: var(--ds-border-hairline) solid var(--ds-color-edge); outline-offset: 4px; background: var(--ds-color-edge); }
 .ds-agentwork-panel { position: relative; display: flex; min-height: 372px; align-items: center; overflow: hidden; background: var(--ds-color-neutral-200); color: var(--ds-color-neutral-300); }
-.ds-agentwork-grain { position: absolute; inset: 0; background-image: url("/conare-ds/textures/grain.webp"); background-repeat: repeat; background-size: 12% auto; opacity: 0.3; pointer-events: none; }
 .ds-agentwork-card { display: flex; flex-direction: column; align-items: flex-start; gap: var(--ds-space-md); padding: 24px; background: var(--ds-color-surface); }
 .ds-agentwork-act { display: flex; width: 100%; flex-wrap: wrap; align-items: center; gap: var(--ds-space-md); margin-top: 8px; }
 .ds-promptbox { width: 100%; margin-top: 8px; border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface-subtle); }

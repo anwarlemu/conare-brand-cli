@@ -1,12 +1,12 @@
 <script setup lang="ts" generic="Row extends Record<string, unknown>">
 import { computed, ref, watch } from 'vue'
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-vue-next'
-import DataTableFilter from '@/components/ui/DataTableFilter.vue'
+import FilterChip from '@/components/product/FilterChip.vue'
 import ShowMore from '@/components/ui/ShowMore.vue'
 import Table from '@/components/ui/Table.vue'
 
-// A table people narrow and order (Table with the search's filter buttons and the credit history's foot): filters
-// over it, heads that sort (aria-sort; the arrow shows the order, a faint pair where it could), and the first
+// A table people narrow and order (Table with the search's filter chips and the credit history's foot): a filter-chip
+// per filter over it, heads that sort (aria-sort; the arrow shows the order, a faint pair where it could), and the first
 // `pageSize` rows with "Show N more" under them, each new row landing as the credit history's lines do. Filters and
 // sort reset what is shown. Cells render the value (numbers right, in tabular figures, en-US), or the slot
 // `cell-<key>` with { row, value }. Nothing matching shows one line with a way to clear the filters.
@@ -51,7 +51,7 @@ const display = (v: unknown) => (typeof v === 'number' ? v.toLocaleString('en-US
 <template>
   <div class="ds-data-table flex min-w-0 flex-col gap-3">
     <div v-if="filters.length" class="flex flex-wrap items-center gap-2">
-      <DataTableFilter v-for="f in filters" :key="f.key" v-model="picked[f.key]" :label="f.label" :options="f.options" :any="f.any" />
+      <FilterChip v-for="f in filters" :key="f.key" :model-value="picked[f.key] ?? ''" @update:model-value="(v: string) => { picked[f.key] = v }" :label="f.label" :options="f.options.map(o => ({ value: o, label: o }))" :any="f.any ?? 'Any'" />
       <button v-if="anyOn" type="button" class="ds-more relative ml-1 cursor-pointer text-meta font-medium text-fg-soft" @click="picked = {}">Clear filters</button>
     </div>
     <Table framed :label="label">
