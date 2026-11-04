@@ -13,3 +13,5 @@ apps/www/app/registry.generated.json
 apps/www/public/favicon.ico
 apps/www/public/apple-touch-icon.png
 .release
+.vercel
+.env*
