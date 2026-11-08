@@ -104,7 +104,7 @@ const timed = computed(() => props.tabs.length > 1 && props.turn > 0)
       <!-- The shell: the frame's outer rule, 9px out; the frame's second rule 5px out of its border. -->
       <div class="relative -mx-2.5 border border-edge-strong p-2.25">
         <div class="ds-hero-frame relative">
-          <div class="relative flex w-full justify-center overflow-hidden border border-edge-strong bg-home-red px-4 py-10 text-neutral-300 sm:px-8 sm:py-16 lg:py-20">
+          <div class="relative flex w-full justify-center overflow-hidden border border-edge-strong bg-home-red px-4 py-10 text-ds-neutral-300 sm:px-8 sm:py-16 lg:py-20">
             <Grain />
             <RoomGrid />
             <Burst :inner="0.01" corners />

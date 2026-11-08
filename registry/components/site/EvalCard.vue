@@ -46,7 +46,7 @@ const top = computed(() => {
         <span class="truncate" :class="r.ours ? 'text-fg' : 'text-fg-muted'">{{ r.name }}</span>
         <span class="tabular-nums" :class="r.ours ? 'text-fg' : 'text-fg-muted'">{{ format(r.value) }}</span>
         <span class="col-start-2 col-end-4 h-1 bg-edge">
-          <span class="block h-full" :class="r.ours ? 'bg-home-red' : 'bg-neutral-500'" :style="r.bar" />
+          <span class="block h-full" :class="r.ours ? 'bg-home-red' : 'bg-ds-neutral-500'" :style="r.bar" />
         </span>
       </li>
     </ol>

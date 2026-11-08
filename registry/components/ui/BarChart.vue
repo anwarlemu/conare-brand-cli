@@ -57,7 +57,7 @@ const peak = computed(() => formatNumber(Math.max(0, ...props.points.map(p => p.
           <div v-for="(p, i) in points" :key="p.day" class="flex h-full flex-1 items-end" @pointerenter="hover = i">
             <div
               class="ds-bar mx-auto w-[70%]"
-              :class="hover === i || (hover === null && (!focus || focus.includes(i))) ? 'bg-data-highlight' : 'bg-neutral-600'"
+              :class="hover === i || (hover === null && (!focus || focus.includes(i))) ? 'bg-data-highlight' : 'bg-ds-neutral-600'"
               :style="{ height: p.value > 0 ? `max(2px, ${(p.value / top) * 100}%)` : '0', '--i': (i * 30) / points.length }"
             />
           </div>

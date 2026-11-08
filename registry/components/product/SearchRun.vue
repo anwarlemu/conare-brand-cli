@@ -95,7 +95,7 @@ watch(found, (f) => {
           @click="emit('reveal', h.key)"
         ><i class="ds-hit" aria-hidden="true" /></button>
       </div>
-      <p v-if="tip" class="ds-hit-tip" :style="{ left: `clamp(0px, calc(${(tip.x * 100).toFixed(2)}% - 12px), calc(100% - 220px))` }" aria-hidden="true"><span class="type-code-sm truncate">{{ tip.id }}</span><span class="text-neutral-500">{{ tip.ns }}</span></p>
+      <p v-if="tip" class="ds-hit-tip" :style="{ left: `clamp(0px, calc(${(tip.x * 100).toFixed(2)}% - 12px), calc(100% - 220px))` }" aria-hidden="true"><span class="type-code-sm truncate">{{ tip.id }}</span><span class="text-ds-neutral-500">{{ tip.ns }}</span></p>
     </div>
     <div class="flex flex-wrap items-center gap-x-3 gap-y-1 type-meta text-fg-muted tabular-nums">
       <template v-if="!found">Searching<template v-if="total"> {{ fmt(total) }}</template> documents</template>

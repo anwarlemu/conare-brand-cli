@@ -63,12 +63,12 @@ const bracket = [
   <VizWindow :active="active" class="max-w-155">
     <template #title>
       <span class="truncate text-ui leading-4">{{ data.benchmark }}</span>
-      <span class="hidden shrink-0 bg-neutral-200 px-1.5 py-0.5 text-caption text-neutral-500 sm:inline">Price and accuracy</span>
+      <span class="hidden shrink-0 bg-ds-neutral-200 px-1.5 py-0.5 text-caption text-ds-neutral-500 sm:inline">Price and accuracy</span>
     </template>
 
     <div class="flex flex-col gap-4 px-4 pt-1 pb-4">
       <!-- The chart. -->
-      <div class="border border-neutral-300 px-2 pt-2 pb-4">
+      <div class="border border-ds-neutral-300 px-2 pt-2 pb-4">
         <div class="relative [container-type:inline-size]" :data-glide="glide" :data-scoped="!!scoped" @pointerleave="hot = null">
           <svg :viewBox="`0 0 ${W} ${H}`" class="block w-full" role="img" :aria-label="`${data.benchmark} ${data.metric} against list price per 1M tokens`">
             <g class="ds-viz-in" style="--d: 300">
@@ -120,16 +120,16 @@ const bracket = [
             aria-hidden="true"
           >
             <div
-              class="ds-price-tip-box w-[172px] border border-neutral-300 bg-neutral-200 px-2.5 py-2 text-meta"
+              class="ds-price-tip-box w-[172px] border border-ds-neutral-300 bg-ds-neutral-200 px-2.5 py-2 text-meta"
               :style="{ transform: `translate(${tipLeft ? 'calc(-100% - 18px)' : '18px'}, ${tipBelow ? '18px' : 'calc(-100% - 18px)'})` }"
             >
               <p class="flex items-center gap-1.5 truncate text-off-white">
-                <span class="ds-viz-dot" :class="scopeAt.ours ? 'bg-home-red' : 'bg-neutral-500'" />{{ scopeAt.name }}
+                <span class="ds-viz-dot" :class="scopeAt.ours ? 'bg-home-red' : 'bg-ds-neutral-500'" />{{ scopeAt.name }}
               </p>
-              <p class="mt-1.5 flex justify-between gap-4 text-neutral-500">
+              <p class="mt-1.5 flex justify-between gap-4 text-ds-neutral-500">
                 {{ data.metric }}<span class="text-off-white tabular-nums">{{ scopeAt.score.toFixed(2) }}</span>
               </p>
-              <p class="mt-0.5 flex justify-between gap-4 text-neutral-500">
+              <p class="mt-0.5 flex justify-between gap-4 text-ds-neutral-500">
                 Per 1M tokens<span class="text-off-white tabular-nums">{{ money(scopeAt.price) }}</span>
               </p>
             </div>
@@ -137,28 +137,28 @@ const bracket = [
         </div>
         <!-- The x axis' name, its right edge on the axis' last label. -->
         <p class="ds-viz-in mt-2 flex justify-end" :style="{ '--d': 300, paddingRight: `${((W - R) / W) * 100}%` }">
-          <span class="bg-neutral-700 px-2 py-1 text-caption text-off-black">Price per 1M tokens, log scale</span>
+          <span class="bg-ds-neutral-700 px-2 py-1 text-caption text-off-black">Price per 1M tokens, log scale</span>
         </p>
       </div>
 
       <!-- The models, best first; a row lights its point. -->
-      <ol class="border border-neutral-300" @mouseleave="hot = null">
+      <ol class="border border-ds-neutral-300" @mouseleave="hot = null">
         <li
           v-for="p in points"
           :key="p.name"
-          class="ds-viz-in flex h-9 items-center gap-3 border-b border-neutral-300 px-3 text-ui leading-4 transition-colors duration-200 ease-standard last:border-b-0"
-          :class="hot === p.name ? 'bg-neutral-200' : ''"
+          class="ds-viz-in flex h-9 items-center gap-3 border-b border-ds-neutral-300 px-3 text-ui leading-4 transition-colors duration-200 ease-standard last:border-b-0"
+          :class="hot === p.name ? 'bg-ds-neutral-200' : ''"
           :style="p.row"
           @mouseenter="hot = p.name"
         >
-          <span class="ds-viz-dot" :class="p.ours ? 'bg-home-red' : 'bg-neutral-500'" />
-          <span class="min-w-0 flex-1 truncate" :class="p.ours ? 'text-off-white' : 'text-neutral-600'">{{ p.name }}</span>
-          <span class="w-12 shrink-0 text-right text-neutral-500 tabular-nums max-[419px]:hidden">{{ p.score.toFixed(2) }}</span>
-          <span class="w-14 shrink-0 text-right tabular-nums" :class="p.ours ? 'text-off-white' : 'text-neutral-500'">{{ money(p.price) }}</span>
+          <span class="ds-viz-dot" :class="p.ours ? 'bg-home-red' : 'bg-ds-neutral-500'" />
+          <span class="min-w-0 flex-1 truncate" :class="p.ours ? 'text-off-white' : 'text-ds-neutral-600'">{{ p.name }}</span>
+          <span class="w-12 shrink-0 text-right text-ds-neutral-500 tabular-nums max-[419px]:hidden">{{ p.score.toFixed(2) }}</span>
+          <span class="w-14 shrink-0 text-right tabular-nums" :class="p.ours ? 'text-off-white' : 'text-ds-neutral-500'">{{ money(p.price) }}</span>
         </li>
       </ol>
 
-      <p v-if="data.note" class="ds-viz-in flex gap-2 text-meta leading-5 text-neutral-500" style="--d: 2300">
+      <p v-if="data.note" class="ds-viz-in flex gap-2 text-meta leading-5 text-ds-neutral-500" style="--d: 2300">
         <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" class="mt-1 shrink-0"><rect x="0.5" y="0.5" width="11" height="11" fill="none" stroke="currentColor" /><rect x="5.25" y="5" width="1.5" height="4" fill="currentColor" /><rect x="5.25" y="2.5" width="1.5" height="1.5" fill="currentColor" /></svg>
         {{ data.note }}
       </p>

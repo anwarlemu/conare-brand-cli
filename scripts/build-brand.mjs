@@ -60,7 +60,12 @@ writeFileSync(join(out, 'brand.css'), `${header('fonts, tokens and base styles')
 const names = Object.keys(light);
 const pick = (prefix) => names.filter((n) => n.startsWith(prefix));
 const lines = [];
-for (const n of pick('--ds-color-')) lines.push(`  --color-${n.slice('--ds-color-'.length)}: var(${n});`);
+// The brand's neutral primitives go as ds-neutral-*: Tailwind's own neutral-* scale stays as it is, so an app's
+// text-neutral-700 keeps meaning Tailwind's dark grey wherever the brand has not been applied yet.
+for (const n of pick('--ds-color-')) {
+	const name = n.slice('--ds-color-'.length);
+	lines.push(`  --color-${/^neutral-\d+$/.test(name) ? `ds-${name}` : name}: var(${n});`);
+}
 lines.push('  --font-sans: var(--ds-font-text);', '  --font-mono: var(--ds-font-code);');
 for (const n of pick('--ds-font-').filter((n) => !n.includes('weight'))) lines.push(`  --font-${n.slice('--ds-font-'.length)}: var(${n});`);
 for (const n of pick('--ds-font-weight-')) lines.push(`  --font-weight-${n.slice('--ds-font-weight-'.length)}: var(${n});`);
@@ -70,7 +75,12 @@ for (const n of pick('--ds-text-').filter((n) => !n.endsWith('-leading'))) {
 	if (light[`${n}-leading`]) lines.push(`  --text-${step}--line-height: var(${n}-leading);`);
 }
 for (const n of pick('--ds-tracking-')) lines.push(`  --tracking-${n.slice('--ds-tracking-'.length)}: var(${n});`);
-for (const n of pick('--ds-radius-')) lines.push(`  --radius-${n.slice('--ds-radius-'.length)}: var(${n});`);
+// The brand kit's radius steps go as rounded-ds-sm...: Tailwind's own rounded-sm...xl keep their values, so an app's
+// cards look as they did wherever the brand has not been applied yet (control, container and full keep their names).
+for (const n of pick('--ds-radius-')) {
+	const step = n.slice('--ds-radius-'.length);
+	lines.push(`  --radius-${/^(sm|md|lg|xl)$/.test(step) ? `ds-${step}` : step}: var(${n});`);
+}
 for (const n of pick('--ds-size-')) lines.push(`  --spacing-${n.slice('--ds-size-'.length)}: var(${n});`);
 for (const n of pick('--ds-layout-')) lines.push(`  --container-${n.slice('--ds-layout-'.length)}: var(${n});`);
 for (const n of pick('--ds-easing-')) lines.push(`  --ease-${n.slice('--ds-easing-'.length)}: var(${n});`);

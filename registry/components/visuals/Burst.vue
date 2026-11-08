@@ -7,7 +7,7 @@ import { HALFTONE_BLOCK, HALFTONE_DOT, cellPaths, halftone, rng } from '@/compos
 // the hatch; no outline is drawn and the cells are never rotated. A fixed seed keeps server and client identical.
 // `inner`: how far in the copies run (small and the slabs meet at the centre). `corners`: a halftone square in each
 // face's outer top corner, kept clear of the frame's edges and of a sibling marked `data-burst-clear` (the hero's
-// window). Lay it in a `relative` red frame (`text-neutral-300` sets the hatch's colour); it is decorative.
+// window). Lay it in a `relative` red frame (`text-ds-neutral-300` sets the hatch's colour); it is decorative.
 const props = withDefaults(defineProps<{ seed?: number, rays?: number, inner?: number, corners?: boolean }>(), { seed: 7, rays: 14, inner: 0.42, corners: false })
 
 // Gap between copies at the face, in viewBox units (1px at full width), and the corner square's share of a face.

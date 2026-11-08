@@ -34,12 +34,12 @@ const active = ref(0)
       <VizWindow active class="text-left">
         <template #title>
           <span class="text-ui">Conare</span>
-          <span class="bg-neutral-200 px-1.5 py-0.5 text-caption text-neutral-500">{{ teams[active]!.where }}</span>
+          <span class="bg-ds-neutral-200 px-1.5 py-0.5 text-caption text-ds-neutral-500">{{ teams[active]!.where }}</span>
         </template>
         <div :key="active" class="flex flex-col gap-4 px-4 pt-1 pb-5 sm:px-7 sm:pb-6">
-          <p class="ds-viz-in self-end bg-neutral-200 px-3 py-2 text-body" style="--d: 200">{{ teams[active]!.ask }}</p>
-          <p class="ds-viz-in text-body text-neutral-600" style="--d: 700">{{ teams[active]!.answer }}</p>
-          <p class="ds-viz-in flex items-center gap-2 text-meta text-neutral-500" style="--d: 900">Source <span class="ds-viz-chip text-off-white"><span class="ds-viz-dot bg-home-red" />{{ teams[active]!.source }}</span></p>
+          <p class="ds-viz-in self-end bg-ds-neutral-200 px-3 py-2 text-body" style="--d: 200">{{ teams[active]!.ask }}</p>
+          <p class="ds-viz-in text-body text-ds-neutral-600" style="--d: 700">{{ teams[active]!.answer }}</p>
+          <p class="ds-viz-in flex items-center gap-2 text-meta text-ds-neutral-500" style="--d: 900">Source <span class="ds-viz-chip text-off-white"><span class="ds-viz-dot bg-home-red" />{{ teams[active]!.source }}</span></p>
         </div>
       </VizWindow>
     </template>

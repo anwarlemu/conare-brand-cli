@@ -6,7 +6,7 @@ const ids: ProductVizId[] = ['search', 'embed', 'rerank']
 
 <template>
   <div class="grid gap-4 md:grid-cols-3">
-    <div v-for="id in ids" :key="id" class="relative grid min-h-64 place-items-center overflow-hidden bg-neutral-200 px-4 py-8 text-neutral-300">
+    <div v-for="id in ids" :key="id" class="relative grid min-h-64 place-items-center overflow-hidden bg-ds-neutral-200 px-4 py-8 text-ds-neutral-300">
       <ProductViz :id="id" active />
     </div>
   </div>

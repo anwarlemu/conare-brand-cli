@@ -115,14 +115,14 @@ const all = () => [...props.items, ...props.more]
         </div>
         <!-- The portrait, as wide as the list: each item's window on the grained dark grey, crossfaded. -->
         <div class="bg-surface p-2">
-          <div aria-hidden="true" class="relative grid h-full min-h-62.5 grid-cols-[minmax(0,1fr)] overflow-hidden bg-neutral-200 text-neutral-300">
+          <div aria-hidden="true" class="relative grid h-full min-h-62.5 grid-cols-[minmax(0,1fr)] overflow-hidden bg-ds-neutral-200 text-ds-neutral-300">
             <Grain />
             <template v-if="opened">
               <div v-for="(item, i) in all()" :key="item.label" class="ds-product-art relative flex items-center justify-center px-3 py-4 [grid-area:1/1]" :data-active="i === pick || undefined">
                 <slot name="window" :item="item" :index="i" :active="open && i === pick" :plays="plays">
-                  <div class="relative w-full max-w-60 border border-neutral-300 bg-neutral-100 text-off-white">
-                    <div class="flex h-6 items-center gap-1 border-b border-neutral-300 px-2"><i v-for="k in 3" :key="k" class="size-1.5 bg-neutral-300" /></div>
-                    <div class="flex flex-col gap-1 p-3"><span class="type-code-sm">{{ item.label.toLowerCase() }}</span><span class="type-meta text-neutral-500">{{ item.desc }}</span></div>
+                  <div class="relative w-full max-w-60 border border-ds-neutral-300 bg-ds-neutral-100 text-off-white">
+                    <div class="flex h-6 items-center gap-1 border-b border-ds-neutral-300 px-2"><i v-for="k in 3" :key="k" class="size-1.5 bg-ds-neutral-300" /></div>
+                    <div class="flex flex-col gap-1 p-3"><span class="type-code-sm">{{ item.label.toLowerCase() }}</span><span class="type-meta text-ds-neutral-500">{{ item.desc }}</span></div>
                   </div>
                 </slot>
               </div>

@@ -10,7 +10,7 @@ withDefaults(defineProps<{ active: boolean, size?: 'sm' | 'md' }>(), { size: 'md
 
 <template>
   <div class="ds-viz w-full min-w-0 text-input" :data-active="active">
-    <div class="ds-viz-card border border-neutral-300 bg-neutral-100 text-off-white">
+    <div class="ds-viz-card border border-ds-neutral-300 bg-ds-neutral-100 text-off-white">
       <div class="flex items-center gap-2" :class="size === 'sm' ? 'h-9 px-3' : 'h-11 px-4'">
         <svg viewBox="0 0 149 134" :width="size === 'sm' ? 12 : 14" :height="size === 'sm' ? 10 : 12" class="w-auto shrink-0" :class="size === 'sm' ? 'h-2.5' : 'h-3'" fill="currentColor" aria-hidden="true">
           <path fill-rule="evenodd" clip-rule="evenodd" d="M89.9457 0C78.5373 44.7769 44.0171 80.8044 0 93.9101V76.5306C31.3148 65.2608 53.8763 35.2427 53.8763 0.0219872V0H89.9457Z" />
@@ -20,7 +20,7 @@ withDefaults(defineProps<{ active: boolean, size?: 'sm' | 'md' }>(), { size: 'md
           <path fill-rule="evenodd" clip-rule="evenodd" d="M148.132 102.776V133.776H0V122.447C51.2376 122.434 101.006 115.324 148.132 102.776Z" />
         </svg>
         <slot name="title" />
-        <span class="ml-auto flex shrink-0 items-center text-neutral-500" :class="size === 'sm' ? 'gap-2' : 'gap-3'" aria-hidden="true">
+        <span class="ml-auto flex shrink-0 items-center text-ds-neutral-500" :class="size === 'sm' ? 'gap-2' : 'gap-3'" aria-hidden="true">
           <svg :width="size === 'sm' ? 8 : 10" :height="size === 'sm' ? 8 : 10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M1 7h8" /></svg>
           <svg v-if="size !== 'sm'" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M6 1h3v3M4 9H1V6M9 1 6 4M1 9l3-3" /></svg>
           <svg :width="size === 'sm' ? 8 : 10" :height="size === 'sm' ? 8 : 10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.2"><path d="m1.5 1.5 7 7m0-7-7 7" /></svg>

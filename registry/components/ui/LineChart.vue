@@ -103,7 +103,7 @@ const hovered = computed(() => {
             <path v-for="p in paths" :key="p.label" :d="p.d" fill="none" :stroke="p.color" stroke-width="2" :stroke-dasharray="p.dash" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />
           </svg>
           <template v-if="hovered">
-            <div class="pointer-events-none absolute inset-y-0 w-px bg-neutral-500" :style="{ left: hovered.left }" />
+            <div class="pointer-events-none absolute inset-y-0 w-px bg-ds-neutral-500" :style="{ left: hovered.left }" />
             <div
               class="pointer-events-none absolute top-0 z-10 border border-edge bg-surface px-3 py-2 type-meta"
               :style="hovered.right ? { right: `calc(100% - ${hovered.left} + 8px)` } : { left: `calc(${hovered.left} + 8px)` }"

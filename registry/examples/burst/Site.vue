@@ -6,7 +6,7 @@ import RoomGrid from '@/components/visuals/RoomGrid.vue'
 </script>
 
 <template>
-  <div class="relative flex aspect-[2/1] w-full justify-center overflow-hidden bg-home-red px-4 py-10 text-neutral-300">
+  <div class="relative flex aspect-[2/1] w-full justify-center overflow-hidden bg-home-red px-4 py-10 text-ds-neutral-300">
     <Grain />
     <RoomGrid />
     <Burst :inner="0.01" corners />

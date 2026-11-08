@@ -124,14 +124,14 @@ export function checkDecl(d: Decl, push: Push) {
 
 // Tailwind classes: palette colors, arbitrary values, default type sizes, shadows and broad or ease-in motion.
 const V = '(?:[\\w-]+:|\\[[^\\]]*\\]:)*!?';
-const TW_PALETTE = new RegExp(`^${V}-?(bg|text|border(?:-[xytrblse])?|ring(?:-offset)?|outline|divide|fill|stroke|from|via|to|decoration|placeholder|caret|accent|shadow)-(slate|gray|zinc|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-(50|[1-9]00|950)(\\/\\d+)?$`);
+const TW_PALETTE = new RegExp(`^${V}-?(bg|text|border(?:-[xytrblse])?|ring(?:-offset)?|outline|divide|fill|stroke|from|via|to|decoration|placeholder|caret|accent|shadow)-(slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-(50|[1-9]00|950)(\\/\\d+)?$`);
 const TW_NAMED = new RegExp(`^${V}(bg|text|border|fill|stroke|outline|ring)-(white|black)(\\/\\d+)?$`);
 const TW_ARBITRARY_COLOR = new RegExp(`^${V}(bg|text|border(?:-[xytrblse])?|ring|outline|fill|stroke|from|via|to|decoration|divide|shadow)-\\[(#[0-9a-fA-F]{3,8}|rgba?\\([^\\]]*\\)|hsla?\\([^\\]]*\\))\\]`);
 const TW_ARBITRARY_SIZE = new RegExp(`^${V}-?(p[xytrblse]?|m[xytrblse]?|gap(?:-[xy])?|space-[xy]|text|rounded(?:-[a-z]+)?|tracking|leading|duration|delay)-\\[(-?\\d*\\.?\\d+(?:px|rem|ms|s|em)?)\\]$`);
 const TW_TEXT_DEFAULT = new RegExp(`^${V}text-(xs|sm|base|lg|xl|[2-9]xl)$`);
 const TW_WEIGHT = new RegExp(`^${V}font-(semibold|bold|extrabold|black)$`);
 const TW_SHADOW = new RegExp(`^${V}shadow(-(2xs|xs|sm|md|lg|xl|2xl|inner))?$`);
-const TW_ROUNDED_DEFAULT = new RegExp(`^${V}rounded(-[trblse]{1,2})?(-(xs|2xl|3xl|4xl))?$`);
+const TW_ROUNDED_DEFAULT = new RegExp(`^${V}rounded(-[trblse]{1,2})?(-(xs|sm|md|lg|xl|2xl|3xl|4xl))?$`);
 const TW_EASE_IN = new RegExp(`^${V}ease-in$`);
 const TW_TRANSITION_ALL = new RegExp(`^${V}transition(-all)?$`);
 const TW_DURATION = new RegExp(`^${V}duration-(\\d+)$`);
@@ -146,7 +146,7 @@ export function checkClass(token: string, offset: number, push: Push) {
 	else if (TW_TEXT_DEFAULT.test(cls)) f('off-scale', `Default text size \`${cls}\``, 'Use the brand type scale: text-caption, text-meta, text-ui, text-body, text-body-lg, text-heading-4 to text-heading-1, text-hero, or a type-* utility.');
 	else if (TW_WEIGHT.test(cls) && !brand().type.bold) f('font', `\`${cls}\``, 'The console uses font-normal and font-medium only.');
 	else if (TW_SHADOW.test(cls)) f('shadow', `Shadow \`${cls}\``, 'The brand has no shadows: a hairline (border border-edge) or a fill sets things apart.');
-	else if (TW_ROUNDED_DEFAULT.test(cls)) f('off-scale', `Radius \`${cls}\``, 'Console controls and containers are square (rounded-control, rounded-container); brand surfaces use rounded-sm, -md, -lg, -xl or rounded-full.');
+	else if (TW_ROUNDED_DEFAULT.test(cls)) f('off-scale', `Radius \`${cls}\``, 'Console controls and containers are square (rounded-control, rounded-container); brand surfaces use rounded-ds-sm, -ds-md, -ds-lg, -ds-xl or rounded-full.');
 	else if (TW_EASE_IN.test(cls)) f('motion', '`ease-in`', 'Use ease-out or ease-standard.');
 	else if (TW_TRANSITION_ALL.test(cls)) f('motion', `Broad transition \`${cls}\``, 'Name the properties: transition-colors, transition-opacity, transition-transform.');
 	else if (TW_UPPERCASE.test(cls) && !brand().type.caps && !/type-tag/.test(cls)) f('font', '`uppercase`', 'Capitals are for the site tag only (type-tag); everything else is sentence case.');

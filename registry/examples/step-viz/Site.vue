@@ -6,7 +6,7 @@ const runs = [212, 238, 251, 196]
 
 <template>
   <div class="grid gap-4 md:grid-cols-2">
-    <div v-for="s in 4" :key="s" class="relative grid min-h-80 place-items-center overflow-hidden bg-neutral-200 px-4 py-8 text-neutral-300">
+    <div v-for="s in 4" :key="s" class="relative grid min-h-80 place-items-center overflow-hidden bg-ds-neutral-200 px-4 py-8 text-ds-neutral-300">
       <StepViz :step="s - 1" :runs="runs" active />
     </div>
   </div>

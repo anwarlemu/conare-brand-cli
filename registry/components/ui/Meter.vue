@@ -8,7 +8,7 @@ import { computed } from 'vue'
 // left, still for reduced motion.
 const props = withDefaults(defineProps<{ value: number, max?: number, label?: string, tone?: 'default' | 'top' | 'rest', decorative?: boolean, live?: boolean }>(), { max: 100, tone: 'default' })
 const share = computed(() => Math.max(0, Math.min(1, props.value / (props.max || 1))))
-const FILL = { default: 'bg-surface-inverse', top: 'bg-edge-accent', rest: 'bg-neutral-500' }
+const FILL = { default: 'bg-surface-inverse', top: 'bg-edge-accent', rest: 'bg-ds-neutral-500' }
 </script>
 
 <template>

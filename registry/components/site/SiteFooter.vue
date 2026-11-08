@@ -29,7 +29,7 @@ const WORDMARK = 'M211.683 40.2172C209.513 40.2172 207.742 40.5598 206.371 41.24
 <template>
   <div role="contentinfo" class="relative w-full" :class="pinned && 'md:sticky md:bottom-0 md:z-0'">
     <div class="relative w-full overflow-hidden text-off-white">
-      <div aria-hidden="true" class="absolute inset-0 bg-linear-to-b from-neutral-200 to-neutral-100" />
+      <div aria-hidden="true" class="absolute inset-0 bg-linear-to-b from-ds-neutral-200 to-ds-neutral-100" />
       <Grain />
 
       <div class="relative mx-auto grid max-w-[1440px] gap-y-14 px-4 pt-16 sm:px-6 md:grid-cols-12 md:gap-x-6 lg:px-10 lg:pt-20">

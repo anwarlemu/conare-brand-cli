@@ -67,7 +67,7 @@ const around = (p: ResultPage) => [p.number - 1, p.number, p.number + 1].filter(
           <AnswerText v-else-if="answer" :text="answer" @cite="cite" />
           <p v-else class="ds-answer-text"><MarkedText :text="results[0].text" :query="query" /></p>
         </div>
-        <p v-else class="type-body-lg text-neutral-200"><MarkedText :text="results[0].text" :query="query" /></p>
+        <p v-else class="type-body-lg text-ds-neutral-200"><MarkedText :text="results[0].text" :query="query" /></p>
         <div v-if="results[0].page" class="flex items-end gap-2">
           <PagePreview v-for="p in around(results[0].page)" :key="p.number" :page="p" size="thumb" :marked="p.here" :here="p.here" />
           <span class="ml-1 type-meta text-fg-muted">{{ pageLine(results[0].page) }} in <span class="type-code-sm">{{ results[0].page.file }}</span></span>
@@ -99,7 +99,7 @@ const around = (p: ResultPage) => [p.number - 1, p.number, p.number + 1].filter(
           <div :id="`${pre}-${i}`" class="ds-expand" :data-open="open === resultKey(r) || undefined" :inert="open !== resultKey(r)">
             <div class="min-h-0 overflow-hidden">
               <div class="flex min-w-0 flex-col gap-3 pt-1 pb-3">
-                <p class="leading-5.5 text-neutral-200"><MarkedText :text="r.text" :query="query" /></p>
+                <p class="leading-5.5 text-ds-neutral-200"><MarkedText :text="r.text" :query="query" /></p>
                 <div class="flex flex-wrap items-center justify-between gap-3">
                   <span class="flex flex-wrap gap-x-4 gap-y-1 type-meta text-fg-muted">
                     <span>in <span class="type-code-sm">{{ r.namespace }}</span></span>

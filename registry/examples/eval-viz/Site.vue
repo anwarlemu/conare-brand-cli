@@ -28,7 +28,7 @@ const vidore: Eval = {
 </script>
 
 <template>
-  <div class="relative grid place-items-center overflow-hidden bg-neutral-200 px-4 py-10 text-neutral-300">
+  <div class="relative grid place-items-center overflow-hidden bg-ds-neutral-200 px-4 py-10 text-ds-neutral-300">
     <EvalViz :item="vidore" active />
   </div>
 </template>

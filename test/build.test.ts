@@ -14,6 +14,13 @@ describe('build', () => {
 		const theme = read('build/theme.css');
 		for (const line of ['--color-surface: var(--ds-color-surface);', '--color-fg-muted: var(--ds-color-fg-muted);', '--color-edge: var(--ds-color-edge);', '--text-ui: var(--ds-text-ui);', '--radius-control: var(--ds-radius-control);', '--ease-out: var(--ds-easing-out);', '@utility type-ui {']) expect(theme).toContain(line);
 	});
+	it("leaves Tailwind's own neutral and radius scales alone, so an app looks the same where the brand is not applied", () => {
+		const theme = read('build/theme.css');
+		expect(theme).not.toMatch(/--color-neutral-\d/);
+		expect(theme).toContain('--color-ds-neutral-500: var(--ds-color-neutral-500);');
+		expect(theme).not.toMatch(/--radius-(sm|md|lg|xl):/);
+		expect(theme).toContain('--radius-ds-lg: var(--ds-radius-lg);');
+	});
 	it('serves every font file it declares', () => {
 		const fonts = read('build/fonts.css');
 		for (const m of fonts.matchAll(/url\("\/conare-ds\/fonts\/([^"]+)"\)/g)) expect(existsSync(join(root, 'build', 'fonts', m[1])), m[1]).toBe(true);

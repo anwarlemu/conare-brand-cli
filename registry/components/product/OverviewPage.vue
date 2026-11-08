@@ -64,18 +64,18 @@ const MATRIX = Array.from({ length: 9 }, (_, i) => ({ '--k': i + 1 }))
             <Button @click="emit('readDocs')">Read the docs</Button>
           </div>
         </div>
-        <div class="relative flex min-h-84 items-center justify-center overflow-hidden bg-code-raised text-neutral-300" aria-hidden="true">
+        <div class="relative flex min-h-84 items-center justify-center overflow-hidden bg-code-raised text-ds-neutral-300" aria-hidden="true">
           <Grain />
           <div class="pointer-events-none absolute inset-0 opacity-70"><CellBurst :seed="17" /></div>
           <div class="relative flex w-full items-center justify-center px-4 py-6">
             <VizWindow active class="max-w-100">
               <template #title>
                 <span class="text-ui leading-4">Your code</span>
-                <span class="bg-neutral-200 px-1.5 py-0.5 text-caption text-neutral-500">API</span>
+                <span class="bg-ds-neutral-200 px-1.5 py-0.5 text-caption text-ds-neutral-500">API</span>
               </template>
               <div :key="keyRun" class="flex flex-col gap-3 px-4 pt-1 pb-4">
-                <p class="ds-viz-in ml-10 bg-neutral-200 px-3 py-2.5 text-ui" style="--d: 120"><span class="block type-code-sm text-neutral-500">POST /query</span>How do refunds work?</p>
-                <p class="ds-viz-in flex items-center justify-end gap-1.5 text-meta text-neutral-500" style="--d: 320"><span class="text-neutral-600">API key</span> added to headers</p>
+                <p class="ds-viz-in ml-10 bg-ds-neutral-200 px-3 py-2.5 text-ui" style="--d: 120"><span class="block type-code-sm text-ds-neutral-500">POST /query</span>How do refunds work?</p>
+                <p class="ds-viz-in flex items-center justify-end gap-1.5 text-meta text-ds-neutral-500" style="--d: 320"><span class="text-ds-neutral-600">API key</span> added to headers</p>
                 <div class="ds-viz-in ds-viz-progress" style="--d: 500">
                   <span class="grid size-2.5 shrink-0 place-items-center">
                     <span class="ds-viz-swap-a ds-viz-matrix [grid-area:1/1]" style="--d: 960"><i v-for="k in 9" :key="k" :style="MATRIX[k - 1]" /></span>
@@ -83,12 +83,12 @@ const MATRIX = Array.from({ length: 9 }, (_, i) => ({ '--k': i + 1 }))
                   </span>
                   <span class="grid flex-1">
                     <span class="ds-viz-swap-a [grid-area:1/1]" style="--d: 960">Calling the API</span>
-                    <span class="ds-viz-swap-b [grid-area:1/1] text-neutral-500" style="--d: 960">200 OK</span>
+                    <span class="ds-viz-swap-b [grid-area:1/1] text-ds-neutral-500" style="--d: 960">200 OK</span>
                   </span>
-                  <span class="ds-viz-swap-b shrink-0 text-neutral-500 tabular-nums" style="--d: 960">62 ms</span>
+                  <span class="ds-viz-swap-b shrink-0 text-ds-neutral-500 tabular-nums" style="--d: 960">62 ms</span>
                 </div>
                 <p class="ds-viz-in text-ui leading-6" style="--d: 1080">Refunds are available for 30 days.</p>
-                <p class="ds-viz-in flex items-center gap-2 text-meta text-neutral-500" style="--d: 1240">Source <span class="ds-viz-chip text-off-white"><span class="ds-viz-dot bg-home-red" />Refunds</span></p>
+                <p class="ds-viz-in flex items-center gap-2 text-meta text-ds-neutral-500" style="--d: 1240">Source <span class="ds-viz-chip text-off-white"><span class="ds-viz-dot bg-home-red" />Refunds</span></p>
               </div>
             </VizWindow>
           </div>

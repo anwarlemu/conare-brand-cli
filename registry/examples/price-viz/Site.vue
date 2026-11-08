@@ -17,7 +17,7 @@ const data: PriceData = {
 </script>
 
 <template>
-  <div class="relative grid min-h-80 place-items-center overflow-hidden bg-neutral-200 px-4 py-10 text-neutral-300">
+  <div class="relative grid min-h-80 place-items-center overflow-hidden bg-ds-neutral-200 px-4 py-10 text-ds-neutral-300">
     <PriceViz :data="data" active />
   </div>
 </template>

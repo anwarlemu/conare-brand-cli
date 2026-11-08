@@ -20,7 +20,7 @@ const lit = computed(() => (props.bare ? TRIANGLE : ARROW))
 
 <template>
   <svg class="shrink-0 overflow-hidden" :class="down && 'rotate-180'" :width="WIDE" :height="TALL" :viewBox="`0 0 ${WIDE} ${TALL}`" aria-hidden="true">
-    <g v-if="!bare" class="fill-neutral-700"><rect v-for="[x, y] in GRID" :key="`${x}-${y}`" :x="x * CELL" :y="y * CELL" width="2" height="2" /></g>
+    <g v-if="!bare" class="fill-ds-neutral-700"><rect v-for="[x, y] in GRID" :key="`${x}-${y}`" :x="x * CELL" :y="y * CELL" width="2" height="2" /></g>
     <g :class="down ? 'fill-fg' : 'fill-edge-accent'"><rect v-for="[x, y] in lit" :key="`${x}-${y}`" :x="x * CELL" :y="y * CELL" :width="INK" :height="INK" /></g>
   </svg>
 </template>
