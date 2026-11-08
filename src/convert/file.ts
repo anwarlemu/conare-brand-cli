@@ -233,7 +233,7 @@ export function convertHtml(text: string, opts: FileOptions): FileResult {
 	const changes: Change[] = [];
 	if (!opts.general) return { text, changes };
 	let out = text.replace(/(<style\b[^>]*>)([\s\S]*?)(<\/style>)/gi, (_, open: string, css: string, close: string) => `${open}${convertCss(css, { changes, merge: opts.merge })}${close}`);
-	out = out.replace(/(<([a-zA-Z][\w-]*)\b[^>]*?\sclass\s*=\s*)(["'])([^"']*)\3/g, (all, head: string, tag: string, q: string, cls: string) => `${head}${q}${convertClassList(cls, { tag, merge: opts.merge, changes })}${q}`);
+	out = out.replace(/(<([a-zA-Z][\w-]*)\b[^>]*?\sclass\s*=\s*)(["'])([^"']*)\3/g, (_all, head: string, tag: string, q: string, cls: string) => `${head}${q}${convertClassList(cls, { tag, merge: opts.merge, changes })}${q}`);
 	out = out.replace(/(\sstyle\s*=\s*)(["'])([^"']*)\2/g, (_, head: string, q: string, css: string) => `${head}${q}${convertCss(css, { changes }, true)}${q}`);
 	if (out !== text) guard(text, out, 'html');
 	return { text: out, changes };

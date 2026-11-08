@@ -6,7 +6,8 @@ import { type FileOptions, StructureChanged, convertCode, convertHtml, convertSt
 import { kebab, kindNames, kindOfComponent, kinds } from '../convert/kinds.js';
 import { brand, cli } from '../lib/brand.js';
 import { type Project, readProject, unsupported } from '../library/project.js';
-import { readIndex } from '../library/registry.js';
+import { readIndex, readItem } from '../library/registry.js';
+import { localContent } from './library.js';
 import { type Graph, buildGraph, closure, routeMatches } from '../project/graph.js';
 import { globToRegex, normalizeName, suggest } from '../lib/names.js';
 import { init } from './init.js';
@@ -39,12 +40,23 @@ export function readState(root: string): State | undefined {
 	}
 }
 
-/** Files the library put in the app (add) and the installed theme: already on the brand, never restyled. */
+/**
+ * Files the library put in the app (add), as it wrote them: already on the brand, never restyled. An app's own file at
+ * the same path (its own components/ui/Button.vue) is the app's, and is restyled like any other.
+ */
 async function libraryFiles(project: Project): Promise<Set<string>> {
 	const out = new Set<string>();
 	const src = project.srcDir === '.' ? '' : `${project.srcDir}/`;
 	try {
-		for (const item of await readIndex()) for (const f of item.files) out.add(`${src}${f}`);
+		for (const entry of await readIndex()) {
+			const present = entry.files.filter((f) => existsSync(join(project.root, `${src}${f}`)));
+			if (!present.length) continue;
+			const item = await readItem(entry.name);
+			for (const f of item.files) {
+				const rel = `${src}${f.path}`;
+				if (present.includes(f.path) && readFileSync(join(project.root, rel), 'utf8') === localContent(project, f.path, f.content)) out.add(rel);
+			}
+		}
 	} catch {}
 	return out;
 }
@@ -126,7 +138,7 @@ async function resolveTargets(project: Project, graph: Graph, opts: ApplyOptions
 }
 
 /** The files and what to do in each, for one part of the scope. */
-function planPart(project: Project, graph: Graph, part: Part, library: Set<string>, out: Map<string, FilePlan>, leftOut: Set<string>) {
+function planPart(project: Project, graph: Graph, part: Part, library: Set<string>, out: Map<string, FilePlan>) {
 	const kindsOf = (k?: string[]) => (k ? new Set(k) : ('all' as const));
 	const css = project.css;
 	const eligible = (f: string) => !library.has(f) && !f.includes(`/${brand().bin}/`);
@@ -158,7 +170,6 @@ function planPart(project: Project, graph: Graph, part: Part, library: Set<strin
 	const general = !part.kinds;
 	for (const f of part.files) add(f, part.targets.join(', '), general, k);
 	if (part.withShared && general && css) add(css, 'shared (--with-shared)', true, 'all');
-	void leftOut;
 }
 
 /** An app component's kind: by its file name, or a shadcn-style folder (components/ui/button/index.ts). */
@@ -218,7 +229,7 @@ export async function apply(root: string, opts: ApplyOptions): Promise<ApplyResu
 	}
 	const library = await libraryFiles(project);
 	const plans = new Map<string, FilePlan>();
-	for (const part of parts) planPart(project, graph, part, library, plans, new Set());
+	for (const part of parts) planPart(project, graph, part, library, plans);
 
 	const results: ApplyResult['files'] = [];
 	const skipped: ApplyResult['skipped'] = [];

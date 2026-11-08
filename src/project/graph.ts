@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { dirname, join, posix, relative } from 'node:path';
+import { join, posix, relative } from 'node:path';
 import type { Project } from '../library/project.js';
 
 // The app as apply sees it: its source files, what each imports (static imports and Nuxt's auto-imported components),
@@ -182,10 +182,3 @@ export function routeMatches(route: string, typed: string) {
 	return a.length === b.length && a.every((s, i) => s.startsWith(':') || s === b[i]);
 }
 
-export const sharedRoots = (graph: Graph) => graph.shell;
-
-export function fileExists(project: Project, rel: string) {
-	return existsSync(join(project.root, rel)) && statSync(join(project.root, rel)).isFile();
-}
-
-export { dirname };

@@ -133,6 +133,15 @@ describe('apply', () => {
 		expect(fails(dir, 'apply', '--component', 'button')).toContain('Unknown option');
 		expect(snapshot(dir)).toEqual(before);
 	});
+	it("restyles the app's own components/ui/Button.vue but never a library file add wrote", () => {
+		const dir = nuxtApp();
+		write(dir, { 'app/components/ui/Button.vue': page('  <button class="rounded-md bg-violet-600 px-3 py-2 text-white"><slot /></button>') });
+		cli(dir, 'add', 'tag', '--no-install');
+		const tag = readFileSync(join(dir, 'app/components/ui/Tag.vue'), 'utf8');
+		cli(dir, 'apply');
+		expect(readFileSync(join(dir, 'app/components/ui/Button.vue'), 'utf8')).toContain('bg-action-primary');
+		expect(readFileSync(join(dir, 'app/components/ui/Tag.vue'), 'utf8')).toBe(tag);
+	});
 	it('reads Vue Router routes in a Vite app', () => {
 		const dir = mkdtempSync(join(tmpdir(), 'conare-vite-'));
 		write(dir, {
