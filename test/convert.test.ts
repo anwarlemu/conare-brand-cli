@@ -72,6 +72,12 @@ describe('kinds', () => {
 		expect(out).toContain('text-[length:var(--ds-text-meta)]');
 		expect(out).toMatch(/icon: '[^']*w-control-sm px-0/);
 	});
+	it("gives a cn() root of a kind with no variants its whole look, once (shadcn's Input)", () => {
+		const src = vue("  <input :class=\"cn('border-input h-8 rounded-lg border bg-transparent px-2.5 py-1 text-base w-full min-w-0 placeholder:text-muted-foreground', props.class)\">", "const props = defineProps<{ class?: string }>()\nconst cn = (...a: unknown[]) => a.join(' ')");
+		const out = twice(src, { ...all, componentKind: 'input', merge: true });
+		expect(out).toContain('h-control-md border border-edge-strong bg-surface');
+		expect(out).toContain('w-full min-w-0');
+	});
 	it('sizes a heading from its own size class', () => {
 		expect(twice(vue('  <h1 class="text-5xl font-extrabold">Acme</h1>'), all)).toContain('<h1 class="type-display">');
 		expect(twice(vue('  <h2 class="text-2xl font-bold text-gray-900">Acme</h2>'), all)).toContain('<h2 class="text-fg type-heading-2">');

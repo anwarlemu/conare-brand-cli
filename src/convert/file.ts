@@ -182,8 +182,10 @@ function convertElement(text: string, node: Node, isRoot: boolean, opts: FileOpt
 			// A component's root built with cn('...') has its whole look in that one string: it takes the base.
 			const rootLook = isRoot && opts.componentKind === restyled?.kind && !staticClass;
 			if (restyled && b.name === 'class' && !restyled.part && (rootLook || (kinds()[restyled.kind]?.variants && (hasColor(lit.value.split(/\s+/)) || !staticClass)))) {
+				// A kind with no variants takes its whole look in the one string; one with variants splits base and colors.
 				const colored = hasColor(lit.value.split(/\s+/));
-				next = restyle(next, restyled, { tag, changes, onDark, merge: opts.merge, variant: colored ? 'variant' : 'base', tokensForVariant: lit.value.split(/\s+/).filter(Boolean) });
+				const mode = !kinds()[restyled.kind]?.variants ? 'both' : colored ? 'variant' : 'base';
+				next = restyle(next, restyled, { tag, changes, onDark, merge: opts.merge, variant: mode, tokensForVariant: lit.value.split(/\s+/).filter(Boolean) });
 			}
 			if (next !== lit.value) edits.push({ start: lit.start, end: lit.end, text: next });
 		}
