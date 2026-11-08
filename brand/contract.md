@@ -1,8 +1,11 @@
 # {{brand}} design system
 - Read `.ds/agent-guide.md` before changing UI. It covers setup, component discovery, composition and verification.
 - Follow the user's brief. When only restyling, preserve existing content, links, order and behavior.
-- Find components with `{{cli}} list --json` and add them with `{{cli}} add <names...>` (`--dry-run` first). Read the
-  installed source or {{registry}}/r/<name>.json for props and examples; do not guess them.
+- Find components with `{{cli}} search <words>` or `{{cli}} list --json` and add them with `{{cli}} add <names...>`
+  (`--dry-run` first). Read `{{cli}} view <name> --json` for props, slots, events and examples; do not guess them.
+- To restyle existing screens, run `{{cli}} apply` with what the user named (`apply button card`, `apply /settings`,
+  `apply app/pages/settings.vue`), `--dry-run --json` first. It changes style values only; `.ds/state.json` records
+  the scope and `{{cli}} check` checks it.
 - Style with brand tokens only: the Tailwind utilities from the installed theme (bg-surface, bg-surface-subtle,
   text-fg, text-fg-soft, text-fg-muted, border-edge, border-edge-strong, bg-action-primary, type-ui, type-meta...) or
   `var(--ds-*)` in CSS. `{{cli}} tokens <term>` finds values. No shadows, no corner radius in the console, no

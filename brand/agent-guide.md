@@ -27,7 +27,13 @@ theme), imports both after `@import "tailwindcss"` in the main stylesheet, copie
 writes this guide and the contract in AGENTS.md. `add` copies each item's files into the app's source folder (Nuxt 4:
 `app/`), follows `@/` imports (rewritten to relative paths when the app has no `@` alias), installs the packages they
 import (`lucide-vue-next`) and runs `init` once if the theme is missing. Existing files that differ are kept unless
-`--overwrite` is passed.
+`--overwrite` is passed. Names resolve however they are typed (`Button`, `alert-dialog`, `badge`); `{{cli}} view <name>`
+prints an item's props, slots, events, examples and source, and `{{cli}} search <words>` finds one.
+
+To restyle what the app already has, `{{cli}} apply` converts style values to the tokens and gives buttons, fields,
+cards, dialogs, tables and the rest the library's look, without changing copy, markup or behavior. Name a selection to
+limit it: `{{cli}} apply button card`, `{{cli}} apply /settings`, `{{cli}} apply app/pages/settings.vue`, or
+`--components button --pages /settings`; `--dry-run --json` lists every file and change first.
 
 ## Compose
 
