@@ -5,7 +5,9 @@
   (`--dry-run` first). Read `{{cli}} view <name> --json` for props, slots, events and examples; do not guess them.
 - To restyle existing screens, run `{{cli}} apply` with what the user named (`apply button card`, `apply /settings`,
   `apply app/pages/settings.vue`), `--dry-run --json` first. It changes style values only; `.ds/state.json` records
-  the scope and `{{cli}} check` checks it.
+  the scope and `{{cli}} check` checks it. Only a whole-app apply styles every page; after a selection or a plain add,
+  the brand's base reaches the library's components (`data-ds` roots) and elements with the `ds-scope` class only, so
+  keep `ds-scope` on what was restyled and do not add brand rules to html or body.
 - Style with brand tokens only: the Tailwind utilities from the installed theme (bg-surface, bg-surface-subtle,
   text-fg, text-fg-soft, text-fg-muted, border-edge, border-edge-strong, bg-action-primary, type-ui, type-meta...) or
   `var(--ds-*)` in CSS. `{{cli}} tokens <term>` finds values. No shadows, no corner radius in the console, no

@@ -10,7 +10,7 @@ defineProps<{ icon?: Component, invalid?: boolean }>()
 </script>
 
 <template>
-  <span v-if="icon" class="relative block w-full">
+  <span data-ds="input" v-if="icon" class="relative block w-full">
     <component :is="icon" :size="12" :stroke-width="1.5" class="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-fg-muted" aria-hidden="true" />
     <input
       v-model="model"
@@ -19,7 +19,7 @@ defineProps<{ icon?: Component, invalid?: boolean }>()
       class="h-control-sm w-full border border-edge-strong bg-surface pr-2.5 pl-7 text-meta leading-5 text-fg outline-none transition-[border-color] duration-120 ease-standard placeholder:text-fg-muted focus:border-edge-focus aria-invalid:border-action-danger disabled:cursor-not-allowed disabled:text-fg-muted max-md:h-control-touch max-md:text-input pointer-coarse:h-control-touch pointer-coarse:text-input"
     >
   </span>
-  <input
+  <input data-ds="input"
     v-else
     v-model="model"
     v-bind="$attrs"

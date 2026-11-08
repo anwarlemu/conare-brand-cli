@@ -71,7 +71,7 @@ const rowsBefore = () => props.items.length + props.more.length
 </script>
 
 <template>
-  <header class="sticky top-0 z-20 border-b border-edge bg-surface" :data-ready="ready || undefined">
+  <header data-ds="site-header" class="sticky top-0 z-20 border-b border-edge bg-surface" :data-ready="ready || undefined">
     <div class="mx-auto grid h-16 max-w-[1440px] grid-cols-[1fr_auto_1fr] items-center px-4 sm:px-6 lg:px-10">
       <a :href="homeHref" :aria-label="homeLabel" class="flex shrink-0 justify-self-start outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-edge-focus"><slot name="logo" /></a>
 

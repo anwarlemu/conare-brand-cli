@@ -15,7 +15,7 @@ const stamp = (b: ParseBlock) => b.content.replace(/^Stamp:\s*/, '').split(', ')
 </script>
 
 <template>
-  <div class="ds-parsepage" :data-scan="scan || undefined" :data-plays="plays || undefined" :data-all="all || undefined" :aria-hidden="mini || undefined">
+  <div data-ds="parse-sheet" class="ds-parsepage" :data-scan="scan || undefined" :data-plays="plays || undefined" :data-all="all || undefined" :aria-hidden="mini || undefined">
     <span v-if="plays" class="ds-parse-sweep" aria-hidden="true" />
     <div v-for="b in part.blocks" :key="b.order" class="ds-parseregion" :data-type="b.type" :data-on="on === b.order || undefined" :style="box(b)">
       <table v-if="b.type === 'table'" class="ds-parsetable">

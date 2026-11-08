@@ -23,9 +23,9 @@ const parts = computed<Part[]>(() => {
 
 <template>
   <template v-for="(p, i) in parts" :key="i">
-    <code v-if="p.kind === 'code'" dir="ltr" class="ds-docs-code">{{ p.text }}</code>
-    <a v-else-if="p.kind === 'link'" :href="p.href" class="ds-docs-link">{{ p.text }}</a>
-    <strong v-else-if="p.kind === 'bold'" class="font-medium text-fg">{{ p.text }}</strong>
+    <code data-ds="docs-inline" v-if="p.kind === 'code'" dir="ltr" class="ds-docs-code">{{ p.text }}</code>
+    <a data-ds="docs-inline" v-else-if="p.kind === 'link'" :href="p.href" class="ds-docs-link">{{ p.text }}</a>
+    <strong data-ds="docs-inline" v-else-if="p.kind === 'bold'" class="font-medium text-fg">{{ p.text }}</strong>
     <template v-else>{{ p.text }}</template>
   </template>
 </template>

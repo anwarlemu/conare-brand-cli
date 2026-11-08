@@ -33,7 +33,7 @@ function picked() {
 </script>
 
 <template>
-  <button
+  <button data-ds="date-picker"
     :id="id"
     :ref="(el) => { pop.anchor.value = el as HTMLElement | null }"
     type="button"
@@ -48,7 +48,7 @@ function picked() {
     <CalendarDays :size="14" :stroke-width="1.5" class="shrink-0 text-fg-muted" aria-hidden="true" />
     <span class="min-w-0 flex-1 truncate" :class="!text && 'text-fg-muted'">{{ text ?? placeholder }}</span>
   </button>
-  <PopoverPanel :id="panelId" :pop="pop" role="dialog" aria-label="choose a date" tabindex="-1" class="p-3">
+  <PopoverPanel data-ds="date-picker" :id="panelId" :pop="pop" role="dialog" aria-label="choose a date" tabindex="-1" class="p-3">
     <Calendar v-model="model" :min="min" :max="max" :disabled="disabled" :locale="locale" @select="picked" />
   </PopoverPanel>
 </template>

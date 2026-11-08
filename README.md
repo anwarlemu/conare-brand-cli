@@ -61,14 +61,29 @@ bare `apply` makes it the whole app, and `check` checks only the files in it, so
 | `list [--json]` | Every item, its group, what it requires and its packages. |
 | `diff <item...>` | Your copy of each file against the library's (exit 1 when one differs). |
 | `info` | The app's framework, source folder, alias, package manager, Tailwind version, stylesheet and theme, installed items (and which changed locally), the applied scope and what to run next. |
-| `init` | Writes `<main stylesheet dir>/conare-ds/brand.css` (fonts, tokens, base styles) and `theme.css` (the Tailwind 4 theme), imports both right after `@import "tailwindcss"`, copies the fonts and textures to `public/conare-ds/`, writes `.ds/agent-guide.md` and the contract into `AGENTS.md`. Idempotent. |
+| `init` | Writes `<main stylesheet dir>/conare-ds/brand.css` (fonts, tokens, and the base layer scoped to the library's components, page-wide after a whole-app `apply`) and `theme.css` (the Tailwind 4 theme), imports both right after `@import "tailwindcss"`, copies the fonts and textures to `public/conare-ds/`, writes `.ds/agent-guide.md` and the contract into `AGENTS.md`. Idempotent. |
 | `check [paths...]` | The value check over styles, Vue templates and scripts: raw colors, Tailwind palette and arbitrary colors, radii and type sizes off the scale, durations off the motion steps, `transition-all`, `ease-in`, custom easings, shadows, bold weights, unknown `--ds-*` tokens and icon packs other than Lucide. Exit 1 on findings; `--fix` applies exact token replacements; `--all` checks every file when a scope is recorded; `--json`. A `ds-override: <reason>` comment on the line above skips a finding. |
 | `tokens [term...]` | Finds tokens by name or value. |
 
-All commands take `--cwd <dir>` and `--json`; an unknown option is an error, never ignored. Installed components use
-the theme's utilities, so they render on brand with no setup beyond `add`; the theme keeps Tailwind's own `neutral-*`
-and `rounded-sm` to `rounded-xl` as they are (the brand's are `ds-neutral-*` and `rounded-ds-*`), so installing it does
-not change pages the brand has not been applied to beyond the base font, colors and focus ring.
+All commands take `--cwd <dir>` and `--json`; an unknown option is an error, never ignored.
+
+### What reaches the rest of the app
+
+Only a whole-app `apply` installs the brand's base layer (the page's background, body type and color, heading font,
+hairline borders and focus ring on every element). A selection, a plain `add` and `init` install the tokens, the
+theme and the fonts, and the base reaches only:
+
+- the library's components: every one renders `data-ds="<name>"` on its root, and the base is scoped to those roots;
+- what a selection restyled: the root of each page or file it covered, and each element of a named kind, get the
+  class `ds-scope`.
+
+So pages outside a selection keep their computed styles exactly (verified with Playwright in Nuxt 4 and Vite: the
+same computed styles and 0% pixel difference before and after `apply /settings`, `apply button` and `add button`).
+Theme keys Tailwind or the app also defines (`font-sans`, `font-mono`, `tracking-tight`, `ease-out`) keep the app's
+value outside those scopes and take the brand's inside them; the brand's own neutrals and radius steps are
+`ds-neutral-*` and `rounded-ds-*`; and the brand registers its faces under its own names (`"Geist (Conare)"`), so an
+app that names Inter or Geist itself keeps its own rendering. After a whole-app apply, later selections and adds keep
+the full base.
 
 ## Work on it
 

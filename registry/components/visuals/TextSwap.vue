@@ -7,7 +7,7 @@ defineProps<{ on: boolean }>()
 </script>
 
 <template>
-  <span class="ds-swap" :data-on="on">
+  <span data-ds="text-swap" class="ds-swap" :data-on="on">
     <span class="ds-swap-a" :aria-hidden="on || undefined"><slot name="a" /></span>
     <span class="ds-swap-b" :aria-hidden="!on || undefined"><slot name="b" /></span>
   </span>

@@ -61,7 +61,7 @@ watch(() => props.notice, (now) => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-3 text-ui">
+  <div data-ds="add-documents" class="flex flex-col gap-3 text-ui">
     <div class="flex flex-wrap items-center gap-3">
       <Tabs v-model="mode" :options="[{ value: 'upload', label: 'Upload files' }, { value: 'paste', label: 'Paste text' }]" label="how to add documents" />
       <span class="type-meta text-fg-muted">or <button type="button" class="ds-adddocs-link" @click="emit('connect')">connect an app</button></span>

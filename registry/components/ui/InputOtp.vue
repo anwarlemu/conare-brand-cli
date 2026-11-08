@@ -38,7 +38,7 @@ function onInput(event: Event) {
 </script>
 
 <template>
-  <div class="ds-otp" :data-invalid="invalid || undefined" :data-disabled="disabled || undefined">
+  <div data-ds="input-otp" class="ds-otp" :data-invalid="invalid || undefined" :data-disabled="disabled || undefined">
     <input
       ref="input"
       :value="code"

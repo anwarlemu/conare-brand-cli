@@ -23,7 +23,7 @@ const share = () => `${Math.max(0, Math.min(1, props.credits?.share ?? 0)) * 100
 </script>
 
 <template>
-  <Menu
+  <Menu data-ds="account-menu"
     ref="menu"
     label="account"
     :up="up"

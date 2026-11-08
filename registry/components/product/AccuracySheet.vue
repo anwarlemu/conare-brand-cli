@@ -38,13 +38,13 @@ const wrong = computed(() => props.view.done - props.view.right)
 </script>
 
 <template>
-  <section class="relative flex flex-wrap items-baseline gap-x-6 gap-y-1 pb-3" aria-live="polite">
+  <section data-ds="accuracy-sheet" class="relative flex flex-wrap items-baseline gap-x-6 gap-y-1 pb-3" aria-live="polite">
     <p><span class="font-heading text-heading-2 tabular-nums"><Count :value="view.right" /></span> right</p>
     <p><span class="font-heading text-heading-2 tabular-nums" :class="wrong > 0 && 'text-fg-accent'"><Count :value="wrong" /></span> wrong</p>
     <p class="ml-auto type-meta text-fg-muted">{{ view.state === 'running' ? `${view.done} of ${view.questions} done` : `${view.questions} questions, run ${view.ran}` }}</p>
     <span class="ds-sheetline" aria-hidden="true"><span :style="{ transform: `scaleX(${view.questions ? view.done / view.questions : 0})` }" /></span>
   </section>
-  <div class="overflow-hidden border border-edge bg-surface">
+  <div data-ds="accuracy-sheet" class="overflow-hidden border border-edge bg-surface">
     <Table>
       <thead><tr><th scope="col" class="w-10 text-right max-sm:hidden"><span class="sr-only">Number</span></th><th scope="col">Question</th><th scope="col" class="w-40 max-lg:hidden">Namespace</th><th scope="col" class="w-32 max-sm:hidden">Result</th><th scope="col" class="w-8"><span class="sr-only">Open</span></th></tr></thead>
       <tbody>
@@ -77,7 +77,7 @@ const wrong = computed(() => props.view.done - props.view.right)
       </tbody>
     </Table>
   </div>
-  <Button v-if="shown < rows.length" variant="ghost" press class="self-start" @click="shown += 12">Show 12 more</Button>
+  <Button data-ds="accuracy-sheet" v-if="shown < rows.length" variant="ghost" press class="self-start" @click="shown += 12">Show 12 more</Button>
 </template>
 
 <style>

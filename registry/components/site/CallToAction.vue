@@ -10,7 +10,7 @@ withDefaults(defineProps<{ title: string, seed?: number, titleId?: string }>(), 
 </script>
 
 <template>
-  <section :aria-labelledby="titleId" class="mx-auto max-w-[1440px] px-4 pb-32 sm:px-6 lg:px-10 lg:pb-40">
+  <section data-ds="call-to-action" :aria-labelledby="titleId" class="mx-auto max-w-[1440px] px-4 pb-32 sm:px-6 lg:px-10 lg:pb-40">
     <div class="mx-auto max-w-[1220px] border border-edge p-2.25">
       <div class="relative overflow-hidden border border-edge bg-home-red outline outline-offset-4 outline-edge">
         <Grain />

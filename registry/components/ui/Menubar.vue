@@ -23,7 +23,7 @@ provide<MenubarContext>('ds-menubar', { active, focused, entries, move })
 </script>
 
 <template>
-  <div role="menubar" :aria-label="label" class="inline-flex items-center gap-0.5 border border-edge bg-surface-subtle p-0.5">
+  <div data-ds="menubar" role="menubar" :aria-label="label" class="inline-flex items-center gap-0.5 border border-edge bg-surface-subtle p-0.5">
     <slot />
   </div>
 </template>

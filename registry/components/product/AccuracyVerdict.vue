@@ -32,7 +32,7 @@ function clicked(event: MouseEvent) {
 </script>
 
 <template>
-  <section class="m-1.25 grid grid-cols-[minmax(0,1fr)_240px] gap-8 border border-edge p-6 outline outline-offset-4 outline-edge max-md:grid-cols-1 max-md:p-4" aria-labelledby="eval-score">
+  <section data-ds="accuracy-verdict" class="m-1.25 grid grid-cols-[minmax(0,1fr)_240px] gap-8 border border-edge p-6 outline outline-offset-4 outline-edge max-md:grid-cols-1 max-md:p-4" aria-labelledby="eval-score">
     <div class="flex min-w-0 flex-col gap-1">
       <p id="eval-score" class="font-heading text-display leading-14 tracking-display tabular-nums max-md:text-heading-1 max-md:leading-10"><Count :value="view.right" /> of {{ view.questions }}</p>
       <p class="text-input">{{ view.state === 'running' ? `Running. ${view.done} of ${view.questions} done.` : 'questions reached the right page.' }}</p>
@@ -43,7 +43,7 @@ function clicked(event: MouseEvent) {
     </div>
   </section>
 
-  <section v-if="wrong.length" class="flex flex-col gap-2" aria-labelledby="eval-look">
+  <section data-ds="accuracy-verdict" v-if="wrong.length" class="flex flex-col gap-2" aria-labelledby="eval-look">
     <h2 id="eval-look" class="type-ui-strong">{{ wrong.length === 1 ? '1 to look at' : `${wrong.length} to look at` }}</h2>
     <ul class="border border-edge bg-surface [&>*+*]:border-t [&>*+*]:border-edge">
       <li v-for="r in wrong" :key="r.id" class="flex min-h-10 items-center justify-between gap-4 px-4 py-1.5 max-sm:flex-col max-sm:items-start max-sm:gap-2 max-sm:py-3">
@@ -56,7 +56,7 @@ function clicked(event: MouseEvent) {
     </ul>
   </section>
 
-  <section class="flex flex-col gap-2" aria-labelledby="eval-all">
+  <section data-ds="accuracy-verdict" class="flex flex-col gap-2" aria-labelledby="eval-all">
     <h2 id="eval-all" class="type-ui-strong">Every question</h2>
     <div class="overflow-hidden border border-edge bg-surface">
       <Table>

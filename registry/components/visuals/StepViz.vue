@@ -28,7 +28,7 @@ const MATRIX_STYLES = Array.from({ length: 9 }, (_, i) => ({ '--k': i + 1 }))
 </script>
 
 <template>
-  <VizWindow :active="active" class="max-w-100">
+  <VizWindow data-ds="step-viz" :active="active" class="max-w-100">
     <template #title>
       <span class="grid">
         <span v-for="(w, i) in windows" :key="w.tag" class="ds-viz-title flex items-center gap-2 whitespace-nowrap [grid-area:1/1]" :data-active="i === props.step">

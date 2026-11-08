@@ -24,7 +24,7 @@ function go(link: FrameLink, event: MouseEvent) {
 </script>
 
 <template>
-  <div class="flex min-h-screen bg-surface" @keydown.escape="open = false">
+  <div data-ds="console-frame" class="flex min-h-screen bg-surface" @keydown.escape="open = false">
     <Sidebar label="console" class="ds-frame-side shrink-0" :data-open="open || undefined">
       <template v-if="$slots.head" #head><slot name="head" /></template>
       <template v-for="group in groups" :key="group.label">

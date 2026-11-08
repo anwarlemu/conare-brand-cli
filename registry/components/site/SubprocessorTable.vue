@@ -7,7 +7,7 @@ withDefaults(defineProps<{ rows: readonly Subprocessor[], label?: string }>(), {
 </script>
 
 <template>
-  <div class="ds-legal-table overflow-x-auto border border-edge outline outline-offset-4 outline-edge" role="region" :aria-label="label" tabindex="0">
+  <div data-ds="subprocessor-table" class="ds-legal-table overflow-x-auto border border-edge outline outline-offset-4 outline-edge" role="region" :aria-label="label" tabindex="0">
     <table class="w-full min-w-160 text-left type-body">
       <thead>
         <tr>

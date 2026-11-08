@@ -11,7 +11,7 @@ const model = defineModel<string | number>({ default: '' })
 </script>
 
 <template>
-  <Combobox v-model="model" :options="options" :label="label" :placeholder="placeholder" :filter="false" match-width :disabled="disabled">
+  <Combobox data-ds="select" v-model="model" :options="options" :label="label" :placeholder="placeholder" :filter="false" match-width :disabled="disabled">
     <template #trigger="{ selected }">
       <span class="min-w-0 flex-1 truncate" :class="!selected && 'text-fg-muted'">{{ selected?.label ?? placeholder }}</span>
       <ChevronDown :size="12" :stroke-width="1.5" class="shrink-0 text-fg-muted transition-[rotate] duration-120 ease-out group-aria-expanded:rotate-180 group-aria-expanded:duration-180 motion-reduce:transition-none" aria-hidden="true" />

@@ -30,7 +30,7 @@ const MARK = 'M89.9457 0C78.5373 44.7769 44.0171 80.8044 0 93.9101V76.5306C31.31
 </script>
 
 <template>
-  <main class="flex flex-col items-center justify-center gap-6 bg-surface px-4 text-center text-fg" :class="full ? 'min-h-dvh' : 'py-24'">
+  <main data-ds="login-page" class="flex flex-col items-center justify-center gap-6 bg-surface px-4 text-center text-fg" :class="full ? 'min-h-dvh' : 'py-24'">
     <svg viewBox="0 0 149 134" class="h-12 w-auto text-fg" fill="currentColor" role="img" aria-label="Conare"><path fill-rule="evenodd" :d="MARK" /></svg>
     <template v-if="message">
       <h1 class="type-heading-3">{{ title }}</h1>

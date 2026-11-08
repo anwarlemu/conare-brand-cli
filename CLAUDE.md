@@ -20,7 +20,7 @@ owner's). It needs `build/` and the registry outputs first (`bun run ci`).
 ## Where things are
 
 - `brand/`: the only brand-specific content. `tokens.css` is the single source of values (`--ds-*`, light at `:root`,
-  dark under `[data-theme="dark"]`); `base.css` the base layer; `brand.json` names, fonts, icons, groups;
+  dark under `[data-theme="dark"]`); `base.css` the base layer (page-wide only after a whole-app apply; build/brand-scoped.css scopes it to `[data-ds]` roots and `.ds-scope`); `brand.json` names, fonts, icons, groups;
   `principles.md`, `agent-guide.md`, `contract.md`; `logo/`, `fonts/` (the vendored woff2 files conare-web serves:
   Faculty Glyphic, Geist, Geist Mono, Inter) and `textures/`.
 - `scripts/build-brand.mjs`: `build/brand.css` (fonts + tokens + base), `theme.css` (Tailwind 4 `@theme inline`:
@@ -59,6 +59,8 @@ copy (`git archive HEAD | tar -x -C <scratch>`), `bun install --ignore-scripts`,
   ease-in, no `transition-all`, durations from the `--ds-duration-*` steps, hover behind `(hover: hover)`, reduced
   motion handled), take data through props and slots (no Nuxt imports, API calls or auth), and have a docs entry and an
   example. Match conare-web's rendered values exactly; where its value has no token, add the token to `tokens.css`.
+- Every component's root element carries `data-ds="<file-name>"`: apps that only add components or apply a selection
+  get the base layer scoped to those roots (build/brand-scoped.css). The registry build fails without it.
 - Examples use sample data only: Acme, no customer or real people's names, no secrets.
 - Apps install the `release` branch, a compiled tree (`scripts/make-release.mjs`); `bun run release` runs CI, builds
   it and force-pushes it. Nothing reaches apps until then.

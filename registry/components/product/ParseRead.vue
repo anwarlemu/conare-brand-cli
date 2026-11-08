@@ -11,7 +11,7 @@ const body = computed(() => props.part.blocks.filter(b => b.type !== 'header' &&
 </script>
 
 <template>
-  <div class="ds-parseread" :data-plays="plays || undefined">
+  <div data-ds="parse-read" class="ds-parseread" :data-plays="plays || undefined">
     <div v-for="b in body" :key="b.order" class="ds-parseread-block" :data-type="b.type" :data-on="on === b.order || undefined" :style="{ '--o': b.order }" tabindex="0" @pointerenter="emit('point', b.order)" @pointerleave="emit('point', null)" @focus="emit('point', b.order)" @blur="emit('point', null)" @click="emit('pick', b.order)">
       <table v-if="b.type === 'table'" class="ds-parsetable" data-read>
         <thead><tr><th v-for="(h, i) in tableOf(b.content).head" :key="i" scope="col">{{ h }}</th></tr></thead>

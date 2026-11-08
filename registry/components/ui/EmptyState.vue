@@ -5,7 +5,7 @@ defineProps<{ title: string, description?: string }>()
 </script>
 
 <template>
-  <div class="flex flex-col items-center gap-1 border border-dashed border-edge-strong px-4 py-10 text-center">
+  <div data-ds="empty-state" class="flex flex-col items-center gap-1 border border-dashed border-edge-strong px-4 py-10 text-center">
     <p class="type-ui">{{ title }}</p>
     <p v-if="description" class="type-meta text-fg-muted">{{ description }}</p>
     <div v-if="$slots.default" class="mt-2 flex flex-wrap justify-center gap-2"><slot /></div>

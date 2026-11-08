@@ -7,7 +7,7 @@ defineProps<{ label?: string, vertical?: boolean }>()
 </script>
 
 <template>
-  <div class="ds-btngroup" role="group" :aria-label="label" :data-vertical="vertical || undefined"><slot /></div>
+  <div data-ds="button-group" class="ds-btngroup" role="group" :aria-label="label" :data-vertical="vertical || undefined"><slot /></div>
 </template>
 
 <style>

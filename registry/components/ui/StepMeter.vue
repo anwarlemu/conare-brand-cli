@@ -8,7 +8,7 @@ const next = computed(() => props.steps.findIndex(f => !f))
 </script>
 
 <template>
-  <span class="inline-flex gap-0.5" aria-hidden="true">
+  <span data-ds="step-meter" class="inline-flex gap-0.5" aria-hidden="true">
     <i
       v-for="(done, i) in steps"
       :key="i"

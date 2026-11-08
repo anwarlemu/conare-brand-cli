@@ -36,7 +36,7 @@ const top = computed(() => {
 </script>
 
 <template>
-  <a :href="href" class="ds-eval-card flex w-full flex-col bg-surface px-5 py-6 sm:px-6">
+  <a data-ds="eval-card" :href="href" class="ds-eval-card flex w-full flex-col bg-surface px-5 py-6 sm:px-6">
     <span class="type-heading-3 text-fg">{{ name }}</span>
     <span class="mt-3 text-heading-1 leading-none tracking-display text-fg tabular-nums">{{ format(score) }}</span>
     <span class="mt-2 type-ui text-fg-muted">{{ metric }}<template v-if="better === 'lower'">, lower is better</template> · {{ rankLabel }}</span>

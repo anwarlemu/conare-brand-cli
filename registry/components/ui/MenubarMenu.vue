@@ -58,7 +58,7 @@ function onPanelKey(event: KeyboardEvent) {
 </script>
 
 <template>
-  <button
+  <button data-ds="menubar-menu"
     :ref="(el) => { pop.anchor.value = el as HTMLElement | null }"
     type="button"
     role="menuitem"
@@ -73,7 +73,7 @@ function onPanelKey(event: KeyboardEvent) {
   >
     {{ label }}
   </button>
-  <PopoverPanel :pop="pop" role="menu" :aria-label="label" tabindex="-1" class="flex flex-col p-1" :style="{ width: props.width }" @keydown="onPanelKey">
+  <PopoverPanel data-ds="menubar-menu" :pop="pop" role="menu" :aria-label="label" tabindex="-1" class="flex flex-col p-1" :style="{ width: props.width }" @keydown="onPanelKey">
     <slot />
   </PopoverPanel>
 </template>

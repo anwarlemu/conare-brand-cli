@@ -12,7 +12,7 @@ const name = props.name ?? `radio-${auto}`
 </script>
 
 <template>
-  <div role="radiogroup" :aria-label="label" class="ds-radios" :data-inline="inline || undefined">
+  <div data-ds="radio-group" role="radiogroup" :aria-label="label" class="ds-radios" :data-inline="inline || undefined">
     <label v-for="o in options" :key="o.value" class="ds-radiorow" :data-disabled="disabled || o.disabled || undefined">
       <span class="ds-radio"><input v-model="model" type="radio" :name="name" :value="o.value" :disabled="disabled || o.disabled" :aria-describedby="o.hint ? `${name}-${o.value}` : undefined"><i aria-hidden="true" /></span>
       <span class="flex min-w-0 flex-col">

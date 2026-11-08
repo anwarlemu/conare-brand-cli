@@ -3,18 +3,25 @@ import { dirname, join, relative } from 'node:path';
 import { brand, packageRoot } from '../lib/brand.js';
 import { readProject, unsupported } from '../library/project.js';
 import type { Project } from '../library/project.js';
+import { readState } from '../lib/state.js';
+import { scopeTheme, tailwindDefaults, themeDeclarations } from '../install/theme.js';
 
 // init: the brand stylesheet and theme beside the app's main stylesheet, the fonts and textures in its public folder,
 // and the agent contract. It changes no component and no copy.
 
-export type InitResult = { project: Project; writes: string[]; warnings: string[] };
+export type InitResult = { project: Project; writes: string[]; warnings: string[]; base: 'whole app' | 'scoped' };
 
 const START = '<!-- ds:contract:start -->';
 const END = '<!-- ds:contract:end -->';
 
 const fill = (text: string) => text.replaceAll('{{brand}}', brand().name).replaceAll('{{cli}}', `npx ${brand().bin}`).replaceAll('{{bin}}', brand().bin).replaceAll('{{registry}}', brand().registryUrl).replaceAll('{{source}}', brand().source);
 
-export function init(root: string, opts: { dryRun?: boolean } = {}): InitResult {
+/**
+ * `whole`: the base layer for every page (a whole-app apply). Otherwise (a selection, a plain add or init) the brand
+ * installs its tokens, theme and fonts, and its base reaches only the library's components and what a selection
+ * restyled; an app that applied the whole app keeps the base (.ds/state.json).
+ */
+export function init(root: string, opts: { dryRun?: boolean; whole?: boolean } = {}): InitResult {
 	const project = readProject(root);
 	const writes: string[] = [];
 	const warnings: string[] = [];
@@ -36,9 +43,11 @@ export function init(root: string, opts: { dryRun?: boolean } = {}): InitResult 
 	const css = project.css ?? `${project.srcDir === '.' ? '' : `${project.srcDir}/`}assets/css/main.css`;
 	if (!project.css) warnings.push(`No main stylesheet found: created ${css}. Nuxt: add it to \`css\` in nuxt.config; Vite: import it in main.ts.`);
 	const dsDir = join(dirname(css), brand().bin);
-	write(join(dsDir, 'brand.css'), readFileSync(join(build, 'brand.css'), 'utf8'));
-	write(join(dsDir, 'theme.css'), readFileSync(join(build, 'theme.css'), 'utf8'));
+	const whole = opts.whole ?? readState(root)?.whole === true;
 	const current = existsSync(join(root, css)) ? readFileSync(join(root, css), 'utf8') : '';
+	write(join(dsDir, 'brand.css'), readFileSync(join(build, whole ? 'brand.css' : 'brand-scoped.css'), 'utf8'));
+	const theme = readFileSync(join(build, 'theme.css'), 'utf8');
+	write(join(dsDir, 'theme.css'), whole ? theme : scopeTheme(theme, themeDeclarations(current), tailwindDefaults(root)).theme);
 	const imports = [`@import "./${brand().bin}/brand.css";`, `@import "./${brand().bin}/theme.css";`];
 	if (!imports.every((l) => current.includes(l))) {
 		let next = current.replace(/^\s*@import\s+["']\.\/[\w-]+\/(brand|theme)\.css["'];\s*\n?/gm, '');
@@ -66,5 +75,5 @@ export function init(root: string, opts: { dryRun?: boolean } = {}): InitResult 
 	const blockText = `${START}\n${contract}\n${END}`;
 	const nextAgents = agents.includes(START) ? agents.replace(new RegExp(`${START}[\\s\\S]*?${END}`), blockText) : `${agents ? `${agents.trimEnd()}\n\n` : ''}${blockText}\n`;
 	if (nextAgents !== agents) write('AGENTS.md', nextAgents);
-	return { project, writes: writes.map((w) => relative('.', w) || w), warnings };
+	return { project, writes: writes.map((w) => relative('.', w) || w), warnings, base: whole ? 'whole app' : 'scoped' };
 }

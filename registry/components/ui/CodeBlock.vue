@@ -14,7 +14,7 @@ const shown = computed(() => props.samples?.[picked.value]?.code ?? props.code ?
 </script>
 
 <template>
-  <div class="bg-code text-code-fg" dir="ltr">
+  <div data-ds="code-block" class="bg-code text-code-fg" dir="ltr">
     <div class="flex min-h-11 flex-wrap items-center justify-between gap-2 border-b border-[color-mix(in_srgb,var(--ds-color-off-white)_24%,transparent)] p-2">
       <div v-if="tabs.length > 1" class="flex min-w-0 flex-wrap gap-0.5" role="tablist" :aria-label="label ?? 'code'">
         <button

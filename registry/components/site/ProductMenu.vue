@@ -68,7 +68,7 @@ const all = () => [...props.items, ...props.more]
 </script>
 
 <template>
-  <li ref="root" class="relative flex" @pointerenter="hover($event, true)" @pointerleave="hover($event, false)">
+  <li data-ds="product-menu" ref="root" class="relative flex" @pointerenter="hover($event, true)" @pointerleave="hover($event, false)">
     <button
       ref="button"
       type="button"

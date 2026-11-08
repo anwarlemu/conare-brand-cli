@@ -9,7 +9,7 @@ defineProps<{ fields: DocsField[], nested?: boolean }>()
 </script>
 
 <template>
-  <ul class="ds-docs-params flex flex-col" :class="nested && 'border-s border-edge ps-4'">
+  <ul data-ds="docs-fields" class="ds-docs-params flex flex-col" :class="nested && 'border-s border-edge ps-4'">
     <li v-for="f in fields" :key="f.name" class="py-4">
       <p class="flex flex-wrap items-center gap-x-2 gap-y-1 type-code" dir="ltr">
         <span class="font-medium text-fg">{{ f.name }}</span>

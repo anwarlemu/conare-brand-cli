@@ -40,7 +40,7 @@ const MARK = 'M89.9457 0C78.5373 44.7769 44.0171 80.8044 0 93.9101V76.5306C31.31
 </script>
 
 <template>
-  <main class="bg-surface px-4 py-12 text-fg md:py-24" :class="full && 'min-h-dvh'">
+  <main data-ds="request-access-page" class="bg-surface px-4 py-12 text-fg md:py-24" :class="full && 'min-h-dvh'">
     <div class="mx-auto max-w-140">
       <a :href="homeHref" aria-label="Home" class="inline-block">
         <svg viewBox="0 0 149 134" class="h-8 w-auto" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" :d="MARK" /></svg>

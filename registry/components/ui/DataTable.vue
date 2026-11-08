@@ -49,7 +49,7 @@ const display = (v: unknown) => (typeof v === 'number' ? v.toLocaleString('en-US
 </script>
 
 <template>
-  <div class="ds-data-table flex min-w-0 flex-col gap-3">
+  <div data-ds="data-table" class="ds-data-table flex min-w-0 flex-col gap-3">
     <div v-if="filters.length" class="flex flex-wrap items-center gap-2">
       <FilterChip v-for="f in filters" :key="f.key" :model-value="picked[f.key] ?? ''" @update:model-value="(v: string) => { picked[f.key] = v }" :label="f.label" :options="f.options.map(o => ({ value: o, label: o }))" :any="f.any ?? 'Any'" />
       <button v-if="anyOn" type="button" class="ds-more relative ml-1 cursor-pointer text-meta font-medium text-fg-soft" @click="picked = {}">Clear filters</button>

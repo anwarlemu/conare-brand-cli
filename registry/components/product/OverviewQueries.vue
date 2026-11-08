@@ -38,7 +38,7 @@ const ms = (v: number) => `${Math.round(v)} ms`
 </script>
 
 <template>
-  <section class="min-w-0 border border-edge bg-surface" aria-labelledby="queries-title">
+  <section data-ds="overview-queries" class="min-w-0 border border-edge bg-surface" aria-labelledby="queries-title">
     <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-edge px-4 py-3">
       <h2 id="queries-title" class="type-ui-strong">Queries</h2>
       <Tabs v-model="tab" :options="[{ value: 'volume', label: 'Volume' }, { value: 'latency', label: 'Latency' }]" label="chart" />

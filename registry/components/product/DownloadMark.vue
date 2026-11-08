@@ -15,13 +15,13 @@ const now = computed(() => props.state ?? shared.value[props.id])
 </script>
 
 <template>
-  <button type="button" class="ds-docdl" :data-state="now" :aria-label="`download ${id}`" @click.stop="$emit('press')">
+  <button data-ds="download-mark" type="button" class="ds-docdl" :data-state="now" :aria-label="`download ${id}`" @click.stop="$emit('press')">
     <Download data-for="idle" :size="14" :stroke-width="1.5" />
     <span data-for="busy" class="inline-grid place-items-center"><DotMatrix /></span>
     <Check data-for="done" :size="14" :stroke-width="2" />
     <X data-for="failed" :size="14" :stroke-width="2" />
   </button>
-  <span class="sr-only" aria-live="polite">{{ now === 'done' ? `${id} downloaded` : now === 'failed' ? `${id} failed to download` : '' }}</span>
+  <span data-ds="download-mark" class="sr-only" aria-live="polite">{{ now === 'done' ? `${id} downloaded` : now === 'failed' ? `${id} failed to download` : '' }}</span>
 </template>
 
 <style>

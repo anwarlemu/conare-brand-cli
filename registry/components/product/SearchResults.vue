@@ -59,7 +59,7 @@ const around = (p: ResultPage) => [p.number - 1, p.number, p.number + 1].filter(
 </script>
 
 <template>
-  <div class="ds-results flex flex-col gap-6">
+  <div data-ds="search-results" class="ds-results flex flex-col gap-6">
     <article v-if="results[0]" :id="`${pre}-top`" class="ds-rise border border-edge bg-surface" :data-flash="flash === resultKey(results[0]) || undefined" :style="{ '--i': 0 }">
       <div class="flex min-w-0 flex-col gap-9 px-4 pt-4 pb-4.5">
         <div v-if="answers" class="min-h-12" aria-live="polite">

@@ -38,7 +38,7 @@ const answers = computed(() => props.both
 </script>
 
 <template>
-  <div class="flex flex-col bg-surface-subtle">
+  <div data-ds="accuracy-detail" class="flex flex-col bg-surface-subtle">
     <div class="grid" :class="both && 'md:grid-cols-2'">
       <div v-for="(a, i) in answers" :key="a.label" class="ds-answer" :class="i > 0 && 'border-edge max-md:border-t md:border-l'" :data-won="a.hit.ok || undefined">
         <p class="type-ui-strong">{{ a.label }}</p>

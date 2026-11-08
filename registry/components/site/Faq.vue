@@ -52,7 +52,7 @@ function onKey(e: KeyboardEvent) {
 </script>
 
 <template>
-  <section :aria-labelledby="`${uid}-title`" class="mx-auto max-w-[1440px] scroll-mt-16 px-4 pt-12 pb-32 sm:px-6 lg:px-10 lg:pt-16 lg:pb-40">
+  <section data-ds="faq" :aria-labelledby="`${uid}-title`" class="mx-auto max-w-[1440px] scroll-mt-16 px-4 pt-12 pb-32 sm:px-6 lg:px-10 lg:pt-16 lg:pb-40">
     <div class="mx-auto max-w-[1200px]">
       <p class="mb-4 flex justify-center"><SiteTag>{{ tag }}</SiteTag></p>
       <h2 :id="`${uid}-title`" class="ds-faq-title text-center font-heading text-heading-2 font-normal tracking-tight sm:text-heading-1">{{ title }}</h2>

@@ -102,7 +102,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <svg ref="root" class="pointer-events-none absolute inset-0 h-full w-full" viewBox="-1 -1 2 2" preserveAspectRatio="none" aria-hidden="true">
+  <svg data-ds="room-grid" ref="root" class="pointer-events-none absolute inset-0 h-full w-full" viewBox="-1 -1 2 2" preserveAspectRatio="none" aria-hidden="true">
     <g class="ds-room-tiles" pointer-events="fill">
       <polygon v-for="(t, i) in tiles" :key="t.pts" :points="t.pts" :data-lit="litSet.has(i) || undefined" />
     </g>

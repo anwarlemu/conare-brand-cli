@@ -12,7 +12,7 @@ withDefaults(defineProps<{ title: string, line?: string, seed?: number, tall?: b
 </script>
 
 <template>
-  <div class="ds-work">
+  <div data-ds="work-panel" class="ds-work">
     <section class="ds-work-grid" :aria-label="label">
       <div class="ds-work-card">
         <h2 class="ds-work-title ds-work-rise">{{ title }}<span class="text-fg-accent-display">.</span></h2>

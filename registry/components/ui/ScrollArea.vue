@@ -7,7 +7,7 @@ withDefaults(defineProps<{ label?: string, maxHeight?: string, axis?: 'y' | 'x' 
 </script>
 
 <template>
-  <div
+  <div data-ds="scroll-area"
     class="ds-scroll overscroll-contain"
     :class="{ 'overflow-y-auto overflow-x-hidden': axis === 'y', 'overflow-x-auto overflow-y-hidden': axis === 'x', 'overflow-auto': axis === 'both' }"
     :data-tone="tone"

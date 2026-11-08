@@ -136,6 +136,8 @@ for (const d of docs) {
 	const { files, requires, packages } = closure(d.files, d.name);
 	for (const f of files) {
 		const text = readFileSync(join(reg, f), 'utf8');
+		// Apps that only add components (or apply a selection) scope the brand's base to these roots.
+		if (f.endsWith('.vue') && f.startsWith('components/') && !/<template>[\s\S]*\sdata-ds="/.test(text)) fail(`${f}: its root element needs data-ds="<name>" (the scoped base styles the library by it)`);
 		if (NUXT_ONLY.test(text)) fail(`${f}: uses Nuxt-only code (${text.match(NUXT_ONLY)?.[0]}); components take data through props`);
 		guardGlobals(f, text);
 	}

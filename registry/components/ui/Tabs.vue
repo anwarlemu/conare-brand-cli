@@ -8,7 +8,7 @@ const norm = (o: T | { value: T, label: string, disabled?: boolean }) => (typeof
 </script>
 
 <template>
-  <div class="ds-tabs" role="tablist" :aria-label="label">
+  <div data-ds="tabs" class="ds-tabs" role="tablist" :aria-label="label">
     <button
       v-for="o in options.map(norm)"
       :key="o.value"

@@ -16,7 +16,7 @@ const unsure = computed(() => part.value.blocks.filter(b => b.conf != null && b.
 </script>
 
 <template>
-  <section class="grid grid-cols-[minmax(0,5fr)_minmax(0,7fr)] items-start gap-6 max-lg:grid-cols-1" aria-label="regions in reading order">
+  <section data-ds="parse-regions" class="grid grid-cols-[minmax(0,5fr)_minmax(0,7fr)] items-start gap-6 max-lg:grid-cols-1" aria-label="regions in reading order">
     <div class="m-1.25 border border-edge bg-surface-subtle p-3 outline outline-offset-4 outline-edge">
       <ParseSheet :part="part" :scan="answer.scan" :on="lit" all plays @point="on = $event" @pick="pick" />
     </div>

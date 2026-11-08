@@ -33,7 +33,7 @@ const share = (n: number) => `scaleX(${props.view.questions ? n / props.view.que
 </script>
 
 <template>
-  <section class="m-1.25 grid grid-cols-2 gap-x-8 gap-y-6 border border-edge p-6 outline outline-offset-4 outline-edge max-md:gap-4 max-md:p-4" aria-label="your current search and Conare">
+  <section data-ds="accuracy-two" class="m-1.25 grid grid-cols-2 gap-x-8 gap-y-6 border border-edge p-6 outline outline-offset-4 outline-edge max-md:gap-4 max-md:p-4" aria-label="your current search and Conare">
     <div v-for="side in [{ name: view.current_name, n: view.current_right, red: false }, { name: 'Conare', n: view.right, red: true }]" :key="side.name" class="min-w-0">
       <p class="type-meta text-fg-muted">{{ side.name }}</p>
       <p class="font-heading text-display leading-14 tracking-display tabular-nums max-md:text-heading-1 max-md:leading-10"><Count :value="side.n" /> of {{ view.questions }}</p>
@@ -42,7 +42,7 @@ const share = (n: number) => `scaleX(${props.view.questions ? n / props.view.que
     <p class="col-span-full text-body">Conare reached the right page on {{ gain }} more questions{{ lost ? `, and missed ${lost} your current search found` : '' }}.</p>
   </section>
 
-  <section class="flex flex-col gap-2" aria-label="question by question">
+  <section data-ds="accuracy-two" class="flex flex-col gap-2" aria-label="question by question">
     <Tabs v-model="show" class="self-start" :options="filters" label="which questions" />
     <p class="ds-evalheads max-sm:hidden" aria-hidden="true"><span>Yours</span><span>Conare</span></p>
     <ul class="border border-edge bg-surface [&>*+*]:border-t [&>*+*]:border-edge">

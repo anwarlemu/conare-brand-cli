@@ -104,7 +104,7 @@ const answers = computed(() => (picked.value ? [{ id: 'current', label: props.vi
 </script>
 
 <template>
-  <section class="m-1.25 grid grid-cols-4 gap-px border border-edge bg-edge outline outline-offset-4 outline-edge max-lg:grid-cols-2" aria-label="results">
+  <section data-ds="accuracy-at-work" class="m-1.25 grid grid-cols-4 gap-px border border-edge bg-edge outline outline-offset-4 outline-edge max-lg:grid-cols-2" aria-label="results">
     <button v-for="t in tiles" :key="t.id" type="button" class="ds-testtile" :aria-pressed="show === t.id" :data-red="t.id === 'look' && t.value > 0 || undefined" @click="show = t.id">
       <span class="block type-meta">{{ t.label }}</span>
       <span class="ds-testtile-num"><Count :value="t.value" :once="`accuracy-${t.id}`" /><span v-if="t.of" class="ds-testtile-of"> of {{ t.of }}</span></span>
@@ -112,7 +112,7 @@ const answers = computed(() => (picked.value ? [{ id: 'current', label: props.vi
     </button>
   </section>
 
-  <div class="grid grid-cols-2 items-start gap-6 max-lg:grid-cols-1">
+  <div data-ds="accuracy-at-work" class="grid grid-cols-2 items-start gap-6 max-lg:grid-cols-1">
     <div ref="listEl" class="relative flex min-w-0 flex-col" @pointerleave="offList">
       <span v-if="mark" class="ds-glidemark" :data-shown="markShown || undefined" :data-instant="markInstant || undefined" :style="{ transform: `translateY(${mark.y}px)`, height: `${mark.h}px` }" aria-hidden="true" />
       <p v-if="!list.length" class="px-3 py-3 type-meta text-fg-muted">No questions here.</p>

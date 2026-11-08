@@ -21,7 +21,7 @@ const count = (n: number) => `${n} ${n === 1 ? 'question' : 'questions'}`
 </script>
 
 <template>
-  <section class="grid grid-cols-[minmax(0,1fr)_minmax(0,320px)] gap-6 border border-edge bg-surface-subtle p-4 max-lg:grid-cols-1" aria-label="add questions">
+  <section data-ds="accuracy-add" class="grid grid-cols-[minmax(0,1fr)_minmax(0,320px)] gap-6 border border-edge bg-surface-subtle p-4 max-lg:grid-cols-1" aria-label="add questions">
     <div class="min-w-0 flex-1">
       <label class="sr-only" for="eval-more">questions, one a line</label>
       <textarea id="eval-more" v-model="text" class="block w-full resize-y border border-edge-strong bg-surface p-3 text-ui outline-none transition-[border-color] duration-120 ease-standard placeholder:text-fg-muted focus:border-edge-focus max-md:text-input" rows="5" placeholder="One question a line" />

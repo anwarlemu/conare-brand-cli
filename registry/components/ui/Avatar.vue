@@ -13,7 +13,7 @@ const SIZES = { 20: 'size-5 text-caption', 28: 'size-7 text-meta', 32: 'size-8 t
 </script>
 
 <template>
-  <span
+  <span data-ds="avatar"
     class="inline-flex shrink-0 items-center justify-center overflow-hidden leading-none font-medium select-none"
     :class="[SIZES[size], variant === 'tile' ? 'border border-edge bg-surface text-fg' : 'bg-off-black text-off-white']"
     :role="name ? 'img' : undefined"

@@ -13,7 +13,7 @@ const json = computed(() => JSON.stringify({ id: props.answer.id, state: 'done',
 </script>
 
 <template>
-  <div class="flex min-h-0 flex-1 flex-col">
+  <div data-ds="parse-output" class="flex min-h-0 flex-1 flex-col">
     <div class="flex gap-4 border-b border-code-edge px-4" role="tablist" aria-label="what was read">
       <button v-for="t in TABS" :key="t.id" type="button" role="tab" class="ds-parsetab" :aria-selected="tab === t.id" @click="tab = t.id">{{ t.label }}</button>
     </div>

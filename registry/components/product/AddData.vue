@@ -50,7 +50,7 @@ function picked(event: Event) {
 </script>
 
 <template>
-  <div class="flex items-start gap-3">
+  <div data-ds="add-data" class="flex items-start gap-3">
   <section class="ds-newdata min-w-0 flex-1" :data-drag="dragging > 0 || undefined" aria-label="add data" @dragenter.prevent="dragging++" @dragover.prevent @dragleave.prevent="dragging--" @drop.prevent="dropped">
     <h3 class="type-ui-strong">Send by API</h3>
     <div class="flex flex-wrap items-center gap-2">

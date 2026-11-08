@@ -10,7 +10,7 @@ provide(DIRECTION, computed(() => props.dir))
 </script>
 
 <template>
-  <div class="ds-dir" :dir="dir"><slot /></div>
+  <div data-ds="direction" class="ds-dir" :dir="dir"><slot /></div>
 </template>
 
 <style>

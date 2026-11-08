@@ -6,7 +6,7 @@ withDefaults(defineProps<{ count?: number, label?: string }>(), { count: 5 })
 </script>
 
 <template>
-  <button type="button" class="ds-more relative ml-1 cursor-pointer text-meta font-medium whitespace-nowrap text-fg-soft"><slot>{{ label ?? `Show ${count} more` }}</slot></button>
+  <button data-ds="show-more" type="button" class="ds-more relative ml-1 cursor-pointer text-meta font-medium whitespace-nowrap text-fg-soft"><slot>{{ label ?? `Show ${count} more` }}</slot></button>
 </template>
 
 <style>

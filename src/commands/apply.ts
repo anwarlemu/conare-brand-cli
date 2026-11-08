@@ -11,13 +11,15 @@ import { localContent } from './library.js';
 import { type Graph, buildGraph, closure, routeMatches } from '../project/graph.js';
 import { globToRegex, normalizeName, suggest } from '../lib/names.js';
 import { init } from './init.js';
+import { type Part, type State, readState, statePath } from '../lib/state.js';
+
+export { readState, statePath };
+export type { Part, State };
 
 // apply: restyles an existing Vue or Nuxt app to the brand, the whole app or a named selection (library kinds, pages by
 // route or file). It converts style values by role, gives the named kinds the library's look, installs the theme, and
 // records the scope in .ds/state.json for --redo, a later wider apply and the check.
 
-export type Part = { whole?: boolean; kinds?: string[]; files?: string[]; targets: string[]; withShared?: boolean };
-export type State = { version: 1; appliedAt: string; parts: Part[]; checked: string[]; whole: boolean };
 export type ApplyOptions = { targets: string[]; components?: string[]; pages?: string[]; withShared?: boolean; dryRun?: boolean; redo?: boolean };
 export type FilePlan = { file: string; reason: string; general: boolean; kinds: Set<string> | 'all'; componentKind?: string };
 export type ApplyResult = {
@@ -30,15 +32,6 @@ export type ApplyResult = {
 	dryRun: boolean;
 	state?: State;
 };
-
-export const statePath = (root: string) => join(root, '.ds', 'state.json');
-export function readState(root: string): State | undefined {
-	try {
-		return JSON.parse(readFileSync(statePath(root), 'utf8')) as State;
-	} catch {
-		return undefined;
-	}
-}
 
 /**
  * Files the library put in the app (add), as it wrote them: already on the brand, never restyled. An app's own file at
@@ -227,6 +220,7 @@ export async function apply(root: string, opts: ApplyOptions): Promise<ApplyResu
 		}
 		parts = [{ kinds: kindsList, files, targets: [...opts.targets, ...(opts.components ?? []), ...(opts.pages ?? [])], withShared: opts.withShared || undefined }];
 	}
+	const wholeApp = parts.some((p) => p.whole) || previous?.whole === true;
 	const library = await libraryFiles(project);
 	const plans = new Map<string, FilePlan>();
 	for (const part of parts) planPart(project, graph, part, library, plans);
@@ -237,7 +231,7 @@ export async function apply(root: string, opts: ApplyOptions): Promise<ApplyResu
 		const abs = join(root, plan.file);
 		if (!existsSync(abs)) continue;
 		const before = readFileSync(abs, 'utf8');
-		const fo: FileOptions = { general: plan.general, kinds: plan.kinds, componentKind: plan.componentKind, merge: project.merge };
+		const fo: FileOptions = { general: plan.general, kinds: plan.kinds, componentKind: plan.componentKind, merge: project.merge, mark: !wholeApp };
 		try {
 			const r = plan.file.endsWith('.vue') ? convertVue(before, fo) : plan.file.endsWith('.html') ? convertHtml(before, fo) : /\.(css|pcss|scss)$/.test(plan.file) ? convertStylesheet(before, fo) : convertCode(before, fo);
 			if (r.text === before) continue;
@@ -250,10 +244,12 @@ export async function apply(root: string, opts: ApplyOptions): Promise<ApplyResu
 	}
 
 	// The shared setup: stylesheet, theme, fonts, contract.
-	const setup = init(root, { dryRun: opts.dryRun });
+	// The base layer comes with the whole app only; a selection gets tokens, theme and fonts, its base scoped.
+	const setup = init(root, { dryRun: opts.dryRun, whole: parts.some((p) => p.whole) || previous?.whole === true });
 	warnings.push(...setup.warnings);
 
-	const whole = parts.some((p) => p.whole);
+	// Once the whole app is applied it stays applied: a later selection only repeats part of it.
+	const whole = parts.some((p) => p.whole) || previous?.whole === true;
 	// A later apply widens the scope; the same apply again adds nothing.
 	const prior = previous && !previous.whole ? previous.parts : [];
 	const mergedParts = whole ? [{ whole: true, targets: [] }] : opts.redo ? parts : [...prior, ...parts.filter((p) => !prior.some((q) => JSON.stringify(q) === JSON.stringify(p)))];

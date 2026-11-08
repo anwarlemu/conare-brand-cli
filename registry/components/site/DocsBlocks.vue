@@ -38,7 +38,7 @@ const PATTERNS = [
 </script>
 
 <template>
-  <div class="flex flex-col gap-5 text-fg" :class="!wide && 'max-w-220'">
+  <div data-ds="docs-blocks" class="flex flex-col gap-5 text-fg" :class="!wide && 'max-w-220'">
     <template v-for="(b, i) in blocks" :key="i">
       <h2 v-if="b.kind === 'h2'" :id="b.id" class="mt-10 scroll-mt-28 text-docs-heading tracking-tight">{{ b.text }}</h2>
       <h3 v-else-if="b.kind === 'h3'" :id="b.id" class="mt-4 scroll-mt-28 text-heading-4 font-medium">{{ b.text }}</h3>

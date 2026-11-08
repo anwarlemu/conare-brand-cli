@@ -41,7 +41,7 @@ const title = computed(() => [state.value.note, props.synced ? `Last sync ${prop
 </script>
 
 <template>
-  <span class="inline-flex flex-wrap items-center gap-x-2 gap-y-1 text-ui">
+  <span data-ds="source-row" class="inline-flex flex-wrap items-center gap-x-2 gap-y-1 text-ui">
     <component :is="as" :href="href ?? '#'" :to="href" class="ds-source-name" :title="app === name ? undefined : app" @click="$emit('open', $event)">
       <AppMark :name="app" :logo="logo" />
       <span>{{ name }}</span>

@@ -4,7 +4,7 @@
 </script>
 
 <template>
-  <span aria-hidden="true" class="ds-grain pointer-events-none absolute inset-0 opacity-30" />
+  <span data-ds="grain" aria-hidden="true" class="ds-grain pointer-events-none absolute inset-0 opacity-30" />
 </template>
 
 <style>

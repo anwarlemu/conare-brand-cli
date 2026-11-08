@@ -9,12 +9,12 @@ defineProps<{ open: boolean, colspan?: number }>()
 
 <template>
   <Transition v-if="colspan" name="ds-opens" :duration="180">
-    <tr v-if="open" class="ds-opens-row" v-bind="$attrs">
+    <tr data-ds="accuracy-opens" v-if="open" class="ds-opens-row" v-bind="$attrs">
       <td :colspan="colspan"><div class="ds-opens-grow"><div><slot /></div></div></td>
     </tr>
   </Transition>
   <Transition v-else name="ds-opens" :duration="{ enter: 200, leave: 140 }">
-    <div v-if="open" class="ds-opens-list" v-bind="$attrs"><div class="ds-opens-grow"><div><slot /></div></div></div>
+    <div data-ds="accuracy-opens" v-if="open" class="ds-opens-list" v-bind="$attrs"><div class="ds-opens-grow"><div><slot /></div></div></div>
   </Transition>
 </template>
 

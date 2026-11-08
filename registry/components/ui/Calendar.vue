@@ -81,7 +81,7 @@ function onKey(event: KeyboardEvent) {
 </script>
 
 <template>
-  <div class="inline-flex flex-col gap-2 text-ui" role="group" :aria-label="label">
+  <div data-ds="calendar" class="inline-flex flex-col gap-2 text-ui" role="group" :aria-label="label">
     <div class="flex items-center gap-1">
       <Button variant="ghost" icon aria-label="previous month" @click="focused = addMonths(focused, -1)"><ChevronLeft :size="14" :stroke-width="1.5" /></Button>
       <p class="min-w-0 flex-1 text-center type-ui-strong" aria-live="polite">{{ caption }}</p>

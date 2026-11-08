@@ -8,7 +8,7 @@ defineProps<{ disabled?: boolean }>()
 </script>
 
 <template>
-  <button type="button" class="ds-toggle" :aria-pressed="pressed" :disabled="disabled" @click="pressed = !pressed"><slot /></button>
+  <button data-ds="toggle" type="button" class="ds-toggle" :aria-pressed="pressed" :disabled="disabled" @click="pressed = !pressed"><slot /></button>
 </template>
 
 <style>

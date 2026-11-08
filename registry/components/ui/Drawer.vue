@@ -15,7 +15,7 @@ const { shown, onCancel, onClick } = useSheet(dialog, open)
 </script>
 
 <template>
-  <dialog ref="dialog" class="ds-drawer" :data-side="side" :data-shown="shown || undefined" :aria-label="title" tabindex="-1" @cancel="onCancel" @click="onClick">
+  <dialog data-ds="drawer" ref="dialog" class="ds-drawer" :data-side="side" :data-shown="shown || undefined" :aria-label="title" tabindex="-1" @cancel="onCancel" @click="onClick">
     <div v-if="bar" class="flex h-bar shrink-0 items-center gap-1 border-b border-edge pr-2 pl-4">
       <h2 class="min-w-0 flex-1 truncate type-ui-strong">{{ title }}</h2>
       <button type="button" class="inline-flex size-control-touch shrink-0 cursor-pointer items-center justify-center border border-transparent text-fg-soft transition-[color,border-color] duration-120 ease-standard hover:border-edge-strong hover:text-fg focus-visible:outline-2 focus-visible:outline-edge-focus" aria-label="close" @click="open = false"><X :size="14" :stroke-width="1.5" /></button>

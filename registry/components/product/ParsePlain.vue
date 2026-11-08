@@ -14,7 +14,7 @@ const at = ref(50)
 </script>
 
 <template>
-  <section class="grid grid-cols-[minmax(0,4fr)_minmax(0,8fr)] items-stretch gap-6 max-lg:grid-cols-1" aria-label="a plain reader and Conare, the same page">
+  <section data-ds="parse-plain" class="grid grid-cols-[minmax(0,4fr)_minmax(0,8fr)] items-stretch gap-6 max-lg:grid-cols-1" aria-label="a plain reader and Conare, the same page">
     <div class="m-1.25 self-start border border-edge bg-surface-subtle p-3 outline outline-offset-4 outline-edge">
       <ParseSheet :part="answer.part" :scan="answer.scan" plays mini />
     </div>

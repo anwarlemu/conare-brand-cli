@@ -7,7 +7,7 @@ defineProps<{ tag: string, text: string, cta?: string, href: string }>()
 </script>
 
 <template>
-  <a :href="href" class="group relative z-10 block bg-red-wash text-off-black transition-colors duration-200 ease-standard hover:bg-home-wash-hover">
+  <a data-ds="announcement-bar" :href="href" class="group relative z-10 block bg-red-wash text-off-black transition-colors duration-200 ease-standard hover:bg-home-wash-hover">
     <span class="mx-auto flex h-9 max-w-[1440px] items-center justify-center gap-2 px-4 text-ui sm:px-6 lg:px-10">
       <span class="shrink-0 bg-off-black py-0.75 pr-[calc(4px-0.06em)] pl-1 type-tag text-off-white transition-colors duration-200 ease-standard [text-box:trim-both_cap_alphabetic] group-hover:bg-home-red">{{ tag }}</span>
       <span class="truncate leading-4">

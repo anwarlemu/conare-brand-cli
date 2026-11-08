@@ -64,7 +64,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <component :is="as" ref="el" class="ds-hl" :class="{ 'ds-hl-ready': ready, 'ds-hl-on': on }">
+  <component data-ds="highlight-text" :is="as" ref="el" class="ds-hl" :class="{ 'ds-hl-ready': ready, 'ds-hl-on': on }">
     <span class="sr-only">{{ text }}{{ accent }}</span>
     <span aria-hidden="true">
       <span v-for="(word, wi) in words" :key="wi"><span class="ds-hl-word"><span v-for="(ch, ci) in word" :key="ci" class="ds-hl-char">{{ ch }}</span><span v-if="wi === words.length - 1 && accent" class="inline-block w-0 whitespace-nowrap"><span v-for="(ch, ci) in accent" :key="`a${ci}`" class="ds-hl-char text-fg-accent-display">{{ ch }}</span></span></span>{{ wi === words.length - 1 ? '' : ' ' }}</span>

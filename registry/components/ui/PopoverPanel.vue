@@ -16,7 +16,7 @@ onMounted(() => { mounted.value = true })
 <template>
   <Teleport v-if="mounted" :to="pop.target.value">
     <Transition name="ds-pop" :css="!pop.instant.value">
-      <div
+      <div data-ds="popover-panel"
         v-if="pop.open.value"
         v-bind="$attrs"
         :ref="(el) => { pop.panel.value = el as HTMLElement | null }"

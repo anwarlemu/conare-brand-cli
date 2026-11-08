@@ -22,7 +22,7 @@ bun add -d {{source}}      # or npm install --save-dev {{source}}
 {{cli}} add button field dialog
 ```
 
-`init` writes `<stylesheet dir>/{{bin}}/brand.css` (fonts, tokens and base styles) and `theme.css` (the Tailwind 4
+`init` writes `<stylesheet dir>/{{bin}}/brand.css` (fonts, tokens, and base styles scoped to the library's components; a whole-app `apply` makes them page-wide) and `theme.css` (the Tailwind 4
 theme), imports both after `@import "tailwindcss"` in the main stylesheet, copies the fonts to `public/{{bin}}/` and
 writes this guide and the contract in AGENTS.md. `add` copies each item's files into the app's source folder (Nuxt 4:
 `app/`), follows `@/` imports (rewritten to relative paths when the app has no `@` alias), installs the packages they

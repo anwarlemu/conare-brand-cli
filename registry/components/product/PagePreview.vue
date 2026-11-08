@@ -22,7 +22,7 @@ const lines = computed(() => {
 </script>
 
 <template>
-  <div class="ds-pg" :data-size="size" :data-here="here || undefined" :aria-hidden="size === 'full' ? undefined : 'true'">
+  <div data-ds="page-preview" class="ds-pg" :data-size="size" :data-here="here || undefined" :aria-hidden="size === 'full' ? undefined : 'true'">
     <span class="ds-pg-head" />
     <template v-for="(l, i) in lines" :key="i">
       <p v-if="size === 'full' && l.first" class="ds-pg-hit ds-pg-words"><MarkedText :text="text" :query="query" /></p>

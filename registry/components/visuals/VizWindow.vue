@@ -9,7 +9,7 @@ withDefaults(defineProps<{ active: boolean, size?: 'sm' | 'md' }>(), { size: 'md
 </script>
 
 <template>
-  <div class="ds-viz w-full min-w-0 text-input" :data-active="active">
+  <div data-ds="viz-window" class="ds-viz w-full min-w-0 text-input" :data-active="active">
     <div class="ds-viz-card border border-ds-neutral-300 bg-ds-neutral-100 text-off-white">
       <div class="flex items-center gap-2" :class="size === 'sm' ? 'h-9 px-3' : 'h-11 px-4'">
         <svg viewBox="0 0 149 134" :width="size === 'sm' ? 12 : 14" :height="size === 'sm' ? 10 : 12" class="w-auto shrink-0" :class="size === 'sm' ? 'h-2.5' : 'h-3'" fill="currentColor" aria-hidden="true">

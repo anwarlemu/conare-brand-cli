@@ -75,7 +75,7 @@ function glide(el: HTMLElement, to: number) {
 </script>
 
 <template>
-  <div ref="box" class="flex min-w-0 flex-col gap-4">
+  <div data-ds="credit-history" ref="box" class="flex min-w-0 flex-col gap-4">
     <div class="ds-grants-view relative">
       <div ref="list" class="ds-grants" :data-above="bar.above || undefined" :data-below="bar.below || undefined" tabindex="0" role="region" aria-label="credits added" @scroll.passive="onScroll">
         <ol class="ds-ledger">

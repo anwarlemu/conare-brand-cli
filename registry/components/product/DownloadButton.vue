@@ -15,7 +15,7 @@ const isDone = computed(() => props.done ?? shared.value[props.id] === 'done')
 </script>
 
 <template>
-  <PixelButton :done="isDone" @click="$emit('press')">
+  <PixelButton data-ds="download-button" :done="isDone" @click="$emit('press')">
     <span class="ds-dlswap" :data-on="isDone || undefined">
       <span class="ds-dlswap-a">{{ label ?? 'Download' }}</span>
       <span class="ds-dlswap-b" aria-hidden="true"><Check :size="12" :stroke-width="2" />Downloaded</span>

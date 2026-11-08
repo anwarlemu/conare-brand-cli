@@ -9,7 +9,7 @@ const titleId = `card-${useId()}`
 </script>
 
 <template>
-  <section class="border border-edge bg-surface" :class="framed && 'outline outline-offset-4 outline-edge'" :aria-labelledby="props.title ? titleId : undefined">
+  <section data-ds="card" class="border border-edge bg-surface" :class="framed && 'outline outline-offset-4 outline-edge'" :aria-labelledby="props.title ? titleId : undefined">
     <div v-if="title || $slots.actions" class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-edge px-4 py-3">
       <h3 v-if="title" :id="titleId" class="type-ui-strong">{{ title }}</h3>
       <div v-if="$slots.actions" class="flex items-center gap-2 type-meta text-fg-muted"><slot name="actions" /></div>

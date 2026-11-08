@@ -5,7 +5,7 @@ withDefaults(defineProps<{ ratio?: number }>(), { ratio: 1 })
 </script>
 
 <template>
-  <div class="relative w-full overflow-hidden" :style="{ aspectRatio: String(ratio) }">
+  <div data-ds="aspect-ratio" class="relative w-full overflow-hidden" :style="{ aspectRatio: String(ratio) }">
     <slot />
   </div>
 </template>

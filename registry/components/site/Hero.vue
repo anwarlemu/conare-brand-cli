@@ -66,7 +66,7 @@ const timed = computed(() => props.tabs.length > 1 && props.turn > 0)
 </script>
 
 <template>
-  <section :aria-labelledby="`${uid}-title`" class="ds-hero mx-auto max-w-[1440px] px-4 pt-24 pb-24 sm:px-6 lg:px-10 lg:pt-32">
+  <section data-ds="hero" :aria-labelledby="`${uid}-title`" class="ds-hero mx-auto max-w-[1440px] px-4 pt-24 pb-24 sm:px-6 lg:px-10 lg:pt-32">
     <div class="flex flex-col items-center text-center">
       <p v-if="eyebrow" class="ds-settle mb-4 flex justify-center"><SiteTag>{{ eyebrow }}</SiteTag></p>
       <h1 v-if="$slots.title" :id="`${uid}-title`" class="ds-hero-title font-heading text-hero font-normal tracking-display sm:text-display"><slot name="title" /></h1>

@@ -39,7 +39,7 @@ function add() {
 </script>
 
 <template>
-  <div class="ds-parsefiles grid grid-cols-4 gap-2 max-lg:grid-cols-2" :data-drag="dragging || undefined" @dragover.prevent="dragging = true" @dragleave.prevent="dragging = false" @drop.prevent="drop">
+  <div data-ds="parse-page" class="ds-parsefiles grid grid-cols-4 gap-2 max-lg:grid-cols-2" :data-drag="dragging || undefined" @dragover.prevent="dragging = true" @dragleave.prevent="dragging = false" @drop.prevent="drop">
     <button v-for="s in samples" :key="s.id" type="button" class="ds-parsefile" :aria-pressed="chosen === s.id" @click="chosen = s.id">
       <span class="min-w-0">
         <span class="block truncate type-ui-strong">{{ s.what }}</span>
@@ -58,10 +58,10 @@ function add() {
     <input ref="input" type="file" class="sr-only" tabindex="-1" aria-label="choose a file to parse" @change="take(($event.target as HTMLInputElement).files)">
   </div>
 
-  <p v-if="!answer" class="type-meta text-fg-muted">Reading.</p>
+  <p data-ds="parse-page" v-if="!answer" class="type-meta text-fg-muted">Reading.</p>
   <template v-else>
-    <ParseReading :key="answer.id + answer.name" :answer="answer" :version="version" />
-    <div class="flex flex-wrap items-center gap-2">
+    <ParseReading data-ds="parse-page" :key="answer.id + answer.name" :answer="answer" :version="version" />
+    <div data-ds="parse-page" class="flex flex-wrap items-center gap-2">
       <p v-if="added" class="inline-flex items-center gap-1.5 type-meta" role="status"><Check :size="12" :stroke-width="2" aria-hidden="true" />Added to <span class="font-code">{{ into }}</span></p>
       <template v-else-if="namespaces.length">
         <ScopeMenu v-model="into" :options="namespaces" single />
@@ -70,7 +70,7 @@ function add() {
       <CopyButton :text="answer.markdown" label="Copy Markdown" class="ml-auto" />
       <CodePop v-if="curl" :code="curl" label="API call" title="Parse this file from your code" />
     </div>
-    <p v-if="own && answer.name === own" class="type-meta text-fg-muted">This shows a sample reading, not your file.</p>
+    <p data-ds="parse-page" v-if="own && answer.name === own" class="type-meta text-fg-muted">This shows a sample reading, not your file.</p>
   </template>
 </template>
 

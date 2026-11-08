@@ -12,7 +12,7 @@ defineEmits<{ open: [] }>()
 </script>
 
 <template>
-  <li class="ds-step" :data-state="state">
+  <li data-ds="step" class="ds-step" :data-state="state">
     <button type="button" class="ds-step-head" :disabled="state === 'next' || (locked && state !== 'now')" :aria-expanded="state === 'now'" @click="$emit('open')">
       <span class="ds-step-mark" aria-hidden="true"><Check v-if="state === 'done'" :size="12" :stroke-width="2" /><template v-else>{{ n }}</template></span>
       <span class="type-ui-strong">{{ title }}</span>

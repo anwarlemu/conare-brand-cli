@@ -30,7 +30,7 @@ const ARROW = Array.from({ length: 49 }, (_, k) => ({ '--i': Math.round(70 + ((k
 </script>
 
 <template>
-  <div ref="root" class="ds-split" :data-done="copied || undefined" :data-large="large || undefined">
+  <div data-ds="agent-split" ref="root" class="ds-split" :data-done="copied || undefined" :data-large="large || undefined">
     <PixelButton :done="copied" :large="large" class="ds-split-copy" @click="put">
       <span class="ds-split-swap" :data-on="copied || undefined">
         <span class="ds-split-swap-a"><Copy :size="12" :stroke-width="1.5" aria-hidden="true" />Copy prompt</span>

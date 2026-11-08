@@ -7,7 +7,7 @@ defineProps<{ label: string, disabled?: boolean }>()
 </script>
 
 <template>
-  <button type="button" role="switch" class="ds-switch" :aria-checked="on" :aria-label="label" :disabled="disabled" @click="on = !on"><span aria-hidden="true" /></button>
+  <button data-ds="switch" type="button" role="switch" class="ds-switch" :aria-checked="on" :aria-label="label" :disabled="disabled" @click="on = !on"><span aria-hidden="true" /></button>
 </template>
 
 <style>

@@ -44,10 +44,10 @@ function blur(event: FocusEvent) {
 </script>
 
 <template>
-  <span ref="root" class="inline-flex" @pointerenter="enter" @pointerleave="leave" @focusin="focus" @focusout="blur">
+  <span data-ds="hover-card" ref="root" class="inline-flex" @pointerenter="enter" @pointerleave="leave" @focusin="focus" @focusout="blur">
     <slot />
   </span>
-  <PopoverPanel :id="id" :pop="pop" class="p-3" :style="{ width }" @pointerenter="enter" @pointerleave="leave">
+  <PopoverPanel data-ds="hover-card" :id="id" :pop="pop" class="p-3" :style="{ width }" @pointerenter="enter" @pointerleave="leave">
     <slot name="card" />
   </PopoverPanel>
 </template>

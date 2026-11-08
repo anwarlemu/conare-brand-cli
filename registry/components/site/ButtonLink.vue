@@ -46,7 +46,7 @@ const CELL = 3
 </script>
 
 <template>
-  <a
+  <a data-ds="button-link"
     ref="root"
     :href="href"
     class="ds-btnlink"

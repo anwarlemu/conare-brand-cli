@@ -31,7 +31,7 @@ defineExpose({ close: (refocus = true) => pop.hide(refocus) })
 </script>
 
 <template>
-  <button
+  <button data-ds="popover"
     :ref="(el) => { pop.anchor.value = el as HTMLElement | null }"
     type="button"
     :class="triggerClass ?? 'inline-flex h-control-sm cursor-pointer items-center gap-1.5 border border-action-secondary-edge bg-surface px-2.5 text-meta leading-5 font-medium text-fg transition-[border-color,background-color] duration-120 ease-standard hover:border-action-secondary-edge-hover active:bg-surface-subtle aria-expanded:border-action-secondary-edge-hover max-md:h-control-touch max-md:text-ui'"
@@ -43,7 +43,7 @@ defineExpose({ close: (refocus = true) => pop.hide(refocus) })
   >
     <slot name="trigger" :open="pop.open.value" />
   </button>
-  <PopoverPanel :id="id" :pop="pop" role="dialog" :aria-label="label" tabindex="-1" class="p-3" :style="{ width }">
+  <PopoverPanel data-ds="popover" :id="id" :pop="pop" role="dialog" :aria-label="label" tabindex="-1" class="p-3" :style="{ width }">
     <slot :close="(refocus = true) => pop.hide(refocus)" />
   </PopoverPanel>
 </template>

@@ -98,7 +98,7 @@ const corners = computed(() => {
 </script>
 
 <template>
-  <svg ref="root" class="pointer-events-none absolute inset-0 h-full w-full" viewBox="-600 -303 1200 606" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+  <svg data-ds="burst" ref="root" class="pointer-events-none absolute inset-0 h-full w-full" viewBox="-600 -303 1200 606" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <!-- Each cell is laid in solid off-white before its lines, so a ray in front hides the hairlines behind it. -->
     <g v-for="(c, i) in (drawn ? cells : [])" :key="c.fill" class="ds-art-in">
       <path :d="c.fill" fill="var(--ds-color-off-white)" />

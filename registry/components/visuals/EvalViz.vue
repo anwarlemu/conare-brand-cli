@@ -46,7 +46,7 @@ const rows = computed(() => list.value.map(e => topRows(e, props.limit).map((row
 </script>
 
 <template>
-  <VizWindow :active="active" :class="wide ? 'max-w-190' : 'max-w-140'">
+  <VizWindow data-ds="eval-viz" :active="active" :class="wide ? 'max-w-190' : 'max-w-140'">
     <template #title>
       <span class="grid min-w-0">
         <span v-for="(e, k) in list" :key="e.id" class="ds-viz-title flex min-w-0 items-center gap-2 [grid-area:1/1]" :data-active="k === pick">

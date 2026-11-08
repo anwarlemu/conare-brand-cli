@@ -71,7 +71,7 @@ function onKey(event: KeyboardEvent) {
 </script>
 
 <template>
-  <form class="ds-searchbox w-full" role="search" :data-drag="dragging || undefined" @submit.prevent="submit" @dragover.prevent="dragging = true" @dragleave.self="dragging = false" @drop.prevent="onDrop">
+  <form data-ds="search-box" class="ds-searchbox w-full" role="search" :data-drag="dragging || undefined" @submit.prevent="submit" @dragover.prevent="dragging = true" @dragleave.self="dragging = false" @drop.prevent="onDrop">
     <label class="sr-only" :for="`${id}-q`">{{ label }}</label>
     <textarea :id="`${id}-q`" v-model="question" rows="2" :placeholder="dragging ? 'Drop files to add them' : placeholder" @keydown="onKey" />
     <div v-if="pasting" class="mx-3 mt-1 flex flex-col gap-2 border border-edge bg-surface-subtle p-2">

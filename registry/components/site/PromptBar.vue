@@ -251,7 +251,7 @@ const nextUpStyles = computed(() => nextUp.value.map((_, i) => ({ '--i': lastPar
 </script>
 
 <template>
-  <div class="ds-prompt-dock" :data-shown="shown" :data-summoned="summoned" :inert="!shown">
+  <div data-ds="prompt-bar" class="ds-prompt-dock" :data-shown="shown" :data-summoned="summoned" :inert="!shown">
     <div class="ds-prompt-trigger" :style="{ width: open ? '480px' : '280px' }">
       <!-- mousedown is cancelled so picking a template doesn't blur the input and fold the stack before the click lands. -->
       <ul aria-label="Templates" :hidden="!focused || chatting" class="ds-prompt-templates">

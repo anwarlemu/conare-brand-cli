@@ -25,7 +25,7 @@ const tag = computed(() => props.as ?? (props.variant === 'link' && !props.href 
 </script>
 
 <template>
-  <component :is="tag" :href="href" :type="tag === 'button' ? 'button' : undefined" :class="CLASSES[variant]"><slot /></component>
+  <component data-ds="text" :is="tag" :href="href" :type="tag === 'button' ? 'button' : undefined" :class="CLASSES[variant]"><slot /></component>
 </template>
 
 <style>

@@ -37,7 +37,7 @@ async function toggle() {
 </script>
 
 <template>
-  <div class="ds-agentstep">
+  <div data-ds="agent-prompt" class="ds-agentstep">
     <section class="ds-agentwork" :aria-labelledby="`${textId}-title`">
       <div class="ds-agentwork-panel" aria-hidden="true">
         <Grain />

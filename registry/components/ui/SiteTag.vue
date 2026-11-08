@@ -5,7 +5,7 @@ defineProps<{ framed?: boolean }>()
 </script>
 
 <template>
-  <span
+  <span data-ds="site-tag"
     class="inline-block bg-home-red py-0.75 pr-[calc(4px-0.06em)] pl-1 type-tag text-off-white [text-box:trim-both_cap_alphabetic]"
     :class="framed && 'outline outline-offset-2 outline-home-red'"
   ><slot /></span>

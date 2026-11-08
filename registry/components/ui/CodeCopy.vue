@@ -13,7 +13,7 @@ async function run(text: string) {
 </script>
 
 <template>
-  <button type="button" class="ds-codecopy" :data-light="light || undefined" @click="run(text)">
+  <button data-ds="code-copy" type="button" class="ds-codecopy" :data-light="light || undefined" @click="run(text)">
     <span class="ds-codecopy-icon" aria-hidden="true"><Copy :data-on="!copied || undefined" :size="12" :stroke-width="1.5" /><Check :data-on="copied || undefined" :size="12" :stroke-width="2" /></span>
     <span class="ds-codecopy-word"><span :data-on="!copied || undefined" :aria-hidden="copied">Copy</span><span :data-on="copied || undefined" :aria-hidden="!copied">Copied</span></span>
     <span class="sr-only" aria-live="polite">{{ copied ? 'copied' : '' }}</span>

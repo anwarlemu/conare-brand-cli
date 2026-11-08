@@ -102,7 +102,7 @@ const traces = computed(() => {
 </script>
 
 <template>
-  <svg ref="root" class="pointer-events-none absolute inset-0 h-full w-full" viewBox="-1 -1 2 2" preserveAspectRatio="none" aria-hidden="true">
+  <svg data-ds="cell-burst" ref="root" class="pointer-events-none absolute inset-0 h-full w-full" viewBox="-1 -1 2 2" preserveAspectRatio="none" aria-hidden="true">
     <g v-if="!traces.length" fill="none" stroke="var(--ds-color-off-white)" stroke-width="0.5" vector-effect="non-scaling-stroke">
       <path :d="grid" :stroke-opacity="o.grid" vector-effect="non-scaling-stroke" />
       <path :d="`M${vp[0]} -1V1M-1 ${vp[1]}H1`" :stroke-opacity="o.cross" vector-effect="non-scaling-stroke" />
@@ -112,7 +112,7 @@ const traces = computed(() => {
       <path :d="wg.lines" :transform="`translate(${vp[0]} ${vp[1]})`" fill="none" stroke="var(--ds-color-off-white)" stroke-width="0.5" :stroke-opacity="o.lines" vector-effect="non-scaling-stroke" />
     </g>
   </svg>
-  <svg v-if="traces.length" class="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true">
+  <svg data-ds="cell-burst" v-if="traces.length" class="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true">
     <g fill="none" stroke="var(--ds-color-off-white)" stroke-width="1">
       <line v-for="(t, i) in traces" :key="i" v-bind="t.d" pathLength="1" class="ds-cell-trace" :stroke-opacity="t.opacity" :style="t.style" />
     </g>

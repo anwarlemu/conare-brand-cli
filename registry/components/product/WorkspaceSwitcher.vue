@@ -37,7 +37,7 @@ function choose(id: string) {
 </script>
 
 <template>
-  <Menu
+  <Menu data-ds="workspace-switcher"
     label="workspaces"
     offset="8px"
     class="!flex h-full w-full"

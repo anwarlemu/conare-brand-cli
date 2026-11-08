@@ -11,7 +11,7 @@ defineProps<{ small?: boolean, invalid?: boolean, mono?: boolean }>()
 </script>
 
 <template>
-  <span class="ds-select" :data-small="small || undefined" :class="$attrs.class">
+  <span data-ds="native-select" class="ds-select" :data-small="small || undefined" :class="$attrs.class">
     <select v-model="model" v-bind="{ ...$attrs, class: undefined }" :aria-invalid="invalid || undefined" :class="mono && 'font-code'"><slot /></select>
     <ChevronDown :size="12" :stroke-width="2" aria-hidden="true" />
   </span>

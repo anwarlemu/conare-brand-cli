@@ -11,7 +11,7 @@ const share = computed(() => (props.max > props.min ? ((value.value - props.min)
 </script>
 
 <template>
-  <span class="ds-slider" :style="{ '--p': `${share}%` }" :data-disabled="disabled || undefined">
+  <span data-ds="slider" class="ds-slider" :style="{ '--p': `${share}%` }" :data-disabled="disabled || undefined">
     <span class="ds-slider-track" aria-hidden="true"><span /></span>
     <input v-model.number="value" type="range" :min="min" :max="max" :step="step" :disabled="disabled" :aria-label="label" :aria-valuetext="valueText">
   </span>

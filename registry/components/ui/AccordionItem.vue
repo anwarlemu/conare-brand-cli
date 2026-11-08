@@ -13,7 +13,7 @@ const id = useId()
 </script>
 
 <template>
-  <div class="border-b border-edge" :data-open="open">
+  <div data-ds="accordion-item" class="border-b border-edge" :data-open="open">
     <h3>
       <button
         :id="`${id}-head`"

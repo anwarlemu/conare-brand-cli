@@ -32,7 +32,7 @@ onBeforeUnmount(() => observer?.disconnect())
 </script>
 
 <template>
-  <a :href="href" class="ds-blog-card flex w-full flex-col border border-edge p-2">
+  <a data-ds="blog-card" :href="href" class="ds-blog-card flex w-full flex-col border border-edge p-2">
     <span ref="art" aria-hidden="true" class="relative grid aspect-[5/4] grid-cols-[minmax(0,1fr)] place-items-center overflow-hidden bg-ds-neutral-200 px-4 text-ds-neutral-300">
       <Grain />
       <span class="ds-blog-tag absolute top-2.5 right-2.5 z-1 bg-home-red py-0.5 pl-0.75 text-tag-sm font-medium tracking-tag text-off-white">{{ category }}</span>

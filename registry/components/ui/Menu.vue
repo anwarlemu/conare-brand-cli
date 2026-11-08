@@ -14,7 +14,7 @@ const id = `menu-${useId()}`
 </script>
 
 <template>
-  <div ref="root" class="relative inline-block">
+  <div data-ds="menu" ref="root" class="relative inline-block">
     <button
       ref="trigger"
       type="button"

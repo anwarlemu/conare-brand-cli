@@ -12,7 +12,7 @@ const FILL = { default: 'bg-surface-inverse', top: 'bg-edge-accent', rest: 'bg-d
 </script>
 
 <template>
-  <div
+  <div data-ds="meter"
     class="block h-1 bg-edge"
     :role="decorative ? undefined : 'meter'"
     :aria-hidden="decorative || undefined"

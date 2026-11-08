@@ -24,7 +24,7 @@ const label = computed(() => scope.value || (props.single ? 'Choose a namespace'
 </script>
 
 <template>
-  <Combobox
+  <Combobox data-ds="scope-menu"
     v-model="scope"
     :options="list"
     :label="single ? 'add to' : 'search in'"

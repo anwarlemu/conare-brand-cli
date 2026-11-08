@@ -7,7 +7,7 @@ defineProps<{ head?: string[], rows: string[][], label?: string }>()
 </script>
 
 <template>
-  <div class="ds-docs-table overflow-x-auto border border-edge" role="region" :aria-label="label ?? head?.join(', ') ?? 'table'" tabindex="0">
+  <div data-ds="docs-table" class="ds-docs-table overflow-x-auto border border-edge" role="region" :aria-label="label ?? head?.join(', ') ?? 'table'" tabindex="0">
     <table class="w-full text-left type-body">
       <thead v-if="head" class="bg-surface-subtle text-fg-muted">
         <tr><th v-for="h in head" :key="h" class="px-4 py-3 text-meta font-normal whitespace-nowrap">{{ h }}</th></tr>

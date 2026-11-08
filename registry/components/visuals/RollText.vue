@@ -8,7 +8,7 @@ withDefaults(defineProps<{ text: string, pace?: 'console' | 'site' }>(), { pace:
 </script>
 
 <template>
-  <span class="ds-roll" :data-pace="pace">
+  <span data-ds="roll-text" class="ds-roll" :data-pace="pace">
     <span class="ds-roll-a">{{ text }}</span>
     <span class="ds-roll-b" aria-hidden="true">{{ text }}</span>
   </span>

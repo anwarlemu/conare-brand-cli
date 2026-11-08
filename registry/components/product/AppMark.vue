@@ -8,6 +8,6 @@ const box = computed(() => ({ width: `${props.size}px`, height: `${props.size}px
 </script>
 
 <template>
-  <img v-if="logo" :src="logo" alt="" :width="size" :height="size" class="shrink-0 object-contain" :style="box" loading="lazy" decoding="async">
-  <span v-else class="inline-flex shrink-0 items-center justify-center border border-edge bg-surface-subtle text-tag leading-none font-medium text-fg-soft" :style="box" aria-hidden="true">{{ name.charAt(0).toUpperCase() }}</span>
+  <img data-ds="app-mark" v-if="logo" :src="logo" alt="" :width="size" :height="size" class="shrink-0 object-contain" :style="box" loading="lazy" decoding="async">
+  <span data-ds="app-mark" v-else class="inline-flex shrink-0 items-center justify-center border border-edge bg-surface-subtle text-tag leading-none font-medium text-fg-soft" :style="box" aria-hidden="true">{{ name.charAt(0).toUpperCase() }}</span>
 </template>

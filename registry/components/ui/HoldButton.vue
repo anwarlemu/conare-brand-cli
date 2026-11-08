@@ -88,7 +88,7 @@ const verb = computed(() => props.label.toLowerCase())
 </script>
 
 <template>
-  <button
+  <button data-ds="hold-button"
     ref="root"
     type="button"
     class="ds-hold"

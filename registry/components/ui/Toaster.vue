@@ -29,7 +29,7 @@ onBeforeUnmount(() => clearInterval(timer))
 </script>
 
 <template>
-  <div class="ds-toasts" role="status" aria-live="polite" @pointerenter="held = true" @pointerleave="held = false">
+  <div data-ds="toaster" class="ds-toasts" role="status" aria-live="polite" @pointerenter="held = true" @pointerleave="held = false">
     <TransitionGroup name="ds-toast">
       <p v-for="t in toasts" :key="t.id" class="ds-toast">
         <Check :size="12" :stroke-width="2" aria-hidden="true" class="shrink-0" />

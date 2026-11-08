@@ -17,7 +17,7 @@ async function send() {
 </script>
 
 <template>
-  <form ref="form" class="flex flex-col gap-4" novalidate :aria-label="label" @submit.prevent="send">
+  <form data-ds="form" ref="form" class="flex flex-col gap-4" novalidate :aria-label="label" @submit.prevent="send">
     <slot />
     <p v-if="failure" class="flex items-start gap-2 border border-transparent bg-surface-danger px-3 py-2 type-meta text-fg-danger" role="alert">
       <span class="mt-1.5 size-1 shrink-0 bg-edge-accent" aria-hidden="true" />{{ failure }}

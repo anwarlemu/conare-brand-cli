@@ -14,7 +14,7 @@ const lines = computed(() => {
 </script>
 
 <template>
-  <span class="ds-thumb" aria-hidden="true">
+  <span data-ds="accuracy-thumb" class="ds-thumb" aria-hidden="true">
     <span class="ds-thumb-head" />
     <template v-for="(l, i) in lines" :key="i">
       <span v-if="l.first" class="ds-thumb-hit"><span class="ds-thumb-line w-full" /><span class="ds-thumb-line w-[68%]" /></span>

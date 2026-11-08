@@ -22,5 +22,5 @@ provide(accordionKey, {
 </script>
 
 <template>
-  <div class="ds-accordion border-t border-edge"><slot /></div>
+  <div data-ds="accordion" class="ds-accordion border-t border-edge"><slot /></div>
 </template>

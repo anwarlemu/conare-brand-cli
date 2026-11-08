@@ -11,7 +11,7 @@ defineEmits<{ navigate: [crumb: Crumb, event: MouseEvent] }>()
 </script>
 
 <template>
-  <nav class="flex min-w-0 flex-1 items-center gap-2 overflow-hidden text-meta leading-5" :aria-label="label">
+  <nav data-ds="breadcrumb" class="flex min-w-0 flex-1 items-center gap-2 overflow-hidden text-meta leading-5" :aria-label="label">
     <template v-for="(crumb, i) in items" :key="i">
       <Slash v-if="i > 0" :size="10" :stroke-width="1.5" class="shrink-0 text-fg-faint" aria-hidden="true" />
       <component :is="as" v-if="i < items.length - 1" :href="crumb.href ?? '#'" :to="crumb.href" class="ds-crumb shrink-0" :class="crumb.mono && 'type-code-sm'" @click="$emit('navigate', crumb, $event)">{{ crumb.label }}</component>

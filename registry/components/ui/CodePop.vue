@@ -24,7 +24,7 @@ function toggle() {
 </script>
 
 <template>
-  <div class="contents" data-codepop>
+  <div data-ds="code-pop" class="contents" data-codepop>
     <button type="button" class="ds-codepop-btn" :data-large="large || undefined" :aria-expanded="open" :aria-controls="id" @click="toggle">
       <Code :size="12" :stroke-width="1.5" aria-hidden="true" />
       <span class="ds-codepop-stack"><span :data-on="!open || undefined" :aria-hidden="open">{{ label }}</span><span :data-on="open || undefined" :aria-hidden="!open">Hide code</span></span>

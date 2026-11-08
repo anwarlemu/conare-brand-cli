@@ -11,7 +11,7 @@ const tone = computed(() => (props.status === 'error' ? 'failed' : working.value
 </script>
 
 <template>
-  <Tag :tone="tone">
+  <Tag data-ds="status-tag" :tone="tone">
     <template v-if="working" #mark><DotMatrix tone="inverse" class="mt-0.5 mr-0.5" /></template>
     {{ status }}
   </Tag>

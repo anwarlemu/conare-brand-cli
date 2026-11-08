@@ -27,7 +27,7 @@ const parts = (p: SearchPassage) => {
 </script>
 
 <template>
-  <div class="overflow-hidden border border-edge bg-surface">
+  <div data-ds="searches-log" class="overflow-hidden border border-edge bg-surface">
     <Table>
       <thead class="max-sm:sr-only"><tr><th scope="col">Question</th><th scope="col" class="w-40 max-lg:hidden">Agent</th><th scope="col" class="w-44 max-md:hidden">Outcome</th><th scope="col" class="w-20 text-right max-md:hidden">Time</th><th scope="col" class="w-24 text-right max-lg:hidden">When</th><th scope="col" class="w-8"><span class="sr-only">Open</span></th></tr></thead>
       <tbody>
@@ -77,7 +77,7 @@ const parts = (p: SearchPassage) => {
       </tbody>
     </Table>
   </div>
-  <button v-if="shown < rows.length" type="button" class="ds-slog-more self-start" @click="shown += page">Show {{ Math.min(page, rows.length - shown) }} more</button>
+  <button data-ds="searches-log" v-if="shown < rows.length" type="button" class="ds-slog-more self-start" @click="shown += page">Show {{ Math.min(page, rows.length - shown) }} more</button>
 </template>
 
 <style>

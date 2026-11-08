@@ -16,10 +16,15 @@ export type FileOptions = {
 	/** This file is an app component of this kind (its root and its class strings take the look). */
 	componentKind?: string;
 	merge?: boolean;
+	/** A selection: what it restyles carries the scope class, so the brand's base reaches it and nothing else. */
+	mark?: boolean;
 };
 export type FileResult = { text: string; changes: Change[] };
 
 type Edit = { start: number; end: number; text: string };
+
+/** The class a selection puts on what it restyled (brand/base-scoped in build/brand-scoped.css). */
+export const MARK = 'ds-scope';
 type Literal = { start: number; end: number; value: string; quote: string };
 
 const allowed = (opts: FileOptions, kind?: string) => !!kind && (opts.kinds === 'all' || opts.kinds.has(kind));
@@ -191,13 +196,25 @@ function convertElement(text: string, node: Node, isRoot: boolean, opts: FileOpt
 		}
 	}
 	const dynColored = dynTokens.some((t) => ['bg', 'text-color', 'border-color'].includes(groupOf(t)));
+	// In a selection, what it restyles carries ds-scope: the brand's type and defaults reach it and nothing around it.
+	const mark = !!opts.mark && /^[a-zA-Z]/.test(tag) && !/^(template|slot|Teleport|Transition|TransitionGroup|KeepAlive|Suspense)$/.test(tag) && (restyled !== undefined || (isRoot && opts.general));
+	// The mark always goes last, so a restyle that reorders the list leaves it where it was.
+	const withMark = (list: string) => {
+		if (!mark) return list;
+		const tokens = list.split(/\s+/).filter(Boolean);
+		if (tokens[tokens.length - 1] === MARK) return list;
+		const rest = tokens.filter((t) => t !== MARK);
+		return rest.length ? `${list.match(/^\s*/)?.[0] ?? ''}${[...rest, MARK].join(' ')}${list.match(/\s*$/)?.[0] ?? ''}` : MARK;
+	};
 	if (staticClass) {
 		let next = opts.general ? convertClassList(staticClass.value, ctx) : staticClass.value;
 		if (restyled) next = restyle(next, restyled, { tag, changes, onDark, merge: opts.merge, variant: hasColor(staticTokens) || !dynColored ? 'both' : 'base', tokensForVariant: staticTokens });
+		next = withMark(next);
 		if (next !== staticClass.value) edits.push({ start: staticClass.start, end: staticClass.end, text: next });
-	} else if (restyled && /^[a-z]/.test(tag) && !tag.includes('-') && !classBinding.length) {
+	} else {
 		// A bare element of a named kind gets the look as a class attribute; nothing else about it changes.
-		const look = restyle('', restyled, { tag, changes, onDark, merge: opts.merge, variant: dynColored ? 'base' : 'both', tokensForVariant: [] });
+		const bare = restyled && /^[a-z]/.test(tag) && !tag.includes('-') && !classBinding.length;
+		const look = withMark(bare ? restyle('', restyled, { tag, changes, onDark, merge: opts.merge, variant: dynColored ? 'base' : 'both', tokensForVariant: [] }) : '');
 		if (look.trim()) {
 			const at = node.loc.start.offset + 1 + tag.length;
 			edits.push({ start: at, end: at, text: ` class="${look.trim()}"` });

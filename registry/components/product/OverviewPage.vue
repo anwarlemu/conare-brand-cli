@@ -48,7 +48,7 @@ const MATRIX = Array.from({ length: 9 }, (_, i) => ({ '--k': i + 1 }))
 </script>
 
 <template>
-  <div>
+  <div data-ds="overview-page">
     <section v-if="setup && setup.done < setup.total" class="flex min-h-10 items-center gap-2.5 border-b border-edge bg-surface-subtle py-1.5 pr-3 pl-4 text-meta md:min-h-12" aria-label="what needs doing">
       <span class="size-1.5 shrink-0 bg-edge-accent" aria-hidden="true" />
       <p class="min-w-0 flex-1">You haven't finished setting up Conare: {{ setup.done }} of {{ setup.total }} steps done.</p>

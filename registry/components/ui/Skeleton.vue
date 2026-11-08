@@ -7,7 +7,7 @@ withDefaults(defineProps<{ held?: boolean, as?: string, label?: string }>(), { h
 </script>
 
 <template>
-  <component :is="as" :data-held="held || undefined" :aria-busy="held || undefined" :aria-label="held ? label : undefined"><slot /></component>
+  <component data-ds="skeleton" :is="as" :data-held="held || undefined" :aria-busy="held || undefined" :aria-label="held ? label : undefined"><slot /></component>
 </template>
 
 <style>

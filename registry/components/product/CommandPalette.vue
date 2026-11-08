@@ -118,7 +118,7 @@ function onDown(event: MouseEvent) {
 </script>
 
 <template>
-  <dialog ref="dialog" class="ds-cmd" :data-tone="tone" aria-label="search and jump" @cancel="onCancel" @mousedown="onDown">
+  <dialog data-ds="command-palette" ref="dialog" class="ds-cmd" :data-tone="tone" aria-label="search and jump" @cancel="onCancel" @mousedown="onDown">
     <div v-if="tone === 'dark'" class="ds-cmd-bar" aria-hidden="true">
       <slot name="mark" />
       <span>{{ title }}</span><span class="ds-cmd-tag">Search</span>

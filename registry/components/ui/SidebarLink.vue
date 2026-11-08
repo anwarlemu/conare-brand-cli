@@ -8,7 +8,7 @@ withDefaults(defineProps<{ href?: string, active?: boolean, icon?: Component, st
 </script>
 
 <template>
-  <component :is="as" :href="href" class="ds-navlink" :data-active="active || undefined" :aria-current="active ? 'page' : undefined">
+  <component data-ds="sidebar-link" :is="as" :href="href" class="ds-navlink" :data-active="active || undefined" :aria-current="active ? 'page' : undefined">
     <component :is="icon" v-if="icon" :size="14" :stroke-width="1.5" aria-hidden="true" />
     <span class="min-w-0 flex-1 truncate"><slot /></span>
     <span v-if="status" class="text-meta tabular-nums" :class="alert ? 'text-home-red-press' : 'text-fg-muted'">{{ status }}</span>

@@ -8,11 +8,11 @@ const pressable = props.pressed !== undefined
 </script>
 
 <template>
-  <button v-if="pressable" type="button" class="ds-stat" :aria-pressed="pressed" :data-on="pressed || undefined" @click="$emit('press')">
+  <button data-ds="stat" v-if="pressable" type="button" class="ds-stat" :aria-pressed="pressed" :data-on="pressed || undefined" @click="$emit('press')">
     <p class="type-meta text-fg-muted">{{ label }}</p>
     <p class="ds-stat-value"><slot>{{ value }}</slot></p>
   </button>
-  <div v-else class="ds-stat">
+  <div data-ds="stat" v-else class="ds-stat">
     <p class="type-meta text-fg-muted">{{ label }}</p>
     <p class="ds-stat-value"><slot>{{ value }}</slot></p>
   </div>

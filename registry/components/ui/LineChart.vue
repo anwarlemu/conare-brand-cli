@@ -73,7 +73,7 @@ const hovered = computed(() => {
 </script>
 
 <template>
-  <figure :class="!bare && 'border border-edge bg-surface p-4'">
+  <figure data-ds="line-chart" :class="!bare && 'border border-edge bg-surface p-4'">
     <figcaption class="mb-3 flex min-h-5 flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
       <span class="type-meta font-medium text-fg-muted">{{ title }}</span>
       <span v-if="lines.length > 1" class="flex flex-wrap gap-3 type-meta text-fg-muted">

@@ -14,7 +14,7 @@ async function run() {
 </script>
 
 <template>
-  <button type="button" class="ds-copy" :data-done="copied || undefined" @click="run">
+  <button data-ds="copy-button" type="button" class="ds-copy" :data-done="copied || undefined" @click="run">
     <span class="ds-copy-icon" :data-state="copied ? 'b' : 'a'" aria-hidden="true">
       <Copy class="ds-copy-a" :size="12" :stroke-width="1.5" />
       <svg class="ds-copy-b ds-copy-check" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12 9 17 20 6" pathLength="1" /></svg>

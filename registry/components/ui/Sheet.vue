@@ -14,7 +14,7 @@ const { shown, onCancel, onClick } = useSheet(dialog, open)
 </script>
 
 <template>
-  <dialog ref="dialog" class="ds-sheet" :data-shown="shown || undefined" :aria-label="title" tabindex="-1" @cancel="onCancel" @click="onClick">
+  <dialog data-ds="sheet" ref="dialog" class="ds-sheet" :data-shown="shown || undefined" :aria-label="title" tabindex="-1" @cancel="onCancel" @click="onClick">
     <div class="flex h-bar shrink-0 items-center gap-1 border-b border-edge pr-2 pl-6.5">
       <h2 class="min-w-0 flex-1 truncate type-ui-strong">{{ title }}</h2>
       <slot name="bar" />

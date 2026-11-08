@@ -27,7 +27,7 @@ const facts = computed(() => {
 </script>
 
 <template>
-  <section v-if="version === 1" class="m-1.25 grid grid-cols-2 border border-edge outline outline-offset-4 outline-edge max-lg:grid-cols-1" aria-label="the page and what was read">
+  <section data-ds="parse-reading" v-if="version === 1" class="m-1.25 grid grid-cols-2 border border-edge outline outline-offset-4 outline-edge max-lg:grid-cols-1" aria-label="the page and what was read">
     <div class="flex min-w-0 flex-col gap-2 bg-surface-subtle p-4">
       <ParseSheet class="border border-edge" :part="answer.part" :scan="answer.scan" :on="lit" plays @point="on = $event" @pick="pick" />
       <p class="flex justify-between gap-4 type-meta text-fg-muted"><span class="truncate">{{ answer.name }}</span><span class="shrink-0">Page {{ answer.page }} of {{ answer.pages }}</span></p>
@@ -42,6 +42,6 @@ const facts = computed(() => {
       <ParseOutput :answer="answer" :on="lit" plays @point="on = $event" @pick="pick" />
     </div>
   </section>
-  <ParseRegions v-else-if="version === 2" :answer="answer" />
-  <ParsePlain v-else :answer="answer" />
+  <ParseRegions data-ds="parse-reading" v-else-if="version === 2" :answer="answer" />
+  <ParsePlain data-ds="parse-reading" v-else :answer="answer" />
 </template>

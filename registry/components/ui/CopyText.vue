@@ -11,7 +11,7 @@ const { copied, copy } = useCopy()
 </script>
 
 <template>
-  <span class="inline-flex max-w-full min-w-0 items-center gap-1">
+  <span data-ds="copy-text" class="inline-flex max-w-full min-w-0 items-center gap-1">
     <code class="truncate font-code text-meta leading-5" :title="value">{{ value }}</code>
     <button
       type="button"

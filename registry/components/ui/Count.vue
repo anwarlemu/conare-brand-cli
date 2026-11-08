@@ -49,5 +49,5 @@ onBeforeUnmount(() => cancelAnimationFrame(raf))
 </script>
 
 <template>
-  <span class="tabular-nums">{{ format ? format(shown) : plain(shown) }}</span>
+  <span data-ds="count" class="tabular-nums">{{ format ? format(shown) : plain(shown) }}</span>
 </template>

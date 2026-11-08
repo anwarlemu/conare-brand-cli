@@ -29,7 +29,7 @@ const rankedStyles = ranked.map(r => ({ '--from': r.from, '--to': r.to, '--d': 6
 </script>
 
 <template>
-  <VizWindow :active="active" size="sm" class="max-w-75">
+  <VizWindow data-ds="product-viz" :active="active" size="sm" class="max-w-75">
     <template #title>
       <span class="truncate text-caption text-ds-neutral-600">{{ TITLES[id] }}</span>
     </template>

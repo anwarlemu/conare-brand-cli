@@ -20,7 +20,7 @@ function pick(key: string, value: string | number) {
 </script>
 
 <template>
-  <Menu
+  <Menu data-ds="filter-menu"
     label="filters"
     width="240px"
     trigger-class="inline-flex h-control-sm cursor-pointer items-center gap-1.5 border border-edge bg-surface-subtle px-2 text-meta text-fg transition-[border-color] duration-120 ease-standard hover:border-edge-focus aria-expanded:border-edge-focus aria-expanded:bg-surface active:bg-surface-subtle focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-edge-focus"

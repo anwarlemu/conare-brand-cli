@@ -27,7 +27,7 @@ const peak = computed(() => formatNumber(Math.max(0, ...props.points.map(p => p.
 </script>
 
 <template>
-  <figure class="ds-barchart flex flex-col gap-3" :data-bare="bare || undefined">
+  <figure data-ds="bar-chart" class="ds-barchart flex flex-col gap-3" :data-bare="bare || undefined">
     <figcaption class="ds-barchart-cap flex h-5 items-baseline justify-between gap-4">
       <span class="ds-chart-caption">{{ label }}</span>
       <span v-if="shown" class="ds-chart-meta">{{ formatDay(shown.day, true) }} <span class="font-medium text-fg">{{ formatNumber(shown.value) }}</span></span>

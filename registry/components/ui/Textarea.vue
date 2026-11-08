@@ -8,7 +8,7 @@ defineProps<{ invalid?: boolean, rows?: number }>()
 </script>
 
 <template>
-  <textarea v-model="model" v-bind="$attrs" :rows="rows ?? 4" :aria-invalid="invalid || undefined" class="ds-textarea" />
+  <textarea data-ds="textarea" v-model="model" v-bind="$attrs" :rows="rows ?? 4" :aria-invalid="invalid || undefined" class="ds-textarea" />
 </template>
 
 <style>

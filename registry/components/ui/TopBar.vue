@@ -6,7 +6,7 @@
 </script>
 
 <template>
-  <header class="sticky top-0 z-10 flex h-bar shrink-0 items-center gap-2 border-b border-edge bg-bar px-4 text-meta leading-5 backdrop-blur-sm">
+  <header data-ds="top-bar" class="sticky top-0 z-10 flex h-bar shrink-0 items-center gap-2 border-b border-edge bg-bar px-4 text-meta leading-5 backdrop-blur-sm">
     <slot name="start" />
     <slot />
     <slot name="end" />

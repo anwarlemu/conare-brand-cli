@@ -44,7 +44,7 @@ function choose(confirmed: boolean) {
 </script>
 
 <template>
-  <dialog ref="dialog" class="ds-alert" role="alertdialog" :aria-labelledby="`${id}-title`" :aria-describedby="`${id}-text`" @cancel="onCancel">
+  <dialog data-ds="alert-dialog" ref="dialog" class="ds-alert" role="alertdialog" :aria-labelledby="`${id}-title`" :aria-describedby="`${id}-text`" @cancel="onCancel">
     <h2 :id="`${id}-title`" class="type-ui-strong">{{ title }}</h2>
     <p :id="`${id}-text`" class="mt-2 type-ui text-fg-soft">{{ description }}</p>
     <slot />

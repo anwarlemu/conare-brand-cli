@@ -9,7 +9,7 @@ defineProps<{ facts?: FactItem[] }>()
 </script>
 
 <template>
-  <dl class="flex flex-wrap gap-2">
+  <dl data-ds="facts" class="flex flex-wrap gap-2">
     <slot><Fact v-for="f in facts" :key="f.name" :name="f.name" :value="f.value" :mono="f.mono" /></slot>
   </dl>
 </template>

@@ -115,7 +115,7 @@ const activeId = computed(() => (pop.open.value && visible.value.length ? option
 </script>
 
 <template>
-  <button
+  <button data-ds="combobox"
     v-bind="$attrs"
     :ref="(el) => { pop.anchor.value = el as HTMLElement | null }"
     type="button"
@@ -133,7 +133,7 @@ const activeId = computed(() => (pop.open.value && visible.value.length ? option
       <ChevronsUpDown :size="12" :stroke-width="1.5" class="shrink-0 text-fg-muted" aria-hidden="true" />
     </slot>
   </button>
-  <PopoverPanel :pop="pop" class="flex flex-col p-1" :style="{ width }">
+  <PopoverPanel data-ds="combobox" :pop="pop" class="flex flex-col p-1" :style="{ width }">
     <label v-if="filtering" class="relative mb-1 block">
       <Search :size="12" :stroke-width="1.5" class="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-fg-muted" aria-hidden="true" />
       <input

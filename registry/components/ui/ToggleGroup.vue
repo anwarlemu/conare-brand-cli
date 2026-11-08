@@ -20,7 +20,7 @@ function press(v: T) {
 </script>
 
 <template>
-  <div class="ds-toggles" role="group" :aria-label="label" :data-multiple="multiple || undefined">
+  <div data-ds="toggle-group" class="ds-toggles" role="group" :aria-label="label" :data-multiple="multiple || undefined">
     <button v-for="o in items" :key="o.value" type="button" :aria-pressed="on(o.value)" :disabled="o.disabled" @click="press(o.value)">{{ o.label }}</button>
   </div>
 </template>

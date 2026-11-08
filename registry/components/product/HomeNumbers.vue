@@ -28,13 +28,13 @@ const href = (t: HomeNumbersTarget) => props.hrefs[t] ?? '#'
 </script>
 
 <template>
-  <nav v-if="take === 'strip'" class="ds-homefoot" aria-label="key numbers">
+  <nav data-ds="home-numbers" v-if="take === 'strip'" class="ds-homefoot" aria-label="key numbers">
     <a :href="href('documents')" @click="emit('navigate', 'documents', $event)"><span class="ds-homefoot-num"><Count :value="documents" once="home-documents" /></span> documents</a>
     <a :href="href('queries')" @click="emit('navigate', 'queries', $event)"><span class="ds-homefoot-num"><Count :value="queries" once="home-queries" /></span> queries this month</a>
     <a :href="href('performance')" @click="emit('navigate', 'performance', $event)"><span class="ds-homefoot-num">{{ typical }} ms</span> typical search</a>
   </nav>
 
-  <section v-else-if="take === 'rule'" class="ds-homecards mx-auto w-full max-w-160" aria-label="key numbers">
+  <section data-ds="home-numbers" v-else-if="take === 'rule'" class="ds-homecards mx-auto w-full max-w-160" aria-label="key numbers">
     <a :href="href('documents')" @click="emit('navigate', 'documents', $event)">
       <span class="type-meta text-fg-muted">Documents</span>
       <span class="ds-homecards-num"><Count :value="documents" once="home-documents" /></span>
@@ -52,7 +52,7 @@ const href = (t: HomeNumbersTarget) => props.hrefs[t] ?? '#'
     </a>
   </section>
 
-  <p v-else class="ds-homeline">
+  <p data-ds="home-numbers" v-else class="ds-homeline">
     <a :href="href('queries')" @click="emit('navigate', 'queries', $event)">{{ num(queries) }} queries this month</a>
     <span aria-hidden="true">·</span>
     <a :href="href('performance')" @click="emit('navigate', 'performance', $event)">{{ typical }} ms typical search</a>

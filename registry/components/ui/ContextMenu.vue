@@ -34,10 +34,10 @@ async function onKey(event: KeyboardEvent) {
 </script>
 
 <template>
-  <div @contextmenu="onContextMenu" @keydown="onKey">
+  <div data-ds="context-menu" @contextmenu="onContextMenu" @keydown="onKey">
     <slot />
   </div>
-  <PopoverPanel :pop="pop" role="menu" :aria-label="label" tabindex="-1" class="flex flex-col p-1" :style="{ width: width ?? '224px' }" @keydown="onMenuRows($event, pop.panel.value, pop.hide)">
+  <PopoverPanel data-ds="context-menu" :pop="pop" role="menu" :aria-label="label" tabindex="-1" class="flex flex-col p-1" :style="{ width: width ?? '224px' }" @keydown="onMenuRows($event, pop.panel.value, pop.hide)">
     <slot name="menu" />
   </PopoverPanel>
 </template>

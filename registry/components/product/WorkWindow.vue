@@ -5,7 +5,7 @@ defineProps<{ title: string, tag?: string, foot?: string, done?: boolean }>()
 </script>
 
 <template>
-  <div class="ds-win w-full max-w-120">
+  <div data-ds="work-window" class="ds-win w-full max-w-120">
     <div class="ds-win-bar"><span class="min-w-0 flex-1 truncate">{{ title }}</span><span v-if="tag" class="ds-win-tag">{{ tag }}</span></div>
     <slot />
     <p v-if="foot" class="ds-win-foot" :data-on="done || undefined"><span class="ds-win-dot" aria-hidden="true" />{{ foot }}</p>

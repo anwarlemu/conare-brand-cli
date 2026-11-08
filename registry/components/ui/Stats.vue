@@ -4,7 +4,7 @@
 </script>
 
 <template>
-  <div class="ds-stats"><slot /></div>
+  <div data-ds="stats" class="ds-stats"><slot /></div>
 </template>
 
 <style>

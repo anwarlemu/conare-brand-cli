@@ -10,7 +10,7 @@ const hintId = computed(() => (props.hint || props.error ? `${id.value}-hint` : 
 </script>
 
 <template>
-  <div class="flex flex-col gap-1.5">
+  <div data-ds="field" class="flex flex-col gap-1.5">
     <label :for="id" class="type-meta text-fg-soft">{{ label }}</label>
     <slot :id="id" :hint-id="hintId" :invalid="!!error" />
     <p v-if="error || hint" :id="hintId" class="type-meta" :class="error ? 'text-fg-danger' : 'text-fg-muted'" :role="error ? 'alert' : undefined">{{ error || hint }}</p>

@@ -11,7 +11,7 @@ const parts = computed(() => citeParts(props.text))
 </script>
 
 <template>
-  <p class="ds-answer-text">
+  <p data-ds="answer-text" class="ds-answer-text">
     <template v-for="(p, i) in parts" :key="i">
       <button v-if="'cite' in p" type="button" class="ds-cite" :aria-label="`Source ${p.cite}`" :aria-pressed="pointed === undefined ? undefined : pointed === p.cite" @pointerenter="emit('point', p.cite)" @focus="emit('point', p.cite)" @click="emit('cite', p.cite)">{{ p.cite }}</button>
       <template v-else>{{ p.words }}</template>

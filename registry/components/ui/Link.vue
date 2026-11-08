@@ -8,8 +8,8 @@ withDefaults(defineProps<{ href?: string, more?: boolean, as?: string | Componen
 </script>
 
 <template>
-  <button v-if="more && !href" type="button" class="ds-more"><slot /></button>
-  <component :is="as" v-else :href="href" :class="more ? 'ds-more' : 'ds-link'"><slot /></component>
+  <button data-ds="link" v-if="more && !href" type="button" class="ds-more"><slot /></button>
+  <component data-ds="link" :is="as" v-else :href="href" :class="more ? 'ds-more' : 'ds-link'"><slot /></component>
 </template>
 
 <style>

@@ -27,7 +27,7 @@ const WORDMARK = 'M211.683 40.2172C209.513 40.2172 207.742 40.5598 206.371 41.24
 </script>
 
 <template>
-  <div role="contentinfo" class="relative w-full" :class="pinned && 'md:sticky md:bottom-0 md:z-0'">
+  <div data-ds="site-footer" role="contentinfo" class="relative w-full" :class="pinned && 'md:sticky md:bottom-0 md:z-0'">
     <div class="relative w-full overflow-hidden text-off-white">
       <div aria-hidden="true" class="absolute inset-0 bg-linear-to-b from-ds-neutral-200 to-ds-neutral-100" />
       <Grain />

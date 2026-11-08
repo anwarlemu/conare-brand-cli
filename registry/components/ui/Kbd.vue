@@ -6,7 +6,7 @@ defineProps<{ boxed?: boolean }>()
 </script>
 
 <template>
-  <kbd class="ds-kbd" :data-boxed="boxed || undefined"><slot /></kbd>
+  <kbd data-ds="kbd" class="ds-kbd" :data-boxed="boxed || undefined"><slot /></kbd>
 </template>
 
 <style>

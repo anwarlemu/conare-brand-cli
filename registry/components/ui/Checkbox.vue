@@ -12,7 +12,7 @@ const id = computed(() => props.id ?? `checkbox-${auto}`)
 </script>
 
 <template>
-  <label class="ds-checkrow" :for="id" :data-disabled="disabled || undefined">
+  <label data-ds="checkbox" class="ds-checkrow" :for="id" :data-disabled="disabled || undefined">
     <span class="ds-checkbox">
       <input :id="id" v-model="checked" type="checkbox" :name="name" :value="value" :disabled="disabled" :indeterminate="indeterminate" :aria-invalid="invalid || undefined" :aria-describedby="hint ? `${id}-hint` : undefined">
       <svg v-if="indeterminate" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 8h8" /></svg>

@@ -6,7 +6,7 @@ defineProps<{ mark: { y: number, h: number } | null, instant?: boolean }>()
 </script>
 
 <template>
-  <span v-if="mark" class="ds-rowmark" :data-instant="instant || undefined" :style="{ transform: `translateY(${mark.y}px)`, height: `${mark.h}px` }" aria-hidden="true" />
+  <span data-ds="glide-mark" v-if="mark" class="ds-rowmark" :data-instant="instant || undefined" :style="{ transform: `translateY(${mark.y}px)`, height: `${mark.h}px` }" aria-hidden="true" />
 </template>
 
 <style>

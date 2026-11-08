@@ -27,7 +27,7 @@ const plain = (n: number) => n.toLocaleString('en-US')
 </script>
 
 <template>
-  <button ref="root" type="button" class="ds-fix" :data-state="state" :data-tone="tone" :style="{ '--s': STEP[state] }" :disabled="state !== 'broken'" :aria-busy="state === 'signing' || state === 'catching'" :aria-label="spoken" @click.stop="$emit('press')">
+  <button data-ds="fix-button" ref="root" type="button" class="ds-fix" :data-state="state" :data-tone="tone" :style="{ '--s': STEP[state] }" :disabled="state !== 'broken'" :aria-busy="state === 'signing' || state === 'catching'" :aria-label="spoken" @click.stop="$emit('press')">
     <span v-for="layer in ['text', 'ink']" :key="layer" class="ds-states" :class="`ds-fix-${layer}`" aria-hidden="true">
       <span v-if="layer === 'ink' && grid" class="ds-fix-fill" :style="style"><i v-for="(c, k) in grid.cells" :key="k" :style="c" /></span>
       <span style="--n: 0">Reconnect {{ app }}</span>

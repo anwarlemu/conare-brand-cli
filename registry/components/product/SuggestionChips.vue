@@ -22,7 +22,7 @@ function glide(event: Event) {
 </script>
 
 <template>
-  <div class="relative flex flex-wrap justify-center gap-2" role="group" :aria-label="label ?? 'suggested searches'" @pointerleave="shown = false">
+  <div data-ds="suggestion-chips" class="relative flex flex-wrap justify-center gap-2" role="group" :aria-label="label ?? 'suggested searches'" @pointerleave="shown = false">
     <span class="ds-chipmark" :data-shown="shown || undefined" :data-instant="instant || undefined" :style="{ transform: `translate(${mark.x}px, ${mark.y}px)`, width: `${mark.w}px`, height: `${mark.h}px` }" aria-hidden="true" />
     <button v-for="s in items" :key="s.q" type="button" class="ds-sgchip" @pointerenter="glide" @focus="glide" @blur="shown = false" @click="$emit('ask', s)">
       <Search :size="12" :stroke-width="1.5" class="shrink-0 text-fg-muted" aria-hidden="true" />

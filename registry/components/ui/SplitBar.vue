@@ -37,7 +37,7 @@ watch(at, i => place(i))
 </script>
 
 <template>
-  <div class="flex flex-col gap-4">
+  <div data-ds="split-bar" class="flex flex-col gap-4">
     <div class="ds-segmark-track" aria-hidden="true"><span class="ds-segmark" :style="{ transform: `translateX(${center})` }"><i /></span></div>
     <div class="ds-splitbar" aria-hidden="true">
       <span v-for="(p, i) in parts" :key="p.name" :data-on="at === i || undefined" :style="{ flexGrow: p.value / total }" />

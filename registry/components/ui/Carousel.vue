@@ -41,7 +41,7 @@ onBeforeUnmount(() => ro?.disconnect())
 </script>
 
 <template>
-  <section class="flex flex-col gap-2" role="region" aria-roledescription="carousel" :aria-label="label">
+  <section data-ds="carousel" class="flex flex-col gap-2" role="region" aria-roledescription="carousel" :aria-label="label">
     <div
       ref="track"
       class="ds-carousel flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain border border-edge"

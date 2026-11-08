@@ -15,7 +15,7 @@ function choose() {
 </script>
 
 <template>
-  <component
+  <component data-ds="menu-item"
     :is="href ? 'a' : 'button'"
     :href="href"
     :type="href ? undefined : 'button'"

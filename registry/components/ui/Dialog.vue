@@ -29,7 +29,7 @@ function backdrop(event: MouseEvent) {
 </script>
 
 <template>
-  <dialog ref="dialog" class="ds-dialog" :data-wide="wide || undefined" tabindex="-1" :aria-label="title" @close="open = false" @click="backdrop">
+  <dialog data-ds="dialog" ref="dialog" class="ds-dialog" :data-wide="wide || undefined" tabindex="-1" :aria-label="title" @close="open = false" @click="backdrop">
     <div class="flex items-center justify-between gap-4 pt-4 pr-4 pl-6">
       <h2 class="type-ui-strong">{{ title }}</h2>
       <button type="button" class="inline-flex size-control-sm shrink-0 cursor-pointer items-center justify-center border border-transparent text-fg-soft transition-[color,border-color] duration-120 ease-standard hover:border-edge-strong hover:text-fg max-md:size-control-touch" aria-label="close" @click="open = false"><X :size="14" :stroke-width="1.5" /></button>

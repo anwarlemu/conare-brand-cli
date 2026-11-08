@@ -43,7 +43,7 @@ const ms = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)} s` : `${n} ms`)
 </script>
 
 <template>
-  <section v-if="view === 'pipeline'" class="ds-pipeline" aria-label="what Conare is doing">
+  <section data-ds="overview-band" v-if="view === 'pipeline'" class="ds-pipeline" aria-label="what Conare is doing">
     <component :is="s.href ? 'a' : 'div'" v-for="s in steps" :key="s.name" :href="s.href" class="ds-pipeline-step" :data-red="s.red || undefined">
       <span class="type-meta text-fg-muted">{{ s.name }}</span>
       <span class="ds-pipeline-num"><Count v-if="typeof s.value === 'number'" :value="s.value" :once="`pipeline-${s.name}`" /><template v-else>{{ s.value }}</template>{{ s.unit }}</span>
@@ -51,7 +51,7 @@ const ms = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)} s` : `${n} ms`)
     </component>
   </section>
 
-  <section v-else-if="view === 'questions'" class="ds-questions border border-edge bg-surface" aria-label="three questions">
+  <section data-ds="overview-band" v-else-if="view === 'questions'" class="ds-questions border border-edge bg-surface" aria-label="three questions">
     <component :is="q.href ? 'a' : 'div'" v-for="q in questions" :key="q.question" :href="q.href" class="ds-questionrow" :data-red="q.red || undefined">
       <span class="ds-questionrow-q type-meta text-fg-muted">{{ q.question }}</span>
       <span class="ds-questionrow-a min-w-0 flex-1">{{ q.answer }}</span>
@@ -59,7 +59,7 @@ const ms = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)} s` : `${n} ms`)
     </component>
   </section>
 
-  <section v-else-if="live" class="ds-liveband" aria-label="searches as they land">
+  <section data-ds="overview-band" v-else-if="live" class="ds-liveband" aria-label="searches as they land">
     <div class="ds-liveband-side">
       <p class="ds-liveband-num">{{ live.value }}</p>
       <p class="ds-liveband-say">{{ live.line }}</p>

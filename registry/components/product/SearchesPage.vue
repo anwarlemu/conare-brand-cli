@@ -18,7 +18,7 @@ const shown = computed(() => props.rows.filter(r => show.value === 'all' || r.ou
 </script>
 
 <template>
-  <ConsolePage title="Searches">
+  <ConsolePage data-ds="searches-page" title="Searches">
     <template v-if="rows.length" #actions>
       <Tabs v-model="show" :options="FILTERS" label="which searches" />
     </template>

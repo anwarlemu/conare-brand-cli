@@ -5,5 +5,5 @@ defineProps<{ for?: string, hint?: string }>()
 </script>
 
 <template>
-  <label :for="$props.for" class="inline-flex items-baseline gap-1.5 type-meta text-fg-soft"><slot /><span v-if="hint" class="text-fg-muted">{{ hint }}</span></label>
+  <label data-ds="label" :for="$props.for" class="inline-flex items-baseline gap-1.5 type-meta text-fg-soft"><slot /><span v-if="hint" class="text-fg-muted">{{ hint }}</span></label>
 </template>

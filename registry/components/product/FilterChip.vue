@@ -21,7 +21,7 @@ const trigger = computed(() => [
 </script>
 
 <template>
-  <Menu :label="label" :width="width" :trigger-class="trigger">
+  <Menu data-ds="filter-chip" :label="label" :width="width" :trigger-class="trigger">
     <template #trigger="{ open }">
       {{ label }}<template v-if="chosen">: <span class="font-medium">{{ chosen }}</span></template>
       <ChevronDown :size="12" :stroke-width="1.5" class="text-fg-muted transition-[rotate] duration-120 ease-out motion-reduce:transition-none" :class="open && 'rotate-180'" aria-hidden="true" />

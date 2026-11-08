@@ -39,6 +39,6 @@ const classes = computed(() => [
 </script>
 
 <template>
-  <a v-if="href" :href="href" :class="classes"><slot /></a>
-  <button v-else :type="type" :disabled="disabled" :class="classes"><slot /></button>
+  <a data-ds="button" v-if="href" :href="href" :class="classes"><slot /></a>
+  <button data-ds="button" v-else :type="type" :disabled="disabled" :class="classes"><slot /></button>
 </template>

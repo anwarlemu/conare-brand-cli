@@ -20,5 +20,5 @@ const words = computed(() => {
 </script>
 
 <template>
-  <span class="ds-words"><template v-for="(t, i) in words" :key="i"><template v-if="t.w < 0">{{ t.text }}</template><strong v-else-if="t.hit" class="ds-word font-medium text-fg" :style="{ '--w': t.w }">{{ t.text }}</strong><span v-else class="ds-word" :style="{ '--w': t.w }">{{ t.text }}</span></template></span>
+  <span data-ds="marked-text" class="ds-words"><template v-for="(t, i) in words" :key="i"><template v-if="t.w < 0">{{ t.text }}</template><strong v-else-if="t.hit" class="ds-word font-medium text-fg" :style="{ '--w': t.w }">{{ t.text }}</strong><span v-else class="ds-word" :style="{ '--w': t.w }">{{ t.text }}</span></template></span>
 </template>

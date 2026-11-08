@@ -44,8 +44,8 @@ function focus(event: FocusEvent) {
 </script>
 
 <template>
-  <span ref="root" class="inline-flex" @pointerenter="enter" @pointerleave="leave" @pointerdown="leave" @focusin="focus" @focusout="leave">
+  <span data-ds="tooltip" ref="root" class="inline-flex" @pointerenter="enter" @pointerleave="leave" @pointerdown="leave" @focusin="focus" @focusout="leave">
     <slot />
   </span>
-  <PopoverPanel :id="id" :pop="pop" tip role="tooltip">{{ text }}</PopoverPanel>
+  <PopoverPanel data-ds="tooltip" :id="id" :pop="pop" tip role="tooltip">{{ text }}</PopoverPanel>
 </template>

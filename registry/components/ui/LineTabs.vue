@@ -7,7 +7,7 @@ const norm = (o: T | { value: T, label: string }) => (typeof o === 'string' ? { 
 </script>
 
 <template>
-  <div class="ds-tabline" role="tablist" :aria-label="label">
+  <div data-ds="line-tabs" class="ds-tabline" role="tablist" :aria-label="label">
     <button v-for="o in options.map(norm)" :key="o.value" type="button" role="tab" :aria-selected="model === o.value" @click="model = o.value">{{ o.label }}</button>
   </div>
 </template>

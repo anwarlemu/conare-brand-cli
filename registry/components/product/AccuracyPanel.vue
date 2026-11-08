@@ -32,7 +32,7 @@ const pass = { onFix: (r: AccuracyRow) => emit('fix', r), onSearch: (r: Accuracy
 </script>
 
 <template>
-  <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+  <div data-ds="accuracy-panel" class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
     <Tabs v-model="tab" :options="[{ value: 'searches', label: 'Searches' }, { value: 'accuracy', label: 'Accuracy' }]" label="performance" />
     <div class="flex flex-wrap items-center gap-2">
       <Button v-if="version !== 3" press :aria-expanded="adding" @click="adding = !adding"><Plus :size="12" :stroke-width="1.5" aria-hidden="true" />Add questions</Button>
@@ -44,9 +44,9 @@ const pass = { onFix: (r: AccuracyRow) => emit('fix', r), onSearch: (r: Accuracy
       </PixelButton>
     </div>
   </div>
-  <AccuracyOpens :open="adding && version !== 3"><AccuracyAdd :asked="asked" @add="more" @close="adding = false" /></AccuracyOpens>
-  <AccuracyVerdict v-if="version === 1" :view="view" v-bind="pass" />
-  <AccuracyTwo v-else-if="version === 2" :view="view" v-bind="pass" />
-  <AccuracySheet v-else-if="version === 3" :view="view" v-bind="pass" @add="emit('add', $event)" />
-  <AccuracyAtWork v-else :view="view" v-bind="pass" />
+  <AccuracyOpens data-ds="accuracy-panel" :open="adding && version !== 3"><AccuracyAdd :asked="asked" @add="more" @close="adding = false" /></AccuracyOpens>
+  <AccuracyVerdict data-ds="accuracy-panel" v-if="version === 1" :view="view" v-bind="pass" />
+  <AccuracyTwo data-ds="accuracy-panel" v-else-if="version === 2" :view="view" v-bind="pass" />
+  <AccuracySheet data-ds="accuracy-panel" v-else-if="version === 3" :view="view" v-bind="pass" @add="emit('add', $event)" />
+  <AccuracyAtWork data-ds="accuracy-panel" v-else :view="view" v-bind="pass" />
 </template>

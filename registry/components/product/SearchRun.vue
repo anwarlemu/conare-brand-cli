@@ -62,7 +62,7 @@ watch(found, (f) => {
 </script>
 
 <template>
-  <section class="ds-run flex flex-col gap-2" :data-found="found || undefined" aria-label="search progress">
+  <section data-ds="search-run" class="ds-run flex flex-col gap-2" :data-found="found || undefined" aria-label="search progress">
     <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
       <span class="grid type-meta" role="status">
         <span v-if="!found" class="ds-run-shimmer [grid-area:1/1]">Searching</span>

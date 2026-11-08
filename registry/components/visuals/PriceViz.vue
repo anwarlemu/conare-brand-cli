@@ -60,7 +60,7 @@ const bracket = [
 </script>
 
 <template>
-  <VizWindow :active="active" class="max-w-155">
+  <VizWindow data-ds="price-viz" :active="active" class="max-w-155">
     <template #title>
       <span class="truncate text-ui leading-4">{{ data.benchmark }}</span>
       <span class="hidden shrink-0 bg-ds-neutral-200 px-1.5 py-0.5 text-caption text-ds-neutral-500 sm:inline">Price and accuracy</span>

@@ -12,7 +12,7 @@ const { grid, style } = usePixelGrid(() => root.value)
 </script>
 
 <template>
-  <component
+  <component data-ds="pixel-button"
     :is="href ? 'a' : 'button'"
     ref="root"
     :href="href"

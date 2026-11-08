@@ -5,7 +5,7 @@
 </script>
 
 <template>
-  <span class="ds-shimmer"><slot /></span>
+  <span data-ds="shimmer-text" class="ds-shimmer"><slot /></span>
 </template>
 
 <style>

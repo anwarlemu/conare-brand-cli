@@ -10,7 +10,7 @@ defineProps<{ title?: string, description?: string, href?: string, arrow?: boole
 </script>
 
 <template>
-  <a v-if="href" :href="href" class="ds-item-link group/item -mx-4 flex items-center justify-between gap-3 px-4 py-2 text-meta">
+  <a data-ds="item" v-if="href" :href="href" class="ds-item-link group/item -mx-4 flex items-center justify-between gap-3 px-4 py-2 text-meta">
     <span class="flex min-w-0 items-center gap-2">
       <slot name="media" />
       <span class="min-w-0">
@@ -23,7 +23,7 @@ defineProps<{ title?: string, description?: string, href?: string, arrow?: boole
       <ChevronRight v-if="arrow" :size="12" :stroke-width="1.5" class="transition-colors duration-120 ease-standard group-hover/item:text-fg" aria-hidden="true" />
     </span>
   </a>
-  <div v-else class="flex items-center justify-between gap-3 py-2 text-meta">
+  <div data-ds="item" v-else class="flex items-center justify-between gap-3 py-2 text-meta">
     <span class="flex min-w-0 items-center gap-2">
       <slot name="media" />
       <span class="min-w-0">

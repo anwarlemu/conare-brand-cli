@@ -6,7 +6,7 @@ withDefaults(defineProps<{ orientation?: 'horizontal' | 'vertical', inset?: bool
 </script>
 
 <template>
-  <div
+  <div data-ds="separator"
     :role="semantic ? 'separator' : 'none'"
     :aria-orientation="semantic ? orientation : undefined"
     class="shrink-0 bg-edge"

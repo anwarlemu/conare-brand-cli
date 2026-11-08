@@ -10,7 +10,7 @@ withDefaults(defineProps<{ pages: number, label?: string }>(), { label: 'pages' 
 </script>
 
 <template>
-  <nav class="flex items-center gap-3" :aria-label="label">
+  <nav data-ds="pagination" class="flex items-center gap-3" :aria-label="label">
     <Button icon aria-label="Previous page" :disabled="page <= 1" @click="page = Math.max(1, page - 1)"><ChevronLeft :size="14" :stroke-width="1.5" aria-hidden="true" /></Button>
     <span class="type-meta text-fg-muted tabular-nums" aria-live="polite">Page <span class="text-fg">{{ page }}</span> of {{ pages }}</span>
     <Button icon aria-label="Next page" :disabled="page >= pages" @click="page = Math.min(pages, page + 1)"><ChevronRight :size="14" :stroke-width="1.5" aria-hidden="true" /></Button>

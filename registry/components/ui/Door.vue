@@ -9,7 +9,7 @@ defineProps<{ title: string, description?: string, icon?: Component, href?: stri
 </script>
 
 <template>
-  <component
+  <component data-ds="door"
     :is="href ? 'a' : 'button'"
     :href="href"
     :type="href ? undefined : 'button'"

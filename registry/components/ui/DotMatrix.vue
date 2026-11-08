@@ -7,7 +7,7 @@ const ORDER = [0, 1, 2, 7, 8, 3, 6, 5, 4]
 </script>
 
 <template>
-  <span class="ds-matrix" :data-tone="tone" aria-hidden="true"><i v-for="k in 9" :key="k" :style="{ '--k': ORDER[k - 1] }" /></span>
+  <span data-ds="dot-matrix" class="ds-matrix" :data-tone="tone" aria-hidden="true"><i v-for="k in 9" :key="k" :style="{ '--k': ORDER[k - 1] }" /></span>
 </template>
 
 <style>
