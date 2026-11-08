@@ -44,7 +44,7 @@ describe('cli', () => {
 	});
 	it('rewrites @/ imports when the app has no alias', () => {
 		const dir = nuxtApp(false);
-		writeFileSync(join(dir, 'package.json'), JSON.stringify({ dependencies: { vue: '3.5.43', 'lucide-vue-next': '^0.479.0' } }));
+		writeFileSync(join(dir, 'package.json'), JSON.stringify({ dependencies: { vue: '3.5.43', 'lucide-vue-next': '^0.479.0' }, devDependencies: { tailwindcss: '^4.2.2' } }));
 		run(dir, 'add', 'copy-button', '--no-install');
 		const text = readFileSync(join(dir, 'src/components/ui/CopyButton.vue'), 'utf8');
 		expect(text).toContain("from '../../composables/useCopy'");
@@ -57,5 +57,25 @@ describe('cli', () => {
 		expect(code).toBe(1);
 		writeFileSync(join(dir, 'app/good.vue'), '<template><div class="bg-surface text-fg" /></template>\n');
 		expect(JSON.parse(run(dir, 'check', 'app/good.vue')).findings).toEqual([]);
+	});
+	it('refuses a Tailwind 3 app with the fix and writes nothing (it used to half-install and break the build)', () => {
+		const dir = mkdtempSync(join(tmpdir(), 'conare-ds-'));
+		writeFileSync(join(dir, 'package.json'), JSON.stringify({ dependencies: { vue: '3.5.43' }, devDependencies: { tailwindcss: '^3.4.17' } }));
+		mkdirSync(join(dir, 'src'));
+		writeFileSync(join(dir, 'src/style.css'), '@tailwind base;\n');
+		let err = '';
+		try { execFileSync('node', [bin, 'init', '--cwd', dir], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }); } catch (e) { err = (e as { stderr: string }).stderr; }
+		expect(err).toContain('npx @tailwindcss/upgrade');
+		expect(readFileSync(join(dir, 'src/style.css'), 'utf8')).toBe('@tailwind base;\n');
+		expect(existsSync(join(dir, 'AGENTS.md'))).toBe(false);
+	});
+	it("installs with the workspace's package manager when the app sits in a monorepo", () => {
+		const root = mkdtempSync(join(tmpdir(), 'conare-ds-'));
+		writeFileSync(join(root, 'package.json'), JSON.stringify({ private: true, workspaces: ['apps/*'] }));
+		writeFileSync(join(root, 'pnpm-lock.yaml'), 'lockfileVersion: 9\n');
+		mkdirSync(join(root, 'apps/web/src'), { recursive: true });
+		writeFileSync(join(root, 'apps/web/package.json'), JSON.stringify({ dependencies: { vue: '3.5.43' }, devDependencies: { tailwindcss: '^4.2.2' } }));
+		const out = JSON.parse(run(join(root, 'apps/web'), 'info'));
+		expect(out.packageManager).toBe('pnpm');
 	});
 });

@@ -1,7 +1,8 @@
-import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { brand, packageRoot } from '../lib/brand.js';
-import { type Project, readProject } from '../library/project.js';
+import { readProject, unsupported } from '../library/project.js';
+import type { Project } from '../library/project.js';
 
 // init: the brand stylesheet and theme beside the app's main stylesheet, the fonts and textures in its public folder,
 // and the agent contract. It changes no component and no copy.
@@ -18,6 +19,8 @@ export function init(root: string, opts: { dryRun?: boolean } = {}): InitResult 
 	const writes: string[] = [];
 	const warnings: string[] = [];
 	const write = (rel: string, content: string) => {
+		// Unchanged files are not rewritten (or reported), so a second run changes nothing.
+		if (existsSync(join(root, rel)) && readFileSync(join(root, rel), 'utf8') === content) return;
 		writes.push(rel);
 		if (opts.dryRun) return;
 		mkdirSync(dirname(join(root, rel)), { recursive: true });
@@ -25,9 +28,9 @@ export function init(root: string, opts: { dryRun?: boolean } = {}): InitResult 
 	};
 	const build = join(packageRoot, 'build');
 	if (!existsSync(join(build, 'brand.css'))) throw new Error('build/ is missing: run the package build first');
-	if (project.framework === 'unknown') warnings.push('No Vue or Nuxt app found here: the stylesheet is installed, but the components need Vue 3.5 and Tailwind 4.');
-	const deps = { ...project.pkg.dependencies, ...project.pkg.devDependencies };
-	if (!deps.tailwindcss && !deps['@tailwindcss/vite']) warnings.push('Tailwind CSS 4 is not installed: add tailwindcss and @tailwindcss/vite (Nuxt: vite.plugins in nuxt.config).');
+	// Nothing is written where the theme cannot work: a clear message with the fix instead of a half-set-up app.
+	const problem = unsupported(project);
+	if (problem) throw new Error(problem);
 
 	// The stylesheet.
 	const css = project.css ?? `${project.srcDir === '.' ? '' : `${project.srcDir}/`}assets/css/main.css`;
@@ -49,6 +52,8 @@ export function init(root: string, opts: { dryRun?: boolean } = {}): InitResult 
 	// Fonts and textures, served at the brand's asset base.
 	const assets = join(project.publicDir, brand().assetBase.replace(/^\//, ''));
 	for (const sub of ['fonts', 'textures']) {
+		const fresh = readdirSync(join(build, sub)).some((f) => !existsSync(join(root, assets, sub, f)));
+		if (!fresh) continue;
 		writes.push(join(assets, sub));
 		if (!opts.dryRun) cpSync(join(build, sub), join(root, assets, sub), { recursive: true });
 	}
