@@ -2,14 +2,15 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, posix, relative } from 'node:path';
 import { brand } from '../lib/brand.js';
-import { type Project, readProject } from '../library/project.js';
+import { type Project, readProject, unsupported } from '../library/project.js';
 import { resolveItems } from '../library/registry.js';
 import { init } from './init.js';
+import { resolveNames } from './library.js';
 
 // add: copies items and everything they require into the app, rewrites the `@/` imports when the app has no `@`
 // alias, installs the npm packages they import and installs the theme once.
 
-export type AddResult = { items: string[]; written: string[]; kept: string[]; packages: string[]; installed: boolean; warnings: string[] };
+export type AddResult = { items: string[]; written: string[]; kept: string[]; packages: string[]; installed: boolean; warnings: string[]; notes: string[] };
 
 /** `@/composables/useMenu` as a path relative to `fromFile` (both under srcDir). */
 function relativeImport(spec: string, fromFile: string) {
@@ -21,7 +22,12 @@ function relativeImport(spec: string, fromFile: string) {
 
 export async function add(root: string, names: string[], opts: { dryRun?: boolean; overwrite?: boolean; install?: boolean } = {}): Promise<AddResult> {
 	const project: Project = readProject(root);
-	const items = await resolveItems(names);
+	const problem = unsupported(project);
+	if (problem) throw new Error(problem);
+	// Names as typed: Button, alert-dialog, AlertDialog, badge (an alias); every one resolves before anything is written.
+	const resolved = await resolveNames(names);
+	const notes = resolved.filter((r) => r.via).map((r) => r.via!);
+	const items = await resolveItems(resolved.map((r) => r.name));
 	const written: string[] = [];
 	const kept: string[] = [];
 	const warnings: string[] = [];
@@ -51,7 +57,8 @@ export async function add(root: string, names: string[], opts: { dryRun?: boolea
 	if (packages.length && !opts.dryRun && opts.install !== false) {
 		const pm = project.packageManager;
 		const args = pm === 'npm' ? ['install', ...packages] : ['add', ...packages];
-		execFileSync(pm, args, { cwd: root, stdio: 'inherit' });
+		// Into the app's own package.json; a monorepo's manager installs from the workspace root's lockfile.
+		execFileSync(pm, args, { cwd: root, stdio: ['ignore', 'inherit', 'inherit'] });
 		installed = true;
 	}
 
@@ -62,5 +69,5 @@ export async function add(root: string, names: string[], opts: { dryRun?: boolea
 		written.push(...r.writes);
 		warnings.push(...r.warnings);
 	}
-	return { items: items.map((i) => i.name), written: written.map((w) => relative('.', w) || w), kept, packages, installed, warnings };
+	return { items: items.map((i) => i.name), written: written.map((w) => relative('.', w) || w), kept, packages, installed, warnings, notes };
 }

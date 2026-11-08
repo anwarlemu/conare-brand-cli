@@ -151,7 +151,7 @@ for (const d of docs) {
 		guardGlobals(path, readFileSync(join(reg, path), 'utf8'));
 		return { ...e, path, content: readFileSync(join(reg, path), 'utf8'), requires: c.requires, packages: c.packages };
 	});
-	const item = { name: d.name, title: d.title, type: d.type, group: d.group, description: d.description, use_for: d.use_for, never: d.never, source: d.source, requires, dependencies: packages.map(pinned), files: files.map((path) => ({ path, content: readFileSync(join(reg, path), 'utf8') })), examples };
+	const item = { name: d.name, title: d.title, type: d.type, group: d.group, description: d.description, use_for: d.use_for, never: d.never, source: d.source, body: d.body, requires, dependencies: packages.map(pinned), files: files.map((path) => ({ path, content: readFileSync(join(reg, path), 'utf8') })), examples };
 	writeFileSync(join(outDir, `${d.name}.json`), `${JSON.stringify(item, null, 2)}\n`);
 	index.push({ ...item, files, examples: d.examples.map((e) => e.name) });
 	site.push({ name: d.name, title: d.title, group: d.group, description: d.description, use_for: d.use_for, never: d.never, source: d.source, body: d.body, requires, dependencies: packages, files, examples: d.examples });

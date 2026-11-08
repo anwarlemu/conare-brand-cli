@@ -4,9 +4,11 @@
   "workspaces": {
     "": {
       "name": "conare-ds",
+      "dependencies": {
+        "@vue/compiler-sfc": "3.5.43",
+      },
       "devDependencies": {
         "@types/node": "^25.3.5",
-        "@vue/compiler-sfc": "3.5.43",
         "lucide-vue-next": "^0.479.0",
         "playwright-core": "1.63.0",
         "typescript": "5.9.3",
