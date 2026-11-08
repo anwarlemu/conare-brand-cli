@@ -32,13 +32,15 @@ function app() {
 const brandCss = (dir: string) => read(dir, 'app/assets/css/conare-ds/brand.css');
 const themeCss = (dir: string) => read(dir, 'app/assets/css/conare-ds/theme.css');
 /** Selectors of rules that apply to the whole page: anything not inside the library's or the selection's scope. */
-const globalRules = (css: string) => [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/(^|[{}])\s*([^{}@;]+)\{/g)].map((m) => m[2].trim()).filter((s) => !/^(:root|\[data-theme=|@)/.test(s) && !s.includes(':where([data-ds], .ds-scope)'));
+const globalRules = (css: string) => [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/(^|[{}])\s*([^{}@;]+)\{/g)].map((m) => m[2].trim()).filter((s) => !/^(:root|\[data-theme=|@)/.test(s) && !/:(where|is)\(\[data-ds\], \.ds-scope\)/.test(s));
 
 describe('the base layer reaches only what was named', () => {
 	it('ships a scoped base: no html, body, heading or focus rule outside the library and the selection', () => {
 		const scoped = read(root, 'build/brand-scoped.css');
 		expect(globalRules(scoped)).toEqual([]);
 		expect(globalRules(read(root, 'build/brand.css'))).toContain('body');
+		// The type on a scoped root outranks Tailwind's preflight (button { font: inherit }) in the base layer.
+		expect(scoped).toContain(':is([data-ds], .ds-scope):not(:is([data-ds], .ds-scope) *) {');
 		// The brand's faces under their own names, so an app that names Inter or Geist keeps its own rendering.
 		expect(scoped).toMatch(/font-family: "Geist \(Conare\)";/);
 		expect(scoped).not.toMatch(/font-family: "Inter";/);
