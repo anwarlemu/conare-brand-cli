@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join, posix } from 'node:path';
 import { elements } from '../convert/color.js';
-import { brand, cli } from '../lib/brand.js';
+import { brand, cli, registryHost } from '../lib/brand.js';
 import { normalizeName, suggest } from '../lib/names.js';
 import { type Project, readProject, unsupported } from '../library/project.js';
 import { type IndexEntry, type RegistryItem, readIndex, readItem } from '../library/registry.js';
@@ -253,7 +253,7 @@ export async function info(root: string) {
 		theme,
 		supported: !problem,
 		problem: problem ?? null,
-		library: `${brand().name} (${index.length} items, registry ${brand().registryUrl})`,
+		library: `${brand().name} (${index.length} items, registry ${registryHost()}/r)`,
 		installed,
 		scope: state ? (state.whole ? 'whole app' : state.parts.map((p) => p.targets.join(', ')).join('; ')) : null,
 		next,

@@ -69,3 +69,9 @@ copy (`git archive HEAD | tar -x -C <scratch>`), `bun install --ignore-scripts`,
 
 - Kill processes by pattern; stop only PIDs you started. Port 3000 is the owner's.
 - Modify conare-web or inkbox-brand-cli. Commit `build`, `dist`, `node_modules` or generated registry output.
+
+## Public registry
+
+The library site is behind Vercel login, so the registry files (`/r/`) are also published to a public project, the
+`registryHost` in `brand/brand.json`. The CLI, components.json, shadcn, MCP and the agent guide read `/r/` from there;
+page links stay on `registryUrl`. After every registry change: `sh scripts/deploy-registry.sh` (after `registry`).

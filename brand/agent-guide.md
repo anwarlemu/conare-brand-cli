@@ -8,7 +8,7 @@ instructions work with any agent that can read text and edit project files.
 1. Read the project's instructions and package.json. Identify Nuxt or Vite, the package manager and the main
    stylesheet.
 2. Read `brand/principles.md` (installed at the library site, {{registry}}) and the references of the components you
-   need. The library is at {{registry}}; each item is also at {{registry}}/r/<name>.json with its files, its
+   need. The library is at {{registry}}; each item is also at {{registryHost}}/r/<name>.json with its files, its
    examples, what it requires and its packages.
 3. Reuse the library's components and their props. Do not recreate them from screenshots.
 

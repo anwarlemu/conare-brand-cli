@@ -1,6 +1,6 @@
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
-import { brand, packageRoot } from '../lib/brand.js';
+import { brand, packageRoot, registryHost } from '../lib/brand.js';
 import { readProject, unsupported } from '../library/project.js';
 import type { Project } from '../library/project.js';
 import { readState } from '../lib/state.js';
@@ -14,7 +14,7 @@ export type InitResult = { project: Project; writes: string[]; warnings: string[
 const START = '<!-- ds:contract:start -->';
 const END = '<!-- ds:contract:end -->';
 
-const fill = (text: string) => text.replaceAll('{{brand}}', brand().name).replaceAll('{{cli}}', `npx ${brand().bin}`).replaceAll('{{bin}}', brand().bin).replaceAll('{{registry}}', brand().registryUrl).replaceAll('{{source}}', brand().source);
+const fill = (text: string) => text.replaceAll('{{brand}}', brand().name).replaceAll('{{cli}}', `npx ${brand().bin}`).replaceAll('{{bin}}', brand().bin).replaceAll('{{registryHost}}', registryHost()).replaceAll('{{registry}}', brand().registryUrl).replaceAll('{{source}}', brand().source);
 
 /**
  * `whole`: the base layer for every page (a whole-app apply). Otherwise (a selection, a plain add or init) the brand

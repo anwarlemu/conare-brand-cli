@@ -1,5 +1,5 @@
 import { resolve } from 'node:path';
-import { brand } from './lib/brand.js';
+import { brand, registryHost } from './lib/brand.js';
 import { formatFinding, runCheck } from './check/engine.js';
 import { add } from './commands/add.js';
 import { apply, formatApply, readState } from './commands/apply.js';
@@ -40,7 +40,7 @@ const HELP = () => {
 		row('tokens [term...]', 'Find tokens by name or value'),
 		'',
 		'Common options: --cwd <dir> (default: the current folder), --json (machine output on stdout).',
-		`Registry: ${brand().registryUrl}/r/index.json`,
+		`Registry: ${registryHost()}/r/index.json`,
 	].join('\n');
 };
 

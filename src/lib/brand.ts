@@ -12,6 +12,8 @@ export type Brand = {
 	bin: string;
 	source: string;
 	registryUrl: string;
+	/** Where the registry files (/r/) are served when the library site is private; defaults to registryUrl. */
+	registryHost?: string;
 	site: string;
 	assetBase: string;
 	fonts: { files: { family: string; weight: number; file: string; role: string }[]; css: string };
@@ -78,3 +80,6 @@ export function brandHexes() {
 	}
 	return map;
 }
+
+/** The public address of the registry files (/r/...): registryHost when the library site is private, else registryUrl. */
+export const registryHost = () => (brand().registryHost ?? brand().registryUrl).replace(/\/$/, '');

@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { brand, packageRoot } from '../lib/brand.js';
+import { brand, packageRoot, registryHost } from '../lib/brand.js';
 
 // The registry as built by scripts/build-registry.ts: r/ in the release tree, apps/www/public/r in a checkout.
 // Falls back to the published registry (registryUrl/r) when an item is not bundled.
@@ -29,15 +29,15 @@ export function registryDir(): string | undefined {
 export async function readIndex(): Promise<IndexEntry[]> {
 	const dir = registryDir();
 	if (dir) return JSON.parse(readFileSync(join(dir, 'index.json'), 'utf8')).items;
-	const res = await fetch(`${brand().registryUrl}/r/index.json`);
-	if (!res.ok) throw new Error(`No bundled registry and ${brand().registryUrl}/r/index.json answered ${res.status}`);
+	const res = await fetch(`${registryHost()}/r/index.json`);
+	if (!res.ok) throw new Error(`No bundled registry and ${registryHost()}/r/index.json answered ${res.status}`);
 	return ((await res.json()) as { items: IndexEntry[] }).items;
 }
 
 export async function readItem(name: string): Promise<RegistryItem> {
 	const dir = registryDir();
 	if (dir && existsSync(join(dir, `${name}.json`))) return JSON.parse(readFileSync(join(dir, `${name}.json`), 'utf8'));
-	const res = await fetch(`${brand().registryUrl}/r/${name}.json`);
+	const res = await fetch(`${registryHost()}/r/${name}.json`);
 	if (!res.ok) throw new Error(`Unknown item \`${name}\` (run \`${brand().bin} list\`)`);
 	return (await res.json()) as RegistryItem;
 }

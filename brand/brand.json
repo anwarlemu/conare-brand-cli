@@ -3,6 +3,7 @@
   "bin": "conare-ds",
   "source": "github:anwarlemu/conare-brand-cli#release",
   "registryUrl": "https://conare-ds.agencidev.com",
+  "registryHost": "https://conare-ds-registry.vercel.app",
   "site": "https://conare.ai",
   "framework": "vue",
   "assetBase": "/conare-ds",

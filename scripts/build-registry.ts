@@ -158,7 +158,7 @@ for (const d of docs) {
 	index.push({ ...item, files, examples: d.examples.map((e) => e.name) });
 	site.push({ name: d.name, title: d.title, group: d.group, description: d.description, use_for: d.use_for, never: d.never, source: d.source, body: d.body, requires, dependencies: packages, files, examples: d.examples });
 }
-writeFileSync(join(outDir, 'index.json'), `${JSON.stringify({ name: brand.name, registryUrl: brand.registryUrl, items: index }, null, 2)}\n`);
+writeFileSync(join(outDir, 'index.json'), `${JSON.stringify({ name: brand.name, registryUrl: brand.registryUrl, registryHost: brand.registryHost ?? brand.registryUrl, items: index }, null, 2)}\n`);
 writeFileSync(join(root, 'apps', 'www', 'app', 'registry.generated.json'), `${JSON.stringify({ groups: brand.groups, items: site }, null, 2)}\n`);
 
 // The value check over the whole library: components, composables and examples.
