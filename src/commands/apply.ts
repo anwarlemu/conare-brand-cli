@@ -258,7 +258,8 @@ export async function apply(root: string, opts: ApplyOptions): Promise<ApplyResu
 	const prior = previous && !previous.whole ? previous.parts : [];
 	const mergedParts = whole ? [{ whole: true, targets: [] }] : opts.redo ? parts : [...prior, ...parts.filter((p) => !prior.some((q) => JSON.stringify(q) === JSON.stringify(p)))];
 	const checked = new Set<string>(whole ? [] : previous && !previous.whole ? previous.checked : []);
-	if (!whole) for (const p of plans.values()) if (p.general || p.componentKind) checked.add(p.file);
+	// The check covers what was restyled whole: files in a page or file scope, and components of the named kinds.
+	if (!whole) for (const p of plans.values()) if (p.general || (p.componentKind && (p.kinds === 'all' || p.kinds.has(p.componentKind)))) checked.add(p.file);
 	const state: State = { version: 1, appliedAt: new Date().toISOString(), parts: mergedParts, checked: [...checked].sort(), whole };
 	// The state changes only when the scope does, so running the same apply twice leaves every file as it was.
 	const same = previous && JSON.stringify({ ...previous, appliedAt: '' }) === JSON.stringify({ ...state, appliedAt: '' });

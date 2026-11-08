@@ -91,6 +91,9 @@ describe('apply', () => {
 		const index = readFileSync(join(dir, 'app/pages/index.vue'), 'utf8');
 		expect(index).toContain('<h1 class="text-4xl font-bold text-gray-900">');
 		expect(index).toContain('bg-action-primary');
+		// The check covers the button components only, not the badge component left as it was.
+		expect(JSON.parse(readFileSync(join(dir, '.ds/state.json'), 'utf8')).checked).toEqual(['app/components/BaseButton.vue']);
+		expect(json(dir, 'check').findings).toEqual([]);
 	});
 	it('combines kinds and pages, records the scope, widens it, and --redo repeats it', () => {
 		const dir = nuxtApp();

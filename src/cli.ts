@@ -146,8 +146,9 @@ async function main() {
 			const state = readState(cwd);
 			const scoped = !args.length && flags.all !== true && state && !state.whole;
 			const r = runCheck(cwd, { paths: scoped ? state.checked : args, fix: flags.fix === true });
-			const note = scoped ? ` in the applied scope (${state.checked.length} files; --all checks every file)` : '';
-			out({ ...r, scope: scoped ? state.checked : undefined }, [...r.findings.map(formatFinding), `${r.files} files${note}, ${r.findings.length} findings${r.fixed ? `, ${r.fixed} fixed` : ''} (${r.ms}ms)`].join('\n'));
+			const note = scoped ? ' in the applied scope (--all checks every file)' : '';
+			const n = (count: number, word: string) => `${count} ${word}${count === 1 ? '' : 's'}`;
+			out({ ...r, scope: scoped ? state.checked : undefined }, [...r.findings.map(formatFinding), `${n(r.files, 'file')}${note}, ${n(r.findings.length, 'finding')}${r.fixed ? `, ${r.fixed} fixed` : ''} (${r.ms}ms)`].join('\n'));
 			if (r.findings.length) process.exitCode = 1;
 			return;
 		}
