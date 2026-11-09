@@ -64,8 +64,33 @@ bare `apply` makes it the whole app, and `check` checks only the files in it, so
 | `init` | Writes `<main stylesheet dir>/conare-ds/brand.css` (fonts, tokens, and the base layer scoped to the library's components, page-wide after a whole-app `apply`) and `theme.css` (the Tailwind 4 theme), imports both right after `@import "tailwindcss"`, copies the fonts and textures to `public/conare-ds/`, writes `.ds/agent-guide.md` and the contract into `AGENTS.md`. Idempotent. |
 | `check [paths...]` | The value check over styles, Vue templates and scripts: raw colors, Tailwind palette and arbitrary colors, radii and type sizes off the scale, durations off the motion steps, `transition-all`, `ease-in`, custom easings, shadows, bold weights, unknown `--ds-*` tokens and icon packs other than Lucide. Exit 1 on findings; `--fix` applies exact token replacements; `--all` checks every file when a scope is recorded; `--json`. A `ds-override: <reason>` comment on the line above skips a finding. |
 | `tokens [term...]` | Finds tokens by name or value. |
+| `image` | Renders an Open Graph card or a social post from a title. PNG and SVG, from the brand's type, colors and mark. |
 
 All commands take `--cwd <dir>` and `--json`; an unknown option is an error, never ignored.
+
+### Open Graph and social images
+
+`image` renders a card from a title and an optional line of subtext. It uses this package's type, colors and mark, writes PNG and SVG, and does not open a browser. The same copy writes the same files, so an agent can run it in CI.
+
+```sh
+npx conare-ds image --title "The right context, on every call" --text "Store it and keep it current."
+npx conare-ds image --size all --title "The right context, on every call"
+npx conare-ds image --template quote --title "Search should return the passage." --by "Acme" --size square,portrait
+npx conare-ds image --template frame --title "What came back" --image ./shot.png --size og,landscape --json
+npx conare-ds image --list
+```
+
+| Template | What it sets |
+| --- | --- |
+| `headline` | The headline on its own. |
+| `statement` | Headline and subtext. The default. |
+| `quote` | A quotation. `--by` (or `--author`) names the speaker. |
+| `announcement` | A tag, a headline and one line under a rule. |
+| `frame` | Headline, subtext and a screenshot in a double rule. Without `--image`, a quiet stand-in of the console. |
+
+Sizes are `og` (1200x630), `square` (1080x1080), `portrait` (1080x1350) and `landscape` (1200x675, for X and LinkedIn). `--size all` writes every size. `--ground paper` is the default; `--ground ink` is the off-black card. `--format` is `png`, `svg` or `both` (the default). `--out` is a directory (default `imagery/`), or one file when there is a single size. `--eyebrow` sets the red tag. `--image` is a PNG or JPEG for `frame`.
+
+A headline ends in a red full stop, as the site's headlines do. Write the copy in sentence case. `--json` prints `{ template, ground, files: [{ path, format, size, width, height }] }`. Rendered examples of each template are in `imagery/samples/`.
 
 ### What reaches the rest of the app
 

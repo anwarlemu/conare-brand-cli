@@ -5,6 +5,7 @@ import { add } from './commands/add.js';
 import { apply, formatApply, readState } from './commands/apply.js';
 import { init } from './commands/init.js';
 import { diff, formatInfo, formatView, info, search, view } from './commands/library.js';
+import { imageHelp, runImage } from './commands/image.js';
 import { findTokens, list } from './commands/small.js';
 
 const HELP = () => {
@@ -39,12 +40,18 @@ const HELP = () => {
 		row('check [paths...] [--fix] [--all]', 'Values off the tokens (the applied scope; --all for every file)'),
 		row('tokens [term...]', 'Find tokens by name or value'),
 		'',
+		'Images:',
+		row('image --title "..."', 'Open Graph and social images (PNG and SVG) from a title and optional subtext'),
+		more('--template headline|statement|quote|announcement|frame   --size og,square,portrait,landscape,all'),
+		more('--ground paper|ink   --text   --eyebrow   --by   --image <file>   --out <dir>   --format png|svg|both'),
+		more('--list  templates, sizes and grounds'),
+		'',
 		'Common options: --cwd <dir> (default: the current folder), --json (machine output on stdout).',
 		`Registry: ${registryHost()}/r/index.json`,
 	].join('\n');
 };
 
-const VALUE_FLAGS = new Set(['cwd', 'components', 'pages']);
+const VALUE_FLAGS = new Set(['cwd', 'components', 'pages', 'title', 'text', 'subtitle', 'eyebrow', 'by', 'author', 'image', 'template', 'size', 'ground', 'out', 'format']);
 
 export function parse(argv: string[]) {
 	const flags: Record<string, string | boolean> = {};
@@ -78,6 +85,7 @@ const FLAGS: Record<string, string[]> = {
 	init: ['dry-run'],
 	check: ['fix', 'all'],
 	tokens: [],
+	image: ['title', 'text', 'subtitle', 'eyebrow', 'by', 'author', 'image', 'template', 'size', 'ground', 'out', 'format', 'list'],
 };
 
 async function main() {
@@ -90,7 +98,7 @@ async function main() {
 	const cwd = resolve(typeof flags.cwd === 'string' ? flags.cwd : process.cwd());
 	const json = flags.json === true;
 	const out = (value: unknown, text: string) => console.log(json ? JSON.stringify(value, null, 2) : text);
-	if (flags.help && command) {
+	if (flags.help && command && command !== 'image') {
 		console.log(HELP());
 		return;
 	}
@@ -155,6 +163,15 @@ async function main() {
 		case 'tokens': {
 			const t = findTokens(args);
 			out({ tokens: t }, t.map((x) => `${x.name.padEnd(40)} ${x.light}${x.dark !== x.light ? `  (dark ${x.dark})` : ''}`).join('\n'));
+			return;
+		}
+		case 'image': {
+			if (flags.help) {
+				console.log(imageHelp());
+				return;
+			}
+			const r = await runImage(cwd, args, flags);
+			out(r.json, r.text);
 			return;
 		}
 		default:

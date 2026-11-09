@@ -47,6 +47,18 @@ limit it: `{{cli}} apply button card`, `{{cli}} apply /settings`, `{{cli}} apply
   `text-fg-muted`, `text-fg-danger`, `border-edge`, `border-edge-strong`, `border-edge-focus`.
 - Mount one `Toaster` per app and call `useToast()` from anywhere.
 
+## Imagery
+
+`{{cli}} image` renders an Open Graph card (1200 by 630) or a social post (1080 by 1080, 1080 by 1350, 1200 by 675) from a title. It writes PNG and SVG, using the brand's type, colors and mark. No browser, and the same copy writes the same files.
+
+```sh
+{{cli}} image --title "The right context, on every call" --text "Store it and keep it current."
+{{cli}} image --list
+{{cli}} image --template frame --title "What came back" --image ./shot.png --size og,landscape --json
+```
+
+Templates are `headline`, `statement` (the default), `quote`, `announcement` and `frame`. `--ground ink` is the off-black card. `--eyebrow` sets the red tag, `--by` the name on a quote. A headline ends in a red full stop. Write the copy in sentence case. `--size all` writes every size.
+
 ## Motion
 
 - Hover and colour: 120ms on `ease-standard`. Small moves: 160ms on `ease-out` (the strong curve). Menus and panels in:

@@ -35,11 +35,12 @@ owner's). It needs `build/` and the registry outputs first (`bun run ci`).
   real files. One rail (filter, Introduction, All components, Theme, groups A to Z), component pages (install line,
   framed previews with Desktop and Phone widths, usage, example source, component source, previous and next).
 - `src/`: the CLI (`bin.js` -> `dist/cli.js`). `check/` (rules.ts, source.ts, engine.ts: the value check, ported from
-  inkbox-brand-cli), `convert/` (apply's restyle: classes.ts, css.ts, kinds.ts for the library look by kind, file.ts
-  for Vue SFCs with @vue/compiler-sfc and the structure check), `project/graph.ts` (files, imports, Nuxt pages and Vue
-  Router routes), `commands/` (apply, add, init, library: view, search, info, diff; small: list, tokens), `library/`
-  (registry and project detection), `lib/brand.ts`, `lib/names.ts`. `brand/elements.json` holds apply's roles and the
-  per-kind recipes (the library components' own classes).
+ inkbox-brand-cli), `convert/` (apply's restyle: classes.ts, css.ts, kinds.ts for the library look by kind, file.ts
+ for Vue SFCs with @vue/compiler-sfc and the structure check), `project/graph.ts` (files, imports, Nuxt pages and Vue
+ Router routes), `commands/` (apply, add, init, library: view, search, info, diff; small: list, tokens; image), `image/`
+ (Open Graph and social cards: SVG from the tokens, fonts and mark, rasterized to PNG), `library/`
+ (registry and project detection), `lib/brand.ts`, `lib/names.ts`. `brand/elements.json` holds apply's roles and the
+ per-kind recipes (the library components' own classes).
 - `test/`: vitest for the check, the build outputs, the registry and the CLI on temporary apps.
 - `PLAN.md`: the items still to build, in three batches.
 
