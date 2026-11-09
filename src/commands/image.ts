@@ -26,7 +26,8 @@ export function imageHelp(): string {
 		'Templates: headline, statement (the default), quote, announcement, frame.',
 		'Sizes: og 1200x630, square 1080x1080, portrait 1080x1350, landscape 1200x675. --size all writes every one.',
 		'--ground paper (the default) or ink. --format png, svg or both (the default). --out is a directory, or one file when there is one size.',
-		'--text is the line under the headline (--subtitle too). --eyebrow is the red tag. --by names the speaker on a quote (--author too).',
+		'--text is the line under the headline on statement, announcement and frame (--subtitle too). Headline and quote do not draw it; a quote\'s speaker is --by (or --author).',
+		'--eyebrow is the red tag.',
 		'--image is a PNG or JPEG for the frame template. Without it, the frame holds a quiet stand-in of the console.',
 		'A headline ends in a red full stop, as the site\'s headlines do. Write the copy in sentence case.',
 	].join('\n');
@@ -64,12 +65,15 @@ export async function runImage(cwd: string, args: string[], flags: Flags): Promi
 		ground: str(flags.ground),
 		format: str(flags.format),
 	});
+	const text = str(flags.text) || str(flags.subtitle);
+	if (text && requested.template === 'headline') throw new Error('Headline does not draw --text. Use --template statement for a line under the title.');
+	if (text && requested.template === 'quote') throw new Error('Quote does not draw --text. Pass the speaker with --by.');
 	const imagePath = str(flags.image);
 	const image = imagePath ? readImage(cwd, imagePath) : undefined;
 	const rendered = await renderImages({
 		...requested,
 		title,
-		text: str(flags.text) || str(flags.subtitle),
+		text,
 		eyebrow: str(flags.eyebrow),
 		by: str(flags.by) || str(flags.author),
 		image,

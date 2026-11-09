@@ -14,4 +14,6 @@
   second accent colour, no ease-in, no transition-all.
 - Icons are Lucide (`lucide-vue-next`) at a 1.5 stroke, 12 to 14px in the console.
 - Run the project's checks and build, then `{{cli}} check --json`, and fix what it reports.
-- For an Open Graph image or a social post, run `{{cli}} image --title "..."` (`--text`, `--template`, `--size`, `--ground`, `--json`). `{{cli}} image --list` shows the templates and sizes. It writes PNG and SVG from the brand's type, colors and mark.
+- For an Open Graph image or a social post, run `{{cli}} image --title "..."` (`--text`, `--template`, `--size`,
+  `--ground`, `--by`, `--image`, `--json`). `{{cli}} image --list` shows the templates and sizes. It writes PNG and
+  SVG from the brand's type, colors and mark. Headline and quote do not draw `--text`.

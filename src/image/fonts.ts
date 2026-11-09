@@ -26,7 +26,10 @@ export type Faces = { heading: Face; text: Face; medium: Face };
 let pending: Promise<Faces> | undefined;
 
 export function faces(): Promise<Faces> {
-	pending ??= load();
+	pending ??= load().catch((err) => {
+		pending = undefined;
+		throw err;
+	});
 	return pending;
 }
 

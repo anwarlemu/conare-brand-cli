@@ -57,7 +57,10 @@ limit it: `{{cli}} apply button card`, `{{cli}} apply /settings`, `{{cli}} apply
 {{cli}} image --template frame --title "What came back" --image ./shot.png --size og,landscape --json
 ```
 
-Templates are `headline`, `statement` (the default), `quote`, `announcement` and `frame`. `--ground ink` is the off-black card. `--eyebrow` sets the red tag, `--by` the name on a quote. A headline ends in a red full stop. Write the copy in sentence case. `--size all` writes every size.
+Templates are `headline`, `statement` (the default), `quote`, `announcement` and `frame`. `--ground ink` is the
+off-black card. `--eyebrow` sets the red tag, `--by` the name on a quote. Headline and quote do not draw `--text`
+(a quote's speaker is `--by`; a line under a headline is `statement`). A headline ends in a red full stop. Write the
+copy in sentence case. `--size all` writes every size. `--image` is a PNG or JPEG for `frame`.
 
 ## Motion
 

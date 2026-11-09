@@ -39,10 +39,6 @@ export type Written = {
 	height: number;
 };
 
-export function describeImages() {
-	return catalog();
-}
-
 export async function renderImages(req: RenderRequest): Promise<Rendered[]> {
 	const title = req.title.trim();
 	if (!title) throw new Error('A title is required.');

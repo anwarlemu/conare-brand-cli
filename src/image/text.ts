@@ -94,9 +94,9 @@ export function normalize(text: string): string {
 		.trim();
 }
 
-/** The site's headlines carry a red full stop. Keep one the copy already has; add one when it has no ending mark. */
+/** The site's headlines carry a red full stop. Keep a stop the copy already has, including one before a closing quote, and add one when it has none. A quote by itself is not a stop. */
 export function withStop(text: string): string {
 	const t = normalize(text);
-	if (/[.?!…"'”’]$/.test(t)) return t;
+	if (/[.?!…]['"”’]*$/.test(t)) return t;
 	return `${t}.`;
 }

@@ -197,7 +197,11 @@ function miniature(x: number, y: number, w: number, h: number, palette: Theme): 
 		const ry = rowTop + i * rowH;
 		const active = i === 1;
 		const barH = Math.max(4, Math.round(rowH * 0.16));
-		if (active) parts.push(rect(ix, ry + (rowH - barH) / 2 - barH * 0.2, 3, barH * 1.4, light.accentText));
+		// The console's active page: a 2px accent at the sidebar's edge, most of the row tall (SidebarLink).
+		if (active) {
+			const tickH = Math.max(8, rowH * 0.58);
+			parts.push(rect(ix, ry + (rowH - tickH) / 2, 2, tickH, light.edgeAccent));
+		}
 		const barW = (rail - (markX - ix)) * (active ? 0.62 : 0.4 + (i % 3) * 0.08);
 		parts.push(rect(markX, ry + (rowH - barH) / 2, barW, barH, active ? light.fg : light.edgeStrong));
 	}
@@ -241,24 +245,24 @@ function rhythm(size: SizeSpec): Rhythm {
 	return { padX: 64, padTop: 54, padBottom: 34, mark: 28, url: 16, footerGap: 18, ruleGap: 28, headline: 72, headlineMin: 32, headlineLines: 3, body: 22, bodyMin: 16, bodyLines: 3, bodyLeading: 1.4, eyebrow: 15, gapTag: 24, gapBody: 18 };
 }
 
-function fitTag(label: string, face: Face, size: number, maxWidth: number, palette: Theme): Box {
+function fitTag(label: string, face: Face, size: number, maxWidth: number, palette: Theme): Box | undefined {
 	let s = size;
 	let text = label.trim().toUpperCase();
-	let width = tagWidth(face, text, s, palette.trackingTag);
-	while (width > maxWidth && s > 11) {
-		s -= 1;
-		width = tagWidth(face, text, s, palette.trackingTag);
+	if (!text || maxWidth < 8) return undefined;
+	// The red box includes its own padding, so the label is fitted to what is left of the column.
+	const padXFor = (n: number) => Math.round(n * 0.48);
+	const boxWidth = (n: number, value: string) => tagWidth(face, value, n, palette.trackingTag) + padXFor(n) * 2;
+	while (boxWidth(s, text) > maxWidth && s > 11) s -= 1;
+	if (boxWidth(s, text) > maxWidth) {
+		while (text.length > 0 && boxWidth(s, `${text}...`) > maxWidth) text = text.slice(0, -1).trimEnd();
+		text = text ? `${text}...` : '';
 	}
-	if (width > maxWidth) {
-		while (text.length > 1 && tagWidth(face, `${text}...`, s, palette.trackingTag) > maxWidth) text = text.slice(0, -1).trimEnd();
-		text = `${text}...`;
-		width = tagWidth(face, text, s, palette.trackingTag);
-	}
+	if (!text || boxWidth(s, text) > maxWidth) return undefined;
 	const cap = capHeight(face, s);
-	const padX = Math.round(s * 0.48);
+	const padX = padXFor(s);
 	const padY = Math.round(s * 0.36);
 	const height = Math.ceil(cap + padY * 2);
-	const boxW = Math.ceil(width + padX * 2);
+	const boxW = Math.min(maxWidth, Math.ceil(boxWidth(s, text)));
 	return {
 		height,
 		draw: (x, y) => `${rect(x, y, boxW, height, palette.accent)}${textAt(face, text, x + padX, y + padY + cap, s, palette.trackingTag, palette.onAccent)}`,
@@ -310,13 +314,20 @@ function linesBox(face: Face, lines: string[], size: number, leading: number, tr
 }
 
 function paintLine(face: Face, line: string, x: number, baseline: number, size: number, tracking: number, fill: string, stop: string): string {
-	// The stop stays in the same run, so its side bearing matches the heading on the site.
-	if (stop !== fill && line.endsWith('.') && !line.endsWith('...')) {
-		const body = line.slice(0, -1);
+	// The stop stays in the same run, so its side bearing matches the heading on the site. A closing quote can follow it.
+	const parts = stop === fill ? undefined : splitStop(line);
+	if (parts) {
 		const ls = tracking ? ` letter-spacing="${fmt(tracking * size)}"` : '';
-		return `<text x="${fmt(x)}" y="${fmt(baseline)}" fill="${fill}" font-family="${esc(face.family)}" font-size="${fmt(size)}" font-weight="${face.weight}"${ls}>${esc(body)}<tspan fill="${stop}">.</tspan></text>`;
+		return `<text x="${fmt(x)}" y="${fmt(baseline)}" fill="${fill}" ${familyAttr(face)} font-size="${fmt(size)}" font-weight="${face.weight}"${ls}>${esc(parts.body)}<tspan fill="${stop}">.</tspan>${esc(parts.tail)}</text>`;
 	}
 	return textAt(face, line, x, baseline, size, tracking, fill);
+}
+
+/** A final full stop, not an ellipsis, with any closing quotes after it. */
+function splitStop(line: string): { body: string; tail: string } | undefined {
+	const m = /^(.*)\.((?:['"”’])*)$/.exec(line);
+	if (!m || m[1].endsWith('.')) return undefined;
+	return { body: m[1], tail: m[2] };
 }
 
 function footer(size: SizeSpec, r: Rhythm, loaded: Faces, palette: Theme): string {
@@ -387,9 +398,14 @@ ${body}
 `;
 }
 
+function familyAttr(face: Face): string {
+	// Quoted, so a family with a space (the heading face) is one name. Unquoted, a browser reads it as two families and skips the embedded face.
+	return `font-family="'${esc(face.family)}'"`;
+}
+
 function textAt(face: Face, text: string, x: number, y: number, size: number, tracking: number, fill: string): string {
 	const ls = tracking ? ` letter-spacing="${fmt(tracking * size)}"` : '';
-	return `<text x="${fmt(x)}" y="${fmt(y)}" fill="${fill}" font-family="${esc(face.family)}" font-size="${fmt(size)}" font-weight="${face.weight}"${ls}>${esc(text)}</text>`;
+	return `<text x="${fmt(x)}" y="${fmt(y)}" fill="${fill}" ${familyAttr(face)} font-size="${fmt(size)}" font-weight="${face.weight}"${ls}>${esc(text)}</text>`;
 }
 
 function rect(x: number, y: number, w: number, h: number, fill: string, stroke?: string): string {

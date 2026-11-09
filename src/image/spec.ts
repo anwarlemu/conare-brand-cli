@@ -40,6 +40,7 @@ export type Theme = {
 	edgeStrong: string;
 	accent: string;
 	accentText: string;
+	edgeAccent: string;
 	onAccent: string;
 	trackingDisplay: number;
 	trackingTag: number;
@@ -129,6 +130,7 @@ function toTheme(raw: Record<string, string>): Theme {
 		edgeStrong: hex(raw, '--ds-color-edge-strong'),
 		accent: hex(raw, '--ds-color-surface-accent'),
 		accentText: hex(raw, '--ds-color-fg-accent-display'),
+		edgeAccent: hex(raw, '--ds-color-edge-accent'),
 		onAccent: hex(raw, '--ds-color-fg-on-accent'),
 		trackingDisplay: em(raw, '--ds-tracking-display', -0.02),
 		trackingTag: em(raw, '--ds-tracking-tag', 0.06),

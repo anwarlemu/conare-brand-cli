@@ -82,15 +82,15 @@ npx conare-ds image --list
 
 | Template | What it sets |
 | --- | --- |
-| `headline` | The headline on its own. |
+| `headline` | The headline on its own. `--text` is refused; use `statement` for a line under it. |
 | `statement` | Headline and subtext. The default. |
-| `quote` | A quotation. `--by` (or `--author`) names the speaker. |
-| `announcement` | A tag, a headline and one line under a rule. |
+| `quote` | A quotation. `--by` (or `--author`) names the speaker. `--text` is not drawn. |
+| `announcement` | A tag, a headline and a short line under a rule. |
 | `frame` | Headline, subtext and a screenshot in a double rule. Without `--image`, a quiet stand-in of the console. |
 
 Sizes are `og` (1200x630), `square` (1080x1080), `portrait` (1080x1350) and `landscape` (1200x675, for X and LinkedIn). `--size all` writes every size. `--ground paper` is the default; `--ground ink` is the off-black card. `--format` is `png`, `svg` or `both` (the default). `--out` is a directory (default `imagery/`), or one file when there is a single size. `--eyebrow` sets the red tag. `--image` is a PNG or JPEG for `frame`.
 
-A headline ends in a red full stop, as the site's headlines do. Write the copy in sentence case. `--json` prints `{ template, ground, files: [{ path, format, size, width, height }] }`. Rendered examples of each template are in `imagery/samples/`.
+A headline ends in a red full stop, as the site's headlines do, including when the title is wrapped in quotes. Write the copy in sentence case. `--json` prints `{ template, ground, files: [{ path, format, template, size, ground, width, height }] }`. Rendered examples of each template are in `imagery/samples/`.
 
 ### What reaches the rest of the app
 
