@@ -82,6 +82,8 @@ export function choosePart(apis: Api[], item: string, requested?: string): Api {
 	throw new Error(`${item} has more than one component and none is named ${componentPartName(item)}. Pass --part. Parts: ${apis.map((api) => api.component).join(', ')}.`);
 }
 
+export type CatalogPart = { component: string; states: string[] };
+
 export type CatalogEntry = {
 	name: string;
 	title: string;
@@ -91,7 +93,7 @@ export type CatalogEntry = {
 	use_for: string;
 	never: string[];
 	part?: string;
-	parts: string[];
+	parts: CatalogPart[];
 	states: string[];
 	examples: string[];
 };
@@ -102,8 +104,10 @@ export async function componentCatalog(): Promise<CatalogEntry[]> {
 	for (const entry of [...index].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))) {
 		const item = await readItem(entry.name);
 		const apis = componentApis(item);
+		const examples = item.examples.map((example) => example.name);
 		const named = apis.find((api) => api.component === componentPartName(item.name));
 		const part = named ?? (apis.length === 1 ? apis[0] : undefined);
+		const parts = apis.map((api) => ({ component: api.component, states: statesOf(api, examples).map((state) => state.id) }));
 		out.push({
 			name: item.name,
 			title: item.title,
@@ -113,9 +117,9 @@ export async function componentCatalog(): Promise<CatalogEntry[]> {
 			use_for: item.use_for,
 			never: item.never,
 			part: part?.component,
-			parts: apis.map((api) => api.component),
-			states: part ? statesOf(part, item.examples.map((example) => example.name)).map((state) => state.id) : [],
-			examples: item.examples.map((example) => example.name),
+			parts,
+			states: parts.find((entry) => entry.component === part?.component)?.states ?? [],
+			examples,
 		});
 	}
 	return out;

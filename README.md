@@ -116,7 +116,7 @@ npx conare-ds component emit field --prop label=Email
 
 `principles --surface product` is the console: the do list, the do-not list and the rules transcribed from `brand/principles.md`. `brand/principles.md` has no website section. `principles --surface website` returns only the sentences in that file, and the comments in `brand/tokens.css`, that name the website or a brand surface outside the console.
 
-`component list` uses the group ids `ui`, `product`, `site` and `visuals`. `inspect` returns every part and the states derived from its props: `rest`, `<prop>:<value>` for each union literal and each boolean, and `example:<Name>` for each example file. `emit` writes Vue that imports that part and sets the state's props. `example:<Name>` copies the example file unchanged. Generated markup leaves the default slot empty. A required prop with no default must be `--prop name=value`.
+`component list` uses the group ids `ui`, `product`, `site` and `visuals`. `inspect` returns every part and the states derived from its props: `rest`, `<prop>:<value>` for each union literal and each boolean, and `example:<Name>` for each example file. In the manifest, `parts` lists every component in the item with its states. When `part` is absent, pass `--part`. `emit` writes Vue that imports that part and sets the state's props. `example:<Name>` copies the example file unchanged. Generated markup leaves the default slot empty. A required prop with no default must be `--prop name=value`.
 
 ### Short video
 

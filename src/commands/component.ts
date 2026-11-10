@@ -35,7 +35,7 @@ export async function runComponent(root: string, args: string[], flags: Flags): 
 		if (flags.state !== undefined || flags.part !== undefined || flags.prop !== undefined || flags.source === true) throw new Error('component list only takes --group.');
 		if (flags.group !== undefined && !str(flags.group)) throw new Error('--group needs a group id. Groups: ui, product, site, visuals.');
 		const items = await componentList(str(flags.group));
-		const text = items.map((item) => `${item.name.padEnd(22)} ${item.group.padEnd(10)} ${item.part ?? 'pass --part'}  ${item.description}`).join('\n');
+		const text = items.map((item) => `${item.name.padEnd(22)} ${item.group.padEnd(10)} ${item.part ?? item.parts.map((part) => part.component).join(', ')}  ${item.description}`).join('\n');
 		return { json: { components: items }, text: text || 'No components.' };
 	}
 	if (args.length !== 2) throw new Error(`Name one item: ${brand().bin} component ${action} button`);

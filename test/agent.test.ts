@@ -78,9 +78,15 @@ describe('manifest', () => {
 		const names = (doc.components as { name: string; states: string[] }[]).map((item) => item.name);
 		expect(names).toContain('button');
 		expect(names).toContain('field');
-		const button = (doc.components as { name: string; states: string[] }[]).find((item) => item.name === 'button');
+		const button = (doc.components as { name: string; part?: string; states: string[]; parts: { component: string; states: string[] }[] }[]).find((item) => item.name === 'button');
+		expect(button?.part).toBe('Button');
 		expect(button?.states).toContain('variant:dark');
 		expect(button?.states).toContain('example:Dark');
+		expect(button?.parts.find((part) => part.component === 'PixelButton')?.states.length).toBeGreaterThan(0);
+		const chart = (doc.components as { name: string; part?: string; parts: { component: string; states: string[] }[] }[]).find((item) => item.name === 'chart');
+		expect(chart?.part).toBeUndefined();
+		expect(chart?.parts.map((part) => part.component)).toContain('BarChart');
+		expect(chart?.parts.every((part) => part.states.length > 0)).toBe(true);
 		const rules = (doc.principles as { rules: { id: string; surface: string }[] }).rules;
 		expect(rules.some((rule) => rule.surface === 'product' && rule.id === 'square')).toBe(true);
 		expect(rules.some((rule) => rule.surface === 'website' && rule.id === 'website-tag')).toBe(true);
