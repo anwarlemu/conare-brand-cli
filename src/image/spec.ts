@@ -25,6 +25,15 @@ export const GROUNDS = [
 	{ id: 'ink', description: 'Off-black.' },
 ] as const;
 
+/** Fields a template draws. Anything else is an error, not a value that is silently dropped. */
+export const TEMPLATE_FIELDS: Record<(typeof TEMPLATES)[number]['id'], { accepts: string[]; refuses: string[] }> = {
+	headline: { accepts: ['eyebrow'], refuses: ['text', 'by', 'image'] },
+	statement: { accepts: ['text', 'eyebrow'], refuses: ['by', 'image'] },
+	quote: { accepts: ['by', 'eyebrow'], refuses: ['text', 'image'] },
+	announcement: { accepts: ['text', 'eyebrow'], refuses: ['by', 'image'] },
+	frame: { accepts: ['text', 'eyebrow', 'image'], refuses: ['by'] },
+};
+
 export type SizeId = (typeof SIZES)[number]['id'];
 export type TemplateId = (typeof TEMPLATES)[number]['id'];
 export type GroundId = (typeof GROUNDS)[number]['id'];
@@ -67,7 +76,13 @@ export function groundById(id: string): GroundId | undefined {
 }
 
 export function catalog() {
-	return { templates: [...TEMPLATES], sizes: [...SIZES], grounds: [...GROUNDS] };
+	return {
+		templates: TEMPLATES.map((t) => ({ ...t, accepts: [...TEMPLATE_FIELDS[t.id].accepts], refuses: [...TEMPLATE_FIELDS[t.id].refuses] })),
+		sizes: [...SIZES],
+		grounds: [...GROUNDS],
+		formats: ['png', 'svg', 'both'],
+		defaults: { template: 'statement', size: 'og', ground: 'paper', format: 'both' },
+	};
 }
 
 let themes: { paper: Theme; ink: Theme } | undefined;

@@ -21,7 +21,8 @@ owner's). It needs `build/` and the registry outputs first (`bun run ci`).
 
 - `brand/`: the only brand-specific content. `tokens.css` is the single source of values (`--ds-*`, light at `:root`,
   dark under `[data-theme="dark"]`); `base.css` the base layer (page-wide only after a whole-app apply; build/brand-scoped.css scopes it to `[data-ds]` roots and `.ds-scope`); `brand.json` names, fonts, icons, groups;
-  `principles.md`, `agent-guide.md`, `contract.md`; `logo/`, `fonts/` (the vendored woff2 files conare-web serves:
+  `principles.md`, `principles.json` (the product and website rules the CLI serves; the website entry records the gap),
+  `agent-guide.md`, `contract.md`; `logo/`, `fonts/` (the vendored woff2 files conare-web serves:
   Faculty Glyphic, Geist, Geist Mono, Inter) and `textures/`.
 - `scripts/build-brand.mjs`: `build/brand.css` (fonts + tokens + base), `theme.css` (Tailwind 4 `@theme inline`:
   `bg-surface`, `text-fg-muted`, `border-edge`, `h-control-sm`, `ease-standard`, `type-ui`...), `tokens.json`.
@@ -37,8 +38,10 @@ owner's). It needs `build/` and the registry outputs first (`bun run ci`).
 - `src/`: the CLI (`bin.js` -> `dist/cli.js`). `check/` (rules.ts, source.ts, engine.ts: the value check, ported from
  inkbox-brand-cli), `convert/` (apply's restyle: classes.ts, css.ts, kinds.ts for the library look by kind, file.ts
  for Vue SFCs with @vue/compiler-sfc and the structure check), `project/graph.ts` (files, imports, Nuxt pages and Vue
- Router routes), `commands/` (apply, add, init, library: view, search, info, diff; small: list, tokens; image), `image/`
- (Open Graph and social cards: SVG from the tokens, fonts and mark, rasterized to PNG), `library/`
+ Router routes), `commands/` (apply, add, init, library: view, search, info, diff; small: list, tokens; image, video,
+ brand, principles, component, manifest), `image/` (Open Graph and social cards: SVG from the tokens, fonts and mark,
+ rasterized to PNG), `video/` (the same frames, 18 at 12 fps, muxed to a Motion JPEG MP4), `brand/` (tokens, fonts,
+ logos, voice, principles), `component/` (list, inspect, emit), `library/`
  (registry and project detection), `lib/brand.ts`, `lib/names.ts`. `brand/elements.json` holds apply's roles and the
  per-kind recipes (the library components' own classes).
 - `test/`: vitest for the check, the build outputs, the registry and the CLI on temporary apps.

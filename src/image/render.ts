@@ -53,7 +53,8 @@ export async function renderImages(req: RenderRequest): Promise<Rendered[]> {
 	return out;
 }
 
-export async function raster(svg: string, background: string): Promise<Buffer> {
+/** Rasterize with the vendored faces only, so a second machine cannot pick up a different system font. */
+export async function rasterize(svg: string, background: string): Promise<{ png: Buffer; pixels: Buffer; width: number; height: number }> {
 	const loaded = await faces();
 	const resvg = new Resvg(svg, {
 		background,
@@ -67,7 +68,12 @@ export async function raster(svg: string, background: string): Promise<Buffer> {
 			sansSerifFamily: loaded.text.family,
 		},
 	});
-	return Buffer.from(resvg.render().asPng());
+	const rendered = resvg.render();
+	return { png: Buffer.from(rendered.asPng()), pixels: Buffer.from(rendered.pixels), width: rendered.width, height: rendered.height };
+}
+
+export async function raster(svg: string, background: string): Promise<Buffer> {
+	return (await rasterize(svg, background)).png;
 }
 
 export function pngSize(png: Buffer): { width: number; height: number } {

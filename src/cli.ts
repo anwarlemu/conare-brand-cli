@@ -5,8 +5,12 @@ import { add } from './commands/add.js';
 import { apply, formatApply, readState } from './commands/apply.js';
 import { init } from './commands/init.js';
 import { diff, formatInfo, formatView, info, search, view } from './commands/library.js';
+import { brandHelp, principlesHelp, runBrand, runPrinciples } from './commands/brand.js';
+import { componentHelp, runComponent } from './commands/component.js';
 import { imageHelp, runImage } from './commands/image.js';
+import { formatManifest, manifest, manifestHelp } from './commands/manifest.js';
 import { findTokens, list } from './commands/small.js';
+import { runVideo, videoHelp } from './commands/video.js';
 
 const HELP = () => {
 	const b = brand().bin;
@@ -38,29 +42,50 @@ const HELP = () => {
 		row('info', "The app's setup, installed items, applied scope and what to run next"),
 		row('init', 'The brand stylesheet, theme, fonts and agent contract only'),
 		row('check [paths...] [--fix] [--all]', 'Values off the tokens (the applied scope; --all for every file)'),
-		row('tokens [term...]', 'Find tokens by name or value'),
+		row('tokens [term...]', 'Find tokens by name or value (no match is an error)'),
+		'',
+		'For an agent, start with manifest --json. It lists every command, template, size, component, token and rule.',
+		row('manifest', 'That document. describe is the same command'),
+		row('brand [--section color]', 'Tokens, fonts, logos and voice. colour is color. --token --ds-color-fg reads one'),
+		row('principles [--surface product]', 'Product and website rules. Surfaces: product, website, all'),
+		row('component list', 'Components with group ids, parts and states'),
+		row('component inspect <item>', 'Props, slots, states and examples. --part --source'),
+		row('component emit <item>', 'Vue for one state. --state variant:dark, --state example:Dark, --prop name=value'),
 		'',
 		'Images:',
 		row('image --title "..."', 'Open Graph and social images (PNG and SVG) from a title and optional subtext'),
 		more('--template headline|statement|quote|announcement|frame   --size og,square,portrait,landscape,all'),
 		more('--ground paper|ink   --text   --eyebrow   --by   --image <file>   --out <dir>   --format png|svg|both'),
-		more('--list  templates, sizes and grounds'),
+		more('--list  templates, sizes and grounds. A field the template does not draw is an error'),
+		'',
+		'Video:',
+		row('video --template headline --title "..."', 'Motion JPEG MP4, 18 frames at 12 fps, from the tokens, faces and logos'),
+		more('--template headline|statement|announcement|logo   --size square,vertical,landscape,all'),
+		more('--ground paper|ink   --text   --eyebrow   --out <dir>. Logo takes no title. --list for the spec'),
 		'',
 		'Common options: --cwd <dir> (default: the current folder), --json (machine output on stdout).',
 		`Registry: ${registryHost()}/r/index.json`,
 	].join('\n');
 };
 
-const VALUE_FLAGS = new Set(['cwd', 'components', 'pages', 'title', 'text', 'subtitle', 'eyebrow', 'by', 'author', 'image', 'template', 'size', 'ground', 'out', 'format']);
+const VALUE_FLAGS = new Set(['cwd', 'components', 'pages', 'title', 'text', 'subtitle', 'eyebrow', 'by', 'author', 'image', 'template', 'size', 'ground', 'out', 'format', 'section', 'token', 'surface', 'group', 'state', 'part', 'prop']);
+const REPEAT_FLAGS = new Set(['prop']);
 
 export function parse(argv: string[]) {
-	const flags: Record<string, string | boolean> = {};
+	const flags: Record<string, string | boolean | string[]> = {};
 	const rest: string[] = [];
+	const take = (key: string, value: string) => {
+		if (REPEAT_FLAGS.has(key)) {
+			const cur = flags[key];
+			const list = Array.isArray(cur) ? cur : typeof cur === 'string' ? [cur] : [];
+			flags[key] = [...list, value];
+		} else flags[key] = value;
+	};
 	for (let i = 0; i < argv.length; i++) {
 		const a = argv[i];
 		const eq = a.match(/^--([\w-]+)=(.*)$/);
-		if (eq) flags[eq[1]] = eq[2];
-		else if (a.startsWith('--') && VALUE_FLAGS.has(a.slice(2))) flags[a.slice(2)] = argv[++i] ?? '';
+		if (eq) take(eq[1], eq[2]);
+		else if (a.startsWith('--') && VALUE_FLAGS.has(a.slice(2))) take(a.slice(2), argv[++i] ?? '');
 		else if (a === '-h') flags.help = true;
 		else if (a.startsWith('--no-')) flags[a.slice(5)] = false;
 		else if (a.startsWith('--')) flags[a.slice(2)] = true;
@@ -69,7 +94,7 @@ export function parse(argv: string[]) {
 	return { command: rest[0], args: rest.slice(1), flags };
 }
 
-const listFlag = (v: string | boolean | undefined) => (typeof v === 'string' ? v.split(',').map((s) => s.trim()).filter(Boolean) : undefined);
+const listFlag = (v: string | boolean | string[] | undefined) => (typeof v === 'string' ? v.split(',').map((s) => s.trim()).filter(Boolean) : undefined);
 
 // The flags each command takes; anything else is a mistake to report, not to ignore (a typo would widen an apply).
 const COMMON = ['cwd', 'json', 'help'];
@@ -86,6 +111,12 @@ const FLAGS: Record<string, string[]> = {
 	check: ['fix', 'all'],
 	tokens: [],
 	image: ['title', 'text', 'subtitle', 'eyebrow', 'by', 'author', 'image', 'template', 'size', 'ground', 'out', 'format', 'list'],
+	video: ['title', 'text', 'subtitle', 'eyebrow', 'template', 'size', 'ground', 'out', 'list'],
+	brand: ['section', 'token'],
+	principles: ['surface'],
+	component: ['group', 'part', 'state', 'prop', 'source'],
+	manifest: [],
+	describe: [],
 };
 
 async function main() {
@@ -98,7 +129,8 @@ async function main() {
 	const cwd = resolve(typeof flags.cwd === 'string' ? flags.cwd : process.cwd());
 	const json = flags.json === true;
 	const out = (value: unknown, text: string) => console.log(json ? JSON.stringify(value, null, 2) : text);
-	if (flags.help && command && command !== 'image') {
+	const ownHelp = new Set(['image', 'video', 'brand', 'principles', 'component', 'manifest', 'describe']);
+	if (flags.help && command && !ownHelp.has(command)) {
 		console.log(HELP());
 		return;
 	}
@@ -172,6 +204,53 @@ async function main() {
 			}
 			const r = await runImage(cwd, args, flags);
 			out(r.json, r.text);
+			return;
+		}
+		case 'video': {
+			if (flags.help) {
+				console.log(videoHelp());
+				return;
+			}
+			const r = await runVideo(cwd, args, flags);
+			out(r.json, r.text);
+			return;
+		}
+		case 'brand': {
+			if (flags.help) {
+				console.log(brandHelp());
+				return;
+			}
+			const r = runBrand(args, flags);
+			out(r.json, r.text);
+			return;
+		}
+		case 'principles': {
+			if (flags.help) {
+				console.log(principlesHelp());
+				return;
+			}
+			const r = runPrinciples(args, flags);
+			out(r.json, r.text);
+			return;
+		}
+		case 'component': {
+			if (flags.help) {
+				console.log(componentHelp());
+				return;
+			}
+			const r = await runComponent(cwd, args, flags);
+			out(r.json, r.text);
+			return;
+		}
+		case 'manifest':
+		case 'describe': {
+			if (flags.help) {
+				console.log(manifestHelp());
+				return;
+			}
+			if (args.length) throw new Error(`\`${command}\` takes no arguments. ${brand().bin} manifest --json`);
+			const doc = await manifest();
+			out(doc, formatManifest(doc));
 			return;
 		}
 		default:

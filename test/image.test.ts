@@ -81,9 +81,12 @@ describe('image', () => {
 		expect(() => resolveRequest({ size: 'story' })).toThrow(/Unknown size/);
 		await expect(runImage(root, [], {})).rejects.toThrow(/title is required/);
 		const dir = mkdtempSync(join(tmpdir(), 'ds-image-'));
-		await expect(runImage(dir, [], { title: 'Hello', image: 'missing.png' })).rejects.toThrow(/No image at/);
+		await expect(runImage(dir, [], { title: 'Hello', image: 'missing.png' })).rejects.toThrow(/does not use --image/);
+		await expect(runImage(dir, [], { template: 'frame', title: 'Hello', image: 'missing.png' })).rejects.toThrow(/No image at/);
+		await expect(runImage(dir, [], { template: 'statement', title: 'Hello', by: 'Acme' })).rejects.toThrow(/does not draw --by/);
+		await expect(runImage(dir, [], { title: 'Hello', text: 'One line', subtitle: 'Another' })).rejects.toThrow(/disagree/);
 		writeFileSync(join(dir, 'notes.txt'), 'not an image');
-		await expect(runImage(dir, [], { title: 'Hello', image: 'notes.txt' })).rejects.toThrow(/PNG or JPEG/);
+		await expect(runImage(dir, [], { template: 'frame', title: 'Hello', image: 'notes.txt' })).rejects.toThrow(/PNG or JPEG/);
 		await expect(runImage(dir, [], { template: 'headline', title: 'Hello', text: 'Left off the card.' })).rejects.toThrow(/does not draw --text/);
 		await expect(runImage(dir, [], { template: 'quote', title: 'Hello', text: 'Not the speaker.' })).rejects.toThrow(/--by/);
 		rmSync(dir, { recursive: true, force: true });

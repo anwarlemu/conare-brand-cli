@@ -63,8 +63,13 @@ bare `apply` makes it the whole app, and `check` checks only the files in it, so
 | `info` | The app's framework, source folder, alias, package manager, Tailwind version, stylesheet and theme, installed items (and which changed locally), the applied scope and what to run next. |
 | `init` | Writes `<main stylesheet dir>/conare-ds/brand.css` (fonts, tokens, and the base layer scoped to the library's components, page-wide after a whole-app `apply`) and `theme.css` (the Tailwind 4 theme), imports both right after `@import "tailwindcss"`, copies the fonts and textures to `public/conare-ds/`, writes `.ds/agent-guide.md` and the contract into `AGENTS.md`. Idempotent. |
 | `check [paths...]` | The value check over styles, Vue templates and scripts: raw colors, Tailwind palette and arbitrary colors, radii and type sizes off the scale, durations off the motion steps, `transition-all`, `ease-in`, custom easings, shadows, bold weights, unknown `--ds-*` tokens and icon packs other than Lucide. Exit 1 on findings; `--fix` applies exact token replacements; `--all` checks every file when a scope is recorded; `--json`. A `ds-override: <reason>` comment on the line above skips a finding. |
-| `tokens [term...]` | Finds tokens by name or value. |
+| `tokens [term...]` | Finds tokens by name or value. No match is an error. One exact token is `brand --token`. |
+| `manifest` (or `describe`) | Every command, template, size, component, token and rule, for an agent. Pass `--json`. |
+| `brand` | Tokens (color, type, spacing, radii, motion), fonts, logos and voice. `--section`, `--token`. `colour` is `color`. |
+| `principles` | Product and website rules, with do and do-not lists. `--surface product` or `website`. |
+| `component` | `list`, `inspect` and `emit` Vue for a real component, including props and states. |
 | `image` | Renders an Open Graph card or a social post from a title. PNG and SVG, from the brand's type, colors and mark. |
+| `video` | Short Motion JPEG MP4 clips from the tokens, faces and logos. Square, 9:16 and 16:9. |
 
 All commands take `--cwd <dir>` and `--json`; an unknown option is an error, never ignored.
 
@@ -90,7 +95,42 @@ npx conare-ds image --list
 
 Sizes are `og` (1200x630), `square` (1080x1080), `portrait` (1080x1350) and `landscape` (1200x675, for X and LinkedIn). `--size all` writes every size. `--ground paper` is the default; `--ground ink` is the off-black card. `--format` is `png`, `svg` or `both` (the default). `--out` is a directory (default `imagery/`), or one file when there is a single size. `--eyebrow` sets the red tag. `--image` is a PNG or JPEG for `frame`.
 
-A headline ends in a red full stop, as the site's headlines do, including when the title is wrapped in quotes. Write the copy in sentence case. `--json` prints `{ template, ground, files: [{ path, format, template, size, ground, width, height }] }`. Rendered examples of each template are in `imagery/samples/`.
+A headline ends in a red full stop, as the site's headlines do, including when the title is wrapped in quotes. Write the copy in sentence case. A template refuses a field it does not draw: headline refuses `--text`, `--by` and `--image`; statement and announcement refuse `--by` and `--image`; quote refuses `--text` and `--image`; frame refuses `--by`. `--text` and `--subtitle` must agree when both are set, and so must `--by` and `--author`. `--json` prints `{ template, ground, files: [{ path, format, template, size, ground, width, height }] }`. Rendered examples of each template are in `imagery/samples/`.
+
+### The brand, the rules and the components
+
+`manifest` (alias `describe`) is the entry point for an agent. `manifest --json` lists every command, brand section, token, principle, component, image template, video template and size, and the gaps this repository does not fill. An unknown name exits 1 and names what is allowed. The CLI does not substitute a nearby value.
+
+```sh
+npx conare-ds manifest --json
+npx conare-ds brand --section color
+npx conare-ds brand --token --ds-color-fg
+npx conare-ds principles --surface product --json
+npx conare-ds component list --group ui --json
+npx conare-ds component inspect button --json
+npx conare-ds component emit button --state variant:dark --json
+npx conare-ds component emit field --prop label=Email
+```
+
+`brand` reads `brand/tokens.css`, `brand/brand.json`, `brand/logo` and the Voice section of `brand/principles.md`. Sections are `color`, `type`, `spacing`, `radii`, `motion`, `fonts`, `logos`, `voice` and `other`. Spacing includes space, size, layout and border; the `group` field on each token says which. Fonts are the faces named in `brand.json` and the woff2 files beside them. Logos are the files on disk, with each SVG fill matched to a token when the hex is one of the brand's. This repository has no logo clearance, minimum size or exclusion zone.
+
+`principles --surface product` is the console: the do list, the do-not list and the rules transcribed from `brand/principles.md`. `brand/principles.md` has no website section. `principles --surface website` returns only the sentences in that file, and the comments in `brand/tokens.css`, that name the website or a brand surface outside the console.
+
+`component list` uses the group ids `ui`, `product`, `site` and `visuals`. `inspect` returns every part and the states derived from its props: `rest`, `<prop>:<value>` for each union literal and each boolean, and `example:<Name>` for each example file. `emit` writes Vue that imports that part and sets the state's props. `example:<Name>` copies the example file unchanged. Generated markup leaves the default slot empty. A required prop with no default must be `--prop name=value`.
+
+### Short video
+
+`video` renders a 1.5 second clip (18 frames at 12 fps) as Motion JPEG in an MP4. The frames are the same headless SVG path as the stills: brand tokens, the vendored faces and the logo files. No browser and no system fonts. The same inputs write the same bytes. The file plays in ffprobe, ffmpeg, VLC and QuickTime. It is not H.264, so a browser video element may not play it.
+
+```sh
+npx conare-ds video --list
+npx conare-ds video --template headline --size square --title "Context that stays current"
+npx conare-ds video --template statement --size landscape --title "The right context, on every call" --text "Store it, keep it current, and hand it to the model."
+npx conare-ds video --template announcement --size vertical --eyebrow "Now shipping" --title "Sources sync themselves" --text "Connect a source once."
+npx conare-ds video --template logo --size square
+```
+
+There is no default template. Sizes are `square` (1080x1080, the default), `vertical` (1080x1920, 9:16) and `landscape` (1920x1080, 16:9). `og` is not a video size. `--ground paper` is the default; `--ground ink` is the off-black card. Headline does not draw `--text`. Logo does not draw a title, `--text` or `--eyebrow`. One sample per template, plus a PNG of its last frame, is in `imagery/samples/` (`video-<template>-<size>`).
 
 ### What reaches the rest of the app
 

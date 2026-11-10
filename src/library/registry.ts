@@ -17,7 +17,7 @@ export type RegistryItem = {
 	files: RegistryFile[];
 	requires: string[];
 	dependencies: string[];
-	examples: { name: string; path: string; content: string }[];
+	examples: { name: string; label?: string; path: string; content: string }[];
 };
 export type IndexEntry = Omit<RegistryItem, 'files' | 'examples'> & { files: string[]; examples: string[] };
 

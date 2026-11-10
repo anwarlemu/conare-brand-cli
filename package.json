@@ -43,6 +43,7 @@
   "dependencies": {
     "@resvg/resvg-js": "^2.6.2",
     "@vue/compiler-sfc": "3.5.43",
+    "jpeg-js": "0.4.4",
     "opentype.js": "^2.0.0",
     "wawoff2": "^2.0.1"
   }

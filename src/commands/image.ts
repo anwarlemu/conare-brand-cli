@@ -2,12 +2,12 @@ import { readFileSync } from 'node:fs';
 import { isAbsolute, resolve } from 'node:path';
 import { brand } from '../lib/brand.js';
 import { mimeOf, renderImages, resolveRequest, writeImages, type Written } from '../image/render.js';
-import { catalog } from '../image/spec.js';
+import { catalog, TEMPLATE_FIELDS, type TemplateId } from '../image/spec.js';
 
 // `image` renders Open Graph and social cards from copy. It does not need an app: the type, colors and mark come
 // from the package.
 
-type Flags = Record<string, string | boolean>;
+type Flags = Record<string, string | boolean | string[] | undefined>;
 
 export function imageHelp(): string {
 	const b = brand().bin;
@@ -27,8 +27,9 @@ export function imageHelp(): string {
 		'Sizes: og 1200x630, square 1080x1080, portrait 1080x1350, landscape 1200x675. --size all writes every one.',
 		'--ground paper (the default) or ink. --format png, svg or both (the default). --out is a directory, or one file when there is one size.',
 		'--text is the line under the headline on statement, announcement and frame (--subtitle too). Headline and quote do not draw it; a quote\'s speaker is --by (or --author).',
-		'--eyebrow is the red tag.',
-		'--image is a PNG or JPEG for the frame template. Without it, the frame holds a quiet stand-in of the console.',
+		'--eyebrow is the red tag. A template that does not draw a field rejects it.',
+		'--image is a PNG or JPEG for the frame template. Without it, the frame holds a quiet stand-in of the console. Other templates reject --image.',
+		'--by is the speaker on a quote. Other templates reject it. --text and --subtitle must match when both are set; so must --by and --author.',
 		'A headline ends in a red full stop, as the site\'s headlines do. Write the copy in sentence case.',
 	].join('\n');
 }
@@ -49,6 +50,10 @@ export async function runImage(cwd: string, args: string[], flags: Flags): Promi
 		return { json: spec, text };
 	}
 
+	for (const name of ['title', 'text', 'subtitle', 'eyebrow', 'by', 'author', 'image', 'template', 'size', 'ground', 'out', 'format']) {
+		if (flags[name] === '' || flags[name] === true) throw new Error(`--${name} needs a value.`);
+	}
+
 	const positional: string[] = [];
 	const fromArgs: string[] = [];
 	for (const arg of args) {
@@ -58,6 +63,12 @@ export async function runImage(cwd: string, args: string[], flags: Flags): Promi
 	if (positional.length > 1 || (positional.length === 1 && str(flags.title))) throw new Error(`Unexpected \`${positional.join(' ')}\`. Pass the title with --title.`);
 	const title = str(flags.title) || positional[0];
 	if (!title) throw new Error(`A title is required. ${brand().bin} image --title "..." (--list shows templates and sizes).`);
+	const textFlag = str(flags.text);
+	const subtitle = str(flags.subtitle);
+	if (textFlag && subtitle && textFlag !== subtitle) throw new Error('--text and --subtitle disagree. Pass one.');
+	const byFlag = str(flags.by);
+	const author = str(flags.author);
+	if (byFlag && author && byFlag !== author) throw new Error('--by and --author disagree. Pass one.');
 
 	const requested = resolveRequest({
 		template: str(flags.template),
@@ -65,9 +76,9 @@ export async function runImage(cwd: string, args: string[], flags: Flags): Promi
 		ground: str(flags.ground),
 		format: str(flags.format),
 	});
-	const text = str(flags.text) || str(flags.subtitle);
-	if (text && requested.template === 'headline') throw new Error('Headline does not draw --text. Use --template statement for a line under the title.');
-	if (text && requested.template === 'quote') throw new Error('Quote does not draw --text. Pass the speaker with --by.');
+	const text = textFlag || subtitle;
+	const by = byFlag || author;
+	refuseUnused(requested.template, { text, by, image: str(flags.image), eyebrow: str(flags.eyebrow) });
 	const imagePath = str(flags.image);
 	const image = imagePath ? readImage(cwd, imagePath) : undefined;
 	const rendered = await renderImages({
@@ -75,11 +86,24 @@ export async function runImage(cwd: string, args: string[], flags: Flags): Promi
 		title,
 		text,
 		eyebrow: str(flags.eyebrow),
-		by: str(flags.by) || str(flags.author),
+		by,
 		image,
 	});
 	const files = writeImages(cwd, str(flags.out), rendered, requested.format);
 	return { json: { template: requested.template, ground: requested.ground, files: files.map(fileJson) }, text: formatWrote(files) };
+}
+
+function refuseUnused(template: TemplateId, present: { text?: string; by?: string; image?: string; eyebrow?: string }) {
+	const policy = TEMPLATE_FIELDS[template];
+	const label = template.charAt(0).toUpperCase() + template.slice(1);
+	if (present.text && policy.refuses.includes('text')) {
+		if (template === 'headline') throw new Error('Headline does not draw --text. Use --template statement for a line under the title.');
+		if (template === 'quote') throw new Error('Quote does not draw --text. Pass the speaker with --by.');
+		throw new Error(`${label} does not draw --text.`);
+	}
+	if (present.by && policy.refuses.includes('by')) throw new Error(`${label} does not draw --by. --by is the speaker on a quote.`);
+	if (present.image && policy.refuses.includes('image')) throw new Error(`${label} does not use --image. --image is for the frame template.`);
+	if (present.eyebrow && policy.refuses.includes('eyebrow')) throw new Error(`${label} does not draw --eyebrow.`);
 }
 
 function readImage(cwd: string, path: string): { mime: 'image/png' | 'image/jpeg'; data: Buffer } {
@@ -103,6 +127,6 @@ function formatWrote(files: Written[]): string {
 	return files.map((f) => `${f.path}  ${f.width}x${f.height}`).join('\n');
 }
 
-function str(value: string | boolean | undefined): string | undefined {
+function str(value: string | boolean | string[] | undefined): string | undefined {
 	return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }

@@ -5,12 +5,16 @@ instructions work with any agent that can read text and edit project files.
 
 ## Start here
 
-1. Read the project's instructions and package.json. Identify Nuxt or Vite, the package manager and the main
+1. Run `{{cli}} manifest --json`. That document lists every command, template, size, component, token and rule.
+   `describe` is the same command. If a name is not in it, the command exits 1. Do not invent a substitute.
+2. Read the project's instructions and package.json. Identify Nuxt or Vite, the package manager and the main
    stylesheet.
-2. Read `brand/principles.md` (installed at the library site, {{registry}}) and the references of the components you
-   need. The library is at {{registry}}; each item is also at {{registryHost}}/r/<name>.json with its files, its
-   examples, what it requires and its packages.
-3. Reuse the library's components and their props. Do not recreate them from screenshots.
+3. Query the brand with `{{cli}} brand --json` and the rules with `{{cli}} principles --json`. The product surface
+   is the console. The website surface is only what `brand/principles.md` and the comments in `brand/tokens.css`
+   already say. There is no separate website section to extend.
+4. Reuse the library's components. `{{cli}} component list --json`, `{{cli}} component inspect <item> --json` and
+   `{{cli}} component emit <item> --state <id> --json` return the real parts, props and states. Do not recreate a
+   component from a screenshot.
 
 ## Install and prepare a project
 
@@ -58,9 +62,25 @@ limit it: `{{cli}} apply button card`, `{{cli}} apply /settings`, `{{cli}} apply
 ```
 
 Templates are `headline`, `statement` (the default), `quote`, `announcement` and `frame`. `--ground ink` is the
-off-black card. `--eyebrow` sets the red tag, `--by` the name on a quote. Headline and quote do not draw `--text`
-(a quote's speaker is `--by`; a line under a headline is `statement`). A headline ends in a red full stop. Write the
-copy in sentence case. `--size all` writes every size. `--image` is a PNG or JPEG for `frame`.
+off-black card. `--eyebrow` sets the red tag, `--by` the name on a quote. A template refuses a field it does not
+draw: headline refuses `--text`, `--by` and `--image`; statement and announcement refuse `--by` and `--image`;
+quote refuses `--text` and `--image`; frame refuses `--by`. A headline ends in a red full stop. Write the copy in
+sentence case. `--size all` writes every size. `--image` is a PNG or JPEG for `frame`.
+
+`{{cli}} video` renders a 1.5 second clip, 18 frames at 12 fps, as Motion JPEG in an MP4. There is no default
+template. Sizes are `square` (1080x1080, the default), `vertical` (1080x1920) and `landscape` (1920x1080). `og` is
+not a video size. Templates are `headline`, `statement`, `announcement` and `logo`. Headline does not draw `--text`.
+Logo does not draw a title, `--text` or `--eyebrow`. The same inputs write the same bytes. The file plays in
+ffprobe, ffmpeg, VLC and QuickTime. It is not H.264.
+
+```sh
+{{cli}} video --list
+{{cli}} video --template statement --size square --title "The right context, on every call" --text "Store it and keep it current."
+```
+
+`{{cli}} brand --section color` (or `type`, `spacing`, `radii`, `motion`, `fonts`, `logos`, `voice`) returns that
+part of the system. `colour` is `color`. `{{cli}} brand --token --ds-color-fg` returns one token and errors on an
+unknown name. Logo clearance, a minimum size and an exclusion zone are not in this repository. Do not invent them.
 
 ## Motion
 
