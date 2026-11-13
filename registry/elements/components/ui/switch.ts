@@ -27,12 +27,8 @@ export class Switch extends DsFormElement {
 		super.updated(changed)
 		if (changed.has('checked')) this.internals.setFormValue(this.checked ? 'on' : null)
 	}
-	formDisabledCallback(disabled: boolean) {
-		this.disabled = disabled
-	}
-
 	render() {
-		return html`<button data-ds="switch" type="button" role="switch" class="ds-switch" aria-checked=${String(this.checked)} aria-label=${this.label} ?disabled=${this.disabled} @click=${() => this.commit(!this.checked, 'checked')}><span aria-hidden="true"></span></button>`
+		return html`<button data-ds="switch" type="button" role="switch" class="ds-switch" aria-checked=${String(this.checked)} aria-label=${this.label} ?disabled=${this.inactive} @click=${() => this.commit(!this.checked, 'checked')}><span aria-hidden="true"></span></button>`
 	}
 }
 

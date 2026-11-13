@@ -42,10 +42,6 @@ export class RadioGroup extends DsFormElement {
 	formResetCallback() {
 		this.value = this.getAttribute('value') ?? undefined
 	}
-	formDisabledCallback(disabled: boolean) {
-		this.disabled = disabled
-	}
-
 	// The inner input event crosses the shadow root on its own (the value is set by then); change does not.
 	private onChange() {
 		this.dispatchEvent(new Event('change', { bubbles: true, composed: true }))
@@ -53,8 +49,8 @@ export class RadioGroup extends DsFormElement {
 
 	render() {
 		const name = this.name ?? this.group
-		return html`<div data-ds="radio-group" role="radiogroup" aria-label=${this.label} class="ds-radios" data-inline=${ifDefined(this.inline ? 'true' : undefined)}>${this.options.map((o) => html`<label class="ds-radiorow" data-disabled=${ifDefined(this.disabled || o.disabled ? 'true' : undefined)}>
-				<span class="ds-radio"><input type="radio" name=${name} .value=${o.value} .checked=${live(this.value === o.value)} ?disabled=${this.disabled || !!o.disabled} aria-describedby=${ifDefined(o.hint ? `${name}-${o.value}` : undefined)} @input=${() => { this.value = o.value }} @change=${this.onChange}><i aria-hidden="true"></i></span>
+		return html`<div data-ds="radio-group" role="radiogroup" aria-label=${this.label} class="ds-radios" data-inline=${ifDefined(this.inline ? 'true' : undefined)}>${this.options.map((o) => html`<label class="ds-radiorow" data-disabled=${ifDefined(this.inactive || o.disabled ? 'true' : undefined)}>
+				<span class="ds-radio"><input type="radio" name=${name} .value=${o.value} .checked=${live(this.value === o.value)} ?disabled=${this.inactive || !!o.disabled} aria-describedby=${ifDefined(o.hint ? `${name}-${o.value}` : undefined)} @input=${() => { this.value = o.value }} @change=${this.onChange}><i aria-hidden="true"></i></span>
 				<span class="flex min-w-0 flex-col">
 					<span>${o.label}</span>
 					${o.hint ? html`<span id=${`${name}-${o.value}`} class="type-meta text-fg-muted">${o.hint}</span>` : nothing}

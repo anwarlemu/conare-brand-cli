@@ -77,10 +77,6 @@ export class NativeSelect extends DsFormElement {
 	formResetCallback() {
 		this.value = this.getAttribute('value') ?? undefined
 	}
-	formDisabledCallback(disabled: boolean) {
-		this.disabled = disabled
-	}
-
 	private onInput(event: Event) {
 		this.value = (event.target as HTMLSelectElement).value
 	}
@@ -91,7 +87,7 @@ export class NativeSelect extends DsFormElement {
 
 	render() {
 		const options = [...this.querySelectorAll('option')]
-		return html`<select name=${ifDefined(this.name)} ?disabled=${this.disabled} ?required=${this.required} aria-invalid=${ifDefined(this.invalid ? 'true' : undefined)} aria-label=${ifDefined(this.label)} aria-description=${ifDefined(this.description)} class=${this.mono ? 'font-code' : ''} @input=${this.onInput} @change=${this.onChange}>${options.map((o) => html`<option value=${o.value} ?disabled=${o.disabled}>${o.text}</option>`)}</select>${icon(ChevronDown, 'chevron-down', { size: 12, strokeWidth: 2, attrs: { 'aria-hidden': 'true' } })}`
+		return html`<select name=${ifDefined(this.name)} ?disabled=${this.inactive} ?required=${this.required} aria-invalid=${ifDefined(this.invalid ? 'true' : undefined)} aria-label=${ifDefined(this.label)} aria-description=${ifDefined(this.description)} class=${this.mono ? 'font-code' : ''} @input=${this.onInput} @change=${this.onChange}>${options.map((o) => html`<option value=${o.value} ?disabled=${o.disabled}>${o.text}</option>`)}</select>${icon(ChevronDown, 'chevron-down', { size: 12, strokeWidth: 2, attrs: { 'aria-hidden': 'true' } })}`
 	}
 }
 

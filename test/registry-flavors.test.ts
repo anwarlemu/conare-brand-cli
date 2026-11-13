@@ -123,6 +123,7 @@ describe.skipIf(!existsSync(CHROME))('registry flavors: elements in a browser', 
   <${prefix}-select name="region" value="eu" label="region" options='[{"value":"us","label":"US"},{"value":"eu","label":"EU"}]'></${prefix}-select>
   <${prefix}-button type="submit" id="go">Save</${prefix}-button>
 </form>
+<fieldset id="fs"><${prefix}-input id="own" name="own" disabled></${prefix}-input><${prefix}-switch id="sw" name="sw" label="sw"></${prefix}-switch></fieldset>
 <${prefix}-hold-button label="Revoke" ms="200" id="hold"></${prefix}-hold-button>
 <div data-theme="dark" id="dark"><${prefix}-button variant="secondary" id="night">Night</${prefix}-button></div>
 <script type="module">
@@ -188,6 +189,28 @@ describe.skipIf(!existsSync(CHROME))('registry flavors: elements in a browser', 
 			await p.waitForTimeout(700);
 			await p.keyboard.up('Space');
 			expect(await p.evaluate(() => (window as unknown as { confirmed?: boolean }).confirmed)).toBe(true);
+			// A disabled fieldset disables its fields and, enabled again, gives each its own disabled back.
+			const states = await p.evaluate(async () => {
+				const fs = document.getElementById('fs') as HTMLFieldSetElement;
+				// What the element shows (its inner control) and its own disabled, which the fieldset never overwrites.
+				const read = () => ['own', 'sw'].map((id) => { const el = document.getElementById(id) as HTMLElement & { disabled: boolean }; return [el.shadowRoot!.querySelector('input, button')!.matches(':disabled'), el.disabled]; });
+				fs.disabled = true;
+				await new Promise((r) => setTimeout(r, 30));
+				const held = read();
+				fs.disabled = false;
+				await new Promise((r) => setTimeout(r, 30));
+				return [held, read()];
+			});
+			expect(states).toEqual([[[true, true], [true, false]], [[true, true], [false, false]]]);
+			// The switch fires the native input and change events, as a checkbox does.
+			const fired = await p.evaluate(() => {
+				const sw = document.getElementById('sw')!;
+				const seen: string[] = [];
+				for (const t of ['input', 'change', 'checked-change']) sw.addEventListener(t, () => seen.push(t));
+				sw.shadowRoot!.querySelector('button')!.click();
+				return seen;
+			});
+			expect(fired).toEqual(['input', 'change', 'checked-change']);
 			// Tokens arrive through inherited variables: dark on an ancestor reaches the inner button.
 			const [light, dark] = await p.evaluate(() => ['go', 'night'].map((id) => getComputedStyle(document.getElementById(id)!.shadowRoot!.querySelector('button')!).backgroundColor));
 			expect(light).not.toBe(dark);

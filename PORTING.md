@@ -208,6 +208,17 @@ classes (the docs site and the parity app compile them; on a page without Tailwi
 the same sample data, and an inline `<script type="module">` with no imports for behavior (listen for the element's
 events, set properties, call methods). Start with the Vue example's comment as an HTML comment.
 
+- A host that is the box loses `:host` padding, margin, border, color, font-size and outline-offset to the page's
+  preflight and the scoped `[data-ds]` base. Mark those `:host` declarations `!important` (a shadow-tree important rule
+  beats the page, as Vue's unlayered rule beats layered utilities).
+- The inner `input` event crosses the shadow root on its own; `change` does not. Set the value in the inner `@input`
+  and dispatch only `change`, or the page gets `input` twice. `commit(v)` and `commit(v, 'checked')` fire both for you.
+- Don't write `formDisabledCallback` or assign `disabled` from a fieldset: `DsFormElement` tracks a disabled fieldset
+  in `formDisabled`. Render and handlers read `this.inactive` (own `disabled` or the fieldset's), never `this.disabled`.
+- `<option>`s can't be slotted into a `<select>`: copy them in (see native-select.ts) and set the value in `updated()`.
+- Interaction steps run after six Tabs, so focus may sit anywhere: start key steps with an explicit `focus:`.
+- `--out` takes an absolute path.
+
 ## Docs and the build
 
 Nothing to add to `registry/docs/<item>.md`: the build finds the ports by name. Only when a port's files are named

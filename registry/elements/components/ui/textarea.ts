@@ -57,10 +57,6 @@ export class Textarea extends DsFormElement {
 	formResetCallback() {
 		this.value = this.getAttribute('value') ?? ''
 	}
-	formDisabledCallback(disabled: boolean) {
-		this.disabled = disabled
-	}
-
 	private onInput(event: Event) {
 		this.value = (event.target as HTMLTextAreaElement).value
 	}
@@ -70,7 +66,7 @@ export class Textarea extends DsFormElement {
 	}
 
 	render() {
-		return html`<textarea data-ds="textarea" .value=${live(this.value)} rows=${this.rows} name=${ifDefined(this.name)} placeholder=${ifDefined(this.placeholder)} maxlength=${ifDefined(this.maxlength)} ?disabled=${this.disabled} ?readonly=${this.readonly} ?required=${this.required} aria-invalid=${ifDefined(this.invalid ? 'true' : undefined)} aria-label=${ifDefined(this.label)} aria-description=${ifDefined(this.description)} class="ds-textarea" @input=${this.onInput} @change=${this.onChange}></textarea>`
+		return html`<textarea data-ds="textarea" .value=${live(this.value)} rows=${this.rows} name=${ifDefined(this.name)} placeholder=${ifDefined(this.placeholder)} maxlength=${ifDefined(this.maxlength)} ?disabled=${this.inactive} ?readonly=${this.readonly} ?required=${this.required} aria-invalid=${ifDefined(this.invalid ? 'true' : undefined)} aria-label=${ifDefined(this.label)} aria-description=${ifDefined(this.description)} class="ds-textarea" @input=${this.onInput} @change=${this.onChange}></textarea>`
 	}
 }
 

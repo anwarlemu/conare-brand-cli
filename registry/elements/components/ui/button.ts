@@ -50,7 +50,7 @@ export class Button extends DsFormElement {
 	label?: string
 
 	private onClick() {
-		if (this.disabled || this.href) return
+		if (this.inactive || this.href) return
 		if (this.type === 'submit') this.form?.requestSubmit()
 		else if (this.type === 'reset') this.form?.reset()
 	}
@@ -67,7 +67,7 @@ export class Button extends DsFormElement {
 		].join(' ')
 		return this.href
 			? html`<a data-ds="button" href=${this.href} class=${classes} aria-label=${ifDefined(this.label)}><slot></slot></a>`
-			: html`<button data-ds="button" type="button" ?disabled=${this.disabled} class=${classes} aria-label=${ifDefined(this.label)} @click=${this.onClick}><slot></slot></button>`
+			: html`<button data-ds="button" type="button" ?disabled=${this.inactive} class=${classes} aria-label=${ifDefined(this.label)} @click=${this.onClick}><slot></slot></button>`
 	}
 }
 

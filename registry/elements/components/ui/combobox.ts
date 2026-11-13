@@ -181,10 +181,6 @@ export class Combobox extends DsFormElement {
 		super.updated(changed)
 		if (changed.has('value')) this.internals.setFormValue(String(this.value ?? ''))
 	}
-	formDisabledCallback(disabled: boolean) {
-		this.disabled = disabled
-	}
-
 	render() {
 		const open = this.pop.open
 		const list = this.visible
@@ -193,7 +189,7 @@ export class Combobox extends DsFormElement {
 		const activeId = open && list.length ? this.optionId(this.active) : undefined
 		const listId = `${this.uidBase}-list`
 		const filtering = this.filtering
-		return html`<button data-ds=${this.triggerName()} data-trigger type="button" class=${this.triggerClasses()} aria-haspopup="listbox" aria-expanded=${String(open)} aria-controls=${open ? listId : nothing} aria-label=${this.label} aria-description=${this.description ?? nothing} ?disabled=${this.disabled} @click=${this.onTrigger} @keydown=${this.onTriggerKey}>${this.renderTrigger(this.selected, open)}</button>${this.pop.rendered
+		return html`<button data-ds=${this.triggerName()} data-trigger type="button" class=${this.triggerClasses()} aria-haspopup="listbox" aria-expanded=${String(open)} aria-controls=${open ? listId : nothing} aria-label=${this.label} aria-description=${this.description ?? nothing} ?disabled=${this.inactive} @click=${this.onTrigger} @keydown=${this.onTriggerKey}>${this.renderTrigger(this.selected, open)}</button>${this.pop.rendered
 			? html`<div data-ds="combobox" popover="manual" class="ds-pop flex flex-col p-1" data-side=${this.pop.pos.side} ?data-instant=${this.pop.instant} ?data-placed=${this.pop.pos.placed} style=${this.pop.style(this.width ? `width: ${this.width}` : '')} @focusout=${this.pop.onFocusOut}>
 				${filtering
 					? html`<label class="relative mb-1 block">${icon(Search, 'search', { size: 12, strokeWidth: 1.5, class: 'pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-fg-muted', attrs: { 'aria-hidden': 'true' } })}<input .value=${this.query} class="h-control-sm w-full border border-edge-strong bg-surface pr-2.5 pl-7 text-meta text-fg outline-none transition-[border-color] duration-120 ease-standard placeholder:text-fg-muted focus:border-edge-focus max-md:h-control-touch max-md:text-input" role="combobox" aria-label=${this.filterLabel} placeholder=${this.filterLabel} aria-autocomplete="list" aria-expanded="true" aria-controls=${listId} aria-activedescendant=${activeId ?? nothing} autocomplete="off" spellcheck="false" @input=${this.onQuery} @keydown=${this.onKey}></label>`

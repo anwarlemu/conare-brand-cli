@@ -17,7 +17,7 @@
 // 3351, and stops both when done. Exit 1 when anything fails.
 import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
-import { dirname, join, relative } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -33,7 +33,7 @@ const PARITY_PORT = Number(opt('parity-port', 3351));
 const THRESHOLD = Number(opt('threshold', 0.5));
 const widths = opt('width') ? [Number(opt('width'))] : [1440, 390];
 const flavorsWanted = opt('flavor') ? [opt('flavor')] : ['react', 'elements'];
-const out = join(root, opt('out', 'apps/parity/report'));
+const out = resolve(root, opt('out', 'apps/parity/report'));
 const CHROME = process.env.PARITY_CHROMIUM ?? '/Users/anwarlemu/Library/Caches/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-mac-arm64/chrome-headless-shell';
 
 const index = JSON.parse(readFileSync(join(root, 'apps/www/public/r/index.json'), 'utf8'));
@@ -147,6 +147,8 @@ const STATE = `(() => {
     selected: all.filter((e) => e.getAttribute('aria-selected') === 'true').map((e) => e.textContent.trim().slice(0, 32)).join(', '),
     active: all.filter((e) => e.hasAttribute('data-active')).map((e) => e.textContent.trim().slice(0, 32)).join(', '),
     checked: all.filter((e) => e.getAttribute('aria-checked') === 'true').length,
+    pressed: all.filter((e) => e.getAttribute('aria-pressed') === 'true').length,
+    controls: all.filter((e) => /^(input|select|textarea)$/.test(e.localName) && e.type !== 'hidden').map((e) => (e.type === 'checkbox' || e.type === 'radio' ? (e.checked ? 'on' : 'off') : e.value)).join('|'),
   };
 })()`;
 

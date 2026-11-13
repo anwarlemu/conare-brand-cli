@@ -37,7 +37,7 @@ export class PixelButton extends DsFormElement {
 	private grid = new PixelGridController(this, () => this.renderRoot.querySelector<HTMLElement>('.ds-px'))
 
 	private onClick() {
-		if (!this.disabled && !this.href && this.type === 'submit') this.form?.requestSubmit()
+		if (!this.inactive && !this.href && this.type === 'submit') this.form?.requestSubmit()
 	}
 
 	render() {
@@ -47,7 +47,7 @@ export class PixelButton extends DsFormElement {
 		const large = this.large ? 'true' : undefined
 		return this.href
 			? html`<a data-ds="pixel-button" href=${this.href} class="ds-px" data-done=${ifDefined(done)} data-large=${ifDefined(large)} aria-label=${ifDefined(this.label)}>${inner}</a>`
-			: html`<button data-ds="pixel-button" type="button" ?disabled=${this.disabled} class="ds-px" data-done=${ifDefined(done)} data-large=${ifDefined(large)} aria-label=${ifDefined(this.label)} @click=${this.onClick}>${inner}</button>`
+			: html`<button data-ds="pixel-button" type="button" ?disabled=${this.inactive} class="ds-px" data-done=${ifDefined(done)} data-large=${ifDefined(large)} aria-label=${ifDefined(this.label)} @click=${this.onClick}>${inner}</button>`
 	}
 }
 

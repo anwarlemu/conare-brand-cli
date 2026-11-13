@@ -1,4 +1,4 @@
-import { LitElement, type CSSResultGroup, type PropertyValues } from 'lit'
+import { LitElement, type CSSResultGroup, type PropertyDeclarations, type PropertyValues } from 'lit'
 import { literal, unsafeStatic, type StaticValue } from 'lit/static-html.js'
 import base from 'virtual:ds-base'
 import properties from 'virtual:ds-properties'
@@ -60,10 +60,12 @@ export class DsElement extends LitElement {
 	/** v-model: sets `value` and dispatches `input` and `change`, as a native field does. */
 	commit(value: unknown, key = 'value') {
 		;(this as unknown as Record<string, unknown>)[key] = value
-		if (key === 'value') {
+		// A value or a checked state is what a form control changes: the native input and change events, as an <input>.
+		if (key === 'value' || key === 'checked') {
 			this.dispatchEvent(new Event('input', { bubbles: true, composed: true }))
 			this.dispatchEvent(new Event('change', { bubbles: true, composed: true }))
-		} else this.emit(`${key}-change`, { value })
+		}
+		if (key !== 'value') this.emit(`${key}-change`, { value })
 	}
 
 	/** Whether a slot has content (Vue's `$slots.name`). Call from render; slotchange re-renders. */
@@ -99,6 +101,16 @@ export class DsFormElement extends DsElement {
 	}
 	get form() {
 		return this.internals.form
+	}
+	static properties: PropertyDeclarations = { formDisabled: { state: true } }
+	/** A disabled fieldset around it; its own `disabled` stays as it was set. */
+	formDisabled = false
+	formDisabledCallback(disabled: boolean) {
+		this.formDisabled = disabled
+	}
+	/** Disabled by itself or by its fieldset: what render and handlers read. */
+	get inactive() {
+		return !!(this as unknown as { disabled?: boolean }).disabled || this.formDisabled
 	}
 }
 

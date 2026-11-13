@@ -62,10 +62,6 @@ export class Checkbox extends DsFormElement {
 	formResetCallback() {
 		this.checked = this.hasAttribute('checked')
 	}
-	formDisabledCallback(disabled: boolean) {
-		this.disabled = disabled
-	}
-
 	private onInput(event: Event) {
 		this.checked = (event.target as HTMLInputElement).checked
 	}
@@ -80,7 +76,7 @@ export class Checkbox extends DsFormElement {
 		const text = this.label || this.hasSlot() || this.hint
 		return html`<label for=${id} class="contents">
 			<span class="ds-checkbox">
-				<input id=${id} type="checkbox" .checked=${live(this.checked)} .indeterminate=${this.indeterminate} name=${ifDefined(this.name)} value=${ifDefined(this.value)} ?disabled=${this.disabled} aria-invalid=${ifDefined(this.invalid ? 'true' : undefined)} aria-describedby=${ifDefined(this.hint ? `${id}-hint` : undefined)} @input=${this.onInput} @change=${this.onChange}>
+				<input id=${id} type="checkbox" .checked=${live(this.checked)} .indeterminate=${this.indeterminate} name=${ifDefined(this.name)} value=${ifDefined(this.value)} ?disabled=${this.inactive} aria-invalid=${ifDefined(this.invalid ? 'true' : undefined)} aria-describedby=${ifDefined(this.hint ? `${id}-hint` : undefined)} @input=${this.onInput} @change=${this.onChange}>
 				${this.indeterminate
 					? html`<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 8h8"></path></svg>`
 					: html`<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" pathLength="1"></path></svg>`}

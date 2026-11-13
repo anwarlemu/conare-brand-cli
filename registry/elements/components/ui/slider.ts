@@ -50,10 +50,6 @@ export class Slider extends DsFormElement {
 	formResetCallback() {
 		this.value = Number(this.getAttribute('value') ?? 0)
 	}
-	formDisabledCallback(disabled: boolean) {
-		this.disabled = disabled
-	}
-
 	private onInput(event: Event) {
 		this.value = Number((event.target as HTMLInputElement).value)
 	}
@@ -64,9 +60,9 @@ export class Slider extends DsFormElement {
 
 	render() {
 		const share = this.max > this.min ? ((this.value - this.min) / (this.max - this.min)) * 100 : 0
-		return html`<span data-ds="slider" class="ds-slider" style=${styleMap({ '--p': `${share}%` })} data-disabled=${ifDefined(this.disabled ? 'true' : undefined)}>
+		return html`<span data-ds="slider" class="ds-slider" style=${styleMap({ '--p': `${share}%` })} data-disabled=${ifDefined(this.inactive ? 'true' : undefined)}>
 			<span class="ds-slider-track" aria-hidden="true"><span></span></span>
-			<input type="range" min=${this.min} max=${this.max} step=${this.step} .value=${live(String(this.value))} ?disabled=${this.disabled} aria-label=${this.label} aria-valuetext=${ifDefined(this.valueText)} @input=${this.onInput} @change=${this.onChange}>
+			<input type="range" min=${this.min} max=${this.max} step=${this.step} .value=${live(String(this.value))} ?disabled=${this.inactive} aria-label=${this.label} aria-valuetext=${ifDefined(this.valueText)} @input=${this.onInput} @change=${this.onChange}>
 		</span>`
 	}
 }

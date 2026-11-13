@@ -55,10 +55,6 @@ export class InputOtp extends DsFormElement {
 	formResetCallback() {
 		this.value = this.getAttribute('value') ?? ''
 	}
-	formDisabledCallback(disabled: boolean) {
-		this.disabled = disabled
-	}
-
 	private get input() {
 		return this.renderRoot.querySelector('input')
 	}
@@ -91,7 +87,7 @@ export class InputOtp extends DsFormElement {
 	render() {
 		const active = this.focused ? Math.min(this.caret, this.length - 1) : -1
 		const cells = Array.from({ length: this.length }, (_, i) => this.value[i] ?? '')
-		return html`<div data-ds="input-otp" class="ds-otp" data-invalid=${ifDefined(this.invalid ? 'true' : undefined)} data-disabled=${ifDefined(this.disabled ? 'true' : undefined)}>
+		return html`<div data-ds="input-otp" class="ds-otp" data-invalid=${ifDefined(this.invalid ? 'true' : undefined)} data-disabled=${ifDefined(this.inactive ? 'true' : undefined)}>
 			<input
 				.value=${live(this.value)}
 				maxlength=${this.length}
@@ -101,7 +97,7 @@ export class InputOtp extends DsFormElement {
 				spellcheck="false"
 				aria-label=${this.label}
 				aria-invalid=${ifDefined(this.invalid ? 'true' : undefined)}
-				?disabled=${this.disabled}
+				?disabled=${this.inactive}
 				@input=${this.onInput}
 				@change=${this.onChange}
 				@focus=${() => { this.focused = true; this.toEnd() }}
