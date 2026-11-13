@@ -18,6 +18,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join, posix, relative } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { createRequire } from 'node:module';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const reg = join(root, 'registry');
@@ -221,6 +222,7 @@ export function buildManifest({ out = elementsOut } = {}) {
 	}
 	const cem = JSON.parse(readFileSync(join(tmp, 'custom-elements.json'), 'utf8'));
 	const byPath = new Map(files.map((f) => [relative(root, f.file), f]));
+	const checked = typeProgram(files);
 	const modules = [];
 	for (const mod of cem.modules) {
 		const f = byPath.get(mod.path);
@@ -238,20 +240,135 @@ export function buildManifest({ out = elementsOut } = {}) {
 			declarations: [main],
 			exports: [{ kind: 'custom-element-definition', name: main.tagName, declaration: { name: main.name, module: `elements/${f.name}.js` } }],
 		});
-		writeFileSync(join(out, `${f.name}.d.ts`), typesOf(main, readFileSync(f.file, 'utf8')));
+		// The types first: they also correct the manifest's member types (the analyzer's guesses, such as `array`).
+		writeFileSync(join(out, `${f.name}.d.ts`), typesOf(main, f.file, checked));
+		// An attribute's type is its field's.
+		for (const a of main.attributes ?? []) {
+			const field = main.members.find((m) => m.name === a.fieldName);
+			if (field?.type) a.type = field.type;
+		}
 	}
 	writeFileSync(join(out, 'custom-elements.json'), `${JSON.stringify({ schemaVersion: '1.0.0', readme: '', modules }, null, 2)}\n`);
 	return { errors: [] };
 }
 
-function typesOf(decl, source) {
-	// Type aliases the members name (export type ButtonVariant = ...) come along from the source.
-	const aliases = [...source.matchAll(/^export (type \w+(?:<[^>]*>)? = [^\n]+|interface \w+ \{[\s\S]*?\n\})/gm)].map((m) => `export ${m[1]}`);
-	const fields = decl.members.filter((m) => m.kind === 'field').map((m) => `  ${m.name}${m.type?.text?.includes('undefined') ? '?' : ''}: ${m.type?.text ?? 'unknown'};`);
-	const methods = decl.members.filter((m) => m.kind === 'method').map((m) => `  ${m.name}(${(m.parameters ?? []).map((p) => `${p.name}${p.optional ? '?' : ''}: ${p.type?.text ?? 'unknown'}`).join(', ')}): ${m.return?.type?.text ?? 'void'};`);
+// ----- Types -----
+// Each element's .d.ts is written from the TypeScript checker, so it carries the types its members really have: a
+// field's or method's type as the source declares or infers it, and every type it names (its own, one imported from
+// another element or from lib/: Align, ComboOption) declared in the file, so the file stands alone with no import of
+// Lit or the library. Types from the DOM are global; anything else outside the registry (Lit's) is unknown.
+
+const require = createRequire(import.meta.url);
+
+/** The checker over every element file, with the registry's compiler options. */
+function typeProgram(files) {
+	const ts = require('typescript');
+	const config = ts.getParsedCommandLineOfConfigFile(join(root, 'tsconfig.registry-elements.json'), {}, { ...ts.sys, onUnRecoverableConfigFileDiagnostic: () => {} });
+	const program = ts.createProgram(files.map((f) => f.file), { ...config.options, noEmit: true });
+	return { ts, program, checker: program.getTypeChecker() };
+}
+
+/** The element's class, its public members' types and the declarations of the types they name. */
+function typesOf(decl, file, { ts, program, checker }) {
+	const sf = program.getSourceFile(file);
+	const cls = sf.statements.find((s) => ts.isClassDeclaration(s) && s.name?.text === decl.name);
+	const F = ts.TypeFormatFlags;
+	const flags = F.NoTruncation | F.UseAliasDefinedOutsideCurrentScope;
+	const inRegistry = (d) => d.getSourceFile().fileName.startsWith(join(root, 'registry'));
+	const isLib = (d) => program.isSourceFileDefaultLibrary(d.getSourceFile());
+	// Types named in the members, resolved to their declarations, then the types those name, until none are new.
+	const wanted = new Map();
+	const unknown = new Set();
+	const named = (d) => ts.isTypeAliasDeclaration(d) || ts.isInterfaceDeclaration(d) || ts.isClassDeclaration(d) || ts.isEnumDeclaration(d);
+	function addDecl(name, d) {
+		if (isLib(d)) return;
+		if (!inRegistry(d)) return void unknown.add(name);
+		if (wanted.has(name)) return;
+		wanted.set(name, d);
+		refsIn(d);
+	}
+	// The types a declaration's text names (`state?: DownloadState`), followed through imports to where they are
+	// declared: a union with undefined loses its alias on the type, but not in the source.
+	function refsIn(node) {
+		node.forEachChild(function inner(n) {
+			if (ts.isTypeReferenceNode(n) || ts.isExpressionWithTypeArguments(n)) {
+				let sym = checker.getSymbolAtLocation(ts.isTypeReferenceNode(n) ? n.typeName : n.expression);
+				if (sym && sym.flags & ts.SymbolFlags.Alias) sym = checker.getAliasedSymbol(sym);
+				const d = sym?.declarations?.[0];
+				if (d && named(d)) addDecl(sym.name, d);
+			}
+			n.forEachChild(inner);
+		});
+	}
+	const visitType = (type) => {
+		const seen = new Set();
+		const walk = (t) => {
+			if (!t || seen.has(t)) return;
+			seen.add(t);
+			const sym = t.aliasSymbol ?? t.getSymbol();
+			const d = sym?.declarations?.[0];
+			if (d && !isLib(d) && sym.name !== '__type' && sym.name !== '__object' && sym.name !== '__function' && (ts.isTypeAliasDeclaration(d) || ts.isInterfaceDeclaration(d) || ts.isClassDeclaration(d) || ts.isEnumDeclaration(d))) {
+				addDecl(sym.name, d);
+				if (t.aliasTypeArguments) t.aliasTypeArguments.forEach(walk);
+				return;
+			}
+			if (t.isUnion?.() || t.isIntersection?.()) t.types.forEach(walk);
+			if (checker.isArrayType?.(t) || checker.isTupleType?.(t)) checker.getTypeArguments(t).forEach(walk);
+			for (const sig of t.getCallSignatures?.() ?? []) {
+				sig.getParameters().forEach((p) => walk(checker.getTypeOfSymbolAtLocation(p, cls)));
+				walk(sig.getReturnType());
+			}
+			for (const a of t.aliasTypeArguments ?? []) walk(a);
+		};
+		walk(type);
+	};
+	const text = (type) => checker.typeToString(type, cls, flags).replace(/import\("[^"]*"\)\./g, '');
+	const fields = [];
+	const methods = [];
+	const classType = checker.getTypeAtLocation(cls);
+	for (const m of decl.members) {
+		const sym = classType.getProperty(m.name);
+		if (!sym) continue;
+		const type = checker.getTypeOfSymbolAtLocation(sym, cls);
+		for (const d of sym.declarations ?? []) if (inRegistry(d)) refsIn(d);
+		if (m.kind === 'method') {
+			const sig = type.getCallSignatures()[0];
+			if (!sig) continue;
+			visitType(type);
+			const params = sig.getParameters().map((p) => {
+				const pd = p.declarations?.[0];
+				const optional = pd && ts.isParameter(pd) && (!!pd.questionToken || !!pd.initializer);
+				return `${p.name}${optional ? '?' : ''}: ${text(checker.getTypeOfSymbolAtLocation(p, cls))}`;
+			});
+			const ret = text(sig.getReturnType());
+			m.parameters = sig.getParameters().map((p, i) => ({ ...(m.parameters?.[i] ?? {}), name: p.name, type: { text: params[i].replace(/^[^:]*:\s*/, '') } }));
+			m.return = { type: { text: ret } };
+			methods.push(`  ${m.name}(${params.join(', ')}): ${ret};`);
+		} else {
+			visitType(type);
+			const t = text(type);
+			m.type = { text: t };
+			const optional = /\bundefined\b/.test(t) && !!(sym.flags & ts.SymbolFlags.Optional || /\|\s*undefined|undefined\s*\|/.test(t));
+			fields.push(`  ${m.name}${optional ? '?' : ''}: ${t};`);
+		}
+	}
+	// A form-associated element (DsFormElement) has the form field API too: its form and its validity, as a native field.
+	if (classType.getProperty('internals')) {
+		const have = new Set(decl.members.map((m) => m.name));
+		const api = [['form', 'HTMLFormElement | null'], ['validity', 'ValidityState'], ['validationMessage', 'string'], ['willValidate', 'boolean']];
+		for (const [name, t] of api) if (!have.has(name)) fields.push(`  readonly ${name}: ${t};`);
+		for (const name of ['checkValidity', 'reportValidity']) if (!have.has(name)) methods.push(`  ${name}(): boolean;`);
+	}
+	// The named types, as written in their source (exported here), and stand-ins for those outside the registry.
+	const decls = [...wanted].filter(([name]) => name !== decl.name).map(([name, d]) => {
+		if (ts.isClassDeclaration(d)) return `export type ${name} = HTMLElement`;
+		const src = d.getText().replace(/^(export\s+)?(declare\s+)?/, 'export ');
+		return src;
+	});
+	const stand = [...unknown].filter((n) => !wanted.has(n)).map((n) => `export type ${n} = unknown`);
 	const events = (decl.events ?? []).map((e) => ` * @fires ${e.name}${e.description ? ` ${e.description}` : ''}`);
 	const slots = (decl.slots ?? []).map((s) => ` * @slot ${s.name || '(default)'}${s.description ? ` ${s.description}` : ''}`);
-	return `${aliases.length ? `${aliases.join('\n')}\n` : ''}/**\n * <${decl.tagName}>${decl.description ? `: ${decl.description}` : ''}\n${[...events, ...slots].join('\n')}\n */\nexport declare class ${decl.name} extends HTMLElement {\n${[...fields, ...methods].join('\n')}\n}\ndeclare global {\n  interface HTMLElementTagNameMap {\n    '${decl.tagName}': ${decl.name};\n  }\n}\n`;
+	return `${[...stand, ...decls].map((x) => `${x}\n`).join('')}/**\n * <${decl.tagName}>${decl.description ? `: ${decl.description}` : ''}\n${[...events, ...slots].join('\n')}\n */\nexport declare class ${decl.name} extends HTMLElement {\n${[...fields, ...methods].join('\n')}\n}\ndeclare global {\n  interface HTMLElementTagNameMap {\n    '${decl.tagName}': ${decl.name};\n  }\n}\n`;
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
