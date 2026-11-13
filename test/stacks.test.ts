@@ -404,7 +404,12 @@ describe('the structure check holds in every file type', () => {
 			expect(convertFile(name, once, opts).text, name).toBe(once);
 		}
 	});
-	it('a file that does not parse is left as it is', () => {
+	it("keeps a native dialog's backdrop (it used to be dropped with the dialog's own fill)", () => {
+		const out = convertFile('a.svelte', '<dialog class="p-6 rounded-xl bg-white shadow-xl backdrop:bg-black/50">x</dialog>\n', opts).text;
+		expect(out).toContain('backdrop:bg-surface-inverse/50');
+		expect(out).toContain('bg-surface');
+	});
+		it('a file that does not parse is left as it is', () => {
 		expect(() => convertFile('x.tsx', 'export const = <div className="p-4">', opts)).toThrow('does not parse');
 		expect(new StructureChanged('x')).toBeInstanceOf(Error);
 	});

@@ -89,6 +89,8 @@ export function groupOf(raw: string): Group {
 	// A class for children or for a relation (`[&_svg]:size-4`, `*:rounded`, `has-[>svg]:px-3`, `group-hover:`) is not
 	// the element's own look.
 	if (p.variants.some((v) => /^(\[|\*|has-|in-|group-|peer-|not-)/.test(v))) return 'other';
+	// A pseudo-element's look (a dialog's backdrop, a file button, list markers) is not the element's own either.
+	if (p.variants.some((v) => /^(backdrop|file|marker|selection|first-letter|first-line|before|after)$/.test(v))) return 'other';
 	if (p.variants.includes('disabled')) return 'state';
 	if (p.variants.includes('placeholder')) return 'placeholder';
 	const c = u.match(COLOR_UTIL);
