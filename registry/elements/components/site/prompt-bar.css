@@ -1,0 +1,94 @@
+.ds-prompt-dock {
+  --prompt-ink: var(--ds-color-glass-ink);
+  --prompt-glass: color-mix(in srgb, var(--ds-color-warm-ink) 52%, transparent);
+  --prompt-light: color-mix(in srgb, var(--ds-color-off-white) 18%, transparent);
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 30;
+  display: flex;
+  justify-content: center;
+  padding: 0 var(--ds-space-xl) var(--ds-space-2xl);
+  pointer-events: none;
+  transform: translateY(calc(100% + 24px));
+  visibility: hidden;
+  transition: transform var(--ds-duration-enter) var(--ds-easing-out), visibility 0s linear var(--ds-duration-enter);
+}
+.ds-prompt-dock[data-shown="true"] { transform: none; visibility: visible; transition: transform var(--ds-duration-dock) var(--ds-easing-out), visibility 0s; }
+.ds-prompt-dock[data-summoned="true"] { transform: none; visibility: visible; transition: none; }
+.ds-prompt-trigger { max-width: 100%; pointer-events: auto; transition: width var(--ds-duration-glide) var(--ds-easing-standard); }
+/* The glass: warm dark at 52%, blurred and saturated behind, a 1px light along the top. */
+.ds-prompt-glass { border-radius: var(--ds-radius-control); background: linear-gradient(var(--prompt-light), var(--prompt-light)) top / 100% 1px no-repeat, var(--prompt-glass); -webkit-backdrop-filter: blur(36px) saturate(140%); backdrop-filter: blur(36px) saturate(140%); }
+.ds-prompt-glass:focus-within { outline: var(--ds-border-hairline) solid color-mix(in srgb, var(--prompt-ink) 42%, transparent); outline-offset: -1px; }
+/* The form's glass on its own layer, so the typing placeholder does not re-run the blur on every repaint. */
+.ds-prompt-form { position: relative; isolation: isolate; display: flex; flex-direction: column; background: none; -webkit-backdrop-filter: none; backdrop-filter: none; cursor: text; }
+.ds-prompt-form::before { position: absolute; inset: 0; z-index: -1; background: linear-gradient(var(--prompt-light), var(--prompt-light)) top / 100% 1px no-repeat, var(--prompt-glass); -webkit-backdrop-filter: blur(36px) saturate(140%); backdrop-filter: blur(36px) saturate(140%); content: ""; pointer-events: none; transform: translateZ(0); will-change: transform; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }
+@media (hover: hover) and (pointer: fine) {
+  .ds-prompt-form:hover::before { background: linear-gradient(var(--prompt-light), var(--prompt-light)) top / 100% 1px no-repeat, color-mix(in srgb, var(--ds-color-warm-ink-hover) 56%, transparent); }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .ds-prompt-glass, .ds-prompt-form::before { background: color-mix(in srgb, var(--ds-color-warm-ink) 98%, transparent); }
+  .ds-prompt-form { background: none; }
+}
+.ds-prompt-templates { display: flex; flex-direction: column; align-items: flex-start; gap: var(--ds-space-md); margin-bottom: var(--ds-space-md); }
+.ds-prompt-templates[hidden] { display: none; }
+.ds-prompt-templates button { animation: ds-prompt-settle var(--ds-duration-enter) var(--ds-easing-standard) backwards; animation-delay: calc(var(--i, 0) * 40ms); }
+@keyframes ds-prompt-settle { from { opacity: 0; transform: translateY(12px); } }
+.ds-prompt-press { transition: opacity var(--ds-duration-micro) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard), border-color var(--ds-duration-micro) var(--ds-easing-standard), color var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-prompt-press:active { background-color: color-mix(in srgb, var(--ds-color-off-white) 14%, transparent); }
+.ds-prompt-press:focus-visible { outline: var(--ds-border-focus) solid color-mix(in srgb, var(--prompt-ink) 90%, transparent); outline-offset: var(--ds-border-focus); }
+.ds-prompt-template { display: flex; height: var(--ds-size-control-lg); align-items: center; gap: var(--ds-space-md); padding: 0 12px; color: var(--prompt-ink); font-size: var(--ds-text-body); cursor: pointer; }
+/* Under the pointer the glass lightens and an arrow opens out after the label on grid columns; the arrow itself stays still. */
+.ds-prompt-go { display: grid; margin-left: -8px; grid-template-columns: 0fr; opacity: 0; transition: grid-template-columns var(--ds-duration-glide) var(--ds-easing-standard), opacity var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-prompt-go > span { min-width: 0; overflow: hidden; }
+.ds-prompt-go svg { margin-left: var(--ds-space-md); }
+@media (hover: hover) and (pointer: fine) {
+  .ds-prompt-template:hover { background: linear-gradient(color-mix(in srgb, var(--ds-color-off-white) 32%, transparent), color-mix(in srgb, var(--ds-color-off-white) 32%, transparent)) top / 100% 1px no-repeat, color-mix(in srgb, var(--ds-color-warm-lift) 60%, transparent); outline: var(--ds-border-hairline) solid color-mix(in srgb, var(--ds-color-off-white) 14%, transparent); outline-offset: -1px; }
+  .ds-prompt-template:hover .ds-prompt-go { grid-template-columns: 1fr; opacity: 1; }
+}
+.ds-prompt-template:focus-visible .ds-prompt-go { grid-template-columns: 1fr; opacity: 1; }
+/* The thread folds open above the input on grid rows, so the glass grows with it. */
+.ds-prompt-thread { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--ds-duration-glide) var(--ds-easing-standard); }
+.ds-prompt-thread[data-open="true"] { grid-template-rows: 1fr; }
+.ds-prompt-thread-in { min-height: 0; overflow: hidden; }
+.ds-prompt-head { display: flex; height: var(--ds-size-control-lg); align-items: center; gap: var(--ds-space-md); padding: 0 var(--ds-space-md) 0 var(--ds-space-xl); border-bottom: var(--ds-border-hairline) solid color-mix(in srgb, var(--ds-color-off-white) 10%, transparent); color: var(--prompt-ink); cursor: auto; }
+.ds-prompt-head-label { color: color-mix(in srgb, var(--prompt-ink) 70%, transparent); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); }
+.ds-prompt-close { display: flex; width: 24px; height: 24px; align-items: center; justify-content: center; margin-left: auto; color: color-mix(in srgb, var(--prompt-ink) 60%, transparent); cursor: pointer; }
+@media (hover: hover) and (pointer: fine) { .ds-prompt-close:hover { background-color: color-mix(in srgb, var(--ds-color-off-white) 10%, transparent); color: var(--prompt-ink); } }
+.ds-prompt-turns { display: flex; max-height: min(70vh, 600px); min-height: min(40vh, 320px); flex-direction: column; gap: var(--ds-space-xl); overflow-y: auto; padding: var(--ds-space-xl) var(--ds-space-xl) var(--ds-space-lg); color: var(--prompt-ink); font-size: var(--ds-text-body); line-height: var(--ds-text-body-lg-leading); cursor: auto; }
+.ds-prompt-q { max-width: 80%; align-self: flex-end; padding: var(--ds-space-sm) var(--ds-space-lg); background: color-mix(in srgb, var(--ds-color-off-white) 10%, transparent); }
+.ds-prompt-a { max-width: 90%; align-self: flex-start; padding: var(--ds-space-md) var(--ds-space-lg); background: color-mix(in srgb, var(--ds-color-warm-ink) 85%, transparent); }
+.ds-prompt-code { padding: 0 var(--ds-space-xs); background: color-mix(in srgb, var(--ds-color-off-white) 10%, transparent); font-family: var(--ds-font-code); font-size: var(--ds-text-meta); }
+.ds-prompt-more-row { display: flex; justify-content: flex-end; margin: var(--ds-space-md) 0 var(--ds-space-xs); }
+.ds-prompt-word { animation: ds-prompt-word var(--ds-duration-word) var(--ds-easing-standard) both; animation-delay: calc(var(--i) * 22ms); }
+@keyframes ds-prompt-word { from { opacity: 0; } }
+.ds-prompt-more { border: var(--ds-border-hairline) solid color-mix(in srgb, var(--ds-color-off-white) 20%, transparent); font-size: var(--ds-text-ui); transition: background-color var(--ds-duration-micro) var(--ds-easing-standard), border-color var(--ds-duration-micro) var(--ds-easing-standard), color var(--ds-duration-micro) var(--ds-easing-standard); }
+@media (hover: hover) and (pointer: fine) { .ds-prompt-more:hover { border-color: color-mix(in srgb, var(--ds-color-off-white) 40%, transparent); background-color: color-mix(in srgb, var(--ds-color-off-white) 10%, transparent); color: var(--prompt-ink); } }
+.ds-prompt-link { display: inline-flex; align-items: center; gap: var(--ds-space-sm); padding: var(--ds-space-2xs) var(--ds-space-md); color: color-mix(in srgb, var(--prompt-ink) 70%, transparent); }
+.ds-prompt-next { display: flex; flex-wrap: wrap; gap: var(--ds-space-md); margin-top: auto; padding-top: var(--ds-space-lg); }
+.ds-prompt-ask { display: flex; height: var(--ds-size-control-sm); align-items: center; gap: var(--ds-space-md); padding: 0 var(--ds-space-md); color: color-mix(in srgb, var(--prompt-ink) 80%, transparent); cursor: pointer; }
+/* The input row, ruled off from the thread while it is open. */
+.ds-prompt-row { display: flex; height: 38px; align-items: center; gap: var(--ds-space-md); padding: var(--ds-space-xs) var(--ds-space-xs) var(--ds-space-xs) var(--ds-space-lg); border-top: var(--ds-border-hairline) solid transparent; transition: border-color var(--ds-duration-enter) var(--ds-easing-standard); }
+.ds-prompt-row[data-ruled] { border-top-color: color-mix(in srgb, var(--ds-color-off-white) 10%, transparent); }
+.ds-prompt-key { flex-shrink: 0; padding: 0 var(--ds-space-xs); border: var(--ds-border-hairline) solid color-mix(in srgb, var(--ds-color-off-white) 20%, transparent); color: color-mix(in srgb, var(--prompt-ink) 60%, transparent); font-family: var(--ds-font-text); font-size: var(--ds-text-caption); line-height: var(--ds-text-caption-leading); }
+.ds-prompt-clear { cursor: pointer; }
+@media (hover: hover) and (pointer: fine) { .ds-prompt-clear:hover { border-color: color-mix(in srgb, var(--ds-color-off-white) 40%, transparent); color: var(--prompt-ink); } }
+.ds-prompt-input { min-width: 0; flex: 1; background: transparent; color: var(--prompt-ink); font-size: var(--ds-text-ui); line-height: var(--ds-text-ui-leading); outline: none; }
+.ds-prompt-input::placeholder { color: color-mix(in srgb, var(--prompt-ink) 60%, transparent); }
+.ds-prompt-mic, .ds-prompt-send { position: relative; display: flex; width: var(--ds-size-control-sm); height: var(--ds-size-control-sm); flex-shrink: 0; align-items: center; justify-content: center; cursor: pointer; }
+.ds-prompt-mic { background: color-mix(in srgb, var(--ds-color-off-white) 10%, transparent); color: color-mix(in srgb, var(--prompt-ink) 90%, transparent); }
+@media (hover: hover) and (pointer: fine) { .ds-prompt-mic:hover { background: color-mix(in srgb, var(--ds-color-off-white) 16%, transparent); } }
+.ds-prompt-mic[data-listening="true"] { background: var(--ds-color-home-red); color: var(--ds-color-off-white); }
+/* While it listens a red ring breathes out from the mic, over and over, and the stop square comes in. */
+.ds-prompt-mic[data-listening="true"]::after { position: absolute; inset: 0; border: var(--ds-border-hairline) solid var(--ds-color-home-red); content: ""; pointer-events: none; animation: ds-prompt-listen 1400ms var(--ds-easing-swap) infinite; }
+@keyframes ds-prompt-listen { from { opacity: 0.9; transform: scale(1); } to { opacity: 0; transform: scale(1.6); } }
+.ds-prompt-icon-in { animation: ds-prompt-icon-in var(--ds-duration-enter) var(--ds-easing-out) both; }
+@keyframes ds-prompt-icon-in { from { opacity: 0; transform: scale(0.6); } }
+.ds-prompt-send { background: var(--prompt-ink); color: var(--ds-color-warm-ink); }
+@media (hover: hover) and (pointer: fine) { .ds-prompt-send:hover:not(:disabled) { background: var(--ds-color-off-white); } }
+.ds-prompt-send:disabled { cursor: not-allowed; opacity: 0.4; }
+@media (prefers-reduced-motion: reduce) {
+  .ds-prompt-dock, .ds-prompt-dock[data-shown="true"], .ds-prompt-trigger, .ds-prompt-thread, .ds-prompt-go { transition: none; }
+  .ds-prompt-templates button, .ds-prompt-word, .ds-prompt-mic[data-listening="true"]::after, .ds-prompt-icon-in { animation: none; }
+  .ds-prompt-press { transition: opacity var(--ds-duration-micro) ease, background-color var(--ds-duration-micro) ease; }
+}
