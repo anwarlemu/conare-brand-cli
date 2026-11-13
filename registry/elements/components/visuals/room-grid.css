@@ -1,0 +1,8 @@
+/* RoomGrid.vue's <style>, as it is. */
+/* A tile fades out slowly, lights a little quicker on its own, and at once under the pointer (home.css .room-tiles). */
+.ds-room-tiles > polygon { fill: var(--ds-color-off-white); fill-opacity: 0; transition: fill-opacity var(--ds-duration-tile-fade) ease; }
+.ds-room-tiles > polygon[data-lit="true"] { fill-opacity: 0.16; transition-duration: var(--ds-duration-tile-lit); }
+@media (hover: hover) and (pointer: fine) {
+  .ds-room-tiles > polygon:hover { fill-opacity: 0.22; transition-duration: var(--ds-duration-cell); }
+}
+@media (prefers-reduced-motion: reduce) { .ds-room-tiles > polygon { transition: none; } }
