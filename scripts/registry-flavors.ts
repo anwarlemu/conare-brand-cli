@@ -83,13 +83,19 @@ export async function buildFlavors(docs: FlavorDoc[], ctx: Ctx) {
 		}
 		return { files: [...files], requires: [...requires].sort(), packages: [...packages].sort() };
 	}
-	const HOOK_USE = /\buse(State|Effect|LayoutEffect|Ref|Reducer|Callback|Memo|Id|Context|Transition|SyncExternalStore|ImperativeHandle|Controllable|[A-Z]\w*)\s*[(<]/;
+	/** A class name with an interpolation glued to it (`bg-surface${x}`): Tailwind's scanner cannot see the class. */
+	const glued = (f: string, text: string) => {
+		const m = text.match(/[a-z0-9\]%]\$\{/);
+		if (m) fail(`${f}: \`${text.slice(Math.max(0, (m.index ?? 0) - 24), (m.index ?? 0) + 3)}\` glues an interpolation to a class name, which Tailwind's scanner cannot read; put a space before it or join an array of whole class names`);
+	};
+	const HOOK_USE = /\buse(?!Id\b)(State|Effect|LayoutEffect|Ref|Reducer|Callback|Memo|Context|Transition|SyncExternalStore|ImperativeHandle|Controllable|[A-Z]\w*)\s*[(<]/;
 	function checkReactFile(f: string) {
 		const text = read(f);
 		if (/from\s+['"]next\//.test(text)) fail(`${f}: imports Next.js; components take data through props and work in any React app`);
 		if (/from\s+['"]vue['"]/.test(text)) fail(`${f}: imports vue`);
 		const usesHooks = HOOK_USE.test(text.replace(/\/\/.*$/gm, '')) || /\bcreatePortal\b/.test(text);
 		if (usesHooks && !/^\s*['"]use client['"]/.test(text)) fail(`${f}: uses hooks; start it with 'use client' so it works in Next's App Router`);
+		glued(f, text);
 		if (f.startsWith('react/components/') && !/(\sdata-ds=["{]|['"]data-ds['"]\s*:)/.test(text)) fail(`${f}: its root element needs data-ds="<name>" as the Vue file's has`);
 	}
 
@@ -217,7 +223,10 @@ export async function buildFlavors(docs: FlavorDoc[], ctx: Ctx) {
 					const name = posix.basename(f, '.ts');
 					const text = read(f);
 					if (!new RegExp(`define\\(\\s*['"]${name}['"]`).test(text)) fail(`${f}: must define('${name}', ...) (the tag is <${prefix}-${name}>)`);
-					if (!/\sdata-ds=["']/.test(text)) fail(`${f}: its shadow root's root element needs data-ds="<name>" as the Vue file's has`);
+					glued(f, text);
+					const css = f.replace(/\.ts$/, '.css');
+					const hostIsRoot = exists(css) && /(^|\n)\s*:host\s*\{/.test(read(css));
+					if (!/\sdata-ds=["']/.test(text) && !hostIsRoot) fail(`${f}: its shadow root's root element needs data-ds="<name>" as the Vue file's has (or the host is the root: style :host in ${posix.basename(css)})`);
 				}
 				const c = elementClosure(eFiles, d.name);
 				const tags = eFiles.map((f) => `${prefix}-${posix.basename(f, '.ts')}`);

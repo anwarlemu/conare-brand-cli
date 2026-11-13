@@ -1,0 +1,27 @@
+<!-- A field with its label, one with a leading icon, and one that checks what is typed: focus turns the hairline ink,
+     and an invalid value turns it red with its message. -->
+<div class="grid items-start gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8">
+  <p class="type-meta leading-7 text-fg-muted">With a label</p>
+  <conare-field label="Name" class="max-w-90">
+    <conare-input placeholder="production-agent"></conare-input>
+  </conare-field>
+  <p class="mt-4 type-meta leading-7 text-fg-muted md:mt-0">With an icon</p>
+  <div class="max-w-90"><conare-input placeholder="Filter namespaces" aria-label="filter namespaces"><i data-lucide="search" slot="icon" data-size="12" data-stroke-width="1.5" aria-hidden="true"></i></conare-input></div>
+  <p class="mt-4 type-meta leading-7 text-fg-muted md:mt-0">With a hint</p>
+  <conare-field label="Filter" id="filter-field" class="max-w-90">
+    <conare-input value='{ "team": ' class="type-code-sm"></conare-input>
+  </conare-field>
+</div>
+<script type="module">
+  await customElements.whenDefined('conare-input')
+  const field = document.getElementById('filter-field')
+  const input = field.querySelector('conare-input')
+  const check = () => {
+    let invalid = false
+    try { JSON.parse(input.value) } catch { invalid = true }
+    field.error = invalid ? 'Filter must be valid JSON.' : undefined
+    field.hint = invalid ? undefined : 'Matches documents whose metadata has these values.'
+  }
+  input.addEventListener('input', check)
+  check()
+</script>

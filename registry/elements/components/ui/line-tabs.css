@@ -1,0 +1,10 @@
+/* LineTabs.vue's <style>, as it is. */
+.ds-tabline { display: flex; gap: var(--ds-space-2xl); border-bottom: var(--ds-border-hairline) solid var(--ds-color-edge); }
+.ds-tabline > button { position: relative; display: flex; height: var(--ds-size-control-lg); flex-shrink: 0; align-items: center; color: var(--ds-color-fg-muted); font-size: var(--ds-text-ui); cursor: pointer; transition: color var(--ds-duration-micro) var(--ds-easing-standard); }
+@media (hover: hover) and (pointer: fine) { .ds-tabline > button:hover { color: var(--ds-color-fg); } }
+.ds-tabline > [aria-selected="true"] { color: var(--ds-color-fg); }
+.ds-tabline > [aria-selected="true"]::after { position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; background: var(--ds-color-surface-inverse); content: ""; }
+.ds-tabline > button::before { position: absolute; top: 50%; left: -10px; width: 4px; height: 4px; margin-top: -2px; background: var(--ds-color-edge-accent); opacity: 0; content: ""; transition: opacity var(--ds-duration-micro) ease-out; }
+.ds-tabline > [aria-selected="true"]::before { opacity: 1; }
+@media (hover: hover) and (pointer: fine) { .ds-tabline > button:hover::before { opacity: 1; } }
+@media (pointer: coarse), (max-width: 767px) { .ds-tabline > button { min-height: 44px; } }

@@ -128,11 +128,13 @@ const FOCUS = `(() => {
   let a = document.activeElement;
   while (a && a.shadowRoot && a.shadowRoot.activeElement) a = a.shadowRoot.activeElement;
   if (!a || a === document.body) return 'body';
-  const text = (n) => { let s = ''; const walk = (x) => { if (x.nodeType === 3) s += x.textContent; else if (x.nodeType === 1) { if (x.localName === 'slot') { const nodes = x.assignedNodes({ flatten: true }); (nodes.length ? nodes : [...x.childNodes]).forEach(walk); } else if (x.shadowRoot) [...x.shadowRoot.childNodes].forEach(walk); else if (!x.hidden && x.getAttribute('aria-hidden') !== 'true') [...x.childNodes].forEach(walk); } }; walk(n); return s.replace(/\\s+/g, ' ').trim().slice(0, 48); };
+  const text = (n) => { const parts = []; const walk = (x) => { if (x.nodeType === 3) parts.push(x.textContent); else if (x.nodeType === 1) { if (x.localName === 'slot') { const nodes = x.assignedNodes({ flatten: true }); (nodes.length ? nodes : [...x.childNodes]).forEach(walk); } else if (x.shadowRoot) [...x.shadowRoot.childNodes].forEach(walk); else if (!x.hidden && x.getAttribute('aria-hidden') !== 'true') [...x.childNodes].forEach(walk); } }; walk(n); return parts.join(' ').replace(/\\s+/g, ' ').trim().slice(0, 48); };
+  // The accessible name, roughly: aria-label, then a <label for>, then the text inside.
+  const name = (el) => el.getAttribute('aria-label') || (el.labels && el.labels[0] ? text(el.labels[0]) : '') || text(el);
   let ds = a.closest('[data-ds]'); let up = a;
   while (!ds && up) { const h = up.getRootNode().host; if (!h) break; ds = h.closest('[data-ds]'); up = h; }
   const role = a.getAttribute('role') || a.localName;
-  return [role, a.getAttribute('aria-label') || text(a), ds ? ds.getAttribute('data-ds') : ''].join(' | ');
+  return [role, name(a), ds ? ds.getAttribute('data-ds') : ''].join(' | ');
 })()`;
 /** Open overlays and expanded triggers, so a step's effect can be compared. */
 const STATE = `(() => {

@@ -1,0 +1,28 @@
+<!-- The cards in the order a page uses them: the one block it leads with, the subjects under it, the ways in at the
+     foot. -->
+<div class="grid items-start gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8">
+  <p class="type-meta leading-7 text-fg-muted">Leads the page</p>
+  <conare-card framed><p class="type-ui">Conare reached the right page on 94 of 100 questions.</p></conare-card>
+  <p class="mt-4 type-meta leading-7 text-fg-muted md:mt-0">One subject each</p>
+  <div class="grid gap-4 sm:grid-cols-2">
+    <conare-card heading="Credits">
+      <a slot="actions" href="#" class="hover:text-fg">Billing</a>
+      <div class="flex flex-col gap-2">
+        <p><span class="type-heading-3">$268.73</span> <span class="type-meta text-fg-muted">left of $310.00</span></p>
+        <div class="h-1 bg-edge" role="meter" aria-label="credits left" aria-valuemin="0" aria-valuemax="310" aria-valuenow="268.73"><span class="block h-full w-[87%] bg-surface-inverse"></span></div>
+      </div>
+    </conare-card>
+    <conare-card heading="Queries">
+      <a slot="actions" href="#" class="hover:text-fg">Usage</a>
+      <div class="flex flex-col gap-2">
+        <p><span class="type-heading-3">186,402</span> <span class="type-meta text-fg-muted">this month</span></p>
+        <div class="h-1 bg-edge" role="meter" aria-label="queries used" aria-valuemin="0" aria-valuemax="300000" aria-valuenow="186402"><span class="block h-full w-[62%] bg-surface-inverse"></span></div>
+      </div>
+    </conare-card>
+  </div>
+  <p class="mt-4 type-meta leading-7 text-fg-muted md:mt-0">Ways in</p>
+  <div class="grid gap-4 sm:grid-cols-2">
+    <conare-door heading="Connect an app" description="Slack, Notion, Gmail and 11 more."><i data-lucide="cable" slot="icon" data-size="14" data-stroke-width="1.5" aria-hidden="true"></i></conare-door>
+    <conare-door heading="Send by API" description="Write documents from your code." arrow><i data-lucide="code" slot="icon" data-size="14" data-stroke-width="1.5" aria-hidden="true"></i></conare-door>
+  </div>
+</div>

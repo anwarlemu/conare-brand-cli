@@ -1,0 +1,13 @@
+<!-- A card with its head and body, the framed card a page leads with, and doors: whole cards that open something. -->
+<div class="grid gap-6 md:grid-cols-2">
+  <conare-card heading="Credits">
+    <a slot="actions" href="#" class="hover:text-fg">Billing</a>
+    <div class="flex flex-col gap-2">
+      <p><span class="type-heading-3">$268.73</span> <span class="type-meta text-fg-muted">left of $310.00</span></p>
+      <div class="h-1 bg-edge" role="meter" aria-label="credits left" aria-valuemin="0" aria-valuemax="310" aria-valuenow="268.73"><span class="block h-full w-[87%] bg-surface-inverse"></span></div>
+    </div>
+  </conare-card>
+  <conare-card framed><p class="type-ui">The website's double rule, for the one block a page leads with.</p></conare-card>
+  <conare-door heading="Connect an app" description="Slack, Notion, Gmail and 11 more."><i data-lucide="cable" slot="icon" data-size="14" data-stroke-width="1.5" aria-hidden="true"></i></conare-door>
+  <conare-door heading="Send by API" description="Write documents from your code." arrow><i data-lucide="code" slot="icon" data-size="14" data-stroke-width="1.5" aria-hidden="true"></i></conare-door>
+</div>
