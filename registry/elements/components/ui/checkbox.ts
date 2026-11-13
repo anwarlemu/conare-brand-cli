@@ -30,6 +30,7 @@ export class Checkbox extends DsFormElement {
 		indeterminate: { type: Boolean },
 		disabled: { type: Boolean, reflect: true },
 		invalid: { type: Boolean, reflect: true },
+		required: { type: Boolean },
 		name: {},
 		value: {},
 	}
@@ -42,6 +43,8 @@ export class Checkbox extends DsFormElement {
 	indeterminate = false
 	disabled = false
 	invalid = false
+	/** It must be checked for its form to send. */
+	required = false
 	name?: string
 	/** What the form gets while it is checked ("on" when unset). */
 	value?: string
@@ -58,6 +61,9 @@ export class Checkbox extends DsFormElement {
 	protected updated(changed: PropertyValues) {
 		super.updated(changed)
 		if (changed.has('checked') || changed.has('value')) this.internals.setFormValue(this.checked ? (this.value ?? 'on') : null)
+	}
+	protected validityControl() {
+		return this.renderRoot.querySelector<HTMLInputElement>('input')
 	}
 	formResetCallback() {
 		this.checked = this.hasAttribute('checked')
@@ -76,7 +82,7 @@ export class Checkbox extends DsFormElement {
 		const text = this.label || this.hasSlot() || this.hint
 		return html`<label for=${id} class="contents">
 			<span class="ds-checkbox">
-				<input id=${id} type="checkbox" .checked=${live(this.checked)} .indeterminate=${this.indeterminate} name=${ifDefined(this.name)} value=${ifDefined(this.value)} ?disabled=${this.inactive} aria-invalid=${ifDefined(this.invalid ? 'true' : undefined)} aria-describedby=${ifDefined(this.hint ? `${id}-hint` : undefined)} @input=${this.onInput} @change=${this.onChange}>
+				<input id=${id} type="checkbox" .checked=${live(this.checked)} .indeterminate=${this.indeterminate} name=${ifDefined(this.name)} value=${ifDefined(this.value)} ?disabled=${this.inactive} ?required=${this.required} aria-invalid=${ifDefined(this.invalid ? 'true' : undefined)} aria-describedby=${ifDefined(this.hint ? `${id}-hint` : undefined)} @input=${this.onInput} @change=${this.onChange}>
 				${this.indeterminate
 					? html`<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 8h8"></path></svg>`
 					: html`<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" pathLength="1"></path></svg>`}

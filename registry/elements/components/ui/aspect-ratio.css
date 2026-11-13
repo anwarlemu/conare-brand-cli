@@ -1,0 +1,3 @@
+/* The host is the box (AspectRatio.vue's root div), so a class on <conare-aspect-ratio> lands on it as a class on
+   <AspectRatio> does. */
+:host { @apply relative block w-full overflow-hidden; }

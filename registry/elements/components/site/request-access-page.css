@@ -1,0 +1,5 @@
+/* RequestAccessPage.vue's <style>, as it is. */
+/* "Loading." shows only when a load is slow, after 300ms. */
+.ds-access-loading { animation: ds-access-appear var(--ds-duration-enter) var(--ds-easing-standard) 300ms both; }
+@keyframes ds-access-appear { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .ds-access-loading { animation-duration: 0ms; } }

@@ -1,0 +1,1 @@
+.ds-docs-table tr + tr, .ds-docs-table thead + tbody tr:first-child { border-top: var(--ds-border-hairline) solid var(--ds-color-edge); }

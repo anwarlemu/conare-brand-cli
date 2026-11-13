@@ -1,0 +1,12 @@
+<!-- The reveal in the console, as Explorer's headline has it. Here it plays again every few seconds (a new element in
+     its place); in the product it plays once. -->
+<conare-highlight-text id="explore" as="h1" text="Explore your data" accent="." class="text-center type-heading-1 md:type-hero"></conare-highlight-text>
+<script type="module">
+  let heading = document.getElementById('explore')
+  const timer = setInterval(() => {
+    if (!heading.isConnected) return clearInterval(timer)
+    const next = heading.cloneNode()
+    heading.replaceWith(next)
+    heading = next
+  }, 4000)
+</script>

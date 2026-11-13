@@ -1,0 +1,9 @@
+/* Carousel.vue's <style>, as it is. */
+.ds-carousel { scrollbar-width: none; }
+.ds-carousel::-webkit-scrollbar { display: none; }
+.ds-carousel:focus-visible { outline-offset: var(--ds-border-focus); }
+.ds-carousel-slide { width: 100%; }
+@media (min-width: 768px) {
+  .ds-carousel[data-per-view="2"] .ds-carousel-slide { width: 50%; }
+  .ds-carousel[data-per-view="3"] .ds-carousel-slide { width: calc(100% / 3); }
+}

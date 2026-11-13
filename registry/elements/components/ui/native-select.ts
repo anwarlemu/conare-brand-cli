@@ -73,6 +73,10 @@ export class NativeSelect extends DsFormElement {
 		if (this.value === undefined) this.value = select.value
 		else if (select.value !== this.value) select.value = this.value
 		this.internals.setFormValue(this.value ?? null)
+		this.syncValidity()
+	}
+	protected validityControl() {
+		return this.renderRoot.querySelector<HTMLSelectElement>('select')
 	}
 	formResetCallback() {
 		this.value = this.getAttribute('value') ?? undefined

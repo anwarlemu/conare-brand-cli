@@ -1,0 +1,24 @@
+<!-- The request-access page as it ships, with a sample requester: send the form to see the sent state, and change the
+     answers to come back. The app would post the answers; here they wait a moment instead. -->
+<conare-request-access-page
+  id="request-access"
+  state="form"
+  email="sam@acme.com"
+  name="Sam"
+  home-href="#home"
+  demo-href="#demo"
+  sign-in-href="#sign-in"
+  privacy-href="#privacy"
+  full="false"
+></conare-request-access-page>
+<script type="module">
+  const page = document.getElementById('request-access')
+  page.addEventListener('submit', () => {
+    page.sending = true
+    setTimeout(() => {
+      page.sending = false
+      page.state = 'sent'
+    }, 600)
+  })
+  page.addEventListener('edit', () => { page.state = 'form' })
+</script>

@@ -15,7 +15,7 @@ import styles from 'virtual:tw'
 export class Switch extends DsFormElement {
 	static styles = [DsFormElement.styles, styles]
 	static shadowRootOptions = { ...LitElement.shadowRootOptions, delegatesFocus: true }
-	static properties = { checked: { type: Boolean, reflect: true }, label: {}, disabled: { type: Boolean, reflect: true }, name: {} }
+	static properties = { checked: { type: Boolean, reflect: true }, label: {}, disabled: { type: Boolean, reflect: true }, name: {}, required: { type: Boolean } }
 
 	checked = false
 	/** What it turns, for assistive tech (the row beside it says it for the eye). */
@@ -23,6 +23,13 @@ export class Switch extends DsFormElement {
 	disabled = false
 	name?: string
 
+	/** It must be on for its form to send. */
+	required = false
+
+	// No native control: a required switch that is off is missing its value, as a required checkbox is.
+	syncValidity() {
+		this.setMissing(this.required && !this.checked, 'checkbox', this.renderRoot.querySelector('button'))
+	}
 	protected updated(changed: PropertyValues) {
 		super.updated(changed)
 		if (changed.has('checked')) this.internals.setFormValue(this.checked ? 'on' : null)

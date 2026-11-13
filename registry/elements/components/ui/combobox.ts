@@ -38,6 +38,7 @@ export class Combobox extends DsFormElement {
 		matchWidth: { type: Boolean, attribute: 'match-width' },
 		disabled: { type: Boolean, reflect: true },
 		name: {},
+		required: { type: Boolean },
 		description: { attribute: 'aria-description' },
 		query: { state: true },
 		active: { state: true },
@@ -59,6 +60,8 @@ export class Combobox extends DsFormElement {
 	matchWidth = false
 	disabled = false
 	name?: string
+	/** An option must be picked for its form to send. */
+	required = false
 	/** A hint or error for the trigger (a field sets it). */
 	description?: string
 	protected query = ''
@@ -177,6 +180,10 @@ export class Combobox extends DsFormElement {
 		this.move(0)
 	}
 
+	// No native control: a required list with no pick is missing its value, as a required select is.
+	syncValidity() {
+		this.setMissing(this.required && (this.value === '' || this.value === null || this.value === undefined), 'select', this.renderRoot.querySelector<HTMLElement>('button[data-trigger]'))
+	}
 	protected updated(changed: PropertyValues) {
 		super.updated(changed)
 		if (changed.has('value')) this.internals.setFormValue(String(this.value ?? ''))

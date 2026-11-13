@@ -63,6 +63,9 @@ export class Input extends DsFormElement {
 		super.updated(changed)
 		if (changed.has('value')) this.internals.setFormValue(this.value)
 	}
+	protected validityControl() {
+		return this.renderRoot.querySelector<HTMLInputElement>('input')
+	}
 	formResetCallback() {
 		this.value = this.getAttribute('value') ?? ''
 	}

@@ -30,6 +30,7 @@ export class InputOtp extends DsFormElement {
 		invalid: { type: Boolean, reflect: true },
 		disabled: { type: Boolean, reflect: true },
 		name: {},
+		required: { type: Boolean },
 		focused: { state: true },
 		caret: { state: true },
 	}
@@ -45,12 +46,17 @@ export class InputOtp extends DsFormElement {
 	invalid = false
 	disabled = false
 	name?: string
+	/** A code must be typed for its form to send. */
+	required = false
 	private focused = false
 	private caret = 0
 
 	protected updated(changed: PropertyValues) {
 		super.updated(changed)
 		if (changed.has('value')) this.internals.setFormValue(this.value)
+	}
+	protected validityControl() {
+		return this.renderRoot.querySelector<HTMLInputElement>('input')
 	}
 	formResetCallback() {
 		this.value = this.getAttribute('value') ?? ''
@@ -98,6 +104,7 @@ export class InputOtp extends DsFormElement {
 				aria-label=${this.label}
 				aria-invalid=${ifDefined(this.invalid ? 'true' : undefined)}
 				?disabled=${this.inactive}
+				?required=${this.required}
 				@input=${this.onInput}
 				@change=${this.onChange}
 				@focus=${() => { this.focused = true; this.toEnd() }}

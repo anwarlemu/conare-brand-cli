@@ -1,0 +1,4 @@
+/* ShimmerText.vue's <style>, as it is. */
+.ds-shimmer { background: linear-gradient(90deg, var(--ds-color-neutral-400) 30%, var(--ds-color-neutral-700) 50%, var(--ds-color-neutral-400) 70%) 0 0 / 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: ds-shimmer 1400ms linear infinite; }
+@keyframes ds-shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
+@media (prefers-reduced-motion: reduce) { .ds-shimmer { animation: none; background: none; color: var(--ds-color-fg-muted); } }

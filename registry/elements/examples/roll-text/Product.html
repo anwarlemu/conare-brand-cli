@@ -1,0 +1,16 @@
+<!-- The docs panel's links: hover one, or reach it with Tab, and its label rolls at the console's pace. -->
+<nav class="flex w-58 flex-col" aria-label="docs" id="docs">
+  <button type="button" class="ds-roll-host relative flex h-control-sm gap-2 cursor-pointer items-center px-2 text-ui text-fg-soft transition-[background-color,color] duration-120 ease-standard hover:bg-surface-subtle hover:text-fg focus-visible:-outline-offset-2 aria-[current=page]:bg-surface aria-[current=page]:font-medium aria-[current=page]:text-fg aria-[current=page]:outline aria-[current=page]:-outline-offset-1 aria-[current=page]:outline-edge max-md:h-11 max-md:text-body" aria-current="page"><conare-roll-text text="Quickstart" class="min-w-0 flex-1 text-left"></conare-roll-text></button>
+  <button type="button" class="ds-roll-host relative flex h-control-sm gap-2 cursor-pointer items-center px-2 text-ui text-fg-soft transition-[background-color,color] duration-120 ease-standard hover:bg-surface-subtle hover:text-fg focus-visible:-outline-offset-2 aria-[current=page]:bg-surface aria-[current=page]:font-medium aria-[current=page]:text-fg aria-[current=page]:outline aria-[current=page]:-outline-offset-1 aria-[current=page]:outline-edge max-md:h-11 max-md:text-body"><conare-roll-text text="Namespaces" class="min-w-0 flex-1 text-left"></conare-roll-text></button>
+  <button type="button" class="ds-roll-host relative flex h-control-sm gap-2 cursor-pointer items-center px-2 text-ui text-fg-soft transition-[background-color,color] duration-120 ease-standard hover:bg-surface-subtle hover:text-fg focus-visible:-outline-offset-2 aria-[current=page]:bg-surface aria-[current=page]:font-medium aria-[current=page]:text-fg aria-[current=page]:outline aria-[current=page]:-outline-offset-1 aria-[current=page]:outline-edge max-md:h-11 max-md:text-body"><conare-roll-text text="Search" class="min-w-0 flex-1 text-left"></conare-roll-text></button>
+  <button type="button" class="ds-roll-host relative flex h-control-sm gap-2 cursor-pointer items-center px-2 text-ui text-fg-soft transition-[background-color,color] duration-120 ease-standard hover:bg-surface-subtle hover:text-fg focus-visible:-outline-offset-2 aria-[current=page]:bg-surface aria-[current=page]:font-medium aria-[current=page]:text-fg aria-[current=page]:outline aria-[current=page]:-outline-offset-1 aria-[current=page]:outline-edge max-md:h-11 max-md:text-body"><conare-roll-text text="Connect an agent" class="min-w-0 flex-1 text-left"></conare-roll-text></button>
+</nav>
+<script type="module">
+  const links = document.querySelectorAll('#docs button')
+  for (const link of links) {
+    link.addEventListener('click', () => {
+      for (const other of links) other.removeAttribute('aria-current')
+      link.setAttribute('aria-current', 'page')
+    })
+  }
+</script>

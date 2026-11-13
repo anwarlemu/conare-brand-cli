@@ -1,0 +1,101 @@
+<!-- Creating an API key: a name, where it can search and when it expires. Send it empty to see the errors; a name of
+     "taken" shows the server's answer. -->
+<div id="create-key" class="w-100 max-w-full">
+  <conare-form label="create an API key">
+    <conare-field label="Name" hint="Letters, numbers and dashes.">
+      <conare-input data-key="name" autocomplete="off" placeholder="production-agent"></conare-input>
+    </conare-field>
+    <conare-field label="Namespace">
+      <conare-native-select data-key="namespace" value="" mono>
+        <option value="" disabled>Pick a namespace</option><option>contracts</option><option>slack</option><option>sec-filings</option>
+      </conare-native-select>
+    </conare-field>
+    <conare-field label="Expires">
+      <conare-native-select data-key="expires" value="90"><option value="30">In 30 days</option><option value="90">In 90 days</option><option value="never">Never</option></conare-native-select>
+    </conare-field>
+    <conare-checkbox data-key="readOnly" checked label="Read only" hint="It can search but not add or delete documents."></conare-checkbox>
+    <conare-button slot="actions" variant="ghost" data-clear>Clear</conare-button>
+    <conare-pixel-button slot="actions" type="submit">Create key</conare-pixel-button>
+  </conare-form>
+  <template>
+    <div class="flex flex-col items-start gap-3 border border-edge p-4" role="status">
+      <p class="type-ui">Key <span class="font-code text-meta"></span> created.</p>
+      <conare-button>Create another</conare-button>
+    </div>
+  </template>
+</div>
+<script type="module">
+  // useForm: an error shows once its field is left or the form sent, then follows the value.
+  await customElements.whenDefined('conare-form')
+  const root = document.getElementById('create-key')
+  const form = root.querySelector('conare-form')
+  const template = root.querySelector('template')
+  const submitButton = form.querySelector('[type="submit"]')
+  const fields = Object.fromEntries([...form.querySelectorAll('[data-key]')].map((el) => [el.dataset.key, el]))
+  const initial = { name: '', namespace: '', expires: '90', readOnly: true }
+  const rules = {
+    name: (v) => (!String(v).trim() ? 'Give the key a name.' : /\s/.test(String(v)) ? 'Use letters, numbers and dashes, no spaces.' : undefined),
+    namespace: (v) => (!v ? 'Pick where it can search.' : undefined),
+  }
+  let values = { ...initial }
+  let touched = {}
+  let tried = false
+  let sending = false
+  const all = () => Object.fromEntries(Object.entries(rules).map(([k, rule]) => [k, rule(values[k], values)]).filter(([, m]) => m))
+  const paint = () => {
+    const errors = all()
+    for (const key of Object.keys(rules)) {
+      const message = tried || touched[key] ? errors[key] : undefined
+      fields[key].closest('conare-field').error = message
+      fields[key].invalid = !!message
+    }
+    submitButton.disabled = sending
+    // Only a changed label is written: replacing the text under a press would swallow its click.
+    const label = sending ? 'Creating' : 'Create key'
+    if (submitButton.textContent !== label) submitButton.textContent = label
+  }
+  const read = (key) => (key === 'readOnly' ? fields[key].checked : fields[key].value)
+  for (const [key, el] of Object.entries(fields)) {
+    el.addEventListener('input', () => { values = { ...values, [key]: read(key) }; paint() })
+    el.addEventListener('change', () => { values = { ...values, [key]: read(key) }; paint() })
+    el.addEventListener('focusout', () => { touched[key] = true; paint() })
+  }
+  const reset = () => {
+    values = { ...initial }
+    touched = {}
+    tried = false
+    form.failure = undefined
+    fields.name.value = ''
+    fields.namespace.value = ''
+    fields.expires.value = '90'
+    fields.readOnly.checked = true
+    paint()
+  }
+  form.querySelector('[data-clear]').addEventListener('click', reset)
+  form.addEventListener('submit', async () => {
+    tried = true
+    form.failure = undefined
+    paint()
+    if (Object.keys(all()).length || sending) return
+    sending = true
+    paint()
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 800))
+      if (values.name === 'taken') throw new Error('A key with that name already exists.')
+      // The form goes and the note comes, as Vue's v-if and v-else swap them.
+      const done = template.content.firstElementChild.cloneNode(true)
+      done.querySelector('span').textContent = values.name
+      done.querySelector('conare-button').addEventListener('click', () => {
+        done.replaceWith(form)
+        reset()
+      })
+      form.replaceWith(done)
+    } catch (error) {
+      form.failure = error.message
+    } finally {
+      sending = false
+      paint()
+    }
+  })
+  paint()
+</script>

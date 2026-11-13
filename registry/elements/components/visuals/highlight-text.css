@@ -1,0 +1,13 @@
+/* The host is the heading's box (HighlightText.vue's root), so a class on <conare-highlight-text> lands on it as a
+   class on <HighlightText> does. Inside, .ds-hl (display: contents) carries the root's classes. */
+:host { display: block; }
+.ds-hl { display: contents; }
+/* HighlightText.vue's <style>, as it is. */
+.ds-hl-char { transition: opacity var(--ds-duration-enter) var(--ds-easing-reveal-fade) var(--d, 0s), color var(--ds-duration-reveal) var(--ds-easing-reveal-ink) calc(var(--d, 0s) + 0.2s); }
+.ds-hl.ds-hl-ready:not(.ds-hl-on) .ds-hl-char { color: var(--ds-color-fg-accent-display); opacity: 0.2; transition: none; }
+.ds-hl-word { display: inline-block; white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) {
+  .ds-hl.ds-hl-ready:not(.ds-hl-on) .ds-hl-char { color: inherit; opacity: 1; }
+  .ds-hl.ds-hl-ready:not(.ds-hl-on) .ds-hl-char.text-fg-accent-display { color: var(--ds-color-fg-accent-display); }
+  .ds-hl-char { transition: none; }
+}

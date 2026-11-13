@@ -1,0 +1,13 @@
+<!-- When a new API key stops working: a date in a field, from tomorrow on. -->
+<form id="key-expiry" class="flex min-h-100 max-w-80 flex-col gap-4">
+  <conare-field label="Expires" hint="The key stops working at the start of this day.">
+    <conare-date-picker name="expires" placeholder="Never"></conare-date-picker>
+  </conare-field>
+  <div><conare-button variant="dark" type="submit">Create key</conare-button></div>
+</form>
+<script type="module">
+  await customElements.whenDefined('conare-date-picker')
+  const form = document.getElementById('key-expiry')
+  form.querySelector('conare-date-picker').min = new Date(new Date().setDate(new Date().getDate() + 1))
+  form.addEventListener('submit', (e) => e.preventDefault())
+</script>

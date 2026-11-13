@@ -1,0 +1,14 @@
+/* CellBurst.vue's <style>, as it is. */
+.ds-art-in { animation: ds-art-in var(--ds-duration-art) var(--ds-easing-standard) both; }
+@keyframes ds-art-in { from { opacity: 0; } }
+/* Each line holds, wipes away from one end, then draws back in from the same end (home.css .cell-trace). */
+.ds-cell-trace { stroke-dasharray: 1 1; stroke-dashoffset: 0; animation: ds-cell-trace var(--dur) var(--ds-easing-swap) infinite; animation-delay: var(--delay); }
+@keyframes ds-cell-trace {
+  0%, 62% { stroke-dashoffset: 0; }
+  80% { stroke-dashoffset: -1; }
+  80.01% { stroke-dashoffset: 1; }
+  100% { stroke-dashoffset: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ds-art-in, .ds-cell-trace { animation: none; }
+}
