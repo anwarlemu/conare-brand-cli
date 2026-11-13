@@ -1,0 +1,3 @@
+/* Vue turns the chevron with rotate-180 while the menu is open; here the icon's markup stays the same from one render
+   to the next (so its transition runs) and the open trigger turns it. */
+button[aria-expanded="true"] > .lucide-chevron-down { @apply rotate-180; }
