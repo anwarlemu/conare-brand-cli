@@ -15,6 +15,64 @@ import styles from 'virtual:tw'
 // alone, the `title` slot and the default slot hold plain content. `stretch` makes it fill its box, for a frame that
 // sizes it (blog-card's picture sets it on the window in its `window` slot).
 
+// Used with plain content in its slots (a page's own window), the parts are the page's: the window adopts these rules
+// (the sheet above for its light DOM: the host's `active` for Vue's data-active) into the tree it sits in, once.
+const LIGHT = `
+[data-ds="viz-window"] {
+.ds-viz-chip { display: inline-flex; align-items: center; gap: 6px; padding: 1px 6px; background: var(--ds-color-neutral-200); font-size: var(--ds-text-meta); line-height: 18px; vertical-align: 1px; white-space: nowrap; }
+.ds-viz-tag { padding: 0 6px; border: var(--ds-border-hairline) solid var(--ds-color-neutral-300); color: var(--ds-color-neutral-500); font-size: var(--ds-text-caption); line-height: 18px; white-space: nowrap; }
+.ds-viz-dot { width: 6px; height: 6px; flex-shrink: 0; }
+.ds-viz-progress { display: flex; height: var(--ds-size-row); align-items: center; gap: var(--ds-space-lg); padding: 0 12px; border: var(--ds-border-hairline) solid var(--ds-color-neutral-300); font-size: var(--ds-text-meta); line-height: 16px; }
+.ds-viz-matrix { display: grid; grid-template-columns: repeat(3, 2px); gap: var(--ds-space-2xs); flex-shrink: 0; }
+.ds-viz-matrix i { width: 2px; height: 2px; background: var(--ds-color-neutral-500); }
+&[active] .ds-viz-matrix i { animation: ds-viz-blink 900ms steps(1, end) infinite; animation-delay: calc(var(--k) * 100ms); }
+.ds-viz-timer { flex-shrink: 0; color: var(--ds-color-neutral-500); font-variant-numeric: tabular-nums; counter-reset: viz-s var(--viz-s); }
+.ds-viz-timer::after { content: "00:" counter(viz-s, decimal-leading-zero); }
+&[active] .ds-viz-timer { animation: ds-viz-count calc(var(--to) * var(--ds-duration-viz-tick)) steps(var(--to), end) both; animation-delay: calc(var(--d) * 1ms); }
+.ds-viz-shimmer { background: linear-gradient(90deg, var(--ds-color-neutral-500) 30%, var(--ds-color-off-white) 50%, var(--ds-color-neutral-500) 70%) 0 0 / 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; }
+&[active] .ds-viz-shimmer { animation: ds-viz-shimmer var(--ds-duration-viz-shimmer) linear calc(var(--d) / 1400 + 0.2), ds-viz-out var(--ds-duration-enter) ease both; animation-delay: 0ms, calc(var(--d) * 1ms); }
+.ds-viz-card, .ds-viz-in, .ds-viz-swap-b { opacity: 0; }
+&[active] .ds-viz-card { animation: ds-viz-card var(--ds-duration-viz-card) var(--ds-easing-viz) 80ms both; }
+&[active] .ds-viz-in { animation: ds-viz-in var(--ds-duration-viz-in) var(--ds-easing-viz) both; animation-delay: calc(var(--d) * 1ms); }
+&[active] .ds-viz-swap-a:not(.ds-viz-shimmer) { animation: ds-viz-out var(--ds-duration-enter) ease both; animation-delay: calc(var(--d) * 1ms); }
+&[active] .ds-viz-swap-b { animation: ds-viz-in var(--ds-duration-entrance) var(--ds-easing-out) both; animation-delay: calc(var(--d) * 1ms + 120ms); }
+.ds-viz-row { opacity: 0; transform: translateY(calc(var(--from) * var(--track, 48px))); }
+&[active] .ds-viz-row { animation: ds-viz-in var(--ds-duration-viz-row) var(--ds-easing-out) both, ds-viz-rank var(--ds-duration-viz-in) var(--ds-easing-swap) both; animation-delay: calc(var(--d) * 1ms), 2400ms; }
+.ds-viz-bar { clip-path: inset(0 100% 0 0); }
+&[active] .ds-viz-bar { animation: ds-viz-bar var(--ds-duration-viz-bar) var(--ds-easing-out) both; animation-delay: calc(var(--d) * 1ms); }
+&:not([active]) :is(.ds-viz-card, .ds-viz-in, .ds-viz-swap-b, .ds-viz-row) { opacity: 1; }
+&:not([active]) .ds-viz-swap-a { opacity: 0; }
+&:not([active]) .ds-viz-row { transform: translateY(calc(var(--to) * var(--track, 48px))); }
+&:not([active]) .ds-viz-bar { clip-path: inset(0 calc((1 - var(--w)) * 100%) 0 0); }
+&:not([active]) .ds-viz-timer { --viz-s: var(--to); }
+.ds-viz-body { opacity: 0; visibility: hidden; transition: opacity var(--ds-duration-slide) ease, visibility 0s linear 180ms; }
+.ds-viz-body[data-active="true"] { opacity: 1; visibility: visible; transition: opacity var(--ds-duration-micro) ease, visibility 0s; }
+.ds-viz-body:not([data-active="true"]) * { animation-play-state: paused !important; }
+.ds-viz-title { opacity: 0; transition: opacity var(--ds-duration-slide) ease; }
+.ds-viz-title[data-active="true"] { opacity: 1; transition: opacity var(--ds-duration-micro) ease; }
+@media (prefers-reduced-motion: reduce) {
+  &[active] :is(.ds-viz-card, .ds-viz-in, .ds-viz-swap-a, .ds-viz-swap-b, .ds-viz-row, .ds-viz-bar, .ds-viz-timer, .ds-viz-shimmer, .ds-viz-matrix i) { animation: none; }
+  & :is(.ds-viz-card, .ds-viz-in, .ds-viz-swap-b, .ds-viz-row) { opacity: 1; }
+  & .ds-viz-swap-a { opacity: 0; }
+  & .ds-viz-row { transform: translateY(calc(var(--to) * var(--track, 48px))); }
+  & .ds-viz-bar { clip-path: inset(0 calc((1 - var(--w)) * 100%) 0 0); }
+  & .ds-viz-timer { --viz-s: var(--to); }
+  .ds-viz-body, .ds-viz-body[data-active="true"], .ds-viz-title, .ds-viz-title[data-active="true"] { transition: none; }
+}
+}
+@property --viz-s { syntax: "<integer>"; inherits: false; initial-value: 0; }
+@keyframes ds-viz-card { from { opacity: 0; transform: translateY(16px) scale(0.985); } to { opacity: 1; transform: none; } }
+@keyframes ds-viz-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes ds-viz-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes ds-viz-rank { from { transform: translateY(calc(var(--from) * var(--track, 48px))); } to { transform: translateY(calc(var(--to) * var(--track, 48px))); } }
+@keyframes ds-viz-bar { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 calc((1 - var(--w)) * 100%) 0 0); } }
+@keyframes ds-viz-blink { 0% { background: var(--ds-color-off-white); } 34% { background: var(--ds-color-neutral-500); } }
+@keyframes ds-viz-count { from { --viz-s: 0; } to { --viz-s: var(--to); } }
+@keyframes ds-viz-shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
+`
+let lightSheet: CSSStyleSheet | undefined
+const adopted = new WeakSet<Document | ShadowRoot>()
+
 /**
  * @summary The website's dark product window: a card that rises in with its parts.
  * @slot title - What the bar says after the mark.
@@ -22,7 +80,7 @@ import styles from 'virtual:tw'
  */
 export class VizWindow extends DsElement {
 	static styles = [DsElement.styles, styles]
-	static properties = { active: { type: Boolean }, size: {}, stretch: { type: Boolean, reflect: true }, relative: { type: Boolean } }
+	static properties = { active: { type: Boolean, reflect: true }, size: {}, stretch: { type: Boolean, reflect: true }, relative: { type: Boolean } }
 
 	/** Plays the entrance; inactive, it holds its finished state. */
 	active = false
@@ -32,6 +90,17 @@ export class VizWindow extends DsElement {
 	stretch = false
 	/** Positions its box (Vue's class="relative" on the window), so it paints over an absolute sibling such as a cell-burst. */
 	relative = false
+
+	connectedCallback() {
+		super.connectedCallback()
+		if (!this.children.length) return
+		const root = this.getRootNode()
+		if (!(root instanceof Document || root instanceof ShadowRoot) || adopted.has(root)) return
+		adopted.add(root)
+		lightSheet ??= new CSSStyleSheet()
+		if (!lightSheet.cssRules.length) lightSheet.replaceSync(LIGHT)
+		root.adoptedStyleSheets = [...root.adoptedStyleSheets, lightSheet]
+	}
 
 	/** Classes on the root after its own (Vue's class on the component). */
 	protected rootClass(): string {

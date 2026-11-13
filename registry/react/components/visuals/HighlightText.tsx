@@ -12,9 +12,11 @@ export interface HighlightTextProps {
   text: string
   accent?: string
   className?: string
+  /** The heading's id (Vue's falls through to it), so a section can be labelled by it. */
+  id?: string
 }
 
-export function HighlightText({ as: Tag = 'h2', text, accent = '', className }: HighlightTextProps) {
+export function HighlightText({ as: Tag = 'h2', text, accent = '', className, id }: HighlightTextProps) {
   const el = useRef<HTMLElement | null>(null)
   const [ready, setReady] = useState(false)
   const [on, setOn] = useState(false)
@@ -77,7 +79,7 @@ export function HighlightText({ as: Tag = 'h2', text, accent = '', className }: 
   return (
     <>
       <style href="ds-highlight-text" precedence="ds">{css}</style>
-      <Tag data-ds="highlight-text" ref={el as Ref<HTMLHeadingElement>} className={cn('ds-hl', ready && 'ds-hl-ready', on && 'ds-hl-on', className)}>
+      <Tag data-ds="highlight-text" id={id} ref={el as Ref<HTMLHeadingElement>} className={cn('ds-hl', ready && 'ds-hl-ready', on && 'ds-hl-on', className)}>
         <span className="sr-only">{text}{accent}</span>
         <span aria-hidden="true">
           {words.map((word, wi) => (
