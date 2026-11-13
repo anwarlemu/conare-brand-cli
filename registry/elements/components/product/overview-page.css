@@ -1,0 +1,9 @@
+/* OverviewPage.vue's <style>, as it is. */
+/* The lead in the website's double rule: a hairline, a second 4px outside it. */
+/* ds-override: 5px holds the outer rule (4px offset plus its 1px) inside the page, as platform.css does. */
+.ds-ovlead { display: grid; margin: 5px; border: var(--ds-border-hairline) solid var(--ds-color-edge); outline: var(--ds-border-hairline) solid var(--ds-color-edge); outline-offset: 4px; }
+@media (min-width: 900px) { .ds-ovlead { grid-template-columns: 312px minmax(0, 1fr); } }
+@media (min-width: 1180px) { .ds-ovlead { grid-template-columns: 360px minmax(0, 1fr); } }
+.ds-ovlink { transition: color var(--ds-duration-micro) var(--ds-easing-standard); }
+@media (hover: hover) and (pointer: fine) { .ds-ovlink:hover { color: var(--ds-color-fg); } }
+@media (max-width: 639px) { .ds-ovlead :is(button, a) { min-height: 40px; } }

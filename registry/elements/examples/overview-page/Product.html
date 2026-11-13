@@ -1,0 +1,37 @@
+<!-- Overview as it ships, in the console's frame, on sample data: setup still open, Queries for the last 90 days,
+     credits and the largest namespaces. Listen for its events to wire your own routes. -->
+<conare-console-frame crumbs='[{ "label": "Overview" }]'>
+  <conare-sidebar-label slot="nav">Platform</conare-sidebar-label>
+  <conare-sidebar-link slot="nav" href="#" active><i data-lucide="house" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Overview</conare-sidebar-link>
+  <conare-sidebar-link slot="nav" href="#" status="6"><i data-lucide="layers" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Namespaces</conare-sidebar-link>
+  <conare-sidebar-link slot="nav" href="#" status="1 failed" alert><i data-lucide="network" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Sources</conare-sidebar-link>
+  <conare-sidebar-link slot="nav" href="#"><i data-lucide="square-terminal" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Agents</conare-sidebar-link>
+  <conare-sidebar-link slot="nav" href="#"><i data-lucide="atom" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Custom models</conare-sidebar-link>
+  <conare-sidebar-label slot="nav">Manage</conare-sidebar-label>
+  <conare-sidebar-link slot="nav" href="#" status="3"><i data-lucide="key-round" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>API keys</conare-sidebar-link>
+  <conare-sidebar-link slot="nav" href="#"><i data-lucide="gauge" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Performance</conare-sidebar-link>
+  <conare-sidebar-link slot="nav" href="#"><i data-lucide="activity" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Usage</conare-sidebar-link>
+  <conare-sidebar-link slot="nav" href="#"><i data-lucide="credit-card" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Billing</conare-sidebar-link>
+  <conare-sidebar-link slot="nav" href="#"><i data-lucide="settings" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Settings</conare-sidebar-link>
+  <conare-overview-page id="overview" greeting="Good afternoon" documents="2786122" setup='{ "done": 3, "total": 4 }'
+    credits='{ "left": 412.6, "total": 500, "spenders": [{ "name": "support", "cost": 54.2, "share": 0.62 }, { "name": "contracts", "cost": 21.85, "share": 0.25 }, { "name": "wiki", "cost": 0.4, "share": 0.004 }] }'
+    namespaces='[{ "name": "contracts", "documents": 412830, "health": "ready", "synced": "2 min ago", "lastUsed": "2 min ago" }, { "name": "support", "documents": 2184920, "health": "syncing", "lastUsed": "1 min ago" }, { "name": "wiki", "documents": 96410, "health": "ready", "synced": "12 min ago", "lastUsed": "1 h ago" }, { "name": "crm", "documents": 52660, "health": "error", "lastUsed": "yesterday" }, { "name": "engineering", "documents": 31902, "health": "api", "lastUsed": "3 days ago" }, { "name": "research", "documents": 7385, "health": "api" }]'></conare-overview-page>
+</conare-console-frame>
+<script type="module">
+  // 90 days ending on Nov 4, a weekday rhythm with a slow climb.
+  const end = Date.UTC(2026, 10, 4)
+  const days = Array.from({ length: 90 }, (_, i) => {
+    const at = new Date(end - (89 - i) * 86400000)
+    const weekend = at.getUTCDay() === 0 || at.getUTCDay() === 6
+    return { day: at.toISOString().slice(0, 10), value: Math.round((weekend ? 1800 : 5200) + i * 42 + ((i * 37) % 11) * 140) }
+  })
+  const thisMonth = days.filter(d => d.day.startsWith('2026-11')).reduce((a, d) => a + d.value, 0)
+  // The last 24 hours, every 30 minutes: p50 and p95.
+  const half = (i) => end - (47 - i) * 1800000
+  const latency = [
+    { label: 'p50', points: Array.from({ length: 48 }, (_, i) => ({ t: half(i), v: 140 + ((i * 29) % 17) * 6 + (i % 12 === 5 ? 90 : 0) })) },
+    { label: 'p95', points: Array.from({ length: 48 }, (_, i) => ({ t: half(i), v: 260 + ((i * 31) % 13) * 8 + (i % 12 === 5 ? 120 : 0) })) },
+  ]
+  await customElements.whenDefined('conare-overview-page')
+  document.getElementById('overview').queries = { thisMonth, p50: 182, p95: 296, days, latency }
+</script>
