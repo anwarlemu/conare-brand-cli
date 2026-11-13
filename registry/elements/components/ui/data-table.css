@@ -1,0 +1,17 @@
+/* DataTable.vue's <style>, then ShowMore.vue's .ds-more for its Clear filters buttons (Vue's styles are the page's: here the shadow root holds its own). */
+.ds-sort { margin: 0 -4px; padding: 0 var(--ds-space-xs); color: inherit; font: inherit; transition: color var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-sort-idle { color: var(--ds-color-fg-faint); transition: color var(--ds-duration-micro) var(--ds-easing-standard); }
+@media (hover: hover) and (pointer: fine) {
+  .ds-sort:hover { color: var(--ds-color-fg); }
+  .ds-sort:hover .ds-sort-idle { color: var(--ds-color-fg-muted); }
+}
+.ds-sort:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: 0; }
+/* Five more: each new row lands on the one above, one after the other (.v2-ledger li[data-new]). */
+.ds-data-table tr[data-new] { animation: ds-row-in var(--ds-duration-rise) var(--ds-easing-out) both; animation-delay: calc(var(--i) * 30ms); }
+@keyframes ds-row-in { from { opacity: 0; transform: translateY(8px); } }
+@media (prefers-reduced-motion: reduce) { .ds-data-table tr[data-new] { animation-name: ds-row-fade; } }
+@keyframes ds-row-fade { from { opacity: 0; } }
+.ds-more { transition: color var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-more::after { position: absolute; inset: -12px; content: ""; }
+@media (hover: hover) and (pointer: fine) { .ds-more:hover { color: var(--ds-color-fg); } }
+.ds-more:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: var(--ds-border-focus); }
