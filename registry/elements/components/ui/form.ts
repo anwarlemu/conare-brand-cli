@@ -49,14 +49,26 @@ export class Form extends DsElement {
 		else this.removeAttribute('aria-label')
 	}
 
+	/**
+	 * What a control does when pressed: submit, reset or neither. An element's `type` is its attribute or its property
+	 * (React sets it as a property); a page's own <button> submits unless its type says otherwise, as in a native form;
+	 * a button inside an element's shadow root counts only for the type written on it.
+	 */
+	private typeOf(n: HTMLElement): string | null {
+		if (n.localName.includes('-')) {
+			const prop = (n as HTMLElement & { type?: unknown }).type
+			return n.getAttribute('type') ?? (typeof prop === 'string' ? prop : null)
+		}
+		if (n.localName !== 'button') return null
+		return n.getAttribute('type') ?? (n.getRootNode() === this.getRootNode() ? 'submit' : null)
+	}
 	/** The control in the event's path that submits or resets, if any. */
 	private kind(event: Event): 'submit' | 'reset' | null {
 		for (const n of event.composedPath()) {
 			if (n === this) break
 			if (!(n instanceof HTMLElement)) continue
-			const type = n.getAttribute('type')
-			const pressable = n.localName === 'button' || n.localName.includes('-')
-			if (pressable && (type === 'submit' || type === 'reset')) return n.matches(':disabled, [disabled]') ? null : type
+			const type = this.typeOf(n)
+			if (type === 'submit' || type === 'reset') return n.matches(':disabled, [disabled]') ? null : type
 		}
 		return null
 	}
@@ -70,7 +82,7 @@ export class Form extends DsElement {
 		if (event.key !== 'Enter' || event.isComposing || event.defaultPrevented) return
 		const target = event.composedPath()[0]
 		if (!(target instanceof HTMLInputElement) || !TEXT_INPUT.test(target.type)) return
-		const button = this.querySelector('[type="submit"]')
+		const button = [...this.querySelectorAll<HTMLElement>('*')].find((n) => (n.localName === 'button' || n.localName.includes('-')) && this.typeOf(n) === 'submit')
 		if (button?.matches(':disabled, [disabled]')) return
 		event.preventDefault()
 		this.send()
