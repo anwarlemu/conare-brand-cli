@@ -190,7 +190,9 @@ if (process.argv.includes('--require-all-flavors')) {
 for (const f of walk('.').filter((p) => /\.(vue|ts|tsx|css|html)$/.test(p) && !p.endsWith('.d.ts'))) {
 	const { findings } = checkText(`registry/${f}`, readFileSync(join(reg, f), 'utf8'));
 	checked++;
-	for (const x of findings) fail(formatFinding(x));
+	// Each flavor's Lucide: lucide-react in the React files, lucide's icon nodes in the elements (brand.json names Vue's).
+	const lucide = f.startsWith('react/') ? /^lucide-react\b/ : f.startsWith('elements/') ? /^lucide\b(?!-)/ : null;
+	for (const x of findings) if (!(lucide && x.rule === 'icon-pack' && lucide.test(x.snippet))) fail(formatFinding(x));
 }
 
 if (!process.argv.includes('--no-tsc') && !errors.length) {

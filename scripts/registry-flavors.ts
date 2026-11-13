@@ -33,6 +33,18 @@ export function elementPath(vue: string) {
 	return m ? `elements/components/${m[1]}/${kebab(m[2])}.ts` : undefined;
 }
 
+/** A class name with an interpolation glued to it (`bg-surface${x}`), which Tailwind's scanner cannot see: the text
+ * around it, or undefined. An id or a prefix (`card-${id}`) is fine. */
+export function gluedInterpolation(text: string) {
+	const m = text.match(/[a-z0-9\]%]\$\{/);
+	return m ? text.slice(Math.max(0, (m.index ?? 0) - 24), (m.index ?? 0) + 3) : undefined;
+}
+/** Whether a React file needs 'use client': it calls a hook other than useId (fine on the server) or portals. */
+export function needsUseClient(text: string) {
+	const code = text.replace(/\/\/.*$/gm, '');
+	return /\buse(?!Id\b)(State|Effect|LayoutEffect|Ref|Reducer|Callback|Memo|Context|Transition|SyncExternalStore|ImperativeHandle|Controllable|[A-Z]\w*)\s*[(<]/.test(code) || /\bcreatePortal\b/.test(code);
+}
+
 export type ReactFlavor = { files: Array<{ path: string; content: string; target?: string }>; dependencies: string[]; registryDependencies: string[]; api?: ReactApi; examples: Array<Example & { path: string; content: string; registryDependencies: string[]; dependencies: string[] }> };
 export type ElementsFlavor = { files: Array<{ path: string; content: string; target?: string }>; modules: string[]; tag: string; tags: string[]; dependencies: string[]; registryDependencies: string[]; api?: ElementsApi; examples: Array<Example & { path: string; content: string }> };
 export type ReactApi = { components: Array<{ name: string; file: string; props: Array<{ name: string; type: string; required: boolean; default?: string; description?: string }>; extends?: string[] }> };
@@ -83,18 +95,15 @@ export async function buildFlavors(docs: FlavorDoc[], ctx: Ctx) {
 		}
 		return { files: [...files], requires: [...requires].sort(), packages: [...packages].sort() };
 	}
-	/** A class name with an interpolation glued to it (`bg-surface${x}`): Tailwind's scanner cannot see the class. */
 	const glued = (f: string, text: string) => {
-		const m = text.match(/[a-z0-9\]%]\$\{/);
-		if (m) fail(`${f}: \`${text.slice(Math.max(0, (m.index ?? 0) - 24), (m.index ?? 0) + 3)}\` glues an interpolation to a class name, which Tailwind's scanner cannot read; put a space before it or join an array of whole class names`);
+		const hit = gluedInterpolation(text)
+		if (hit) fail(`${f}: \`${hit}\` glues an interpolation to a class name, which Tailwind's scanner cannot read; put a space before it or join an array of whole class names`);
 	};
-	const HOOK_USE = /\buse(?!Id\b)(State|Effect|LayoutEffect|Ref|Reducer|Callback|Memo|Context|Transition|SyncExternalStore|ImperativeHandle|Controllable|[A-Z]\w*)\s*[(<]/;
 	function checkReactFile(f: string) {
 		const text = read(f);
 		if (/from\s+['"]next\//.test(text)) fail(`${f}: imports Next.js; components take data through props and work in any React app`);
 		if (/from\s+['"]vue['"]/.test(text)) fail(`${f}: imports vue`);
-		const usesHooks = HOOK_USE.test(text.replace(/\/\/.*$/gm, '')) || /\bcreatePortal\b/.test(text);
-		if (usesHooks && !/^\s*['"]use client['"]/.test(text)) fail(`${f}: uses hooks; start it with 'use client' so it works in Next's App Router`);
+		if (needsUseClient(text) && !/^\s*['"]use client['"]/.test(text)) fail(`${f}: uses hooks; start it with 'use client' so it works in Next's App Router`);
 		glued(f, text);
 		if (f.startsWith('react/components/') && !/(\sdata-ds=["{]|['"]data-ds['"]\s*:)/.test(text)) fail(`${f}: its root element needs data-ds="<name>" as the Vue file's has`);
 	}

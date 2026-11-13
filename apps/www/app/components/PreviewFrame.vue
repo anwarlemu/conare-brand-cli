@@ -7,9 +7,10 @@ import type { SiteExample } from '~/utils/registry'
 // One example in a frame: an iframe of /preview/<item>/<example>, so the example renders alone with the page's real
 // widths and media queries. Desktop fills the frame; Phone shows it 390px wide. The frame takes the example's height
 // (the preview posts it, open menus and dialogs included), so nothing scrolls inside it.
-const props = defineProps<{ item: string, example: SiteExample }>()
+// `flavor: 'elements'` frames the web component example instead (the same route with ?flavor=elements).
+const props = defineProps<{ item: string, example: SiteExample, flavor?: 'vue' | 'elements' }>()
 const device = ref<'desktop' | 'phone'>('desktop')
-const src = computed(() => `/preview/${props.item}/${props.example.name}`)
+const src = computed(() => `/preview/${props.item}/${props.example.name}${props.flavor === 'elements' ? '?flavor=elements' : ''}`)
 const frame = ref<HTMLIFrameElement | null>(null)
 const height = ref(props.example.center ? 140 : 240)
 const shown = ref(false)

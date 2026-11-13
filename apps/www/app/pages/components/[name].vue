@@ -2,7 +2,8 @@
 import { computed } from 'vue'
 import { ArrowLeft, ArrowRight } from 'lucide-vue-next'
 import CodeBlock from '@/components/ui/CodeBlock.vue'
-import { addCommand, findItem, ordered, sourceOf } from '~/utils/registry'
+import { addCommand, elementTags, FLAVORS, flavorFiles, hasFlavor, findItem, ordered, sourceOf } from '~/utils/registry'
+import { useFlavor } from '~/utils/flavor'
 
 // One item: its install line, every example live in a frame, when to use it and not, the examples' code, the
 // component's source (the files apps install), then the previous and next items.
@@ -14,8 +15,18 @@ const all = ordered()
 const at = computed(() => all.findIndex(i => i.name === item.value?.name))
 const prev = computed(() => all[at.value - 1])
 const next = computed(() => all[at.value + 1])
-const examples = computed(() => item.value!.examples.map(e => ({ label: `${e.name}.vue`, code: sourceOf(`examples/${item.value!.name}/${e.name}.vue`) })))
-const sources = computed(() => item.value!.files.map(f => ({ label: f.split('/').pop()!, code: sourceOf(f) })))
+// The flavor picked (Vue, React or Web component): the install line, usage, examples' code and source follow it. An
+// item not ported to it yet says so and shows the Vue files.
+const flavor = useFlavor()
+const ported = computed(() => hasFlavor(item.value!, flavor.value))
+const shown = computed(() => (ported.value ? flavor.value : 'vue'))
+const flavorLabel = computed(() => FLAVORS.find(f => f.value === flavor.value)!.label)
+const files = computed(() => flavorFiles(item.value!, shown.value))
+const examples = computed(() => files.value.examples.map(path => ({ label: path.split('/').pop()!, code: sourceOf(path) })))
+const sources = computed(() => files.value.files.map(f => ({ label: f.split('/').pop()!, code: sourceOf(f) })))
+const requires = computed(() => (shown.value === 'vue' ? item.value!.requires : item.value!.flavors[shown.value]?.requires ?? []))
+const packages = computed(() => (shown.value === 'vue' ? item.value!.dependencies : shown.value === 'react' ? item.value!.flavors.react?.dependencies ?? [] : []))
+const tags = computed(() => (shown.value === 'elements' ? item.value!.flavors.elements!.tags.map(t => `<${t}>`).join(', ') : ''))
 const toc = [['preview', 'Preview'], ['usage', 'Usage'], ['example', 'Example'], ['source', 'Source']]
 </script>
 
@@ -23,11 +34,17 @@ const toc = [['preview', 'Preview'], ['usage', 'Usage'], ['example', 'Example'],
   <div v-if="item" class="mx-auto flex w-full max-w-page-wide gap-10 px-4 pt-8 pb-16 md:px-8 md:pt-10 md:pb-20">
     <article class="flex w-full min-w-0 max-w-220 flex-col gap-10">
       <PageHead eyebrow="Component" :title="item.title" :description="item.description">
-        <InstallLine :command="addCommand(item.name)" />
+        <div class="flex flex-col items-start gap-3">
+          <FlavorSwitch />
+          <InstallLine :command="addCommand(item.name, shown)" />
+          <InstallLine v-if="shown === 'elements'" :command="elementTags(item)" />
+          <p v-if="!ported" class="type-meta text-fg-muted">{{ item.title }} has no {{ flavorLabel }} version yet; the Vue files show below.</p>
+        </div>
       </PageHead>
 
       <section id="preview" class="grid scroll-mt-16 gap-4 md:grid-cols-2 md:scroll-mt-6" aria-label="examples">
-        <PreviewFrame v-for="e in item.examples" :key="`${item.name}/${e.name}`" :item="item.name" :example="e" :class="e.half ? '' : 'md:col-span-2'" />
+        <PreviewFrame v-for="e in item.examples" :key="`${item.name}/${e.name}/${shown === 'elements' ? 'elements' : 'vue'}`" :item="item.name" :example="e" :flavor="shown === 'elements' ? 'elements' : 'vue'" :class="e.half ? '' : 'md:col-span-2'" />
+        <p v-if="shown === 'react'" class="type-meta text-fg-muted md:col-span-2">The previews render the Vue components; the React ones render the same, pixel for pixel (checked on every example at 1440 and 390 wide).</p>
       </section>
 
       <section class="flex flex-col gap-4" aria-labelledby="usage">
@@ -45,9 +62,10 @@ const toc = [['preview', 'Preview'], ['usage', 'Usage'], ['example', 'Example'],
           </div>
         </div>
         <p class="type-ui text-fg-muted">
-          Files: <code class="type-code-sm text-fg-soft">{{ item.files.join(', ') }}</code>.
-          <template v-if="item.requires.length"> Requires: <NuxtLink v-for="(r, i) in item.requires" :key="r" :to="`/components/${r}`" class="text-fg underline decoration-edge-strong underline-offset-4 hover:decoration-fg">{{ r }}{{ i < item.requires.length - 1 ? ', ' : '' }}</NuxtLink>.</template>
-          <template v-if="item.dependencies.length"> Packages: <code class="type-code-sm text-fg-soft">{{ item.dependencies.join(', ') }}</code>.</template>
+          <template v-if="tags">Elements: <code class="type-code-sm text-fg-soft">{{ tags }}</code>. </template>
+          Files: <code class="type-code-sm text-fg-soft">{{ files.files.join(', ') }}</code>.
+          <template v-if="requires.length"> Requires: <NuxtLink v-for="(r, i) in requires" :key="r" :to="`/components/${r}`" class="text-fg underline decoration-edge-strong underline-offset-4 hover:decoration-fg">{{ r }}{{ i < requires.length - 1 ? ', ' : '' }}</NuxtLink>.</template>
+          <template v-if="packages.length"> Packages: <code class="type-code-sm text-fg-soft">{{ packages.join(', ') }}</code>.</template>
         </p>
         <p class="type-meta text-fg-muted">Reference: {{ item.source }}.</p>
       </section>
@@ -55,13 +73,15 @@ const toc = [['preview', 'Preview'], ['usage', 'Usage'], ['example', 'Example'],
       <section class="flex flex-col gap-4" aria-labelledby="example">
         <SectionHead id="example" title="Example" />
         <p class="type-ui text-fg-soft">The code of the examples above. They use sample data; connect your page's data, routes and callbacks.</p>
-        <CodeBlock :samples="examples" label="examples" />
+        <CodeBlock :key="`examples-${shown}`" :samples="examples" label="examples" />
       </section>
 
       <section class="flex flex-col gap-4" aria-labelledby="source">
         <SectionHead id="source" title="Source" />
-        <p class="type-ui text-fg-soft">The files <code class="type-code-sm">add</code> copies into your app, with the composables they import.</p>
-        <CodeBlock :samples="sources" label="source" />
+        <p v-if="shown === 'elements'" class="type-ui text-fg-soft">The element's source. <code class="type-code-sm">add</code> copies the prebuilt modules (<code class="type-code-sm">{{ item.flavors.elements?.modules.join(', ') }}</code>) into your app's static folder.</p>
+        <p v-else-if="shown === 'react'" class="type-ui text-fg-soft">The files <code class="type-code-sm">add</code> copies into your app, with the hooks they import.</p>
+        <p v-else class="type-ui text-fg-soft">The files <code class="type-code-sm">add</code> copies into your app, with the composables they import.</p>
+        <CodeBlock :key="`source-${shown}`" :samples="sources" label="source" />
       </section>
 
       <nav aria-label="more components" class="flex items-center justify-between gap-3 border-t border-edge pt-6">
