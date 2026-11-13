@@ -1,0 +1,11 @@
+<!-- Search latency, p50 and p95, as smoothed lines over a day. -->
+<conare-line-chart heading="Search latency, last 24 hours" smooth="3" bare></conare-line-chart>
+<script type="module">
+  const hour = (i) => Date.UTC(2026, 9, 29, i)
+  const chart = document.querySelector('conare-line-chart')
+  chart.format = (v) => `${Math.round(v)} ms`
+  chart.series = [
+    { label: 'p50', points: Array.from({ length: 24 }, (_, i) => ({ t: hour(i), v: 230 + ((i * 13) % 7) * 3 })) },
+    { label: 'p95', points: Array.from({ length: 24 }, (_, i) => ({ t: hour(i), v: 400 + ((i * 17) % 9) * 6 })) },
+  ]
+</script>

@@ -1,0 +1,14 @@
+/* The charts' caption: 12px medium, muted (written in sentence case); meta and axis labels 12px muted in tabular figures. */
+.ds-chart-caption { color: var(--ds-color-fg-muted); font-size: var(--ds-text-meta); font-weight: var(--ds-font-weight-medium); line-height: var(--ds-text-meta-leading); }
+.ds-chart-meta { color: var(--ds-color-fg-muted); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); font-variant-numeric: tabular-nums; }
+/* A bar rises from the axis once (console2.css .c-bar), then only its colour changes. */
+.ds-bar { transform-origin: bottom; animation: ds-bar-in var(--ds-duration-rise) var(--ds-easing-out) both; animation-delay: calc(var(--i, 0) * 4ms); transition: background-color var(--ds-duration-glide) var(--ds-easing-standard); }
+@keyframes ds-bar-in { from { transform: scaleY(0.02); } }
+/* The week's change, over the last seven bars on a red rule. */
+.ds-chart-week { position: absolute; right: 0; bottom: 100%; display: flex; justify-content: flex-end; gap: var(--ds-space-xs); margin-bottom: var(--ds-space-xs); padding-bottom: calc(var(--ds-space-xs) - 1px); border-bottom: var(--ds-border-hairline) solid var(--ds-color-edge-accent); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); white-space: nowrap; }
+/* Under a stat that names it (the usage cards), the value read out sits over the chart's top right. */
+.ds-barchart[data-bare] { position: relative; }
+.ds-barchart[data-bare] > .ds-barchart-cap { position: absolute; top: -24px; right: 0; z-index: 1; height: auto; }
+.ds-barchart[data-bare] .ds-chart-caption { display: none; }
+.ds-barchart[data-bare] .ds-barchart-cap .ds-chart-meta { padding: 0 var(--ds-space-xs); background: var(--ds-color-surface); }
+@media (prefers-reduced-motion: reduce) { .ds-bar { animation: none; } }
