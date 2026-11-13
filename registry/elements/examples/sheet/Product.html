@@ -1,0 +1,20 @@
+<!-- The docs beside the console: a page's help opens in a sheet at the right edge, with the call to make. Escape or
+     the dimmed page closes it. -->
+<div class="flex min-h-40 items-center justify-center">
+  <conare-button id="open-docs"><i data-lucide="book-open" data-size="12" data-stroke-width="1.5" aria-hidden="true"></i>Docs</conare-button>
+  <conare-sheet heading="Search a namespace" description="Send a question and get back the passages that answer it, best first.">
+    <div class="flex flex-col gap-4">
+      <p class="type-ui text-fg-soft">Name the namespace in the path. <span class="type-code-sm text-fg">top_k</span> sets how many passages come back, 5 by default.</p>
+      <conare-code-block label="Request"></conare-code-block>
+      <h3 class="type-heading-4">What comes back</h3>
+      <p class="type-ui text-fg-soft">Each passage has its document's ID, the text and a score between 0 and 1. Results under 0.3 are left out.</p>
+    </div>
+  </conare-sheet>
+</div>
+<script type="module">
+  // Code keeps its line breaks, so it is set as a property.
+  document.querySelector('conare-code-block').code = `curl https://api.acme.dev/v1/namespaces/contracts/query \\
+  -H "Authorization: Bearer $API_KEY" \\
+  -d '{ "query": "notice period", "top_k": 5 }'`
+  document.getElementById('open-docs').addEventListener('click', () => { document.querySelector('conare-sheet').open = true })
+</script>
