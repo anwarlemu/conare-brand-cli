@@ -1,0 +1,29 @@
+<!-- Which events a webhook sends: each a checkbox with a hint, and one over them all that shows a bar while some are on. -->
+<fieldset class="flex flex-col" id="webhook-events">
+  <legend class="mb-1 type-meta text-fg-soft">Send these events</legend>
+  <conare-checkbox data-all label="All events"></conare-checkbox>
+  <div class="flex flex-col pl-6">
+    <conare-checkbox name="synced" checked label="Source synced" hint="When a sync finishes with new documents."></conare-checkbox>
+    <conare-checkbox name="failed" checked label="Source failed" hint="When a sync stops and needs you."></conare-checkbox>
+    <conare-checkbox name="deleted" label="Document deleted"></conare-checkbox>
+  </div>
+  <conare-checkbox class="mt-2" label="Signed payloads (always on)" checked disabled></conare-checkbox>
+</fieldset>
+<script type="module">
+  await customElements.whenDefined('conare-checkbox')
+  const set = document.getElementById('webhook-events')
+  const all = set.querySelector('[data-all]')
+  const events = [...set.querySelectorAll('.pl-6 > conare-checkbox')]
+  // "All events" is on when every one is, and shows a bar while only some are.
+  const sync = () => {
+    const on = events.filter((e) => e.checked).length
+    all.checked = on === events.length
+    all.indeterminate = on > 0 && on < events.length
+  }
+  all.addEventListener('change', () => {
+    for (const e of events) e.checked = all.checked
+    sync()
+  })
+  for (const e of events) e.addEventListener('change', sync)
+  sync()
+</script>
