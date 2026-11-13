@@ -1,0 +1,14 @@
+<!-- The hero's heading as the website draws it. Here it plays again every few seconds (a new element in its place); on
+     the website it plays once. -->
+<div class="flex flex-col items-center text-center">
+  <conare-highlight-text id="hero" as="h1" text="Search any data you bring" accent="." class="type-hero sm:type-display"></conare-highlight-text>
+</div>
+<script type="module">
+  let heading = document.getElementById('hero')
+  const timer = setInterval(() => {
+    if (!heading.isConnected) return clearInterval(timer)
+    const next = heading.cloneNode()
+    heading.replaceWith(next)
+    heading = next
+  }, 4000)
+</script>
