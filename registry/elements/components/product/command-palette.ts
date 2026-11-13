@@ -211,17 +211,8 @@ export class CommandPalette extends DsElement {
 					${g.label ? html`<p class="ds-cmd-label" aria-hidden="true">${g.label}${g.label === 'Documents' && this.searching ? html`<span>Searching</span>` : nothing}</p>` : nothing}
 					${g.rows.map((row) => {
 						const i = rows.indexOf(row)
-						return html`<div id=${`ds-cmd-${i}`} role="option" class="ds-cmd-row" ?data-doc=${!!row.text} aria-selected=${String(i === active)} ?data-active=${i === active} @mousemove=${() => { this.activeId = row.id }} @click=${() => this.run(row)}>
-							${glyph(row)}
-							<span class="flex min-w-0 flex-1 flex-col">
-								<span class="flex min-w-0 items-baseline gap-2">
-									${row.text && row.meta ? html`<span class="ds-cmd-muted shrink-0 type-code-sm">${row.meta}</span>` : nothing}
-									<span class=${row.mono ? 'truncate type-code-sm' : 'truncate'}>${row.label}</span>
-								</span>
-								${row.text ? html`<span class="ds-cmd-muted truncate type-meta">${row.text}</span>` : nothing}
-							</span>
-							${row.meta && !row.text ? html`<span class="ds-cmd-muted min-w-10 text-right text-meta tabular-nums">${row.meta}</span>` : nothing}
-						</div>`
+						// One line, no whitespace between the parts: a row's text is its words alone, as the Vue row's is.
+						return html`<div id=${`ds-cmd-${i}`} role="option" class="ds-cmd-row" ?data-doc=${!!row.text} aria-selected=${String(i === active)} ?data-active=${i === active} @mousemove=${() => { this.activeId = row.id }} @click=${() => this.run(row)}>${glyph(row)}<span class="flex min-w-0 flex-1 flex-col"><span class="flex min-w-0 items-baseline gap-2">${row.text && row.meta ? html`<span class="ds-cmd-muted shrink-0 type-code-sm">${row.meta}</span>` : nothing}<span class=${row.mono ? 'truncate type-code-sm' : 'truncate'}>${row.label}</span></span>${row.text ? html`<span class="ds-cmd-muted truncate type-meta">${row.text}</span>` : nothing}</span>${row.meta && !row.text ? html`<span class="ds-cmd-muted min-w-10 text-right text-meta tabular-nums">${row.meta}</span>` : nothing}</div>`
 					})}
 				</div>`)}
 				${rows.length ? nothing : html`<p class="ds-cmd-muted px-3.5 py-2 type-meta">${`Nothing matches "${this.q}".`}</p>`}
