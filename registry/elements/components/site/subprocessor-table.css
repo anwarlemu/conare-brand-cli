@@ -1,0 +1,5 @@
+.ds-legal-table th { padding: var(--ds-space-lg) var(--ds-space-xl); background: var(--ds-color-surface-subtle); font-family: var(--ds-font-text); font-size: var(--ds-text-meta); font-weight: var(--ds-font-weight-regular); color: var(--ds-color-fg-muted); white-space: nowrap; }
+.ds-legal-table td { padding: var(--ds-space-lg) var(--ds-space-xl); vertical-align: top; border-top: var(--ds-border-hairline) solid var(--ds-color-edge); }
+/* Links in the red, underlined at 40% that turns full under the pointer (home.css .legal a). */
+.ds-legal-table a { color: var(--ds-color-fg-accent-display); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--ds-color-fg-accent-display) 40%, transparent); text-underline-offset: 4px; transition: text-decoration-color var(--ds-duration-micro) var(--ds-easing-standard); }
+@media (hover: hover) and (pointer: fine) { .ds-legal-table a:hover { text-decoration-color: var(--ds-color-fg-accent-display); } }

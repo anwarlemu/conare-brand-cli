@@ -1,0 +1,4 @@
+/* The host is the list's box (Steps.vue's <ol>), so a class on <conare-steps> (a width) lands on it as a class on
+   <Steps> does; the <ol> inside keeps the list's meaning and lays out nothing. The page's reset (margin: 0 on every
+   element) outranks :host, so the 8px above is important here. */
+:host { @apply m-0 flex w-full list-none flex-col p-0; @apply mt-2!; }

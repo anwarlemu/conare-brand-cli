@@ -1,0 +1,21 @@
+<!-- Adding to a sample "contracts" namespace. Nothing is sent: the write is played, then the notice says what landed. -->
+<div class="max-w-160">
+  <conare-add-documents namespace="contracts"></conare-add-documents>
+  <conare-toaster></conare-toaster>
+</div>
+<script type="module">
+  const add = document.querySelector('conare-add-documents')
+  const toaster = document.querySelector('conare-toaster')
+  const write = (ns, count) => {
+    add.notice = ''
+    add.writing = true
+    setTimeout(() => {
+      add.writing = false
+      add.notice = `Wrote ${count} ${count === 1 ? 'document' : 'documents'} to ${ns}.`
+    }, 900)
+  }
+  add.addEventListener('upload', (e) => write(e.detail.namespace, e.detail.files.length))
+  add.addEventListener('paste', (e) => write(e.detail.namespace, 1))
+  add.addEventListener('connect', () => toaster.toast('Sources opens here'))
+  add.addEventListener('browse', (e) => toaster.toast('Opens the namespace', e.detail.namespace))
+</script>

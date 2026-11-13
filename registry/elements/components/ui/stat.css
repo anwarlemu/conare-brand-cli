@@ -1,0 +1,9 @@
+.ds-stat { position: relative; padding: var(--ds-space-md) var(--ds-space-lg); border-right: var(--ds-border-hairline) solid var(--ds-color-edge); border-bottom: var(--ds-border-hairline) solid var(--ds-color-edge); transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-stat-value { font-size: var(--ds-text-heading-4); font-weight: var(--ds-font-weight-medium); line-height: var(--ds-text-heading-4-leading); font-variant-numeric: tabular-nums; }
+button.ds-stat { width: 100%; text-align: left; cursor: pointer; }
+.ds-stat[data-on] { background: var(--ds-color-surface-subtle); }
+@media (hover: hover) and (pointer: fine) { button.ds-stat:hover { background: var(--ds-color-surface-subtle); } }
+.ds-stat[aria-pressed="true"]::before { position: absolute; top: -1px; right: -1px; left: -1px; height: 2px; background: var(--ds-color-edge-accent); content: ""; }
+button.ds-stat:focus-visible { outline-offset: -2px; }
+/* Stats.vue's `.ds-stats > :last-child:nth-child(odd)`, from the stat's side. */
+@media (max-width: 639px) { :host(:last-child:nth-child(odd)) .ds-stat { grid-column: 1 / -1; } }

@@ -1,0 +1,18 @@
+<!-- The same window as on the site, a pill per language. -->
+<conare-code-block id="search-request" label="search request"></conare-code-block>
+<script type="module">
+  // Code keeps its line breaks, so the samples are set as a property.
+  document.getElementById('search-request').samples = [
+    { label: 'cURL', code: `curl https://api.conare.ai/v1/search \\
+  -H "Authorization: Bearer $CONARE_API_KEY" \\
+  -d '{ "namespace": "contracts", "query": "notice period" }'` },
+    { label: 'Python', code: `from conare import Conare
+
+client = Conare()
+hits = client.search(namespace="contracts", query="notice period")` },
+    { label: 'TypeScript', code: `import Conare from "conare"
+
+const client = new Conare()
+const hits = await client.search({ namespace: "contracts", query: "notice period" })` },
+  ]
+</script>

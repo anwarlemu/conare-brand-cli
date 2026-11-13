@@ -1,0 +1,13 @@
+<!-- The queries card's stats; press one to pin it. -->
+<div class="max-w-160 border border-edge bg-surface">
+  <conare-stats>
+    <conare-stat label="This month" value="186,402" pressed="true"></conare-stat>
+    <conare-stat label="Today" value="7,912" pressed="false"></conare-stat>
+    <conare-stat label="Search p50, 24 h" value="238 ms" pressed="false"></conare-stat>
+  </conare-stats>
+</div>
+<script type="module">
+  // Pin the stat pressed, unpin the others.
+  const stats = [...document.querySelectorAll('conare-stat')]
+  for (const s of stats) s.addEventListener('press', () => { for (const o of stats) o.pressed = o === s })
+</script>

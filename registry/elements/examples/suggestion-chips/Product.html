@@ -1,0 +1,14 @@
+<!-- Questions to start from, each ending on the namespace that answers it. Point at them: one block glides along. -->
+<div class="flex flex-col items-center gap-4">
+  <conare-suggestion-chips items='[
+    { "q": "notice period to terminate a contract", "ns": "contracts" },
+    { "q": "breach notification window", "ns": "slack" },
+    { "q": "cash on hand last quarter", "ns": "sec-filings" }
+  ]'></conare-suggestion-chips>
+  <p class="min-h-4 type-meta text-fg-muted" role="status"></p>
+</div>
+<script type="module">
+  // Say what the picked chip searches.
+  const status = document.querySelector('[role="status"]')
+  document.querySelector('conare-suggestion-chips').addEventListener('ask', (e) => { status.textContent = `Searching ${e.detail.ns} for: ${e.detail.q}` })
+</script>
