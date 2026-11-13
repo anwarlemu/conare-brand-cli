@@ -1,0 +1,2 @@
+.ds-source-name { display: inline-flex; align-items: center; gap: var(--ds-space-sm); white-space: nowrap; color: var(--ds-color-fg); }
+.ds-source-name:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: 2px; }

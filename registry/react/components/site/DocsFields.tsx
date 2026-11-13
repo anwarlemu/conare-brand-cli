@@ -23,7 +23,7 @@ export function DocsFields({ fields, nested, className }: DocsFieldsProps) {
               <span className="font-medium text-fg">{f.name}</span>
               <span className="ds-docs-tag">{f.type}</span>
               {f.required && <span className="ds-docs-tag" data-required="">required</span>}
-              {f.default !== undefined && <span className="ds-docs-tag">default: {f.default}</span>}
+              {f.default !== undefined && <span className="ds-docs-tag">{`default: ${f.default}`}</span>}
             </p>
             {f.text && <p className="mt-2 type-body-lg text-fg-muted"><DocsInline text={f.text} /></p>}
             {f.notes?.map(n => <p key={n} className="mt-1.5 type-ui text-fg-muted"><DocsInline text={n} /></p>)}

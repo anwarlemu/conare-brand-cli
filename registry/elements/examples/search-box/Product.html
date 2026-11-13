@@ -1,0 +1,32 @@
+<!-- The search box as Explorer has it: the question, the files attached, the plus for more data, the scope, the Enter
+     cue and the arrow, red once there is a question. Files stay here: each shows adding, then added. The scope is the
+     console's scope menu, in the box's `scope` slot. -->
+<div class="h-90 w-full">
+  <conare-search-box value="notice period to terminate a contract" attached='[{ "key": "msa", "name": "acme-msa.pdf", "state": "added" }]'>
+    <conare-scope-menu slot="scope" value="" own-mark="/conare-ds/logo/svg/mark.svg" namespaces='[
+      { "name": "contracts", "documents": 412830 },
+      { "name": "slack", "documents": 96410 },
+      { "name": "crm", "documents": 52660 }
+    ]'></conare-scope-menu>
+  </conare-search-box>
+</div>
+<script type="module">
+  // The app owns the attached files and the busy state; the scope names where added data goes.
+  const box = document.querySelector('conare-search-box')
+  const scope = box.querySelector('conare-scope-menu')
+  scope.addEventListener('change', () => { box.target = scope.value || 'uploads' })
+  const attach = (names) => {
+    for (const name of names) {
+      const key = `${name}-${Date.now()}`
+      box.attached = [...box.attached, { key, name, state: 'adding' }]
+      setTimeout(() => { box.attached = box.attached.map((a) => (a.key === key ? { ...a, state: 'added' } : a)) }, 900)
+    }
+  }
+  box.addEventListener('submit', () => {
+    box.busy = true
+    setTimeout(() => { box.busy = false }, 1200)
+  })
+  box.addEventListener('files', (e) => attach(e.detail.files.map((f) => f.name)))
+  box.addEventListener('paste', (e) => attach([`${e.detail.text.split(/\s+/).slice(0, 6).join(' ').slice(0, 60)}.txt`]))
+  box.addEventListener('remove', (e) => { box.attached = box.attached.filter((a) => a.key !== e.detail.key) })
+</script>
