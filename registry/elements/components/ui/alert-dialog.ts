@@ -21,7 +21,7 @@ import styles from 'virtual:tw'
  */
 export class AlertDialog extends DsElement {
 	static styles = [DsElement.styles, styles]
-	static properties = { heading: {}, description: {}, action: {}, cancel: {}, danger: { type: Boolean }, open: { type: Boolean, reflect: true } }
+	static properties = { heading: {}, description: {}, action: {}, cancel: {}, danger: { converter: { fromAttribute: (v: string | null) => v !== 'false' } }, open: { type: Boolean, reflect: true } }
 
 	/** The question (Vue's `title`). */
 	heading = ''
@@ -31,7 +31,7 @@ export class AlertDialog extends DsElement {
 	action = ''
 	/** The Cancel button's label. */
 	cancel = 'Cancel'
-	/** The danger button for the action (`danger="false"` is not a boolean attribute: set the property to false for the dark one). */
+	/** The danger button for the action; danger="false" draws the dark one. */
 	danger = true
 	open = false
 	private dialogId = uid('alert')
