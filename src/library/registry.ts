@@ -10,7 +10,7 @@ import type { Flavor } from './project.js';
 export type RegistryFile = { path: string; content: string; target?: string };
 export type FlavorApi = Record<string, unknown>;
 export type ReactFlavor = { files: RegistryFile[]; dependencies: string[]; registryDependencies: string[]; api?: FlavorApi; examples?: { name: string; path: string; content: string; label?: string }[] };
-export type ElementsFlavor = { files: RegistryFile[]; modules: string[]; tag: string; dependencies: string[]; registryDependencies?: string[]; api?: FlavorApi; examples?: { name: string; path: string; content: string; label?: string }[] };
+export type ElementsFlavor = { files: RegistryFile[]; modules: string[]; tag: string; tags?: string[]; dependencies: string[]; registryDependencies?: string[]; api?: FlavorApi; examples?: { name: string; path: string; content: string; label?: string }[] };
 export type RegistryItem = {
 	name: string;
 	title: string;

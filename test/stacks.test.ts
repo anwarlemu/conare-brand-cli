@@ -344,7 +344,9 @@ describe('Server templates', () => {
 		const info = json(dir, 'info');
 		expect([info.framework, info.publicDir, info.layouts]).toEqual(['django', 'static', ['templates/base.html']]);
 		json(dir, 'apply', '/team/');
-		expect(read(dir, 'templates/base.html')).toContain('    <link rel="stylesheet" href="/static/conare-ds/brand.css">');
+		// {% static %}, so STATIC_URL and hashed file names follow; the template loads the tag library already.
+		expect(read(dir, 'templates/base.html')).toContain(`    <link rel="stylesheet" href="{% static 'conare-ds/brand.css' %}">`);
+		expect(read(dir, 'templates/base.html').match(/\{% load static %\}/g)).toHaveLength(1);
 		expect(read(dir, 'templates/team.html')).toContain('<button class="btn {% if x %}on{% endif %}">Go</button>');
 		expect(read(dir, 'templates/team.html')).toContain('<th class="ds-table-th ds-scope">{{ name }}</th>');
 		expect(read(dir, 'templates/home.html')).toBe('{% extends "base.html" %}{% block content %}<h1 class="title">Home</h1>{% endblock %}\n');
@@ -488,7 +490,10 @@ describe('library flavors', () => {
 		expect(v.api[0].props[0].name).toBe('variant');
 		expect(v.api[0].emits).toEqual(['press']);
 		const django = app({ 'manage.py': '', 'acme/settings.py': "STATIC_URL = '/static/'\n", 'templates/base.html': '<html><head></head><body></body></html>\n', 'static/css/a.css': '' });
-		expect(json(django, 'add', 'button').scripts).toEqual(['<script type="module" src="/static/conare-ds/elements/button.js"></script>']);
+		expect(json(django, 'add', 'button').scripts).toEqual([`<script type="module" src="{% static 'conare-ds/elements/button.js' %}"></script>`]);
+		// A template without the tag library gets {% load static %} with the links.
+		expect(read(django, 'templates/base.html')).toMatch(/^\{% load static %\}\n<html>/);
+		expect(read(django, 'templates/base.html')).toContain(`<link rel="stylesheet" href="{% static 'conare-ds/brand.css' %}">`);
 		expect(existsSync(join(django, 'static/conare-ds/elements/button.js'))).toBe(true);
 	});
 	it('list and search show the flavors', () => {

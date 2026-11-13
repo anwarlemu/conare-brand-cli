@@ -158,13 +158,23 @@ export function wirePreset(config: string, spec: string): string | undefined {
 	return next;
 }
 
+/** A static file's URL as a template writes it: Django's `{% static %}` (STATIC_URL and hashed names follow), else the path. */
+export const staticHref = (project: { framework: string; publicUrl: string }, path: string) => (project.framework === 'django' ? `{% static '${path.replace(/^\//, '')}' %}` : `${project.publicUrl}/${path.replace(/^\//, '')}`);
+
 /** The <link> lines for a layout, in the brand's asset folder under the app's static URL. */
-export const linkLines = (publicUrl: string, files: string[]) => files.map((f) => `<link rel="stylesheet" href="${publicUrl}${brand().assetBase}/${f}">`);
+export const linkLines = (project: { framework: string; publicUrl: string }, files: string[]) => files.map((f) => `<link rel="stylesheet" href="${staticHref(project, `${brand().assetBase.replace(/^\//, '')}/${f}`)}">`);
 
 /** A layout with the links added before the app's own stylesheets (or before </head>); undefined when there is no head. */
 export function insertLinks(layout: string, lines: string[]): string | undefined {
-	const missing = lines.filter((l) => !layout.includes(l.match(/href="([^"]+)"/)![1]));
+	// Linked already, in either form (/static/x.css or {% static 'x.css' %}).
+	const tail = (l: string) => l.match(/href="([^"]+)"/)![1].replace(/^\{%\s*static\s+'([^']+)'\s*%\}$/, '$1').replace(/^\/+/, '').replace(/^static\//, '');
+	const missing = lines.filter((l) => !layout.includes(tail(l)));
 	if (!missing.length) return layout;
+	// A Django template that uses {% static %} loads its tag library first.
+	if (missing.some((l) => l.includes('{% static')) && !/\{%\s*load\s+[^%]*\bstatic\b[^%]*%\}/.test(layout)) {
+		const extended = layout.match(/^\s*\{%\s*extends\s[^%]*%\}\s*\n?/);
+		layout = extended ? `${extended[0]}{% load static %}\n${layout.slice(extended[0].length)}` : `{% load static %}\n${layout}`;
+	}
 	const head = layout.search(/<\/head>/i);
 	if (head < 0) return undefined;
 	const before = layout.slice(0, head);
@@ -175,7 +185,9 @@ export function insertLinks(layout: string, lines: string[]): string | undefined
 		if (m?.index !== undefined && m.index < at) at = m.index;
 	}
 	const lineStart = layout.lastIndexOf('\n', at - 1) + 1;
-	const indent = layout.slice(lineStart, at).match(/^[ \t]*/)?.[0] ?? '    ';
+	// Before </head>, the lines take the indent of the head's last line, not of </head> itself.
+	const prev = at === head ? layout.slice(0, lineStart).replace(/\s+$/, '').split('\n').pop() ?? '' : ''
+	const indent = (at === head && /^[ \t]*</.test(prev) ? prev : layout.slice(lineStart, at)).match(/^[ \t]*/)?.[0] ?? '    ';
 	const onOwnLine = /^[ \t]*$/.test(layout.slice(lineStart, at));
 	const block = missing.map((l) => `${indent}${l}\n`).join('');
 	return onOwnLine ? `${layout.slice(0, lineStart)}${block}${layout.slice(lineStart)}` : `${layout.slice(0, at)}${missing.join('')}${layout.slice(at)}`;
