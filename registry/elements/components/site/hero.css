@@ -1,0 +1,46 @@
+/* Hero.vue's <style>, as it is. */
+.ds-hero-title { line-height: 1.1; text-wrap: balance; }
+/* Elements enter flat and settle upward (home.css .settle). */
+.ds-settle { animation: ds-settle var(--ds-duration-entrance) var(--ds-easing-standard) both; animation-delay: calc(var(--i, 0) * 60ms); }
+@keyframes ds-settle { from { opacity: 0; transform: translateY(12px); } }
+.ds-hero-frame::before { position: absolute; inset: -5px; border: var(--ds-border-hairline) solid var(--ds-color-edge-strong); content: ""; pointer-events: none; }
+/* A short window (a small laptop, a phone on its side): less room above, a smaller heading, a closer frame. */
+@media (max-height: 760px) and (min-width: 640px) {
+  .ds-hero { padding-top: 40px; }
+  .ds-hero-title { font-size: var(--ds-text-heading-1); }
+  .ds-hero-stage { margin-top: var(--ds-space-2xl); }
+}
+@media (max-height: 480px) and (min-width: 640px) {
+  .ds-hero { padding-top: var(--ds-space-2xl); }
+  .ds-hero-title { font-size: var(--ds-text-heading-2); }
+  .ds-hero-stage { margin-top: var(--ds-space-xl); }
+}
+/* The teams: both top corners stepped in three 3px pixels, the rule's grey under a ground 1px in, so a hairline runs
+   up the sides and round the top and meets the frame's rule at the foot. Idle grey, darkening under the pointer as
+   the pattern takes the red; the picked one red, its name and pattern off-white. */
+.ds-hero-tab { color: var(--ds-color-neutral-400); cursor: pointer; transition: color var(--ds-duration-rise) var(--ds-easing-standard); }
+.ds-hero-tab :is(.ds-hero-tab-edge, .ds-hero-tab-ground) { clip-path: polygon(0 9px, 3px 9px, 3px 6px, 6px 6px, 6px 3px, 9px 3px, 9px 0, calc(100% - 9px) 0, calc(100% - 9px) 3px, calc(100% - 6px) 3px, calc(100% - 6px) 6px, calc(100% - 3px) 6px, calc(100% - 3px) 9px, 100% 9px, 100% 100%, 0 100%); }
+.ds-hero-tab-edge { background: var(--ds-color-neutral-600); }
+.ds-hero-tab-ground { background: var(--ds-color-home-grey); transition: background-color var(--ds-duration-rise) var(--ds-easing-standard); }
+.ds-hero-tab-mark { color: var(--ds-color-neutral-500); transition: color var(--ds-duration-rise) var(--ds-easing-standard); }
+@media (hover: hover) and (pointer: fine) {
+  .ds-hero-tab:not([data-on="true"]):hover { color: var(--ds-color-off-black); }
+  .ds-hero-tab:not([data-on="true"]):hover .ds-hero-tab-ground { background: color-mix(in srgb, var(--ds-color-neutral-700) 45%, var(--ds-color-home-grey)); }
+  .ds-hero-tab:not([data-on="true"]):hover .ds-hero-tab-mark { color: var(--ds-color-home-red); }
+}
+.ds-hero-tab[data-on="true"] { color: var(--ds-color-off-white); }
+.ds-hero-tab[data-on="true"] .ds-hero-tab-ground { background: var(--ds-color-home-red); }
+.ds-hero-tab[data-on="true"] .ds-hero-tab-mark { color: var(--ds-color-off-white); }
+.ds-hero-tab:focus-visible { outline-offset: -2px; }
+/* The timer: a line filling along the picked tab's foot, linear over the turn, paused off screen and under a resting
+   pointer. Reduced motion: no auto-advance, the line sits full. */
+.ds-hero-fill { transform: scaleX(0); transform-origin: left; animation: ds-hero-fill var(--turn) linear forwards; animation-play-state: paused; }
+.ds-hero-stage[data-running="true"] .ds-hero-fill { animation-play-state: running; }
+@media (hover: hover) and (pointer: fine) { .ds-hero-stage[data-running="true"]:hover .ds-hero-fill { animation-play-state: paused; } }
+@keyframes ds-hero-fill { to { transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .ds-settle { animation-name: ds-settle-fade; }
+  .ds-hero-tab, .ds-hero-tab-ground, .ds-hero-tab-mark { transition: none; }
+  .ds-hero-fill { animation: none; transform: none; }
+}
+@keyframes ds-settle-fade { from { opacity: 0; } }

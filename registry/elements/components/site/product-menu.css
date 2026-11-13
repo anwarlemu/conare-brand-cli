@@ -1,0 +1,23 @@
+/* ProductMenu.vue's <style>, as it is. */
+/* The menu's small label: the website's capitals, 12px at 0.06em (home.css .label with uppercase). */
+.ds-product-menu-label { letter-spacing: var(--ds-tracking-tag); text-transform: uppercase; }
+.ds-navlink-site { transition: color var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-navlink-site:active { background: var(--ds-color-surface-subtle); }
+.ds-navlink-site:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }
+/* The highlight glides between items and fades when the pointer leaves the list; arriving from outside it fades in
+   where it lands, without the slide. Its red square grows in, and the hovered title eases right of it. */
+.ds-product-mark { opacity: 0; transition: transform var(--ds-duration-glide) var(--ds-easing-standard), opacity var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-product-mark[data-shown] { opacity: 1; }
+.ds-product-mark[data-instant] { transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-product-dot { opacity: 0; transform: scale(0.5); transition: transform var(--ds-duration-glide) var(--ds-easing-standard), opacity var(--ds-duration-glide) var(--ds-easing-standard); }
+.ds-product-mark[data-shown] .ds-product-dot { opacity: 1; transform: none; }
+.ds-product-text { transition: transform var(--ds-duration-glide) var(--ds-easing-standard); }
+.ds-product-text[data-hot] { transform: translateX(16px); }
+/* Windows crossfade, a little quicker out than in; the one being left freezes where it is. */
+.ds-product-art { opacity: 0; transition: opacity var(--ds-duration-cell) ease; }
+.ds-product-art[data-active] { opacity: 1; transition-duration: var(--ds-duration-micro); }
+.ds-product-art:not([data-active]) * { animation-play-state: paused !important; }
+@media (prefers-reduced-motion: reduce) {
+  .ds-product-mark, .ds-product-dot { transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }
+  .ds-product-text { transition: none; }
+}

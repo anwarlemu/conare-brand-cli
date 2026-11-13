@@ -1,0 +1,2 @@
+/* ParseRegions.vue's <style>, as it is (the table is in this shadow root, with conare-table's rules). */
+.ds-table tbody tr.ds-parse-on td { background: color-mix(in srgb, var(--ds-color-surface-accent) 6%, transparent); }

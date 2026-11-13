@@ -1,0 +1,26 @@
+<!-- What drives a total: each row's share as a bar, the largest red. Point at a row, or focus it, and its percent rolls
+     up to what it cost. -->
+<style>
+/* The percent rolls up to the cost under the pointer or focus, both in one cell, so nothing moves. */
+.share-roll { position: relative; display: block; overflow: hidden; line-height: 1.4; }
+.share-a, .share-b { display: block; transition: transform var(--ds-duration-glide) var(--ds-easing-standard); }
+.share-b { position: absolute; inset-inline: 0; top: 0; transform: translateY(110%); }
+.share-row:focus-visible .share-a { transform: translateY(-110%); }
+.share-row:focus-visible .share-b { transform: none; }
+@media (hover: hover) and (pointer: fine) {
+  .share-row:hover .share-a { transform: translateY(-110%); }
+  .share-row:hover .share-b { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) { .share-a, .share-b { transition: none; } }
+</style>
+<conare-table framed label="share of credits used">
+  <table>
+    <thead><tr><th class="sm:w-40">Namespace</th><th><span class="sr-only">Share bar</span></th><th class="w-24 text-right">Queries</th><th class="w-32 text-right">% of credits used</th></tr></thead>
+    <tbody>
+      <tr class="share-row" tabindex="0"><td class="type-code-sm">sec-filings</td><td><conare-meter value="63" tone="top" decorative></conare-meter></td><td class="text-right tabular-nums">50,908</td><td class="text-right font-medium tabular-nums"><span class="share-roll"><span class="share-a">21%</span><span class="share-b">$26.59</span></span></td></tr>
+      <tr class="share-row" tabindex="0"><td class="type-code-sm">contracts</td><td><conare-meter value="42" tone="default" decorative></conare-meter></td><td class="text-right tabular-nums">33,658</td><td class="text-right font-medium tabular-nums"><span class="share-roll"><span class="share-a">14%</span><span class="share-b">$17.58</span></span></td></tr>
+      <tr class="share-row" tabindex="0"><td class="type-code-sm">slack</td><td><conare-meter value="21" tone="default" decorative></conare-meter></td><td class="text-right tabular-nums">18,317</td><td class="text-right font-medium tabular-nums"><span class="share-roll"><span class="share-a">7%</span><span class="share-b">$9.57</span></span></td></tr>
+      <tr class="share-row" tabindex="0"><td class="type-code-sm">crm</td><td><conare-meter value="18" tone="default" decorative></conare-meter></td><td class="text-right tabular-nums">14,127</td><td class="text-right font-medium tabular-nums"><span class="share-roll"><span class="share-a">6%</span><span class="share-b">$7.38</span></span></td></tr>
+    </tbody>
+  </table>
+</conare-table>

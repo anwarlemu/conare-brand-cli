@@ -8,8 +8,10 @@ import styles from 'virtual:tw'
 // smallest. code: 13px Geist Mono; code-sm: 12px mono, for IDs, keys and namespace names. link: ink text with a quiet
 // underline 4px under it that turns ink on hover. mark: a query's word in a passage, medium weight in ink, never a fill.
 //
-// The host is the text's box (text.css), so a class on <conare-text> (a colour, a margin) lands on it as a class on
-// <Text> does, and it takes the role of the variant's tag (heading, paragraph, code, strong). A link is a real <a> (or a
+// The host is the text's box (text.css), so a class on <conare-text> (a margin, a width) lands on it as a class on
+// <Text> does, and it takes the role of the variant's tag (heading, paragraph, code, strong). Its variant's colour and
+// type are !important, so they hold over the page's scoped base in apps that only add components; set another through
+// --type-color, --type-size or --type-leading on the element (class="[--type-color:...]"). A link is a real <a> (or a
 // <button> without `href`) inside, the host staying out of the way. `as` names another tag for its role.
 export type TextVariant = 'title' | 'ui' | 'strong' | 'meta' | 'caption' | 'code' | 'code-sm' | 'link' | 'mark'
 
@@ -25,6 +27,9 @@ const INLINE = new Set(['code', 'strong', 'em', 'span', 'label', 'a', 'button'])
 /**
  * @summary The console's type as one part.
  * @slot - The text.
+ * @cssprop --type-color - The colour, in place of the variant's (a class like text-fg-soft does not reach it).
+ * @cssprop --type-size - The font size, in place of the variant's.
+ * @cssprop --type-leading - The line height, in place of the variant's.
  */
 export class Text extends DsElement {
 	static styles = [DsElement.styles, styles]

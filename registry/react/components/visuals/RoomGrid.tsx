@@ -60,6 +60,8 @@ const tiles = (() => {
   return out
 })()
 
+// Tile picks: a seeded source when check-parity defines __dsRandom for comparisons; real pages never do.
+const random = () => ((globalThis as { __dsRandom?: () => number }).__dsRandom ?? Math.random)()
 // A few tiles lit at random from the outer rings (the slabs cover the deeper ones), one swapped every SWAP_MS.
 const LIT = 6
 const SWAP_MS = 600
@@ -81,11 +83,11 @@ export function RoomGrid() {
     }
     const pickTile = () => {
       const pool = tiles.flatMap((t, i) => (t.k < OUTER && !litNow.current.includes(i) ? [i] : []))
-      return pool[Math.floor(Math.random() * pool.length)]!
+      return pool[Math.floor(random() * pool.length)]!
     }
     const swap = () => {
       const next = [...litNow.current]
-      next.splice(Math.floor(Math.random() * next.length), 1, pickTile())
+      next.splice(Math.floor(random() * next.length), 1, pickTile())
       show(next)
     }
     const play = (on: boolean) => {

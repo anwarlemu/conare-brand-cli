@@ -1,0 +1,14 @@
+<!-- The website header with the Product menu. Below 768px the links fold into the sheet behind the square button. The
+     buttons go in twice: in the bar and in the sheet. -->
+<div class="relative -m-8 min-h-150">
+  <conare-site-header home-label="Acme home"
+    items='[{ "label": "Search", "desc": "Store documents and query them.", "href": "#search" }, { "label": "Sync", "desc": "Keep your apps in a namespace.", "href": "#sync" }, { "label": "Parse", "desc": "Read any file in full, every row and cell.", "href": "#parse" }, { "label": "Embed", "desc": "Embeddings for any vector database.", "href": "#embed" }, { "label": "Rerank", "desc": "Put the best passages first.", "href": "#rerank" }]'
+    more='[{ "label": "Benchmarks", "desc": "Accuracy you can check, losses included.", "href": "#benchmarks" }, { "label": "Price vs accuracy", "desc": "Most accurate, and the cheapest.", "href": "#price" }]'
+    links='[{ "label": "FAQ", "href": "#faq" }, { "label": "Pricing", "href": "#pricing", "current": true }, { "label": "Docs", "href": "#docs" }]'>
+    <img slot="logo" src="/conare-ds/logo/svg/primary-logo.svg" alt="" width="147" height="24" class="h-6 w-auto">
+    <conare-button slot="actions" href="#contact">Contact us</conare-button>
+    <conare-pixel-button slot="actions" href="#dashboard">Dashboard</conare-pixel-button>
+    <conare-button slot="sheet-actions" href="#contact">Contact us</conare-button>
+    <conare-pixel-button slot="sheet-actions" href="#dashboard">Dashboard</conare-pixel-button>
+  </conare-site-header>
+</div>

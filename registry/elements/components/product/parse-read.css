@@ -1,0 +1,25 @@
+/* ParseRead.vue's <style>, with the host as .ds-parseread (its look !important, as Vue's unlayered rule beats the
+   page's scoped base). */
+:host { display: flex !important; flex-direction: column !important; gap: var(--ds-space-2xs) !important; font-size: var(--ds-text-ui) !important; line-height: var(--ds-text-ui-leading) !important; }
+.ds-parseread-block { padding: 8px; border-left: 2px solid transparent; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard), border-color var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-parseread-block p { margin: 0; }
+.ds-parseread-block[data-type="title"] { font-size: var(--ds-text-heading-4); font-weight: var(--ds-font-weight-medium); line-height: var(--ds-text-heading-4-leading); }
+.ds-parseread-block:is([data-type="footnote"], [data-type="image"]) { font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); opacity: 0.7; }
+.ds-parseread-block[data-on] { border-left-color: var(--ds-color-edge-accent); background: color-mix(in srgb, var(--ds-color-surface-accent) 12%, transparent); }
+.ds-parseread-block:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: -2px; }
+.ds-parsetable[data-read] { font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); }
+@media (prefers-reduced-motion: no-preference) {
+  :host([plays]) .ds-parseread-block { animation: ds-parse-land var(--ds-duration-land) var(--ds-easing-standard) both; animation-delay: calc(var(--o) * 90ms); }
+}
+@media (max-width: 767px) { .ds-parsetable[data-read] :is(th, td) + :is(th, td) { padding-left: 0.6em; } }
+/* ParseSheet's table rules and its land keyframes, which Vue's page shares with this view. */
+.ds-parsetable { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.ds-parsetable th { padding-block: 0.3em; border-bottom: var(--ds-border-hairline) solid currentColor; font-weight: var(--ds-font-weight-medium); text-align: right; white-space: nowrap; }
+.ds-parsetable :is(th, td):first-child { text-align: left; }
+.ds-parsetable td { padding-block: 0.15em; text-align: right; white-space: nowrap; }
+.ds-parsetable :is(th, td) + :is(th, td) { padding-left: 1.2em; }
+.ds-parsetable td:first-child { padding-right: 1em; white-space: normal; }
+.ds-parsetable tr[data-total] td { border-top: var(--ds-border-hairline) solid currentColor; font-weight: var(--ds-font-weight-medium); }
+@keyframes ds-parse-land { from { opacity: 0; } }
+/* `tight` (in parse-plain): its blocks' 6px rows (Vue's .ds-parseplain-layer .ds-parseread-block). */
+:host([tight]) .ds-parseread-block { padding: 6px 0; }

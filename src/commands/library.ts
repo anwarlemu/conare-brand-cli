@@ -5,7 +5,7 @@ import { brand, cli, registryHost } from '../lib/brand.js';
 import { normalizeName, suggest } from '../lib/names.js';
 import { type Flavor, type Project, readProject, stackLabel, unsupported } from '../library/project.js';
 import { type IndexEntry, type RegistryItem, flavorsOf, readIndex, readItem, requiresOf } from '../library/registry.js';
-import { aliasOf, chooseFlavor, elementsDir, localContent, placedFiles, reactPath } from '../library/flavors.js';
+import { aliasOf, appFlavor, elementsDir, localContent, placedFiles, reactPath, scriptLines, tagModules } from '../library/flavors.js';
 import { readState } from '../lib/state.js';
 
 export { localContent };
@@ -216,7 +216,7 @@ export async function view(root: string, names: string[], opts: { framework?: st
 			return undefined;
 		}
 	})();
-	const flavor = chooseFlavor(project, opts.framework);
+	const flavor = appFlavor(project, opts.framework);
 	const out: ViewResult[] = [];
 	const seen = new Set<string>();
 	for (const r of await resolveNames(names)) {
@@ -227,7 +227,7 @@ export async function view(root: string, names: string[], opts: { framework?: st
 		// An item without the app's flavor yet shows its Vue source, and says so.
 		const shown: Flavor = flavors.includes(flavor) ? flavor : 'vue';
 		const base = { name: item.name, title: item.title, group: brand().groups[item.group] ?? item.group, description: item.description, use_for: item.use_for, never: item.never, notes: item.body ?? '', flavors, requires: requiresOf(item, shown), via: r.via };
-		const install = `npx ${cli()} add ${item.name}${shown !== (project ? chooseFlavor(project) : 'vue') ? ` --framework ${shown}` : ''}`;
+		const install = `npx ${cli()} add ${item.name}${shown !== (project ? appFlavor(project) : 'vue') ? ` --framework ${shown}` : ''}`;
 		if (shown === 'react') {
 			const f = item.flavors!.react!;
 			const comps = f.files.filter((x) => /\.(tsx|jsx)$/.test(x.path) && /components\//.test(x.path));
@@ -240,7 +240,9 @@ export async function view(root: string, names: string[], opts: { framework?: st
 				const spec = alias && project ? `${alias}${target.replace(project.srcDir === '.' ? '' : `${project.srcDir}/`, '')}` : `./${target}`;
 				return `import ${def ?? `{ ${named.join(', ')} }`} from '${spec.replace(/\.(tsx|jsx)$/, '')}'`;
 			});
-			out.push({ ...base, flavor: shown, install, imports, nuxtNames: [], packages: f.dependencies, api, examples: f.examples ?? [], files: f.files });
+			// Examples as they read in this app: the library's `@/react/...` imports through the app's alias.
+			const examples = (f.examples ?? []).map((e) => ({ ...e, content: alias && project ? e.content.replace(/(['"])@\/react\//g, `$1${alias}`) : e.content }))
+			out.push({ ...base, flavor: shown, install, imports, nuxtNames: [], packages: f.dependencies, api, examples, files: f.files });
 			continue;
 		}
 		if (shown === 'elements') {
@@ -248,8 +250,8 @@ export async function view(root: string, names: string[], opts: { framework?: st
 			const src = f.files.find((x) => /\.(ts|js)$/.test(x.path) && !x.path.endsWith('.d.ts')) ?? f.files[0];
 			const api = givenApi(f.api, src?.path ?? '', f.tag) ?? (src ? [elementApiOf(src.path, src.content, f.tag)] : []);
 			const url = project ? elementsDir(project).url : `${brand().assetBase}/elements`;
-			const mod = f.modules.find((m) => !/(chunk|shared|lib)[-./]/.test(m.split('/').pop() ?? '')) ?? f.modules[0];
-			out.push({ ...base, flavor: shown, install, tag: f.tag, imports: mod ? [`<script type="module" src="${url}/${mod.replace(/^\/?elements\//, '')}"></script>`, `<${f.tag}>...</${f.tag}>`] : [], nuxtNames: [], packages: [], api, examples: f.examples ?? [], files: f.files });
+			const loads = project ? scriptLines(project, [item]) : tagModules(item).map((m) => `<script type="module" src="${url}/${m.replace(/^\/?elements\//, '')}"></script>`);
+			out.push({ ...base, flavor: shown, install, tag: f.tag, imports: [...loads, `<${f.tag}>...</${f.tag}>`], nuxtNames: [], packages: [], api, examples: f.examples ?? [], files: f.files });
 			continue;
 		}
 		const components = item.files.filter((f) => f.path.startsWith('components/') && f.path.endsWith('.vue'));
@@ -314,11 +316,10 @@ export async function search(query: string[]) {
 	return scored.filter((s) => s.score > 0).sort((a, b) => b.score - a.score).slice(0, 12);
 }
 
-export async function info(root: string) {
-	const project = readProject(root);
-	const problem = unsupported(project);
-	const index = await readIndex();
-	const flavor = project.flavor;
+/** The library items this app has, in the flavor each came in, with the source files it changed. */
+export async function installedItems(project: Project, index?: IndexEntry[]): Promise<{ name: string; flavor: Flavor; modified: string[] }[]> {
+	index ??= await readIndex();
+	const root = project.root;
 	const installed: { name: string; flavor: Flavor; modified: string[] }[] = [];
 	for (const entry of index) {
 		for (const f of ['vue', 'react', 'elements'] as Flavor[]) {
@@ -346,6 +347,15 @@ export async function info(root: string) {
 			installed.push({ name: entry.name, flavor: f, modified: placed.filter((p) => readFileSync(join(root, p.path), 'utf8') !== p.content).map((p) => p.path) });
 		}
 	}
+	return installed;
+}
+
+export async function info(root: string) {
+	const project = readProject(root);
+	const problem = unsupported(project);
+	const index = await readIndex();
+	const flavor = appFlavor(project);
+	const installed = await installedItems(project, index);
 	const stylesheet = project.css && existsSync(join(root, project.css)) ? readFileSync(join(root, project.css), 'utf8') : '';
 	const linked = project.layouts.some((l) => readFileSync(join(root, l), 'utf8').includes(`${brand().assetBase}/brand.css`));
 	const entry = project.cssEntry && existsSync(join(root, project.cssEntry)) ? readFileSync(join(root, project.cssEntry), 'utf8') : '';
@@ -358,6 +368,7 @@ export async function info(root: string) {
 		if (!state) next.push(`npx ${cli()} apply --dry-run   (see what restyling the whole app would change), then npx ${cli()} apply`);
 		next.push(`npx ${cli()} add <item>   (${flavorName(flavor)}; for example: ${['button', 'field', 'dialog'].filter((n) => index.some((i) => i.name === n)).join(', ')}; npx ${cli()} search <words> finds one)`);
 		next.push(`npx ${cli()} view <item>   (${flavor === 'elements' ? 'properties, events, slots' : flavor === 'react' ? 'props, callbacks, children' : 'props, slots'}, examples, source)`);
+		if (installed.length) next.push(`npx ${cli()} add --update   (every installed item to this version: prebuilt modules replaced, files you changed kept unless --overwrite)`);
 		next.push(`npx ${cli()} check`);
 	}
 	return {
@@ -441,7 +452,7 @@ export function unifiedDiff(a: string, b: string, fromName: string, toName: stri
 
 export async function diff(root: string, names: string[], opts: { framework?: string } = {}) {
 	const project = readProject(root);
-	const flavor = chooseFlavor(project, opts.framework);
+	const flavor = appFlavor(project, opts.framework);
 	const out: { name: string; flavor: Flavor; files: { path: string; status: 'same' | 'changed' | 'missing'; diff: string }[] }[] = [];
 	for (const r of await resolveNames(names)) {
 		const item = await readItem(r.name);

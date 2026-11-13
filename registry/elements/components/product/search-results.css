@@ -1,0 +1,25 @@
+/* Results rise in, each 60ms after the last (console2.css .v2-results[data-motion="1"] .v2-rise). */
+.ds-results .ds-rise { animation: ds-results-in var(--ds-duration-enter) var(--ds-easing-out) both; animation-delay: calc(var(--i, 0) * 60ms); }
+@keyframes ds-results-in { from { opacity: 0; transform: translateY(12px); } }
+/* The dot matrix in red while the answer is written (.v2-proc .v2-matrix). */
+.ds-results .ds-matrix i { background: var(--ds-color-edge-accent); }
+.ds-others-rows > * + * { border-top: var(--ds-border-hairline) solid var(--ds-color-edge); }
+/* Other matches: a quiet list under the answer, every row still opening. */
+.ds-match { display: flex; min-height: var(--ds-size-control-md); align-items: center; gap: var(--ds-space-md); padding: 0; color: var(--ds-color-fg-muted); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); transition: color var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-match-id { color: var(--ds-color-fg-soft); font-family: var(--ds-font-code); font-size: var(--ds-text-meta); transition: color var(--ds-duration-micro) var(--ds-easing-standard); }
+@media (hover: hover) and (pointer: fine) {
+  .ds-match:hover { color: var(--ds-color-fg-soft); }
+  .ds-match:hover .ds-match-id { color: var(--ds-color-fg); }
+}
+.ds-match:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: -2px; }
+.ds-match-chev { transition: rotate var(--ds-duration-micro) var(--ds-easing-out); }
+.ds-match[aria-expanded="true"] .ds-match-chev { rotate: 180deg; transition-duration: var(--ds-duration-slide); }
+.ds-expand { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--ds-duration-slide) var(--ds-easing-out); }
+.ds-expand[data-open] { grid-template-rows: 1fr; }
+/* A result shown from its square flashes its red outline once. */
+.ds-results [data-flash] { animation: ds-results-flash var(--ds-duration-flash) var(--ds-easing-standard) both; }
+@keyframes ds-results-flash { 0%, 40% { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: -2px; } 100% { outline: var(--ds-border-focus) solid transparent; outline-offset: -2px; } }
+@media (prefers-reduced-motion: reduce) {
+  .ds-results .ds-rise, .ds-results [data-flash] { animation: none; }
+  .ds-match-chev, .ds-expand { transition: none; }
+}

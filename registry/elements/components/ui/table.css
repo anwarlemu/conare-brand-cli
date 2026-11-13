@@ -1,0 +1,4 @@
+/* Framed, the host is the frame (Table.vue's root div), so a class on <conare-table> (w-full) lands on it as a class on
+   <Table> does. The border is important: the page's reset (no border on any element) outranks :host. */
+:host { display: contents; }
+:host([framed]) { @apply block overflow-x-auto bg-surface; border: var(--ds-border-hairline) solid var(--ds-color-edge) !important; }

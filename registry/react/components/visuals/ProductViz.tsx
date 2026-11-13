@@ -10,6 +10,8 @@ export type ProductVizId = 'search' | 'sync' | 'parse' | 'embed' | 'rerank'
 export interface ProductVizProps {
   id: ProductVizId
   active: boolean
+  /** Classes on the window's root after its own (Vue's class falling through), such as relative over a cell-burst. */
+  className?: string
 }
 
 const TITLES: Record<ProductVizId, string> = { search: 'POST /namespaces/docs/query', sync: 'Source Linear', parse: 'POST /parse', embed: 'POST /v1/embeddings', rerank: 'POST /v1/rerank' }
@@ -32,9 +34,9 @@ const syncedStyles = synced.map((_, i) => d(500 + i * 300))
 const vectorRows = vector.map((v, i) => ({ v, row: d(500 + i * 120), bar: { '--w': v, '--d': 600 + i * 120 } as CSSProperties }))
 const rankedStyles = ranked.map(r => ({ '--from': r.from, '--to': r.to, '--d': 600 + r.from * 120, '--track': '32px' }) as CSSProperties)
 
-export function ProductViz({ id, active }: ProductVizProps) {
+export function ProductViz({ id, active, className }: ProductVizProps) {
   return (
-    <VizWindow data-ds="product-viz" active={active} size="sm" className="max-w-75" title={<span className="truncate text-caption text-ds-neutral-600">{TITLES[id]}</span>}>
+    <VizWindow data-ds="product-viz" active={active} size="sm" className={cn('max-w-75', className)} title={<span className="truncate text-caption text-ds-neutral-600">{TITLES[id]}</span>}>
       <div className="flex flex-col gap-2 px-3 pt-0.5 pb-3 text-meta">
         {id === 'search'
           ? (
@@ -69,7 +71,7 @@ export function ProductViz({ id, active }: ProductVizProps) {
                 // Sync: a run writing what changed and deleting what went, with its progress and the next run.
                 <>
                   <p className="ds-viz-in flex items-center justify-between text-caption text-ds-neutral-500" style={d(200)}>
-                    Namespace Eng
+                    {' Namespace Eng '}
                     <span className="grid">
                       <span className="ds-viz-swap-a [grid-area:1/1] bg-ds-neutral-200 px-1.5 text-caption leading-4.5 text-ds-neutral-400" style={d(1900)}>Syncing</span>
                       <span className="ds-viz-swap-b [grid-area:1/1] bg-home-red px-1.5 text-caption leading-4.5 text-off-white" style={d(1900)}>Synced</span>

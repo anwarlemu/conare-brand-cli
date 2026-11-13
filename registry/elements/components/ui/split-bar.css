@@ -1,0 +1,14 @@
+/* console2.css .v2-splitbar, .v2-segmark, .v2-rowmark and .v2-priced, as Billing's prices set them (data-pm="6"). */
+.ds-splitbar { display: flex; height: 12px; gap: var(--ds-space-2xs); margin-top: var(--ds-space-xs); }
+.ds-splitbar > span { flex-basis: 0; background: var(--ds-color-neutral-600); transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-splitbar > span[data-on] { background: var(--ds-color-surface-inverse); }
+.ds-segmark-track { position: relative; height: 8px; margin-bottom: -12px; overflow: clip; }
+.ds-segmark { position: absolute; inset: 0; transition: transform var(--ds-duration-settle) var(--ds-easing-out); }
+.ds-segmark i { position: absolute; top: 0; left: -3px; width: 6px; height: 6px; background: var(--ds-color-edge-accent); }
+.ds-rowmark { position: absolute; top: 0; right: 0; left: 0; z-index: 0; background: var(--ds-color-surface-subtle); pointer-events: none; transition: transform var(--ds-duration-enter) var(--ds-easing-out), height var(--ds-duration-enter) var(--ds-easing-out); }
+.ds-rowmark[data-instant] { transition: none; }
+.ds-priced { position: relative; z-index: 1; display: flex; width: 100%; min-height: var(--ds-size-row); align-items: center; gap: var(--ds-space-xl); padding: 0 16px 0 20px; font-size: var(--ds-text-ui); cursor: pointer; }
+.ds-priced::before { position: absolute; top: 50%; left: 8px; width: 4px; height: 4px; margin-top: -2px; background: var(--ds-color-edge-accent); content: ""; opacity: 0; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-priced[data-on]::before { opacity: 1; }
+.ds-priced:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: -2px; }
+@media (prefers-reduced-motion: reduce) { .ds-splitbar > span, .ds-segmark, .ds-rowmark { transition: none; } }

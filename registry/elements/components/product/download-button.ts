@@ -14,21 +14,23 @@ import styles from 'virtual:tw'
 // up with its check drawing, so the width holds. Its state is the document's (controllers/document-download.ts), unless
 // `done` says. `download(get, name?)` downloads this document, for a page script with no imports.
 
+/** No attribute: the shared state decides; done or done="true": done; done="false": not done. */
+const tristate = { fromAttribute: (v: string | null) => (v === null ? undefined : v !== 'false') }
+
 /**
  * @summary The dark button for a document, saying Downloaded once it has.
  * @fires press - It was pressed (call download(get, name) from here).
  */
 export class DownloadButton extends DsElement {
 	static styles = [DsElement.styles, styles]
-	static properties = { doc: { attribute: 'doc-id' }, label: {}, done: { type: Boolean } }
+	static properties = { doc: { attribute: 'doc-id' }, label: {}, done: { converter: tristate } }
 
 	/** The document's id (Vue's `id`; `id` is HTML's own attribute). */
 	doc = ''
 	/** The word at rest (Download). */
 	label?: string
-	/** Overrides the shared state. Vue casts a boolean prop left out to false, not undefined, so DownloadButton.vue's
-	 * `done ?? shared` never reads the shared state; it defaults to false here too, so the flavors agree. */
-	done = false
+	/** Overrides the shared state; left out, the shared state decides. */
+	done?: boolean
 	private shared = new DownloadStateController(this)
 
 	/** Downloads this document: saves what `get` returns as `name`. */

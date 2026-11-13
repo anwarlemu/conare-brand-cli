@@ -1,0 +1,25 @@
+/* SiteHeader.vue's <style>, as it is. */
+.ds-site-caps { letter-spacing: var(--ds-tracking-tag); text-transform: uppercase; }
+/* The blocks glide on transform (the Product menu's pace); arriving from outside they fade in where they land. */
+.ds-site-mark { opacity: 0; transition: transform var(--ds-duration-glide) var(--ds-easing-standard), opacity var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-site-mark[data-shown] { opacity: 1; }
+.ds-site-mark[data-instant] { transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }
+header:not([data-ready]) :is(.ds-site-mark, .ds-navlink-site) { transition: none; }
+.ds-site-menu-btn:active { background: var(--ds-color-surface-subtle); }
+/* The menu button's 3 by 3 in red: open, the four edge squares fade away while the corners and center grow from 3px
+   to 5px, just enough to meet corner to corner, and the grid turns a quarter, so the five read as an X. */
+.ds-site-grid { display: grid; grid-template-columns: repeat(3, 3px); gap: 2px; transition: transform var(--ds-duration-morph) var(--ds-easing-swap); }
+.ds-site-grid i { width: 3px; height: 3px; background: var(--ds-color-home-red); transition: transform var(--ds-duration-morph) var(--ds-easing-swap) 80ms, opacity var(--ds-duration-morph) var(--ds-easing-swap) 80ms; }
+.ds-site-menu-btn[data-open] .ds-site-grid { transform: rotate(90deg); }
+.ds-site-menu-btn[data-open] .ds-site-grid i { transform: scale(1.667); }
+.ds-site-menu-btn[data-open] .ds-site-grid i[data-edge] { opacity: 0; transform: scale(0.5); transition-delay: 0ms; }
+/* The sheet unrolls downward on a clip (no layout moves) and its rows rise 6px and fade in 28ms apart; closing, it
+   rolls back up quickly and all at once. */
+.ds-site-sheet { visibility: hidden; clip-path: inset(0 0 100% 0); transition: clip-path var(--ds-duration-exit) var(--ds-easing-standard), visibility 0s linear var(--ds-duration-exit); }
+.ds-site-sheet[data-open] { visibility: visible; clip-path: inset(0 0 -1px 0); transition: clip-path var(--ds-duration-entrance) var(--ds-easing-out), visibility 0s; }
+.ds-site-row { opacity: 0; transform: translateY(6px); transition: opacity var(--ds-duration-exit) var(--ds-easing-standard), transform 0s linear var(--ds-duration-exit); }
+.ds-site-sheet[data-open] .ds-site-row { opacity: 1; transform: none; transition: opacity var(--ds-duration-entrance) var(--ds-easing-out), transform var(--ds-duration-entrance) var(--ds-easing-out); transition-delay: calc(80ms + var(--i) * 28ms); }
+@media (prefers-reduced-motion: reduce) {
+  .ds-site-mark, .ds-site-grid, .ds-site-grid i, .ds-site-sheet, .ds-site-sheet[data-open] { transition: none; }
+  .ds-site-row, .ds-site-sheet[data-open] .ds-site-row { transform: none; transition: opacity var(--ds-duration-enter) var(--ds-easing-standard); transition-delay: 0ms; }
+}

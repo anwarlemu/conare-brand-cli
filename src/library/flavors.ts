@@ -1,8 +1,10 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join, posix } from 'node:path';
-import { brand } from '../lib/brand.js';
+import { brand, elementPrefix } from '../lib/brand.js';
 import { type Flavor, type Project, flavorOf } from './project.js';
 import { type RegistryItem, readModule } from './registry.js';
+import { elementTypes, narrowManifest } from './element-types.js';
+import { staticHref } from '../install/stylesheets.js';
 
 // The library in the flavor an app takes (Vue for Vue and Nuxt, React for React apps, web components for everything
 // else), and where each flavor's files land in the app, with their library imports made to resolve there.
@@ -26,6 +28,15 @@ export function flavorProblem(project: Project, flavor: Flavor): string | undefi
 	if (flavor === 'elements' || project.tailwind) return undefined;
 	const name = flavor === 'react' ? 'React' : 'Vue';
 	return `This ${name} app has no Tailwind, and the ${name} components are styled with the theme's Tailwind utilities. Nothing was written. Pass --framework elements for the web components (they carry their own styles and work in ${name}), or install Tailwind 4 and run this again.`;
+}
+
+/**
+ * The flavor this app takes when none is named: its own (Vue, React), or the web components where that flavor cannot
+ * work (a Vue or React app without Tailwind), as `add` installs them. view, diff and info follow it.
+ */
+export function appFlavor(project: Project | undefined, override?: string): Flavor {
+	const f = chooseFlavor(project, override);
+	return !override && project && flavorProblem(project, f) ? 'elements' : f;
 }
 
 /** The app's import alias for its source folder (`@/` in Vite, Next and Nuxt; `~/` in React Router), if it has one. */
@@ -85,7 +96,15 @@ export function elementsDir(project: Project) {
 	return { dir: `${publicRoot}${base}/elements`, url: `${project.publicUrl}/${base}/elements` };
 }
 
-export type Placed = { path: string; content: string; library: string };
+/**
+ * A file `add` places. `generated` ones (the elements' types and manifest) and `prebuilt` ones (the element modules and
+ * their shared chunk: compiled output, and a stale shared.js beside new modules would break the page) are rewritten
+ * on every add; source files are kept when they differ, unless --overwrite.
+ */
+export type Placed = { path: string; content: string; library: string; generated?: boolean; prebuilt?: boolean };
+
+/** Where the elements' types file goes: the app's source folder, which its tsconfig includes. */
+export const elementTypesPath = (project: Project) => srcJoin(project, `${brand().bin}/elements.d.ts`);
 
 /** An item's files as they land in this app, in a flavor (web components: the prebuilt modules and what they import). */
 export async function placedFiles(project: Project, items: RegistryItem[], flavor: Flavor): Promise<Placed[]> {
@@ -108,17 +127,53 @@ export async function placedFiles(project: Project, items: RegistryItem[], flavo
 		seen.add(mod);
 		const content = await readModule(mod);
 		const name = mod.replace(/^elements\//, '');
-		out.push({ path: posix.join(dir, name), content, library: mod });
+		out.push({ path: posix.join(dir, name), content, library: mod, prebuilt: true });
 		// Its shared chunk and the modules it imports come too.
 		for (const m of content.matchAll(/(?:\bimport\s*(?:[\w*{}\s,]+\s*from\s*)?|\bimport\s*\(\s*|\bexport\s*[\w*{}\s,]+\s*from\s*)['"](\.{1,2}\/[^'"]+)['"]/g)) queue.push(posix.normalize(posix.join(posix.dirname(mod), m[1])));
 	}
+	// Types and the manifest for every element in the app (these and any added before), so editors and type-checkers
+	// know the tags: modules already in the folder count too, since the files are rewritten on each add.
+	const names = new Set([...seen].map((m) => m.replace(/^elements\//, '').replace(/\.js$/, '')));
+	try {
+		for (const f of readdirSync(join(project.root, dir))) if (f.endsWith('.js')) names.add(f.replace(/\.js$/, ''));
+	} catch {}
+	const typed: { name: string; dts: string }[] = [];
+	for (const name of [...names].sort()) {
+		try {
+			typed.push({ name, dts: await readModule(`elements/${name}.d.ts`) });
+		} catch {
+			// The shared chunk has no element, so no types.
+		}
+	}
+	try {
+		out.push({ path: posix.join(dir, 'custom-elements.json'), content: narrowManifest(await readModule('elements/custom-elements.json'), [...names].map((n) => `${n}.js`)), library: 'elements/custom-elements.json', generated: true });
+	} catch {}
+	if (project.typescript && typed.length) out.push({ path: elementTypesPath(project), content: elementTypes(project, typed), library: 'elements/*.d.ts', generated: true });
 	return out;
 }
 
-/** The lines a page needs to use web components, for the modules of the named items. */
+/**
+ * The modules that define an item's own elements (menu: menu.js, menu-item.js, menu-label.js, menu-separator.js), each
+ * named after its tag. An item's module list also holds what its examples use (a dialog's field and input), which a
+ * page loads for those items itself.
+ */
+export function tagModules(item: RegistryItem): string[] {
+	const f = item.flavors?.elements;
+	if (!f) return [];
+	const prefix = `${elementPrefix()}-`;
+	const tags = f.tags?.length ? f.tags : f.tag ? [f.tag] : [];
+	const own = tags.map((t) => `elements/${t.replace(prefix, '')}.js`).filter((m) => f.modules.some((x) => x.replace(/^\/+/, '') === m));
+	return own.length ? own : f.modules.filter((m) => !/(chunk|shared|lib)[-./]/.test(m.split('/').pop() ?? '')).slice(0, 1);
+}
+
+/** The lines a page needs to use web components: one per module that defines the named items' elements, once each. */
 export function scriptLines(project: Project, items: RegistryItem[]) {
-	const { url } = elementsDir(project);
-	return items.flatMap((i) => (i.flavors?.elements?.modules ?? []).filter((m) => !/(chunk|shared|lib)[-./]/.test(m.split('/').pop() ?? '')).slice(0, 1).map((m) => `<script type="module" src="${url}/${m.replace(/^\/?elements\//, '')}"></script>`));
+	const { dir } = elementsDir(project);
+	const under = project.framework === 'django' ? dir.replace(new RegExp(`^${project.publicDir}/`), '') : undefined;
+	return [...new Set(items.flatMap(tagModules))].map((m) => {
+		const file = m.replace(/^\/?elements\//, '');
+		return `<script type="module" src="${under ? staticHref(project, `${under}/${file}`) : `${elementsDir(project).url}/${file}`}"></script>`;
+	});
 }
 
 export const present = (root: string, rel: string) => existsSync(join(root, rel));

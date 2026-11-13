@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 import { brand, registryHost } from './lib/brand.js';
 import { formatFinding, hookCheck, runCheck } from './check/engine.js';
-import { add } from './commands/add.js';
+import { add, update, type AddResult } from './commands/add.js';
 import { apply, formatApply, readState } from './commands/apply.js';
 import { describeProject, init } from './commands/init.js';
 import { flavorLabel } from './commands/add.js';
@@ -31,6 +31,7 @@ const HELP = () => {
 		row('add <item...>', 'Copy items (Button, alert-dialog, badge...) and what they need into the app'),
 		more('in its flavor: Vue (Vue, Nuxt), React (Next, Vite, React Router), web components (everything else)'),
 		more('--framework vue|react|elements   --dry-run   --overwrite   --no-install (skip packages)'),
+		row('add --update', 'Every installed item to this version: prebuilt modules replaced, files you changed kept (--overwrite replaces them)'),
 		row('view <item...> [--source]', 'How to use an item: rules, props, slots, events, examples, source'),
 		row('search <words>', 'Find items by what they do'),
 		row('list', 'Every item, with what it requires'),
@@ -72,7 +73,7 @@ const listFlag = (v: string | boolean | undefined) => (typeof v === 'string' ? v
 const COMMON = ['cwd', 'json', 'help'];
 const FLAGS: Record<string, string[]> = {
 	list: [],
-	add: ['dry-run', 'overwrite', 'install', 'framework'],
+	add: ['update', 'dry-run', 'overwrite', 'install', 'framework'],
 	apply: ['components', 'pages', 'with-shared', 'dry-run', 'redo'],
 	view: ['source', 'full', 'framework'],
 	show: ['source', 'full', 'framework'],
@@ -106,9 +107,25 @@ async function main() {
 			return;
 		}
 		case 'add': {
-			if (!args.length) throw new Error(`Name at least one item: ${brand().bin} add button (\`${brand().bin} search <words>\` finds one)`);
-			const r = await add(cwd, args, { dryRun: flags['dry-run'] === true, overwrite: flags.overwrite === true, install: flags.install !== false, framework: typeof flags.framework === 'string' ? flags.framework : undefined });
-			out(r, [...r.notes.map((n) => `note: ${n}`), `${flags['dry-run'] ? 'Would add' : 'Added'} ${r.items.join(', ')} (${flavorLabel(r.flavor)})`, ...r.written.map((w) => `  + ${w}`), ...(r.packages.length ? [`Packages: ${r.packages.join(', ')}${r.installed ? ' (installed)' : ''}`] : []), ...(r.scripts.length ? ['Load each on the pages that use it (once):', ...r.scripts.map((l) => `  ${l}`)] : []), ...r.warnings.map((w) => `warning: ${w}`), ...(flags['dry-run'] ? [] : [`How to use: ${brand().bin} view ${r.items[r.items.length - 1]}`])].join('\n'));
+			const opts = { dryRun: flags['dry-run'] === true, overwrite: flags.overwrite === true, install: flags.install !== false };
+			const lines = (r: AddResult) => [
+				...r.notes.map((n) => `note: ${n}`),
+				`${flags['dry-run'] ? 'Would add' : 'Added'} ${r.items.join(', ')} (${flavorLabel(r.flavor)})`,
+				...r.written.map((w) => `  + ${w}`),
+				...(r.updated.length ? [`Updated ${r.updated.length} prebuilt module(s) to this version: ${r.updated.map((u) => u.split('/').pop()).join(', ')}`] : []),
+				...(r.packages.length ? [`Packages: ${r.packages.join(', ')}${r.installed ? ' (installed)' : ''}`] : []),
+				...(r.scripts.length ? ['Load each on the pages that use it (once):', ...r.scripts.map((l) => `  ${l}`)] : []),
+				...r.warnings.map((w) => `warning: ${w}`),
+			];
+			if (flags.update === true) {
+				if (args.length) throw new Error(`add --update re-adds every installed item; name none (or add them by name without --update).`);
+				const rs = await update(cwd, opts);
+				out({ results: rs }, rs.flatMap(lines).join('\n'));
+				return;
+			}
+			if (!args.length) throw new Error(`Name at least one item: ${brand().bin} add button (\`${brand().bin} search <words>\` finds one), or ${brand().bin} add --update for every installed item`);
+			const r = await add(cwd, args, { ...opts, framework: typeof flags.framework === 'string' ? flags.framework : undefined });
+			out(r, [...lines(r), ...(flags['dry-run'] ? [] : [`How to use: ${brand().bin} view ${r.items[r.items.length - 1]}`])].join('\n'));
 			return;
 		}
 		case 'apply': {
