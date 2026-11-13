@@ -1,0 +1,33 @@
+<!-- The menu, opened as the frame loads; point at a product to change the window. Each product shows its own window
+     (product-viz) over a sheet of cells; Benchmarks and Price vs accuracy show the leaderboard (eval-viz) and the price
+     chart (price-viz), drawn at their own width and scaled to fit, laid over the panel so they never set its height.
+     Each plays again every time it comes into view (the menu sets their `active`). -->
+<div class="relative flex min-h-140 items-start justify-center px-6 py-4">
+  <ul class="flex text-body leading-none text-fg-soft">
+    <conare-product-menu id="product" items='[{"label": "Search", "desc": "Store documents and query them.", "href": "#search"}, {"label": "Sync", "desc": "Keep your apps in a namespace.", "href": "#sync"}, {"label": "Parse", "desc": "Read any file in full, every row and cell.", "href": "#parse"}, {"label": "Embed", "desc": "Embeddings for any vector database.", "href": "#embed"}, {"label": "Rerank", "desc": "Put the best passages first.", "href": "#rerank"}]' more='[{"label": "Benchmarks", "desc": "Accuracy you can check, losses included.", "href": "#benchmarks"}, {"label": "Price vs accuracy", "desc": "Most accurate, and the cheapest.", "href": "#price"}]'>
+    <conare-cell-burst slot="window-0" seed="71" jumble></conare-cell-burst>
+    <conare-product-viz slot="window-0" product="search" relative></conare-product-viz>
+    <conare-cell-burst slot="window-1" seed="90" jumble></conare-cell-burst>
+    <conare-product-viz slot="window-1" product="sync" relative></conare-product-viz>
+    <conare-cell-burst slot="window-2" seed="109" jumble></conare-cell-burst>
+    <conare-product-viz slot="window-2" product="parse" relative></conare-product-viz>
+    <conare-cell-burst slot="window-3" seed="128" jumble></conare-cell-burst>
+    <conare-product-viz slot="window-3" product="embed" relative></conare-product-viz>
+    <conare-cell-burst slot="window-4" seed="147" jumble></conare-cell-burst>
+    <conare-product-viz slot="window-4" product="rerank" relative></conare-product-viz>
+    <div slot="window-5" class="absolute inset-0 flex items-center justify-center overflow-hidden px-3 py-4">
+      <conare-cell-burst seed="131" jumble></conare-cell-burst>
+      <div class="relative flex w-120 shrink-0 origin-center scale-[0.62] justify-center"><conare-eval-viz limit="5" item='{"id": "acme-retrieval", "name": "Acme retrieval benchmark", "description": "Search over 19,252 business document pages with 2,419 questions.", "metric": "nDCG@10", "better": "higher", "model": "conare-embed-1", "score": 67, "rank": {"n": 1, "of": 6}, "rows": [{"name": "conare-embed-1", "value": 67.02, "ours": true}, {"name": "Provider B", "value": 66.48}, {"name": "Provider C", "value": 64.24}, {"name": "Provider D", "value": 60.64}, {"name": "Provider E", "value": 58.7}, {"name": "BM25", "value": 49.68}], "max": 80}'></conare-eval-viz></div>
+    </div>
+    <div slot="window-6" class="absolute inset-0 flex items-center justify-center overflow-hidden px-3 py-4">
+      <conare-cell-burst seed="154" jumble></conare-cell-burst>
+      <div class="relative flex w-120 shrink-0 origin-center scale-[0.62] justify-center"><conare-price-viz data='{"benchmark": "Acme retrieval benchmark", "metric": "nDCG@10", "points": [{"name": "conare-embed-1", "price": 0.1, "score": 67.02, "ours": true}, {"name": "Provider B", "price": 1.5, "score": 62.25}, {"name": "Provider C", "price": 0.12, "score": 60.64}, {"name": "Provider D", "price": 0.2, "score": 58.7}]}'></conare-price-viz></div>
+    </div>
+    </conare-product-menu>
+  </ul>
+</div>
+<script type="module">
+  await customElements.whenDefined('conare-product-menu')
+  const menu = document.getElementById('product')
+  setTimeout(() => { menu.open = true }, 300)
+</script>

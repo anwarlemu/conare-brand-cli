@@ -1,16 +1,35 @@
-/* The host is the text's box (Text.vue's root), so a class on <conare-text> lands on it as a class on <Text> does. */
-:host { display: block; }
+/* The host is the text's box (Text.vue's root). Its variant's look is !important, so it holds over the page's scoped
+   [data-ds] base in apps that only add components (Vue's utilities on the root beat that base; a :host rule would not).
+   A page sets another colour, size or line height through --type-color, --type-size and --type-leading on the
+   element (they don't inherit, so text inside keeps its own variant); any other class on the
+   host (a margin, a width) lands as one on <Text> does. */
+@property --type-color { syntax: "*"; inherits: false; }
+@property --type-size { syntax: "*"; inherits: false; }
+@property --type-leading { syntax: "*"; inherits: false; }
+:host {
+  display: block;
+  color: var(--type-color, var(--_color)) !important;
+}
+:host(:not([variant="mark"])) {
+  font-family: var(--ds-font-text) !important;
+  font-size: var(--type-size, var(--_size)) !important;
+  line-height: var(--type-leading, var(--_leading)) !important;
+  font-weight: var(--_weight);
+  letter-spacing: var(--_tracking);
+}
 :host([data-inline]) { display: inline; }
 /* A link or button draws its own box inside. */
 :host([data-control]) { display: contents; }
-:host(:not([variant])), :host([variant="ui"]) { @apply type-ui text-fg; }
-:host([variant="title"]) { @apply type-heading-3 text-fg; }
-:host([variant="strong"]) { @apply type-ui-strong text-fg; }
-:host([variant="meta"]) { @apply type-meta text-fg-muted; }
-:host([variant="caption"]) { @apply type-caption text-fg-muted; }
-:host([variant="code"]) { @apply type-code text-fg; }
-:host([variant="code-sm"]) { @apply type-code-sm text-fg; }
-:host([variant="mark"]) { @apply font-medium text-fg; }
+/* Each variant's type (type-* in the theme) and colour. */
+:host { --_color: var(--ds-color-fg); --_size: var(--ds-text-ui); --_leading: var(--ds-text-ui-leading); --_weight: var(--ds-font-weight-regular); --_tracking: 0; }
+:host([variant="title"]) { font-family: var(--ds-font-heading) !important; --_size: var(--ds-text-heading-3); --_leading: var(--ds-text-heading-3-leading); }
+:host([variant="strong"]) { --_weight: var(--ds-font-weight-medium); }
+:host([variant="meta"]) { --_color: var(--ds-color-fg-muted); --_size: var(--ds-text-meta); --_leading: var(--ds-text-meta-leading); }
+:host([variant="caption"]) { --_color: var(--ds-color-fg-muted); --_size: var(--ds-text-caption); --_leading: var(--ds-text-caption-leading); }
+:host([variant="code"]) { font-family: var(--ds-font-code) !important; }
+:host([variant="code-sm"]) { font-family: var(--ds-font-code) !important; --_size: var(--ds-text-meta); --_leading: var(--ds-text-meta-leading); }
+/* mark sets only weight and colour (font-medium text-fg), as in Vue: its type is the passage's (or the base's). */
+:host([variant="mark"]) { font-weight: var(--ds-font-weight-medium); }
 /* Text.vue's <style>, as it is. */
 .ds-text-link { cursor: pointer; text-decoration: underline; text-decoration-color: var(--ds-color-edge-strong); text-underline-offset: 4px; transition: text-decoration-color var(--ds-duration-enter) var(--ds-easing-standard); }
 @media (hover: hover) and (pointer: fine) { .ds-text-link:hover { text-decoration-color: var(--ds-color-fg); } }
