@@ -13,6 +13,7 @@ import styles from 'virtual:tw'
  * @summary The website's dark button: red squares run in on hover.
  * @slot - The label, with a Lucide icon if any.
  * @fires click - When pressed.
+ * @csspart control - The inner button or link, for a page's or another element's ::part(control).
  */
 export class PixelButton extends DsFormElement {
 	static styles = [DsFormElement.styles, styles]
@@ -50,8 +51,8 @@ export class PixelButton extends DsFormElement {
 		const large = this.large ? 'true' : undefined
 		const busy = this.busy === undefined ? undefined : String(this.busy)
 		return this.href
-			? html`<a data-ds="pixel-button" href=${this.href} class="ds-px" data-done=${ifDefined(done)} data-large=${ifDefined(large)} aria-label=${ifDefined(this.label)} aria-busy=${ifDefined(busy)}>${inner}</a>`
-			: html`<button data-ds="pixel-button" type="button" ?disabled=${this.inactive} class="ds-px" data-done=${ifDefined(done)} data-large=${ifDefined(large)} aria-label=${ifDefined(this.label)} aria-busy=${ifDefined(busy)} @click=${this.onClick}>${inner}</button>`
+			? html`<a data-ds="pixel-button" part="control" href=${this.href} class="ds-px" data-done=${ifDefined(done)} data-large=${ifDefined(large)} aria-label=${ifDefined(this.label)} aria-busy=${ifDefined(busy)}>${inner}</a>`
+			: html`<button data-ds="pixel-button" part="control" type="button" ?disabled=${this.inactive} class="ds-px" data-done=${ifDefined(done)} data-large=${ifDefined(large)} aria-label=${ifDefined(this.label)} aria-busy=${ifDefined(busy)} @click=${this.onClick}>${inner}</button>`
 	}
 }
 

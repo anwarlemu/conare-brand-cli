@@ -102,11 +102,13 @@ export class DsFormElement extends DsElement {
 	get form() {
 		return this.internals.form
 	}
-	static properties: PropertyDeclarations = { formDisabled: { state: true } }
-	/** A disabled fieldset around it; its own `disabled` stays as it was set. */
-	formDisabled = false
-	formDisabledCallback(disabled: boolean) {
-		this.formDisabled = disabled
+	/** A disabled fieldset around it; its own `disabled` stays as it was set. Read from the page at each render (the
+	 * browser's callback can land while the element is mid-update, and a state set then would be one render late). */
+	get formDisabled() {
+		return !!this.closest('fieldset[disabled]')
+	}
+	formDisabledCallback() {
+		this.requestUpdate()
 	}
 	/** Disabled by itself or by its fieldset: what render and handlers read. A `disabled` that is not a boolean (the
 	 * date picker's days that can't be picked) does not disable the element. */

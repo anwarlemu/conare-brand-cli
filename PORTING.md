@@ -69,7 +69,7 @@ export default [
 Use role selectors (`role=button[name="..."]`, `role=option[name="EU"]`): they find the same control in all three
 flavors, inside shadow roots too. Cover what the Vue file handles: every key it listens to, hover, press, open and
 close, Escape and focus return, form submission. Steps that fail to find their target are reported, not skipped.
-The steps run at 1440 and at 390 (a step with `width: 1440` runs at that width only, for a control a phone hides).
+Pages run with a seeded `Math.random` (the same sequence in every flavor). The steps run at 1440 and at 390 (a step with `width: 1440` runs at that width only, for a control a phone hides).
 `button: 'right'` makes a click a right-click (a context menu). The state compares the text of `aria-selected` and
 `data-active` elements in the flat tree, slotted text included, without whitespace.
 
@@ -198,6 +198,11 @@ define('thing', Thing)
 - **ARIA across shadow roots:** a `<label for>` or `aria-describedby` cannot point into another shadow root. The
   field element names its control with `aria-label` and describes it with `aria-description`, which the control passes
   to its inner element (input, button: a tooltip describes its button this way).
+- **Parts:** `<conare-button>` and `<conare-pixel-button>` expose their inner button or link as `part="control"`, so
+  a page or another element styles the box they draw with `::part(control)` (the table's 92px settings buttons, the
+  search box's send button). Give an element's own root a part where pages need it.
+- **Attribute names HTML already styles:** an `align` attribute is HTML's old alignment hint (text-align) even on a
+  custom element; `<conare-menu>` takes Vue's `align` as `placement`.
 - **Markup:** `unsafeHTML` and `keyed` are in the shared chunk, for markup the page hands an element (the command palette's icons).
   An element that imports something the shared chunk lacks fails the build with the name to add to
   `registry/elements/lib/index.ts`.
@@ -241,8 +246,8 @@ events, set properties, call methods). Start with the Vue example's comment as a
   beats the page, as Vue's unlayered rule beats layered utilities).
 - The inner `input` event crosses the shadow root on its own; `change` does not. Set the value in the inner `@input`
   and dispatch only `change`, or the page gets `input` twice. `commit(v)` and `commit(v, 'checked')` fire both for you.
-- Don't write `formDisabledCallback` or assign `disabled` from a fieldset: `DsFormElement` tracks a disabled fieldset
-  in `formDisabled`. Render and handlers read `this.inactive` (own `disabled` or the fieldset's), never `this.disabled`.
+- Don't write `formDisabledCallback` or assign `disabled` from a fieldset: `DsFormElement` reads a disabled fieldset
+  around it in `formDisabled`. Render and handlers read `this.inactive` (own `disabled` or the fieldset's), never `this.disabled`.
 - `<option>`s can't be slotted into a `<select>`: copy them in (see native-select.ts) and set the value in `updated()`.
 - Interaction steps run after six Tabs, so focus may sit anywhere: start key steps with an explicit `focus:`.
 - `--out` takes an absolute path.

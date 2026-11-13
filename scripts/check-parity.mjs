@@ -181,6 +181,21 @@ const results = [];
 async function capture(url, width) {
 	const context = await browser.newContext({ viewport: { width, height: 900 }, deviceScaleFactor: 1, reducedMotion: 'no-preference' });
 	const page = await context.newPage();
+	// The same random sequence on every flavor's page (room-grid lights random tiles): a seeded generator (mulberry32)
+	// stands in for Math.random before any script runs. Calls straight from a framework's own code (React DOM's and
+	// Lit's ids, Vite's client) keep the real one, so each flavor's components draw the same numbers in the same order.
+	await page.addInitScript(() => {
+		const real = Math.random;
+		let seed = 0x2f6b1d;
+		Math.random = () => {
+			const caller = (new Error().stack ?? '').split('\n')[2] ?? '';
+			if (/react-dom|\/elements\/shared\.js|lit-html|\/@vite\//.test(caller)) return real();
+			seed = (seed + 0x6d2b79f5) | 0;
+			let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+			t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+			return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+		};
+	});
 	const errors = [];
 	page.on('pageerror', (e) => errors.push(e.message));
 	page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });

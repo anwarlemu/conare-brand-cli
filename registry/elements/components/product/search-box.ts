@@ -1,4 +1,4 @@
-import { nothing, type PropertyValues } from 'lit'
+import { nothing } from 'lit'
 import { html } from 'lit/static-html.js'
 import { live } from 'lit/directives/live.js'
 import { repeat } from 'lit/directives/repeat.js'
@@ -22,11 +22,6 @@ import styles from 'virtual:tw'
 // hairline turns ink while anything inside has focus. It calls nothing: it fires `submit`, `files`, `paste`, `connect`
 // and `remove`, and the app owns `attached`. v-model is `value` with the textarea's own `input` events.
 export interface Attachment { key: string, name: string, state: 'adding' | 'added' | 'failed' }
-
-// The send button's `ml-auto sm:ml-0` (a class on Vue's Button root) has to reach the box <conare-button> draws in its
-// own shadow root: the search box marks it (data-searchbox-send) and gives that shadow root this rule once.
-const SEND_RULES = `:host([data-searchbox-send]) > [data-ds] { margin-left: auto; } @media (width >= 40rem) { :host([data-searchbox-send]) > [data-ds] { margin-left: 0; } }`
-const sendSheets = new WeakSet<ShadowRoot>()
 
 /**
  * @summary The search box: the question, attached files, the add menu, the scope and the send arrow.
@@ -105,20 +100,6 @@ export class SearchBox extends DsElement {
 		if (event.key !== 'Enter' || event.shiftKey || event.isComposing) return
 		event.preventDefault()
 		this.submit()
-	}
-
-	protected async updated(changed: PropertyValues) {
-		super.updated(changed)
-		const send = this.renderRoot.querySelector<HTMLElement & { updateComplete?: Promise<unknown> }>('[data-searchbox-send]')
-		if (!send) return
-		await customElements.whenDefined(send.localName)
-		await send.updateComplete
-		const root = send.shadowRoot
-		if (!root || sendSheets.has(root)) return
-		const sheet = new CSSStyleSheet()
-		sheet.replaceSync(SEND_RULES)
-		root.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet]
-		sendSheets.add(root)
 	}
 
 	render() {

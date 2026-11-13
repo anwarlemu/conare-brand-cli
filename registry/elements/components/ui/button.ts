@@ -29,6 +29,7 @@ const VARIANTS: Record<ButtonVariant, string> = {
  * @summary An action: secondary by default, dark, primary, ghost, danger or brand; `icon` for a square icon button.
  * @slot - The label, with a Lucide icon before it if any.
  * @fires click - When pressed (the native click, from the inner button).
+ * @csspart control - The inner button or link, for a page's or another element's ::part(control).
  */
 export class Button extends DsFormElement {
 	static styles = [DsFormElement.styles, styles]
@@ -104,8 +105,8 @@ export class Button extends DsFormElement {
 			VARIANTS[this.variant] ?? VARIANTS.secondary,
 		].join(' ')
 		return this.href
-			? html`<a data-ds="button" href=${this.href} class=${classes} aria-label=${ifDefined(this.label)} aria-description=${ifDefined(this.description)} aria-expanded=${ifDefined(this.expanded)} aria-haspopup=${ifDefined(this.haspopup as never)}><slot></slot></a>`
-			: html`<button data-ds="button" type="button" ?disabled=${this.inactive} class=${classes} aria-label=${ifDefined(this.label)} aria-description=${ifDefined(this.description)} aria-expanded=${ifDefined(this.expanded)} aria-haspopup=${ifDefined(this.haspopup as never)} @click=${this.onClick}><slot></slot></button>`
+			? html`<a data-ds="button" part="control" href=${this.href} class=${classes} aria-label=${ifDefined(this.label)} aria-description=${ifDefined(this.description)} aria-expanded=${ifDefined(this.expanded)} aria-haspopup=${ifDefined(this.haspopup as never)}><slot></slot></a>`
+			: html`<button data-ds="button" part="control" type="button" ?disabled=${this.inactive} class=${classes} aria-label=${ifDefined(this.label)} aria-description=${ifDefined(this.description)} aria-expanded=${ifDefined(this.expanded)} aria-haspopup=${ifDefined(this.haspopup as never)} @click=${this.onClick}><slot></slot></button>`
 	}
 }
 

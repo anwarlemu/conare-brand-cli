@@ -21,3 +21,7 @@
 }
 @media (prefers-reduced-motion: reduce) { .ds-attach { animation-name: ds-attach-fade; } }
 @keyframes ds-attach-fade { from { opacity: 0; } }
+/* The send button's `ml-auto sm:ml-0` (a class on Vue's Button root) lands on the box <conare-button> draws, its control
+   part. */
+[data-searchbox-send]::part(control) { margin-left: auto; }
+@media (width >= 40rem) { [data-searchbox-send]::part(control) { margin-left: 0; } }

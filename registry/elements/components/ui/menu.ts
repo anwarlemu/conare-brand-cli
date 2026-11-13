@@ -22,7 +22,8 @@ export class Menu extends DsElement {
 	static properties = {
 		label: {},
 		up: { type: Boolean },
-		align: {},
+		// Vue's `align`; an `align` attribute is also HTML's old alignment hint, which the browser draws as text-align.
+		placement: {},
 		width: {},
 		offset: {},
 		triggerLabel: { attribute: 'trigger-label' },
@@ -34,7 +35,8 @@ export class Menu extends DsElement {
 	label = ''
 	/** Opens upward. */
 	up = false
-	align: 'start' | 'end' = 'start'
+	/** The panel's edge: start, or end to open toward the start from the trigger's end (Vue's `align`). */
+	placement: 'start' | 'end' = 'start'
 	width = '264px'
 	/** Moves the panel in from its edge. */
 	offset = '0px'
@@ -160,7 +162,7 @@ export class Menu extends DsElement {
 	render() {
 		const own = !!this.querySelector(':scope > button[slot="trigger"]')
 		const panel = this.open
-			? html`<div id=${this.panelId} class="ds-menu" ?data-up=${this.up} ?data-instant=${this.instant} style=${styleMap({ width: this.width, [this.align === 'end' ? 'right' : 'left']: this.offset, [this.up ? 'bottom' : 'top']: 'calc(100% + 4px)' })} role="menu" aria-label=${this.label} @keydown=${this.onMenuKey}><slot></slot></div>`
+			? html`<div id=${this.panelId} class="ds-menu" ?data-up=${this.up} ?data-instant=${this.instant} style=${styleMap({ width: this.width, [this.placement === 'end' ? 'right' : 'left']: this.offset, [this.up ? 'bottom' : 'top']: 'calc(100% + 4px)' })} role="menu" aria-label=${this.label} @keydown=${this.onMenuKey}><slot></slot></div>`
 			: nothing
 		const trigger = own
 			? html`<slot name="trigger"></slot>`

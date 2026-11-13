@@ -10,7 +10,7 @@
           <span slot="b" class="contents"><i data-lucide="check" data-size="12" data-stroke-width="2" aria-hidden="true"></i>Copied</span>
         </conare-text-swap>
       </conare-pixel-button>
-      <conare-menu label="other ways to connect" trigger-label="other ways to connect" width="200px" id="installs">
+      <conare-menu placement="end" label="other ways to connect" trigger-label="other ways to connect" width="200px" id="installs">
         <button slot="trigger" type="button" class="group/trigger relative inline-flex h-control-sm w-control-sm cursor-pointer items-center justify-center bg-action-primary text-action-primary-fg transition-[background-color] duration-120 ease-standard hover:bg-edge-accent focus-visible:outline-edge-accent max-md:h-control-touch max-md:w-control-touch"><i data-lucide="chevron-down" data-size="12" data-stroke-width="1.5" class="transition-[rotate] duration-120 ease-out motion-reduce:transition-none group-aria-expanded/trigger:rotate-180" aria-hidden="true"></i></button>
         <conare-menu-item href="#cursor"><span class="flex-1">Add to Cursor</span><i data-lucide="arrow-up-right" data-size="12" data-stroke-width="1.5" aria-hidden="true"></i></conare-menu-item>
         <conare-menu-item href="#vscode"><span class="flex-1">Add to VS Code</span><i data-lucide="arrow-up-right" data-size="12" data-stroke-width="1.5" aria-hidden="true"></i></conare-menu-item>
@@ -51,9 +51,6 @@
     clearTimeout(timer)
     timer = setTimeout(() => { copyButton.done = swap.on = false }, 1500)
   })
-  // The menu opens to the end. Set as a property: an `align` attribute is also HTML's old alignment hint, which the
-  // browser draws as text-align on the element.
-  document.getElementById('installs').align = 'end'
   // The pager: Page n of 4, the ends disabled.
   let page = 2
   const paint = () => {
@@ -61,8 +58,6 @@
     for (const [id, off] of [['prev', page === 1], ['next', page === 4]]) {
       const button = document.getElementById(id)
       button.disabled = off
-      // A second render once the disabled attribute is gone (the form-disabled state it reads lags the attribute by one render).
-      button.updateComplete.then(() => button.requestUpdate())
     }
   }
   document.getElementById('prev').addEventListener('click', () => { page--; paint() })

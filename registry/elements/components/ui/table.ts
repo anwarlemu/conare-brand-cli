@@ -30,6 +30,7 @@ const RULES = `
 .ds-table[data-variant="settings"] :is(th, td):last-child { padding-right: 16px; }
 .ds-table[data-variant="settings"] th::first-letter { text-transform: uppercase; }
 .ds-table[data-variant="settings"] td:last-child :is(button, a):only-child { width: 92px; }
+.ds-table[data-variant="settings"] td:last-child > :only-child::part(control) { width: 92px; }
 @media (pointer: coarse), (max-width: 767px) {
   .ds-table[data-variant="product"] td { height: 48px; }
   .ds-table[data-variant="product"] th { height: var(--ds-size-control-lg); }
@@ -75,19 +76,6 @@ export class Table extends DsElement {
 		table.setAttribute('data-variant', this.variant)
 		if (this.framed) table.removeAttribute('data-ds')
 		else table.setAttribute('data-ds', 'table')
-		if (this.variant === 'settings') void this.sizeButtons(table)
-	}
-
-	// Settings' last column holds buttons one width (92px), but a button element draws its box in its own shadow root,
-	// out of reach of the rule for `td:last-child :is(button, a):only-child`: the width goes on that box here.
-	private async sizeButtons(table: Element) {
-		for (const el of table.querySelectorAll<HTMLElement>('td:last-child > :only-child')) {
-			if (!el.localName.includes('-')) continue
-			await customElements.whenDefined(el.localName)
-			await (el as HTMLElement & { updateComplete?: Promise<unknown> }).updateComplete
-			const box = el.shadowRoot?.querySelector<HTMLElement>(':is(button, a)[data-ds]')
-			if (box) box.style.width = '92px'
-		}
 	}
 
 	render() {
