@@ -1,0 +1,25 @@
+<!-- The sheet behind How it works and the blog cards. The same seed draws the same burst; jumble and ledger change its
+     pattern. -->
+<div class="grid gap-6 sm:grid-cols-3">
+  <figure class="flex flex-col gap-2">
+    <span aria-hidden="true" class="relative grid aspect-[5/4] grid-cols-[minmax(0,1fr)] place-items-center overflow-hidden bg-ds-neutral-200 px-4 text-ds-neutral-300">
+      <conare-grain></conare-grain>
+      <span class="pointer-events-none absolute inset-0 opacity-70"><conare-cell-burst seed="5"></conare-cell-burst></span>
+    </span>
+    <figcaption class="type-meta text-fg-faint">How it works, seed 5</figcaption>
+  </figure>
+  <figure class="flex flex-col gap-2">
+    <span aria-hidden="true" class="relative grid aspect-[5/4] grid-cols-[minmax(0,1fr)] place-items-center overflow-hidden bg-ds-neutral-200 px-4 text-ds-neutral-300">
+      <conare-grain></conare-grain>
+      <span class="pointer-events-none absolute inset-0 opacity-70"><conare-cell-burst seed="84" jumble></conare-cell-burst></span>
+    </span>
+    <figcaption class="type-meta text-fg-faint">Blog card, jumble</figcaption>
+  </figure>
+  <figure class="flex flex-col gap-2">
+    <span aria-hidden="true" class="relative grid aspect-[5/4] grid-cols-[minmax(0,1fr)] place-items-center overflow-hidden bg-ds-neutral-200 px-4 text-ds-neutral-300">
+      <conare-grain></conare-grain>
+      <span class="pointer-events-none absolute inset-0 opacity-70"><conare-cell-burst seed="5" ledger></conare-cell-burst></span>
+    </span>
+    <figcaption class="type-meta text-fg-faint">Ledger</figcaption>
+  </figure>
+</div>
