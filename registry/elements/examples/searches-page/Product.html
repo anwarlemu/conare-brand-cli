@@ -1,0 +1,129 @@
+<!-- Searches as it ships, in the console's frame, on sample data: pick a filter, open a row to see what the agent read,
+     press a document to download it. Wire the events to your own routes and files. -->
+<conare-console-frame crumbs='[{ "label": "Overview", "href": "#" }, { "label": "Searches" }]'>
+  <conare-sidebar-label slot="nav">Platform</conare-sidebar-label>
+  <conare-sidebar-link slot="nav" href="#"><i data-lucide="house" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Overview</conare-sidebar-link>
+  <conare-sidebar-link slot="nav" href="#" status="6"><i data-lucide="layers" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Namespaces</conare-sidebar-link>
+  <conare-sidebar-link slot="nav" href="#"><i data-lucide="network" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Sources</conare-sidebar-link>
+  <conare-sidebar-link slot="nav" href="#"><i data-lucide="square-terminal" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Agents</conare-sidebar-link>
+  <conare-sidebar-label slot="nav">Manage</conare-sidebar-label>
+  <conare-sidebar-link slot="nav" href="#"><i data-lucide="key-round" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>API keys</conare-sidebar-link>
+  <conare-sidebar-link slot="nav" href="#"><i data-lucide="gauge" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Performance</conare-sidebar-link>
+  <conare-sidebar-link slot="nav" href="#" active><i data-lucide="search" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Searches</conare-sidebar-link>
+  <conare-sidebar-link slot="nav" href="#"><i data-lucide="activity" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Usage</conare-sidebar-link>
+  <conare-searches-page id="searches"></conare-searches-page>
+</conare-console-frame>
+<script type="module">
+  const rows = [
+    {
+      "id": "s1",
+      "when": "2 min ago",
+      "question": "What is the notice period to terminate the Acme reseller agreement?",
+      "agent": "Support agent",
+      "outcome": "strong",
+      "tookMs": 182,
+      "passages": [
+        {
+          "id": "acme-reseller-msa",
+          "namespace": "contracts",
+          "text": "Either party may terminate for convenience with 90 days written notice. Termination for cause needs a 30 day cure period.",
+          "key": "90 days written notice"
+        },
+        {
+          "id": "acme-reseller-amendment-2",
+          "namespace": "contracts",
+          "text": "Amendment 2 leaves the notice period unchanged and adds a renewal window in March.",
+          "key": "leaves the notice period unchanged"
+        }
+      ]
+    },
+    {
+      "id": "s2",
+      "when": "9 min ago",
+      "question": "refund policy for annual plans canceled after 30 days",
+      "agent": "Billing agent",
+      "outcome": "weak",
+      "tookMs": 241,
+      "why": "The closest passage covers monthly plans; nothing in support covers annual plans after 30 days.",
+      "fix": {
+        "action": "Add the billing policy"
+      },
+      "passages": [
+        {
+          "id": "refunds-monthly",
+          "namespace": "support",
+          "text": "Monthly plans can be refunded within 30 days of the charge, in full, from the billing page.",
+          "key": "within 30 days of the charge"
+        }
+      ]
+    },
+    {
+      "id": "s3",
+      "when": "24 min ago",
+      "question": "Who approves vendor security reviews?",
+      "agent": "Acme assistant",
+      "outcome": "strong",
+      "tookMs": 156,
+      "passages": [
+        {
+          "id": "handbook-security",
+          "namespace": "wiki",
+          "text": "Vendor security reviews are approved by the security lead, with legal signing the data processing terms.",
+          "key": "approved by the security lead"
+        }
+      ]
+    },
+    {
+      "id": "s4",
+      "when": "1 h ago",
+      "question": "breach notification window in the EU data processing addendum",
+      "agent": "Legal agent",
+      "outcome": "none",
+      "tookMs": 318,
+      "why": "No document in contracts mentions a breach notification window.",
+      "fix": {
+        "action": "Connect the legal drive"
+      },
+      "passages": []
+    },
+    {
+      "id": "s5",
+      "when": "2 h ago",
+      "question": "quarterly planning notes for the platform team",
+      "agent": "Acme assistant",
+      "outcome": "failed",
+      "tookMs": 1240,
+      "why": "The engineering namespace timed out while it re-indexed.",
+      "fix": {
+        "action": "Open engineering"
+      },
+      "passages": []
+    },
+    {
+      "id": "s6",
+      "when": "3 h ago",
+      "question": "Which regions does the Acme storage service run in?",
+      "agent": "Support agent",
+      "outcome": "strong",
+      "tookMs": 171,
+      "passages": [
+        {
+          "id": "infra-regions",
+          "namespace": "engineering",
+          "text": "Storage runs in us-east-1, eu-west-1 and ap-southeast-2, with backups kept in a second region.",
+          "key": "us-east-1, eu-west-1 and ap-southeast-2"
+        }
+      ]
+    }
+  ]
+  await customElements.whenDefined('conare-searches-page')
+  const page = document.getElementById('searches')
+  page.rows = rows
+  // A document pressed: download it (a mark's download() saves it and shows the state on every mark for it).
+  page.addEventListener('download', (e) => {
+    const p = e.detail.passage
+    const mark = document.createElement('conare-download-mark')
+    mark.doc = p.id
+    mark.download(() => p.text)
+  })
+</script>

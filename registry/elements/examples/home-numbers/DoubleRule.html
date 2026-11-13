@@ -1,0 +1,16 @@
+<!-- Explorer's first screen with its numbers, take 2: the website's double rule under the box, this month's queries as bars, today's in red. -->
+<conare-console-frame crumbs='[{ "label": "Overview", "href": "#" }, { "label": "Explorer" }]'>
+  <conare-sidebar-label slot="nav">Platform</conare-sidebar-label>
+  <conare-sidebar-link slot="nav" href="#"><i data-lucide="house" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Overview</conare-sidebar-link>
+  <conare-sidebar-link slot="nav" href="#" active><i data-lucide="compass" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Explorer</conare-sidebar-link>
+  <conare-sidebar-link slot="nav" href="#" status="6"><i data-lucide="layers" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Namespaces</conare-sidebar-link>
+  <conare-sidebar-link slot="nav" href="#"><i data-lucide="network" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Sources</conare-sidebar-link>
+  <div class="mx-auto flex min-h-[calc(100vh-48px)] w-full max-w-page flex-col justify-center gap-6 px-4 pt-8 pb-28 md:px-8">
+    <conare-highlight-text as="h1" text="Explore your data" accent="." class="text-center type-heading-1 md:type-hero"></conare-highlight-text>
+    <conare-search-box></conare-search-box>
+    <conare-home-numbers id="numbers" take="rule" documents="2786122" namespaces="6" queries="148920" typical="182" slowest="296" days="[3200, 6090, 5600, 5110, 4620, 2330, 1840, 6530, 6040, 5550, 5060, 4570, 2280, 1790, 6480, 5990, 5500, 5010, 4520, 2230, 5120, 6430, 5940, 5450, 4960, 4470, 2180, 5070, 6380, 5890]"></conare-home-numbers>
+  </div>
+</conare-console-frame>
+<script type="module">
+  document.getElementById('numbers').addEventListener('navigate', (e) => e.detail.event.preventDefault())
+</script>

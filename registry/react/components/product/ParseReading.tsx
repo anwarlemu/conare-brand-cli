@@ -14,9 +14,11 @@ import { cn } from '@/react/lib/cn'
 export interface ParseReadingProps {
   answer: ParseAnswer
   version?: 1 | 2 | 3
+  /** The root's data-ds (a page built on this one says its own, as Vue's fallthrough does). */
+  'data-ds'?: string
 }
 
-export function ParseReading({ answer, version = 1 }: ParseReadingProps) {
+export function ParseReading({ answer, version = 1, 'data-ds': ds = 'parse-reading' }: ParseReadingProps) {
   const { setOn, lit, pick } = useParsePoint()
   const p = answer.part
   const tables = p.blocks.filter(b => b.type === 'table').length
@@ -26,10 +28,10 @@ export function ParseReading({ answer, version = 1 }: ParseReadingProps) {
     { label: 'Tables', value: '', count: tables },
     { label: 'OCR', value: p.ocr ? `${Math.round((p.confidence ?? 0) * 100)}% sure` : 'Not needed' },
   ]
-  if (version === 2) return <ParseRegions data-ds="parse-reading" answer={answer} />
-  if (version === 3) return <ParsePlain data-ds="parse-reading" answer={answer} />
+  if (version === 2) return <ParseRegions data-ds={ds} answer={answer} />
+  if (version === 3) return <ParsePlain data-ds={ds} answer={answer} />
   return (
-    <section data-ds="parse-reading" className="m-1.25 grid grid-cols-2 border border-edge outline outline-offset-4 outline-edge max-lg:grid-cols-1" aria-label="the page and what was read">
+    <section data-ds={ds} className="m-1.25 grid grid-cols-2 border border-edge outline outline-offset-4 outline-edge max-lg:grid-cols-1" aria-label="the page and what was read">
       <div className="flex min-w-0 flex-col gap-2 bg-surface-subtle p-4">
         <ParseSheet className="border border-edge" part={answer.part} scan={answer.scan} on={lit} plays onPoint={setOn} onPick={pick} />
         <p className="flex justify-between gap-4 type-meta text-fg-muted"><span className="truncate">{answer.name}</span><span className="shrink-0">{`Page ${answer.page} of ${answer.pages}`}</span></p>
