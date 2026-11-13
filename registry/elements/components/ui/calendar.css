@@ -1,0 +1,9 @@
+/* Calendar.vue's <style>, as it is. */
+.ds-day { position: relative; display: inline-flex; width: var(--ds-size-control-md); height: var(--ds-size-control-md); align-items: center; justify-content: center; color: var(--ds-color-fg); font-size: var(--ds-text-ui); font-variant-numeric: tabular-nums; cursor: pointer; outline: none; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard), color var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-day[aria-current="date"]::after { position: absolute; top: 4px; right: 4px; width: 4px; height: 4px; background: var(--ds-color-edge-accent); content: ""; }
+@media (hover: hover) and (pointer: fine) { .ds-day:hover:not([data-picked], [aria-disabled]) { background: var(--ds-color-surface-subtle); } }
+.ds-day:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }
+.ds-day[data-picked] { background: var(--ds-color-surface-inverse); color: var(--ds-color-fg-inverse); font-weight: var(--ds-font-weight-medium); }
+.ds-day[data-picked]:focus-visible { outline-color: var(--ds-color-edge-accent); }
+.ds-day[aria-disabled] { color: var(--ds-color-fg-muted); text-decoration: line-through; cursor: not-allowed; }
+@media (pointer: coarse), (max-width: 767px) { .ds-day { width: var(--ds-size-control-touch); height: var(--ds-size-control-touch); } }
