@@ -1,0 +1,9 @@
+/* SidebarLink.vue's <style>. The icon is slotted from the page, so its rules reach it through ::slotted. */
+.ds-navlink { position: relative; display: flex; height: var(--ds-size-control-sm); flex-shrink: 0; align-items: center; gap: var(--ds-space-md); margin: 0 8px; padding: 0 8px; color: var(--ds-color-fg-soft); font-size: var(--ds-text-ui); transition: background-color var(--ds-duration-micro) var(--ds-easing-standard), color var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-navlink ::slotted(svg) { flex-shrink: 0; color: var(--ds-color-fg-muted); }
+@media (hover: hover) and (pointer: fine) { .ds-navlink:hover { background: color-mix(in srgb, var(--ds-color-edge) 50%, transparent); color: var(--ds-color-fg); } }
+.ds-navlink[data-active] { background: var(--ds-color-surface); color: var(--ds-color-fg); font-weight: var(--ds-font-weight-medium); outline: var(--ds-border-hairline) solid var(--ds-color-edge); outline-offset: -1px; }
+.ds-navlink[data-active]::before { position: absolute; top: 6px; bottom: 6px; left: -8px; width: 2px; background: var(--ds-color-edge-accent); content: ""; }
+.ds-navlink[data-active] ::slotted(svg) { color: var(--ds-color-fg); }
+.ds-navlink:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }
+@media (pointer: coarse), (max-width: 767px) { .ds-navlink { height: 44px; font-size: var(--ds-text-body); } }

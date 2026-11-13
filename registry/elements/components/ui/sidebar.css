@@ -1,0 +1,4 @@
+/* The host is the column (Sidebar.vue's <nav>), so a class on <conare-sidebar> lands on it as a class on <Sidebar>
+   does. A page's own reset (Tailwind's preflight: * { border: 0 solid }) beats a host's normal styles, so the hairline
+   at its edge is important. */
+:host { @apply flex w-sidebar flex-col bg-surface-subtle; @apply border-r! border-edge!; }

@@ -1,0 +1,7 @@
+<!-- The crumbs alone, as a breadcrumb anywhere: a long trail keeps every step back and truncates only the page. -->
+<div class="max-w-120">
+  <conare-breadcrumb id="long-trail" items='[{ "label": "Overview", "href": "#" }, { "label": "Sources", "href": "#" }, { "label": "Acme drive", "href": "#" }, { "label": "Quarterly planning notes for the platform team, final revision" }]'></conare-breadcrumb>
+</div>
+<script type="module">
+  document.getElementById('long-trail').addEventListener('navigate', (event) => event.detail.event.preventDefault())
+</script>

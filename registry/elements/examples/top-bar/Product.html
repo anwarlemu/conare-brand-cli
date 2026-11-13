@@ -1,0 +1,7 @@
+<!-- The bar over every console page: where you are, each step back a link, the page in ink, a namespace in mono. -->
+<conare-top-bar class="border border-edge">
+  <conare-breadcrumb id="bar-crumbs" items='[{ "label": "Overview", "href": "#" }, { "label": "Namespaces", "href": "#" }, { "label": "contracts", "mono": true }]'></conare-breadcrumb>
+</conare-top-bar>
+<script type="module">
+  document.getElementById('bar-crumbs').addEventListener('navigate', (event) => event.detail.event.preventDefault())
+</script>
