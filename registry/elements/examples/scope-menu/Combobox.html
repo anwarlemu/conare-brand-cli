@@ -1,0 +1,11 @@
+<!-- Any list with a filter: type to narrow it, arrows to move, Enter to pick. -->
+<div class="h-96 w-full max-w-72">
+  <conare-field label="Model">
+    <conare-combobox id="model" value="" label="model" placeholder="Choose a model" filter-label="Filter models" width="288px"></conare-combobox>
+  </conare-field>
+</div>
+<script type="module">
+  await customElements.whenDefined('conare-combobox')
+  const models = ['conare-embed-1', 'conare-embed-1-small', 'conare-rerank-1', 'conare-rerank-1-fast', 'conare-parse-1', 'acme-custom-embed', 'acme-custom-rerank', 'acme-legal-embed']
+  document.getElementById('model').options = models.map((m) => ({ value: m, label: m }))
+</script>

@@ -80,7 +80,8 @@ export class DsElement extends LitElement {
 
 /** Defines `<prefix>-<name>` once (a second copy of a module on the page is harmless). */
 export function define(name: string, element: CustomElementConstructor & { dsName?: string }) {
-	element.dsName ||= name
+	// Its own name, also for a subclass (<conare-select> extends <conare-combobox>).
+	if (!Object.prototype.hasOwnProperty.call(element, 'dsName') || !element.dsName) element.dsName = name
 	const t = tagName(name)
 	if (!customElements.get(t)) customElements.define(t, element)
 }

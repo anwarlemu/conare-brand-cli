@@ -226,7 +226,9 @@ export async function buildFlavors(docs: FlavorDoc[], ctx: Ctx) {
 					glued(f, text);
 					const css = f.replace(/\.ts$/, '.css');
 					const hostIsRoot = exists(css) && /(^|\n)\s*:host\s*\{/.test(read(css));
-					if (!/\sdata-ds=["']/.test(text) && !hostIsRoot) fail(`${f}: its shadow root's root element needs data-ds="<name>" as the Vue file's has (or the host is the root: style :host in ${posix.basename(css)})`);
+					// A subclass of another element (<conare-select> extends <conare-combobox>) draws its parent's template.
+					const subclass = /from\s+['"]@\/elements\/components\//.test(text) && /\bclass\s+\w+\s+extends\s+(?!Ds(Form)?Element\b)\w+/.test(text)
+					if (!/\sdata-ds=["']/.test(text) && !hostIsRoot && !subclass) fail(`${f}: its shadow root's root element needs data-ds="<name>" as the Vue file's has (or the host is the root: style :host in ${posix.basename(css)})`);
 				}
 				const c = elementClosure(eFiles, d.name);
 				const tags = eFiles.map((f) => `${prefix}-${posix.basename(f, '.ts')}`);

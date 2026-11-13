@@ -1,0 +1,25 @@
+<!-- A search's settings in a popover: how many results, and whether to rerank. Focus moves into the panel as it opens;
+     Escape closes it and returns to the button. -->
+<div class="flex min-h-72 items-start justify-center">
+  <conare-popover label="search settings" align="end" id="settings">
+    <span slot="trigger" class="contents"><i data-lucide="sliders-horizontal" data-size="12" data-stroke-width="1.5" aria-hidden="true"></i>Settings</span>
+    <form class="flex flex-col gap-4">
+      <p class="type-ui-strong">Search settings</p>
+      <conare-field label="Results" hint="Between 1 and 50.">
+        <conare-input value="5" inputmode="numeric"></conare-input>
+      </conare-field>
+      <div class="flex items-center justify-between gap-4">
+        <span class="type-meta text-fg-soft">Rerank results</span>
+        <conare-switch checked label="rerank results"></conare-switch>
+      </div>
+      <div class="flex justify-end"><conare-button variant="dark" type="submit">Save</conare-button></div>
+    </form>
+  </conare-popover>
+</div>
+<script type="module">
+  const settings = document.getElementById('settings')
+  settings.querySelector('form').addEventListener('submit', (event) => {
+    event.preventDefault()
+    settings.close()
+  })
+</script>

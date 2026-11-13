@@ -145,6 +145,8 @@ const STATE = `(() => {
     menus: all.filter((e) => /^(menu|listbox|dialog)$/.test(e.getAttribute('role') || '') && vis(e)).length,
     expanded: all.filter((e) => e.getAttribute('aria-expanded') === 'true').length,
     selected: all.filter((e) => e.getAttribute('aria-selected') === 'true').map((e) => e.textContent.trim().slice(0, 32)).join(', '),
+    active: all.filter((e) => e.hasAttribute('data-active')).map((e) => e.textContent.trim().slice(0, 32)).join(', '),
+    checked: all.filter((e) => e.getAttribute('aria-checked') === 'true').length,
   };
 })()`;
 

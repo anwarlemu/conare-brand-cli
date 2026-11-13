@@ -1,0 +1,9 @@
+/* Combobox.vue's <style>, as it is. */
+/* A row of a listbox: Menu's row (console2.css .v2-menu-item). The highlight follows the arrows and the pointer alike,
+   as in the command palette, so hover itself draws nothing. */
+.ds-option { position: relative; display: flex; height: var(--ds-size-control-md); flex-shrink: 0; align-items: center; gap: var(--ds-space-md); padding: 0 10px 0 14px; color: var(--ds-color-fg); font-size: var(--ds-text-ui); cursor: pointer; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-option::before { position: absolute; top: 50%; left: 5px; width: 4px; height: 4px; margin-top: -2px; background: var(--ds-color-edge-accent); content: ""; opacity: 0; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-option[data-active] { background: var(--ds-color-surface-subtle); }
+.ds-option[data-active]::before { opacity: 1; }
+.ds-option[aria-disabled="true"] { color: var(--ds-color-fg-muted); cursor: not-allowed; }
+@media (pointer: coarse), (max-width: 767px) { .ds-option { height: auto; min-height: 44px; } }

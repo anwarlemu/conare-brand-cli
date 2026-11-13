@@ -68,27 +68,26 @@ export interface TransitionProps { show: boolean, name: string, css?: boolean, d
 
 /** Vue's <Transition> around one element: it enters when `show` turns true and leaves before it unmounts. */
 export function Transition({ show, name, css = true, duration, appear, children }: TransitionProps) {
-  const [mounted, setMounted] = useState(show)
+  // Whether the element is in the page: from the render where `show` turns true until its leave has ended.
+  const [present, setPresent] = useState(show)
   const el = useRef<HTMLElement | null>(null)
-  const first = useRef(true)
+  const was = useRef<boolean | null>(null)
   const last = useRef<ReactNode>(children)
   if (show) last.current = children
+  if (show && !present) setPresent(true)
   useLayoutEffect(() => {
-    if (show && !mounted) setMounted(true)
-  }, [show, mounted])
-  useLayoutEffect(() => {
+    const before = was.current
+    was.current = show
     const node = el.current
-    const initial = first.current
-    first.current = false
-    if (!node || !mounted) return
+    if (before === show) return
     if (show) {
-      if (css && (!initial || appear)) void runTransition(node, name, 'enter', duration)
+      if (node && css && (before !== null || appear)) void runTransition(node, name, 'enter', duration)
     }
-    else if (css) void runTransition(node, name, 'leave', duration).then(() => setMounted(false))
-    else setMounted(false)
-  }, [show, mounted]) // eslint-disable-line react-hooks/exhaustive-deps
+    else if (node && css && before) void runTransition(node, name, 'leave', duration).then(() => { if (!was.current) setPresent(false) })
+    else setPresent(false)
+  }, [show]) // eslint-disable-line react-hooks/exhaustive-deps
   const child = (show ? children : last.current) as Child
-  if (!mounted || !isValidElement(child)) return null
+  if (!(show || present) || !isValidElement(child)) return null
   return cloneElement(child, { ref: mergeRefs(child.props.ref, (n: HTMLElement | null) => { el.current = n }) })
 }
 
