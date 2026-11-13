@@ -1,0 +1,20 @@
+<!-- The fix for a failure, as a namespace's row has it, and in the failure's own red as Home's banner has it: hover
+     runs its squares across; a press signs in, counts the changes as they come back, and ends on the check. Here each
+     comes back to the start after a few seconds. -->
+<div class="grid items-center gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8">
+  <p class="type-meta leading-7 text-fg-muted">In a row</p>
+  <div><conare-fix-button state="broken" app="Acme CRM" count="0"></conare-fix-button></div>
+  <p class="mt-4 type-meta leading-7 text-fg-muted md:mt-0">Red, on a calm page</p>
+  <div><conare-fix-button state="broken" app="Acme CRM" count="0" tone="red"></conare-fix-button></div>
+</div>
+<script type="module">
+  // The app moves each button along: signing, then catching with the count, then done; back to the start after 6s.
+  for (const button of document.querySelectorAll('conare-fix-button')) {
+    button.addEventListener('press', () => {
+      button.state = 'signing'
+      setTimeout(() => { button.state = 'catching'; button.count = 1240 }, 1000)
+      setTimeout(() => { button.state = 'done' }, 2800)
+      setTimeout(() => { button.state = 'broken'; button.count = 0 }, 6000)
+    })
+  }
+</script>
