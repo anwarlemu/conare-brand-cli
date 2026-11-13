@@ -43,7 +43,7 @@ function send() {
       </Field>
       <Checkbox v-model="values.readOnly" label="Read only" hint="It can search but not add or delete documents." />
       <template #actions>
-        <Button type="reset" variant="ghost" @click="reset">Clear</Button>
+        <Button variant="ghost" @click="reset">Clear</Button>
         <PixelButton type="submit" :disabled="sending">{{ sending ? 'Creating' : 'Create key' }}</PixelButton>
       </template>
     </Form>
