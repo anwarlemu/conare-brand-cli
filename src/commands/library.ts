@@ -5,6 +5,7 @@ import { brand, cli, registryHost } from '../lib/brand.js';
 import { normalizeName, suggest } from '../lib/names.js';
 import { type Flavor, type Project, readProject, stackLabel, unsupported } from '../library/project.js';
 import { type IndexEntry, type RegistryItem, flavorsOf, readIndex, readItem, requiresOf } from '../library/registry.js';
+import { exampleCss } from '../library/example-css.js';
 import { aliasOf, appFlavor, elementsDir, localContent, placedFiles, reactPath, scriptLines, tagModules } from '../library/flavors.js';
 import { readState } from '../lib/state.js';
 
@@ -251,7 +252,13 @@ export async function view(root: string, names: string[], opts: { framework?: st
 			const api = givenApi(f.api, src?.path ?? '', f.tag) ?? (src ? [elementApiOf(src.path, src.content, f.tag)] : []);
 			const url = project ? elementsDir(project).url : `${brand().assetBase}/elements`;
 			const loads = project ? scriptLines(project, [item]) : tagModules(item).map((m) => `<script type="module" src="${url}/${m.replace(/^\/?elements\//, '')}"></script>`);
-			out.push({ ...base, flavor: shown, install, tag: f.tag, imports: [...loads, `<${f.tag}>...</${f.tag}>`], nuxtNames: [], packages: [], api, examples: f.examples ?? [], files: f.files });
+			// On a page without Tailwind, the examples' layout classes would do nothing: each comes with the CSS they need.
+			const plain = !!project && !project.tailwind;
+			const examples = await Promise.all((f.examples ?? []).map(async (e) => {
+				const css = plain ? await exampleCss(e.content) : '';
+				return css ? { ...e, content: `${e.content.trimEnd()}\n<!-- The layout classes above are Tailwind's, which this app does not have: this is the CSS they need (brand tokens only; your own styles win over it). -->\n<style>\n${css}\n</style>\n` } : e;
+			}));
+			out.push({ ...base, flavor: shown, install, tag: f.tag, imports: [...loads, `<${f.tag}>...</${f.tag}>`], nuxtNames: [], packages: [], api, examples, files: f.files });
 			continue;
 		}
 		const components = item.files.filter((f) => f.path.startsWith('components/') && f.path.endsWith('.vue'));

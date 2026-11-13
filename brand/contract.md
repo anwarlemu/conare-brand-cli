@@ -3,8 +3,11 @@
 - Follow the user's brief. When only restyling, preserve existing content, links, order and behavior.
 - Find components with `{{cli}} search <words>` or `{{cli}} list --json` and add them with `{{cli}} add <names...>`
   (`--dry-run` first). It adds the app's flavor: Vue in Vue and Nuxt, React in React apps, web components everywhere
-  else (`--framework vue|react|elements` to choose). Read `{{cli}} view <name> --json` for props, events, slots and
-  examples; do not guess them.
+  else and in apps without Tailwind (`--framework vue|react|elements` to choose). Read `{{cli}} view <name> --json` for
+  props, events, slots and examples in that flavor (`--framework` for another); do not guess them. The flavors differ:
+  React takes `value`/`onValueChange` for v-model and props or children for slots; web components take properties for
+  lists, fire DOM events and name `title` as `heading`. `.ds/agent-guide.md` has the table.
+{{appNote}}
 - To restyle existing screens, run `{{cli}} apply` with what the user named (`apply button card`, `apply /settings`,
   `apply <page file>`), `--dry-run --json` first. It changes style values only, in any file type; `.ds/state.json`
   records the scope and `{{cli}} check` checks it. Only a whole-app apply styles every page; after a selection or a

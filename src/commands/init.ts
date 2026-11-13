@@ -2,6 +2,7 @@ import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync
 import { dirname, join, posix, relative } from 'node:path';
 import { brand, elementPrefix, packageRoot, registryHost } from '../lib/brand.js';
 import { readProject, stackLabel, unsupported } from '../library/project.js';
+import { appFlavor } from '../library/flavors.js';
 import type { Project } from '../library/project.js';
 import { readState } from '../lib/state.js';
 import { scopeTheme, tailwindDefaults, themeDeclarations } from '../install/theme.js';
@@ -17,7 +18,8 @@ export type InitResult = { project: Project; writes: string[]; warnings: string[
 const START = '<!-- ds:contract:start -->';
 const END = '<!-- ds:contract:end -->';
 
-const fill = (text: string) => text.replaceAll('{{brand}}', brand().name).replaceAll('{{cli}}', `npx ${brand().bin}`).replaceAll('{{bin}}', brand().bin).replaceAll('{{registryHost}}', registryHost()).replaceAll('{{registry}}', brand().registryUrl).replaceAll('{{source}}', brand().source).replaceAll('{{elementPrefix}}', elementPrefix());
+// An app with no package.json has no installed CLI: its agent runs the package straight from its source with npx.
+const fill = (text: string, project?: Project) => text.replaceAll('{{brand}}', brand().name).replaceAll('{{cli}}', project && !project.node ? `npx -y ${brand().source}` : `npx ${brand().bin}`).replaceAll('{{bin}}', brand().bin).replaceAll('{{registryHost}}', registryHost()).replaceAll('{{registry}}', brand().registryUrl).replaceAll('{{source}}', brand().source).replaceAll('{{elementPrefix}}', elementPrefix());
 
 /** A path from one file's folder to another file, as an import spec (`./<bin>/brand.css`, `../styles/x.css`). */
 const spec = (fromFile: string, to: string) => {
@@ -153,14 +155,27 @@ export async function init(root: string, opts: { dryRun?: boolean; whole?: boole
 	}
 
 	// Agent contract and guide.
-	const guide = fill(readFileSync(join(packageRoot, 'brand', 'agent-guide.md'), 'utf8'));
+	const guide = fill(readFileSync(join(packageRoot, 'brand', 'agent-guide.md'), 'utf8'), project);
 	write('.ds/agent-guide.md', guide);
-	const contract = fill(readFileSync(join(packageRoot, 'brand', 'contract.md'), 'utf8')).trim();
+	const contract = fill(readFileSync(join(packageRoot, 'brand', 'contract.md'), 'utf8'), project).replace('{{appNote}}', appNote(project)).replace(/\n{3,}/g, '\n\n').trim();
 	const agents = read('AGENTS.md');
 	const blockText = `${START}\n${contract}\n${END}`;
 	const nextAgents = agents.includes(START) ? agents.replace(new RegExp(`${START}[\\s\\S]*?${END}`), blockText) : `${agents ? `${agents.trimEnd()}\n\n` : ''}${blockText}\n`;
 	if (nextAgents !== agents) write('AGENTS.md', nextAgents);
 	return { project, writes, warnings, base: whole ? 'whole app' : 'scoped', styling, links };
+}
+
+/** The contract's line about this app: its flavor and what using the library takes here. */
+export function appNote(project: Project): string {
+	const b = brand();
+	const p = elementPrefix();
+	const where = `${stackLabel(project.framework)}`;
+	const flavor = appFlavor(project);
+	if (flavor === 'vue') return `- In this app (${where}): the Vue flavor, in ${project.srcDir === '.' ? '' : `${project.srcDir}/`}components/ (\`import Button from '@/components/ui/Button.vue'\`${project.framework === 'nuxt' ? ', or auto-imported as <UiButton>' : ''}).`;
+	if (flavor === 'react') return `- In this app (${where}): the React flavor, in ${project.srcDir === '.' ? '' : `${project.srcDir}/`}components/ (\`import { Button } from '@/components/ui/Button'\`). ${project.framework === 'next' ? 'Server components can render them; callbacks and render props belong in client components.' : ''}`.trimEnd();
+	const src = project.framework === 'django' ? `{% static '${b.assetBase.replace(/^\//, '')}/elements/<name>.js' %}` : `${project.publicUrl}${b.assetBase}/elements/<name>.js`;
+	const extra = project.framework === 'angular' ? ' Add schemas: [CUSTOM_ELEMENTS_SCHEMA] to each component that uses them.' : project.framework === 'nuxt' || project.framework === 'vite-vue' ? ` Vue needs isCustomElement for the ${p}- prefix (add sets it where it can).` : '';
+	return `- In this app (${where}): the web components (<${p}-button> and the rest). Load each on the pages that use it with <script type="module" src="${src}"> (add prints the lines); lists and objects are properties, events are DOM events.${extra}`;
 }
 
 export const describeProject = (p: Project) => `${stackLabel(p.framework)} app`;
