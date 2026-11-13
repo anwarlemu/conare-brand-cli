@@ -1,9 +1,10 @@
 import { resolve } from 'node:path';
 import { brand, registryHost } from './lib/brand.js';
-import { formatFinding, runCheck } from './check/engine.js';
+import { formatFinding, hookCheck, runCheck } from './check/engine.js';
 import { add } from './commands/add.js';
 import { apply, formatApply, readState } from './commands/apply.js';
-import { init } from './commands/init.js';
+import { describeProject, init } from './commands/init.js';
+import { flavorLabel } from './commands/add.js';
 import { diff, formatInfo, formatView, info, search, view } from './commands/library.js';
 import { findTokens, list } from './commands/small.js';
 
@@ -20,6 +21,7 @@ const HELP = () => {
 		row('apply button card dialog', "Only those kinds, wherever the app uses them (its components and elements)"),
 		row('apply /settings /billing', 'Only those pages (by route), with the components only they use'),
 		row('apply app/pages/settings.vue', 'Pages by file (or a glob in quotes); an app component by name (PrimaryButton)'),
+		more('any stack: Vue, React, Svelte, Astro, Angular, Solid, HTML, ERB, Blade, Django, PHP, Liquid, Twig...'),
 		row('apply --components button,card --pages /settings', ''),
 		more('--with-shared  include layouts and components other pages share'),
 		more('--dry-run [--json]  list every file it would touch and why, write nothing'),
@@ -27,7 +29,8 @@ const HELP = () => {
 		'',
 		'Use the library:',
 		row('add <item...>', 'Copy items (Button, alert-dialog, badge...) and what they need into the app'),
-		more('--dry-run   --overwrite (replace files that differ)   --no-install (skip packages)'),
+		more('in its flavor: Vue (Vue, Nuxt), React (Next, Vite, React Router), web components (everything else)'),
+		more('--framework vue|react|elements   --dry-run   --overwrite   --no-install (skip packages)'),
 		row('view <item...> [--source]', 'How to use an item: rules, props, slots, events, examples, source'),
 		row('search <words>', 'Find items by what they do'),
 		row('list', 'Every item, with what it requires'),
@@ -38,13 +41,14 @@ const HELP = () => {
 		row('init', 'The brand stylesheet, theme, fonts and agent contract only'),
 		row('check [paths...] [--fix] [--all]', 'Values off the tokens (the applied scope; --all for every file)'),
 		row('tokens [term...]', 'Find tokens by name or value'),
+		row('hook', "An agent's edit hook: checks the files its payload names (stdin), exit 2 on findings"),
 		'',
 		'Common options: --cwd <dir> (default: the current folder), --json (machine output on stdout).',
 		`Registry: ${registryHost()}/r/index.json`,
 	].join('\n');
 };
 
-const VALUE_FLAGS = new Set(['cwd', 'components', 'pages']);
+const VALUE_FLAGS = new Set(['cwd', 'components', 'pages', 'framework']);
 
 export function parse(argv: string[]) {
 	const flags: Record<string, string | boolean> = {};
@@ -68,15 +72,16 @@ const listFlag = (v: string | boolean | undefined) => (typeof v === 'string' ? v
 const COMMON = ['cwd', 'json', 'help'];
 const FLAGS: Record<string, string[]> = {
 	list: [],
-	add: ['dry-run', 'overwrite', 'install'],
+	add: ['dry-run', 'overwrite', 'install', 'framework'],
 	apply: ['components', 'pages', 'with-shared', 'dry-run', 'redo'],
-	view: ['source', 'full'],
-	show: ['source', 'full'],
+	view: ['source', 'full', 'framework'],
+	show: ['source', 'full', 'framework'],
 	search: [],
 	info: [],
-	diff: [],
+	diff: ['framework'],
 	init: ['dry-run'],
 	check: ['fix', 'all'],
+	hook: [],
 	tokens: [],
 };
 
@@ -97,13 +102,13 @@ async function main() {
 	switch (command) {
 		case 'list': {
 			const items = await list();
-			out({ items }, items.map((i) => `${i.name.padEnd(22)} ${i.group.padEnd(12)} ${i.description}`).join('\n'));
+			out({ items }, items.map((i) => `${i.name.padEnd(22)} ${i.group.padEnd(12)} ${i.flavors.map((f) => (f === 'elements' ? 'wc' : f)).join(',').padEnd(15)} ${i.description}`).join('\n'));
 			return;
 		}
 		case 'add': {
 			if (!args.length) throw new Error(`Name at least one item: ${brand().bin} add button (\`${brand().bin} search <words>\` finds one)`);
-			const r = await add(cwd, args, { dryRun: flags['dry-run'] === true, overwrite: flags.overwrite === true, install: flags.install !== false });
-			out(r, [...r.notes.map((n) => `note: ${n}`), `${flags['dry-run'] ? 'Would add' : 'Added'} ${r.items.join(', ')}`, ...r.written.map((w) => `  + ${w}`), ...(r.packages.length ? [`Packages: ${r.packages.join(', ')}${r.installed ? ' (installed)' : ''}`] : []), ...r.warnings.map((w) => `warning: ${w}`), ...(flags['dry-run'] ? [] : [`How to use: ${brand().bin} view ${r.items[r.items.length - 1]}`])].join('\n'));
+			const r = await add(cwd, args, { dryRun: flags['dry-run'] === true, overwrite: flags.overwrite === true, install: flags.install !== false, framework: typeof flags.framework === 'string' ? flags.framework : undefined });
+			out(r, [...r.notes.map((n) => `note: ${n}`), `${flags['dry-run'] ? 'Would add' : 'Added'} ${r.items.join(', ')} (${flavorLabel(r.flavor)})`, ...r.written.map((w) => `  + ${w}`), ...(r.packages.length ? [`Packages: ${r.packages.join(', ')}${r.installed ? ' (installed)' : ''}`] : []), ...(r.scripts.length ? ['Load each on the pages that use it (once):', ...r.scripts.map((l) => `  ${l}`)] : []), ...r.warnings.map((w) => `warning: ${w}`), ...(flags['dry-run'] ? [] : [`How to use: ${brand().bin} view ${r.items[r.items.length - 1]}`])].join('\n'));
 			return;
 		}
 		case 'apply': {
@@ -121,7 +126,7 @@ async function main() {
 		case 'search': {
 			if (!args.length) throw new Error(`Say what you are looking for: ${brand().bin} search date picker`);
 			const r = await search(args);
-			out({ results: r }, r.length ? r.map((x) => `${x.name.padEnd(22)} ${x.group.padEnd(11)} ${x.description}`).join('\n') : `Nothing matches. \`${brand().bin} list\` shows every item.`);
+			out({ results: r }, r.length ? r.map((x) => `${x.name.padEnd(22)} ${x.group.padEnd(11)} ${x.flavors.map((f) => (f === 'elements' ? 'wc' : f)).join(',').padEnd(15)} ${x.description}`).join('\n') : `Nothing matches. \`${brand().bin} list\` shows every item.`);
 			return;
 		}
 		case 'info': {
@@ -137,8 +142,25 @@ async function main() {
 			return;
 		}
 		case 'init': {
-			const r = init(cwd, { dryRun: flags['dry-run'] === true });
-			out({ framework: r.project.framework, writes: r.writes, warnings: r.warnings }, [`${r.project.framework} app at ${cwd}`, ...r.writes.map((w) => `  + ${w}`), ...r.warnings.map((w) => `warning: ${w}`)].join('\n'));
+			const r = await init(cwd, { dryRun: flags['dry-run'] === true });
+			out({ framework: r.project.framework, flavor: r.project.flavor, styling: r.styling, writes: r.writes, links: r.links, warnings: r.warnings }, [`${describeProject(r.project)} at ${cwd} (${r.styling})`, ...r.writes.map((w) => `  + ${w}`), ...(r.links.length ? [`Linked from ${r.project.layouts.length ? r.project.layouts.join(', ') : 'no layout'}:`, ...r.links.map((l) => `  ${l}`)] : []), ...r.warnings.map((w) => `warning: ${w}`)].join('\n'));
+			return;
+		}
+		case 'hook': {
+			// An agent's edit hook (Claude Code PostToolUse, Codex, Cursor afterFileEdit): the payload on stdin names the
+			// edited files; their findings go back on stderr with exit 2, which the agent reads and fixes.
+			const input = await new Promise<string>((done) => {
+				let data = '';
+				process.stdin.on('data', (c) => (data += c));
+				process.stdin.on('end', () => done(data));
+				if (process.stdin.isTTY) done('');
+			});
+			const r = hookCheck(cwd, input);
+			if (json) console.log(JSON.stringify(r, null, 2));
+			if (r.findings.length) {
+				console.error([`${brand().name} design system: ${r.findings.length} value${r.findings.length === 1 ? '' : 's'} off the brand in ${r.paths.join(', ')}:`, ...r.findings.slice(0, 30).map(formatFinding)].join('\n'));
+				process.exitCode = 2;
+			}
 			return;
 		}
 		case 'check': {

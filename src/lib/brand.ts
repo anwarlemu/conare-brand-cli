@@ -16,6 +16,8 @@ export type Brand = {
 	registryHost?: string;
 	site: string;
 	assetBase: string;
+	/** Web components are named `<elementPrefix>-<item>`. */
+	elementPrefix?: string;
 	fonts: { files: { family: string; weight: number; file: string; role: string }[]; css: string };
 	icons: { name: string; packages: string[]; stroke?: number };
 	type: { caps: boolean; bold: boolean };
@@ -28,6 +30,8 @@ export function brand(): Brand {
 	return cached;
 }
 export const cli = () => brand().bin;
+/** The web components' tag prefix: brand.json's elementPrefix, else the CLI's name without its `-ds`. */
+export const elementPrefix = () => brand().elementPrefix ?? brand().bin.replace(/-ds$/, '');
 
 export type TokenTable = Record<string, { value: string; light: string; dark: string }>;
 let tokenCache: TokenTable | undefined;

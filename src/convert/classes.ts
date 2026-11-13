@@ -89,6 +89,8 @@ export function groupOf(raw: string): Group {
 	// A class for children or for a relation (`[&_svg]:size-4`, `*:rounded`, `has-[>svg]:px-3`, `group-hover:`) is not
 	// the element's own look.
 	if (p.variants.some((v) => /^(\[|\*|has-|in-|group-|peer-|not-)/.test(v))) return 'other';
+	// A pseudo-element's look (a dialog's backdrop, a file button, list markers) is not the element's own either.
+	if (p.variants.some((v) => /^(backdrop|file|marker|selection|first-letter|first-line|before|after)$/.test(v))) return 'other';
 	if (p.variants.includes('disabled')) return 'state';
 	if (p.variants.includes('placeholder')) return 'placeholder';
 	const c = u.match(COLOR_UTIL);
@@ -146,6 +148,8 @@ export const nearestDuration = (ms: number) => durationSteps().reduce((best, s) 
 
 /** One class converted. Returns the replacement (possibly empty, to drop it) or undefined to keep it. */
 export function convertClass(raw: string, ctx: ClassContext, list: Parsed[] = []): string | undefined {
+	// Template code in a class list (a placeholder for `{{ size }}`) is never a class to convert.
+	if (raw.includes('\u0000')) return undefined;
 	const p = parseClass(raw);
 	const neg = p.utility.startsWith('-') ? '-' : '';
 	const u = neg ? p.utility.slice(1) : p.utility;

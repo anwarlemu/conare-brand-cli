@@ -161,21 +161,19 @@ describe('apply', () => {
 	});
 });
 
-describe('unsupported apps fail clearly and write nothing', () => {
-	it('on Tailwind 3', () => {
-		const dir = mkdtempSync(join(tmpdir(), 'conare-tw3-'));
-		write(dir, { 'package.json': JSON.stringify({ dependencies: { vue: '^3.5.0' }, devDependencies: { tailwindcss: '^3.4.0' } }), 'src/style.css': '@tailwind base;\n' });
-		const before = snapshot(dir);
-		for (const cmd of [['apply'], ['init'], ['add', 'button', '--no-install']]) expect(fails(dir, ...cmd)).toContain('Tailwind CSS 3');
-		expect(snapshot(dir)).toEqual(before);
-	});
-	it('in a React app or a folder with no app', () => {
-		const react = mkdtempSync(join(tmpdir(), 'conare-react-'));
-		write(react, { 'package.json': JSON.stringify({ dependencies: { react: '^19.0.0' } }) });
-		expect(fails(react, 'apply')).toContain('React app');
+describe('apps it cannot restyle fail clearly and write nothing', () => {
+	it('in a folder with no app', () => {
 		const empty = mkdtempSync(join(tmpdir(), 'conare-empty-'));
-		expect(fails(empty, 'init')).toContain('no package.json');
+		expect(fails(empty, 'init')).toContain('no app this can restyle');
+		expect(fails(empty, 'apply')).toContain('Nothing was written');
 		expect(readdirSync(empty)).toEqual([]);
+	});
+	it('on Tailwind 2', () => {
+		const dir = mkdtempSync(join(tmpdir(), 'conare-tw2-'));
+		write(dir, { 'package.json': JSON.stringify({ dependencies: { vue: '^3.5.0' }, devDependencies: { tailwindcss: '^2.2.0' } }), 'src/style.css': '@tailwind base;\n' });
+		const before = snapshot(dir);
+		for (const cmd of [['apply'], ['init'], ['add', 'button', '--no-install']]) expect(fails(dir, ...cmd)).toContain('Tailwind CSS 2');
+		expect(snapshot(dir)).toEqual(before);
 	});
 });
 

@@ -2,12 +2,15 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, posix, relative, resolve } from 'node:path';
 import { type Change } from '../convert/classes.js';
 import { elements } from '../convert/color.js';
-import { type FileOptions, StructureChanged, convertCode, convertHtml, convertStylesheet, convertVue } from '../convert/file.js';
+import { StructureChanged } from '../convert/shared.js';
+import type { FileOptions } from '../convert/shared.js';
+import { STYLE_FILE, convertFile, fileType } from '../convert/dispatch.js';
+import { buildStyleIndex } from '../convert/look.js';
 import { kebab, kindNames, kindOfComponent, kinds } from '../convert/kinds.js';
 import { brand, cli } from '../lib/brand.js';
 import { type Project, readProject, unsupported } from '../library/project.js';
-import { readIndex, readItem } from '../library/registry.js';
-import { localContent } from './library.js';
+import { flavorsOf, readIndex, readItem } from '../library/registry.js';
+import { placedFiles } from '../library/flavors.js';
 import { type Graph, buildGraph, closure, routeMatches } from '../project/graph.js';
 import { globToRegex, normalizeName, suggest } from '../lib/names.js';
 import { init } from './init.js';
@@ -16,7 +19,7 @@ import { type Part, type State, readState, statePath } from '../lib/state.js';
 export { readState, statePath };
 export type { Part, State };
 
-// apply: restyles an existing Vue or Nuxt app to the brand, the whole app or a named selection (library kinds, pages by
+// apply: restyles an existing app (any stack) to the brand, the whole app or a named selection (library kinds, pages by
 // route or file). It converts style values by role, gives the named kinds the library's look, installs the theme, and
 // records the scope in .ds/state.json for --redo, a later wider apply and the check.
 
@@ -39,15 +42,13 @@ export type ApplyResult = {
  */
 async function libraryFiles(project: Project): Promise<Set<string>> {
 	const out = new Set<string>();
-	const src = project.srcDir === '.' ? '' : `${project.srcDir}/`;
 	try {
 		for (const entry of await readIndex()) {
-			const present = entry.files.filter((f) => existsSync(join(project.root, `${src}${f}`)));
-			if (!present.length) continue;
-			const item = await readItem(entry.name);
-			for (const f of item.files) {
-				const rel = `${src}${f.path}`;
-				if (present.includes(f.path) && readFileSync(join(project.root, rel), 'utf8') === localContent(project, f.path, f.content)) out.add(rel);
+			for (const flavor of flavorsOf(entry)) {
+				if (flavor === 'elements') continue;
+				if (flavor === 'vue' && !entry.files.some((f) => existsSync(join(project.root, project.srcDir === '.' ? f : `${project.srcDir}/${f}`)))) continue;
+				const item = await readItem(entry.name);
+				for (const p of await placedFiles(project, [item], flavor)) if (existsSync(join(project.root, p.path)) && readFileSync(join(project.root, p.path), 'utf8') === p.content) out.add(p.path);
 			}
 		}
 	} catch {}
@@ -156,7 +157,7 @@ function planPart(project: Project, graph: Graph, part: Part, library: Set<strin
 		for (const f of graph.files) {
 			const ck = componentKindOf(f);
 			if (ck && (k === 'all' || k.has(ck))) add(f, `${ck} component`, false, k);
-			else if (/\.(vue|html)$/.test(f)) add(f, `${[...(k === 'all' ? [] : k)].join(', ')} elements`, false, k);
+			else if (markupFile(project, f)) add(f, `${[...(k === 'all' ? [] : k)].join(', ')} elements`, false, k);
 		}
 		return;
 	}
@@ -165,32 +166,41 @@ function planPart(project: Project, graph: Graph, part: Part, library: Set<strin
 	if (part.withShared && general && css) add(css, 'shared (--with-shared)', true, 'all');
 }
 
+/** A file that holds elements (markup or JSX), where a kind's elements can be. */
+const markupFile = (project: Project, f: string) => {
+	const t = fileType(f, project.framework === 'angular');
+	return !!t && t !== 'css' && (t !== 'script' || /\.(tsx|jsx)$/.test(f));
+};
+
 /** An app component's kind: by its file name, or a shadcn-style folder (components/ui/button/index.ts). */
 export function componentKindOf(file: string): string | undefined {
 	const name = file.split('/').pop()!;
-	if (/^index\.(ts|js)$/.test(name)) {
+	if (/^index\.(ts|js|tsx|jsx)$/.test(name)) {
 		const dir = file.split('/').slice(-2, -1)[0];
 		return dir ? kindOfComponent(dir) : undefined;
 	}
-	return /\.vue$/.test(name) ? kindOfComponent(name) : undefined;
+	// Components: Vue, JSX, Svelte, Astro, Angular, Blade components, ERB and other template partials.
+	if (/\.(vue|tsx|jsx|svelte|astro|component\.ts|component\.html)$/.test(name) || /(^|\/)components\/.*\.blade\.php$/.test(file) || /^_[\w-]+\.(html\.erb|erb|hbs|ejs|liquid|twig|njk|html)$/.test(name) || /(^|\/)(partials|components|includes|_includes)\/[^/]+\.\w+$/.test(file)) return kindOfComponent(name.replace(/^_/, ''));
+	return undefined;
 }
 
 /** A page's own files, and the shared ones (used by other pages or the shell too) apply leaves out unless asked. */
 function pageFiles(graph: Graph, pages: string[], withShared: boolean) {
 	const users = new Map<string, Set<string>>();
 	const roots = [...new Set([...graph.pages.map((p) => p.file), ...graph.shell])];
-	for (const root of roots) for (const f of closure(graph, root)) (users.get(f) ?? users.set(f, new Set()).get(f)!).add(root);
+	const pageSet = new Set(graph.pages.map((p) => p.file));
+	for (const root of roots) for (const f of closure(graph, root, pageSet)) (users.get(f) ?? users.set(f, new Set()).get(f)!).add(root);
 	const files = new Set<string>();
 	const shared = new Set<string>();
 	for (const page of pages) {
-		for (const f of closure(graph, page)) {
+		for (const f of closure(graph, page, pageSet)) {
 			const by = users.get(f) ?? new Set([page]);
 			const own = [...by].every((u) => u === page || pages.includes(u));
 			if (own || withShared) files.add(f);
 			else shared.add(f);
 		}
 	}
-	if (withShared) for (const s of graph.shell) for (const f of closure(graph, s)) files.add(f);
+	if (withShared) for (const s of graph.shell) for (const f of closure(graph, s, pageSet)) files.add(f);
 	else for (const s of graph.shell) shared.add(s);
 	return { files: [...files], shared: [...shared].filter((f) => !files.has(f)) };
 }
@@ -221,19 +231,22 @@ export async function apply(root: string, opts: ApplyOptions): Promise<ApplyResu
 		parts = [{ kinds: kindsList, files, targets: [...opts.targets, ...(opts.components ?? []), ...(opts.pages ?? [])], withShared: opts.withShared || undefined }];
 	}
 	const wholeApp = parts.some((p) => p.whole) || previous?.whole === true;
+	const whole0 = wholeApp;
 	const library = await libraryFiles(project);
 	const plans = new Map<string, FilePlan>();
 	for (const part of parts) planPart(project, graph, part, library, plans);
 
+	// What the app's own stylesheets give its classes: read once, for kinds and variants of elements styled in CSS.
+	const look = buildStyleIndex(graph.files.flatMap((f) => (STYLE_FILE.test(f) ? [readFileSync(join(root, f), 'utf8')] : /\.(vue|svelte|astro|html?|erb|php|hbs|ejs|liquid|twig|njk)$/.test(f) ? styleBlocks(readFileSync(join(root, f), 'utf8')) : [])));
 	const results: ApplyResult['files'] = [];
 	const skipped: ApplyResult['skipped'] = [];
 	for (const plan of plans.values()) {
 		const abs = join(root, plan.file);
 		if (!existsSync(abs)) continue;
 		const before = readFileSync(abs, 'utf8');
-		const fo: FileOptions = { general: plan.general, kinds: plan.kinds, componentKind: plan.componentKind, merge: project.merge, mark: !wholeApp };
+		const fo: FileOptions = { general: plan.general, kinds: plan.kinds, componentKind: plan.componentKind, merge: project.merge && !!project.tailwind, mark: !wholeApp, css: project.tailwind ? 'tailwind' : 'plain', look };
 		try {
-			const r = plan.file.endsWith('.vue') ? convertVue(before, fo) : plan.file.endsWith('.html') ? convertHtml(before, fo) : /\.(css|pcss|scss)$/.test(plan.file) ? convertStylesheet(before, fo) : convertCode(before, fo);
+			const r = convertFile(plan.file, before, fo, project.framework === 'angular');
 			if (r.text === before) continue;
 			results.push({ file: plan.file, reason: plan.reason, changes: r.changes });
 			if (!opts.dryRun) writeFileSync(abs, r.text);
@@ -245,7 +258,11 @@ export async function apply(root: string, opts: ApplyOptions): Promise<ApplyResu
 
 	// The shared setup: stylesheet, theme, fonts, contract.
 	// The base layer comes with the whole app only; a selection gets tokens, theme and fonts, its base scoped.
-	const setup = init(root, { dryRun: opts.dryRun, whole: parts.some((p) => p.whole) || previous?.whole === true });
+	// Pages that hold their own <head> and sit outside the selection are not linked: they stay byte for byte.
+	const everywhere = whole0 || parts.some((p) => !p.files) || previous?.parts?.some((p) => !p.files);
+	const inScope = new Set([...plans.keys(), ...(previous?.checked ?? [])]);
+	const skipLayouts = everywhere ? [] : graph.pages.map((p) => p.file).filter((f) => !inScope.has(f) && !(previous && previous.parts.some((q) => q.files?.includes(f))));
+	const setup = await init(root, { dryRun: opts.dryRun, whole: whole0, skipLayouts });
 	warnings.push(...setup.warnings);
 
 	// Once the whole app is applied it stays applied: a later selection only repeats part of it.
@@ -276,6 +293,8 @@ export async function apply(root: string, opts: ApplyOptions): Promise<ApplyResu
 		state,
 	};
 }
+
+const styleBlocks = (text: string) => [...text.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)].map((m) => m[1]);
 
 export function formatApply(r: ApplyResult): string {
 	const b = brand();

@@ -13,7 +13,7 @@ export const kindNames = () => Object.keys(kinds());
 /** `PrimaryButton`, `primary_button` and `primary-button` all as `primary-button`. */
 export const kebab = (name: string) =>
 	name
-		.replace(/\.(vue|ts|js|tsx|jsx)$/, '')
+		.replace(/\.(component\.(ts|html)|blade\.php|html\.erb|vue|tsx|jsx|ts|js|svelte|astro|html|erb|php|hbs|ejs|liquid|twig|njk|jinja2?)$/, '')
 		.replace(/([a-z0-9])([A-Z])/g, '$1-$2')
 		.replace(/([A-Z])([A-Z][a-z])/g, '$1-$2')
 		.replace(/[_\s]+/g, '-')
@@ -108,11 +108,22 @@ export function kindOfElement(tag: string, attrs: Record<string, string | true>,
 	if (t === 'td') return { kind: 'table', part: 'td' };
 	if (t === 'label') return { kind: 'label' };
 	if (/^h[1-6]$/.test(t)) return { kind: 'typography', part: 'heading' };
+	if (/^(a|router-link|routerlink|nuxt-link|nuxtlink)$/.test(t) && tokens.some((x) => /^(btn|button)$/.test(x))) return { kind: 'button' };
 	if (/^(a|router-link|routerlink|nuxt-link|nuxtlink)$/.test(t)) {
 		if (look.padding && ((look.bg && look.bg.alpha > 0.5) || look.border)) return { kind: 'button' };
 		if ((look.text && look.text.family === 'accent') || tokens.some((x) => /(^|:)underline$/.test(x))) return { kind: 'link' };
 		return undefined;
 	}
+	// Component libraries' own tags and class names: Angular Material, Shoelace, Bootstrap and plain CSS naming.
+	if (/^(mat-card|sl-card|ion-card)$/.test(t)) return { kind: 'card' };
+	if (/^(mat-chip|mat-chip-option|sl-badge|sl-tag|ion-badge|ion-chip)$/.test(t)) return { kind: 'badge' };
+	if (/^(mat-tab-group|sl-tab-group)$/.test(t)) return { kind: 'tabs' };
+	if (/^(sl-button|ion-button)$/.test(t)) return { kind: 'button' };
+	const named = (re: RegExp) => tokens.some((x) => re.test(x));
+	if (/^(a|router-link|routerlink|nuxt-link|nuxtlink)$/.test(t) && named(/^(btn|button)$/)) return { kind: 'button' };
+	if (/^(div|section|article|li|aside)$/.test(t) && named(/^(card|panel|tile)$/)) return { kind: 'card' };
+	if (/^(span|small|div)$/.test(t) && named(/^(badge|tag|chip|pill)$/)) return { kind: 'badge' };
+	if (/^(div|section|p)$/.test(t) && named(/^(alert|callout|notice)$/)) return { kind: 'alert' };
 	if (look.fixedInset && look.bg && look.bg.family === 'neutral' && look.bg.l < 0.3 && look.bg.alpha < 1) return { kind: 'dialog', part: 'backdrop' };
 	if (/^(div|section|article|li|aside|form|fieldset)$/.test(t) && look.padding && (look.shadow || (look.border && look.radius)) && (!look.bg || (look.bg.l > 0.85 && look.bg.family === 'neutral'))) return { kind: 'card' };
 	if (/^(span|small|div|p)$/.test(t) && look.padding && look.radius && (look.bg || look.border) && /^(xs|\[1[01]px\]|\[12px\])$/.test(look.size ?? '') && tokens.some((x) => /^p[xy]?-(0\.5|1|1\.5|2|2\.5|3)$/.test(x))) return { kind: 'badge' };
@@ -142,6 +153,9 @@ function headingType(tag: string, tokens: string[]): string {
 	return 'type-heading-4';
 }
 
+/** A token holding template code (a placeholder for `{{ size }}`, `<%= x %>`, `{expr}`): kept exactly where it is. */
+export const opaque = (t: string) => t.includes('\u0000');
+
 export type RestyleOptions = { tag?: string; key?: string; onDark?: boolean; merge?: boolean; variant?: 'base' | 'variant' | 'both' | 'size'; changes?: Change[]; tokensForVariant?: string[] };
 
 /**
@@ -153,7 +167,7 @@ export function restyle(text: string, hit: Hit, opts: RestyleOptions = {}): stri
 	const tokens = text.split(/\s+/).filter(Boolean);
 	const def = kinds()[hit.kind] as Kind;
 	const anchor = !!opts.tag && !/^(button|input)$/i.test(opts.tag);
-	const keep = tokens.filter((t) => !recipe.replace.includes(groupOf(t) as Group));
+	const keep = tokens.filter((t) => opaque(t) || !recipe.replace.includes(groupOf(t) as Group));
 	let add: string[] = [];
 	const which = opts.variant ?? 'both';
 	if (which === 'size') add.push(...recipe.base.split(/\s+/).filter((t) => t && ['padding', 'height', 'type'].includes(groupOf(t))));
@@ -182,6 +196,45 @@ export function restyle(text: string, hit: Hit, opts: RestyleOptions = {}): stri
 }
 
 export { hasColor };
+
+/** The class a kind (or one of its parts, or one of its variants) takes in an app without Tailwind (kinds.css). */
+export const semanticClass = (kind: string, suffix?: string) => `ds-${kind}${suffix ? `-${suffix}` : ''}`;
+
+/**
+ * A class list given a kind's look in an app without Tailwind: the kind's class from kinds.css (and its variant's),
+ * added beside the app's own classes, which all stay. The variant comes from the app's class names (btn-danger) or
+ * from what the app's stylesheets give those classes (`look`, as Tailwind-like tokens).
+ */
+export function restyleSemantic(text: string, hit: Hit, opts: RestyleOptions & { look?: string[] } = {}): string {
+	const tokens = text.split(/\s+/).filter(Boolean);
+	const def = kinds()[hit.kind] as Kind;
+	const own = (t: string) => t === semanticClass(hit.kind) || t.startsWith(`${semanticClass(hit.kind)}-`) || (hit.part === 'heading' && /^ds-type-/.test(t));
+	// Already given the look (a second run): what it was given stays, so the result does not depend on values the first
+	// run converted.
+	const has = (t: string) => tokens.includes(t);
+	if (hit.part === 'heading' ? tokens.some((t) => /^ds-type-/.test(t)) : hit.part ? has(semanticClass(hit.kind, hit.part)) : has(semanticClass(hit.kind)) && (!def.variants || (opts.variant ?? 'both') === 'base' || Object.keys(def.variants).some((v) => has(semanticClass(hit.kind, v))))) return text;
+	const keep = tokens.filter((t) => !own(t));
+	const add: string[] = [];
+	const which = opts.variant ?? 'both';
+	if (hit.part === 'heading') add.push(`ds-${headingType(opts.tag ?? 'h2', opts.look ?? [])}`);
+	else if (hit.part) add.push(semanticClass(hit.kind, hit.part));
+	else if (which !== 'variant') add.push(semanticClass(hit.kind));
+	if (def.variants && !hit.part && which !== 'base' && which !== 'size') {
+		const named = keep.map((t) => t.toLowerCase().split(/[-_]+/)).flat();
+		let v: string | undefined;
+		for (const [variant, keys] of Object.entries(def.keys ?? {})) if (keys.some((k) => named.includes(k))) v ??= variant;
+		v ??= variantOf(hit.kind, opts.look ?? [], opts.key) ?? def.default;
+		if (v === 'dark' && opts.onDark && def.variants.primary) v = 'primary';
+		if (v && def.variants[v]) add.push(semanticClass(hit.kind, v));
+	}
+	if (hit.kind === 'button' && opts.key && /^icon/.test(opts.key) && def.icon) add.push(semanticClass('button', 'icon'));
+	const out = [...keep, ...add];
+	if (out.join(' ') === tokens.join(' ')) return text;
+	opts.changes?.push({ from: tokens.filter((t) => !out.includes(t)).join(' ') || '(none)', to: `${hit.kind}${hit.part ? ` ${hit.part}` : ''}: ${add.join(' ')}` });
+	const lead = text.match(/^\s*/)?.[0] ?? '';
+	const trail = text.match(/\s*$/)?.[0] ?? '';
+	return `${lead}${out.join(' ')}${trail}`;
+}
 
 /** Does this class list paint a dark fill (a dark band, a dark header)? Its children sit on dark. */
 export function paintsDark(tokens: string[]): boolean | undefined {

@@ -1,13 +1,16 @@
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { type RawFinding, runRules } from './rules.js';
+import { brand } from '../lib/brand.js';
 import { MARKUP, SCRIPT, STYLES, lineOf, loadSource } from './source.js';
 
 export type Finding = { file: string; line: number; column: number; rule: string; message: string; hint: string; snippet: string; fix?: RawFinding['fix']; overridden?: string };
 export type CheckResult = { files: number; findings: Finding[]; overrides: Finding[]; fixed: number; ms: number };
 
-const IGNORE = /(^|\/)(node_modules|\.git|\.nuxt|\.output|\.next|dist|build|coverage|\.vercel|\.data)(\/|$)/;
-export const checkable = (rel: string) => (STYLES.test(rel) || MARKUP.test(rel) || SCRIPT.test(rel)) && !/\.d\.ts$|\.config\.|\.test\.|\.spec\./.test(rel);
+const IGNORE = /(^|\/)(node_modules|\.git|\.nuxt|\.output|\.next|\.svelte-kit|\.astro|\.angular|dist|build|coverage|\.vercel|\.data|\.ds|vendor|storage|tmp|log|\.venv|venv|__pycache__|staticfiles)(\/|$)/;
+/** The brand's own installed files (brand.css, kinds.css, the theme, web component modules) are not the app's to check. */
+const own = (rel: string) => `/${rel.split('\\').join('/')}/`.includes(`/${brand().bin}/`);
+export const checkable = (rel: string) => (STYLES.test(rel) || MARKUP.test(rel) || SCRIPT.test(rel)) && !/\.d\.ts$|\.config\.|\.test\.|\.spec\.|\.min\./.test(rel) && !own(rel);
 
 /** Every checkable file under a folder, relative to it. */
 export function walkFiles(dir: string, base = dir): string[] {
@@ -87,3 +90,25 @@ export function runCheck(root: string, opts: { paths?: string[]; fix?: boolean }
 }
 
 export const formatFinding = (f: Finding) => `${f.file}:${f.line}:${f.column}  ${f.rule}  ${f.message}. ${f.hint}`;
+
+/**
+ * The check for an agent's edit hook: the files the payload names (Claude Code `tool_input.file_path`, Cursor
+ * `file_path` or `files`, Codex `paths`), each checkable and inside the applied scope when one is recorded.
+ */
+export function hookCheck(root: string, payload: string): CheckResult & { paths: string[] } {
+	let data: any = {};
+	try {
+		data = payload.trim() ? JSON.parse(payload) : {};
+	} catch {
+		data = { files: payload.split(/\s+/).filter(Boolean) };
+	}
+	const raw: string[] = [data.tool_input?.file_path, data.tool_input?.path, data.file_path, data.path, ...(data.files ?? []), ...(data.paths ?? []), ...(data.tool_input?.edits ?? []).map((e: any) => e?.file_path)].filter((x): x is string => typeof x === 'string');
+	const rels = [...new Set(raw.map((p) => relative(root, join(root, p.startsWith('/') ? relative(root, p) : p))))].filter((p) => !p.startsWith('..') && checkable(p) && existsSync(join(root, p)));
+	let scoped = rels;
+	try {
+		const state = JSON.parse(readFileSync(join(root, '.ds', 'state.json'), 'utf8')) as { whole: boolean; checked: string[] };
+		if (!state.whole) scoped = rels.filter((p) => state.checked.includes(p));
+	} catch {}
+	const r = scoped.length ? runCheck(root, { paths: scoped }) : { files: 0, findings: [], overrides: [], fixed: 0, ms: 0 };
+	return { ...r, paths: scoped };
+}
