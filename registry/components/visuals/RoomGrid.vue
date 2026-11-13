@@ -58,6 +58,8 @@ const tiles = computed(() => {
   return out
 })
 
+// Tile picks: a seeded source when check-parity defines __dsRandom for comparisons; real pages never do.
+const random = () => ((globalThis as { __dsRandom?: () => number }).__dsRandom ?? Math.random)()
 // A few tiles lit at random from the outer rings (the slabs cover the deeper ones), one swapped every SWAP_MS.
 const LIT = 6
 const SWAP_MS = 600
@@ -70,11 +72,11 @@ let io: IntersectionObserver | undefined
 
 function pickTile() {
   const pool = tiles.value.flatMap((t, i) => (t.k < OUTER && !lit.value.includes(i) ? [i] : []))
-  return pool[Math.floor(Math.random() * pool.length)]!
+  return pool[Math.floor(random() * pool.length)]!
 }
 function swap() {
   const next = [...lit.value]
-  next.splice(Math.floor(Math.random() * next.length), 1, pickTile())
+  next.splice(Math.floor(random() * next.length), 1, pickTile())
   lit.value = next
 }
 function play(on: boolean) {
