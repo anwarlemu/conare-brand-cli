@@ -1,5 +1,5 @@
 <!-- Held rows while the namespaces load: each is the real row from a blank record, so its rules stay and nothing moves
-     when the answer lands. Reload holds them for a second and a half; the rules come in only after 300ms. -->
+     when the answer lands. Reload holds them for three seconds; the rules come in only after 300ms. -->
 <div class="flex flex-col items-start gap-4">
   <conare-skeleton target="tbody > tr" id="held">
     <conare-table framed label="namespaces" class="w-full">
@@ -40,7 +40,7 @@
   const load = () => {
     paint(true)
     clearTimeout(timer)
-    timer = setTimeout(() => paint(false), 1500)
+    timer = setTimeout(() => paint(false), 3000)
   }
   reload.addEventListener('click', load)
   load()
