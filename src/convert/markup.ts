@@ -12,7 +12,7 @@ import { type Edit, type ElementInfo, type FileOptions, type FileResult, Structu
 export type Dialect = 'html' | 'template' | 'svelte' | 'astro' | 'angular';
 type Span = { start: number; end: number };
 type Attr = { name: string; start: number; nameEnd: number; end: number; value?: { start: number; end: number; quote: string; expr: boolean }; codes: Span[] };
-export type Tag = { tag: string; start: number; nameEnd: number; end: number; attrs: Attr[]; depth: number; parent?: Tag; selfClosing: boolean; spread: boolean };
+export type Tag = { tag: string; start: number; nameEnd: number; end: number; attrs: Attr[]; depth: number; parent?: Tag; selfClosing: boolean; spread: boolean; codes: Span[] };
 type Region = { kind: 'style' | 'script' | 'frontmatter' | 'code'; start: number; end: number; open?: string };
 
 const VOID = /^(area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr|!doctype)$/i;
@@ -133,7 +133,7 @@ export function scan(text: string, dialect: Dialect): { tags: Tag[]; regions: Re
 function parseTag(text: string, start: number, dialect: Dialect): Tag | undefined {
 	const name = text.slice(start + 1).match(/^!?[A-Za-z][\w:.-]*/)?.[0];
 	if (!name) return undefined;
-	const tag: Tag = { tag: name, start, nameEnd: start + 1 + name.length, end: 0, attrs: [], depth: 0, selfClosing: false, spread: false };
+	const tag: Tag = { tag: name, start, nameEnd: start + 1 + name.length, end: 0, attrs: [], depth: 0, selfClosing: false, spread: false, codes: [] };
 	let j = tag.nameEnd;
 	while (j < text.length) {
 		while (j < text.length && /\s/.test(text[j])) j++;
@@ -150,6 +150,7 @@ function parseTag(text: string, start: number, dialect: Dialect): Tag | undefine
 		const code = construct(text, j, dialect, true);
 		if (code !== undefined) {
 			tag.spread = true;
+			tag.codes.push({ start: j, end: code });
 			j = code;
 			continue;
 		}
@@ -202,6 +203,7 @@ function parseTag(text: string, start: number, dialect: Dialect): Tag | undefine
 }
 
 const isClassAttr = (name: string) => name === 'class' || name === 'className';
+const isComponentTag = (tag: string, dialect: Dialect) => /^[A-Z]/.test(tag) || tag.includes('.') || (dialect === 'svelte' && tag.startsWith('svelte:')) || (dialect !== 'html' && /^x-[\w.-]+$/.test(tag));
 const isExtraClass = (name: string) => /^[\w-]*(-class|Class)$/.test(name) && !isClassAttr(name);
 /** Attributes whose value is code holding class strings: Astro class:list, Svelte and Astro class={...}, Angular and Vue/Alpine bindings. */
 const isClassBinding = (name: string) => /^(\[class\]|\[ngClass\]|\[className\]|:class|x-bind:class|v-bind:class|class:list)$/.test(name);
@@ -225,7 +227,12 @@ export function convertMarkupInto(text: string, opts: FileOptions, dialect: Dial
 	const sub: Edit[] = [];
 	for (const t of tags) {
 		if (t.tag.startsWith('!')) continue;
-		const el: ElementInfo = { tag: t.tag, isRoot: t.depth === 0, attrs: {}, bindings: [], directives: [], styleBindings: [], extraClasses: [], insert: !t.spread ? { at: t.nameEnd, attr: 'class' } : undefined };
+		// Components (Svelte and Astro <Layout>, Blade <x-card>, Angular <app-card>) take class as a prop: never given one.
+		// Their children count as roots when no element sits above them.
+		const component = isComponentTag(t.tag, dialect);
+		let root = !component;
+		for (let p = t.parent; p && root; p = p.parent) if (!isComponentTag(p.tag, dialect)) root = false;
+		const el: ElementInfo = { tag: t.tag, isRoot: root, attrs: {}, bindings: [], directives: [], styleBindings: [], extraClasses: [], insert: !t.spread && !component ? { at: t.nameEnd, attr: 'class' } : undefined };
 		for (const a of t.attrs) {
 			const v = a.value;
 			const raw = v ? text.slice(v.start, v.end) : undefined;
@@ -250,6 +257,8 @@ export function convertMarkupInto(text: string, opts: FileOptions, dialect: Dial
 		const onDark = t.parent ? (dark.get(t.parent) ?? false) : false;
 		const d = convertElementInfo(text, el, opts, sub, changes, onDark);
 		dark.set(t, d ?? onDark);
+		// Template code in the tag (Blade's $attributes->merge(['class' => '...']), Svelte's {...spread}): its class strings.
+		if (dialect === 'html' || dialect === 'template') for (const c of t.codes) convertScript(text.slice(c.start, c.end), c.start, text, { ...opts, componentKind: t.depth === 0 ? opts.componentKind : undefined }, sub, changes, { classesOnly: true, lits: literals(text.slice(c.start, c.end), c.start) });
 	}
 	for (const r of regions) {
 		const content = text.slice(r.start, r.end);
@@ -273,6 +282,7 @@ export function markupSignature(text: string, dialect: Dialect): string {
 	const { tags, regions } = scan(text, dialect);
 	const spans: { start: number; end: number; text: string }[] = [];
 	for (const t of tags) {
+		if (dialect === 'html' || dialect === 'template') for (const c of t.codes) spans.push({ start: c.start, end: c.end, text: blankLiterals(text.slice(c.start, c.end)) });
 		for (const a of t.attrs) {
 			const v = a.value;
 			const d = directive(a.name);

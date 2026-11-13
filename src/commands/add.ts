@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { brand } from '../lib/brand.js';
 import { type Flavor, type Project, readProject, unsupported } from '../library/project.js';
-import { chooseFlavor, placedFiles, scriptLines } from '../library/flavors.js';
+import { chooseFlavor, flavorProblem, placedFiles, scriptLines } from '../library/flavors.js';
 import { flavorsOf, resolveItems } from '../library/registry.js';
 import { init } from './init.js';
 import { resolveNames } from './library.js';
@@ -19,6 +19,8 @@ export async function add(root: string, names: string[], opts: { dryRun?: boolea
 	const problem = unsupported(project);
 	if (problem) throw new Error(problem);
 	const flavor = chooseFlavor(project, opts.framework);
+	const stop = flavorProblem(project, flavor);
+	if (stop) throw new Error(stop);
 	// Names as typed: Button, alert-dialog, AlertDialog, badge (an alias); every one resolves before anything is written.
 	const resolved = await resolveNames(names);
 	const notes = resolved.filter((r) => r.via).map((r) => r.via!);

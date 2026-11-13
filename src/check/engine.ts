@@ -90,3 +90,25 @@ export function runCheck(root: string, opts: { paths?: string[]; fix?: boolean }
 }
 
 export const formatFinding = (f: Finding) => `${f.file}:${f.line}:${f.column}  ${f.rule}  ${f.message}. ${f.hint}`;
+
+/**
+ * The check for an agent's edit hook: the files the payload names (Claude Code `tool_input.file_path`, Cursor
+ * `file_path` or `files`, Codex `paths`), each checkable and inside the applied scope when one is recorded.
+ */
+export function hookCheck(root: string, payload: string): CheckResult & { paths: string[] } {
+	let data: any = {};
+	try {
+		data = payload.trim() ? JSON.parse(payload) : {};
+	} catch {
+		data = { files: payload.split(/\s+/).filter(Boolean) };
+	}
+	const raw: string[] = [data.tool_input?.file_path, data.tool_input?.path, data.file_path, data.path, ...(data.files ?? []), ...(data.paths ?? []), ...(data.tool_input?.edits ?? []).map((e: any) => e?.file_path)].filter((x): x is string => typeof x === 'string');
+	const rels = [...new Set(raw.map((p) => relative(root, join(root, p.startsWith('/') ? relative(root, p) : p))))].filter((p) => !p.startsWith('..') && checkable(p) && existsSync(join(root, p)));
+	let scoped = rels;
+	try {
+		const state = JSON.parse(readFileSync(join(root, '.ds', 'state.json'), 'utf8')) as { whole: boolean; checked: string[] };
+		if (!state.whole) scoped = rels.filter((p) => state.checked.includes(p));
+	} catch {}
+	const r = scoped.length ? runCheck(root, { paths: scoped }) : { files: 0, findings: [], overrides: [], fixed: 0, ms: 0 };
+	return { ...r, paths: scoped };
+}

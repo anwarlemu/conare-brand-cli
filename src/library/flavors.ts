@@ -18,6 +18,16 @@ export function chooseFlavor(project: Project | undefined, override?: string): F
 	return project ? flavorOf(project.framework) : 'vue';
 }
 
+/**
+ * Why a flavor cannot work in this app, with the fix: the Vue and React components are styled with the theme's
+ * Tailwind utilities, so an app without Tailwind takes the web components (they carry their own styles).
+ */
+export function flavorProblem(project: Project, flavor: Flavor): string | undefined {
+	if (flavor === 'elements' || project.tailwind) return undefined;
+	const name = flavor === 'react' ? 'React' : 'Vue';
+	return `This ${name} app has no Tailwind, and the ${name} components are styled with the theme's Tailwind utilities. Nothing was written. Pass --framework elements for the web components (they carry their own styles and work in ${name}), or install Tailwind 4 and run this again.`;
+}
+
 /** The app's import alias for its source folder (`@/` in Vite, Next and Nuxt; `~/` in React Router), if it has one. */
 export function aliasOf(project: Project): string | undefined {
 	if (project.framework === 'nuxt') return '@/';

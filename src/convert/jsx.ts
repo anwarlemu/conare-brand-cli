@@ -73,6 +73,8 @@ const CLASS_ATTR = /^(class|className)$/;
 const EXTRA_CLASS = /(^|-)class$|Class(Name)?$/;
 
 type Jsx = { el: Node; parent?: Jsx; root: boolean };
+/** A component (Layout, Card.Root, a Fragment), not an element: its class is a prop. */
+const isComponent = (tag: string) => !/^[a-z][\w-]*$/.test(tag);
 
 function jsxElements(ast: Node): Jsx[] {
 	const out: Jsx[] = [];
@@ -86,7 +88,10 @@ function jsxElements(ast: Node): Jsx[] {
 		if (typeof node.type !== 'string') return;
 		let next = owner;
 		if (node.type === 'JSXElement') {
-			const j: Jsx = { el: node, parent: owner, root: !owner };
+			// The roots: elements with no element above them (components above them do not count: a page's <Layout>).
+			let root = true;
+			for (let p = owner; p; p = p.parent) if (!isComponent(nameOf(p.el.openingElement.name))) root = false;
+			const j: Jsx = { el: node, parent: owner, root };
 			out.push(j);
 			byNode.set(node, j);
 			next = j;
@@ -115,7 +120,7 @@ export function convertJsx(text: string, opts: FileOptions, file: string): FileR
 	for (const j of jsxElements(ast)) {
 		const open = j.el.openingElement as Node;
 		const tag = nameOf(open.name);
-		const el: ElementInfo = { tag, isRoot: j.root, attrs: {}, bindings: [], directives: [], styleBindings: [], extraClasses: [], insert: /^[a-z][\w]*$/.test(tag) ? { at: open.name.end, attr: solid ? 'class' : 'className' } : undefined };
+		const el: ElementInfo = { tag, isRoot: j.root && !isComponent(tag), attrs: {}, bindings: [], directives: [], styleBindings: [], extraClasses: [], insert: /^[a-z][\w]*$/.test(tag) ? { at: open.name.end, attr: solid ? 'class' : 'className' } : undefined };
 		for (const a of open.attributes as Node[]) {
 			if (a.type !== 'JSXAttribute') {
 				// A spread ({...props}) may carry a className: a bare element with one gets no second class attribute.

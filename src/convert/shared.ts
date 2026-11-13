@@ -110,7 +110,9 @@ export function convertScript(code: string, base: number, full: string, opts: Fi
 				// A size string (sm: 'px-3 py-1.5 text-sm') takes only the size part of the look.
 				const sizeOnly = (!!key && /^(xs|sm|md|lg|xl|2xl|small|medium|large|icon(-\w+)?)$/i.test(key)) || tokens.every((t) => ['padding', 'height', 'type', 'radius', 'other'].includes(groupOf(t)));
 				const variantKey = !!key && Object.values(kinds()[opts.componentKind]?.keys ?? {}).some((keys) => keys.includes(key.toLowerCase()));
-				next = restyle(next, { kind: opts.componentKind }, { merge: opts.merge, key, variant: hasColor(tokens) ? 'variant' : sizeOnly ? 'size' : variantKey ? 'variant' : 'base', tokensForVariant: tokens, changes });
+				// A string with colors and a shape (padding, height, radius) is a whole look in one place: it takes base and variant.
+				const complete = hasColor(tokens) && !variantKey && tokens.some((t) => ['padding', 'height', 'radius'].includes(groupOf(t)));
+				next = restyle(next, { kind: opts.componentKind }, { merge: opts.merge, key, variant: complete ? 'both' : hasColor(tokens) ? 'variant' : sizeOnly ? 'size' : variantKey ? 'variant' : 'base', tokensForVariant: tokens, changes });
 			}
 		} else if (opts.general && !so.classesOnly && /^\s*(#[0-9a-fA-F]{3,8}|rgba?\([^)]*\)|hsla?\([^)]*\))\s*$/.test(lit.value)) {
 			const c = colorLiteral(lit.value, key);

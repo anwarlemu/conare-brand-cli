@@ -47,7 +47,11 @@ export function convertFile(rel: string, text: string, opts: FileOptions, angula
 		case 'angular-ts':
 			return convertAngularTs(text, opts, rel);
 		case 'script':
-			if (!parseScript(text, rel)) return convertCode(text, opts, rel);
+			// JSX that does not parse is left alone (a scan could not tell markup from strings); plain scripts are scanned.
+			if (!parseScript(text, rel)) {
+				if (/\.(tsx|jsx)$/.test(rel)) throw new Error('it does not parse');
+				return convertCode(text, opts, rel);
+			}
 			return convertJsx(text, opts, rel);
 		default:
 			return { text, changes: [] };
