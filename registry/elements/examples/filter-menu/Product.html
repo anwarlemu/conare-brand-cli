@@ -1,0 +1,10 @@
+<!-- The menu, opened as the frame loads; pick a filter and the button counts it. Sample apps and types. -->
+<div class="flex h-110 items-start gap-3">
+  <conare-filter-menu id="filters" value='{ "app": "", "type": "", "days": 0 }' groups='[{ "key": "app", "label": "App", "options": [{ "value": "Slack", "label": "Slack" }, { "value": "Notion", "label": "Notion" }, { "value": "Gmail", "label": "Gmail" }, { "value": "HubSpot", "label": "HubSpot" }] }, { "key": "type", "label": "Type", "options": [{ "value": "PDF", "label": "PDF" }, { "value": "Word", "label": "Word" }, { "value": "Email", "label": "Email" }, { "value": "Message", "label": "Message" }, { "value": "Page", "label": "Page" }, { "value": "Code", "label": "Code" }, { "value": "Issue", "label": "Issue" }, { "value": "Record", "label": "Record" }, { "value": "Transcript", "label": "Transcript" }] }, { "key": "days", "label": "Date", "options": [{ "value": 7, "label": "Past week" }, { "value": 30, "label": "Past month" }, { "value": 365, "label": "Past year" }] }]'></conare-filter-menu>
+</div>
+<script type="module">
+  await customElements.whenDefined('conare-filter-menu')
+  const filters = document.getElementById('filters')
+  await filters.updateComplete
+  setTimeout(() => filters.shadowRoot.querySelector('button').click(), 300)
+</script>
