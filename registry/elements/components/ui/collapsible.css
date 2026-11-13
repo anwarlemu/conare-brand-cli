@@ -1,0 +1,13 @@
+/* Collapsible.vue's <style>, as it is. */
+.ds-collapsible-region { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--ds-duration-slide) var(--ds-easing-out); }
+.ds-collapsible[data-open] > .ds-collapsible-region { grid-template-rows: 1fr; transition-duration: var(--ds-duration-collapse); }
+.ds-collapsible-region > div { min-height: 0; overflow: hidden; }
+.ds-collapsible-content { opacity: 0; filter: blur(2px); transform: translateY(-6px); transition: opacity var(--ds-duration-micro) var(--ds-easing-standard), filter var(--ds-duration-micro) var(--ds-easing-standard), transform var(--ds-duration-slide) var(--ds-easing-out); }
+.ds-collapsible[data-open] > .ds-collapsible-region .ds-collapsible-content { opacity: 1; filter: none; transform: none; transition-delay: 40ms; transition-duration: var(--ds-duration-settle), var(--ds-duration-settle), var(--ds-duration-collapse); }
+.ds-collapsible-chev { transition: rotate var(--ds-duration-micro) var(--ds-easing-out); }
+.ds-collapsible[data-open] > button .ds-collapsible-chev { rotate: 180deg; transition-duration: var(--ds-duration-slide); }
+.ds-collapsible[data-instant] :is(.ds-collapsible-region, .ds-collapsible-content, .ds-collapsible-chev) { transition: none; }
+@media (prefers-reduced-motion: reduce) {
+  .ds-collapsible-region, .ds-collapsible-chev { transition: none; }
+  .ds-collapsible-content, .ds-collapsible[data-open] > .ds-collapsible-region .ds-collapsible-content { filter: none; transform: none; }
+}

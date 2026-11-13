@@ -1,0 +1,24 @@
+<!-- A new source's form with its advanced settings folded away: open them and the form below moves down to make room. -->
+<form class="flex max-w-100 flex-col gap-4" id="new-source">
+  <conare-field label="Name">
+    <conare-input value="Acme drive"></conare-input>
+  </conare-field>
+  <div class="border-y border-edge">
+    <conare-collapsible>
+      <span slot="trigger" class="contents">Advanced settings</span>
+      <div class="flex flex-col gap-4 pt-1 pb-4">
+        <conare-field label="Sync every" hint="In minutes, 15 at least.">
+          <conare-input value="60" inputmode="numeric"></conare-input>
+        </conare-field>
+        <div class="flex items-center justify-between gap-4">
+          <span class="type-meta text-fg-soft">Read text in scanned pages</span>
+          <conare-switch checked label="read text in scanned pages"></conare-switch>
+        </div>
+      </div>
+    </conare-collapsible>
+  </div>
+  <p class="type-meta text-fg-muted">Documents start syncing as soon as you connect.</p>
+</form>
+<script type="module">
+  document.getElementById('new-source').addEventListener('submit', (event) => event.preventDefault())
+</script>
