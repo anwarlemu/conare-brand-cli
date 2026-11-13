@@ -42,7 +42,9 @@ export async function copyText(text: string) {
 }
 
 function copyByCommand(text: string) {
-	const back = document.activeElement as HTMLElement | null
+	// The focused element inside shadow roots, not the host, so focus goes back to the button that copied.
+	let back = document.activeElement as HTMLElement | null
+	while (back?.shadowRoot?.activeElement) back = back.shadowRoot.activeElement as HTMLElement
 	const field = document.createElement('textarea')
 	field.value = text
 	field.setAttribute('readonly', '')

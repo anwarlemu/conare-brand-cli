@@ -30,6 +30,10 @@ export class Input extends DsFormElement {
 		disabled: { type: Boolean, reflect: true },
 		readonly: { type: Boolean },
 		required: { type: Boolean },
+		maxlength: { type: Number },
+		minlength: { type: Number },
+		pattern: {},
+		inputmode: {},
 		invalid: { type: Boolean, reflect: true },
 		label: { attribute: 'aria-label' },
 		description: { attribute: 'aria-description' },
@@ -43,6 +47,11 @@ export class Input extends DsFormElement {
 	disabled = false
 	readonly = false
 	required = false
+	/** Passed to the inner input, as Vue's attribute fallthrough does. */
+	maxlength?: number
+	minlength?: number
+	pattern?: string
+	inputmode?: string
 	/** A red border (with the message under it in a field). */
 	invalid = false
 	/** The name for assistive tech, passed to the inner input. */
@@ -73,7 +82,7 @@ export class Input extends DsFormElement {
 
 	render() {
 		const icon = this.hasSlot('icon')
-		const input = (classes: string, ds?: string) => html`<input data-ds=${ifDefined(ds)} .value=${live(this.value)} type=${this.type} name=${ifDefined(this.name)} placeholder=${ifDefined(this.placeholder)} autocomplete=${ifDefined(this.autocomplete as never)} ?disabled=${this.inactive} ?readonly=${this.readonly} ?required=${this.required} aria-invalid=${ifDefined(this.invalid ? 'true' : undefined)} aria-label=${ifDefined(this.label)} aria-description=${ifDefined(this.description)} class=${classes} @input=${this.onInput} @change=${this.onChange} @keydown=${this.onKeyDown}>`
+		const input = (classes: string, ds?: string) => html`<input data-ds=${ifDefined(ds)} .value=${live(this.value)} type=${this.type} name=${ifDefined(this.name)} placeholder=${ifDefined(this.placeholder)} autocomplete=${ifDefined(this.autocomplete as never)} ?disabled=${this.inactive} ?readonly=${this.readonly} ?required=${this.required} maxlength=${ifDefined(this.maxlength)} minlength=${ifDefined(this.minlength)} pattern=${ifDefined(this.pattern)} inputmode=${ifDefined(this.inputmode as never)} aria-invalid=${ifDefined(this.invalid ? 'true' : undefined)} aria-label=${ifDefined(this.label)} aria-description=${ifDefined(this.description)} class=${classes} @input=${this.onInput} @change=${this.onChange} @keydown=${this.onKeyDown}>`
 		if (icon) {
 			return html`<span data-ds="input" class="relative block w-full"><span class="pointer-events-none absolute top-1/2 left-2.5 flex -translate-y-1/2 text-fg-muted" aria-hidden="true"><slot name="icon"></slot></span>${input('h-control-sm w-full border border-edge-strong bg-surface pr-2.5 pl-7 text-meta leading-5 text-fg outline-none transition-[border-color] duration-120 ease-standard placeholder:text-fg-muted focus:border-edge-focus aria-invalid:border-action-danger disabled:cursor-not-allowed disabled:text-fg-muted max-md:h-control-touch max-md:text-input pointer-coarse:h-control-touch pointer-coarse:text-input')}</span>`
 		}
