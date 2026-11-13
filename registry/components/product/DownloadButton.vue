@@ -8,7 +8,8 @@ import { useDownloadState } from '@/composables/useDocumentDownload'
 // pixels come in on hover, and it says Downloaded once it has, since the browser's own bar can sit out of sight. The
 // words cross in one cell (.v2-swap): Download leaves up, Downloaded comes up with its check drawing, so the width
 // holds. Its state is the document's in useDocumentDownload(), unless `done` says.
-const props = defineProps<{ id: string, label?: string, done?: boolean }>()
+// `done` left out stays undefined (Vue would cast a missing boolean to false), so the shared state decides.
+const props = withDefaults(defineProps<{ id: string, label?: string, done?: boolean }>(), { done: undefined })
 defineEmits<{ press: [] }>()
 const shared = useDownloadState()
 const isDone = computed(() => props.done ?? shared.value[props.id] === 'done')

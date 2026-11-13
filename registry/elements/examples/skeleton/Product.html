@@ -1,0 +1,47 @@
+<!-- Held rows while the namespaces load: each is the real row from a blank record, so its rules stay and nothing moves
+     when the answer lands. Reload holds them for a second and a half; the rules come in only after 300ms. -->
+<div class="flex flex-col items-start gap-4">
+  <conare-skeleton target="tbody > tr" id="held">
+    <conare-table framed label="namespaces" class="w-full">
+      <table>
+        <thead><tr><th>Namespace</th><th class="text-right">Documents</th><th>Last query</th></tr></thead>
+        <tbody>
+          <tr><td class="type-code-sm"></td><td class="text-right tabular-nums"></td><td class="type-meta whitespace-nowrap text-fg-muted"></td></tr>
+          <tr><td class="type-code-sm"></td><td class="text-right tabular-nums"></td><td class="type-meta whitespace-nowrap text-fg-muted"></td></tr>
+          <tr><td class="type-code-sm"></td><td class="text-right tabular-nums"></td><td class="type-meta whitespace-nowrap text-fg-muted"></td></tr>
+        </tbody>
+      </table>
+    </conare-table>
+  </conare-skeleton>
+  <conare-button id="reload">Reload</conare-button>
+</div>
+<script type="module">
+  // While held, each row is drawn from the blank record; once loaded, from its own.
+  const BLANK = { name: 'namespace', documents: 0, queried: 'never' }
+  const rows = [
+    { name: 'contracts', documents: 412830, queried: '2 min ago' },
+    { name: 'slack', documents: 96410, queried: '1 h ago' },
+    { name: 'crm', documents: 52660, queried: 'yesterday' },
+  ]
+  const skeleton = document.getElementById('held')
+  const reload = document.getElementById('reload')
+  const paint = (held) => {
+    skeleton.held = held
+    reload.disabled = held
+    reload.updateComplete?.then(() => reload.requestUpdate())
+    skeleton.querySelectorAll('tbody > tr').forEach((tr, i) => {
+      const r = held ? BLANK : rows[i]
+      tr.children[0].textContent = r.name
+      tr.children[1].textContent = r.documents.toLocaleString('en-US')
+      tr.children[2].textContent = r.queried
+    })
+  }
+  let timer
+  const load = () => {
+    paint(true)
+    clearTimeout(timer)
+    timer = setTimeout(() => paint(false), 1500)
+  }
+  reload.addEventListener('click', load)
+  load()
+</script>

@@ -1,0 +1,2 @@
+/* The host is the nav's box (Pagination.vue's root), so a class on <conare-pagination> (self-end) lands on it. */
+:host { @apply flex items-center gap-3; }

@@ -1,0 +1,38 @@
+<!-- As Home shows it: in a card, without a close button. Nothing connects or uploads here: the sample plays the first
+     API write once the prompt is copied, as the product would watch for it. -->
+<div class="max-w-190 border border-edge p-4">
+  <conare-add-data namespace="api-documents"></conare-add-data>
+  <conare-toaster></conare-toaster>
+</div>
+<script type="module">
+  const add = document.querySelector('conare-add-data')
+  const toaster = document.querySelector('conare-toaster')
+  add.apps = ['Google Drive', 'Slack', 'Notion', 'Gmail', 'HubSpot', 'Confluence', 'Dropbox', 'GitHub'].map((name) => ({ type: name.toLowerCase().replace(/\s/g, '-'), name }))
+  add.prompt = 'Send my documents to Conare. Write them in batches of up to 100 to POST https://api.conare.ai/v1/namespaces/api-documents/documents with the header "Authorization: Bearer $CONARE_API_KEY". Each document needs an id and its text. The first write creates the namespace api-documents. Tell me how many landed.'
+  add.code = `curl https://api.conare.ai/v1/namespaces/api-documents/documents \\
+  -H "Authorization: Bearer $CONARE_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"documents": [{"id": "handbook", "text": "The text of your document."}]}'`
+  add.addEventListener('copied', () => {
+    if (add.waiting) return
+    add.waiting = true
+    setTimeout(() => { add.landed = true }, 2400)
+  })
+  add.addEventListener('connect', (e) => {
+    const app = e.detail.app
+    add.connecting = app.type
+    setTimeout(() => {
+      add.connecting = ''
+      toaster.toast(`${app.name}'s sign-in opens here`)
+    }, 900)
+  })
+  add.addEventListener('files', (e) => {
+    const n = e.detail.files.length
+    add.uploading = n
+    setTimeout(() => {
+      add.uploading = 0
+      toaster.toast(`Uploaded ${n === 1 ? '1 file' : `${n} files`}`)
+    }, 1200)
+  })
+  add.addEventListener('open', (e) => toaster.toast('Opens the namespace', e.detail.namespace))
+</script>

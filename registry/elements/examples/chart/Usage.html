@@ -1,0 +1,29 @@
+<!-- The usage page's cards: a meter's total for the month, the week's change and its bars per day, with the grid and
+     the dates. Point at a bar to read it. -->
+<ul class="grid gap-4 md:grid-cols-2" id="cards"></ul>
+<script type="module">
+  // useChart's helpers, as the card needs them: the total, in en-US, and the week's change.
+  const days = Array.from({ length: 30 }, (_, i) => `2026-10-${String(i + 2).padStart(2, '0')}`)
+  const series = (peak, step) => days.map((day, i) => ({ day, value: Math.round(peak * (0.16 + (((i * step) % 23) / 23) ** 2 * 0.84)) }))
+  const totalOf = (points) => points.reduce((a, p) => a + p.value, 0)
+  const weekChange = (points) => {
+    if (points.length < 14) return null
+    const before = totalOf(points.slice(-14, -7))
+    return before ? (totalOf(points.slice(-7)) - before) / before : null
+  }
+  const metrics = [
+    { label: 'Queries', points: series(15000, 7) },
+    { label: 'Documents written', points: series(13000, 11) },
+  ]
+  document.getElementById('cards').innerHTML = metrics.map((m) => `<li class="flex flex-col gap-8 border border-edge bg-surface p-4">
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <p class="type-meta text-fg-muted">${m.label}</p>
+        <p class="text-heading-4 font-medium tabular-nums">${new Intl.NumberFormat('en-US').format(totalOf(m.points))}</p>
+      </div>
+      ${weekChange(m.points) !== null ? `<conare-chart-trend change="${weekChange(m.points)}"></conare-chart-trend>` : ''}
+    </div>
+    <conare-bar-chart label="${m.label} per day" height="120" bare></conare-bar-chart>
+  </li>`).join('')
+  document.querySelectorAll('conare-bar-chart').forEach((chart, i) => { chart.points = metrics[i].points })
+</script>

@@ -1,0 +1,4 @@
+/* The host is the held part (Skeleton.vue's root, as="div"), so a class on <conare-skeleton> lands on it. With
+   `target`, it marks the page's own elements instead (table rows) and lays out nothing itself. */
+:host { display: block; }
+:host([target]) { display: contents; }

@@ -1,0 +1,7 @@
+/* The host is the button (ShowMore.vue's root <button>, with role="button" and the keys a button has), so a class on
+   <conare-show-more> (self-start) lands on it as on Vue's root. Its face is important: the page's reset and the scoped
+   base layer (the type of a data-ds root) outrank :host, and Vue's classes win over them. */
+:host { display: inline-block !important; position: relative !important; margin-left: calc(var(--spacing, 0.25rem) * 1) !important; cursor: pointer; font-size: var(--ds-text-meta) !important; line-height: var(--ds-text-meta-leading) !important; font-weight: var(--ds-font-weight-medium) !important; white-space: nowrap !important; color: var(--ds-color-fg-soft) !important; text-align: center; transition: color var(--ds-duration-micro) var(--ds-easing-standard); }
+:host::after { position: absolute; inset: -12px; content: ""; }
+@media (hover: hover) and (pointer: fine) { :host(:hover) { color: var(--ds-color-fg) !important; } }
+:host(:focus-visible) { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent) !important; outline-offset: var(--ds-border-focus) !important; }
