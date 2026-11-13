@@ -1,0 +1,48 @@
+/* OverviewBand.vue's <style>, as it is. */
+/* Pipeline: four steps in the website's double rule, a small chevron of hairlines between them. */
+.ds-pipeline { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: calc(var(--ds-space-xs) + var(--ds-border-hairline)); border: var(--ds-border-hairline) solid var(--ds-color-edge); outline: var(--ds-border-hairline) solid var(--ds-color-edge); outline-offset: 4px; }
+.ds-pipeline-step { position: relative; display: flex; min-width: 0; flex-direction: column; gap: var(--ds-space-2xs); padding: var(--ds-space-xl); transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-pipeline-step + .ds-pipeline-step { border-left: var(--ds-border-hairline) solid var(--ds-color-edge); }
+.ds-pipeline-step + .ds-pipeline-step::before { position: absolute; top: 50%; left: -4px; width: 7px; height: 7px; border-top: var(--ds-border-hairline) solid var(--ds-color-edge-strong); border-right: var(--ds-border-hairline) solid var(--ds-color-edge-strong); background: var(--ds-color-surface); content: ""; transform: translateY(-50%) rotate(45deg); }
+.ds-pipeline-line { text-wrap: balance; }
+.ds-pipeline-num { overflow: hidden; font-family: var(--ds-font-heading); font-size: var(--ds-text-heading-2); line-height: var(--ds-text-heading-2-leading); font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
+.ds-pipeline-step[data-red]::after { position: absolute; inset: 0 0 auto; height: 2px; background: var(--ds-color-surface-accent); content: ""; }
+.ds-pipeline-step[data-red] .ds-pipeline-line { color: var(--ds-color-fg-accent); }
+/* Questions: one row each, the question 192px wide in muted meta, the answer in ink. */
+.ds-questions > * + * { border-top: var(--ds-border-hairline) solid var(--ds-color-edge); }
+.ds-questionrow { display: flex; align-items: center; gap: var(--ds-space-xl); padding: var(--ds-space-lg) var(--ds-space-xl); transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-questionrow > span { text-wrap: pretty; }
+.ds-questionrow-q { width: 192px; flex-shrink: 0; }
+.ds-questionrow[data-red] .ds-questionrow-a { color: var(--ds-color-fg-accent); }
+@media (hover: hover) and (pointer: fine) { a:is(.ds-pipeline-step, .ds-questionrow):hover { background: var(--ds-color-surface-subtle); } }
+a:is(.ds-pipeline-step, .ds-questionrow):active { background: color-mix(in srgb, var(--ds-color-fg) 8%, var(--ds-color-surface-subtle)); }
+a:is(.ds-pipeline-step, .ds-questionrow):focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }
+/* Live: the website's dark panel in the double rule. */
+.ds-liveband { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--ds-space-2xl); margin: calc(var(--ds-space-xs) + var(--ds-border-hairline)); padding: var(--ds-space-2xl); border: var(--ds-border-hairline) solid var(--ds-color-fg); outline: var(--ds-border-hairline) solid var(--ds-color-edge); outline-offset: 4px; background: var(--ds-color-code); color: var(--ds-color-code-fg); }
+.ds-liveband-side { display: flex; min-width: 0; flex-direction: column; align-items: flex-start; gap: var(--ds-space-xs); }
+.ds-liveband-num { margin: 0; font-family: var(--ds-font-heading); font-size: var(--ds-text-hero); line-height: var(--ds-text-hero-leading); letter-spacing: var(--ds-tracking-display); font-variant-numeric: tabular-nums; }
+.ds-liveband-say { max-width: 280px; margin: 0; color: var(--ds-color-code-muted); font-size: var(--ds-text-body); line-height: var(--ds-text-body-leading); }
+.ds-liveband-link { display: inline-flex; align-items: center; gap: var(--ds-space-sm); margin-top: auto; padding-top: var(--ds-space-lg); color: var(--ds-color-code-muted); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); transition: color var(--ds-duration-micro) var(--ds-easing-standard); }
+@media (hover: hover) and (pointer: fine) { a.ds-liveband-link:hover { color: var(--ds-color-code-fg); } }
+.ds-livelog { display: flex; min-width: 0; min-height: 184px; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+.ds-livelog > li { display: flex; align-items: center; gap: var(--ds-space-lg); padding: var(--ds-space-sm) 0; border-bottom: var(--ds-border-hairline) solid var(--ds-color-neutral-300); font-size: var(--ds-text-meta); line-height: 18px; }
+.ds-livelog-agent, .ds-livelog-ms { flex-shrink: 0; color: var(--ds-color-code-muted); font-variant-numeric: tabular-nums; }
+.ds-livelog-dot { width: 6px; height: 6px; flex-shrink: 0; background: var(--ds-color-code-fg); }
+.ds-livelog-dot:not([data-outcome="strong"]) { background: var(--ds-color-surface-accent); }
+.ds-livelog-enter-active { transition: opacity var(--ds-duration-enter) var(--ds-easing-standard), transform var(--ds-duration-enter) var(--ds-easing-standard); }
+.ds-livelog-enter-from { opacity: 0; transform: translateY(-6px); }
+.ds-livelog-move { transition: transform var(--ds-duration-enter) var(--ds-easing-standard); }
+@media (prefers-reduced-motion: reduce) { .ds-livelog-enter-active, .ds-livelog-move { transition: none; } }
+@media (max-width: 1023px) {
+  .ds-pipeline { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ds-pipeline-step:nth-child(3) { border-left: 0; }
+  .ds-pipeline-step:nth-child(n + 3) { border-top: var(--ds-border-hairline) solid var(--ds-color-edge); }
+  .ds-pipeline-step + .ds-pipeline-step::before { display: none; }
+  .ds-liveband { grid-template-columns: minmax(0, 1fr); padding: var(--ds-space-xl); }
+}
+@media (max-width: 767px) {
+  .ds-questionrow { flex-wrap: wrap; gap: 2px 12px; }
+  .ds-questionrow-q { width: 100%; }
+  .ds-livelog-agent { display: none; }
+  .ds-liveband-link { min-height: 40px; }
+}

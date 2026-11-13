@@ -1,0 +1,32 @@
+<!-- Pipeline: the website's four steps with the team's numbers, so the console teaches what the product does. A broken
+     step turns red where it broke. The numbers count up the first time they show in a session. -->
+<conare-overview-band view="pipeline" steps='[
+    {
+      "name": "Connect",
+      "value": 6,
+      "unit": " sources",
+      "line": "Into 4 namespaces",
+      "href": "#sources"
+    },
+    {
+      "name": "Sync",
+      "value": 2749690,
+      "line": "crm stopped syncing",
+      "href": "#sources",
+      "red": true
+    },
+    {
+      "name": "Retrieve",
+      "value": 312,
+      "unit": " ms",
+      "line": "94.2% strong answers",
+      "href": "#performance"
+    },
+    {
+      "name": "Deliver",
+      "value": 3,
+      "unit": " agents",
+      "line": "1,284 searches today",
+      "href": "#agents"
+    }
+  ]'></conare-overview-band>
