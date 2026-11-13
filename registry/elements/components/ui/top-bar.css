@@ -1,0 +1,4 @@
+/* The host is the bar (TopBar.vue's <header>), so a class on <conare-top-bar> lands on it as a class on <TopBar> does.
+   A page's own reset (Tailwind's preflight: * { padding: 0; border: 0 solid }) beats a host's normal styles, so the
+   padding and the hairline under it are important. */
+:host { @apply sticky top-0 z-10 flex h-bar shrink-0 items-center gap-2 bg-bar text-meta leading-5 backdrop-blur-sm; @apply border-b! border-edge! px-4!; }

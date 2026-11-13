@@ -1,0 +1,4 @@
+/* Breadcrumb.vue's <style>, as it is. */
+.ds-crumb { color: var(--ds-color-fg-muted); transition: color var(--ds-duration-micro) var(--ds-easing-standard); }
+@media (hover: hover) and (pointer: fine) { .ds-crumb:hover { color: var(--ds-color-fg); } }
+.ds-crumb:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: 2px; }

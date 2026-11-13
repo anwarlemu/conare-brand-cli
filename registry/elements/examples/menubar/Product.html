@@ -1,0 +1,36 @@
+<!-- A namespace's tools as a menubar: what to add, what to do with it, how to show its documents. Open one, then point
+     at the next or press Right. -->
+<div class="min-h-72">
+  <conare-menubar label="namespace">
+    <conare-menubar-menu label="Add">
+      <conare-menu-item><i data-lucide="file-plus" data-size="14" data-stroke-width="1.5" class="shrink-0 text-fg-muted" aria-hidden="true"></i>Paste text</conare-menu-item>
+      <conare-menu-item><i data-lucide="upload" data-size="14" data-stroke-width="1.5" class="shrink-0 text-fg-muted" aria-hidden="true"></i>Upload files</conare-menu-item>
+      <conare-menu-item><i data-lucide="layers" data-size="14" data-stroke-width="1.5" class="shrink-0 text-fg-muted" aria-hidden="true"></i>Connect an app</conare-menu-item>
+    </conare-menubar-menu>
+    <conare-menubar-menu label="Namespace">
+      <conare-menu-item><i data-lucide="refresh-cw" data-size="14" data-stroke-width="1.5" class="shrink-0 text-fg-muted" aria-hidden="true"></i>Sync now</conare-menu-item>
+      <conare-menu-item><i data-lucide="copy" data-size="14" data-stroke-width="1.5" class="shrink-0 text-fg-muted" aria-hidden="true"></i>Copy name</conare-menu-item>
+      <conare-menu-item><i data-lucide="download" data-size="14" data-stroke-width="1.5" class="shrink-0 text-fg-muted" aria-hidden="true"></i>Export documents</conare-menu-item>
+      <conare-menu-separator></conare-menu-separator>
+      <conare-menu-item danger><i data-lucide="trash-2" data-size="14" data-stroke-width="1.5" class="shrink-0" aria-hidden="true"></i>Delete namespace</conare-menu-item>
+    </conare-menubar-menu>
+    <conare-menubar-menu label="View" id="view-menu">
+      <conare-menu-label>Sort documents</conare-menu-label>
+      <conare-menu-item data-sort="newest" current><span class="min-w-0 flex-1">Newest first</span><i data-lucide="check" data-size="14" data-stroke-width="1.5" class="shrink-0" aria-label="current"></i></conare-menu-item>
+      <conare-menu-item data-sort="title"><span class="min-w-0 flex-1">Title</span><i data-lucide="check" data-size="14" data-stroke-width="1.5" class="shrink-0" aria-label="current" hidden></i></conare-menu-item>
+      <conare-menu-item data-sort="size"><span class="min-w-0 flex-1">Size</span><i data-lucide="check" data-size="14" data-stroke-width="1.5" class="shrink-0" aria-label="current" hidden></i></conare-menu-item>
+    </conare-menubar-menu>
+  </conare-menubar>
+</div>
+<script type="module">
+  // Sorting: the chosen order becomes current, with its check.
+  const rows = document.querySelectorAll('#view-menu [data-sort]')
+  for (const row of rows) {
+    row.addEventListener('select', () => {
+      for (const other of rows) {
+        other.current = other === row
+        other.querySelector('svg').toggleAttribute('hidden', other !== row)
+      }
+    })
+  }
+</script>

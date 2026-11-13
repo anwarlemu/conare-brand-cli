@@ -1,0 +1,26 @@
+<!-- The console's navigation: a label over each group, a row with its icon and count, a red edge on the page you are
+     on, and the count turning red when something failed. -->
+<conare-sidebar label="console" class="border border-edge" id="console-nav">
+  <conare-sidebar-label>Platform</conare-sidebar-label>
+  <conare-sidebar-link href="#"><i data-lucide="house" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Overview</conare-sidebar-link>
+  <conare-sidebar-link href="#" status="11" active><i data-lucide="layers" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Namespaces</conare-sidebar-link>
+  <conare-sidebar-link href="#" status="1 failed" alert><i data-lucide="network" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Sources</conare-sidebar-link>
+  <conare-sidebar-link href="#"><i data-lucide="square-terminal" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Agents</conare-sidebar-link>
+  <conare-sidebar-link href="#"><i data-lucide="atom" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Custom models</conare-sidebar-link>
+  <conare-sidebar-label>Manage</conare-sidebar-label>
+  <conare-sidebar-link href="#" status="4"><i data-lucide="key-round" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>API keys</conare-sidebar-link>
+  <conare-sidebar-link href="#"><i data-lucide="gauge" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Performance</conare-sidebar-link>
+  <conare-sidebar-link href="#"><i data-lucide="activity" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Usage</conare-sidebar-link>
+  <conare-sidebar-link href="#"><i data-lucide="credit-card" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Billing</conare-sidebar-link>
+  <conare-sidebar-link href="#"><i data-lucide="settings" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Settings</conare-sidebar-link>
+</conare-sidebar>
+<script type="module">
+  // The row you pick becomes the page you are on.
+  const links = document.querySelectorAll('#console-nav conare-sidebar-link')
+  for (const link of links) {
+    link.addEventListener('click', (event) => {
+      event.preventDefault()
+      for (const other of links) other.active = other === link
+    })
+  }
+</script>

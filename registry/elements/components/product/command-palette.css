@@ -1,0 +1,31 @@
+/* CommandPalette.vue's <style>, as it is. */
+/* No transition or animation anywhere: it opens and closes at once. */
+.ds-cmd { position: fixed; inset: 15vh auto auto 50%; display: none; width: min(var(--ds-layout-palette), calc(100vw - 32px)); max-width: none; max-height: none; flex-direction: column; margin: 0; padding: 0; border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface); color: var(--ds-color-fg); font-size: var(--ds-text-ui); line-height: var(--ds-text-ui-leading); overscroll-behavior: contain; transform: translateX(-50%); }
+.ds-cmd[open] { display: flex; }
+.ds-cmd::backdrop { background: var(--ds-color-scrim-palette); }
+.ds-cmd-muted { color: var(--ds-color-fg-muted); }
+.ds-cmd-box { display: flex; height: 44px; flex-shrink: 0; align-items: center; gap: var(--ds-space-md); padding: 0 14px; border-bottom: var(--ds-border-hairline) solid var(--ds-color-edge); }
+.ds-cmd-box input { min-width: 0; flex: 1; background: transparent; color: inherit; font-size: var(--ds-text-body); outline: none; }
+.ds-cmd-box input::placeholder { color: var(--ds-color-fg-muted); }
+/* iOS zooms into a field under 16px. */
+@media (pointer: coarse), (max-width: 767px) { .ds-cmd-box input { font-size: var(--ds-text-input); } }
+.ds-cmd-list { max-height: min(400px, 60vh); overflow-y: auto; overscroll-behavior: contain; padding: var(--ds-space-xs); }
+.ds-cmd-label { display: flex; align-items: center; justify-content: space-between; gap: var(--ds-space-md); padding: 6px 10px 4px 14px; color: var(--ds-color-fg-muted); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); }
+.ds-cmd-row { position: relative; display: flex; height: var(--ds-size-control-md); align-items: center; gap: var(--ds-space-md); padding: 0 10px 0 14px; color: inherit; cursor: pointer; }
+.ds-cmd-row::before { position: absolute; top: 50%; left: 5px; width: 4px; height: 4px; margin-top: -2px; background: var(--ds-color-edge-accent); content: ""; opacity: 0; }
+.ds-cmd-row[data-active] { background: var(--ds-color-surface-subtle); }
+.ds-cmd-row[data-active]::before { opacity: 1; }
+.ds-cmd-row[data-doc] { height: auto; min-height: 44px; padding-top: 6px; padding-bottom: 6px; }
+.ds-cmd-foot { display: flex; align-items: center; gap: var(--ds-space-sm); padding: 8px 12px; border-top: var(--ds-border-hairline) solid var(--ds-color-edge); color: var(--ds-color-fg-muted); font-size: var(--ds-text-caption); line-height: var(--ds-text-caption-leading); }
+.ds-cmd-key { padding: 1px 6px; background: var(--ds-color-surface-subtle); }
+/* The website's dark window (console2.css .v2-cmd[data-skin="1"]). */
+.ds-cmd[data-tone="dark"] { border-color: var(--ds-color-neutral-300); background: var(--ds-color-neutral-100); color: var(--ds-color-off-white); }
+.ds-cmd-bar { display: flex; height: 40px; flex-shrink: 0; align-items: center; gap: var(--ds-space-md); padding: 0 16px; border-bottom: var(--ds-border-hairline) solid var(--ds-color-neutral-300); }
+.ds-cmd-tag { padding: 1px 6px; background: var(--ds-color-neutral-200); color: var(--ds-color-neutral-600); font-size: var(--ds-text-caption); line-height: var(--ds-text-caption-leading); }
+.ds-cmd[data-tone="dark"] :is(.ds-cmd-box, .ds-cmd-foot) { border-color: var(--ds-color-neutral-300); }
+.ds-cmd[data-tone="dark"] :is(.ds-cmd-muted, .ds-cmd-label, .ds-cmd-foot, .ds-cmd-box input::placeholder) { color: var(--ds-color-neutral-500); }
+.ds-cmd[data-tone="dark"] .ds-cmd-row[data-active] { background: var(--ds-color-neutral-200); }
+.ds-cmd[data-tone="dark"] .ds-cmd-key { background: var(--ds-color-neutral-200); color: var(--ds-color-neutral-600); }
+.ds-cmd[data-tone="dark"] .ds-cmd-row img { filter: invert(1); }
+@media (max-width: 767px) { .ds-cmd-foot { display: none; } }
+@media (pointer: coarse), (max-width: 767px) { .ds-cmd-row { height: auto; min-height: 44px; } }

@@ -1,0 +1,122 @@
+import { html, nothing, type PropertyValues } from 'lit'
+import { DsElement, define, tagName } from '@/elements/lib/element'
+import { PopoverController, popoverStyles } from '@/elements/lib/popover'
+import type { Menubar } from '@/elements/components/ui/menubar'
+import styles from 'virtual:tw'
+
+// MenubarMenu.vue as <conare-menubar-menu>: one menu of a <conare-menubar>: its trigger and a menu's panel of rows
+// (<conare-menu-item>, <conare-menu-label>, <conare-menu-separator>) under it, in the top layer.
+
+/**
+ * @summary One menu of a menubar.
+ * @slot - The rows.
+ */
+export class MenubarMenu extends DsElement {
+	static styles = [DsElement.styles, popoverStyles, styles]
+	static properties = { label: {}, width: {} }
+
+	/** The trigger's text and the menu's name. */
+	label = ''
+	width = '224px'
+	private wasOpen = false
+	private pop = new PopoverController(this, {
+		side: 'bottom',
+		align: 'start',
+		gap: 4,
+		anchor: () => this.renderRoot.querySelector<HTMLElement>('button[role="menuitem"]'),
+		panel: () => this.renderRoot.querySelector<HTMLElement>('.ds-pop'),
+	})
+
+	private get bar() {
+		const b = this.closest(tagName('menubar')) as Menubar | null
+		return b && typeof b.setActive === 'function' ? b : null
+	}
+	private rows() {
+		return [...this.querySelectorAll<HTMLElement & { disabled?: boolean }>(tagName('menu-item'))].filter((r) => !r.disabled)
+	}
+	/** Focuses the trigger (the bar's arrows). */
+	focusTrigger() {
+		this.renderRoot.querySelector<HTMLElement>('button[role="menuitem"]')?.focus()
+	}
+	/** Opens the menu, focusing its first or last row, or the panel. */
+	async openMenu(focus: 'first' | 'last' | 'none' = 'first', keyboard = true) {
+		await this.pop.show({ keyboard })
+		await this.updateComplete
+		if (focus === 'none') return this.renderRoot.querySelector<HTMLElement>('.ds-pop')?.focus({ preventScroll: true })
+		const rows = this.rows()
+		;(focus === 'last' ? rows.at(-1) : rows[0])?.focus()
+	}
+
+	private onClick = (event: MouseEvent) => {
+		if (this.pop.open) return this.pop.hide(event.detail === 0, event.detail === 0)
+		void this.openMenu(event.detail === 0 ? 'first' : 'none', event.detail === 0)
+	}
+	private onEnter = () => {
+		const bar = this.bar
+		if (bar?.active && bar.active !== this) void this.openMenu('none', true)
+	}
+	private onTriggerKey = (event: KeyboardEvent) => {
+		if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+			event.preventDefault()
+			this.bar?.move(this, event.key === 'ArrowRight' ? 1 : -1, false)
+		} else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+			event.preventDefault()
+			void this.openMenu(event.key === 'ArrowDown' ? 'first' : 'last')
+		}
+	}
+	// Vue's onMenuRows, after Left and Right, which open the next menu.
+	private onPanelKey = (event: KeyboardEvent) => {
+		if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+			event.preventDefault()
+			this.pop.hide(false, true)
+			this.bar?.move(this, event.key === 'ArrowRight' ? 1 : -1, true)
+			return
+		}
+		const rows = this.rows()
+		const at = rows.findIndex((r) => r.matches(':focus-within'))
+		if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+			event.preventDefault()
+			const step = event.key === 'ArrowDown' ? 1 : -1
+			rows[(at + step + rows.length) % rows.length]?.focus()
+		} else if (event.key === 'Home' || event.key === 'End') {
+			event.preventDefault()
+			;(event.key === 'Home' ? rows[0] : rows.at(-1))?.focus()
+		} else if (event.key === 'Tab') this.pop.hide(false)
+	}
+	// A chosen row closes the menu (a row looks for a <conare-menu> around it, which this is not).
+	private onSelect = (event: Event) => {
+		const row = event.target as HTMLElement & { keepOpen?: boolean }
+		if (row.localName === tagName('menu-item') && !row.keepOpen) this.pop.hide(true)
+	}
+
+	connectedCallback() {
+		super.connectedCallback()
+		this.addEventListener('select', this.onSelect)
+	}
+	disconnectedCallback() {
+		super.disconnectedCallback()
+		this.removeEventListener('select', this.onSelect)
+	}
+	protected updated(changed: PropertyValues<this>) {
+		super.updated(changed)
+		const bar = this.bar
+		if (!bar) return
+		if (this.pop.open !== this.wasOpen) {
+			this.wasOpen = this.pop.open
+			if (this.pop.open) bar.setActive(this)
+			else if (bar.active === this) bar.setActive(null)
+		}
+		if (bar.active !== this && this.pop.open) this.pop.hide(false, true)
+	}
+
+	render() {
+		const bar = this.bar
+		const tabbable = !bar || bar.current() === this
+		const panel = this.pop.rendered
+			? html`<div data-ds="menubar-menu" popover="manual" class="ds-pop flex flex-col p-1" role="menu" aria-label=${this.label} tabindex="-1" data-side=${this.pop.pos.side} ?data-instant=${this.pop.instant} ?data-placed=${this.pop.pos.placed} style=${this.pop.style(`width: ${this.width}`)} @keydown=${this.onPanelKey} @focusout=${this.pop.onFocusOut}><slot></slot></div>`
+			: nothing
+		return html`<button data-ds="menubar-menu" type="button" role="menuitem" aria-haspopup="menu" aria-expanded=${String(this.pop.open)} tabindex=${tabbable ? 0 : -1} class="inline-flex h-control-sm cursor-pointer items-center px-2.5 text-meta leading-5 font-medium text-fg transition-colors duration-120 ease-standard hover:bg-edge/45 aria-expanded:bg-surface focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-focus max-md:h-control-touch max-md:text-ui" @click=${this.onClick} @pointerenter=${this.onEnter} @focus=${() => this.bar?.setFocused(this)} @keydown=${this.onTriggerKey}>${this.label}</button>${panel}`
+	}
+}
+
+define('menubar-menu', MenubarMenu)

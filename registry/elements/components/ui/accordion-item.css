@@ -1,0 +1,15 @@
+/* Vue turns the chevron with the rotate-180 class; here the icon's markup stays the same from one render to the next
+   (so its transition runs) and the open row turns it. */
+button[aria-expanded="true"] > .lucide-chevron-down { @apply rotate-180; }
+/* AccordionItem.vue's <style>, as it is. The console's disclosure (console2.css .v2-collapse): open over 260ms, close in
+   180ms, the words fading and settling 6px down with a 2px blur that clears, so the text never pops. Reduced motion: no
+   height or move, opacity only. */
+.ds-collapse { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--ds-duration-slide) var(--ds-easing-out); }
+.ds-collapse[data-open="true"] { grid-template-rows: 1fr; transition-duration: var(--ds-duration-collapse); }
+.ds-collapse > div { min-height: 0; overflow: hidden; }
+.ds-collapse-body { opacity: 0; filter: blur(2px); transform: translateY(-6px); transition: opacity var(--ds-duration-micro) ease, filter var(--ds-duration-micro) ease, transform var(--ds-duration-slide) var(--ds-easing-out); }
+.ds-collapse[data-open="true"] .ds-collapse-body { opacity: 1; filter: none; transform: none; transition: opacity var(--ds-duration-settle) ease 40ms, filter var(--ds-duration-settle) ease 40ms, transform var(--ds-duration-collapse) var(--ds-easing-out) 40ms; }
+@media (prefers-reduced-motion: reduce) {
+  .ds-collapse, .ds-collapse[data-open="true"] { transition: none; }
+  .ds-collapse-body, .ds-collapse[data-open="true"] .ds-collapse-body { filter: none; transform: none; transition: opacity var(--ds-duration-micro) ease; }
+}
