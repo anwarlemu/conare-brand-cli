@@ -21,16 +21,6 @@ export class CopyText extends DsElement {
 	label = ''
 	private copier = new CopyController(this)
 
-	// Where the clipboard is refused, the copy command's fallback hands focus back to document.activeElement, which is
-	// this element's host, not the button inside it; the button takes focus back itself, as it keeps it in Vue.
-	private async run(event: Event) {
-		event.stopPropagation()
-		const button = this.renderRoot.querySelector('button')
-		const had = (this.renderRoot as ShadowRoot).activeElement === button
-		await this.copier.copy(this.value)
-		if (had && button && (this.renderRoot as ShadowRoot).activeElement !== button) button.focus()
-	}
-
 	render() {
 		const copied = this.copier.copied
 		return html`<span data-ds="copy-text" class="inline-flex max-w-full min-w-0 items-center gap-1">
@@ -39,7 +29,7 @@ export class CopyText extends DsElement {
 				type="button"
 				class="relative inline-flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-fg-muted transition-colors duration-150 hover:bg-surface-sunken hover:text-fg pointer-coarse:after:absolute pointer-coarse:after:-inset-3 pointer-coarse:after:content-[''] max-md:after:absolute max-md:after:-inset-3 max-md:after:content-['']"
 				aria-label=${copied ? `${this.label} copied` : `copy ${this.label}`}
-				@click=${(e: Event) => void this.run(e)}
+				@click=${(e: Event) => { e.stopPropagation(); void this.copier.copy(this.value) }}
 			>${copied ? icon(Check, 'check', { size: 12, strokeWidth: 1.5, attrs: { 'aria-hidden': 'true' } }) : icon(Copy, 'copy', { size: 12, strokeWidth: 1.5, attrs: { 'aria-hidden': 'true' } })}</button>
 		</span>`
 	}

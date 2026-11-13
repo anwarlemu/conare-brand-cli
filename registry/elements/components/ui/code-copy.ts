@@ -23,14 +23,8 @@ export class CodeCopy extends DsElement {
 	light = false
 	private copier = new CopyController(this)
 
-	// Where the clipboard is refused, the copy command's fallback hands focus back to document.activeElement, which is
-	// this element's host, not the button inside it; the button takes focus back itself, as it keeps it in Vue.
 	private async run() {
-		const button = this.renderRoot.querySelector('button')
-		const had = (this.renderRoot as ShadowRoot).activeElement === button
-		const ok = await this.copier.copy(this.text)
-		if (had && button && (this.renderRoot as ShadowRoot).activeElement !== button) button.focus()
-		if (ok) this.emit('copied')
+		if (await this.copier.copy(this.text)) this.emit('copied')
 	}
 
 	// The glyphs' data-on is set on the nodes Lit keeps (their markup never changes), so the swap's transition runs.
