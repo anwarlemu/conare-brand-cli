@@ -4,7 +4,7 @@ import { Button } from '@/react/components/ui/Button'
 import { Skeleton } from '@/react/components/ui/Skeleton'
 import { Table } from '@/react/components/ui/Table'
 // Held rows while the namespaces load: each is the real row from a blank record, so its rules stay and nothing moves
-// when the answer lands. Reload holds them for a second and a half; the rules come in only after 300ms.
+// when the answer lands. Reload holds them for three seconds; the rules come in only after 300ms.
 const BLANK = { name: 'namespace', documents: 0, queried: 'never' }
 const rows = [
   { name: 'contracts', documents: 412830, queried: '2 min ago' },
@@ -18,7 +18,7 @@ export default function Product() {
   function load() {
     setHeld(true)
     clearTimeout(timer.current)
-    timer.current = setTimeout(() => setHeld(false), 1500)
+    timer.current = setTimeout(() => setHeld(false), 3000)
   }
   useEffect(() => {
     load()

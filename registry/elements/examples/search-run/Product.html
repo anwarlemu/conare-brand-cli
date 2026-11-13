@@ -1,0 +1,53 @@
+<!-- The run alone, on a loop: "Searching" over the namespaces while the index flickers, then where the answer was
+     found, each document a red square to point at. In the product it follows the request's real clock. It keeps the
+     taller state's height, so nothing under it moves, and holds still while the pointer or focus is in it. Once the
+     answer is in, Show code opens the request under the footer. -->
+<div id="run-box"><conare-search-run searching></conare-search-run></div>
+<script type="module">
+  const results = [
+    { namespace: 'contracts', id: 'acme-msa-2026', score: 0.94, text: 'Acme may renew for twelve months with 60 days written notice.' },
+    { namespace: 'slack', id: 'legal-thread-1182', score: 0.81, text: 'Legal confirmed that Acme needs EU data residency in the renewal.' },
+    { namespace: 'sales-calls', id: 'acme-oct-review', score: 0.76, text: 'Acme asked what happens to their data at renewal.' },
+    { namespace: 'crm', id: 'acme-renewal-2026', score: 0.71, text: 'Renewal open. Blocker: data processing addendum for the EU region.' },
+  ]
+  const box = document.getElementById('run-box')
+  const run = box.querySelector('conare-search-run')
+  run.namespaces = [
+    { name: 'sec-filings', documents: 2184920 },
+    { name: 'contracts', documents: 412830 },
+    { name: 'slack', documents: 96410 },
+    { name: 'crm', documents: 52660 },
+    { name: 'sales-calls', documents: 2870 },
+  ]
+  run.code = `curl https://api.conare.ai/v1/query \\
+  -H "Authorization: Bearer $CONARE_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"query": "Acme renewal EU data", "top_k": 10}'`
+  // The loop: 600ms searching, 5s found, held while the pointer or focus is in it.
+  let timer
+  let pointed = false
+  let focused = false
+  const wait = () => {
+    clearTimeout(timer)
+    if (!pointed && !focused) timer = setTimeout(next, run.searching ? 600 : 5000)
+  }
+  const next = () => {
+    run.searching = !run.searching
+    run.answer = run.searching ? null : { results, took_ms: 312 }
+    wait()
+  }
+  box.addEventListener('pointerenter', () => { pointed = true; wait() })
+  box.addEventListener('pointerleave', () => { pointed = false; wait() })
+  box.addEventListener('focusin', () => { focused = true; wait() })
+  box.addEventListener('focusout', (e) => { focused = box.contains(e.relatedTarget) || run.shadowRoot.contains(e.relatedTarget); wait() })
+  wait()
+  // The taller state's height: the run draws its box in its shadow root.
+  await customElements.whenDefined('conare-search-run')
+  await run.updateComplete
+  const section = run.shadowRoot.querySelector('section')
+  let tallest = 0
+  new ResizeObserver(() => {
+    tallest = Math.max(tallest, section.getBoundingClientRect().height)
+    box.style.minHeight = `${tallest}px`
+  }).observe(section)
+</script>
