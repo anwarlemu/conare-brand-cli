@@ -1,0 +1,15 @@
+<!-- Pick the day a usage report starts: the month around today, weekends closed, nothing after today. -->
+<div class="flex flex-col items-center gap-3">
+  <conare-calendar id="report-start" label="report start"></conare-calendar>
+  <p id="report-start-day" class="type-meta text-fg-muted" aria-live="polite">No day picked</p>
+</div>
+<script type="module">
+  await customElements.whenDefined('conare-calendar')
+  const calendar = document.getElementById('report-start')
+  calendar.max = new Date()
+  calendar.disabled = (d) => d.getDay() === 0 || d.getDay() === 6
+  calendar.addEventListener('change', () => {
+    const day = calendar.value
+    document.getElementById('report-start-day').textContent = day ? `Starts ${day.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}` : 'No day picked'
+  })
+</script>

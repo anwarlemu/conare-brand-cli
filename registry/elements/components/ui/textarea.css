@@ -1,0 +1,8 @@
+/* Textarea.vue's <style>, as it is. */
+.ds-textarea { display: block; width: 100%; min-height: var(--ds-size-control-md); padding: 6px 12px; border: var(--ds-border-hairline) solid var(--ds-color-edge-strong); background: var(--ds-color-surface); color: var(--ds-color-fg); font-size: var(--ds-text-ui); line-height: var(--ds-text-ui-leading); resize: vertical; transition: border-color var(--ds-duration-enter) var(--ds-easing-standard); }
+.ds-textarea::placeholder { color: var(--ds-color-fg-muted); }
+@media (hover: hover) and (pointer: fine) { .ds-textarea:hover:not(:disabled, :focus) { border-color: var(--ds-color-neutral-500); } }
+.ds-textarea:focus { padding: calc(6px - 1px) calc(12px - 1px); border: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline: none; }
+.ds-textarea[aria-invalid="true"] { border-color: var(--ds-color-action-danger); }
+.ds-textarea:disabled { border-color: var(--ds-color-edge); color: var(--ds-color-fg-muted); cursor: not-allowed; }
+@media (pointer: coarse), (max-width: 767px) { .ds-textarea { font-size: var(--ds-text-input); line-height: var(--ds-text-input-leading); } }

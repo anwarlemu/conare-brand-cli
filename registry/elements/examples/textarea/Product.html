@@ -1,0 +1,23 @@
+<!-- Pasting text into a namespace, with a count under it, and the same field when it is too long. -->
+<div class="flex w-120 max-w-full flex-col gap-6">
+  <conare-field id="text-field" label="Text" hint="0 of 20,000 characters">
+    <conare-textarea placeholder="Refunds are available for 30 days after purchase."></conare-textarea>
+  </conare-field>
+  <conare-field id="summary-field" label="Summary" hint="Shown under the namespace's name.">
+    <conare-textarea rows="3" value="Refunds are available for 30 days after purchase. Refunds are available for 30 days after purchase. Refunds are available for 30 days after purchase. "></conare-textarea>
+  </conare-field>
+</div>
+<script type="module">
+  await customElements.whenDefined('conare-textarea')
+  const textField = document.getElementById('text-field')
+  const text = textField.querySelector('conare-textarea')
+  text.addEventListener('input', () => { textField.hint = `${text.value.length} of 20,000 characters` })
+  const summaryField = document.getElementById('summary-field')
+  const summary = summaryField.querySelector('conare-textarea')
+  const check = () => {
+    const tooLong = summary.value.length > 120
+    summaryField.error = tooLong ? `Keep it under 120 characters (${summary.value.length} now).` : undefined
+  }
+  summary.addEventListener('input', check)
+  check()
+</script>

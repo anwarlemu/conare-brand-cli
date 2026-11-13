@@ -1,0 +1,8 @@
+/* Separator.vue's classes on the host (the Vue root div): across by default, down with orientation="vertical", and the
+   menu's inset. A class on the element wins over these, as a class on <Separator> does. */
+:host { @apply block shrink-0 bg-edge h-px w-full; }
+:host([orientation="vertical"]) { @apply h-auto w-px self-stretch; }
+:host([inset]:not([orientation="vertical"])) { margin: 4px -4px !important; }
+:host([inset][orientation="vertical"]) { margin: -4px 4px !important; }
+/* The inset's margins are !important: the page's preflight (margin: 0) wins over a plain :host rule. Vue's w-auto
+   loses to its w-full in the stylesheet's order, so the rule keeps the full width, as Vue renders it. */

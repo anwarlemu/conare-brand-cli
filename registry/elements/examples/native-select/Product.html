@@ -1,0 +1,13 @@
+<!-- A member's role, a namespace in mono, and the small size in a row of filters. -->
+<div class="flex w-90 max-w-full flex-col gap-4">
+  <conare-field label="Role">
+    <conare-native-select value="member"><option value="admin">Admin</option><option value="member">Member</option><option value="viewer">Viewer</option></conare-native-select>
+  </conare-field>
+  <conare-field label="Namespace">
+    <conare-native-select value="contracts" mono><option>contracts</option><option>slack</option><option>sec-filings</option></conare-native-select>
+  </conare-field>
+  <div class="flex items-center gap-2">
+    <span class="type-meta text-fg-muted">Range</span>
+    <conare-native-select value="7d" small aria-label="range"><option value="24h">Last 24 hours</option><option value="7d">Last 7 days</option><option value="30d">Last 30 days</option></conare-native-select>
+  </div>
+</div>

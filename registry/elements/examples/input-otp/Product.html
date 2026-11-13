@@ -1,0 +1,21 @@
+<!-- The code from the sign-in email: six digits in two threes. Type, paste or take the phone's suggestion; 000000 shows
+     the wrong-code state. -->
+<div class="flex flex-col items-center gap-2">
+  <p id="otp-label" class="type-meta text-fg-soft">Code from the email</p>
+  <conare-input-otp id="otp" label="code from the email" split="3"></conare-input-otp>
+  <p id="otp-status" class="min-h-4 type-meta text-fg-muted" role="status">It expires in 10 minutes.</p>
+</div>
+<script type="module">
+  const otp = document.getElementById('otp')
+  const status = document.getElementById('otp-status')
+  const show = (state) => {
+    otp.invalid = state === 'wrong'
+    status.className = `min-h-4 type-meta ${state === 'wrong' ? 'text-fg-danger' : 'text-fg-muted'}`
+    status.textContent = state === 'checking' ? 'Checking' : state === 'wrong' ? 'That code is not right. Check the latest email.' : state === 'ok' ? 'Signed in.' : 'It expires in 10 minutes.'
+  }
+  otp.addEventListener('input', () => show('idle'))
+  otp.addEventListener('complete', (e) => {
+    show('checking')
+    setTimeout(() => show(e.detail.value === '000000' ? 'wrong' : 'ok'), 600)
+  })
+</script>

@@ -1,0 +1,13 @@
+/* NativeSelect.vue's <style>, with the wrapper (.ds-select, the Vue root) as the host. */
+:host { position: relative; display: inline-flex; width: 100%; align-items: center; }
+:host > select { width: 100%; height: var(--ds-size-control-md); padding: 0 32px 0 12px; border: var(--ds-border-hairline) solid var(--ds-color-edge-strong); background: var(--ds-color-surface); color: var(--ds-color-fg); font-size: var(--ds-text-ui); line-height: var(--ds-text-ui-leading); appearance: none; cursor: pointer; transition: border-color var(--ds-duration-enter) var(--ds-easing-standard); }
+:host > svg { position: absolute; right: 12px; color: var(--ds-color-fg-muted); pointer-events: none; }
+@media (hover: hover) and (pointer: fine) { :host > select:hover:not(:disabled, :focus) { border-color: var(--ds-color-neutral-500); } }
+:host > select:focus { padding: 0 calc(32px - 1px) 0 calc(12px - 1px); border: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline: none; }
+:host > select[aria-invalid="true"] { border-color: var(--ds-color-action-danger); }
+:host > select:disabled { border-color: var(--ds-color-edge); color: var(--ds-color-fg-muted); cursor: not-allowed; }
+:host([small]) { width: auto; }
+:host([small]) > select { height: var(--ds-size-control-sm); padding: 0 28px 0 8px; font-size: var(--ds-text-meta); }
+:host([small]) > select:focus { padding: 0 calc(28px - 1px) 0 calc(8px - 1px); }
+:host([small]) > svg { right: 8px; }
+@media (pointer: coarse), (max-width: 767px) { :host > select, :host([small]) > select { height: var(--ds-size-control-touch); font-size: var(--ds-text-input); } }

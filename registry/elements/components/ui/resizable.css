@@ -1,0 +1,19 @@
+/* The host is the split (Resizable.vue's root div and its classes), so a class on the element lands on it. */
+:host { @apply flex min-h-0 min-w-0 flex-row; }
+:host([direction="vertical"]) { @apply flex-col; }
+:host([data-dragging]) { @apply select-none; }
+/* Resizable.vue's <style>, as it is. */
+.ds-resize-handle { position: relative; flex-shrink: 0; background: var(--ds-color-edge); touch-action: none; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-resize-handle[data-direction="horizontal"] { width: var(--ds-border-hairline); cursor: col-resize; }
+.ds-resize-handle[data-direction="vertical"] { height: var(--ds-border-hairline); cursor: row-resize; }
+/* The reach: 8px either side of the hairline, 20px on touch. */
+.ds-resize-handle::before { position: absolute; content: ""; }
+.ds-resize-handle[data-direction="horizontal"]::before { inset: 0 calc(var(--ds-space-md) * -1); }
+.ds-resize-handle[data-direction="vertical"]::before { inset: calc(var(--ds-space-md) * -1) 0; }
+@media (pointer: coarse) {
+  .ds-resize-handle[data-direction="horizontal"]::before { inset: 0 -20px; }
+  .ds-resize-handle[data-direction="vertical"]::before { inset: -20px 0; }
+}
+.ds-resize-handle[data-dragging], .ds-resize-handle:focus-visible { background: var(--ds-color-edge-focus); }
+.ds-resize-handle:focus-visible { outline: none; }
+@media (hover: hover) and (pointer: fine) { .ds-resize-handle:hover { background: var(--ds-color-edge-focus); } }

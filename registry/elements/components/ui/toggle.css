@@ -1,0 +1,13 @@
+/* Toggle.vue's <style>, with slotted icons as the Vue file's own svg. */
+.ds-toggle { position: relative; display: inline-flex; height: var(--ds-size-control-sm); align-items: center; gap: var(--ds-space-sm); padding: 0 10px 0 16px; border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface); color: var(--ds-color-fg); font-size: var(--ds-text-meta); white-space: nowrap; cursor: pointer; transition: border-color var(--ds-duration-micro) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard), color var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-toggle::before { position: absolute; top: 50%; left: 6px; width: 4px; height: 4px; margin-top: -2px; background: var(--ds-color-edge-accent); content: ""; opacity: 0; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-toggle[aria-pressed="true"] { border-color: var(--ds-color-edge-focus); }
+.ds-toggle[aria-pressed="true"]::before { opacity: 1; }
+@media (hover: hover) and (pointer: fine) {
+  .ds-toggle:hover:not(:disabled) { border-color: var(--ds-color-action-secondary-edge-hover); }
+  .ds-toggle:hover:not(:disabled)::before { opacity: 1; }
+}
+.ds-toggle:active:not(:disabled) { background: var(--ds-color-surface-subtle); }
+.ds-toggle:disabled { color: var(--ds-color-fg-muted); cursor: not-allowed; }
+.ds-toggle svg, ::slotted(svg) { flex-shrink: 0; }
+@media (pointer: coarse), (max-width: 767px) { .ds-toggle { height: auto; min-height: var(--ds-size-control-touch); padding-block: 6px; font-size: var(--ds-text-ui); } }

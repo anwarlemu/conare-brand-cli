@@ -1,0 +1,7 @@
+<!-- Kinds of document a search may return, several at once; and a single pick that can be let go. -->
+<div class="grid items-start gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8">
+  <p class="type-meta leading-7 text-fg-muted">Several</p>
+  <div><conare-toggle-group value='["Pages", "Files"]' multiple label="kinds of document" options='["Messages", "Pages", "Emails", "Files"]'></conare-toggle-group></div>
+  <p class="mt-4 type-meta leading-7 text-fg-muted md:mt-0">One or none</p>
+  <div><conare-toggle-group value="Recent first" label="ordering" options='["Recent first", "Most cited"]'></conare-toggle-group></div>
+</div>

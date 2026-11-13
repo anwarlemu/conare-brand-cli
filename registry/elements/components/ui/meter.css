@@ -1,0 +1,4 @@
+/* Meter.vue's <style>, as it is. */
+/* A job's progress moves on its own clock, so it eases linearly (console2.css .v2-meter[data-state]). */
+.ds-meter-live { width: 100%; transform-origin: left; transition: transform var(--ds-duration-progress) linear; }
+@media (prefers-reduced-motion: reduce) { .ds-meter-live { transition: none; } }

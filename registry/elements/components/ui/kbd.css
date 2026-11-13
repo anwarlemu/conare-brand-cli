@@ -1,0 +1,7 @@
+/* Kbd.vue's <style>, with the key (.ds-kbd, the Vue root) as the host. */
+/* The host rules are !important: the page's preflight and scoped base (padding: 0, border: 0, the root's type) win over a plain :host rule, and Vue's unlayered rule wins over them, as an important shadow rule does. */
+:host { display: inline !important; font-family: inherit; font-size: var(--ds-text-caption) !important; line-height: var(--ds-text-caption-leading) !important; white-space: nowrap !important; }
+:host([boxed]) { display: inline-block !important; padding: 0 4px !important; border: var(--ds-border-hairline) solid currentColor !important; border-color: color-mix(in srgb, currentColor 24%, transparent) !important; }
+@media (pointer: coarse) { :host { display: none !important; } }
+/* The inner <kbd> (for its meaning) takes the host's face and size, not the base layer's mono. */
+kbd { font-family: inherit; font-size: inherit; }

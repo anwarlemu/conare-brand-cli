@@ -1,0 +1,27 @@
+/* ToggleGroup.vue's <style>, as it is. */
+.ds-toggles { display: inline-flex; padding: var(--ds-space-2xs); border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface-subtle); }
+.ds-toggles > button { height: var(--ds-size-control-xs); padding: 0 8px; color: var(--ds-color-fg-muted); font-size: var(--ds-text-meta); cursor: pointer; transition: color var(--ds-duration-glide) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard), transform var(--ds-duration-glide) var(--ds-easing-out); }
+.ds-toggles > button:active:not(:disabled) { transform: scale(0.97); }
+@media (hover: hover) and (pointer: fine) { .ds-toggles > button:hover { color: var(--ds-color-fg); } }
+.ds-toggles > button:disabled { color: var(--ds-color-fg-faint); cursor: not-allowed; }
+.ds-toggles > button[aria-pressed="true"] { position: relative; z-index: 1; background: var(--ds-color-surface); color: var(--ds-color-fg); outline: var(--ds-border-hairline) solid var(--ds-color-edge); }
+.ds-toggles > button[aria-pressed="true"]:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); }
+/* Two pressed side by side keep a gap between their blocks. */
+.ds-toggles[data-multiple] { gap: var(--ds-space-2xs); }
+@supports (anchor-scope: all) {
+  .ds-toggles:not([data-multiple]) { position: relative; anchor-scope: --ds-toggle-thumb; }
+  .ds-toggles:not([data-multiple])::before { position: absolute; top: anchor(top); right: anchor(right); bottom: anchor(bottom); left: anchor(left); background: var(--ds-color-surface); content: ""; outline: var(--ds-border-hairline) solid var(--ds-color-edge); position-anchor: --ds-toggle-thumb; }
+  .ds-toggles:not([data-multiple]):is(:hover, :focus-within)::before { transition: top var(--ds-duration-slide) var(--ds-easing-out), right var(--ds-duration-slide) var(--ds-easing-out), bottom var(--ds-duration-slide) var(--ds-easing-out), left var(--ds-duration-slide) var(--ds-easing-out); }
+  .ds-toggles:not([data-multiple]):not(:has(> [aria-pressed="true"]))::before { content: none; }
+  .ds-toggles:not([data-multiple]) > button { position: relative; z-index: 1; }
+  .ds-toggles:not([data-multiple]) > button[aria-pressed="true"] { anchor-name: --ds-toggle-thumb; background: none; outline: 0; }
+  .ds-toggles:not([data-multiple]) > button[aria-pressed="true"]:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); }
+}
+@media (pointer: coarse), (max-width: 767px) {
+  .ds-toggles > button { position: relative; height: 34px; padding-inline: 12px; font-size: var(--ds-text-ui); }
+  .ds-toggles > button::after { position: absolute; inset: -3px 0; content: ""; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ds-toggles:is(:hover, :focus-within)::before { transition: none; }
+  .ds-toggles > button:active:not(:disabled) { transform: none; }
+}
