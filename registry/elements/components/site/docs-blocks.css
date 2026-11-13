@@ -1,0 +1,8 @@
+.ds-docs-callout { border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface-subtle); color: var(--ds-color-fg); }
+.ds-docs-callout:is([data-tone="warning"], [data-tone="caution"]) { border-color: color-mix(in srgb, var(--ds-color-edge-accent) 30%, transparent); background: var(--ds-color-surface-danger); }
+.ds-docs-card { transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-docs-card-mark { color: var(--ds-color-fg-faint); transition: color var(--ds-duration-micro) var(--ds-easing-standard); }
+@media (hover: hover) and (pointer: fine) {
+  .ds-docs-card:hover { background: var(--ds-color-surface-subtle); }
+  .ds-docs-card:hover .ds-docs-card-mark { color: var(--ds-color-edge-accent); }
+}
