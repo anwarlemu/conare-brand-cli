@@ -1,0 +1,30 @@
+import { AgentPrompt } from '@/react/components/product/AgentPrompt'
+// The panel the agents page opens, for a sample team with three namespaces connected: the agent at work, the prompt,
+// Copy prompt with the one-click installs, and the API call.
+
+const MCP = 'https://api.conare.ai/v1/mcp'
+const prompt = `Connect Conare and search the data I connected.
+
+1. Check whether you have Conare's MCP tools (search, save, fetch, list_namespaces). If not, add the server:
+   - Claude Code: claude mcp add --transport http --scope user conare ${MCP}
+     Then ask me to run /mcp, choose conare and sign in.
+   - Codex: codex mcp add conare --url ${MCP}
+     Then ask me to run: codex mcp login conare
+   - Cursor: add "conare": {"url": "${MCP}"} under "mcpServers" in ~/.cursor/mcp.json, then ask me to sign in from Cursor's MCP settings.
+   - Any other client: it is a remote MCP server at ${MCP} and sign-in is OAuth.
+   If the tools still don't appear after I sign in, ask me to restart this session and paste this prompt again.
+2. List my namespaces with list_namespaces. I connected contracts, slack, crm.
+3. Search Conare for a question those documents answer, such as a recent decision or a contract term. Show me the answer and the documents it came from.
+4. From now on, search Conare before you answer questions about my company's work.`
+const code = `curl https://api.conare.ai/v1/query \\
+  -H "Authorization: Bearer $CONARE_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"query": "how do refunds work?", "top_k": 5}'`
+const installs = [
+  { label: 'Add to Cursor', href: '#cursor' },
+  { label: 'Add to VS Code', href: '#vscode' },
+]
+
+export default function Product() {
+  return <AgentPrompt prompt={prompt} code={code} installs={installs} />
+}
