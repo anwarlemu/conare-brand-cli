@@ -23,7 +23,7 @@
   const show = (next) => {
     sync = next
     button.done = sync === 'done'
-    button.setAttribute('aria-busy', String(sync === 'busy'))
+    button.busy = sync === 'busy'
     if (sync === 'busy') button.prepend(matrix)
     else matrix.remove()
     check.toggleAttribute('hidden', sync !== 'done')

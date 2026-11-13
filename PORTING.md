@@ -69,6 +69,7 @@ export default [
 Use role selectors (`role=button[name="..."]`, `role=option[name="EU"]`): they find the same control in all three
 flavors, inside shadow roots too. Cover what the Vue file handles: every key it listens to, hover, press, open and
 close, Escape and focus return, form submission. Steps that fail to find their target are reported, not skipped.
+The steps run at 1440 and at 390 (a step with `width: 1440` runs at that width only, for a control a phone hides).
 `button: 'right'` makes a click a right-click (a context menu). The state compares the text of `aria-selected` and
 `data-active` elements in the flat tree, slotted text included, without whitespace.
 
@@ -197,7 +198,7 @@ define('thing', Thing)
 - **ARIA across shadow roots:** a `<label for>` or `aria-describedby` cannot point into another shadow root. The
   field element names its control with `aria-label` and describes it with `aria-description`, which the control passes
   to its inner element (input, button: a tooltip describes its button this way).
-- **Markup:** `unsafeHTML` is in the shared chunk, for markup the page hands an element (the command palette's icons).
+- **Markup:** `unsafeHTML` and `keyed` are in the shared chunk, for markup the page hands an element (the command palette's icons).
   An element that imports something the shared chunk lacks fails the build with the name to add to
   `registry/elements/lib/index.ts`.
 

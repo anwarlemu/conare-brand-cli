@@ -16,6 +16,7 @@ export interface PixelButtonProps {
   children?: ReactNode
   onClick?: MouseEventHandler<HTMLElement>
   'aria-label'?: string
+  'aria-busy'?: boolean
 }
 
 export function PixelButton({ done, large, href, type, disabled, className, children, onClick, ...aria }: PixelButtonProps) {

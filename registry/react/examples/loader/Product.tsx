@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { Check, RefreshCw } from 'lucide-react'
-import { PixelButton, type PixelButtonProps } from '@/react/components/ui/PixelButton'
+import { PixelButton } from '@/react/components/ui/PixelButton'
 import { DotMatrix } from '@/react/components/ui/DotMatrix'
 import { StatusTag } from '@/react/components/ui/StatusTag'
 // The dot matrix where the product uses it: beside what is working, inside a source's dark status, and in the dark button
@@ -20,7 +20,6 @@ export default function Product() {
     timers.current.push(setTimeout(() => setSync('idle'), 4200))
   }
   // PixelButton passes aria-* to its button; its props name only aria-label.
-  const busy = { 'aria-busy': sync === 'busy' } as Partial<PixelButtonProps>
   return (
     <div className="grid items-start gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8">
       <p className="type-meta leading-7 text-fg-muted">Beside what is working</p>
@@ -32,7 +31,7 @@ export default function Product() {
       </div>
       <p className="mt-4 type-meta leading-7 text-fg-muted md:mt-0">In a button</p>
       <div className="flex items-center">
-        <PixelButton done={sync === 'done'} {...busy} onClick={press}>
+        <PixelButton done={sync === 'done'} aria-busy={sync === 'busy'} onClick={press}>
           {sync === 'busy'
             ? <DotMatrix tone="inverse" />
             : sync === 'done'

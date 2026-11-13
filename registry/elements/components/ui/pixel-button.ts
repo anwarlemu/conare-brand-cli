@@ -23,6 +23,7 @@ export class PixelButton extends DsFormElement {
 		type: {},
 		disabled: { type: Boolean, reflect: true },
 		label: { attribute: 'aria-label' },
+		busy: { attribute: 'aria-busy', converter: { fromAttribute: (v: string | null) => (v === null ? undefined : v === 'true') } },
 	}
 
 	/** Holds the red while an action shows it happened. */
@@ -33,6 +34,8 @@ export class PixelButton extends DsFormElement {
 	type: 'button' | 'submit' = 'button'
 	disabled = false
 	label?: string
+	/** Working (the aria-busy attribute), passed to the inner button as Vue's aria-busy falls through. */
+	busy?: boolean
 
 	private grid = new PixelGridController(this, () => this.renderRoot.querySelector<HTMLElement>('.ds-px'))
 
@@ -45,9 +48,10 @@ export class PixelButton extends DsFormElement {
 		const inner = html`${g ? html`<span aria-hidden="true" class="ds-px-fill" style=${this.grid.style}>${g.cells.map((c) => html`<i style=${vars(c)}></i>`)}</span>` : nothing}<span class="ds-px-label"><slot></slot></span>`
 		const done = this.done ? 'true' : undefined
 		const large = this.large ? 'true' : undefined
+		const busy = this.busy === undefined ? undefined : String(this.busy)
 		return this.href
-			? html`<a data-ds="pixel-button" href=${this.href} class="ds-px" data-done=${ifDefined(done)} data-large=${ifDefined(large)} aria-label=${ifDefined(this.label)}>${inner}</a>`
-			: html`<button data-ds="pixel-button" type="button" ?disabled=${this.inactive} class="ds-px" data-done=${ifDefined(done)} data-large=${ifDefined(large)} aria-label=${ifDefined(this.label)} @click=${this.onClick}>${inner}</button>`
+			? html`<a data-ds="pixel-button" href=${this.href} class="ds-px" data-done=${ifDefined(done)} data-large=${ifDefined(large)} aria-label=${ifDefined(this.label)} aria-busy=${ifDefined(busy)}>${inner}</a>`
+			: html`<button data-ds="pixel-button" type="button" ?disabled=${this.inactive} class="ds-px" data-done=${ifDefined(done)} data-large=${ifDefined(large)} aria-label=${ifDefined(this.label)} aria-busy=${ifDefined(busy)} @click=${this.onClick}>${inner}</button>`
 	}
 }
 

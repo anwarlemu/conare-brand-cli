@@ -4,7 +4,7 @@
 //
 //   pixels    full-page screenshots, diffed with pixelmatch; over 0.5% of the pixels differing fails
 //   styles    computed styles of every element with data-ds, in flat-tree order (through shadow roots and slots)
-//   keyboard  Tab through the example and record where focus lands (the deepest focused element's role, name and
+//   keyboard  (at each width) Tab through the example and record where focus lands (the deepest focused element's role, name and
 //             data-ds), then the item's own steps from apps/parity/interactions/<item>.mjs if it has one
 //
 // It writes report.json, report.html and the screenshots and diff images to the report folder.
@@ -266,6 +266,8 @@ function diff(a, b, file) {
 	writeFileSync(file, PNG.sync.write(d));
 	return { ratio: n / (w * h), pixels: n, size: [A.width, A.height, B.width, B.height] };
 }
+// A url() resolves against the page, so the docs site and the parity app give it different origins.
+const norm = (v) => String(v).replace(/url\("https?:\/\/(localhost|127\.0\.0\.1):\d+/g, 'url("');
 function compareStyles(vue, other) {
 	const problems = [];
 	if (vue.length !== other.length) problems.push(`${vue.length} data-ds elements in Vue, ${other.length} here (${vue.map((s) => s.ds).join(',')} / ${other.map((s) => s.ds).join(',')})`);
@@ -277,7 +279,7 @@ function compareStyles(vue, other) {
 			continue;
 		}
 		if (a.box.join() !== b.box.join()) problems.push(`#${i} ${a.ds}: box ${a.box.join(' ')} in Vue, ${b.box.join(' ')} here`);
-		for (const p of PROPS) if (a.style[p] !== b.style[p]) problems.push(`#${i} ${a.ds}: ${p} ${a.style[p]} in Vue, ${b.style[p]} here`);
+		for (const p of PROPS) if (norm(a.style[p]) !== norm(b.style[p])) problems.push(`#${i} ${a.ds}: ${p} ${a.style[p]} in Vue, ${b.style[p]} here`);
 	}
 	return problems;
 }
@@ -294,8 +296,8 @@ for (const name of names) {
 			const vue = await capture(`${www}/preview/${name}/${ex.name}`, width);
 			const vueFile = `img/${name}-${ex.name}-${width}-vue.png`;
 			writeFileSync(join(out, vueFile), vue.png);
-			const exSteps = steps.filter((s) => !s.example || s.example === ex.name);
-			const vueKeys = width === 1440 ? await keyboard(vue.page, exSteps) : [];
+			const exSteps = steps.filter((s) => (!s.example || s.example === ex.name) && (!s.width || s.width === width));
+			const vueKeys = await keyboard(vue.page, exSteps);
 			await vue.context.close();
 			for (const flavor of flavorsWanted) {
 				const r = { item: name, example: ex.name, width, flavor, ok: true, notes: [] };
@@ -317,7 +319,7 @@ for (const name of names) {
 				r.styles = compareStyles(vue.styles, got.styles);
 				if (r.styles.length) r.notes.push(`styles: ${r.styles.length} difference(s)`);
 				if (got.errors.length) r.notes.push(`errors: ${got.errors.join(' / ')}`);
-				if (width === 1440) {
+				{
 					const keys = await keyboard(got.page, exSteps);
 					r.keyboard = keys.map((k, i) => ({ ...k, vue: vueKeys[i] })).filter((k) => k.focus !== k.vue?.focus || JSON.stringify(k.state) !== JSON.stringify(k.vue?.state)).map(({ png, vue, ...k }) => ({ ...k, vue: vue && { focus: vue.focus, state: vue.state } }));
 					if (r.keyboard.length) r.notes.push(`keyboard: ${r.keyboard.map((k) => `${k.step}: ${k.vue?.focus} ${JSON.stringify(k.vue?.state)} in Vue, ${k.focus} ${JSON.stringify(k.state)} here`).join('; ')}`);
@@ -325,7 +327,7 @@ for (const name of names) {
 					r.shots = [];
 					keys.forEach((k, i) => {
 						if (!k.png || !vueKeys[i]?.png) return;
-						const tag = `${name}-${ex.name}-step${i}-${flavor}`;
+						const tag = `${name}-${ex.name}-${width}-step${i}-${flavor}`;
 						writeFileSync(join(out, `img/${tag}.png`), k.png);
 						writeFileSync(join(out, `img/${tag}-vue.png`), vueKeys[i].png);
 						const sd = diff(vueKeys[i].png, k.png, join(out, `img/${tag}-diff.png`));
