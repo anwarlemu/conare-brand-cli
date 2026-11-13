@@ -3,60 +3,17 @@ import type { Project } from './project.js';
 
 // Types for the web components an app has added, so `<prefix-button variant="dark">` type-checks in React (TSX),
 // Svelte and Astro, and `document.querySelector('prefix-button')` knows its properties. Each module's .d.ts (built
-// with the registry) goes into one file in the app's source folder, each in its own namespace (two modules may name a
-// type alike), with the tag map and the JSX hooks of the frameworks the app uses. Types a module's declaration names
-// but does not carry (a lib type such as Align) are declared as unknown there, so the file always compiles.
-
-const GLOBALS = new Set(['HTMLElement', 'Element', 'Node', 'Date', 'Intl', 'Record', 'Partial', 'Required', 'Readonly', 'ReadonlyArray', 'Array', 'Promise', 'Map', 'Set', 'Pick', 'Omit', 'Exclude', 'Extract', 'NonNullable', 'ReturnType', 'Function', 'Event', 'CustomEvent', 'ShadowRoot', 'DocumentFragment', 'ValidityState', 'ElementInternals', 'FormData', 'File', 'Blob', 'URL', 'DOMRect', 'Intl.DateTimeFormatOptions']);
-const isGlobal = (n: string) => GLOBALS.has(n) || /^(HTML|SVG)\w*Element$|Event$/.test(n);
+// with the registry, standing alone: every type it names is declared in it) goes into one file in the app's source
+// folder, each in its own namespace (two modules may declare the same type), with the tag map and the JSX hooks of the
+// frameworks the app uses.
 
 export type ModuleTypes = { name: string; dts: string };
 
-/**
- * The top-level declarations of a .d.ts (its exported types, interfaces and classes, each with the doc comment over
- * it), cut at their balanced end: anything else a declaration file should not hold (code a type's text swept in) is
- * left out.
- */
-export function declarations(dts: string): string[] {
-	const out: string[] = [];
-	// The generated class is `export declare class`; an `export class` is source code a type's text swept in.
-	const starts = [...dts.matchAll(/^export\s+(type|interface|declare class)\s+\w+/gm)];
-	for (const m of starts) {
-		let i = m.index!;
-		let depth = 0;
-		let end = -1;
-		for (; i < dts.length; i++) {
-			const c = dts[i];
-			if (c === '{' || c === '(' || c === '[') depth++;
-			else if (c === '}' || c === ')' || c === ']') {
-				depth--;
-				if (depth === 0 && c === '}' && m[1] !== 'type') {
-					end = i + 1;
-					break;
-				}
-			} else if (c === '\n' && depth <= 0 && m[1] === 'type' && !/[|&=,(<]\s*$/.test(dts.slice(m.index!, i))) {
-				end = i;
-				break;
-			}
-		}
-		if (end < 0) continue;
-		const doc = dts.slice(0, m.index!).match(/(\/\*\*(?:(?!\*\/)[\s\S])*\*\/\s*)$/)?.[1] ?? '';
-		out.push(`${doc}${dts.slice(m.index!, end)}`);
-	}
-	return out;
-}
-
-/** One module's declaration as a namespace body: its types and class, its tags, and stand-ins for names it lacks. */
+/** One module's declaration as a namespace body (its tag map taken out, to be merged into one), and its tags. */
 function wrap(m: ModuleTypes) {
 	const tags: [string, string][] = [];
 	for (const t of m.dts.matchAll(/'([a-z][\w-]*-[\w-]*)'\s*:\s*(\w+)\s*;/g)) tags.push([t[1], t[2]]);
-	let body = declarations(m.dts).join('\n').replace(/^export declare class/gm, 'export class').replace(/:\s*array\b/g, ': unknown[]');
-	const declared = new Set([...body.matchAll(/^export\s+(?:type|interface|class)\s+(\w+)/gm)].map((x) => x[1]));
-	// Names in the declarations (not in comments) that nothing declares: unknown, so the file compiles.
-	const code = body.replace(/\/\*[\s\S]*?\*\//g, '').replace(/'[^'\n]*'/g, "''");
-	const used = new Set([...code.matchAll(/\b([A-Z]\w*)\b/g)].map((x) => x[1]));
-	const missing = [...used].filter((n) => !declared.has(n) && !isGlobal(n));
-	if (missing.length) body = `${missing.map((n) => `type ${n} = unknown`).join('\n')}\n${body}`;
+	const body = m.dts.replace(/declare global\s*\{[\s\S]*$/, '').replace(/^export declare class/gm, 'export class');
 	return { body, tags };
 }
 

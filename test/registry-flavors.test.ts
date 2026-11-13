@@ -1,4 +1,5 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { createServer, type Server } from 'node:http';
 import { extname, join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -112,6 +113,51 @@ describe('registry flavors: output', () => {
 
 // The elements in a real browser: form association, events, slots and tokens through the shadow root. Skipped where
 // the Playwright Chromium the repository uses is not installed.
+describe('registry flavors: element types', () => {
+	const dir = join(root, 'apps', 'www', 'public', 'elements');
+	it('every generated .d.ts and every type in custom-elements.json compiles, strict, with nothing but the DOM', async () => {
+		const ts = (await import('typescript')).default;
+		const out = mkdtempSync(join(tmpdir(), 'conare-dts-'));
+		const files: string[] = [];
+		const dtsNames = readdirSync(dir).filter((f) => f.endsWith('.d.ts'));
+		expect(dtsNames.length).toBeGreaterThan(50);
+		for (const f of dtsNames) {
+			const text = readFileSync(join(dir, f), 'utf8');
+			writeFileSync(join(out, f), text);
+			files.push(join(out, f));
+		}
+		// The manifest's types, each checked against its own module's declarations (its tag map left out: one per file).
+		const manifest = JSON.parse(readFileSync(join(dir, 'custom-elements.json'), 'utf8'));
+		for (const mod of manifest.modules) {
+			const name = mod.path.replace(/^elements\//, '').replace(/\.js$/, '');
+			const own = readFileSync(join(dir, `${name}.d.ts`), 'utf8').replace(/declare global\s*\{[\s\S]*$/, '');
+			const types: string[] = [];
+			for (const d of mod.declarations) for (const m of d.members ?? []) {
+				if (m.type?.text) types.push(m.type.text);
+				if (m.return?.type?.text) types.push(m.return.type.text);
+				for (const p of m.parameters ?? []) if (p.type?.text) types.push(p.type.text);
+			}
+			const check = join(out, `${name}.manifest.ts`);
+			writeFileSync(check, `${own}\n${types.map((t, i) => `export type Manifest${i} = ${t}`).join('\n')}\n`);
+			files.push(check);
+		}
+		const program = ts.createProgram(files, { strict: true, noEmit: true, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext, moduleResolution: ts.ModuleResolutionKind.Bundler, lib: ['lib.es2022.d.ts', 'lib.dom.d.ts', 'lib.dom.iterable.d.ts'], types: [], skipLibCheck: false });
+		const errors = ts.getPreEmitDiagnostics(program).map((d) => `${d.file ? d.file.fileName.replace(out, '') : ''}: ${ts.flattenDiagnosticMessageText(d.messageText, ' ')}`);
+		expect(errors).toEqual([]);
+		// Form fields carry the field API; checkValidity answers a boolean.
+		const input = readFileSync(join(dir, 'input.d.ts'), 'utf8');
+		expect(input).toContain('checkValidity(): boolean;');
+		expect(input).toContain('readonly validity: ValidityState;');
+		expect(readFileSync(join(dir, 'form.d.ts'), 'utf8')).toContain('checkValidity(): boolean;');
+		// Types a member names from another module come with it, and no source code rides along.
+		const select = readFileSync(join(dir, 'select.d.ts'), 'utf8');
+		expect(select).toMatch(/export (interface|type) ComboOption/);
+		expect(select).toMatch(/export type Align = /);
+		for (const f of dtsNames) expect(readFileSync(join(dir, f), 'utf8')).not.toMatch(/^\s*(const|function|static|render\(|return )/m);
+		expect(JSON.stringify(manifest)).not.toContain('"text":"array"');
+	});
+});
+
 const CHROME = process.env.PARITY_CHROMIUM ?? '/Users/anwarlemu/Library/Caches/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-mac-arm64/chrome-headless-shell';
 describe.skipIf(!existsSync(CHROME))('registry flavors: elements in a browser', () => {
 	let server: Server;
@@ -146,6 +192,7 @@ describe.skipIf(!existsSync(CHROME))('registry flavors: elements in a browser', 
   <${prefix}-button type="submit">Send</${prefix}-button>
 </form>
 <${prefix}-form id="cf" label="conare form"><${prefix}-input id="cf-input" name="x" required></${prefix}-input><${prefix}-button slot="actions" type="submit">Go</${prefix}-button></${prefix}-form>
+<${prefix}-form id="cf2" label="react form"><${prefix}-input name="y"></${prefix}-input><${prefix}-button slot="actions" id="prop-submit">Send it</${prefix}-button><button slot="actions" type="button" id="plain-button">Not a send</button><button slot="actions" id="native-submit">Native send</button></${prefix}-form>
 <${prefix}-request-access-page id="rap" state="form" email="sam@acme.com" name="Sam" full="false" home-href="#" demo-href="#" sign-in-href="#" privacy-href="#"></${prefix}-request-access-page>
 <script type="module">
   ${['shared', 'input', 'textarea', 'native-select', 'checkbox', 'radio-group', 'switch', 'combobox', 'select', 'date-picker', 'input-otp', 'slider', 'button', 'form', 'request-access-page'].map((m) => `import '/elements/${m}.js'`).join('\n  ')}
@@ -292,6 +339,24 @@ describe.skipIf(!existsSync(CHROME))('registry flavors: elements in a browser', 
 			expect(await p.evaluate(() => (document.getElementById('cf') as unknown as { checkValidity(): boolean }).checkValidity())).toBe(false);
 			expect(await p.evaluate(() => (document.getElementById('cf') as unknown as { reportValidity(): boolean }).reportValidity())).toBe(false);
 			expect(await focus()).toBe('cf-input input');
+			// A submit button whose type is a property only (React sets it so) sends a conare-form; a page's <button>
+			// sends unless it says type="button", as in a native form.
+			const sends = await p.evaluate(async () => {
+				const f = document.getElementById('cf2')!;
+				let n = 0;
+				f.addEventListener('submit', () => n++);
+				const b = document.getElementById('prop-submit') as HTMLElement & { type: string };
+				b.type = 'submit';
+				await new Promise((r) => setTimeout(r, 30));
+				const hadAttribute = b.hasAttribute('type');
+				b.shadowRoot!.querySelector('button')!.click();
+				const afterProp = n;
+				document.getElementById('plain-button')!.click();
+				const afterPlain = n;
+				document.getElementById('native-submit')!.click();
+				return [hadAttribute, afterProp, afterPlain, n];
+			});
+			expect(sends).toEqual([false, 1, 1, 2]);
 			// The request-access page's form stops at its empty company, with no submit event.
 			await p.evaluate(() => document.getElementById('rap')!.addEventListener('submit', () => { (window as unknown as { sent: number }).sent = ((window as unknown as { sent?: number }).sent ?? 0) + 1; }));
 			await p.locator('role=button[name="Send request"]').click();

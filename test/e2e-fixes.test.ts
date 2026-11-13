@@ -1,9 +1,9 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { declarations, elementTypes } from '../src/library/element-types.js';
+import { elementTypes } from '../src/library/element-types.js';
 import { insertLinks } from '../src/install/stylesheets.js';
 
 // Regressions found installing the packed CLI into fresh scaffolds (Next, Vite + React, SvelteKit, Astro, Angular, a
@@ -86,13 +86,15 @@ describe.skipIf(!has)('web components in apps', () => {
 });
 
 describe('element types from the registry\'s declaration files', () => {
-	it('keeps only the declarations: source code a type swept in is left out, and missing types are stood in for', () => {
-		const dts = "export interface Crumb { label: string }\n\n  const NAMESPACE = /^[a-z]$/\n  function docId(n: string) { return n }\nexport class Breadcrumb extends DsElement {\n  static styles = [x]\n}\n/**\n * <conare-breadcrumb>\n */\nexport declare class Breadcrumb extends HTMLElement {\n  items: Crumb[];\n  side: Side;\n}\ndeclare global {\n  interface HTMLElementTagNameMap {\n    'conare-breadcrumb': Breadcrumb;\n  }\n}\n";
-		expect(declarations(dts).map((d) => d.split('\n').find((l) => l.startsWith('export')))).toEqual(['export interface Crumb { label: string }', 'export declare class Breadcrumb extends HTMLElement {']);
-		const out = elementTypes({ pkg: {}, framework: 'html' }, [{ name: 'breadcrumb', dts }]);
-		expect(out).toContain('type Side = unknown');
-		expect(out).not.toContain('NAMESPACE');
-		expect(out).toContain("'conare-breadcrumb': BreadcrumbElement.Breadcrumb");
+	it('the types file for every element compiles, strict, with the React hooks and the tag map, and checks props', async () => {
+		const ts = (await import('typescript')).default;
+		const dir = join(__dirname, '..', 'apps', 'www', 'public', 'elements');
+		const modules = readdirSync(dir).filter((f) => f.endsWith('.d.ts')).map((f) => ({ name: f.replace(/\.d\.ts$/, ''), dts: readFileSync(join(dir, f), 'utf8') }));
+		const out = mkdtempSync(join(tmpdir(), 'conare-types-'));
+		writeFileSync(join(out, 'elements.d.ts'), elementTypes({ pkg: { dependencies: { react: '19.2.0' } }, framework: 'vite-react' }, modules));
+		writeFileSync(join(out, 'use.tsx'), "export const a = <conare-button variant=\"dark\" icon>Go</conare-button>\nexport const b = <conare-tabs label=\"x\" options={['a', 'b']} value=\"a\" />\nexport const c: Date | null | undefined = document.querySelector('conare-date-picker')?.value\nexport const d: boolean | undefined = document.querySelector('conare-input')?.checkValidity()\n// @ts-expect-error a variant the button does not have\nexport const e = <conare-button variant=\"nope\">Go</conare-button>\n");
+		const program = ts.createProgram([join(out, 'elements.d.ts'), join(out, 'use.tsx')], { strict: true, noEmit: true, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext, moduleResolution: ts.ModuleResolutionKind.Bundler, lib: ['lib.es2022.d.ts', 'lib.dom.d.ts'], typeRoots: [join(__dirname, '..', 'node_modules', '@types')], types: ['react'] });
+		expect(ts.getPreEmitDiagnostics(program).map((d) => ts.flattenDiagnosticMessageText(d.messageText, ' '))).toEqual([]);
 	});
 });
 
