@@ -92,6 +92,7 @@ export class SearchResults extends DsElement {
 		this.flash = key
 		;(this.renderRoot as ShadowRoot).getElementById(i === 0 ? `${this.pre}-top` : `${this.pre}-row-${i - 1}`)?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' })
 	}
+	// The answer's own cite and point events stop here: composed, they would leave this element too, beside its cite.
 	private cite(n: number) {
 		const r = this.results[n - 1]
 		if (!r) return
@@ -119,7 +120,7 @@ export class SearchResults extends DsElement {
 							${answers
 								? html`<div class="min-h-12" aria-live="polite">${this.writing
 									? html`<p class="inline-flex items-center gap-1.5 type-meta"><${dots} data-red></${dots}>Writing an answer</p>`
-									: this.answer ? html`<${answerText} .text=${this.answer} @cite=${(e: CustomEvent<{ n: number }>) => this.cite(e.detail.n)}></${answerText}>` : html`<p class="ds-answer-text">${mark(top.text)}</p>`}</div>`
+									: this.answer ? html`<${answerText} .text=${this.answer} @cite=${(e: CustomEvent<{ n: number }>) => { e.stopPropagation(); this.cite(e.detail.n) }} @point=${(e: Event) => e.stopPropagation()}></${answerText}>` : html`<p class="ds-answer-text">${mark(top.text)}</p>`}</div>`
 								: html`<p class="type-body-lg text-ds-neutral-200">${mark(top.text)}</p>`}
 							${top.page
 								? html`<div class="flex items-end gap-2">${around(top.page).map((p) => html`<${preview} .page=${p} size="thumb" .marked=${p.here} ?here=${p.here}></${preview}>`)}<span class="ml-1 type-meta text-fg-muted">${`${pageLine(top.page)} in `}<span class="type-code-sm">${top.page.file}</span></span></div>`
