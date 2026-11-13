@@ -65,3 +65,8 @@
   .ds-viz .ds-viz-timer { --viz-s: var(--to); }
   .ds-viz-body, .ds-viz-body[data-active="true"], .ds-viz-title, .ds-viz-title[data-active="true"] { transition: none; }
 }
+
+/* `stretch` (set by a frame that sizes the window, as blog-card's picture does with [&>.ds-viz]:h-full and
+   [&>.ds-viz>.ds-viz-card]:h-full on Vue's root): the window fills its box at any width. */
+:host([stretch]) [data-ds].ds-viz { height: 100%; max-width: none; }
+:host([stretch]) [data-ds].ds-viz > .ds-viz-card { height: 100%; }

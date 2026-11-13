@@ -1,0 +1,12 @@
+/* ButtonGroup.vue's <style>, for the group's own box. Vue's rules for its children (`.ds-btngroup > *`) cannot reach
+   the boxes the library's elements draw in their own shadow roots, so the element marks each child (data-group,
+   data-group-overlap, data-group-divide) and these rules, with the ones it gives each child's shadow root and the page,
+   draw what Vue's do. */
+.ds-btngroup { display: inline-flex; align-items: stretch; }
+.ds-btngroup[data-vertical] { flex-direction: column; }
+/* A child that is its own box (a native field, an element whose host is its box, such as a menu). The page's reset
+   (margin: 0 on every element) outranks ::slotted, so the overlap is important. */
+::slotted(*) { position: relative; }
+::slotted([data-group-overlap="x"]) { margin-left: -1px !important; }
+::slotted([data-group-overlap="y"]) { margin-top: -1px !important; }
+::slotted(:is(:hover, :focus-visible, :focus-within)) { z-index: 1; }

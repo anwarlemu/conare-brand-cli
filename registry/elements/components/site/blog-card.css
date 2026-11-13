@@ -1,0 +1,5 @@
+/* BlogCard.vue's <style>, as it is. */
+.ds-blog-card { transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }
+@media (hover: hover) and (pointer: fine) { .ds-blog-card:hover { background-color: var(--ds-color-surface-subtle); } }
+/* The category, in the section tag's red and capitals: 3px in, less the tracking on the right. */
+.ds-blog-tag { padding-right: calc(var(--ds-space-xs) - 1px - var(--ds-tracking-tag)); line-height: var(--ds-text-tag-sm-leading); text-transform: uppercase; }

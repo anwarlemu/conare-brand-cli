@@ -1,6 +1,7 @@
 /* RollText.vue's <style>, with the host as .ds-roll (the clipped box) and the host link's :hover and :focus-visible
    as the labels' data-hover and data-focus. */
-:host { --roll-out: -110%; position: relative; display: block; overflow: hidden; line-height: 1.4; }
+/* !important: as Vue's unlayered .ds-roll, it beats the page's scoped [data-ds] base (its line height). */
+:host { --roll-out: -110%; position: relative !important; display: block !important; overflow: hidden !important; line-height: 1.4 !important; }
 :host([pace="site"]) { --roll-out: -100%; }
 .ds-roll-a, .ds-roll-b { display: block; transition: transform var(--ds-duration-glide) var(--ds-easing-standard); }
 .ds-roll-b { position: absolute; inset-inline: 0; top: 0; transform: translateY(110%); }

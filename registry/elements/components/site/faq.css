@@ -1,0 +1,26 @@
+.ds-faq-title { line-height: 1.2; text-wrap: balance; }
+/* The answers swap without a pause; the short fade keeps frequent picks quiet (home.css .faq-panel). */
+.ds-faq-panel { opacity: 0; transform: translateY(4px); visibility: hidden; transition: opacity var(--ds-duration-answer-out) ease, visibility 0s linear var(--ds-duration-answer-out); }
+.ds-faq-panel[data-active="true"] { opacity: 1; transform: none; visibility: visible; transition: opacity var(--ds-duration-micro) ease, visibility 0s; }
+/* Both grounds move on transform only; the pointer's fades in where it is. */
+.ds-faq-mark { transition: transform var(--ds-duration-glide) var(--ds-easing-standard); }
+.ds-faq-hover { opacity: 0; transition: transform var(--ds-duration-glide) var(--ds-easing-standard), opacity var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-faq-hover[data-on="true"] { opacity: 1; }
+.ds-faq-hover[data-snap="true"] { transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-faq-row { transition: color var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-faq-row:active { background-color: var(--ds-color-surface-subtle); }
+/* The phone accordion, on the swap curve: the answer opens by its row's height while its words fade up a beat
+   later, the row's ground comes in with it, and the plus's upright turns flat. Closing, the words go first. */
+.ds-faq-item { transition: background-color var(--ds-duration-unfold) var(--ds-easing-swap); }
+.ds-faq-item[data-open="true"] { background-color: var(--ds-color-surface-subtle); }
+.ds-faq-acc { grid-template-rows: 0fr; transition: grid-template-rows var(--ds-duration-unfold) var(--ds-easing-swap); }
+.ds-faq-acc[data-open="true"] { grid-template-rows: 1fr; }
+.ds-faq-acc p { opacity: 0; transform: translateY(-4px); transition: opacity var(--ds-duration-glide) var(--ds-easing-swap), transform var(--ds-duration-glide) var(--ds-easing-swap); }
+.ds-faq-acc[data-open="true"] p { opacity: 1; transform: none; transition: opacity var(--ds-duration-words) var(--ds-easing-swap) 120ms, transform var(--ds-duration-words) var(--ds-easing-swap) 120ms; }
+.ds-faq-sign-v { transition: rotate var(--ds-duration-unfold) var(--ds-easing-swap); }
+.ds-faq-item[data-open="true"] .ds-faq-sign-v { rotate: 90deg; }
+@media (prefers-reduced-motion: reduce) {
+  .ds-faq-panel, .ds-faq-panel[data-active="true"], .ds-faq-mark, .ds-faq-hover, .ds-faq-hover[data-snap="true"], .ds-faq-acc, .ds-faq-item, .ds-faq-sign-v, .ds-faq-row { transition: none; }
+  .ds-faq-panel { transform: none; }
+  .ds-faq-acc p, .ds-faq-acc[data-open="true"] p { transform: none; transition: opacity var(--ds-duration-micro) ease; }
+}

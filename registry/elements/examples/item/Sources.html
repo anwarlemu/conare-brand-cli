@@ -1,0 +1,22 @@
+<!-- Sources as getting started lists them (source-row): the app's mark and the source's name, its sync's state, then
+     when it last synced and syncs next. Each row opens its source. -->
+<ul class="flex max-w-140 flex-col gap-3">
+  <li class="border border-edge px-4">
+    <conare-item href="#drive" heading="Contracts drive" description="synced 2 min ago · next in 58 min" arrow>
+      <span slot="media" class="inline-flex size-5 shrink-0 items-center justify-center border border-edge bg-surface-subtle" aria-hidden="true"><i data-lucide="file-text" data-size="12" data-stroke-width="1.5"></i></span>
+      <conare-status-tag slot="meta" status="ready"></conare-status-tag>
+    </conare-item>
+  </li>
+  <li class="border border-edge px-4">
+    <conare-item href="#slack" heading="Acme Slack" description="synced 1 h ago" arrow>
+      <span slot="media" class="inline-flex size-5 shrink-0 items-center justify-center border border-edge bg-surface-subtle" aria-hidden="true"><i data-lucide="hash" data-size="12" data-stroke-width="1.5"></i></span>
+      <conare-status-tag slot="meta" status="syncing"></conare-status-tag>
+    </conare-item>
+  </li>
+  <li class="border border-edge px-4">
+    <conare-item href="#crm" heading="Accounts" description="synced yesterday" arrow>
+      <span slot="media" class="inline-flex size-5 shrink-0 items-center justify-center border border-edge bg-surface-subtle" aria-hidden="true"><i data-lucide="users" data-size="12" data-stroke-width="1.5"></i></span>
+      <conare-status-tag slot="meta" status="error"></conare-status-tag>
+    </conare-item>
+  </li>
+</ul>

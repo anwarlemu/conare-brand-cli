@@ -1,0 +1,36 @@
+/* PriceViz.vue's <style>, as it is. */
+/* The price chart (home.css .price-*): hairline grid and axes on the window's dark; a row under the pointer lights its
+   point while the others dim. */
+.ds-price-grid { stroke: var(--ds-color-neutral-300); stroke-width: 1; }
+.ds-price-axis { fill: var(--ds-color-neutral-500); font-family: var(--ds-font-text); font-size: var(--ds-text-tag); font-variant-numeric: tabular-nums; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-price-label { fill: var(--ds-color-neutral-600); font-size: var(--ds-text-meta); }
+.ds-price-label[data-ours] { fill: var(--ds-color-off-white); }
+/* On a phone the chart draws at under half size: its axis labels go up to stay legible, and the points' names give
+   way (the rows under the chart name every model). */
+@media (max-width: 639px) {
+  .ds-price-axis { font-size: var(--ds-text-heading-3); }
+  .ds-price-axis-floor, .ds-price-label { display: none; }
+}
+.ds-price-point { transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-price-point[data-dim="true"] { opacity: 0.3 !important; }
+.ds-price-scope, .ds-price-tip { opacity: 0; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-price-scope[data-shown="true"], .ds-price-tip[data-shown="true"] { opacity: 1; }
+[data-glide="true"] .ds-price-scope-move { transition: transform var(--ds-duration-glide) var(--ds-easing-standard); }
+[data-glide="true"] .ds-price-tip { transition: opacity var(--ds-duration-micro) var(--ds-easing-standard), transform var(--ds-duration-glide) var(--ds-easing-standard); }
+[data-glide="true"] .ds-price-tip-box { transition: transform var(--ds-duration-glide) var(--ds-easing-standard); }
+.ds-price-scope line { stroke: var(--ds-color-off-white); stroke-opacity: 0.35; stroke-dasharray: 2 3; }
+.ds-price-scope-bracket { fill: none; stroke: var(--ds-color-off-white); stroke-width: 1.5; }
+.ds-price-scope[data-ours] .ds-price-scope-bracket { stroke: var(--ds-color-home-red); }
+/* While a point is scoped the axes' own labels step back for its readouts. */
+[data-scoped="true"] .ds-price-axis:not(.ds-price-readout-text) { opacity: 0.35; }
+.ds-price-readout { fill: var(--ds-color-off-white); }
+.ds-price-readout-text { fill: var(--ds-color-off-black); }
+@media (max-width: 639px) { .ds-price-readout, .ds-price-readout-text { display: none; } }
+.ds-price-draw { stroke-dasharray: 1; stroke-dashoffset: 1; }
+.ds-viz[data-active="true"] .ds-price-draw { animation: ds-price-draw var(--ds-duration-viz-draw) var(--ds-easing-swap) both; animation-delay: calc(var(--d) * 1ms); }
+@keyframes ds-price-draw { to { stroke-dashoffset: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  [data-glide="true"] :is(.ds-price-scope-move, .ds-price-tip, .ds-price-tip-box) { transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }
+  .ds-viz[data-active="true"] .ds-price-draw { animation: none; }
+  .ds-price-draw { stroke-dashoffset: 0; }
+}

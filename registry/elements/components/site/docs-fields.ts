@@ -28,7 +28,7 @@ export class DocsFields extends DsElement {
 				<span class="font-medium text-fg">${f.name}</span>
 				<span class="ds-docs-tag">${f.type}</span>
 				${f.required ? html`<span class="ds-docs-tag" data-required>required</span>` : nothing}
-				${f.default !== undefined ? html`<span class="ds-docs-tag">default: ${f.default}</span>` : nothing}
+				${f.default !== undefined ? html`<span class="ds-docs-tag">${`default: ${f.default}`}</span>` : nothing}
 			</p>
 			${f.text ? html`<p class="mt-2 type-body-lg text-fg-muted"><${inline} .text=${f.text}></${inline}></p>` : nothing}
 			${(f.notes ?? []).map((n) => html`<p class="mt-1.5 type-ui text-fg-muted"><${inline} .text=${n}></${inline}></p>`)}
@@ -36,7 +36,7 @@ export class DocsFields extends DsElement {
 				? html`<details class="ds-docs-more mt-3">
 						<summary class="ds-docs-btn inline-flex h-7 cursor-pointer list-none items-center gap-1.5 px-2.5 text-meta leading-4">
 							<svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true" class="ds-docs-sign"><path d="M5 1.5v7M1.5 5h7"></path></svg>
-							${f.children.length} ${f.children.length === 1 ? 'field' : 'fields'}
+							${`${f.children.length} ${f.children.length === 1 ? 'field' : 'fields'}`}
 						</summary>
 						<${fields} .fields=${f.children} nested class="mt-2"></${fields}>
 					</details>`

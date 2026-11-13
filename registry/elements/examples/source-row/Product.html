@@ -1,0 +1,12 @@
+<!-- A sample team's sources as getting started lists them: an app on its schedule, one syncing, one that failed, and
+     one pushed through the API. -->
+<ul class="flex max-w-140 flex-col gap-3">
+  <li><conare-source-row name="Acme drive" app="Google Drive" status="ready" every="every 6 hours" synced="2 hours ago" next="in 4 hours" detail></conare-source-row></li>
+  <li><conare-source-row name="Acme Slack" app="Slack" status="syncing" synced="6 hours ago" detail></conare-source-row></li>
+  <li><conare-source-row name="Wiki" app="Notion" status="error" synced="yesterday" detail></conare-source-row></li>
+  <li><conare-source-row name="Support inbox" app="Gmail" status="pushed" synced="12 minutes ago" detail></conare-source-row></li>
+</ul>
+<script type="module">
+  // The sample rows stay on the page.
+  for (const row of document.querySelectorAll('conare-source-row')) row.addEventListener('open', (e) => e.detail.event.preventDefault())
+</script>

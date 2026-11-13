@@ -1,0 +1,11 @@
+.ds-dlswap { display: grid; }
+.ds-dlswap > span { display: inline-flex; grid-area: 1 / 1; align-items: center; justify-content: center; gap: var(--ds-space-sm); transition: opacity var(--ds-duration-glide) ease, filter var(--ds-duration-glide) ease, transform var(--ds-duration-settle) var(--ds-easing-out); }
+.ds-dlswap-b { opacity: 0; filter: blur(2px); transform: translateY(5px) scale(0.96); }
+.ds-dlswap[data-on] .ds-dlswap-a { opacity: 0; filter: blur(2px); transform: translateY(-5px) scale(0.96); }
+.ds-dlswap[data-on] .ds-dlswap-b { opacity: 1; filter: none; transform: none; }
+.ds-dlswap-b svg path { stroke-dasharray: 24; stroke-dashoffset: 24; transition: stroke-dashoffset var(--ds-duration-micro) ease; }
+.ds-dlswap[data-on] .ds-dlswap-b svg path { stroke-dashoffset: 0; transition: stroke-dashoffset var(--ds-duration-enter) var(--ds-easing-out) 40ms; }
+@media (prefers-reduced-motion: reduce) {
+  .ds-dlswap > span { filter: none; transform: none; transition: opacity var(--ds-duration-micro) ease; }
+  .ds-dlswap-b svg path { stroke-dashoffset: 0; transition: none; }
+}

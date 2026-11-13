@@ -1,0 +1,19 @@
+<!-- The two places a document downloads: the mark at the end of its row in a namespace, and the button under an opened
+     document or a result. Sample text stands in for your API's bytes. -->
+<div class="flex flex-col gap-3">
+  <p class="type-meta text-fg-muted">In a row</p>
+  <div class="flex h-row max-w-120 items-center gap-3 border-y border-edge px-3">
+    <span class="min-w-0 flex-1 truncate type-code-sm">handbook-security</span>
+    <span class="type-meta text-fg-muted tabular-nums">12 KB</span>
+    <conare-download-mark doc-id="handbook-security"></conare-download-mark>
+  </div>
+  <p class="type-meta text-fg-muted">As a button</p>
+  <div class="flex items-center"><conare-download-button doc-id="handbook-security"></conare-download-button></div>
+</div>
+<script type="module">
+  // Both read the document's one shared state; either starts the download.
+  const get = () => new Promise((done) => setTimeout(() => done('Acme security handbook.\n\nEvery laptop uses full-disk encryption.'), 400))
+  for (const el of document.querySelectorAll('conare-download-mark, conare-download-button')) {
+    el.addEventListener('press', () => el.download(get, 'handbook-security.txt'))
+  }
+</script>
