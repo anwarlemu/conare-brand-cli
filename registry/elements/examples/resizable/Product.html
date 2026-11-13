@@ -1,0 +1,19 @@
+<!-- A page and its docs side by side, the hairline between them: drag it, or focus it and use the arrow keys. -->
+<div class="flex flex-col gap-2">
+  <conare-resizable id="docs-split" value="62" class="h-72 border border-edge" label="resize the docs panel" min="30" max="80">
+    <div slot="first" class="flex flex-col gap-1 p-4">
+      <h3 class="type-heading-3">Search</h3>
+      <p class="type-meta text-fg-muted">Ask a question of the contracts namespace.</p>
+    </div>
+    <div slot="second" class="flex h-12 items-center border-b border-edge px-4 type-ui-strong">Docs</div>
+    <p slot="second" class="p-4 type-ui text-fg-soft">Search returns the passages that answer a question, best first, each with its source.</p>
+  </conare-resizable>
+  <p id="docs-split-share" class="type-meta text-fg-muted tabular-nums">Page 62%, docs 38%</p>
+</div>
+<script type="module">
+  const split = document.getElementById('docs-split')
+  split.addEventListener('input', () => {
+    const page = Math.round(split.value)
+    document.getElementById('docs-split-share').textContent = `Page ${page}%, docs ${100 - page}%`
+  })
+</script>
