@@ -1,8 +1,10 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { createServer, type Server } from 'node:http';
 import { extname, join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { elementPath, gluedInterpolation, needsUseClient, reactPath } from '../scripts/registry-flavors.ts';
+import { builtModule, elementPath, gluedInterpolation, needsUseClient, reactPath } from '../scripts/registry-flavors.ts';
+import { explainBuildError } from '../scripts/build-elements.mjs';
 
 // The React and web component flavors as the registry build writes them (bun run registry runs before the tests in ci).
 const root = join(__dirname, '..');
@@ -24,12 +26,41 @@ describe('registry flavors: files', () => {
 		// The card element once rendered `bg-surface${...}` and lost its background.
 		expect(gluedInterpolation('class=${`border bg-surface${this.framed ? " outline" : ""}`}')).toBeTruthy();
 		expect(gluedInterpolation("const id = `card-${n}`; const s = `translateX(${x}px)`; `${a}${b}`")).toBeUndefined();
+		expect(gluedInterpolation('<div className={cn("p-2", `bg-surface${x}`)} />')).toBeTruthy();
+		expect(gluedInterpolation("icon(X, 'x', { class: `shrink-0 text-fg${muted}` })")).toBeTruthy();
+	});
+	it('looks for glued classes in class lists only, not in comments, keys or SVG paths', () => {
+		expect(gluedInterpolation('<path d={`M0 0h${w}v${h}`} key={`row${i}`} /> // width${x}')).toBeUndefined();
+		expect(gluedInterpolation('<i class=${`ds-${kind} text-fg`}>')).toBeUndefined();
 	});
 	it("asks for 'use client' where a React file uses hooks, not for useId alone", () => {
 		expect(needsUseClient("const [a] = useState(0)")).toBe(true);
 		expect(needsUseClient('const pop = usePopover({})')).toBe(true);
 		expect(needsUseClient('const id = useId()')).toBe(false);
 		expect(needsUseClient('// useState( in a comment\nexport const x = 1')).toBe(false);
+	});
+});
+
+describe('registry flavors: a failed element build', () => {
+	// An element importing what the shared chunk lacks (unsafeHTML once) failed to build, and the registry build then
+	// crashed with ENOENT reading its module before printing why.
+	it('reports a module that was not built instead of crashing', () => {
+		const dir = mkdtempSync(join(tmpdir(), 'ds-elements-'));
+		try {
+			const failures: string[] = [];
+			expect(builtModule(dir, 'command-palette', 'command-palette', (m) => failures.push(m))).toBeUndefined();
+			expect(failures).toEqual(['command-palette: elements/command-palette.js was not built (see the elements error above for why)']);
+			writeFileSync(join(dir, 'tooltip.js'), 'export {}');
+			expect(builtModule(dir, 'tooltip', 'tooltip', (m) => failures.push(m))).toBe('export {}');
+			expect(failures).toHaveLength(1);
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+	it('names the shared chunk when an element imports what it does not export', () => {
+		const esbuild = 'Build failed with 1 error:\nshared:all:1:9: ERROR: No matching export in "shared:all" for import "unsafeHTML"';
+		expect(explainBuildError('elements/components/product/command-palette.ts', esbuild)).toBe('elements: elements/components/product/command-palette.ts: imports unsafeHTML, which the shared chunk does not export; add it to registry/elements/lib/index.ts');
+		expect(explainBuildError('elements/components/ui/card.ts', 'Could not resolve "x"')).toBe('elements: elements/components/ui/card.ts: Could not resolve "x"');
 	});
 });
 

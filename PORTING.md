@@ -62,13 +62,15 @@ export default [
 	{ example: 'Product', click: 'role=button[name="Settings"]', wait: 500, shot: true, label: 'a click opens it' },
 	{ key: 'ArrowDown' }, { type: 'eu' }, { hover: 'role=menuitem[name=/Invite/]', shot: true },
 	{ hold: 'role=button[name="hold to revoke"]', ms: 1500 }, { focus: '...', down: 'Space', wait: 1400 },
-	{ clickAt: [8, 8] }, { reload: true, focus: '...' },
+	{ clickAt: [8, 8] }, { reload: true, focus: '...' }, { click: 'text=Order form', button: 'right' },
 ]
 ```
 
 Use role selectors (`role=button[name="..."]`, `role=option[name="EU"]`): they find the same control in all three
 flavors, inside shadow roots too. Cover what the Vue file handles: every key it listens to, hover, press, open and
 close, Escape and focus return, form submission. Steps that fail to find their target are reported, not skipped.
+`button: 'right'` makes a click a right-click (a context menu). The state compares the text of `aria-selected` and
+`data-active` elements in the flat tree, slotted text included, without whitespace.
 
 ## Vue to React
 
@@ -177,14 +179,27 @@ define('thing', Thing)
 - **Overlays:** `PopoverController` and `popoverStyles` from `@/elements/lib/popover`. The panel stays in the
   element's shadow root and opens in the top layer (`popover="manual"`), over modal dialogs too; placement, Escape for
   the topmost panel, a press outside and focus leaving are usePopover's (popover, combobox). A dialog is a native
-  `<dialog>` in the shadow root with `showModal()` (dialog).
+  `<dialog>` in the shadow root with `showModal()` (dialog). A panel beside a trigger the page slots in measures
+  `boxOf(trigger)` (also in `lib/popover`): the box the element draws, through hosts that are `display: contents`
+  (`<conare-button>`), as tooltip and hover card do.
+- **Menus of your own:** `@/elements/lib/menu` has the rows of a panel of `<conare-menu-item>`s: `menuRows(this)` (or
+  `menuRows(this, 'menu')` for one named slot), `onMenuRows(event, rows, close)` for the arrows, Home, End and Tab
+  (Vue's onMenuRows), and `new CloseOnSelect(this, () => this.pop.hide(true))` in the constructor, so a chosen row
+  closes the menu unless it is `keep-open` (Menu.vue's provide/inject; menu, context menu, menubar). A row passes
+  `role` and `aria-checked` set on it to its button (`<conare-menu-item role="menuitemradio" aria-checked="true">`,
+  or the `itemRole` and `checked` properties), as Vue's fall through. In React, `<Menu data-ds="filter-chip"
+  onOpenChange={...}>` names the root and hears it open, and `<MenuItem role="menuitemradio" aria-checked={picked}>`
+  makes a radio row.
 - **Forms:** extend `DsFormElement` (ElementInternals): call `this.internals.setFormValue(...)` when the value changes,
   implement `formResetCallback` and `formDisabledCallback`, and set `delegatesFocus` so a label or `focus()` reaches
   the inner control. A button with `type="submit"` calls `this.form?.requestSubmit()`; Enter in a text field submits
   its form (input). Fields set `static dsField = true`, so a dialog starts in them.
 - **ARIA across shadow roots:** a `<label for>` or `aria-describedby` cannot point into another shadow root. The
   field element names its control with `aria-label` and describes it with `aria-description`, which the control passes
-  to its inner element.
+  to its inner element (input, button: a tooltip describes its button this way).
+- **Markup:** `unsafeHTML` is in the shared chunk, for markup the page hands an element (the command palette's icons).
+  An element that imports something the shared chunk lacks fails the build with the name to add to
+  `registry/elements/lib/index.ts`.
 
 ### Gotchas the pilots hit
 
@@ -200,6 +215,18 @@ define('thing', Thing)
   attribute makes it.
 - Text needs a wrapper to go into a named slot: `<span slot="trigger" class="contents"><i data-lucide=...></i>Settings</span>`.
 - Hidden icons in examples keep their place unless `hidden` (`<i data-lucide="check" ... hidden>`), as `v-if` does.
+- `icon()`'s markup is replaced when its class string changes, which ends its transition: turn a chevron from CSS
+  instead (`button[aria-expanded="true"] > .lucide-chevron-down { @apply rotate-180; }`).
+- Lit keeps the newlines and tabs between a template's tags; in a row the state reads (an option, an active row) keep
+  the parts on one line, so its text is its words as in Vue.
+- A `<div>`, `<p>` or `<dl>` inside a `<p>` ends the paragraph when the example's HTML is parsed: put such slot content
+  in a `<template slot="card">` and move it into the light DOM as the element connects (hover card).
+- Private members named after an `HTMLElement` member (`focus`, `blur`, `scroll`) fail `tsc`; a check of private state
+  in `willUpdate` takes `PropertyValues` without `<this>`.
+- A boolean that defaults to true needs a converter (`fromAttribute: (v) => v !== 'false'`) so `up="false"` works.
+- A parent that its children ask (accordion, menubar) may be defined after them: the children check that its methods
+  exist, and the parent asks them to render again once it has.
+- React: `Reconnect {name}` is two text nodes and lays out a subpixel wider than Vue's one; use a template literal.
 
 ### Examples
 

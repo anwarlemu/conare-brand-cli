@@ -1,5 +1,6 @@
 import { html, nothing, type PropertyValues } from 'lit'
 import { DsElement, define, tagName } from '@/elements/lib/element'
+import { CloseOnSelect, menuRows, onMenuRows } from '@/elements/lib/menu'
 import { PopoverController, popoverStyles } from '@/elements/lib/popover'
 import type { Menubar } from '@/elements/components/ui/menubar'
 import styles from 'virtual:tw'
@@ -31,8 +32,14 @@ export class MenubarMenu extends DsElement {
 		const b = this.closest(tagName('menubar')) as Menubar | null
 		return b && typeof b.setActive === 'function' ? b : null
 	}
+	constructor() {
+		super()
+		// A chosen row closes the menu, focus back on the trigger.
+		new CloseOnSelect(this, () => this.pop.hide(true))
+	}
+
 	private rows() {
-		return [...this.querySelectorAll<HTMLElement & { disabled?: boolean }>(tagName('menu-item'))].filter((r) => !r.disabled)
+		return menuRows(this)
 	}
 	/** Focuses the trigger (the bar's arrows). */
 	focusTrigger() {
@@ -72,30 +79,7 @@ export class MenubarMenu extends DsElement {
 			this.bar?.move(this, event.key === 'ArrowRight' ? 1 : -1, true)
 			return
 		}
-		const rows = this.rows()
-		const at = rows.findIndex((r) => r.matches(':focus-within'))
-		if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-			event.preventDefault()
-			const step = event.key === 'ArrowDown' ? 1 : -1
-			rows[(at + step + rows.length) % rows.length]?.focus()
-		} else if (event.key === 'Home' || event.key === 'End') {
-			event.preventDefault()
-			;(event.key === 'Home' ? rows[0] : rows.at(-1))?.focus()
-		} else if (event.key === 'Tab') this.pop.hide(false)
-	}
-	// A chosen row closes the menu (a row looks for a <conare-menu> around it, which this is not).
-	private onSelect = (event: Event) => {
-		const row = event.target as HTMLElement & { keepOpen?: boolean }
-		if (row.localName === tagName('menu-item') && !row.keepOpen) this.pop.hide(true)
-	}
-
-	connectedCallback() {
-		super.connectedCallback()
-		this.addEventListener('select', this.onSelect)
-	}
-	disconnectedCallback() {
-		super.disconnectedCallback()
-		this.removeEventListener('select', this.onSelect)
+		onMenuRows(event, this.rows(), (refocus) => this.pop.hide(refocus))
 	}
 	protected updated(changed: PropertyValues<this>) {
 		super.updated(changed)

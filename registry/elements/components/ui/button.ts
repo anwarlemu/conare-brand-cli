@@ -34,6 +34,7 @@ export class Button extends DsFormElement {
 		type: {},
 		disabled: { type: Boolean, reflect: true },
 		label: { attribute: 'aria-label' },
+		description: { attribute: 'aria-description' },
 	}
 
 	/** secondary, dark, primary, ghost, danger or brand. */
@@ -48,6 +49,8 @@ export class Button extends DsFormElement {
 	disabled = false
 	/** The name for assistive tech, passed to the inner button (aria-label on the element). */
 	label?: string
+	/** A description for assistive tech (a tooltip's text), passed to the inner button (aria-description on the element). */
+	description?: string
 
 	private onClick() {
 		if (this.inactive || this.href) return
@@ -66,8 +69,8 @@ export class Button extends DsFormElement {
 			VARIANTS[this.variant] ?? VARIANTS.secondary,
 		].join(' ')
 		return this.href
-			? html`<a data-ds="button" href=${this.href} class=${classes} aria-label=${ifDefined(this.label)}><slot></slot></a>`
-			: html`<button data-ds="button" type="button" ?disabled=${this.inactive} class=${classes} aria-label=${ifDefined(this.label)} @click=${this.onClick}><slot></slot></button>`
+			? html`<a data-ds="button" href=${this.href} class=${classes} aria-label=${ifDefined(this.label)} aria-description=${ifDefined(this.description)}><slot></slot></a>`
+			: html`<button data-ds="button" type="button" ?disabled=${this.inactive} class=${classes} aria-label=${ifDefined(this.label)} aria-description=${ifDefined(this.description)} @click=${this.onClick}><slot></slot></button>`
 	}
 }
 

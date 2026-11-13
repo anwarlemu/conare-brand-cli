@@ -1,7 +1,7 @@
-import { html, nothing, type LitElement, type PropertyValues } from 'lit'
+import { html, nothing } from 'lit'
 import { html as staticHtml } from 'lit/static-html.js'
 import { Check, ListFilter } from 'lucide'
-import { DsElement, define, tag, tagName } from '@/elements/lib/element'
+import { DsElement, define, tag } from '@/elements/lib/element'
 import { icon } from '@/elements/lib/icon'
 import '@/elements/components/ui/menu'
 import '@/elements/components/ui/menu-item'
@@ -16,14 +16,6 @@ import styles from 'virtual:tw'
 // property) with `input` and `change` events; `groups` is a JSON attribute or the property.
 export interface FilterGroup { key: string, label: string, options: Array<{ value: string | number, label: string }> }
 export type FilterValues = Record<string, string | number>
-
-/** Makes a menu row a radio (a row draws role="menuitem"; Vue's role and aria-checked fall through to its button). */
-async function radio(row: Element, checked: boolean) {
-	await (row as LitElement).updateComplete
-	const button = row.shadowRoot?.querySelector('.ds-menu-item')
-	button?.setAttribute('role', 'menuitemradio')
-	button?.setAttribute('aria-checked', String(checked))
-}
 
 /**
  * @summary Every filter in one menu, counted on its button.
@@ -41,11 +33,6 @@ export class FilterMenu extends DsElement {
 	private pick(key: string, v: string | number) {
 		this.commit({ ...this.value, [key]: this.value[key] === v ? (typeof v === 'number' ? 0 : '') : v })
 	}
-	protected updated(changed: PropertyValues<this>) {
-		super.updated(changed)
-		const checked = this.groups.flatMap((g) => g.options.map((o) => this.value[g.key] === o.value))
-		this.renderRoot.querySelectorAll(tagName('menu-item')).forEach((row, i) => void radio(row, !!checked[i]))
-	}
 
 	render() {
 		const menu = tag('menu')
@@ -62,7 +49,7 @@ export class FilterMenu extends DsElement {
 				${this.groups.map((g, i) => staticHtml`${i ? staticHtml`<${sep}></${sep}>` : nothing}
 				<${label}>${g.label}</${label}>
 				<div role="group" aria-label=${g.label} class="flex flex-col">
-					${g.options.map((o) => staticHtml`<${item} keep-open @select=${() => this.pick(g.key, o.value)}>
+					${g.options.map((o) => staticHtml`<${item} role="menuitemradio" aria-checked=${String(this.value[g.key] === o.value)} keep-open @select=${() => this.pick(g.key, o.value)}>
 						<span class="min-w-0 flex-1 truncate text-left">${o.label}</span>
 						${icon(Check, 'check', { size: 14, strokeWidth: 1.5, class: this.value[g.key] !== o.value ? 'shrink-0 invisible' : 'shrink-0', attrs: { 'aria-hidden': 'true' } })}
 					</${item}>`)}

@@ -1,5 +1,4 @@
 'use client'
-import { useEffect, useRef } from 'react'
 import { ChevronsUpDown, LogOut, ShieldCheck } from 'lucide-react'
 import { Menu } from '@/react/components/ui/Menu'
 import { MenuItem } from '@/react/components/ui/MenuItem'
@@ -20,25 +19,12 @@ export interface AccountMenuProps {
 }
 
 export function AccountMenu({ email, credits, securityHref = '#', signingOut, up = true, onOpen, onSignOut }: AccountMenuProps) {
-  const mark = useRef<HTMLSpanElement | null>(null)
-  const report = useRef(onOpen)
-  report.current = onOpen
-  // Vue's data-ds falls through to Menu's root and its open is watched; React's Menu takes neither yet (data-ds is
-  // passed for when it does), so the root is renamed once drawn and its trigger's aria-expanded says when it opens.
-  useEffect(() => {
-    const root = mark.current?.closest('[data-ds="menu"]')
-    root?.setAttribute('data-ds', 'account-menu')
-    const trigger = mark.current?.closest('button')
-    if (!trigger) return
-    const seen = new MutationObserver(() => { if (trigger.getAttribute('aria-expanded') === 'true') report.current?.() })
-    seen.observe(trigger, { attributes: true, attributeFilter: ['aria-expanded'] })
-    return () => seen.disconnect()
-  }, [])
   const share = () => `${Math.max(0, Math.min(1, credits?.share ?? 0)) * 100}%`
   return (
     <Menu
       data-ds="account-menu"
       label="account"
+      onOpenChange={(open) => { if (open) onOpen?.() }}
       up={up}
       offset="8px"
       width="calc(100% - 16px)"
@@ -46,7 +32,7 @@ export function AccountMenu({ email, credits, securityHref = '#', signingOut, up
       triggerClass="relative isolate flex h-full w-full cursor-pointer items-center gap-2 px-3 text-left text-meta before:absolute before:inset-x-2 before:inset-y-1.5 before:-z-10 before:transition-colors before:duration-120 before:ease-standard hover:before:bg-edge/45 aria-expanded:before:bg-edge/45 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-focus"
       trigger={(
         <>
-          <span ref={mark} className="size-5 shrink-0 bg-off-black" aria-hidden="true" />
+          <span className="size-5 shrink-0 bg-off-black" aria-hidden="true" />
           <span className="min-w-0 flex-1 truncate text-left">{email}</span>
           <ChevronsUpDown size={14} strokeWidth={1.5} className="mr-0.75 shrink-0 text-fg-muted" aria-hidden="true" />
         </>

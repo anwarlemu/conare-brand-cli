@@ -1,6 +1,7 @@
 import { html, nothing, type PropertyValues } from 'lit'
 import { styleMap } from 'lit/directives/style-map.js'
-import { DsElement, define, tagName, uid } from '@/elements/lib/element'
+import { DsElement, define, uid } from '@/elements/lib/element'
+import { CloseOnSelect, menuRows } from '@/elements/lib/menu'
 import styles from 'virtual:tw'
 
 // Menu.vue as <conare-menu>: a button that opens a short list of choices or actions (console2.css .v2-menu): a square
@@ -45,12 +46,18 @@ export class Menu extends DsElement {
 	private pending: 'first' | 'last' | 'none' | null = null
 
 	/** A <button slot="trigger"> the page drew, or the default trigger in the shadow root. */
+	constructor() {
+		super()
+		// A chosen row closes the menu and returns focus to the trigger.
+		new CloseOnSelect(this, () => this.close(true))
+	}
+
 	private get trigger(): HTMLElement | null {
 		const own = this.querySelector<HTMLElement>(':scope > button[slot="trigger"]')
 		return own ?? this.renderRoot.querySelector<HTMLElement>('button[data-trigger]')
 	}
 	private items() {
-		return [...this.querySelectorAll<HTMLElement & { disabled?: boolean }>(tagName('menu-item'))].filter((i) => !i.disabled)
+		return menuRows(this)
 	}
 
 	show(focus: 'first' | 'last' | 'none' = 'first') {

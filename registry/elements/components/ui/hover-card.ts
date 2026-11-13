@@ -1,6 +1,6 @@
 import { html, nothing, type PropertyValues } from 'lit'
 import { DsElement, define } from '@/elements/lib/element'
-import { PopoverController, popoverStyles, within, type Align, type Side } from '@/elements/lib/popover'
+import { boxOf, PopoverController, popoverStyles, within, type Align, type Side } from '@/elements/lib/popover'
 import styles from 'virtual:tw'
 
 // HoverCard.vue as <conare-hover-card>: more about a link, shown while the pointer rests on it: Menu's square panel,
@@ -11,13 +11,6 @@ import styles from 'virtual:tw'
 // into a <div slot="card"> as it connects.
 const WAIT = 300
 const GRACE = 120
-
-/** The box an element draws: itself, or for an element whose host is display: contents, its shadow root's first box. */
-function boxOf(el: Element | null | undefined): HTMLElement | null {
-	let n = el ?? null
-	for (let i = 0; n && i < 8 && getComputedStyle(n).display === 'contents'; i++) n = [...(n.shadowRoot?.children ?? n.children)].find((c) => c.localName !== 'style' && c.localName !== 'slot') ?? null
-	return n as HTMLElement | null
-}
 
 /**
  * @summary More about a link, shown while the pointer rests on it.

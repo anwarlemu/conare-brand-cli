@@ -33,12 +33,58 @@ export function elementPath(vue: string) {
 	return m ? `elements/components/${m[1]}/${kebab(m[2])}.ts` : undefined;
 }
 
-/** A class name with an interpolation glued to it (`bg-surface${x}`), which Tailwind's scanner cannot see: the text
- * around it, or undefined. An id or a prefix (`card-${id}`) is fine. */
-export function gluedInterpolation(text: string) {
-	const m = text.match(/[a-z0-9\]%]\$\{/);
-	return m ? text.slice(Math.max(0, (m.index ?? 0) - 24), (m.index ?? 0) + 3) : undefined;
+/** The class lists in a file: class and className attribute values (a string, or the expression in {...} or ${...}),
+ * `class:` and `className:` properties, and the arguments of cn(), clsx() and classMap(). */
+export function classContexts(text: string): string[] {
+	// The expression that starts at `i` (a string, a template literal or a bracketed expression), to its end.
+	const expressionAt = (i: number) => {
+		const stack: string[] = []
+		for (let j = i; j < text.length; j++) {
+			const c = text[j]!
+			const top = stack.at(-1)
+			if (top === '`' || top === '"' || top === "'") {
+				if (c === '\\') j++
+				else if (c === top) {
+					stack.pop()
+					if (!stack.length) return text.slice(i, j + 1)
+				}
+				else if (top === '`' && c === '$' && text[j + 1] === '{') {
+					stack.push('}')
+					j++
+				}
+				continue
+			}
+			if (c === '`' || c === '"' || c === "'") stack.push(c)
+			else if (c === '{') stack.push('}')
+			else if (c === '(') stack.push(')')
+			else if (c === '[') stack.push(']')
+			else if (c === '}' || c === ')' || c === ']') {
+				if (top !== c) return text.slice(i, j)
+				stack.pop()
+				if (!stack.length) return text.slice(i, j + 1)
+			}
+		}
+		return text.slice(i)
+	}
+	const starts = [
+		...text.matchAll(/\b(?:class|className)\s*=\s*\$?(?=["'{])/g),
+		...text.matchAll(/\b(?:class|className)\s*:\s*(?=["'`([])/g),
+		...text.matchAll(/\b(?:cn|clsx|classMap)\s*(?=\()/g),
+	]
+	return starts.map((m) => expressionAt((m.index ?? 0) + m[0].length)).filter(Boolean)
 }
+
+/** A class name with an interpolation glued to it (`bg-surface${x}`), which Tailwind's scanner cannot see: the text
+ * around it, or undefined. Only class lists count (classContexts): an id or a prefix (`card-${id}`), a React key, an
+ * SVG path or a comment is fine. */
+export function gluedInterpolation(text: string) {
+	for (const part of classContexts(text)) {
+		const m = part.match(/[a-z0-9\]%]\$\{/)
+		if (m) return part.slice(Math.max(0, (m.index ?? 0) - 24), (m.index ?? 0) + 3)
+	}
+	return undefined
+}
+
 /** Whether a React file needs 'use client': it calls a hook other than useId (fine on the server) or portals. */
 export function needsUseClient(text: string) {
 	const code = text.replace(/\/\/.*$/gm, '');
@@ -300,7 +346,9 @@ export async function buildFlavors(docs: FlavorDoc[], ctx: Ctx) {
 		if (e) {
 			const files = e.modules.flatMap((m) => {
 				const base = posix.basename(m, '.js');
-				const out = [{ path: m, type: 'registry:file', target: `public${assetBase}/${m}`, content: readFileSync(join(elementsOut, `${base}.js`), 'utf8') }];
+				const content = builtModule(elementsOut, base, d.name, fail);
+				if (content === undefined) return [];
+				const out = [{ path: m, type: 'registry:file', target: `public${assetBase}/${m}`, content }];
 				const dts = join(elementsOut, `${base}.d.ts`);
 				if (existsSync(dts)) out.push({ path: m.replace(/\.js$/, '.d.ts'), type: 'registry:file', target: `public${assetBase}/${m.replace(/\.js$/, '.d.ts')}`, content: readFileSync(dts, 'utf8') });
 				return out;
@@ -315,6 +363,17 @@ export async function buildFlavors(docs: FlavorDoc[], ctx: Ctx) {
 	writeFileSync(join(ctx.outDir, 'elements', 'index.json'), `${JSON.stringify(registryIndex(elementsIndex, 'elements'), null, 2)}\n`);
 
 	return { react, elements, coverage: { total: docs.length, react: react.size, elements: elements.size, missing: { react: docs.filter((d) => !react.has(d.name)).map((d) => d.name), elements: docs.filter((d) => !elements.has(d.name)).map((d) => d.name) } }, elementPrefix: prefix };
+}
+
+/** A built element module's code, or undefined (with the reason) when its build failed: the build's own error says why,
+ * and the item's JSON is not written from a missing file. */
+export function builtModule(outDir: string, base: string, item: string, fail: (message: string) => void) {
+	const file = join(outDir, `${base}.js`);
+	if (!existsSync(file)) {
+		fail(`${item}: elements/${base}.js was not built (see the elements error above for why)`);
+		return undefined;
+	}
+	return readFileSync(file, 'utf8');
 }
 
 /** Each exported component's props, read with the TypeScript compiler: name, type, required, default, description. */

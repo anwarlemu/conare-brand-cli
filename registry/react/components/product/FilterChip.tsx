@@ -1,5 +1,4 @@
 'use client'
-import { useEffect, useRef } from 'react'
 import { Check, ChevronDown } from 'lucide-react'
 import { Menu } from '@/react/components/ui/Menu'
 import { MenuItem } from '@/react/components/ui/MenuItem'
@@ -32,29 +31,6 @@ export function FilterChip<T extends string | number>({ label, any, options, wid
     chosen ? 'border-edge-focus bg-surface' : 'border-edge bg-surface-subtle',
   ].join(' ')
 
-  // Vue's data-ds falls through to Menu's root, and role and aria-checked to each MenuItem's button; React's Menu and
-  // MenuItem take neither yet (data-ds is passed for when they do), so the root is renamed once drawn and the rows are
-  // made radios as they are drawn and as the pick changes.
-  const chevron = useRef<SVGSVGElement | null>(null)
-  const checked = useRef<boolean[]>([])
-  checked.current = all.map(o => o.value === model)
-  const radios = () => {
-    const root = chevron.current?.closest('[data-ds="filter-chip"], [data-ds="menu"]')
-    root?.querySelectorAll('[role="menu"] .ds-menu-item').forEach((row, i) => {
-      row.setAttribute('role', 'menuitemradio')
-      row.setAttribute('aria-checked', String(!!checked.current[i]))
-    })
-  }
-  useEffect(() => {
-    const root = chevron.current?.closest('[data-ds="menu"]')
-    if (!root) return
-    root.setAttribute('data-ds', 'filter-chip')
-    const drawn = new MutationObserver(radios)
-    drawn.observe(root, { childList: true, subtree: true })
-    return () => drawn.disconnect()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(radios)
-
   return (
     <Menu
       data-ds="filter-chip"
@@ -64,13 +40,13 @@ export function FilterChip<T extends string | number>({ label, any, options, wid
       trigger={open => (
         <>
           {label}{chosen && <>{': '}<span className="font-medium">{chosen}</span></>}
-          <ChevronDown ref={chevron} size={12} strokeWidth={1.5} className={cn('text-fg-muted transition-[rotate] duration-120 ease-out motion-reduce:transition-none', open && 'rotate-180')} aria-hidden="true" />
+          <ChevronDown size={12} strokeWidth={1.5} className={cn('text-fg-muted transition-[rotate] duration-120 ease-out motion-reduce:transition-none', open && 'rotate-180')} aria-hidden="true" />
         </>
       )}
     >
       <div className="flex max-h-75 flex-col overflow-y-auto">
         {all.map(o => (
-          <MenuItem key={o.value} onSelect={() => setModel(o.value)}>
+          <MenuItem key={o.value} role="menuitemradio" aria-checked={model === o.value} onSelect={() => setModel(o.value)}>
             <span className="min-w-0 flex-1 truncate">{o.label}</span>
             <Check size={14} strokeWidth={1.5} className={cn('shrink-0', model === o.value ? '' : 'invisible')} aria-hidden="true" />
           </MenuItem>

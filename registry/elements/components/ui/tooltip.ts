@@ -1,6 +1,6 @@
 import { html, nothing, type PropertyValues } from 'lit'
 import { DsElement, define } from '@/elements/lib/element'
-import { PopoverController, popoverStyles, type Align, type Side } from '@/elements/lib/popover'
+import { boxOf, PopoverController, popoverStyles, type Align, type Side } from '@/elements/lib/popover'
 import styles from 'virtual:tw'
 
 // Tooltip.vue as <conare-tooltip>: a control's name, for icon buttons (Copy.vue version 1's tip): the inverse fill,
@@ -12,13 +12,6 @@ import styles from 'virtual:tw'
 // When the last tooltip closed: one opened right after it shows at once, so moving along a toolbar reads fast.
 let lastClosed = 0
 const WAIT = 300
-
-/** The box an element draws: itself, or for an element whose host is display: contents, its shadow root's first box. */
-function boxOf(el: Element | null | undefined): HTMLElement | null {
-	let n = el ?? null
-	for (let i = 0; n && i < 8 && getComputedStyle(n).display === 'contents'; i++) n = [...(n.shadowRoot?.children ?? n.children)].find((c) => c.localName !== 'style' && c.localName !== 'slot') ?? null
-	return n as HTMLElement | null
-}
 
 /**
  * @summary A control's name, shown under it after a short wait.

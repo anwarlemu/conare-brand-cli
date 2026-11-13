@@ -5,16 +5,17 @@ import { MenuClose } from '@/react/components/ui/Menu'
 // One row of a Menu (console2.css .v2-menu-item): 32px (44px on phones), 13px, a 14px gutter that holds the 4px red
 // square marker of the row under the pointer or focus, which also takes the paper fill. `current` sets it in medium
 // weight; `danger` is Sign out's red. Put a 14px Lucide icon first (text-fg-muted), a count or a check last.
-// Choosing it calls `onSelect` and closes the menu, unless `keepOpen`.
-export interface MenuItemProps { href?: string, current?: boolean, danger?: boolean, disabled?: boolean, keepOpen?: boolean, onSelect?: () => void, className?: string, children?: ReactNode }
+// Choosing it calls `onSelect` and closes the menu, unless `keepOpen`. `role` and `aria-checked` make it a radio or
+// checkbox row (role="menuitemradio" aria-checked={picked}), as Vue's fall through to the button.
+export interface MenuItemProps { href?: string, current?: boolean, danger?: boolean, disabled?: boolean, keepOpen?: boolean, onSelect?: () => void, role?: 'menuitem' | 'menuitemradio' | 'menuitemcheckbox', 'aria-checked'?: boolean, className?: string, children?: ReactNode }
 
-export function MenuItem({ href, current, danger, disabled, keepOpen, onSelect, className, children }: MenuItemProps) {
+export function MenuItem({ href, current, danger, disabled, keepOpen, onSelect, role = 'menuitem', 'aria-checked': checked, className, children }: MenuItemProps) {
   const close = useContext(MenuClose)
   function choose() {
     onSelect?.()
     if (!keepOpen) close()
   }
-  const shared = { 'data-ds': 'menu-item', role: 'menuitem', className: className ? `ds-menu-item ${className}` : 'ds-menu-item', 'aria-current': current ? 'true' as const : undefined, 'data-danger': danger || undefined, onClick: choose }
+  const shared = { 'data-ds': 'menu-item', role, 'aria-checked': checked, className: className ? `ds-menu-item ${className}` : 'ds-menu-item', 'aria-current': current ? 'true' as const : undefined, 'data-danger': danger || undefined, onClick: choose }
   return (
     <>
       <style href="ds-menu-item" precedence="ds">{css}</style>

@@ -1,6 +1,7 @@
 import { html, nothing, type PropertyValues } from 'lit'
 import { live } from 'lit/directives/live.js'
-import { Braces, Database, Search, type IconNode } from 'lucide'
+import { unsafeHTML } from 'lit/directives/unsafe-html.js'
+import { Braces, Database, Search } from 'lucide'
 import { DsElement, define } from '@/elements/lib/element'
 import { icon } from '@/elements/lib/icon'
 import styles from 'virtual:tw'
@@ -30,20 +31,26 @@ const compact = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFra
 const SEARCH = Symbol('search')
 
 // An svg's markup drawn as the Vue palette draws a row's icon component: 14px, a 1.5 stroke, muted, hidden from
-// assistive tech. Each markup is read once, into the nodes the library's icons are drawn from.
-const read = new Map<string, { node: IconNode, name: string }>()
+// assistive tech. Each markup is parsed once.
+const drawn = new Map<string, string>()
 function rowIcon(markup: string) {
-	let hit = read.get(markup)
-	if (!hit) {
+	let out = drawn.get(markup)
+	if (out === undefined) {
 		const t = document.createElement('template')
 		t.innerHTML = markup.trim()
 		const svg = t.content.querySelector('svg')
-		const node = [...(svg?.children ?? [])].map((c) => [c.localName, Object.fromEntries([...c.attributes].map((a) => [a.name, a.value]))]) as IconNode
-		const name = [...(svg?.classList ?? [])].find((c) => c.startsWith('lucide-'))?.slice(7) ?? 'icon'
-		hit = { node, name }
-		read.set(markup, hit)
+		if (svg) {
+			svg.setAttribute('width', '14')
+			svg.setAttribute('height', '14')
+			svg.setAttribute('stroke-width', '1.5')
+			svg.setAttribute('aria-hidden', 'true')
+			svg.removeAttribute('hidden')
+			svg.classList.add('ds-cmd-muted', 'shrink-0')
+		}
+		out = svg?.outerHTML ?? ''
+		drawn.set(markup, out)
 	}
-	return icon(hit.node, hit.name, { size: 14, strokeWidth: 1.5, class: 'ds-cmd-muted shrink-0', attrs: { 'aria-hidden': 'true' } })
+	return unsafeHTML(out)
 }
 
 /**

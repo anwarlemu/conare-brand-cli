@@ -1,5 +1,5 @@
 'use client'
-import { Fragment, useEffect, useRef, type ReactNode } from 'react'
+import { Fragment, type ReactNode } from 'react'
 import { Check, ChevronsUpDown, Plus, Settings, Users } from 'lucide-react'
 import { Menu } from '@/react/components/ui/Menu'
 import { MenuItem } from '@/react/components/ui/MenuItem'
@@ -32,10 +32,6 @@ const initial = (name: string) => name.trim().charAt(0).toUpperCase() || '·'
 
 export function WorkspaceSwitcher({ groups, admin, switching, error, settingsHref = '#', membersHref = '#', value, defaultValue = '', onValueChange, onCreate, mark }: WorkspaceSwitcherProps) {
   const [current, setCurrent] = useControllable(value, defaultValue, onValueChange)
-  const name = useRef<HTMLSpanElement | null>(null)
-  // Vue's data-ds falls through to Menu's root; React's Menu takes none yet (it is passed for when it does), so the
-  // root is renamed once drawn.
-  useEffect(() => { name.current?.closest('[data-ds="menu"]')?.setAttribute('data-ds', 'workspace-switcher') }, [])
   let where: { org: WorkspaceGroup['organizations'][number], group: WorkspaceGroup } | undefined
   for (const g of groups) {
     const o = g.organizations.find(x => x.id === current)
@@ -55,7 +51,7 @@ export function WorkspaceSwitcher({ groups, admin, switching, error, settingsHre
       trigger={(
         <>
           {mark ?? <span className="inline-flex size-5 shrink-0 items-center justify-center border border-edge bg-surface text-caption leading-none font-medium" aria-hidden="true">{initial(where?.org.name ?? '')}</span>}
-          <span ref={name} className="min-w-0 flex-1">
+          <span className="min-w-0 flex-1">
             <span className="block translate-y-[0.5px] truncate text-meta leading-3 font-medium">{where?.org.name ?? ' '}</span>
             <span className="mt-px block translate-y-[0.5px] truncate pb-0.75 -mb-0.75 text-caption leading-2.5 text-fg-muted">{where?.group.name ?? ' '}{where?.group.role && ` · ${where.group.role}`}</span>
           </span>

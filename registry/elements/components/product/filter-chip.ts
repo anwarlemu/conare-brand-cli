@@ -1,7 +1,7 @@
-import { html, nothing, type LitElement, type PropertyValues } from 'lit'
+import { html, nothing } from 'lit'
 import { html as staticHtml } from 'lit/static-html.js'
 import { Check, ChevronDown } from 'lucide'
-import { DsElement, define, tag, tagName } from '@/elements/lib/element'
+import { DsElement, define, tag } from '@/elements/lib/element'
 import { icon } from '@/elements/lib/icon'
 import '@/elements/components/ui/menu'
 import '@/elements/components/ui/menu-item'
@@ -13,14 +13,6 @@ import styles from 'virtual:tw'
 // 28px, 40px on phones. v-model is `value` with `input` and `change` events; `options` is a JSON attribute or the
 // property.
 export type FilterValue = string | number
-
-/** Makes a menu row a radio (a row draws role="menuitem"; Vue's role and aria-checked fall through to its button). */
-async function radio(row: Element, checked: boolean) {
-	await (row as LitElement).updateComplete
-	const button = row.shadowRoot?.querySelector('.ds-menu-item')
-	button?.setAttribute('role', 'menuitemradio')
-	button?.setAttribute('aria-checked', String(checked))
-}
 
 /**
  * @summary One filter as a menu button.
@@ -47,12 +39,6 @@ export class FilterChip extends DsElement {
 		return String(a) === String(b)
 	}
 
-	protected updated(changed: PropertyValues<this>) {
-		super.updated(changed)
-		const all = [{ value: this.empty }, ...this.options]
-		this.renderRoot.querySelectorAll(tagName('menu-item')).forEach((row, i) => void radio(row, this.is(this.value, all[i]!.value)))
-	}
-
 	render() {
 		const menu = tag('menu')
 		const item = tag('menu-item')
@@ -67,7 +53,7 @@ export class FilterChip extends DsElement {
 		return html`${staticHtml`<${menu} data-ds="filter-chip" label=${this.label} width=${this.width}>
 			<button slot="trigger" type="button" class=${trigger}>${this.label}${chosen ? html`: <span class="font-medium">${chosen}</span>` : nothing}${icon(ChevronDown, 'chevron-down', { size: 12, strokeWidth: 1.5, class: 'text-fg-muted transition-[rotate] duration-120 ease-out motion-reduce:transition-none', attrs: { 'aria-hidden': 'true' } })}</button>
 			<div class="flex max-h-75 flex-col overflow-y-auto">
-				${all.map((o) => staticHtml`<${item} @select=${() => this.commit(o.value)}>
+				${all.map((o) => staticHtml`<${item} role="menuitemradio" aria-checked=${String(this.is(this.value, o.value))} @select=${() => this.commit(o.value)}>
 					<span class="min-w-0 flex-1 truncate">${o.label}</span>
 					${icon(Check, 'check', { size: 14, strokeWidth: 1.5, class: this.is(this.value, o.value) ? 'shrink-0' : 'shrink-0 invisible', attrs: { 'aria-hidden': 'true' } })}
 				</${item}>`)}

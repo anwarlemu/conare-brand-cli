@@ -139,13 +139,15 @@ const FOCUS = `(() => {
 /** Open overlays and expanded triggers, so a step's effect can be compared. */
 const STATE = `(() => {
   const all = ${FLAT};
+  // An element's text in the flat tree (slotted text included, as a Vue element's own), without whitespace.
+  const text = (n) => { const parts = []; const walk = (x) => { if (x.nodeType === 3) parts.push(x.textContent); else if (x.nodeType === 1) { if (x.localName === 'slot') { const nodes = x.assignedNodes({ flatten: true }); (nodes.length ? nodes : [...x.childNodes]).forEach(walk); } else if (x.shadowRoot) [...x.shadowRoot.childNodes].forEach(walk); else if (x.localName !== 'style' && x.localName !== 'script') [...x.childNodes].forEach(walk); } }; walk(n); return parts.join('').replace(/\\s+/g, '').slice(0, 32); };
   const vis = (el) => { const r = el.getBoundingClientRect(); const cs = getComputedStyle(el); return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden'; };
   return {
     dialogs: all.filter((e) => e.localName === 'dialog' && e.open).length,
     menus: all.filter((e) => /^(menu|listbox|dialog)$/.test(e.getAttribute('role') || '') && vis(e)).length,
     expanded: all.filter((e) => e.getAttribute('aria-expanded') === 'true').length,
-    selected: all.filter((e) => e.getAttribute('aria-selected') === 'true').map((e) => e.textContent.trim().slice(0, 32)).join(', '),
-    active: all.filter((e) => e.hasAttribute('data-active')).map((e) => e.textContent.trim().slice(0, 32)).join(', '),
+    selected: all.filter((e) => e.getAttribute('aria-selected') === 'true').map(text).join(', '),
+    active: all.filter((e) => e.hasAttribute('data-active')).map(text).join(', '),
     checked: all.filter((e) => e.getAttribute('aria-checked') === 'true').length,
     pressed: all.filter((e) => e.getAttribute('aria-pressed') === 'true').length,
     controls: all.filter((e) => /^(input|select|textarea)$/.test(e.localName) && e.type !== 'hidden').map((e) => (e.type === 'checkbox' || e.type === 'radio' ? (e.checked ? 'on' : 'off') : e.value)).join('|'),
@@ -193,7 +195,7 @@ async function capture(url, width) {
 	return { context, page, png, styles, errors };
 }
 
-// A step: { label, example?, reload?, click?, clickAt? ([x, y]), focus?, hover?, hold? (selector, with ms), key?, down?, up?, type?, wait?,
+// A step: { label, example?, reload?, click? (with button: 'right' for a right-click), clickAt? ([x, y]), focus?, hover?, hold? (selector, with ms), key?, down?, up?, type?, wait?,
 // shot? }. Selectors are Playwright's, which pierce shadow roots: prefer role=button[name="Create key"] or text=...,
 // which find the same control in every flavor. `shot` screenshots the example after the step and diffs it with Vue's.
 async function keyboard(page, steps) {
@@ -221,7 +223,7 @@ async function keyboard(page, steps) {
 				await page.waitForTimeout(400);
 			}
 			const at = (sel) => page.locator(sel).first();
-			if (s.click) await at(s.click).click({ timeout: 3000 });
+			if (s.click) await at(s.click).click({ timeout: 3000, button: s.button ?? 'left' });
 			if (s.clickAt) await page.mouse.click(s.clickAt[0], s.clickAt[1]);
 			if (s.focus) await at(s.focus).focus({ timeout: 3000 });
 			if (s.hover) await at(s.hover).hover({ timeout: 3000 });

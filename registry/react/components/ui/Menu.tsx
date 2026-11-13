@@ -1,5 +1,5 @@
 'use client'
-import { createContext, useId, useImperativeHandle, type ReactNode, type Ref } from 'react'
+import { createContext, useEffect, useId, useImperativeHandle, useRef, type ReactNode, type Ref } from 'react'
 import { useMenu } from '@/react/hooks/useMenu'
 import { cn } from '@/react/lib/cn'
 
@@ -8,7 +8,8 @@ import { cn } from '@/react/lib/cn'
 // all when opened from the keyboard. Arrows, Home, End, Escape, Tab and a click outside are handled (useMenu).
 // `offset` moves the panel in from its edge. The trigger's content is `trigger` (a node, or a function of `open`),
 // drawn as a secondary button unless `triggerClass` says otherwise. `defaultOpen` opens it with the page; `ref` gets
-// { open, show, close } (Vue's exposed open and close).
+// { open, show, close } (Vue's exposed open and close); `onOpenChange` hears it open and close. `data-ds` names the
+// root for a component built on it (Vue's falls through: <Menu data-ds="account-menu">).
 export const MenuClose = createContext<() => void>(() => {})
 
 export interface MenuHandle { open: boolean, show: (focus?: 'first' | 'last' | 'none') => void, close: (refocus?: boolean) => void }
@@ -22,19 +23,29 @@ export interface MenuProps {
   triggerLabel?: string
   trigger?: ReactNode | ((open: boolean) => ReactNode)
   defaultOpen?: boolean
+  onOpenChange?: (open: boolean) => void
+  'data-ds'?: string
   className?: string
   children?: ReactNode
   ref?: Ref<MenuHandle>
 }
 
-export function Menu({ label, up, align = 'start', width = '264px', offset = '0px', triggerClass, triggerLabel, trigger: triggerContent, defaultOpen, className, children, ref }: MenuProps) {
+export function Menu({ label, up, align = 'start', width = '264px', offset = '0px', triggerClass, triggerLabel, trigger: triggerContent, defaultOpen, onOpenChange, 'data-ds': ds = 'menu', className, children, ref }: MenuProps) {
   const { open, root, trigger, show, close, toggle, onTriggerKey, onMenuKey } = useMenu(defaultOpen)
+  const report = useRef(onOpenChange)
+  report.current = onOpenChange
+  const was = useRef(open)
+  useEffect(() => {
+    if (was.current === open) return
+    was.current = open
+    report.current?.(open)
+  }, [open])
   useImperativeHandle(ref, () => ({ open, show, close }), [open, show, close])
   const id = `menu-${useId()}`
   return (
     <MenuClose.Provider value={() => close(true)}>
       <style href="ds-menu" precedence="ds">{css}</style>
-      <div data-ds="menu" ref={root} className={cn('relative inline-block', className)}>
+      <div data-ds={ds} ref={root} className={cn('relative inline-block', className)}>
         <button
           ref={trigger}
           type="button"

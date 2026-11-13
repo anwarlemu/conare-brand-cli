@@ -114,6 +114,13 @@ export async function expandIcons(html, file = 'example') {
 
 // ----- Build -----
 
+/** An element's build error in words: an import the shared chunk lacks names the file to add it to. */
+export function explainBuildError(path, message) {
+	const missing = [...message.matchAll(/No matching export in "shared:[^"]*" for import "([^"]+)"/g)].map((m) => m[1]);
+	if (missing.length) return `elements: ${path}: imports ${[...new Set(missing)].join(', ')}, which the shared chunk does not export; add ${missing.length > 1 ? 'them' : 'it'} to registry/elements/lib/index.ts`;
+	return `elements: ${path}: ${message}`;
+}
+
 /** Builds every element. Returns { names, errors }. */
 export async function buildElements({ out = elementsOut } = {}) {
 	const errors = [];
@@ -197,7 +204,7 @@ export async function buildElements({ out = elementsOut } = {}) {
 		try {
 			await esbuild.build({ ...common, entryPoints: { [f.name]: f.file }, outdir: out, plugins: [virtuals(), linker] });
 		} catch (error) {
-			errors.push(`elements: ${f.path}: ${error.message}`);
+			errors.push(explainBuildError(f.path, error.message));
 		}
 	}
 	return { names: files.map((f) => f.name), errors };

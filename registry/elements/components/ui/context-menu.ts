@@ -1,5 +1,6 @@
 import { html, nothing } from 'lit'
-import { DsElement, define, tagName } from '@/elements/lib/element'
+import { DsElement, define } from '@/elements/lib/element'
+import { CloseOnSelect, menuRows, onMenuRows } from '@/elements/lib/menu'
 import { PopoverController, popoverStyles } from '@/elements/lib/popover'
 import styles from 'virtual:tw'
 
@@ -31,8 +32,14 @@ export class ContextMenu extends DsElement {
 		panel: () => this.renderRoot.querySelector<HTMLElement>('.ds-pop'),
 	})
 
+	constructor() {
+		super()
+		// A chosen row closes the menu, focus back where it was.
+		new CloseOnSelect(this, () => this.pop.hide(true))
+	}
+
 	private rows() {
-		return [...this.querySelectorAll<HTMLElement & { disabled?: boolean }>(`${tagName('menu-item')}[slot="menu"]`)].filter((r) => !r.disabled)
+		return menuRows(this, 'menu')
 	}
 	private context(event: Event) {
 		return (event.composedPath()[0] as HTMLElement | null)?.closest?.<HTMLElement>('[data-context]')?.dataset.context
@@ -52,33 +59,10 @@ export class ContextMenu extends DsElement {
 		await this.updateComplete
 		this.rows()[0]?.focus()
 	}
-	// Vue's onMenuRows: arrows, Home and End over the rows; Tab closes.
 	private onMenuKey = (event: KeyboardEvent) => {
-		const rows = this.rows()
-		const at = rows.findIndex((r) => r.matches(':focus-within'))
-		if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-			event.preventDefault()
-			const step = event.key === 'ArrowDown' ? 1 : -1
-			rows[(at + step + rows.length) % rows.length]?.focus()
-		} else if (event.key === 'Home' || event.key === 'End') {
-			event.preventDefault()
-			;(event.key === 'Home' ? rows[0] : rows.at(-1))?.focus()
-		} else if (event.key === 'Tab') this.pop.hide(false)
-	}
-	// A chosen row closes the menu (a row looks for a <conare-menu> around it, which a context menu is not).
-	private onSelect = (event: Event) => {
-		const row = event.target as HTMLElement & { keepOpen?: boolean }
-		if (row.localName === tagName('menu-item') && !row.keepOpen) this.pop.hide(true)
+		onMenuRows(event, this.rows(), (refocus) => this.pop.hide(refocus))
 	}
 
-	connectedCallback() {
-		super.connectedCallback()
-		this.addEventListener('select', this.onSelect)
-	}
-	disconnectedCallback() {
-		super.disconnectedCallback()
-		this.removeEventListener('select', this.onSelect)
-	}
 	render() {
 		const panel = this.pop.rendered
 			? html`<div data-ds="context-menu" popover="manual" class="ds-pop flex flex-col p-1" role="menu" aria-label=${this.label} tabindex="-1" data-side=${this.pop.pos.side} ?data-instant=${this.pop.instant} ?data-placed=${this.pop.pos.placed} style=${this.pop.style(`width: ${this.width ?? '224px'}`)} @keydown=${this.onMenuKey} @focusout=${this.pop.onFocusOut}><slot name="menu"></slot></div>`

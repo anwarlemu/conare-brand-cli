@@ -59,6 +59,14 @@ export function within(container: Node | null | undefined, node: Node | null | u
 	return false
 }
 
+/** The box an element draws: itself, or, for an element whose host is display: contents (most of the library's), the
+ * first box in its shadow root. A panel placed beside <conare-button> measures the button it draws. */
+export function boxOf(el: Element | null | undefined): HTMLElement | null {
+	let n = el ?? null
+	for (let i = 0; n && i < 8 && getComputedStyle(n).display === 'contents'; i++) n = [...(n.shadowRoot?.children ?? n.children)].find((c) => c.localName !== 'style' && c.localName !== 'slot') ?? null
+	return n as HTMLElement | null
+}
+
 /** The first thing in `root` that takes focus, through slots into the page's content and into elements. */
 export function firstFocusable(root: Element | null | undefined): HTMLElement | null {
 	if (!root) return null
