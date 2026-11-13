@@ -36,6 +36,7 @@ export class DatePicker extends DsFormElement {
 		max: { converter: dateAttr },
 		disabled: { attribute: false },
 		invalid: { type: Boolean, reflect: true },
+		required: { type: Boolean },
 		locale: {},
 		format: { type: Object },
 		label: { attribute: 'aria-label' },
@@ -51,6 +52,8 @@ export class DatePicker extends DsFormElement {
 	disabled?: (day: Date) => boolean
 	/** A red edge (with the message under it in a field). */
 	invalid = false
+	/** A day must be picked for its form to send. */
+	required = false
 	locale = 'en-US'
 	/** How the picked day reads in the field (Intl.DateTimeFormat options). */
 	format: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' }
@@ -70,6 +73,10 @@ export class DatePicker extends DsFormElement {
 	protected updated(changed: PropertyValues) {
 		super.updated(changed)
 		if (changed.has('value')) this.internals.setFormValue(this.value ? iso(this.value) : null)
+	}
+	// No native control: a required picker with no day is missing its value, as a required field is.
+	syncValidity() {
+		this.setMissing(this.required && !this.value, 'input', this.renderRoot.querySelector<HTMLElement>('button[data-ds="date-picker"]'))
 	}
 	formResetCallback() {
 		this.value = dateAttr.fromAttribute(this.getAttribute('value'))
@@ -106,7 +113,7 @@ export class DatePicker extends DsFormElement {
 				data-ds="date-picker"
 				type="button"
 				class="flex h-control-md w-full cursor-pointer items-center gap-2 border border-edge-strong bg-surface px-2.5 text-left text-ui text-fg outline-none transition-[border-color] duration-120 ease-standard focus-visible:border-edge-focus aria-expanded:border-edge-focus aria-invalid:border-action-danger max-md:h-control-touch max-md:text-input"
-				?disabled=${this.formDisabled}
+				?disabled=${this.inactive}
 				aria-haspopup="dialog"
 				aria-expanded=${String(this.pop.open)}
 				aria-controls=${ifDefined(this.pop.open ? this.panelId : undefined)}

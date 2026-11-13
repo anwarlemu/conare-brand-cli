@@ -54,6 +54,9 @@ export class Textarea extends DsFormElement {
 		super.updated(changed)
 		if (changed.has('value')) this.internals.setFormValue(this.value)
 	}
+	protected validityControl() {
+		return this.renderRoot.querySelector<HTMLTextAreaElement>('textarea')
+	}
 	formResetCallback() {
 		this.value = this.getAttribute('value') ?? ''
 	}

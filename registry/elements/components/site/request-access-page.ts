@@ -14,8 +14,8 @@ import styles from 'virtual:tw'
 // app's: loading (shown after 300ms), signed-out (sign in with a work email first), failed (try again), form (their
 // email, then name, company, team size and what they want to build) or sent (what happens next). It calls nothing:
 // `submit` carries the answers (detail), `retry` and `edit` ask the app to load again or reopen the form. `full` fills
-// the window; full="false" sits in its container. The required fields are checked as the browser checks Vue's form:
-// the first empty one shows the browser's message and takes focus, and nothing is sent.
+// the window; full="false" sits in its container. The browser checks the required fields, as
+// in Vue's form: the first empty one shows its message and takes focus, and nothing is sent.
 export type AccessState = 'loading' | 'signed-out' | 'failed' | 'form' | 'sent'
 export type AccessAnswers = { name: string, company: string, teamSize: string, useCase: string }
 
@@ -81,18 +81,10 @@ export class RequestAccessPage extends DsElement {
 			this.answers = { ...this.answers, [key]: (event.target as HTMLElement & { value: string }).value }
 		}
 	}
-	// Vue's form has no novalidate: the browser checks its required fields. The fields here are elements, so the page
-	// asks each one's own control and shows the first message the browser would.
+	// Vue's form has no novalidate, and neither has this one: its fields are form-associated and report their own
+	// validity, so the browser stops a send with a required field empty, shows its message and focuses the field.
 	private onSubmit(event: SubmitEvent) {
 		event.preventDefault()
-		const form = event.currentTarget as HTMLFormElement
-		for (const field of form.querySelectorAll<HTMLElement>('[required]')) {
-			const control = field.shadowRoot?.querySelector<HTMLInputElement>('input, select, textarea')
-			if (control && !control.checkValidity()) {
-				control.reportValidity()
-				return
-			}
-		}
 		this.emit('submit', { ...this.answers })
 	}
 

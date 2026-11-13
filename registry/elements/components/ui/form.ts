@@ -6,12 +6,16 @@ import styles from 'virtual:tw'
 // stacked 16px apart, each a <conare-field> with its label over it and its hint or error under it; a `failure` from the
 // server in a red-wash box above the actions; the actions (slot="actions") at the end, the main one last. It never
 // validates as the first value is typed: the page shows an error once its field is left or the form is sent, and on a
-// send with errors focus moves to the first field that is wrong (the first with `invalid` or aria-invalid="true").
+// send with errors focus moves to the first field that is wrong: marked `invalid` (or aria-invalid="true"), or failing
+// its own validity. Like Vue's novalidate form it never blocks a send or shows the browser's bubbles;
+// checkValidity() and reportValidity() check its fields, as a form's do.
 //
 // A <form> in a shadow root does not own the fields the page puts in its slots, so the element is the form's behavior
 // itself: a press on a submit button in it (a <button type="submit"> or an element with type="submit"), or Enter in a
 // one-line field, fires `submit`; a press on a reset button fires `reset`. The browser's own bubbles are off, as with
 // novalidate. The host is the form's box (Vue's root <form>), so a class on the element lands on it.
+
+type Validatable = HTMLElement & { checkValidity(): boolean, reportValidity(): boolean, validity: ValidityState, willValidate: boolean }
 
 const TEXT_INPUT = /^(text|email|password|search|tel|url|number|date|datetime-local|month|time|week)$/
 
@@ -77,7 +81,25 @@ export class Form extends DsElement {
 		this.emit('submit')
 		// Vue moves focus after the next render (nextTick), once the errors the submit raised are drawn.
 		await new Promise((resolve) => setTimeout(resolve))
-		;[...this.querySelectorAll<HTMLElement>('[invalid], [aria-invalid="true"]')][0]?.focus()
+		this.firstWrong()?.focus()
+	}
+
+	/** Its fields: the controls and form-associated elements in it that take part in validation. */
+	get fields(): Validatable[] {
+		return [...this.querySelectorAll<HTMLElement>('*')].filter((el): el is Validatable => typeof (el as Partial<Validatable>).checkValidity === 'function' && (el as Validatable).willValidate === true)
+	}
+	private firstWrong() {
+		const fields = new Set<HTMLElement>(this.fields)
+		return [...this.querySelectorAll<HTMLElement>('*')].find((el) => el.matches('[invalid], [aria-invalid="true"]') || (fields.has(el) && !(el as Validatable).validity.valid)) ?? null
+	}
+	/** Whether every field is valid (no events, no messages). */
+	checkValidity() {
+		return this.fields.every((f) => f.validity.valid)
+	}
+	/** Like checkValidity, and the first invalid field shows the browser's message and takes focus. */
+	reportValidity() {
+		const bad = this.fields.find((f) => !f.validity.valid)
+		return bad ? bad.reportValidity() : true
 	}
 
 	render() {

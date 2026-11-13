@@ -22,7 +22,7 @@ export class RadioGroup extends DsFormElement {
 	static styles = [DsFormElement.styles, styles]
 	static shadowRootOptions = { ...LitElement.shadowRootOptions, delegatesFocus: true }
 	static dsField = true
-	static properties = { options: { type: Array }, label: {}, name: {}, inline: { type: Boolean }, disabled: { type: Boolean, reflect: true }, value: {} }
+	static properties = { options: { type: Array }, label: {}, name: {}, inline: { type: Boolean }, disabled: { type: Boolean, reflect: true }, required: { type: Boolean }, value: {} }
 
 	options: RadioOption[] = []
 	/** The group's name for assistive tech. */
@@ -33,11 +33,17 @@ export class RadioGroup extends DsFormElement {
 	inline = false
 	disabled = false
 	value?: string
+	/** One must be picked for its form to send. */
+	required = false
 	private group = uid('radio')
 
 	protected updated(changed: PropertyValues) {
 		super.updated(changed)
 		if (changed.has('value')) this.internals.setFormValue(this.value ?? null)
+	}
+	// A group's missing pick is on every radio in it: the first one that can be picked reports it.
+	protected validityControl() {
+		return this.renderRoot.querySelector<HTMLInputElement>('input:not(:disabled)')
 	}
 	formResetCallback() {
 		this.value = this.getAttribute('value') ?? undefined
@@ -50,7 +56,7 @@ export class RadioGroup extends DsFormElement {
 	render() {
 		const name = this.name ?? this.group
 		return html`<div data-ds="radio-group" role="radiogroup" aria-label=${this.label} class="ds-radios" data-inline=${ifDefined(this.inline ? 'true' : undefined)}>${this.options.map((o) => html`<label class="ds-radiorow" data-disabled=${ifDefined(this.inactive || o.disabled ? 'true' : undefined)}>
-				<span class="ds-radio"><input type="radio" name=${name} .value=${o.value} .checked=${live(this.value === o.value)} ?disabled=${this.inactive || !!o.disabled} aria-describedby=${ifDefined(o.hint ? `${name}-${o.value}` : undefined)} @input=${() => { this.value = o.value }} @change=${this.onChange}><i aria-hidden="true"></i></span>
+				<span class="ds-radio"><input type="radio" name=${name} .value=${o.value} .checked=${live(this.value === o.value)} ?disabled=${this.inactive || !!o.disabled} ?required=${this.required} aria-describedby=${ifDefined(o.hint ? `${name}-${o.value}` : undefined)} @input=${() => { this.value = o.value }} @change=${this.onChange}><i aria-hidden="true"></i></span>
 				<span class="flex min-w-0 flex-col">
 					<span>${o.label}</span>
 					${o.hint ? html`<span id=${`${name}-${o.value}`} class="type-meta text-fg-muted">${o.hint}</span>` : nothing}

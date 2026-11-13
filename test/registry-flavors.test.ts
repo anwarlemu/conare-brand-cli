@@ -130,9 +130,34 @@ describe.skipIf(!existsSync(CHROME))('registry flavors: elements in a browser', 
   ${['shared', 'input', 'switch', 'combobox', 'select', 'button', 'hold-button'].map((m) => `import '/elements/${m}.js'`).join('\n  ')}
   window.ready = true
 </script></body></html>`;
+	// Every field required and empty, in a native form, in conare-form, and the request-access page's own form.
+	const validityPage = `<!doctype html><html><head><link rel="stylesheet" href="/brand.css"></head><body>
+<form id="v">
+  <${prefix}-input id="v-input" name="name" required></${prefix}-input>
+  <${prefix}-textarea id="v-textarea" name="about" required></${prefix}-textarea>
+  <${prefix}-native-select id="v-native" name="size" value="" required><option value="" disabled>Choose</option><option>1-10</option></${prefix}-native-select>
+  <${prefix}-checkbox id="v-checkbox" name="terms" label="terms" required></${prefix}-checkbox>
+  <${prefix}-radio-group id="v-radio" name="plan" label="plan" required options='[{"value":"a","label":"A"},{"value":"b","label":"B"}]'></${prefix}-radio-group>
+  <${prefix}-switch id="v-switch" name="on" label="on" required></${prefix}-switch>
+  <${prefix}-select id="v-select" name="region" label="region" required options='[{"value":"us","label":"US"}]'></${prefix}-select>
+  <${prefix}-date-picker id="v-date" name="day" aria-label="day" required></${prefix}-date-picker>
+  <${prefix}-input-otp id="v-otp" name="code" label="code" length="4" required></${prefix}-input-otp>
+  <${prefix}-slider id="v-slider" name="k" label="k" value="5"></${prefix}-slider>
+  <${prefix}-button type="submit">Send</${prefix}-button>
+</form>
+<${prefix}-form id="cf" label="conare form"><${prefix}-input id="cf-input" name="x" required></${prefix}-input><${prefix}-button slot="actions" type="submit">Go</${prefix}-button></${prefix}-form>
+<${prefix}-request-access-page id="rap" state="form" email="sam@acme.com" name="Sam" full="false" home-href="#" demo-href="#" sign-in-href="#" privacy-href="#"></${prefix}-request-access-page>
+<script type="module">
+  ${['shared', 'input', 'textarea', 'native-select', 'checkbox', 'radio-group', 'switch', 'combobox', 'select', 'date-picker', 'input-otp', 'slider', 'button', 'form', 'request-access-page'].map((m) => `import '/elements/${m}.js'`).join('\n  ')}
+  window.ready = true
+</script></body></html>`;
 	beforeAll(async () => {
 		server = createServer((req, res) => {
 			const url = (req.url ?? '/').split('?')[0];
+			if (url === '/validity') {
+				res.writeHead(200, { 'content-type': 'text/html' }).end(validityPage);
+				return;
+			}
 			const file = url === '/' ? null : url === '/brand.css' ? join(root, 'build/brand.css') : join(root, 'apps/www/public', url);
 			if (!file) {
 				res.writeHead(200, { 'content-type': 'text/html' }).end(page);
@@ -214,6 +239,72 @@ describe.skipIf(!existsSync(CHROME))('registry flavors: elements in a browser', 
 			// Tokens arrive through inherited variables: dark on an ancestor reaches the inner button.
 			const [light, dark] = await p.evaluate(() => ['go', 'night'].map((id) => getComputedStyle(document.getElementById(id)!.shadowRoot!.querySelector('button')!).backgroundColor));
 			expect(light).not.toBe(dark);
+		} finally {
+			await browser.close();
+		}
+	});
+
+	it('reports each field\'s validity: a required empty field blocks its form, shows the browser\'s message and takes focus', async () => {
+		const { chromium } = await import('playwright-core');
+		const browser = await chromium.launch({ executablePath: CHROME });
+		try {
+			const p = await browser.newPage();
+			await p.goto(`${base}/validity`, { waitUntil: 'networkidle' });
+			await p.waitForFunction(() => (window as unknown as { ready?: boolean }).ready);
+			await p.evaluate(() => new Promise((r) => requestAnimationFrame(r)));
+			type Field = HTMLElement & { validity: ValidityState, validationMessage: string, willValidate: boolean, checkValidity(): boolean, value: unknown, checked: boolean };
+			const ids = ['v-input', 'v-textarea', 'v-native', 'v-checkbox', 'v-radio', 'v-switch', 'v-select', 'v-date', 'v-otp'];
+			// Each required empty field is missing its value, with the browser's own message; the slider is valid.
+			const states = await p.evaluate((ids) => {
+				const native = Object.assign(document.createElement('input'), { required: true }).validationMessage;
+				const read = (id: string) => { const f = document.getElementById(id) as unknown as Field; return [id, f.willValidate, f.validity.valueMissing, f.validationMessage.length > 0, f.checkValidity()]; };
+				return { native, form: (document.getElementById('v') as HTMLFormElement).checkValidity(), fields: ids.map(read), slider: (document.getElementById('v-slider') as unknown as Field).validity.valid, input: (document.getElementById('v-input') as unknown as Field).validationMessage };
+			}, ids);
+			expect(states.form).toBe(false);
+			for (const f of states.fields) expect(f.slice(1)).toEqual([true, true, true, false]);
+			expect(states.slider).toBe(true);
+			expect(states.input).toBe(states.native);
+			// A send stops at the first: no submit, an invalid event on it, and focus in its inner control.
+			await p.evaluate(() => {
+				const w = window as unknown as { submitted: number, invalid: string[] };
+				w.submitted = 0;
+				w.invalid = [];
+				const f = document.getElementById('v') as HTMLFormElement;
+				f.addEventListener('submit', (e) => { e.preventDefault(); w.submitted++; });
+				f.addEventListener('invalid', (e) => w.invalid.push((e.target as HTMLElement).id), true);
+			});
+			await p.locator('role=button[name="Send"]').click();
+			const focus = () => p.evaluate(() => { let a = document.activeElement; const host = a?.id; while (a?.shadowRoot?.activeElement) a = a.shadowRoot.activeElement; return `${host} ${a?.localName}`; });
+			expect(await p.evaluate(() => (window as unknown as { submitted: number }).submitted)).toBe(0);
+			expect(await p.evaluate(() => (window as unknown as { invalid: string[] }).invalid[0])).toBe('v-input');
+			expect(await focus()).toBe('v-input input');
+			// Filled in, each turns valid and the form sends.
+			await p.evaluate(async () => {
+				const set = (id: string, k: string, v: unknown) => { (document.getElementById(id) as unknown as Record<string, unknown>)[k] = v; };
+				set('v-input', 'value', 'Acme'); set('v-textarea', 'value', 'Search'); set('v-native', 'value', '1-10'); set('v-checkbox', 'checked', true);
+				set('v-radio', 'value', 'a'); set('v-switch', 'checked', true); set('v-select', 'value', 'us'); set('v-date', 'value', new Date(2026, 10, 13)); set('v-otp', 'value', '1234');
+				await new Promise((r) => setTimeout(r, 50));
+			});
+			expect(await p.evaluate(() => (document.getElementById('v') as HTMLFormElement).checkValidity())).toBe(true);
+			await p.locator('role=button[name="Send"]').click();
+			expect(await p.evaluate(() => (window as unknown as { submitted: number }).submitted)).toBe(1);
+			// conare-form checks its slotted fields; reportValidity focuses the first invalid one.
+			expect(await p.evaluate(() => (document.getElementById('cf') as unknown as { checkValidity(): boolean }).checkValidity())).toBe(false);
+			expect(await p.evaluate(() => (document.getElementById('cf') as unknown as { reportValidity(): boolean }).reportValidity())).toBe(false);
+			expect(await focus()).toBe('cf-input input');
+			// The request-access page's form stops at its empty company, with no submit event.
+			await p.evaluate(() => document.getElementById('rap')!.addEventListener('submit', () => { (window as unknown as { sent: number }).sent = ((window as unknown as { sent?: number }).sent ?? 0) + 1; }));
+			await p.locator('role=button[name="Send request"]').click();
+			expect(await p.evaluate(() => (window as unknown as { sent?: number }).sent ?? 0)).toBe(0);
+			expect(await p.evaluate(() => { let a = document.activeElement; while (a?.shadowRoot?.activeElement) a = a.shadowRoot.activeElement; return a?.getAttribute('aria-label'); })).toBe('Company');
+			// A function-valued disabled (the picker's days that can't be picked) does not disable the field.
+			const picker = await p.evaluate(async () => {
+				const d = document.getElementById('v-date') as HTMLElement & { disabled: unknown, inactive: boolean };
+				d.disabled = (day: Date) => day.getDay() === 0;
+				await new Promise((r) => setTimeout(r, 30));
+				return [d.inactive, d.shadowRoot!.querySelector('button')!.disabled];
+			});
+			expect(picker).toEqual([false, false]);
 		} finally {
 			await browser.close();
 		}

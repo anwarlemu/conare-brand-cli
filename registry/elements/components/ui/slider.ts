@@ -47,6 +47,9 @@ export class Slider extends DsFormElement {
 		super.updated(changed)
 		if (changed.has('value')) this.internals.setFormValue(String(this.value))
 	}
+	protected validityControl() {
+		return this.renderRoot.querySelector<HTMLInputElement>('input')
+	}
 	formResetCallback() {
 		this.value = Number(this.getAttribute('value') ?? 0)
 	}

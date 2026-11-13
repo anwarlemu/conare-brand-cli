@@ -108,10 +108,82 @@ export class DsFormElement extends DsElement {
 	formDisabledCallback(disabled: boolean) {
 		this.formDisabled = disabled
 	}
-	/** Disabled by itself or by its fieldset: what render and handlers read. */
+	/** Disabled by itself or by its fieldset: what render and handlers read. A `disabled` that is not a boolean (the
+	 * date picker's days that can't be picked) does not disable the element. */
 	get inactive() {
-		return !!(this as unknown as { disabled?: boolean }).disabled || this.formDisabled
+		const own = (this as unknown as { disabled?: unknown }).disabled
+		return (typeof own === 'boolean' && own) || this.formDisabled
 	}
+
+	// ----- Validity -----
+	// A field is valid when its inner control is: after every render the element copies the control's validity onto
+	// itself (ElementInternals), so its form blocks on `required` and the like, :invalid matches the host, and the
+	// browser's message shows at the control, which takes focus. Fields with a native control return it from
+	// validityControl(); fields without one (a switch, a listbox trigger, the date picker) override syncValidity() and
+	// use setMissing().
+
+	/** The native control whose validity this field reports, if it has one. */
+	protected validityControl(): HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null {
+		return null
+	}
+	/** Copies the control's validity onto the element. The base calls it after every render; call it again after
+	 * changing the control outside a render. */
+	syncValidity() {
+		const c = this.validityControl()
+		if (!c) return
+		if (c.validity.valid) this.internals.setValidity({})
+		else this.internals.setValidity(flagsOf(c.validity), c.validationMessage, c)
+	}
+	/** Valid, or missing a required value with the browser's own message for that `kind` of control, shown at `anchor`. */
+	protected setMissing(missing: boolean, kind: 'input' | 'checkbox' | 'select' | 'radio', anchor?: HTMLElement | null) {
+		if (missing) this.internals.setValidity({ valueMissing: true }, missingMessage(kind), anchor ?? undefined)
+		else this.internals.setValidity({})
+	}
+	protected updated(changed: PropertyValues) {
+		super.updated(changed)
+		this.syncValidity()
+	}
+	get validity() {
+		return this.internals.validity
+	}
+	get validationMessage() {
+		return this.internals.validationMessage
+	}
+	get willValidate() {
+		return this.internals.willValidate
+	}
+	checkValidity() {
+		this.syncValidity()
+		return this.internals.checkValidity()
+	}
+	reportValidity() {
+		this.syncValidity()
+		return this.internals.reportValidity()
+	}
+}
+
+const FLAGS = ['valueMissing', 'typeMismatch', 'patternMismatch', 'tooLong', 'tooShort', 'rangeUnderflow', 'rangeOverflow', 'stepMismatch', 'badInput', 'customError'] as const
+/** A ValidityState as the plain flags setValidity takes. */
+export const flagsOf = (v: ValidityState): ValidityStateFlags => Object.fromEntries(FLAGS.map((f) => [f, v[f]]))
+
+// The browser's own "fill out this field" message, in the page's language, from a detached required control.
+const messages = new Map<string, string>()
+export function missingMessage(kind: 'input' | 'checkbox' | 'select' | 'radio') {
+	let m = messages.get(kind)
+	if (m === undefined) {
+		let probe: HTMLInputElement | HTMLSelectElement
+		if (kind === 'select') {
+			probe = document.createElement('select')
+			probe.append(new Option('', ''))
+		} else {
+			probe = document.createElement('input')
+			if (kind !== 'input') probe.type = kind
+		}
+		probe.required = true
+		m = probe.validationMessage
+		messages.set(kind, m)
+	}
+	return m
 }
 
 /** Light-DOM id for a part, unique per page (Vue's useId). */
