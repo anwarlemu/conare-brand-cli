@@ -37,7 +37,7 @@ const easings = list('--ds-easing-')
 
 <template>
   <div class="mx-auto flex w-full max-w-page-wide flex-col gap-10 px-4 pt-8 pb-16 md:px-8 md:pt-10 md:pb-20">
-    <PageHead title="Theme" description="Every value the library uses, from brand/tokens.css. Use the Tailwind utilities the theme makes (bg-surface, text-fg-muted, border-edge, type-ui) or var(--ds-*) in CSS. The dark theme applies under [data-theme=&quot;dark&quot;]." />
+    <PageHead title="Theme" description="Every value the library uses, from brand/tokens.css, in every flavor. With Tailwind, use the utilities the theme makes (bg-surface, text-fg-muted, border-edge, type-ui); without it, var(--ds-*) in CSS, which brand.css defines for any page. The web components read the same variables through their shadow roots, so the dark theme applies to all three under [data-theme=&quot;dark&quot;] on any ancestor." />
 
     <section class="flex flex-col gap-4" aria-labelledby="roles">
       <div class="flex flex-wrap items-center justify-between gap-3">

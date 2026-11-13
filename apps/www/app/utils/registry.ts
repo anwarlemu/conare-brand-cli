@@ -67,9 +67,30 @@ export function flavorFiles(item: SiteItem, flavor: Flavor) {
   return { files: item.files, examples: item.examples.map(e => `examples/${item.name}/${e.name}.vue`) }
 }
 
-/** The tags a page with no build step loads: the brand's stylesheet, then each element module the item needs. */
-export function elementTags(item: SiteItem) {
+/** The modules that define an item's own elements (named after its tags); others load with them (relative imports). */
+export function tagModules(item: SiteItem) {
   const el = item.flavors.elements
-  if (!el) return ''
-  return [`<link rel="stylesheet" href="${assetBase}/brand.css">`, ...el.modules.map(m => `<script type="module" src="${assetBase}/${m}"></script>`)].join('\n')
+  if (!el) return []
+  const own = el.tags.map(t => `elements/${t.replace(`${elementPrefix}-`, '')}.js`).filter(m => el.modules.includes(m))
+  return own.length ? own : el.modules.filter(m => m !== 'elements/shared.js').slice(0, 1)
 }
+
+/** The tags a page with no build step loads: the brand's stylesheet, then each module that defines the item's elements. */
+export function elementTags(item: SiteItem) {
+  if (!item.flavors.elements) return ''
+  return [`<link rel="stylesheet" href="${assetBase}/brand.css">`, ...tagModules(item).map(m => `<script type="module" src="${assetBase}/${m}"></script>`)].join('\n')
+}
+
+/** The component names a Vue or React file exports, as an app imports them (the alias `add` writes through: @/). */
+export function importLines(item: SiteItem, flavor: Flavor) {
+  if (flavor === 'elements') return ''
+  const files = flavor === 'react' ? (item.flavors.react?.files ?? []).filter(f => /react\/components\/.*\.tsx$/.test(f)) : item.files.filter(f => f.startsWith('components/') && f.endsWith('.vue'))
+  return files.map((f) => {
+    const name = f.split('/').pop()!.replace(/\.(vue|tsx)$/, '')
+    const path = f.replace(/^react\//, '').replace(/\.tsx$/, '')
+    return flavor === 'react' ? `import { ${name} } from '@/${path}'` : `import ${name} from '@/${path}'`
+  }).join('\n')
+}
+
+/** A file as an app has it after `add`: React's library imports (@/react/...) through the app's @/ alias. */
+export const asInstalled = (code: string, flavor: Flavor) => (flavor === 'react' ? code.replace(/(['"])@\/react\//g, '$1@/') : code)

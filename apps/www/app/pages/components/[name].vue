@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { ArrowLeft, ArrowRight } from 'lucide-vue-next'
 import CodeBlock from '@/components/ui/CodeBlock.vue'
-import { addCommand, elementTags, FLAVORS, flavorFiles, hasFlavor, findItem, ordered, sourceOf } from '~/utils/registry'
+import { addCommand, asInstalled, elementTags, FLAVORS, flavorFiles, hasFlavor, findItem, importLines, ordered, sourceOf } from '~/utils/registry'
 import { useFlavor } from '~/utils/flavor'
 
 // One item: its install line, every example live in a frame, when to use it and not, the examples' code, the
@@ -22,8 +22,19 @@ const ported = computed(() => hasFlavor(item.value!, flavor.value))
 const shown = computed(() => (ported.value ? flavor.value : 'vue'))
 const flavorLabel = computed(() => FLAVORS.find(f => f.value === flavor.value)!.label)
 const files = computed(() => flavorFiles(item.value!, shown.value))
-const examples = computed(() => files.value.examples.map(path => ({ label: path.split('/').pop()!, code: sourceOf(path) })))
-const sources = computed(() => files.value.files.map(f => ({ label: f.split('/').pop()!, code: sourceOf(f) })))
+// The element examples as the registry ships them (Lucide icons inlined as SVGs, ready to paste), once fetched.
+const built = ref<Record<string, string>>({})
+watch(shown, async (f) => {
+  if (f !== 'elements' || Object.keys(built.value).length) return
+  try {
+    const data = await $fetch<{ flavors?: { elements?: { examples: Array<{ path: string, content: string }> } } }>(`/r/${item.value!.name}.json`)
+    built.value = Object.fromEntries((data.flavors?.elements?.examples ?? []).map(e => [e.path, e.content]))
+  }
+  catch {}
+}, { immediate: true })
+const examples = computed(() => files.value.examples.map(path => ({ label: path.split('/').pop()!, code: built.value[path] ?? asInstalled(sourceOf(path), shown.value) })))
+const sources = computed(() => files.value.files.map(f => ({ label: f.split('/').pop()!, code: asInstalled(sourceOf(f), shown.value) })))
+const imports = computed(() => importLines(item.value!, shown.value))
 const requires = computed(() => (shown.value === 'vue' ? item.value!.requires : item.value!.flavors[shown.value]?.requires ?? []))
 const packages = computed(() => (shown.value === 'vue' ? item.value!.dependencies : shown.value === 'react' ? item.value!.flavors.react?.dependencies ?? [] : []))
 const tags = computed(() => (shown.value === 'elements' ? item.value!.flavors.elements!.tags.map(t => `<${t}>`).join(', ') : ''))
@@ -38,6 +49,7 @@ const toc = [['preview', 'Preview'], ['usage', 'Usage'], ['example', 'Example'],
           <FlavorSwitch />
           <InstallLine :command="addCommand(item.name, shown)" />
           <InstallLine v-if="shown === 'elements'" :command="elementTags(item)" />
+          <InstallLine v-else-if="imports" :command="imports" />
           <p v-if="!ported" class="type-meta text-fg-muted">{{ item.title }} has no {{ flavorLabel }} version yet; the Vue files show below.</p>
         </div>
       </PageHead>
@@ -73,6 +85,8 @@ const toc = [['preview', 'Preview'], ['usage', 'Usage'], ['example', 'Example'],
       <section class="flex flex-col gap-4" aria-labelledby="example">
         <SectionHead id="example" title="Example" />
         <p class="type-ui text-fg-soft">The code of the examples above. They use sample data; connect your page's data, routes and callbacks.</p>
+        <p v-if="shown === 'elements'" class="type-ui text-fg-soft">The layout around the elements uses the theme's utility classes (<code class="type-code-sm">flex</code>, <code class="type-code-sm">gap-4</code>, <code class="type-code-sm">type-meta</code>). On a page without Tailwind, <code class="type-code-sm">npx conare-ds view {{ item.name }}</code> prints each example with the CSS those classes need, in brand tokens; or lay it out with your own CSS.</p>
+        <p v-else-if="shown === 'react'" class="type-ui text-fg-soft">Imports read as they do in your app after <code class="type-code-sm">add</code> (through the <code class="type-code-sm">@/</code> alias; relative where the app has none).</p>
         <CodeBlock :key="`examples-${shown}`" :samples="examples" label="examples" />
       </section>
 
