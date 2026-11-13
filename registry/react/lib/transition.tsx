@@ -1,5 +1,6 @@
 'use client'
 import { Children, cloneElement, isValidElement, useLayoutEffect, useRef, useState, type ReactElement, type ReactNode, type Ref } from 'react'
+import { flushSync } from 'react-dom'
 
 // Vue's <Transition> and <TransitionGroup> for the React flavor, with the same class names, so a Vue item's CSS
 // (.ds-pop-enter-from, .ds-toast-leave-active, .ds-toast-move...) works unchanged:
@@ -8,8 +9,9 @@ import { Children, cloneElement, isValidElement, useLayoutEffect, useRef, useSta
 //   <TransitionGroup name="ds-toast">{toasts.map((t) => <p key={t.id} ... />)}</TransitionGroup>
 //
 // Entering: <name>-enter-from and -enter-active, then a frame later -enter-to in place of -enter-from, until the
-// transition ends. Leaving: the same with -leave-*, and the element stays until it has. A group also moves the others
-// with <name>-move (FLIP). `css={false}` skips the classes (Vue's :css="false"); `duration` is Vue's explicit duration
+// transition ends. Leaving: the same with -leave-*, and the element stays until it has, then goes in the same task its
+// classes come off (flushSync), so it never shows again for a frame. A group also moves the others with <name>-move
+// (FLIP), measured once the entering and leaving children have their classes, as Vue's are. `css={false}` skips the classes (Vue's :css="false"); `duration` is Vue's explicit duration
 // in ms, a number or { enter, leave }. The child must take a ref (a DOM element) and className.
 type Duration = number | { enter: number, leave: number }
 type Phase = 'enter' | 'leave'
@@ -83,7 +85,8 @@ export function Transition({ show, name, css = true, duration, appear, children 
     if (show) {
       if (node && css && (before !== null || appear)) void runTransition(node, name, 'enter', duration)
     }
-    else if (node && css && before) void runTransition(node, name, 'leave', duration).then(() => { if (!was.current) setPresent(false) })
+    // Gone in the same task its leave classes come off, as Vue removes it, so no frame shows it whole again.
+    else if (node && css && before) void runTransition(node, name, 'leave', duration).then(() => { if (!was.current) flushSync(() => setPresent(false)) })
     else setPresent(false)
   }, [show]) // eslint-disable-line react-hooks/exhaustive-deps
   const child = (show ? children : last.current) as Child
@@ -119,29 +122,40 @@ export function TransitionGroup({ name, children }: TransitionGroupProps) {
   for (const [key, node] of nodes.current) rects.current.set(key, node.getBoundingClientRect())
 
   useLayoutEffect(() => {
+    // First every entering and leaving child takes its classes, so the measures for the move below see each as Vue does
+    // (an entering one at its enter-from, a leaving one out of the flow): measuring first would fix an entering child's
+    // style as it is, fully shown, and its transition would start from the end.
+    const entered = new Set<string>()
     for (const c of list) {
       const key = c.key!
       const node = nodes.current.get(key)
       if (!node) continue
       if (leaving.has(key)) {
         if (!node.classList.contains(`${name}-leave-active`)) {
-          void runTransition(node, name, 'leave').then(() => setLeaving((m) => {
+          // Gone in the same task its leave classes come off, so no frame shows it whole again.
+          void runTransition(node, name, 'leave').then(() => flushSync(() => setLeaving((m) => {
             const n = new Map(m)
             n.delete(key)
             return n
-          }))
+          })))
         }
         continue
       }
       if (!seen.current.has(key)) {
         seen.current.add(key)
+        entered.add(key)
         if (!firstRender.current) void runTransition(node, name, 'enter')
-        continue
       }
-      // FLIP: from where it was to where it is.
+    }
+    // Then the move: from where each stayed child was to where it is.
+    for (const c of list) {
+      const key = c.key!
+      const node = nodes.current.get(key)
+      if (!node || leaving.has(key) || entered.has(key)) continue
       const before = rects.current.get(key)
+      if (!before) continue
       const after = node.getBoundingClientRect()
-      if (before && (before.left !== after.left || before.top !== after.top)) {
+      if (before.left !== after.left || before.top !== after.top) {
         node.style.transitionDuration = '0s'
         node.style.transform = `translate(${before.left - after.left}px, ${before.top - after.top}px)`
         void node.offsetWidth
