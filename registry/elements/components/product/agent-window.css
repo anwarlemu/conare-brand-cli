@@ -1,0 +1,19 @@
+/* AgentWindow.vue's <style>, as it is. */
+.ds-agentwin-card { border: var(--ds-border-hairline) solid var(--ds-color-neutral-300); background: var(--ds-color-code); color: var(--ds-color-code-fg); font-family: var(--ds-font-text); }
+.ds-agentwin p { margin: 0; }
+.ds-agentwin-note { display: flex; align-items: center; gap: var(--ds-space-sm); color: var(--ds-color-code-muted); font-size: var(--ds-text-ui); line-height: var(--ds-text-meta-leading); }
+.ds-agentwin-chip { display: inline-flex; align-items: center; gap: var(--ds-space-sm); padding: 1px 6px; background: var(--ds-color-neutral-200); font-size: var(--ds-text-meta); line-height: 18px; vertical-align: 1px; white-space: nowrap; }
+.ds-agentwin-shimmer { background: linear-gradient(90deg, var(--ds-color-neutral-500) 30%, var(--ds-color-off-white) 50%, var(--ds-color-neutral-500) 70%) 0 0 / 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; opacity: 0; }
+.ds-agentwin-swap { opacity: 1; }
+.ds-agentwin[data-play] .ds-agentwin-card { animation: ds-agentwin-card var(--ds-duration-viz-card) var(--ds-easing-out) 80ms both; }
+.ds-agentwin[data-play] .ds-agentwin-in { animation: ds-agentwin-in var(--ds-duration-viz-in) var(--ds-easing-out) both; animation-delay: calc(var(--d) * 1ms); }
+.ds-agentwin[data-play] .ds-agentwin-shimmer { opacity: 1; animation: ds-agentwin-shimmer var(--ds-duration-viz-shimmer) linear infinite, ds-agentwin-out var(--ds-duration-enter) ease both; animation-delay: 0ms, calc(var(--d) * 1ms); }
+.ds-agentwin[data-play] .ds-agentwin-swap { animation: ds-agentwin-in var(--ds-duration-entrance) var(--ds-easing-out) both; animation-delay: calc(var(--d) * 1ms + 120ms); }
+@keyframes ds-agentwin-card { from { opacity: 0; transform: translateY(16px) scale(0.985); } }
+@keyframes ds-agentwin-in { from { opacity: 0; transform: translateY(8px); } }
+@keyframes ds-agentwin-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes ds-agentwin-shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .ds-agentwin[data-play] :is(.ds-agentwin-card, .ds-agentwin-in, .ds-agentwin-swap) { animation: none; }
+  .ds-agentwin[data-play] .ds-agentwin-shimmer { opacity: 0; animation: none; }
+}

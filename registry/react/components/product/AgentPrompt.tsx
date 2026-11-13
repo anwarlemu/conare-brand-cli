@@ -1,0 +1,110 @@
+'use client'
+import { useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
+import { ChevronDown } from 'lucide-react'
+import { AgentSplit } from '@/react/components/product/AgentSplit'
+import { AgentWindow } from '@/react/components/product/AgentWindow'
+import { CodePop } from '@/react/components/ui/CodePop'
+import { CellBurst } from '@/react/components/visuals/CellBurst'
+import { Grain } from '@/react/components/visuals/Grain'
+
+// Connect a coding agent over MCP (the console's agents/Connect.vue): one column in the double-rule frame. The agent
+// at work, large, on the dark panel with its grain and a sheet of cells; then the title with its red stop, the prompt
+// in a paper box that shows its first lines and opens the rest in place (Show all: to its height in 200ms, back in
+// 140ms, from wherever it is), and under it Copy prompt with the one-click installs, and the API call opening from its
+// own button. The agent signs in with OAuth, so no key is shown. The prompt, the request and the installs come through props.
+export interface AgentPromptProps { prompt: string, code: string, installs?: { label: string, href: string }[], title?: string, onCopied?: () => void, onInstall?: (label: string) => void }
+
+export function AgentPrompt({ prompt, code, installs, title = 'Give this prompt into your agent', onCopied, onInstall }: AgentPromptProps) {
+  // A wrapped line hangs past its indent and its list mark, so the steps still read as steps.
+  const lines = prompt.split('\n').map((line) => {
+    const text = line.trimStart()
+    return { text, at: line.length - text.length, mark: /^(?:- |\d+\. )/.exec(text)?.[0].length ?? 0 }
+  })
+  const [all, setAll] = useState(false)
+  const textId = useId()
+  const box = useRef<HTMLDivElement | null>(null)
+  // Vue measures before the flip and after the next render (nextTick); here the height before goes in a ref and the
+  // layout effect reads the height after, before the paint.
+  const from = useRef<number | null>(null)
+  function toggle() {
+    const el = box.current
+    from.current = el?.offsetHeight ?? 0
+    el?.getAnimations().forEach(a => a.cancel())
+    setAll(a => !a)
+  }
+  useLayoutEffect(() => {
+    const el = box.current
+    const start = from.current
+    from.current = null
+    if (start === null || !el) return
+    const to = el.offsetHeight
+    if (to === start || matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const easing = getComputedStyle(el).getPropertyValue('--ds-easing-out').trim() || 'ease-out'
+    el.animate([{ height: `${start}px` }, { height: `${to}px` }], { duration: all ? 200 : 140, easing })
+  }, [all])
+
+  return (
+    <>
+      <style href="ds-agent-prompt" precedence="ds">{css}</style>
+      <div data-ds="agent-prompt" className="ds-agentstep">
+        <section className="ds-agentwork" aria-labelledby={`${textId}-title`}>
+          <div className="ds-agentwork-panel" aria-hidden="true">
+            <Grain />
+            <div className="pointer-events-none absolute inset-0 opacity-70"><CellBurst seed={17} /></div>
+            <div className="relative flex w-full justify-center px-4 py-8"><AgentWindow /></div>
+          </div>
+          <div className="ds-agentwork-card">
+            <h2 id={`${textId}-title`} className="type-heading-2 text-balance">{title}<span className="text-fg-accent-display">.</span></h2>
+            <div className="ds-promptbox">
+              <div id={textId} ref={box} className="ds-promptbox-text" data-all={all || undefined}>
+                <pre>{lines.map((l, i) => <span key={i} style={{ '--at': l.at, '--mark': l.mark } as CSSProperties}>{l.text}</span>)}</pre>
+              </div>
+              <div className="ds-promptbox-foot">
+                <button type="button" className="ds-promptbox-more" aria-expanded={all} aria-controls={textId} onClick={toggle}>
+                  <span className="ds-promptbox-stack"><span data-on={!all || undefined} aria-hidden={all}>Show all</span><span data-on={all || undefined} aria-hidden={!all}>Show less</span></span>
+                  <ChevronDown size={12} strokeWidth={1.5} className="ds-promptbox-chev" aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+            <div className="ds-agentwork-act">
+              <AgentSplit prompt={prompt} installs={installs} large onCopied={() => onCopied?.()} onInstall={l => onInstall?.(l)} />
+              <CodePop code={code} label="API call" title="Search from your code" large />
+            </div>
+          </div>
+        </section>
+      </div>
+    </>
+  )
+}
+
+export default AgentPrompt
+
+const css = `
+.ds-agentstep { display: block; container-type: inline-size; }
+/* ds-override: 5px of margin holds the double rule (a 1px outline 4px out) inside the frame, as measured. */
+.ds-agentwork { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); gap: 1px; margin: 5px; border: var(--ds-border-hairline) solid var(--ds-color-edge); outline: var(--ds-border-hairline) solid var(--ds-color-edge); outline-offset: 4px; background: var(--ds-color-edge); }
+.ds-agentwork-panel { position: relative; display: flex; min-height: 372px; align-items: center; overflow: hidden; background: var(--ds-color-neutral-200); color: var(--ds-color-neutral-300); }
+.ds-agentwork-card { display: flex; flex-direction: column; align-items: flex-start; gap: var(--ds-space-md); padding: 24px; background: var(--ds-color-surface); }
+.ds-agentwork-act { display: flex; width: 100%; flex-wrap: wrap; align-items: center; gap: var(--ds-space-md); margin-top: 8px; }
+.ds-promptbox { width: 100%; margin-top: 8px; border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface-subtle); }
+.ds-promptbox-text { max-height: 228px; overflow: hidden; padding: 12px 12px 0; }
+.ds-promptbox-text[data-all] { max-height: none; padding-bottom: 12px; }
+.ds-promptbox pre { margin: 0; font-family: var(--ds-font-code); font-size: var(--ds-text-meta); line-height: 18px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ds-promptbox pre span { display: block; min-height: 18px; padding-left: calc((var(--at) + var(--mark)) * 1ch); text-indent: calc(var(--mark) * -1ch); }
+.ds-promptbox-foot { display: flex; height: var(--ds-size-control-md); align-items: center; border-top: var(--ds-border-hairline) solid var(--ds-color-edge); }
+.ds-promptbox-more { position: relative; display: inline-flex; align-items: center; gap: var(--ds-space-xs); margin-left: 4px; color: var(--ds-color-fg-soft); font-size: var(--ds-text-meta); font-weight: var(--ds-font-weight-medium); line-height: var(--ds-text-meta-leading); white-space: nowrap; cursor: pointer; transition: color var(--ds-duration-micro) var(--ds-easing-standard); }
+@media (hover: hover) and (pointer: fine) { .ds-promptbox-more:hover { color: var(--ds-color-fg); } }
+.ds-promptbox-more:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: 2px; }
+.ds-promptbox-stack { display: inline-grid; }
+.ds-promptbox-stack > * { grid-area: 1 / 1; transition: opacity var(--ds-duration-swap) var(--ds-easing-out), filter var(--ds-duration-swap) var(--ds-easing-out), transform var(--ds-duration-enter) var(--ds-easing-out); }
+.ds-promptbox-stack > :not([data-on]) { opacity: 0; filter: blur(2px); }
+.ds-promptbox-stack > :first-child:not([data-on]) { transform: translateY(-4px); }
+.ds-promptbox-stack > :last-child:not([data-on]) { transform: translateY(4px); }
+.ds-promptbox-chev { transition: rotate var(--ds-duration-micro) var(--ds-easing-out); }
+.ds-promptbox-more[aria-expanded="true"] .ds-promptbox-chev { rotate: 180deg; transition-duration: var(--ds-duration-slide); }
+@media (pointer: coarse), (max-width: 767px) { .ds-promptbox-more::after { position: absolute; inset: -12px; content: ""; } }
+@media (prefers-reduced-motion: reduce) {
+  .ds-promptbox-stack > * { filter: none; transform: none; transition: opacity var(--ds-duration-micro) ease; }
+  .ds-promptbox-chev { transition: none; }
+}
+`

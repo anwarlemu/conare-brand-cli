@@ -1,0 +1,94 @@
+/* PixelButton.vue's <style> (the copy half is its markup, drawn here), MenuItem.vue's (the menu's rows), then
+   AgentSplit.vue's, as they are. */
+.ds-px {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  height: var(--ds-size-control-sm);
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ds-space-sm);
+  overflow: hidden;
+  padding: 0 10px;
+  background: var(--ds-color-surface-inverse);
+  color: var(--ds-color-off-white);
+  font-size: var(--ds-text-meta);
+  font-weight: var(--ds-font-weight-medium);
+  white-space: nowrap;
+  cursor: pointer;
+  will-change: transform;
+  transition-property: color, background-color;
+  transition-duration: var(--ds-duration-micro);
+  transition-timing-function: var(--ds-easing-standard);
+}
+.ds-px:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: var(--ds-border-focus); }
+.ds-px-fill { position: absolute; inset: 0; z-index: -1; display: grid; pointer-events: none; }
+.ds-px-fill i { position: relative; background: var(--ds-color-edge-accent); font-style: normal; opacity: 0; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard) calc(var(--o) * 1ms); }
+.ds-px-label { display: inline-flex; align-items: center; gap: var(--ds-space-sm); line-height: 1.4; }
+@media (hover: hover) and (pointer: fine) {
+  .ds-px:hover:not(:disabled) .ds-px-fill i { opacity: 1; transition: opacity var(--ds-duration-cell) var(--ds-easing-decelerate) calc(var(--i) * 1ms); }
+}
+.ds-px:active:not(:disabled) .ds-px-fill i { background: var(--ds-color-home-red-press); opacity: 1; transition: opacity var(--ds-duration-press) ease 0ms; }
+.ds-px:focus-visible .ds-px-fill i,
+.ds-px[data-done="true"] .ds-px-fill i { opacity: 1; transition: opacity var(--ds-duration-cell) var(--ds-easing-decelerate) calc(var(--i) * 1ms); }
+.ds-px:disabled { background: var(--ds-color-surface-sunken); color: var(--ds-color-fg-soft); cursor: not-allowed; }
+.ds-px:disabled .ds-px-fill { display: none; }
+.ds-px[data-large="true"] { height: var(--ds-size-control-lg); gap: var(--ds-space-lg); padding: 0 12px; font-size: var(--ds-text-ui); }
+.ds-px[data-large="true"]::before { position: absolute; inset: 0; z-index: -1; background-image: url("/conare-ds/textures/grain.webp"); background-size: 170px auto; opacity: 0.3; content: ""; pointer-events: none; }
+.ds-px[data-large="true"]:disabled::before { display: none; }
+@media (pointer: coarse), (max-width: 767px) {
+  .ds-px, .ds-px[data-large="true"] { height: var(--ds-size-control-touch); font-size: var(--ds-text-ui); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ds-px-fill i, .ds-px:hover .ds-px-fill i { transition: none; }
+}
+.ds-menu-item { position: relative; display: flex; width: 100%; height: var(--ds-size-control-md); align-items: center; gap: var(--ds-space-md); padding: 0 10px 0 14px; color: var(--ds-color-fg); font-size: var(--ds-text-ui); text-align: left; outline: none; cursor: pointer; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-menu-item::before { position: absolute; top: 50%; left: 5px; width: 4px; height: 4px; margin-top: -2px; background: var(--ds-color-edge-accent); content: ""; opacity: 0; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-menu-item:focus-visible { background: var(--ds-color-surface-subtle); }
+.ds-menu-item:focus-visible::before { opacity: 1; }
+@media (hover: hover) and (pointer: fine) {
+  .ds-menu-item:hover { background: var(--ds-color-surface-subtle); }
+  .ds-menu-item:hover::before { opacity: 1; }
+  .ds-menu-item[data-danger]:hover { background: var(--ds-color-surface-danger); }
+}
+.ds-menu-item[aria-current="true"] { font-weight: var(--ds-font-weight-medium); }
+.ds-menu-item:disabled { color: var(--ds-color-fg-muted); cursor: progress; }
+.ds-menu-item[data-danger] { color: var(--ds-color-fg-danger); }
+.ds-menu-item[data-danger]:focus-visible { background: var(--ds-color-surface-danger); }
+@media (pointer: coarse), (max-width: 767px) { .ds-menu-item { height: auto; min-height: 44px; } }
+.ds-split { position: relative; display: flex; align-items: center; }
+.ds-split-swap { display: grid; }
+.ds-split-swap > span { display: inline-flex; grid-area: 1 / 1; align-items: center; justify-content: center; gap: var(--ds-space-sm); transition: opacity var(--ds-duration-glide) ease, filter var(--ds-duration-glide) ease, transform var(--ds-duration-settle) var(--ds-easing-out); }
+.ds-split-swap-b { opacity: 0; filter: blur(2px); transform: translateY(5px) scale(0.96); }
+.ds-split-swap[data-on] .ds-split-swap-a { opacity: 0; filter: blur(2px); transform: translateY(-5px) scale(0.96); }
+.ds-split-swap[data-on] .ds-split-swap-b { opacity: 1; filter: none; transform: none; }
+.ds-split-arrow { position: relative; isolation: isolate; display: inline-flex; width: 28px; height: var(--ds-size-control-sm); flex-shrink: 0; align-items: center; justify-content: center; overflow: hidden; background: var(--ds-color-action-primary); color: var(--ds-color-action-primary-fg); cursor: pointer; }
+.ds-split[data-large] .ds-split-arrow { width: 32px; height: var(--ds-size-control-lg); }
+.ds-split[data-large] .ds-split-arrow::before { position: absolute; inset: 0; z-index: -1; background-image: url("/conare-ds/textures/grain.webp"); background-size: 170px auto; opacity: 0.3; content: ""; pointer-events: none; }
+.ds-split-arrow:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: var(--ds-border-focus); }
+.ds-split-fill { position: absolute; inset: 0; z-index: -1; display: grid; grid-template-columns: repeat(7, 6px); grid-auto-rows: 6px; pointer-events: none; }
+.ds-split-fill i { background: var(--ds-color-edge-accent); font-style: normal; opacity: 0; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard) calc(var(--o) * 1ms); }
+.ds-split-chev { transition: rotate var(--ds-duration-micro) var(--ds-easing-out); }
+.ds-split-arrow[aria-expanded="true"] .ds-split-chev { rotate: 180deg; transition-duration: var(--ds-duration-slide); }
+/* The two halves light as one: the copy's squares (PixelButton's) and the arrow's. */
+@media (hover: hover) and (pointer: fine) {
+  .ds-split:hover :is(.ds-px-fill, .ds-split-fill) i { opacity: 1; transition: opacity var(--ds-duration-cell) var(--ds-easing-decelerate) calc(var(--i) * 1ms); }
+}
+.ds-split:active :is(.ds-px-fill, .ds-split-fill) i { opacity: 1; transition: opacity var(--ds-duration-press) ease 0ms; }
+.ds-split:has(> :focus-visible) :is(.ds-px-fill, .ds-split-fill) i { opacity: 1; }
+.ds-split[data-done] :is(.ds-px-fill, .ds-split-fill) i { opacity: 1; transition: opacity var(--ds-duration-cell) var(--ds-easing-decelerate) calc(var(--i) * 1ms); }
+.ds-split-menu { position: absolute; top: calc(100% + 6px); right: 0; left: 0; z-index: 40; display: flex; flex-direction: column; border: var(--ds-border-hairline) solid var(--ds-color-action-primary); background: var(--ds-color-action-primary); animation: ds-split-menu-in var(--ds-duration-glide) var(--ds-easing-standard) both; }
+.ds-split-menu:has(:focus-visible) { animation: none; }
+@keyframes ds-split-menu-in { from { opacity: 0; transform: translateY(-4px); } }
+.ds-split-menu .ds-menu-item { color: var(--ds-color-off-white); }
+.ds-split-menu .ds-menu-item::before { display: none; }
+.ds-split-menu .ds-menu-item:focus-visible { background: color-mix(in srgb, var(--ds-color-off-white) 16%, var(--ds-color-action-primary)); }
+@media (hover: hover) and (pointer: fine) { .ds-split-menu .ds-menu-item:hover { background: color-mix(in srgb, var(--ds-color-off-white) 16%, var(--ds-color-action-primary)); } }
+@media (pointer: coarse), (max-width: 767px) { .ds-split-arrow, .ds-split[data-large] .ds-split-arrow { width: var(--ds-size-control-touch); height: var(--ds-size-control-touch); } }
+@media (prefers-reduced-motion: reduce) {
+  .ds-split :is(.ds-px-fill, .ds-split-fill) i { transition: none !important; }
+  .ds-split-swap > span { filter: none; transform: none; transition: opacity var(--ds-duration-micro) ease; }
+  .ds-split-menu { animation: none; }
+  .ds-split-chev { transition: none; }
+}
