@@ -1,0 +1,37 @@
+<!-- Accuracy against list price: point at a point or a row to scope it. Sample figures from the website's embedding
+     benchmark. -->
+<div class="relative grid min-h-80 place-items-center overflow-hidden bg-ds-neutral-200 px-4 py-10 text-ds-neutral-300">
+  <conare-price-viz active data='{
+      "benchmark": "ViDoRe v3, embedding",
+      "metric": "nDCG@10",
+      "points": [
+        {
+          "name": "conare-embed-1",
+          "price": 0.1,
+          "score": 67.02,
+          "ours": true
+        },
+        {
+          "name": "Mixedbread",
+          "price": 1.5,
+          "score": 62.25
+        },
+        {
+          "name": "voyage-4-large",
+          "price": 0.12,
+          "score": 60.64
+        },
+        {
+          "name": "gemini-embedding-2",
+          "price": 0.2,
+          "score": 58.7
+        },
+        {
+          "name": "Cohere embed-v4.0",
+          "price": 0.12,
+          "score": 56.63
+        }
+      ],
+      "note": "List prices per 1M tokens. Mixedbread publishes no embedding price; its $1.50 is indexing per 1M content tokens."
+    }'></conare-price-viz>
+</div>
