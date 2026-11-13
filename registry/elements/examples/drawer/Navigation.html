@@ -1,0 +1,37 @@
+<!-- The console's navigation on a phone: the bar's menu button slides the sidebar in from the left over the dimmed page.
+     Pick a page, tap the page or press Escape to close it. -->
+<div class="flex min-h-40 items-center justify-center">
+  <!-- Button.vue's icon button, as a plain button: it says whether the menu is open (aria-expanded). -->
+  <button type="button" id="open-nav" data-ds="button" class="inline-flex h-control-sm shrink-0 cursor-pointer items-center justify-center gap-1.5 border text-meta leading-5 font-medium whitespace-nowrap select-none transition-[color,background-color,border-color] duration-120 ease-standard disabled:cursor-not-allowed disabled:border-edge disabled:bg-surface-sunken disabled:text-fg-soft max-md:h-control-touch max-md:text-ui pointer-coarse:h-control-touch pointer-coarse:text-ui w-control-sm px-0 max-md:w-control-touch pointer-coarse:w-control-touch border-action-secondary-edge bg-surface text-fg hover:enabled:border-action-secondary-edge-hover active:enabled:bg-surface-subtle" aria-label="open menu" aria-expanded="false"><i data-lucide="menu" data-size="14" data-stroke-width="1.5"></i></button>
+  <conare-drawer id="nav-drawer" heading="console">
+    <nav class="flex flex-col pb-4" aria-label="console">
+      <conare-sidebar-label>Platform</conare-sidebar-label>
+      <conare-sidebar-link href="#"><i data-lucide="house" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Overview</conare-sidebar-link>
+      <conare-sidebar-link href="#" status="11" active><i data-lucide="layers" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Namespaces</conare-sidebar-link>
+      <conare-sidebar-link href="#" status="1 failed" alert><i data-lucide="network" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Sources</conare-sidebar-link>
+      <conare-sidebar-label>Manage</conare-sidebar-label>
+      <conare-sidebar-link href="#" status="4"><i data-lucide="key-round" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>API keys</conare-sidebar-link>
+      <conare-sidebar-link href="#"><i data-lucide="activity" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Usage</conare-sidebar-link>
+      <conare-sidebar-link href="#"><i data-lucide="settings" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Settings</conare-sidebar-link>
+    </nav>
+  </conare-drawer>
+</div>
+<script type="module">
+  const button = document.getElementById('open-nav')
+  const drawer = document.getElementById('nav-drawer')
+  button.addEventListener('click', () => {
+    drawer.open = true
+    button.setAttribute('aria-expanded', 'true')
+  })
+  drawer.addEventListener('open-change', () => button.setAttribute('aria-expanded', String(drawer.open)))
+  // Picking a page makes it the one you are on and closes the drawer.
+  const links = [...drawer.querySelectorAll('conare-sidebar-link')]
+  for (const link of links) {
+    link.addEventListener('click', (e) => {
+      e.preventDefault()
+      for (const l of links) l.active = l === link
+      drawer.open = false
+      button.setAttribute('aria-expanded', 'false')
+    })
+  }
+</script>

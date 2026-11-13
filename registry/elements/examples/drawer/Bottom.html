@@ -1,0 +1,29 @@
+<!-- A choice on a phone, from the bottom edge: which searches to show. The rows are 44px to land a thumb on. -->
+<div class="flex min-h-40 items-center justify-center">
+  <conare-button id="open-shows">All searches</conare-button>
+  <conare-drawer id="shows" heading="Show" side="bottom" bar>
+    <ul class="flex flex-col p-2">
+      <li><button type="button" aria-pressed="true" class="flex h-11 w-full cursor-pointer items-center gap-2 px-3 text-left type-body transition-colors duration-120 ease-standard hover:bg-surface-subtle focus-visible:bg-surface-subtle focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-focus"><span class="min-w-0 flex-1">All searches</span><i data-lucide="check" data-size="14" data-stroke-width="1.5" aria-hidden="true"></i></button></li>
+      <li><button type="button" aria-pressed="false" class="flex h-11 w-full cursor-pointer items-center gap-2 px-3 text-left type-body transition-colors duration-120 ease-standard hover:bg-surface-subtle focus-visible:bg-surface-subtle focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-focus"><span class="min-w-0 flex-1">Weak match</span><i data-lucide="check" data-size="14" data-stroke-width="1.5" aria-hidden="true" hidden></i></button></li>
+      <li><button type="button" aria-pressed="false" class="flex h-11 w-full cursor-pointer items-center gap-2 px-3 text-left type-body transition-colors duration-120 ease-standard hover:bg-surface-subtle focus-visible:bg-surface-subtle focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-focus"><span class="min-w-0 flex-1">Nothing found</span><i data-lucide="check" data-size="14" data-stroke-width="1.5" aria-hidden="true" hidden></i></button></li>
+      <li><button type="button" aria-pressed="false" class="flex h-11 w-full cursor-pointer items-center gap-2 px-3 text-left type-body transition-colors duration-120 ease-standard hover:bg-surface-subtle focus-visible:bg-surface-subtle focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-focus"><span class="min-w-0 flex-1">Failed</span><i data-lucide="check" data-size="14" data-stroke-width="1.5" aria-hidden="true" hidden></i></button></li>
+    </ul>
+  </conare-drawer>
+</div>
+<script type="module">
+  const open = document.getElementById('open-shows')
+  const drawer = document.getElementById('shows')
+  open.addEventListener('click', () => { drawer.open = true })
+  // A row picks what to show (its check moves to it) and closes the drawer.
+  const rows = [...drawer.querySelectorAll('button')]
+  for (const row of rows) {
+    row.addEventListener('click', () => {
+      for (const r of rows) {
+        r.setAttribute('aria-pressed', String(r === row))
+        r.lastElementChild.hidden = r !== row
+      }
+      open.textContent = row.textContent.trim()
+      drawer.close()
+    })
+  }
+</script>
