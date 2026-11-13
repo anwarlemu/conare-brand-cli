@@ -69,6 +69,10 @@ describe('registry flavors: output', () => {
 		expect(dark.content).toContain('class="lucide lucide-key-round"');
 		expect(dark.content).not.toContain('data-lucide');
 	});
+	it("records an element's dependencies when a bare import comes before an import ... from", () => {
+		const item = JSON.parse(readFileSync(join(root, 'apps/www/public/r/date-picker.json'), 'utf8'));
+		expect(item.flavors.elements.registryDependencies).toEqual(expect.arrayContaining(['button', 'calendar']));
+	});
 	it('lists the modules an item needs, those of the elements it renders included', () => {
 		const scope = json('apps/www/public/r/scope-menu.json').flavors.elements;
 		expect(scope.modules).toEqual(expect.arrayContaining(['elements/shared.js', 'elements/scope-menu.js', 'elements/combobox.js', 'elements/select.js', 'elements/field.js']));

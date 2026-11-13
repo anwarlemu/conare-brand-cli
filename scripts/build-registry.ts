@@ -84,7 +84,7 @@ for (const d of docs) {
 const walk = (dir: string): string[] => readdirSync(join(reg, dir), { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(posix.join(dir, e.name)) : [posix.join(dir, e.name)]));
 for (const f of walk('components')) if (!owner.has(f)) fail(`${f} belongs to no item (add it to a docs entry's files)`);
 
-const IMPORT = /(?:^|\n)\s*import\s+(?:type\s+)?(?:[\s\S]*?\s+from\s+)?['"]([^'"]+)['"]/g;
+const IMPORT = /(?:^|\n)\s*import\s+(?:type\s+)?(?:[^'";]*?\s+from\s+)?['"]([^'"]+)['"]/g;
 // The docs site bundles the library's raw source into its server build, where `typeof window` (and `typeof document`)
 // is folded away and the build fails; feature checks go through globalThis instead.
 const TYPEOF_GLOBAL = /\btypeof\s+(window|document)\b/;

@@ -16,7 +16,7 @@ export type Example = { name: string; label: string; center: boolean; half: bool
 export type FlavorDoc = { name: string; title: string; type: string; description: string; files: string[]; examples: Example[]; react_files?: string[]; elements_files?: string[] };
 type Ctx = { root: string; reg: string; outDir: string; brand: { name: string; registryHost?: string; registryUrl: string; assetBase?: string; elementPrefix?: string }; fail: (msg: string) => void; pinned: (p: string) => string };
 
-const IMPORT = /(?:^|\n)\s*(?:import|export)\s+(?:type\s+)?(?:[\s\S]*?\s+from\s+)?['"]([^'"]+)['"]/g;
+const IMPORT = /(?:^|\n)\s*(?:import|export)\s+(?:type\s+)?(?:[^'";]*?\s+from\s+)?['"]([^'"]+)['"]/g;
 const kebab = (s: string) => s.replace(/([a-z0-9])([A-Z])/g, '$1-$2').replace(/([A-Z])([A-Z][a-z])/g, '$1-$2').toLowerCase();
 
 /** The React files that stand for a Vue file. */
