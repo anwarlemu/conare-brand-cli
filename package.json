@@ -28,7 +28,11 @@
     "test:docs": "node scripts/check-docs.mjs",
     "ci": "bun run build && node scripts/ci-limits.mjs && bun run registry && vitest run",
     "release": "sh scripts/release.sh",
-    "www:build": "bun run --cwd apps/www build"
+    "www:build": "bun run --cwd apps/www build",
+    "registry:release": "bun scripts/build-registry.ts --require-all-flavors",
+    "elements": "node scripts/build-elements.mjs",
+    "parity": "node scripts/check-parity.mjs",
+    "port-order": "node scripts/port-order.mjs"
   },
   "devDependencies": {
     "@custom-elements-manifest/analyzer": "0.10.4",

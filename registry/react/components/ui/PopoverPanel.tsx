@@ -1,5 +1,5 @@
 'use client'
-import type { CSSProperties, HTMLAttributes, ReactNode } from 'react'
+import { useEffect, useState, type CSSProperties, type HTMLAttributes, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { Transition } from '@/react/lib/transition'
 import { cn } from '@/react/lib/cn'
@@ -12,8 +12,11 @@ import type { PopoverController } from '@/react/hooks/usePopover'
 export interface PopoverPanelProps extends HTMLAttributes<HTMLDivElement> { pop: PopoverController, tip?: boolean, children?: ReactNode, 'data-ds'?: string }
 
 export function PopoverPanel({ pop, tip, className, style, children, ...rest }: PopoverPanelProps) {
-  const target = pop.target ?? (typeof document === 'undefined' ? null : document.body)
-  if (!target) return null
+  // Portalled after mount, so the server's render and the first client render agree (Vue's `mounted`).
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  const target = mounted ? pop.target ?? document.body : null
+  if (!target) return <style href="ds-popover-panel" precedence="ds">{css}</style>
   const placed: CSSProperties = { left: `${pop.pos.x}px`, top: `${pop.pos.y}px`, transformOrigin: pop.pos.origin, minWidth: pop.pos.minWidth ? `${pop.pos.minWidth}px` : undefined }
   return (
     <>
