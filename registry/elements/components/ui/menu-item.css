@@ -1,0 +1,16 @@
+/* MenuItem.vue's <style>. A row is a flex item of the panel that does not shrink (Menu.vue's .ds-menu > *). */
+.ds-menu-item { position: relative; display: flex; width: 100%; height: var(--ds-size-control-md); align-items: center; gap: var(--ds-space-md); padding: 0 10px 0 14px; color: var(--ds-color-fg); font-size: var(--ds-text-ui); text-align: left; outline: none; cursor: pointer; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-menu-item::before { position: absolute; top: 50%; left: 5px; width: 4px; height: 4px; margin-top: -2px; background: var(--ds-color-edge-accent); content: ""; opacity: 0; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-menu-item:focus-visible { background: var(--ds-color-surface-subtle); }
+.ds-menu-item:focus-visible::before { opacity: 1; }
+@media (hover: hover) and (pointer: fine) {
+  .ds-menu-item:hover { background: var(--ds-color-surface-subtle); }
+  .ds-menu-item:hover::before { opacity: 1; }
+  .ds-menu-item[data-danger]:hover { background: var(--ds-color-surface-danger); }
+}
+.ds-menu-item[aria-current="true"] { font-weight: var(--ds-font-weight-medium); }
+.ds-menu-item:disabled { color: var(--ds-color-fg-muted); cursor: progress; }
+.ds-menu-item[data-danger] { color: var(--ds-color-fg-danger); }
+.ds-menu-item[data-danger]:focus-visible { background: var(--ds-color-surface-danger); }
+@media (pointer: coarse), (max-width: 767px) { .ds-menu-item { height: auto; min-height: 44px; } }
+.ds-menu-item { flex-shrink: 0; }

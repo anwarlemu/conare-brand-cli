@@ -209,27 +209,33 @@ async function keyboard(page, steps) {
 		await record(`Tab ${i + 1}`);
 	}
 	for (const s of steps) {
-		if (s.reload) {
-			await page.reload({ waitUntil: 'networkidle' });
-			await page.evaluate(() => document.fonts.ready);
-			await page.waitForTimeout(400);
+		const label = s.label ?? s.key ?? s.click ?? s.hover ?? s.hold ?? s.focus ?? s.type ?? s.down ?? s.up;
+		try {
+			if (s.reload) {
+				await page.reload({ waitUntil: 'networkidle' });
+				await page.evaluate(() => document.fonts.ready);
+				await page.waitForTimeout(400);
+			}
+			const at = (sel) => page.locator(sel).first();
+			if (s.click) await at(s.click).click({ timeout: 3000 });
+			if (s.clickAt) await page.mouse.click(s.clickAt[0], s.clickAt[1]);
+			if (s.focus) await at(s.focus).focus({ timeout: 3000 });
+			if (s.hover) await at(s.hover).hover({ timeout: 3000 });
+			if (s.hold) {
+				await at(s.hold).hover({ timeout: 3000 });
+				await page.mouse.down();
+				await page.waitForTimeout(s.ms ?? 1200);
+				await page.mouse.up();
+			}
+			if (s.key) await page.keyboard.press(s.key);
+			if (s.down) await page.keyboard.down(s.down);
+			if (s.up) await page.keyboard.up(s.up);
+			if (s.type) await page.keyboard.type(s.type);
+			await page.waitForTimeout(s.wait ?? 300);
+			await record(label, s.shot);
+		} catch (error) {
+			trail.push({ step: label, focus: `step failed: ${error.message.split('\n')[0]}`, state: {} });
 		}
-		if (s.click) await page.locator(s.click).first().click();
-		if (s.clickAt) await page.mouse.click(s.clickAt[0], s.clickAt[1]);
-		if (s.focus) await page.locator(s.focus).first().focus();
-		if (s.hover) await page.locator(s.hover).first().hover();
-		if (s.hold) {
-			await page.locator(s.hold).first().hover();
-			await page.mouse.down();
-			await page.waitForTimeout(s.ms ?? 1200);
-			await page.mouse.up();
-		}
-		if (s.key) await page.keyboard.press(s.key);
-		if (s.down) await page.keyboard.down(s.down);
-		if (s.up) await page.keyboard.up(s.up);
-		if (s.type) await page.keyboard.type(s.type);
-		await page.waitForTimeout(s.wait ?? 300);
-		await record(s.label ?? s.key ?? s.click ?? s.hover ?? s.hold ?? s.focus ?? s.type ?? s.down ?? s.up, s.shot);
 	}
 	return trail;
 }

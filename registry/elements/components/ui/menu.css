@@ -1,0 +1,14 @@
+/* The host is the menu's box (Menu.vue's root div: relative inline-block), so a class on <conare-menu> lands on it as
+   a class on <Menu> does. */
+:host { @apply relative inline-block; }
+/* Menu.vue's <style>. Opened from the keyboard, focus lands on a row at once: no animation. Vue reads that from
+   :has(:focus-visible), which cannot see rows slotted from the page, so the element marks the panel data-instant. */
+.ds-menu { position: absolute; z-index: 40; display: flex; flex-direction: column; padding: var(--ds-space-xs); border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface); animation: ds-menu-in var(--ds-duration-glide) var(--ds-easing-standard) both; scroll-margin: 8px; }
+.ds-menu[data-up] { animation-name: ds-menu-up; }
+/* Opened from the keyboard, focus lands on a row at once: no animation. */
+.ds-menu:has(:focus-visible) { animation: none; }
+.ds-menu > * { flex-shrink: 0; }
+@keyframes ds-menu-in { from { opacity: 0; transform: translateY(-4px); } }
+@keyframes ds-menu-up { from { opacity: 0; transform: translateY(4px); } }
+@media (prefers-reduced-motion: reduce) { .ds-menu { animation: none; } }
+.ds-menu[data-instant] { animation: none; }
