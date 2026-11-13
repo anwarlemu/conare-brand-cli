@@ -461,6 +461,20 @@ describe('library flavors', () => {
 		expect(fails(plain, 'add', 'button', '--framework', 'react')).toContain('--framework elements');
 		expect(json(plain, 'add', 'button', '--framework', 'elements').flavor).toBe('elements');
 	});
+	it('view and diff take --framework, and read the API the registry build writes for each flavor', () => {
+		(globalThis as any).dsEnv = { DS_REGISTRY_DIR: join(__dirname, '..', 'apps', 'www', 'public', 'r') };
+		const dir = app({ 'index.html': htmlPage('Home', '<main></main>') });
+		const wc = json(dir, 'view', 'dialog').items[0];
+		expect(wc.flavor).toBe('elements');
+		expect(wc.api[0].component).toBe(`${wc.tag}`);
+		expect(wc.api[0].props.map((p: { name: string }) => p.name)).toContain('open');
+		expect(wc.api[0].emits).toContain('close');
+		expect(wc.api[0].slots).toContain('foot');
+		const react = json(dir, 'view', 'dialog', '--framework', 'react').items[0];
+		expect(react.flavor).toBe('react');
+		expect(react.api[0].props.map((p: { name: string }) => p.name)).toContain('onOpenChange');
+		expect(json(dir, 'diff', 'dialog', '--framework', 'react').items[0].files[0].status).toBe('missing');
+	});
 	it('a site with no build gets the prebuilt web component and its shared chunk in the static folder, with the script line', () => {
 		fixture();
 		const dir = app({ 'index.html': htmlPage('Home', '<main></main>') });

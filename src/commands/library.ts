@@ -190,12 +190,15 @@ export function elementApiOf(path: string, source: string, tag: string): Api {
 /** A flavor's API as the registry gives it (props, events, slots), when it does. */
 function givenApi(raw: unknown, file: string, component: string): Api[] | undefined {
 	if (!raw || typeof raw !== 'object') return undefined;
-	const list = Array.isArray(raw) ? raw : [raw];
-	const names = (x: unknown) => (Array.isArray(x) ? x.map((e) => (typeof e === 'string' ? e : (e as { name?: string }).name ?? '')).filter(Boolean) : x && typeof x === 'object' ? Object.keys(x) : []);
+	// The registry writes { components: [...] } (React) and { elements: [...] } (web components); older shapes are one entry or a list.
+	const wrapped = raw as { components?: unknown[]; elements?: unknown[] };
+	const list = Array.isArray(raw) ? raw : Array.isArray(wrapped.components) ? wrapped.components : Array.isArray(wrapped.elements) ? wrapped.elements : [raw];
+	const names = (x: unknown) => (Array.isArray(x) ? x.map((e) => (typeof e === 'string' ? e : ((e as { name?: string }).name ?? '') || 'default')).filter(Boolean) : x && typeof x === 'object' ? Object.keys(x) : []);
+	const entries = (x: unknown): any[] => (Array.isArray(x) ? x : Object.entries(x ?? {}).map(([name, v]) => ({ name, ...(typeof v === 'object' ? v : { type: v }) })));
 	return list.map((a: any) => ({
-		file: a.file ?? file,
-		component: a.component ?? a.name ?? a.tag ?? component,
-		props: (Array.isArray(a.props) ? a.props : Object.entries(a.props ?? a.properties ?? a.attributes ?? {}).map(([name, v]) => ({ name, ...(typeof v === 'object' ? v : { type: v }) }))).map((p: any) => ({ name: String(p.name), type: String(p.type ?? 'unknown'), required: !!p.required, default: p.default === undefined ? undefined : String(p.default) })),
+		file: a.file ?? a.module ?? file,
+		component: a.tag ?? a.component ?? a.name ?? component,
+		props: entries(a.props ?? a.properties ?? a.attributes).map((p: any) => ({ name: p.attribute && p.attribute !== p.name ? `${p.name} (attribute ${p.attribute})` : String(p.name), type: String(p.type ?? 'unknown'), required: !!p.required, default: p.default === undefined ? undefined : String(p.default) })),
 		models: [],
 		emits: names(a.events ?? a.emits),
 		slots: names(a.slots ?? (a.children ? ['children'] : [])),

@@ -119,7 +119,7 @@ async function main() {
 		case 'view':
 		case 'show': {
 			if (!args.length) throw new Error(`Name an item: ${brand().bin} view button`);
-			const v = await view(cwd, args);
+			const v = await view(cwd, args, { framework: typeof flags.framework === 'string' ? flags.framework : undefined });
 			out({ items: v }, v.map((x) => formatView(x, flags.source === true || flags.full === true)).join('\n\n'));
 			return;
 		}
@@ -136,7 +136,7 @@ async function main() {
 		}
 		case 'diff': {
 			if (!args.length) throw new Error(`Name an item: ${brand().bin} diff button`);
-			const r = await diff(cwd, args);
+			const r = await diff(cwd, args, { framework: typeof flags.framework === 'string' ? flags.framework : undefined });
 			out({ items: r }, r.map((i) => i.files.map((f) => (f.status === 'changed' ? f.diff : `${f.path}: ${f.status === 'same' ? 'same as the library' : `not in this app (${brand().bin} add ${i.name})`}`)).join('\n')).join('\n'));
 			if (r.some((i) => i.files.some((f) => f.status === 'changed'))) process.exitCode = 1;
 			return;
