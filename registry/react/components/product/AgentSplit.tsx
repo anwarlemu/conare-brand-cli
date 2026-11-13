@@ -1,5 +1,5 @@
 'use client'
-import { useId, type CSSProperties, type KeyboardEvent } from 'react'
+import { useId, type CSSProperties } from 'react'
 import { ArrowUpRight, Check, ChevronDown, Copy } from 'lucide-react'
 import { MenuClose } from '@/react/components/ui/Menu'
 import { MenuItem } from '@/react/components/ui/MenuItem'
@@ -29,17 +29,6 @@ export function AgentSplit({ prompt, installs, large, onCopied, onInstall }: Age
   }
   const { open, root, trigger, toggle, close, onTriggerKey, onMenuKey } = useMenu()
   const id = `agent-menu-${useId()}`
-  // useMenu's show() does nothing more once the menu is open (its state does not change, so nothing renders); Vue's
-  // focuses the row anyway. An arrow on the open menu's button goes to its first or last row here.
-  function onArrowKey(event: KeyboardEvent<HTMLButtonElement>) {
-    if (open && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
-      event.preventDefault()
-      const rows = [...(root.current?.querySelectorAll<HTMLElement>('[role^="menuitem"]:not([disabled])') ?? [])]
-      ;(event.key === 'ArrowDown' ? rows[0] : rows.at(-1))?.focus()
-      return
-    }
-    onTriggerKey(event)
-  }
   return (
     <MenuClose.Provider value={() => close(true)}>
       <style href="ds-agent-split" precedence="ds">{css}</style>
@@ -61,7 +50,7 @@ export function AgentSplit({ prompt, installs, large, onCopied, onInstall }: Age
                 aria-controls={id}
                 aria-label="other ways to connect"
                 onClick={toggle}
-                onKeyDown={onArrowKey}
+                onKeyDown={onTriggerKey}
               >
                 <span aria-hidden="true" className="ds-split-fill">{ARROW.map((c, k) => <i key={k} style={c} />)}</span>
                 <ChevronDown size={12} strokeWidth={1.5} className="ds-split-chev" />

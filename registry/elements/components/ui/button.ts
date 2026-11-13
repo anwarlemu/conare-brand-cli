@@ -7,8 +7,14 @@ import styles from 'virtual:tw'
 // touch), 12px medium labels. secondary is the default; dark is the one main action of a view; primary the red action;
 // ghost a tool in a row; danger removes something (hold it with <conare-hold-button>); brand is the fix for a
 // failure. Disabled is grey with a dark label, never faded. `press` gives a little under the pointer. `href` renders a
-// link. It is form-associated: type="submit" submits its form, type="reset" resets it.
+// link. It is form-associated: type="submit" submits its form, type="reset" resets it. aria-label, aria-description,
+// aria-expanded, aria-haspopup and aria-controls on it pass to the inner button (the last three move there, so the
+// button opening a dialog or a menu is named expanded once).
 export type ButtonVariant = 'secondary' | 'dark' | 'primary' | 'ghost' | 'danger' | 'brand'
+
+// The attributes that move from the element to its inner button, by property.
+const MOVED = ['aria-expanded', 'aria-haspopup', 'aria-controls']
+const FIELD: Record<string, 'expanded' | 'haspopup' | 'controls'> = { 'aria-expanded': 'expanded', 'aria-haspopup': 'haspopup', 'aria-controls': 'controls' }
 
 const VARIANTS: Record<ButtonVariant, string> = {
 	secondary: 'border-action-secondary-edge bg-surface text-fg hover:enabled:border-action-secondary-edge-hover active:enabled:bg-surface-subtle',
@@ -35,6 +41,12 @@ export class Button extends DsFormElement {
 		disabled: { type: Boolean, reflect: true },
 		label: { attribute: 'aria-label' },
 		description: { attribute: 'aria-description' },
+		expanded: { attribute: false },
+		haspopup: { attribute: false },
+		controls: { attribute: false },
+	}
+	static get observedAttributes() {
+		return [...super.observedAttributes, ...MOVED]
 	}
 
 	/** secondary, dark, primary, ghost, danger or brand. */
@@ -51,6 +63,29 @@ export class Button extends DsFormElement {
 	label?: string
 	/** A description for assistive tech (a tooltip's text), passed to the inner button (aria-description on the element). */
 	description?: string
+	/** Whether what it opens is open (the aria-expanded attribute). */
+	expanded?: string
+	/** What it opens: dialog, menu, listbox (the aria-haspopup attribute). */
+	haspopup?: string
+	/** The id of what it opens (the aria-controls attribute); the button points at it across its shadow root. */
+	controls?: string
+
+	attributeChangedCallback(name: string, old: string | null, value: string | null) {
+		const field = FIELD[name]
+		if (!field) return super.attributeChangedCallback(name, old, value)
+		if (value === null) return
+		this[field] = value
+		this.removeAttribute(name)
+	}
+	protected updated(changed: Map<PropertyKey, unknown>) {
+		super.updated(changed)
+		// An id inside the shadow root would not find the page's element: the button refers to it directly.
+		const inner = this.renderRoot.querySelector('button, a') as (HTMLElement & { ariaControlsElements?: Element[] | null }) | null
+		if (inner && changed.has('controls') && 'ariaControlsElements' in inner) {
+			const target = this.controls ? (this.getRootNode() as Document | ShadowRoot).getElementById?.(this.controls) : null
+			inner.ariaControlsElements = target ? [target] : null
+		}
+	}
 
 	private onClick() {
 		if (this.inactive || this.href) return
@@ -69,8 +104,8 @@ export class Button extends DsFormElement {
 			VARIANTS[this.variant] ?? VARIANTS.secondary,
 		].join(' ')
 		return this.href
-			? html`<a data-ds="button" href=${this.href} class=${classes} aria-label=${ifDefined(this.label)} aria-description=${ifDefined(this.description)}><slot></slot></a>`
-			: html`<button data-ds="button" type="button" ?disabled=${this.inactive} class=${classes} aria-label=${ifDefined(this.label)} aria-description=${ifDefined(this.description)} @click=${this.onClick}><slot></slot></button>`
+			? html`<a data-ds="button" href=${this.href} class=${classes} aria-label=${ifDefined(this.label)} aria-description=${ifDefined(this.description)} aria-expanded=${ifDefined(this.expanded)} aria-haspopup=${ifDefined(this.haspopup as never)}><slot></slot></a>`
+			: html`<button data-ds="button" type="button" ?disabled=${this.inactive} class=${classes} aria-label=${ifDefined(this.label)} aria-description=${ifDefined(this.description)} aria-expanded=${ifDefined(this.expanded)} aria-haspopup=${ifDefined(this.haspopup as never)} @click=${this.onClick}><slot></slot></button>`
 	}
 }
 

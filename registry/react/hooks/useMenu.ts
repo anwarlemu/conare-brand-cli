@@ -10,6 +10,8 @@ export function useMenu(initial = false) {
   const root = useRef<HTMLDivElement | null>(null)
   const trigger = useRef<HTMLButtonElement | null>(null)
   const pending = useRef<'first' | 'last' | 'none' | null>(null)
+  // Each show() renders, so an arrow on the open menu's button still focuses a row (Vue's nextTick runs either way).
+  const [, setShown] = useState(0)
 
   const items = () => [...(root.current?.querySelectorAll<HTMLElement>('[role^="menuitem"]:not([disabled])') ?? [])]
 
@@ -28,6 +30,7 @@ export function useMenu(initial = false) {
   const show = useCallback((focus: 'first' | 'last' | 'none' = 'first') => {
     pending.current = focus
     setOpen(true)
+    setShown(n => n + 1)
   }, [])
   const close = useCallback((refocus = false) => {
     setOpen(false)
