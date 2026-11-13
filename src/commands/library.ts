@@ -316,11 +316,10 @@ export async function search(query: string[]) {
 	return scored.filter((s) => s.score > 0).sort((a, b) => b.score - a.score).slice(0, 12);
 }
 
-export async function info(root: string) {
-	const project = readProject(root);
-	const problem = unsupported(project);
-	const index = await readIndex();
-	const flavor = appFlavor(project);
+/** The library items this app has, in the flavor each came in, with the source files it changed. */
+export async function installedItems(project: Project, index?: IndexEntry[]): Promise<{ name: string; flavor: Flavor; modified: string[] }[]> {
+	index ??= await readIndex();
+	const root = project.root;
 	const installed: { name: string; flavor: Flavor; modified: string[] }[] = [];
 	for (const entry of index) {
 		for (const f of ['vue', 'react', 'elements'] as Flavor[]) {
@@ -348,6 +347,15 @@ export async function info(root: string) {
 			installed.push({ name: entry.name, flavor: f, modified: placed.filter((p) => readFileSync(join(root, p.path), 'utf8') !== p.content).map((p) => p.path) });
 		}
 	}
+	return installed;
+}
+
+export async function info(root: string) {
+	const project = readProject(root);
+	const problem = unsupported(project);
+	const index = await readIndex();
+	const flavor = appFlavor(project);
+	const installed = await installedItems(project, index);
 	const stylesheet = project.css && existsSync(join(root, project.css)) ? readFileSync(join(root, project.css), 'utf8') : '';
 	const linked = project.layouts.some((l) => readFileSync(join(root, l), 'utf8').includes(`${brand().assetBase}/brand.css`));
 	const entry = project.cssEntry && existsSync(join(root, project.cssEntry)) ? readFileSync(join(root, project.cssEntry), 'utf8') : '';
@@ -360,6 +368,7 @@ export async function info(root: string) {
 		if (!state) next.push(`npx ${cli()} apply --dry-run   (see what restyling the whole app would change), then npx ${cli()} apply`);
 		next.push(`npx ${cli()} add <item>   (${flavorName(flavor)}; for example: ${['button', 'field', 'dialog'].filter((n) => index.some((i) => i.name === n)).join(', ')}; npx ${cli()} search <words> finds one)`);
 		next.push(`npx ${cli()} view <item>   (${flavor === 'elements' ? 'properties, events, slots' : flavor === 'react' ? 'props, callbacks, children' : 'props, slots'}, examples, source)`);
+		if (installed.length) next.push(`npx ${cli()} add --update   (every installed item to this version: prebuilt modules replaced, files you changed kept unless --overwrite)`);
 		next.push(`npx ${cli()} check`);
 	}
 	return {

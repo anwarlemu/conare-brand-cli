@@ -6,13 +6,13 @@ import { type Flavor, type Project, readProject, unsupported } from '../library/
 import { chooseFlavor, elementTypesPath, flavorProblem, placedFiles, scriptLines } from '../library/flavors.js';
 import { flavorsOf, resolveItems } from '../library/registry.js';
 import { init } from './init.js';
-import { resolveNames } from './library.js';
+import { installedItems, resolveNames } from './library.js';
 
 // add: copies items and everything they require into the app in its flavor (Vue, React, or web components), makes
 // their library imports resolve there, installs the npm packages they import with the app's manager and installs the
 // brand stylesheet once. Web components are prebuilt modules: copied into the static folder, with the line to load them.
 
-export type AddResult = { items: string[]; flavor: Flavor; written: string[]; kept: string[]; packages: string[]; installed: boolean; warnings: string[]; notes: string[]; scripts: string[] };
+export type AddResult = { items: string[]; flavor: Flavor; written: string[]; updated: string[]; kept: string[]; packages: string[]; installed: boolean; warnings: string[]; notes: string[]; scripts: string[] };
 
 export async function add(root: string, names: string[], opts: { dryRun?: boolean; overwrite?: boolean; install?: boolean; framework?: string } = {}): Promise<AddResult> {
 	const project: Project = readProject(root);
@@ -32,16 +32,20 @@ export async function add(root: string, names: string[], opts: { dryRun?: boolea
 	const missing = items.filter((i) => !flavorsOf(i).includes(flavor));
 	if (missing.length) throw new Error(`${missing.map((i) => i.name).join(', ')} ${missing.length === 1 ? 'has' : 'have'} no ${flavor === 'elements' ? 'web component' : flavor === 'react' ? 'React' : 'Vue'} version in this registry yet. Nothing was written. ${flavor === 'vue' ? '' : `Pass --framework ${flavor === 'react' ? 'elements' : 'vue'} for another flavor, or update the package.`}`.trim());
 	const written: string[] = [];
+	const updated: string[] = [];
 	const kept: string[] = [];
 	const warnings: string[] = [];
 	for (const f of await placedFiles(project, items, flavor)) {
 		const abs = join(root, f.path);
-		if (existsSync(abs) && !opts.overwrite && !f.generated) {
-			if (readFileSync(abs, 'utf8') !== f.content) kept.push(f.path);
+		const before = existsSync(abs) ? readFileSync(abs, 'utf8') : undefined;
+		if (before === f.content) continue;
+		if (before !== undefined && !opts.overwrite && !f.generated && !f.prebuilt) {
+			kept.push(f.path);
 			continue;
 		}
-		if (f.generated && existsSync(abs) && readFileSync(abs, 'utf8') === f.content) continue;
-		written.push(f.path);
+		// A prebuilt module that was there, at another version: replaced, and said so on one line.
+		if (before !== undefined && f.prebuilt) updated.push(f.path);
+		else written.push(f.path);
 		if (!opts.dryRun) {
 			mkdirSync(dirname(abs), { recursive: true });
 			writeFileSync(abs, f.content);
@@ -77,7 +81,25 @@ export async function add(root: string, names: string[], opts: { dryRun?: boolea
 	const r = await init(root, { dryRun: opts.dryRun });
 	written.push(...r.writes);
 	warnings.push(...r.warnings.filter((w) => !written.includes(w)));
-	return { items: items.map((i) => i.name), flavor, written, kept, packages, installed, warnings, notes, scripts };
+	return { items: items.map((i) => i.name), flavor, written, updated, kept, packages, installed, warnings, notes, scripts };
+}
+
+/**
+ * add --update: every item the app has, re-added from this version of the package in the flavor it was added in. Source
+ * files the app changed are kept (unless --overwrite); prebuilt modules, types and the manifest are rewritten.
+ */
+export async function update(root: string, opts: { dryRun?: boolean; overwrite?: boolean; install?: boolean } = {}): Promise<AddResult[]> {
+	const project = readProject(root);
+	const problem = unsupported(project);
+	if (problem) throw new Error(problem);
+	const have = await installedItems(project);
+	if (!have.length) throw new Error(`No library items found in this app: add one first (${brand().bin} add <item>).`);
+	const out: AddResult[] = [];
+	for (const flavor of ['vue', 'react', 'elements'] as Flavor[]) {
+		const names = have.filter((i) => i.flavor === flavor).map((i) => i.name);
+		if (names.length) out.push(await add(root, names, { ...opts, framework: flavor }));
+	}
+	return out;
 }
 
 export const flavorLabel = (f: Flavor) => (f === 'elements' ? 'web components' : f === 'react' ? 'React' : 'Vue');

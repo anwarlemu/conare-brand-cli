@@ -85,6 +85,46 @@ describe.skipIf(!has)('web components in apps', () => {
 	});
 });
 
+describe.skipIf(!has)('updating what an app has', () => {
+	it('add always replaces the prebuilt modules and the shared chunk, says which, and keeps changed source files', () => {
+		const site = app({ 'index.html': '<!doctype html><html><head></head><body></body></html>\n' });
+		json(site, 'add', 'button');
+		const dir = join(site, 'conare-ds/elements');
+		writeFileSync(join(dir, 'button.js'), '// an old build\n');
+		writeFileSync(join(dir, 'shared.js'), '// an old build\n');
+		const again = json(site, 'add', 'button');
+		expect(again.updated.map((p: string) => p.split('/').pop()).sort()).toEqual(['button.js', 'shared.js']);
+		expect(again.kept).toEqual([]);
+		expect(read(site, 'conare-ds/elements/shared.js')).not.toBe('// an old build\n');
+		expect(json(site, 'add', 'button').updated).toEqual([]);
+		const next = app({ 'package.json': pkg({ react: '19.2.0', next: '16.0.0' }, { tailwindcss: '^4.1.0' }), 'tsconfig.json': '{ "compilerOptions": { "paths": { "@/*": ["./*"] } } }', 'app/globals.css': '@import "tailwindcss";\n', 'app/layout.tsx': 'import "./globals.css";\n' });
+		json(next, 'add', 'button', '--no-install');
+		writeFileSync(join(next, 'components/ui/Button.tsx'), `${read(next, 'components/ui/Button.tsx')}// ours\n`);
+		const r = json(next, 'add', 'button', '--no-install');
+		expect(r.kept).toEqual(['components/ui/Button.tsx']);
+		expect(read(next, 'components/ui/Button.tsx')).toContain('// ours');
+	});
+
+	it('add --update re-adds every installed item in its flavor: modules replaced, changed sources kept unless --overwrite; info says so', () => {
+		const next = app({ 'package.json': pkg({ react: '19.2.0', next: '16.0.0' }, { tailwindcss: '^4.1.0' }), 'tsconfig.json': '{ "compilerOptions": { "paths": { "@/*": ["./*"] } } }', 'app/globals.css': '@import "tailwindcss";\n', 'app/layout.tsx': 'import "./globals.css";\n', 'public/.keep': '' });
+		json(next, 'add', 'button', 'tabs', '--no-install');
+		json(next, 'add', 'menu', '--framework', 'elements');
+		writeFileSync(join(next, 'components/ui/Button.tsx'), `${read(next, 'components/ui/Button.tsx')}// ours\n`);
+		writeFileSync(join(next, 'components/ui/Tabs.tsx'), '// lost\n');
+		writeFileSync(join(next, 'public/conare-ds/elements/menu-item.js'), '// an old build\n');
+		expect(json(next, 'info').next.join('\n')).toContain('add --update');
+		const r = json(next, 'add', '--update', '--no-install').results;
+		expect(r.map((x: { flavor: string }) => x.flavor)).toEqual(['react', 'elements']);
+		expect(r[0].items).toEqual(expect.arrayContaining(['button', 'tabs']));
+		expect(r[0].kept).toEqual(expect.arrayContaining(['components/ui/Button.tsx', 'components/ui/Tabs.tsx']));
+		expect(r[1].updated.map((p: string) => p.split('/').pop())).toContain('menu-item.js');
+		expect(read(next, 'components/ui/Button.tsx')).toContain('// ours');
+		json(next, 'add', '--update', '--overwrite', '--no-install');
+		expect(read(next, 'components/ui/Button.tsx')).not.toContain('// ours');
+		expect(read(next, 'components/ui/Tabs.tsx')).not.toBe('// lost\n');
+	});
+});
+
 describe('element types from the registry\'s declaration files', () => {
 	it('the types file for every element compiles, strict, with the React hooks and the tag map, and checks props', async () => {
 		const ts = (await import('typescript')).default;

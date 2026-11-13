@@ -96,8 +96,12 @@ export function elementsDir(project: Project) {
 	return { dir: `${publicRoot}${base}/elements`, url: `${project.publicUrl}/${base}/elements` };
 }
 
-/** A file `add` places; `generated` ones (the elements' types and manifest) are rewritten on every add. */
-export type Placed = { path: string; content: string; library: string; generated?: boolean };
+/**
+ * A file `add` places. `generated` ones (the elements' types and manifest) and `prebuilt` ones (the element modules and
+ * their shared chunk: compiled output, and a stale shared.js beside new modules would break the page) are rewritten
+ * on every add; source files are kept when they differ, unless --overwrite.
+ */
+export type Placed = { path: string; content: string; library: string; generated?: boolean; prebuilt?: boolean };
 
 /** Where the elements' types file goes: the app's source folder, which its tsconfig includes. */
 export const elementTypesPath = (project: Project) => srcJoin(project, `${brand().bin}/elements.d.ts`);
@@ -123,7 +127,7 @@ export async function placedFiles(project: Project, items: RegistryItem[], flavo
 		seen.add(mod);
 		const content = await readModule(mod);
 		const name = mod.replace(/^elements\//, '');
-		out.push({ path: posix.join(dir, name), content, library: mod });
+		out.push({ path: posix.join(dir, name), content, library: mod, prebuilt: true });
 		// Its shared chunk and the modules it imports come too.
 		for (const m of content.matchAll(/(?:\bimport\s*(?:[\w*{}\s,]+\s*from\s*)?|\bimport\s*\(\s*|\bexport\s*[\w*{}\s,]+\s*from\s*)['"](\.{1,2}\/[^'"]+)['"]/g)) queue.push(posix.normalize(posix.join(posix.dirname(mod), m[1])));
 	}
