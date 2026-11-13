@@ -1,0 +1,28 @@
+<!-- Steps that open one at a time: the one to do is the only open thing, a finished step folds to a line that says what
+     came of it, and a step not reached is dimmed and locked. -->
+<conare-steps class="max-w-140">
+  <conare-step n="1" heading="Create a key" says="Key created" state="now">
+    <p class="type-meta text-fg-muted">Your agent uses it to read what you connect.</p>
+    <conare-pixel-button data-reach="2">Create key</conare-pixel-button>
+  </conare-step>
+  <conare-step n="2" heading="Give the prompt to your agent" says="Prompt copied" state="next">
+    <p class="type-meta text-fg-muted">It connects Acme's documents and runs a first search.</p>
+    <conare-pixel-button data-reach="3">Copy prompt</conare-pixel-button>
+  </conare-step>
+  <conare-step n="3" heading="Watch the first write" state="next">
+    <p class="type-meta text-fg-muted">Documents show here as they land.</p>
+    <conare-button data-reach="1">Start again</conare-button>
+  </conare-step>
+</conare-steps>
+<script type="module">
+  // useSteps: `reached` is the furthest step, `shown` the open one; a step's head opens or folds it.
+  let reached = 1
+  let shown = 1
+  const steps = [...document.querySelectorAll('conare-step')]
+  const state = (n) => (n === shown ? 'now' : n < reached ? 'done' : n === reached ? 'todo' : 'next')
+  const paint = () => steps.forEach((s, i) => { s.state = state(i + 1) })
+  steps.forEach((s, i) => s.addEventListener('open', () => { shown = shown === i + 1 ? 0 : i + 1; paint() }))
+  for (const b of document.querySelectorAll('[data-reach]')) {
+    b.addEventListener('click', () => { const n = Number(b.dataset.reach); reached = Math.max(reached, n); shown = n; paint() })
+  }
+</script>

@@ -1,0 +1,4 @@
+.ds-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: var(--ds-border-hairline) solid var(--ds-color-edge); border-left: var(--ds-border-hairline) solid var(--ds-color-edge); }
+@media (min-width: 640px) { .ds-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+/* The odd last stat's whole row is set by <conare-stat> itself (:host(:last-child:nth-child(odd))): its host is
+   display: contents, so a ::slotted rule here would land on a box that is not there. */
