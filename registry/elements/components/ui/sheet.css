@@ -1,0 +1,7 @@
+.ds-sheet { position: fixed; inset: 0 0 0 auto; width: min(var(--ds-layout-sheet), 100vw); height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; border-left: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface); color: var(--ds-color-fg); font-size: var(--ds-text-ui); line-height: var(--ds-text-ui-leading); opacity: 0; transform: translateX(16px); transition: opacity var(--ds-duration-glide) var(--ds-easing-out), transform var(--ds-duration-glide) var(--ds-easing-out); }
+.ds-sheet[open] { display: flex; flex-direction: column; }
+.ds-sheet:focus { outline: none; }
+.ds-sheet[data-shown] { opacity: 1; transform: none; transition-duration: var(--ds-duration-settle); }
+.ds-sheet::backdrop { background: var(--ds-color-scrim-light); opacity: 0; transition: opacity var(--ds-duration-glide) var(--ds-easing-out); }
+.ds-sheet[data-shown]::backdrop { opacity: 1; transition-duration: var(--ds-duration-settle); }
+@media (prefers-reduced-motion: reduce) { .ds-sheet { transform: none; } }

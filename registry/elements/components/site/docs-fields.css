@@ -1,0 +1,12 @@
+.ds-docs-params > li + li { border-top: var(--ds-border-hairline) solid var(--ds-color-edge); }
+.ds-docs-tag { border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface-subtle); padding: 0 calc(var(--ds-space-xs) + 1px); font-size: var(--ds-text-caption); line-height: 18px; color: var(--ds-color-fg-muted); }
+.ds-docs-tag[data-required] { border-color: color-mix(in srgb, var(--ds-color-edge-accent) 40%, transparent); background: var(--ds-color-surface-danger); color: var(--ds-color-edge-accent); }
+.ds-docs-btn { border: var(--ds-border-hairline) solid var(--ds-color-edge); color: var(--ds-color-fg); transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }
+@media (hover: hover) and (pointer: fine) { .ds-docs-btn:hover { background: var(--ds-color-surface-subtle); } }
+.ds-docs-more summary::-webkit-details-marker { display: none; }
+.ds-docs-more[open] > summary .ds-docs-sign path { d: path("M1.5 5h7"); }
+/* The host is the list's box (DocsFields.vue's <ul>), so a class on <conare-docs-fields> lands on it; the <ul> inside
+   keeps the list's meaning and lays out nothing. The page's reset (no border, no padding on any element) outranks
+   :host, so a nested list's rule and indent are important here. */
+:host { display: flex; flex-direction: column; }
+:host([nested]) { @apply border-s! border-edge! ps-4!; }

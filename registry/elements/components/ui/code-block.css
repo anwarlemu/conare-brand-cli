@@ -1,0 +1,3 @@
+/* The host is the window (CodeBlock.vue's root div), so a class on <conare-code-block> lands on it as a class on
+   <CodeBlock> does. */
+:host { @apply block bg-code text-code-fg; }
