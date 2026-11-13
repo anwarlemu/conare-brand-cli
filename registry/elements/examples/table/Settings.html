@@ -1,0 +1,14 @@
+<!-- The table every Settings tab and the audit log share: a header row, 13px rows, the line that matters most in ink,
+     and buttons one width in the last column. -->
+<conare-table variant="settings" framed label="members">
+  <table>
+    <thead>
+      <tr><th>Name</th><th class="w-24">Role</th><th class="w-32">Joined</th><th class="w-px"><span class="sr-only">Actions</span></th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="max-w-0"><p class="truncate">Acme admin</p><p class="truncate type-meta text-fg-muted">admin@acme.com</p></td><td>Admin</td><td class="type-meta whitespace-nowrap text-fg-muted">3 months ago</td><td class="text-right"><conare-button press>Manage</conare-button></td></tr>
+      <tr><td class="max-w-0"><p class="truncate">Acme operations</p><p class="truncate type-meta text-fg-muted">ops@acme.com</p></td><td>Member</td><td class="type-meta whitespace-nowrap text-fg-muted">2 weeks ago</td><td class="text-right"><conare-button press>Manage</conare-button></td></tr>
+      <tr><td class="max-w-0"><p class="truncate">Acme support</p><p class="truncate type-meta text-fg-muted">support@acme.com</p></td><td>Member</td><td class="type-meta whitespace-nowrap text-fg-muted">4 days ago</td><td class="text-right"><conare-button press>Manage</conare-button></td></tr>
+    </tbody>
+  </table>
+</conare-table>

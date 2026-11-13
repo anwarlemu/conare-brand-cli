@@ -1,0 +1,39 @@
+<!-- The namespaces table on sample data: press a row and it opens in place to where its documents come from; press it
+     again, or another row, and it closes as the next one opens. Names in mono, numbers in tabular figures. -->
+<conare-table framed label="namespaces">
+  <table>
+    <thead>
+      <tr><th>Namespace</th><th class="text-right">Documents</th><th>Health</th><th>Last query</th><th class="w-px"><span class="sr-only">Open</span></th></tr>
+    </thead>
+    <tbody>
+      <tr class="is-link" tabindex="0" aria-expanded="false" data-name="contracts" data-source="Google Drive" data-queried="2 min ago"><td class="type-code-sm">contracts</td><td class="text-right tabular-nums">412,830</td><td><conare-status-tag status="ready"></conare-status-tag></td><td class="type-meta whitespace-nowrap text-fg-muted">2 min ago</td><td><i data-lucide="chevron-down" data-size="14" data-stroke-width="1.5" class="text-fg-muted transition-[rotate] duration-160 ease-out motion-reduce:transition-none" aria-hidden="true"></i></td></tr>
+      <tr class="is-link" tabindex="0" aria-expanded="false" data-name="slack" data-source="Slack" data-queried="1 h ago"><td class="type-code-sm">slack</td><td class="text-right tabular-nums">96,410</td><td><conare-status-tag status="syncing"></conare-status-tag></td><td class="type-meta whitespace-nowrap text-fg-muted">1 h ago</td><td><i data-lucide="chevron-down" data-size="14" data-stroke-width="1.5" class="text-fg-muted transition-[rotate] duration-160 ease-out motion-reduce:transition-none" aria-hidden="true"></i></td></tr>
+      <tr class="is-link" tabindex="0" aria-expanded="false" data-name="crm" data-source="HubSpot" data-queried="yesterday"><td class="type-code-sm">crm</td><td class="text-right tabular-nums">52,660</td><td><conare-status-tag status="error"></conare-status-tag></td><td class="type-meta whitespace-nowrap text-fg-muted">yesterday</td><td><i data-lucide="chevron-down" data-size="14" data-stroke-width="1.5" class="text-fg-muted transition-[rotate] duration-160 ease-out motion-reduce:transition-none" aria-hidden="true"></i></td></tr>
+      <tr class="is-link" tabindex="0" aria-expanded="false" data-name="support" data-source="API" data-queried="3 days ago"><td class="type-code-sm">support</td><td class="text-right tabular-nums">18,204</td><td><conare-status-tag status="ready"></conare-status-tag></td><td class="type-meta whitespace-nowrap text-fg-muted">3 days ago</td><td><i data-lucide="chevron-down" data-size="14" data-stroke-width="1.5" class="text-fg-muted transition-[rotate] duration-160 ease-out motion-reduce:transition-none" aria-hidden="true"></i></td></tr>
+    </tbody>
+  </table>
+</conare-table>
+<script type="module">
+  // One row open at a time: its detail row goes in under it and its chevron turns over (rotate-180).
+  const rows = [...document.querySelectorAll('tr.is-link')]
+  let opened = null
+  const paint = () => {
+    document.querySelector('tr[data-detail]')?.remove()
+    for (const r of rows) {
+      const on = r.dataset.name === opened
+      r.setAttribute('aria-expanded', String(on))
+      r.querySelector('svg').classList.toggle('rotate-180', on)
+      if (!on) continue
+      const docs = r.children[1].textContent
+      const detail = document.createElement('tr')
+      detail.dataset.detail = ''
+      detail.innerHTML = `<td colspan="5" class="bg-surface-subtle"><p class="type-meta text-fg-soft">${docs} documents from ${r.dataset.source}. Searched ${r.dataset.queried}.</p></td>`
+      r.after(detail)
+    }
+  }
+  const toggle = (name) => { opened = opened === name ? null : name; paint() }
+  for (const r of rows) {
+    r.addEventListener('click', () => toggle(r.dataset.name))
+    r.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(r.dataset.name) } })
+  }
+</script>

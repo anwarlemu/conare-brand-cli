@@ -1,0 +1,5 @@
+/* The host is the list's box (ItemGroup.vue's <ul>), so a class on <conare-item-group> (-my-2) lands on it; the <ul>
+   inside keeps the list's meaning and lays out nothing. The rows are the page's <li>s: the hairline between them is
+   set on them as slotted elements, important because the page's reset (no border on any element) outranks ::slotted. */
+:host { display: flex; flex-direction: column; }
+::slotted(:not(:first-child)) { border-top: var(--ds-border-hairline) solid var(--ds-color-edge) !important; }
