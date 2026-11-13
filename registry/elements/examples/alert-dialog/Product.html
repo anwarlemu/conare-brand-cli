@@ -1,0 +1,11 @@
+<!-- Deleting a whole namespace: too much to undo, so it asks first. Focus starts on Cancel; only a choice closes it. -->
+<div class="flex min-h-64 items-center justify-center">
+  <conare-button variant="danger" id="delete-namespace"><i data-lucide="trash-2" data-size="12" data-stroke-width="1.5" aria-hidden="true"></i>Delete namespace</conare-button>
+  <conare-alert-dialog id="confirm-delete" heading="Delete contracts?" description="Its 412,830 documents are deleted with it, and searches that name it stop working. This can't be undone." action="Delete namespace"></conare-alert-dialog>
+  <conare-toaster></conare-toaster>
+</div>
+<script type="module">
+  const dialog = document.getElementById('confirm-delete')
+  document.getElementById('delete-namespace').addEventListener('click', () => { dialog.open = true })
+  dialog.addEventListener('confirm', () => document.querySelector('conare-toaster').toast('Deleted', 'contracts'))
+</script>

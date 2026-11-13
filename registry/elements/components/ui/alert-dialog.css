@@ -1,0 +1,7 @@
+/* AlertDialog.vue's <style>, as it is. */
+.ds-alert { width: min(400px, calc(100vw - 32px)); margin: auto; padding: var(--ds-space-2xl); border: var(--ds-border-hairline) solid var(--ds-color-edge); border-radius: var(--ds-radius-container); background: var(--ds-color-surface); color: var(--ds-color-fg); font-size: var(--ds-text-ui); line-height: var(--ds-text-ui-leading); }
+.ds-alert::backdrop { background: var(--ds-color-scrim); }
+.ds-alert[open] { animation: ds-alert-rise var(--ds-duration-entrance) var(--ds-easing-standard); }
+@keyframes ds-alert-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .ds-alert[open] { animation: ds-alert-fade var(--ds-duration-enter) var(--ds-easing-standard); } }
+@keyframes ds-alert-fade { from { opacity: 0; } }
