@@ -12,7 +12,8 @@ import styles from 'virtual:tw'
 // The parts' rules (.ds-viz-in, .ds-viz-bar, .ds-viz-chip...) cannot reach content slotted from another shadow root,
 // so a window with its own parts (<conare-eval-viz>) extends this class: it draws its title and body by overriding
 // renderTitle() and renderBody() and its root says its own data-ds, as Vue's fallthrough attribute makes it. Used
-// alone, the `title` slot and the default slot hold plain content.
+// alone, the `title` slot and the default slot hold plain content. `stretch` makes it fill its box, for a frame that
+// sizes it (blog-card's picture sets it on the window in its `window` slot).
 
 /**
  * @summary The website's dark product window: a card that rises in with its parts.
@@ -21,12 +22,14 @@ import styles from 'virtual:tw'
  */
 export class VizWindow extends DsElement {
 	static styles = [DsElement.styles, styles]
-	static properties = { active: { type: Boolean }, size: {} }
+	static properties = { active: { type: Boolean }, size: {}, stretch: { type: Boolean, reflect: true } }
 
 	/** Plays the entrance; inactive, it holds its finished state. */
 	active = false
 	/** `sm`: the product cards' 36px bar with two controls. */
 	size: 'sm' | 'md' = 'md'
+	/** Fills its box (full height, no max width). */
+	stretch = false
 
 	/** Classes on the root after its own (Vue's class on the component). */
 	protected rootClass(): string {

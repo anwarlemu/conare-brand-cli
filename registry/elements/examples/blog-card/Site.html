@@ -1,0 +1,45 @@
+<!-- The blog's list: three posts, each with its picture of cells. The benchmark post plays its leaderboard (eval-viz,
+     the top three) once the card is on screen; the slot takes any 520 by 380 window. -->
+<div class="grid gap-6 md:grid-cols-3">
+  <conare-blog-card href="#retrieval-benchmark" heading="Acme retrieval benchmark: 67.0, #1 of 9" dek="Search over 19,252 business document pages with 2,419 questions." category="Benchmarks" author="Acme team" date="October 14, 2026">
+    <conare-eval-viz slot="window" limit="3" item='{
+        "id": "acme-retrieval",
+        "name": "Acme retrieval benchmark",
+        "description": "Search over 19,252 business document pages with 2,419 questions.",
+        "metric": "nDCG@10",
+        "better": "higher",
+        "model": "conare-embed-1",
+        "score": 67,
+        "rank": {
+          "n": 1,
+          "of": 9
+        },
+        "rows": [
+          {
+            "name": "conare-embed-1",
+            "value": 67.02,
+            "ours": true
+          },
+          {
+            "name": "Provider B, page images",
+            "value": 66.48
+          },
+          {
+            "name": "Provider C, page text",
+            "value": 64.24
+          },
+          {
+            "name": "Provider D",
+            "value": 60.64
+          },
+          {
+            "name": "BM25",
+            "value": 49.68
+          }
+        ],
+        "max": 80
+      }'></conare-eval-viz>
+  </conare-blog-card>
+  <conare-blog-card href="#six-languages" heading="Six languages, one index" dek="The same pages, with questions asked in six languages." category="Product" author="Acme team" date="October 2, 2026"></conare-blog-card>
+  <conare-blog-card href="#changelog-october" heading="What changed in October" dek="Faster syncs, filters in search and a new usage page." category="Changelog" author="Acme team" date="September 30, 2026"></conare-blog-card>
+</div>
