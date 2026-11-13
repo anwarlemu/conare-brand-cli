@@ -43,7 +43,8 @@ export async function kindsCss(): Promise<string> {
 	};
 	// What the recipe replaces and does not set itself is cleared, as Tailwind's restyle drops those classes: an app's
 	// own padding and shadow on .btn would otherwise survive under the library's look.
-	const resets = (replace: string[] = [], list = '') => [replace.includes('padding') ? 'p-0' : '', replace.includes('shadow') ? 'shadow-none' : '', replace.includes('bg') && !/(^|\s)bg-/.test(list) ? 'bg-transparent' : '', list].filter(Boolean).join(' ');
+	// Form controls take no font from the page without Tailwind's preflight: the recipe's type comes with the text face.
+	const resets = (replace: string[] = [], list = '') => [replace.includes('padding') ? 'p-0' : '', replace.includes('shadow') ? 'shadow-none' : '', replace.includes('bg') && !/(^|\s)bg-/.test(list) ? 'bg-transparent' : '', replace.includes('type') && !/(^|\s)(type-|font-(text|heading|code|brand))/.test(list) ? 'font-text' : '', list].filter(Boolean).join(' ');
 	for (const [kind, def] of Object.entries(elements().kinds) as [string, any][]) {
 		const k = semanticClass(kind);
 		rule(`.${k}.${k}`, def.base ? resets(def.replace, def.base) : '');

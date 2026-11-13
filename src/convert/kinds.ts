@@ -108,11 +108,22 @@ export function kindOfElement(tag: string, attrs: Record<string, string | true>,
 	if (t === 'td') return { kind: 'table', part: 'td' };
 	if (t === 'label') return { kind: 'label' };
 	if (/^h[1-6]$/.test(t)) return { kind: 'typography', part: 'heading' };
+	if (/^(a|router-link|routerlink|nuxt-link|nuxtlink)$/.test(t) && tokens.some((x) => /^(btn|button)$/.test(x))) return { kind: 'button' };
 	if (/^(a|router-link|routerlink|nuxt-link|nuxtlink)$/.test(t)) {
 		if (look.padding && ((look.bg && look.bg.alpha > 0.5) || look.border)) return { kind: 'button' };
 		if ((look.text && look.text.family === 'accent') || tokens.some((x) => /(^|:)underline$/.test(x))) return { kind: 'link' };
 		return undefined;
 	}
+	// Component libraries' own tags and class names: Angular Material, Shoelace, Bootstrap and plain CSS naming.
+	if (/^(mat-card|sl-card|ion-card)$/.test(t)) return { kind: 'card' };
+	if (/^(mat-chip|mat-chip-option|sl-badge|sl-tag|ion-badge|ion-chip)$/.test(t)) return { kind: 'badge' };
+	if (/^(mat-tab-group|sl-tab-group)$/.test(t)) return { kind: 'tabs' };
+	if (/^(sl-button|ion-button)$/.test(t)) return { kind: 'button' };
+	const named = (re: RegExp) => tokens.some((x) => re.test(x));
+	if (/^(a|router-link|routerlink|nuxt-link|nuxtlink)$/.test(t) && named(/^(btn|button)$/)) return { kind: 'button' };
+	if (/^(div|section|article|li|aside)$/.test(t) && named(/^(card|panel|tile)$/)) return { kind: 'card' };
+	if (/^(span|small|div)$/.test(t) && named(/^(badge|tag|chip|pill)$/)) return { kind: 'badge' };
+	if (/^(div|section|p)$/.test(t) && named(/^(alert|callout|notice)$/)) return { kind: 'alert' };
 	if (look.fixedInset && look.bg && look.bg.family === 'neutral' && look.bg.l < 0.3 && look.bg.alpha < 1) return { kind: 'dialog', part: 'backdrop' };
 	if (/^(div|section|article|li|aside|form|fieldset)$/.test(t) && look.padding && (look.shadow || (look.border && look.radius)) && (!look.bg || (look.bg.l > 0.85 && look.bg.family === 'neutral'))) return { kind: 'card' };
 	if (/^(span|small|div|p)$/.test(t) && look.padding && look.radius && (look.bg || look.border) && /^(xs|\[1[01]px\]|\[12px\])$/.test(look.size ?? '') && tokens.some((x) => /^p[xy]?-(0\.5|1|1\.5|2|2\.5|3)$/.test(x))) return { kind: 'badge' };

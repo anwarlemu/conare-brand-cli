@@ -1,6 +1,6 @@
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, posix, relative } from 'node:path';
-import { brand, packageRoot, registryHost } from '../lib/brand.js';
+import { brand, elementPrefix, packageRoot, registryHost } from '../lib/brand.js';
 import { readProject, stackLabel, unsupported } from '../library/project.js';
 import type { Project } from '../library/project.js';
 import { readState } from '../lib/state.js';
@@ -17,7 +17,7 @@ export type InitResult = { project: Project; writes: string[]; warnings: string[
 const START = '<!-- ds:contract:start -->';
 const END = '<!-- ds:contract:end -->';
 
-const fill = (text: string) => text.replaceAll('{{brand}}', brand().name).replaceAll('{{cli}}', `npx ${brand().bin}`).replaceAll('{{bin}}', brand().bin).replaceAll('{{registryHost}}', registryHost()).replaceAll('{{registry}}', brand().registryUrl).replaceAll('{{source}}', brand().source);
+const fill = (text: string) => text.replaceAll('{{brand}}', brand().name).replaceAll('{{cli}}', `npx ${brand().bin}`).replaceAll('{{bin}}', brand().bin).replaceAll('{{registryHost}}', registryHost()).replaceAll('{{registry}}', brand().registryUrl).replaceAll('{{source}}', brand().source).replaceAll('{{elementPrefix}}', elementPrefix());
 
 /** A path from one file's folder to another file, as an import spec (`./<bin>/brand.css`, `../styles/x.css`). */
 const spec = (fromFile: string, to: string) => {
