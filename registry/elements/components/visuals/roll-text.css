@@ -1,0 +1,17 @@
+/* RollText.vue's <style>, with the host as .ds-roll (the clipped box) and the host link's :hover and :focus-visible
+   as the labels' data-hover and data-focus. */
+:host { --roll-out: -110%; position: relative; display: block; overflow: hidden; line-height: 1.4; }
+:host([pace="site"]) { --roll-out: -100%; }
+.ds-roll-a, .ds-roll-b { display: block; transition: transform var(--ds-duration-glide) var(--ds-easing-standard); }
+.ds-roll-b { position: absolute; inset-inline: 0; top: 0; transform: translateY(110%); }
+.ds-roll-a[data-focus] { transform: translateY(var(--roll-out)); }
+.ds-roll-b[data-focus] { transform: none; }
+@media (hover: hover) and (pointer: fine) {
+  .ds-roll-a[data-hover] { transform: translateY(var(--roll-out)); }
+  .ds-roll-b[data-hover] { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ds-roll-a, .ds-roll-b { transition: none; }
+  .ds-roll-a:is([data-hover], [data-focus]) { transform: none; }
+  .ds-roll-b:is([data-hover], [data-focus]) { transform: translateY(110%); }
+}
