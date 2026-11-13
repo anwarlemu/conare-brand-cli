@@ -14,9 +14,7 @@ export interface DownloadButtonProps {
   onPress?: () => void
 }
 
-// Vue casts a boolean prop left out to false, not undefined, so DownloadButton.vue's `done ?? shared` never reads the
-// shared state; `done` defaults to false here too, so the flavors agree (see the port report: the fix is Vue's).
-export function DownloadButton({ id, label, done = false, onPress }: DownloadButtonProps) {
+export function DownloadButton({ id, label, done, onPress }: DownloadButtonProps) {
   const shared = useDownloadState()
   const isDone = done ?? shared[id] === 'done'
   return (
