@@ -1,6 +1,8 @@
 # conare-ds (working on the harness itself)
 
-This repo is the CLI and component library that apply the Conare design system to Vue and Nuxt apps. `README.md` says
+This repo is the CLI and component library that apply the Conare design system to any web app (Vue and Nuxt, React and
+Next.js, Svelte, Astro, Angular, Solid, plain HTML, server templates; Tailwind 4, 3 or none). The library comes in three
+flavors that must render identically: Vue (the source of truth), React and web components (Lit). `README.md` says
 how it is used. Apps that install it get a different contract, written from `brand/contract.md`. The stack is the
 same as conare-web's: Nuxt 4.6, Vue 3.5 (`<script setup lang="ts">`), Tailwind 4 via `@tailwindcss/vite`,
 `lucide-vue-next` icons, bun.
@@ -40,8 +42,14 @@ owner's). It needs `build/` and the registry outputs first (`bun run ci`).
   Router routes), `commands/` (apply, add, init, library: view, search, info, diff; small: list, tokens), `library/`
   (registry and project detection), `lib/brand.ts`, `lib/names.ts`. `brand/elements.json` holds apply's roles and the
   per-kind recipes (the library components' own classes).
+- `registry/react/`: the React flavor (`components/<group>/<Name>.tsx`, `hooks/`, `lib/`, `examples/<item>/`), the same
+  token classes as the Vue file. `registry/elements/`: the web components (Lit, shadow DOM, `<elementPrefix>-<item>`,
+  styles compiled from the same classes at build time; prebuilt modules land in `apps/www/public/elements/`).
+  `PORTING.md` is the recipe; `scripts/port-order.mjs` the order; `apps/parity/` and `scripts/check-parity.mjs` compare
+  every example in all three flavors (pixels, computed styles, keyboard trail). Release requires every item in every
+  flavor (`bun run registry:release`) and a clean parity run.
 - `test/`: vitest for the check, the build outputs, the registry and the CLI on temporary apps.
-- `PLAN.md`: the items still to build, in three batches.
+- `PLAN.md`: how the Vue items were built (historical); `PORTING.md` for the other flavors.
 
 ## Source of truth
 

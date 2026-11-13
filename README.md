@@ -1,8 +1,10 @@
 # conare-ds
 
-Components, design tokens and checks for building Conare pages and interfaces in Vue 3.5 and Nuxt 4 with Tailwind 4.
-Every component is ported from Conare's own console and website (conare-web, branch `agencidev/console`), takes its
-data through props and slots, and is shown on the library site from the files apps install.
+Components, design tokens and checks for building Conare pages and interfaces in any web stack: Vue and Nuxt, React
+and Next.js, Svelte, Astro, Angular, Solid, plain HTML and server-rendered templates (Rails, Laravel, Django, PHP), on
+Tailwind 4, Tailwind 3 or no Tailwind. Every component is ported from Conare's own console and website (conare-web,
+branch `agencidev/console`) and comes in three flavors that render identically: Vue, React, and web components that
+need no build step. Each is shown on the library site from the files apps install.
 
 Library site: https://conare-ds.agencidev.com (the `apps/www` Nuxt app in this repository).
 
@@ -130,8 +132,10 @@ After a whole-app apply, later selections and adds keep the full base.
 bun install          # also prepares the docs site
 bun run build        # tsc (src -> dist) and scripts/build-brand.mjs (brand -> build)
 bun run registry     # validate registry/, write apps/www/public/r, value check, vue-tsc
-bun run ci           # build, limits, registry, vitest
+bun run ci           # build, limits, registry (all three flavors), vitest
+bun run parity       # every example in Vue, React and web components, compared in a browser
 bun run --cwd apps/www build && PORT=3201 node apps/www/.output/server/index.mjs
 ```
 
-`CLAUDE.md` says where everything is. `PLAN.md` lists the items still to build.
+`CLAUDE.md` says where everything is. `PORTING.md` is the recipe for porting an item to React and web components;
+`node scripts/port-order.mjs` lists what is left, in dependency order.

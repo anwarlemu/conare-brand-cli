@@ -15,3 +15,5 @@ apps/www/public/apple-touch-icon.png
 .release
 .vercel
 .env*
+apps/www/public/elements
+apps/parity/report

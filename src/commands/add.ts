@@ -18,12 +18,16 @@ export async function add(root: string, names: string[], opts: { dryRun?: boolea
 	const project: Project = readProject(root);
 	const problem = unsupported(project);
 	if (problem) throw new Error(problem);
-	const flavor = chooseFlavor(project, opts.framework);
+	let flavor = chooseFlavor(project, opts.framework);
 	const stop = flavorProblem(project, flavor);
-	if (stop) throw new Error(stop);
+	// Asked for by name: stop and say why. Chosen from the app: the web components work without Tailwind, so use them.
+	const fallback = stop && !opts.framework ? `This app has no Tailwind, so it gets the web components (they carry their own styles). Install Tailwind 4 and pass --framework ${flavor} for the ${flavor === 'react' ? 'React' : 'Vue'} files.` : undefined;
+	if (stop && !fallback) throw new Error(stop);
+	if (fallback) flavor = 'elements';
 	// Names as typed: Button, alert-dialog, AlertDialog, badge (an alias); every one resolves before anything is written.
 	const resolved = await resolveNames(names);
 	const notes = resolved.filter((r) => r.via).map((r) => r.via!);
+	if (fallback) notes.push(fallback);
 	const items = await resolveItems(resolved.map((r) => r.name), flavor);
 	const missing = items.filter((i) => !flavorsOf(i).includes(flavor));
 	if (missing.length) throw new Error(`${missing.map((i) => i.name).join(', ')} ${missing.length === 1 ? 'has' : 'have'} no ${flavor === 'elements' ? 'web component' : flavor === 'react' ? 'React' : 'Vue'} version in this registry yet. Nothing was written. ${flavor === 'vue' ? '' : `Pass --framework ${flavor === 'react' ? 'elements' : 'vue'} for another flavor, or update the package.`}`.trim());

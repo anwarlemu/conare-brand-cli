@@ -32,7 +32,7 @@ describe('value check', () => {
 	});
 	it('reads Vue templates: classes, bound classes, styles and imports', () => {
 		const vue = `<script setup lang="ts">
-import { X } from 'lucide-react'
+import { X } from '@heroicons/react/24/outline'
 const cls = 'bg-blue-500 text-white'
 </script>
 <template>

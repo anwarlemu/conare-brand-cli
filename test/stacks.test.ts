@@ -449,13 +449,16 @@ describe('library flavors', () => {
 		expect(json(dir, 'diff', 'button').items[0].files.every((f: { status: string }) => f.status === 'same')).toBe(true);
 		expect(json(dir, 'info').installed).toEqual([{ name: 'button', flavor: 'react', modified: [] }]);
 	});
-	it('a React app with no alias gets relative imports; without Tailwind it stops and names the fix', () => {
+	it('a React app with no alias gets relative imports; without Tailwind it takes the web components, and stops when React is asked for by name', () => {
 		fixture();
 		const dir = app({ 'package.json': pkg({ react: '19.2.0' }, { vite: '7.0.0', tailwindcss: '^4.1.0' }), 'src/index.css': '@import "tailwindcss";\n', 'src/main.tsx': "import './index.css';\n" });
 		json(dir, 'add', 'button', '--no-install');
 		expect(read(dir, 'src/components/ui/Button.tsx')).toContain("from '../../lib/cn'");
 		const plain = app({ 'package.json': pkg({ react: '19.2.0' }, { vite: '7.0.0' }), 'src/index.css': 'body {}\n', 'src/main.tsx': "import './index.css';\n" });
-		expect(fails(plain, 'add', 'button')).toContain('--framework elements');
+		const auto = json(plain, 'add', 'button', '--dry-run');
+		expect(auto.flavor).toBe('elements');
+		expect(auto.notes.join(' ')).toContain('no Tailwind');
+		expect(fails(plain, 'add', 'button', '--framework', 'react')).toContain('--framework elements');
 		expect(json(plain, 'add', 'button', '--framework', 'elements').flavor).toBe('elements');
 	});
 	it('a site with no build gets the prebuilt web component and its shared chunk in the static folder, with the script line', () => {

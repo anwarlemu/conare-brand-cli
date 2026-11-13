@@ -22,7 +22,7 @@
   },
   "icons": {
     "name": "Lucide",
-    "packages": ["lucide-vue-next"],
+    "packages": ["lucide-vue-next", "lucide-react", "lucide", "@lucide/svelte", "lucide-svelte", "lucide-angular", "lucide-solid", "lucide-preact"],
     "stroke": 1.5
   },
   "type": {

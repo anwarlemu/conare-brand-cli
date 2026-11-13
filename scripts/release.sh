@@ -5,6 +5,8 @@ set -e
 branch="${RELEASE_BRANCH:-release}"
 cd "$(dirname "$0")/.."
 bun run ci
+bun run registry:release   # every item in Vue, React and web components
+bun run parity             # and they render identically
 out="$(mktemp -d)/release"
 node scripts/make-release.mjs "$out"
 sha="$(git rev-parse --short HEAD)"
