@@ -1,4 +1,4 @@
-import { LitElement, type CSSResultGroup, type PropertyDeclarations, type PropertyValues } from 'lit'
+import { LitElement, type CSSResultGroup, type PropertyDeclaration, type PropertyDeclarations, type PropertyValues } from 'lit'
 import { literal, unsafeStatic, type StaticValue } from 'lit/static-html.js'
 import base from 'virtual:ds-base'
 import properties from 'virtual:ds-properties'
@@ -46,6 +46,42 @@ export class DsElement extends LitElement {
 		registerProperties()
 	}
 
+	// ----- Lists and objects -----
+	// A list or an object (`type: Array` or `Object`) can arrive as a string: a JSON attribute that does not parse, or a
+	// framework that sets attributes as properties (Svelte: `options='[...]'` reaches `options` as text), or none when a
+	// server render drops a bound list. The attribute parses as JSON and otherwise keeps what the property held (its
+	// default at first); a string property is parsed before each render, and kept as it was when it does not parse.
+	static createProperty(name: PropertyKey, options?: PropertyDeclaration) {
+		if (options && (options.type === Array || options.type === Object) && !options.converter) options = { ...options, converter: { fromAttribute: parseJson, toAttribute: (v: unknown) => JSON.stringify(v) } }
+		super.createProperty(name, options)
+	}
+	private lastGood = new Map<PropertyKey, unknown>()
+	private lists(): PropertyKey[] {
+		return [...(this.constructor as typeof LitElement).elementProperties].filter(([, o]) => o.type === Array || o.type === Object).map(([k]) => k)
+	}
+	attributeChangedCallback(name: string, old: string | null, value: string | null) {
+		// What a list held before its attribute changed: the default, or the last list that parsed.
+		const key = (this.constructor as typeof LitElement).elementProperties
+		for (const [k, o] of key) if ((o.attribute === name || (o.attribute !== false && typeof o.attribute !== 'string' && String(k).toLowerCase() === name)) && (o.type === Array || o.type === Object)) {
+			const now = (this as unknown as Record<PropertyKey, unknown>)[k]
+			if (typeof now !== 'string') this.lastGood.set(k, now)
+		}
+		super.attributeChangedCallback(name, old, value)
+	}
+	protected shouldUpdate(changed: PropertyValues) {
+		const self = this as unknown as Record<PropertyKey, unknown>
+		for (const k of this.lists()) {
+			const v = self[k]
+			if (typeof v !== 'string') {
+				this.lastGood.set(k, v)
+				continue
+			}
+			const parsed = parseJson(v)
+			self[k] = typeof parsed === 'string' ? this.lastGood.get(k) : parsed
+		}
+		return super.shouldUpdate(changed)
+	}
+
 	connectedCallback() {
 		super.connectedCallback()
 		const name = (this.constructor as typeof DsElement).dsName
@@ -77,6 +113,16 @@ export class DsElement extends LitElement {
 		super.firstUpdated(changed)
 		// Slots that come and go change what the element draws ($slots), so it renders again when they do.
 		this.renderRoot.addEventListener('slotchange', () => this.requestUpdate())
+	}
+}
+
+/** JSON, or the text itself when it is not JSON (the element keeps its list then). */
+function parseJson(v: string | null): unknown {
+	if (v === null) return v
+	try {
+		return JSON.parse(v)
+	} catch {
+		return v
 	}
 }
 

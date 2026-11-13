@@ -157,8 +157,11 @@ describe.skipIf(!existsSync(CHROME))('registry flavors: elements in a browser', 
 <fieldset id="fs"><${prefix}-input id="own" name="own" disabled></${prefix}-input><${prefix}-switch id="sw" name="sw" label="sw"></${prefix}-switch></fieldset>
 <${prefix}-hold-button label="Revoke" ms="200" id="hold"></${prefix}-hold-button>
 <div data-theme="dark" id="dark"><${prefix}-button variant="secondary" id="night">Night</${prefix}-button></div>
+<${prefix}-tabs id="bad-json" label="bad" options='[not json'></${prefix}-tabs>
+<${prefix}-tabs id="as-text" label="text"></${prefix}-tabs>
+<${prefix}-menu id="m" label="m"><span slot="trigger">Open</span><${prefix}-menu-item>One</${prefix}-menu-item><${prefix}-menu-item>Two</${prefix}-menu-item></${prefix}-menu>
 <script type="module">
-  ${['shared', 'input', 'switch', 'combobox', 'select', 'button', 'hold-button'].map((m) => `import '/elements/${m}.js'`).join('\n  ')}
+  ${['shared', 'input', 'switch', 'combobox', 'select', 'button', 'hold-button', 'tabs', 'menu', 'menu-item'].map((m) => `import '/elements/${m}.js'`).join('\n  ')}
   window.ready = true
 </script></body></html>`;
 	// Every field required and empty, in a native form, in conare-form, and the request-access page's own form.
@@ -270,6 +273,55 @@ describe.skipIf(!existsSync(CHROME))('registry flavors: elements in a browser', 
 			// Tokens arrive through inherited variables: dark on an ancestor reaches the inner button.
 			const [light, dark] = await p.evaluate(() => ['go', 'night'].map((id) => getComputedStyle(document.getElementById(id)!.shadowRoot!.querySelector('button')!).backgroundColor));
 			expect(light).not.toBe(dark);
+		} finally {
+			await browser.close();
+		}
+	});
+
+	it('reads lists set as text and keeps its own when a list does not parse', async () => {
+		const { chromium } = await import('playwright-core');
+		const browser = await chromium.launch({ executablePath: CHROME });
+		try {
+			const p = await browser.newPage();
+			const errors: string[] = [];
+			p.on('pageerror', (e) => errors.push(e.message));
+			await p.goto(base, { waitUntil: 'networkidle' });
+			await p.waitForFunction(() => (window as unknown as { ready?: boolean }).ready);
+			// Svelte sets attributes as properties: a JSON list arrives as text.
+			const tabs = await p.evaluate(async () => {
+				type Tabs = HTMLElement & { options: unknown, updateComplete: Promise<unknown> };
+				const text = document.getElementById('as-text') as Tabs;
+				text.options = '["Volume", "Latency"]';
+				await text.updateComplete;
+				const bad = document.getElementById('bad-json') as Tabs;
+				await bad.updateComplete;
+				const count = (el: Tabs) => el.shadowRoot!.querySelectorAll('[role="tab"]').length;
+				return { text: count(text), parsed: Array.isArray(text.options), bad: count(bad), badValue: bad.options };
+			});
+			expect(tabs).toEqual({ text: 2, parsed: true, bad: 0, badValue: [] });
+			expect(errors).toEqual([]);
+		} finally {
+			await browser.close();
+		}
+	});
+
+	it('moves focus to a row when an arrow reaches the button of a menu that is already open', async () => {
+		const { chromium } = await import('playwright-core');
+		const browser = await chromium.launch({ executablePath: CHROME });
+		try {
+			const p = await browser.newPage();
+			await p.goto(base, { waitUntil: 'networkidle' });
+			await p.waitForFunction(() => (window as unknown as { ready?: boolean }).ready);
+			await p.locator('role=button[name="Open"]').click();
+			await p.locator('role=button[name="Open"]').focus();
+			await p.keyboard.press('ArrowDown');
+			await p.waitForTimeout(50);
+			const focused = () => p.evaluate(() => { let a = document.activeElement; while (a?.shadowRoot?.activeElement) a = a.shadowRoot.activeElement; return a?.textContent?.trim(); });
+			expect(await focused()).toBe('One');
+			await p.locator('role=button[name="Open"]').focus();
+			await p.keyboard.press('ArrowUp');
+			await p.waitForTimeout(50);
+			expect(await focused()).toBe('Two');
 		} finally {
 			await browser.close();
 		}

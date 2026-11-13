@@ -178,18 +178,15 @@ mkdirSync(join(out, 'img'), { recursive: true });
 const browser = await chromium.launch({ executablePath: CHROME });
 const results = [];
 
-async function capture(url, width) {
+async function capture(url, width, settle = true) {
 	const context = await browser.newContext({ viewport: { width, height: 900 }, deviceScaleFactor: 1, reducedMotion: 'no-preference' });
 	const page = await context.newPage();
-	// The same random sequence on every flavor's page (room-grid lights random tiles): a seeded generator (mulberry32)
-	// stands in for Math.random before any script runs. Calls straight from a framework's own code (React DOM's and
-	// Lit's ids, Vite's client) keep the real one, so each flavor's components draw the same numbers in the same order.
+	// The same random sequence on every flavor's page: globalThis.__dsRandom, a seeded generator (mulberry32), for
+	// examples that draw at random (room-grid's tiles use it before Math.random). Math.random itself is left alone,
+	// since each framework draws from it a different number of times.
 	await page.addInitScript(() => {
-		const real = Math.random;
 		let seed = 0x2f6b1d;
-		Math.random = () => {
-			const caller = (new Error().stack ?? '').split('\n')[2] ?? '';
-			if (/react-dom|\/elements\/shared\.js|lit-html|\/@vite\//.test(caller)) return real();
+		globalThis.__dsRandom = () => {
 			seed = (seed + 0x6d2b79f5) | 0;
 			let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
 			t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
@@ -205,7 +202,8 @@ async function capture(url, width) {
 	await page.mouse.move(width - 1, 899);
 	await page.waitForTimeout(900);
 	const height = await page.evaluate(HEIGHT);
-	const png = await page.screenshot({ fullPage: true, clip: { x: 0, y: 0, width, height }, animations: 'disabled', caret: 'hide' });
+	// Settled: running animations jump to their end, unless the example opts out (a timer drawn as an animation).
+	const png = await page.screenshot({ fullPage: true, clip: { x: 0, y: 0, width, height }, animations: settle ? 'disabled' : 'allow', caret: 'hide' });
 	const styles = await page.evaluate(STYLES);
 	return { context, page, png, styles, errors };
 }
@@ -305,10 +303,16 @@ for (const name of names) {
 	const detail = JSON.parse(readFileSync(join(root, 'apps/www/public/r', `${name}.json`), 'utf8'));
 	let steps = [];
 	const stepsFile = join(root, 'apps/parity/interactions', `${name}.mjs`);
-	if (existsSync(stepsFile)) steps = (await import(pathToFileURL(stepsFile).href)).default ?? [];
+	let settle = true;
+	if (existsSync(stepsFile)) {
+		const mod = await import(pathToFileURL(stepsFile).href);
+		steps = mod.default ?? [];
+		// `export const settle = false`: screenshots let running animations run (hero's tab timer would advance its tab).
+		if (mod.settle === false) settle = false;
+	}
 	for (const ex of detail.examples) {
 		for (const width of widths) {
-			const vue = await capture(`${www}/preview/${name}/${ex.name}`, width);
+			const vue = await capture(`${www}/preview/${name}/${ex.name}`, width, settle);
 			const vueFile = `img/${name}-${ex.name}-${width}-vue.png`;
 			writeFileSync(join(out, vueFile), vue.png);
 			const exSteps = steps.filter((s) => (!s.example || s.example === ex.name) && (!s.width || s.width === width));
@@ -325,7 +329,7 @@ for (const name of names) {
 					continue;
 				}
 				const url = `${parity}/${flavor}/${name}/${ex.name}`;
-				const got = await capture(url, width);
+				const got = await capture(url, width, settle);
 				const file = `img/${name}-${ex.name}-${width}-${flavor}.png`;
 				writeFileSync(join(out, file), got.png);
 				const d = diff(vue.png, got.png, join(out, `img/${name}-${ex.name}-${width}-${flavor}-diff.png`));

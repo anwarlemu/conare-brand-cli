@@ -69,7 +69,9 @@ export default [
 Use role selectors (`role=button[name="..."]`, `role=option[name="EU"]`): they find the same control in all three
 flavors, inside shadow roots too. Cover what the Vue file handles: every key it listens to, hover, press, open and
 close, Escape and focus return, form submission. Steps that fail to find their target are reported, not skipped.
-Pages run with a seeded `Math.random` (the same sequence in every flavor). The steps run at 1440 and at 390 (a step with `width: 1440` runs at that width only, for a control a phone hides).
+Pages get `globalThis.__dsRandom`, a seeded generator with the same sequence in every flavor: an item that draws at
+random uses `globalThis.__dsRandom ?? Math.random` (room-grid). Screenshots settle running animations at their end; an
+interactions file with `export const settle = false` keeps them running (hero's tab timer). The steps run at 1440 and at 390 (a step with `width: 1440` runs at that width only, for a control a phone hides).
 `button: 'right'` makes a click a right-click (a context menu). The state compares the text of `aria-selected` and
 `data-active` elements in the flat tree, slotted text included, without whitespace.
 

@@ -66,6 +66,8 @@ export class Menu extends DsElement {
 		this.pending = focus
 		this.instant = focus !== 'none'
 		this.setOpen(true)
+		// Already open (an arrow on the open menu's button), it still renders, and the row asked for takes focus.
+		this.requestUpdate()
 	}
 	close(refocus = false) {
 		this.setOpen(false)
@@ -147,8 +149,7 @@ export class Menu extends DsElement {
 	protected updated(changed: PropertyValues<this>) {
 		super.updated(changed)
 		this.wire(this.querySelector<HTMLElement>(':scope > button[slot="trigger"]'))
-		if (!changed.has('open')) return
-		if (!this.open) this.instant = false
+		if (changed.has('open') && !this.open) this.instant = false
 		const focus = this.pending
 		this.pending = null
 		if (!this.open || !focus) return
