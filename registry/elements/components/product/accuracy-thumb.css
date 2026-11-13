@@ -1,0 +1,7 @@
+/* AccuracyThumb.vue's <style>, as it is. */
+.ds-thumb { position: relative; display: flex; width: 28px; height: 36px; flex-shrink: 0; flex-direction: column; gap: var(--ds-space-2xs); overflow: hidden; padding: 4px; border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface); }
+.ds-thumb-line { display: block; height: 1px; flex-shrink: 0; background: var(--ds-color-edge-strong); opacity: 0.55; }
+.ds-thumb-line[data-gap] { opacity: 0; }
+.ds-thumb-head { display: block; width: 34%; height: 1px; flex-shrink: 0; margin-bottom: 1px; background: var(--ds-color-edge-strong); }
+.ds-thumb-hit { display: flex; flex-shrink: 0; flex-direction: column; gap: var(--ds-space-2xs); margin: 0 -2px; padding: 1px 2px; background: linear-gradient(var(--ds-color-edge-accent), var(--ds-color-edge-accent)) left / 2px 100% no-repeat, color-mix(in srgb, var(--ds-color-edge-accent) 14%, transparent); }
+.ds-thumb-hit .ds-thumb-line { background: var(--ds-color-off-black); opacity: 0.8; }
