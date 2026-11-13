@@ -1,0 +1,16 @@
+<!-- A tool in a row, as a source's Sync now: its icon turns while it syncs, and it waits until the sync lands. -->
+<conare-button variant="ghost" press id="sync"><i data-lucide="refresh-cw" data-size="12" data-stroke-width="1.5" aria-hidden="true"></i><span>Sync now</span></conare-button>
+<script type="module">
+  const button = document.getElementById('sync')
+  button.addEventListener('click', () => {
+    button.disabled = true
+    button.querySelector('svg').classList.add('animate-spin', 'motion-reduce:animate-none')
+    button.querySelector('span').textContent = 'Syncing'
+    // ds-latency: stands in for the sync request in this example.
+    setTimeout(() => {
+      button.disabled = false
+      button.querySelector('svg').classList.remove('animate-spin', 'motion-reduce:animate-none')
+      button.querySelector('span').textContent = 'Sync now'
+    }, 1800)
+  })
+</script>

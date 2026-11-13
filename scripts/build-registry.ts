@@ -2,13 +2,20 @@
 // docs site lists). It validates every item, derives its files and dependencies from its imports, runs the value
 // check over the whole library and type-checks it with vue-tsc. Any problem fails the build.
 //
-//   bun scripts/build-registry.ts           build, check and type-check
-//   bun scripts/build-registry.ts --no-tsc  skip the type check (faster while iterating)
+// It also builds the React and web component flavors (scripts/registry-flavors.ts, scripts/build-elements.mjs): each
+// item's JSON carries `flavors.react` and `flavors.elements` where ported, /r/react/ and /r/elements/ hold
+// shadcn-style registries, apps/www/public/elements the prebuilt element modules, and the build reports how many
+// items each flavor covers.
+//
+//   bun scripts/build-registry.ts                        build, check and type-check
+//   bun scripts/build-registry.ts --no-tsc               skip the type checks (faster while iterating)
+//   bun scripts/build-registry.ts --require-all-flavors  fail unless every item has its React and element ports (release)
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, posix } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { checkText, formatFinding } from '../src/check/engine.ts';
+import { buildFlavors } from './registry-flavors.ts';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const reg = join(root, 'registry');
@@ -22,7 +29,7 @@ const pinned = (p: string) => (ranges[p] ? `${p}@${ranges[p]}` : p);
 const fail = (msg: string) => errors.push(msg);
 
 type Example = { name: string; label: string; center: boolean; half: boolean };
-type Doc = { name: string; title: string; type: string; group: string; description: string; use_for: string; never: string[]; source: string; files: string[]; examples: Example[]; body: string };
+type Doc = { name: string; title: string; type: string; group: string; description: string; use_for: string; never: string[]; source: string; files: string[]; examples: Example[]; body: string; react_files?: string[]; elements_files?: string[] };
 
 /** The frontmatter this registry writes: `key: value` (plain or JSON-quoted) and `key:` followed by `  - item` lines. */
 function frontmatter(text: string, file: string): Record<string, string | string[]> & { body: string } {
@@ -60,7 +67,7 @@ const docs: Doc[] = readdirSync(join(reg, 'docs'))
 			const [ex, label, opts = ''] = e.split('|').map((s) => s.trim());
 			return { name: ex, label: label || ex, center: /\bcenter\b/.test(opts), half: /\bhalf\b/.test(opts) };
 		});
-		return { name, title: fm.title as string, type: fm.type as string, group: fm.group as string, description: fm.description as string, use_for: fm.use_for as string, never: (fm.never as string[]) ?? [], source: fm.source as string, files: (fm.files as string[]) ?? [], examples, body: fm.body };
+		return { name, title: fm.title as string, type: fm.type as string, group: fm.group as string, description: fm.description as string, use_for: fm.use_for as string, never: (fm.never as string[]) ?? [], source: fm.source as string, files: (fm.files as string[]) ?? [], examples, body: fm.body, react_files: fm.react_files as string[] | undefined, elements_files: fm.elements_files as string[] | undefined };
 	});
 
 // Which item owns which file.
@@ -129,6 +136,13 @@ function closure(entries: string[], self?: string) {
 
 rmSync(outDir, { recursive: true, force: true });
 mkdirSync(outDir, { recursive: true });
+const flavors = await buildFlavors(docs, { root, reg, outDir, brand, fail, pinned });
+const flavorsOf = (name: string) => {
+	const react = flavors.react.get(name);
+	const elements = flavors.elements.get(name);
+	return { ...(react ? { react } : {}), ...(elements ? { elements } : {}) };
+};
+const flavorList = (name: string) => ['vue', ...(flavors.react.has(name) ? ['react'] : []), ...(flavors.elements.has(name) ? ['elements'] : [])];
 const index: unknown[] = [];
 const site: unknown[] = [];
 let checked = 0;
@@ -153,27 +167,41 @@ for (const d of docs) {
 		guardGlobals(path, readFileSync(join(reg, path), 'utf8'));
 		return { ...e, path, content: readFileSync(join(reg, path), 'utf8'), requires: c.requires, packages: c.packages };
 	});
-	const item = { name: d.name, title: d.title, type: d.type, group: d.group, description: d.description, use_for: d.use_for, never: d.never, source: d.source, body: d.body, requires, dependencies: packages.map(pinned), files: files.map((path) => ({ path, content: readFileSync(join(reg, path), 'utf8') })), examples };
+	const item = { name: d.name, title: d.title, type: d.type, group: d.group, description: d.description, use_for: d.use_for, never: d.never, source: d.source, body: d.body, requires, dependencies: packages.map(pinned), files: files.map((path) => ({ path, content: readFileSync(join(reg, path), 'utf8') })), examples, flavors: flavorsOf(d.name) };
 	writeFileSync(join(outDir, `${d.name}.json`), `${JSON.stringify(item, null, 2)}\n`);
-	index.push({ ...item, files, examples: d.examples.map((e) => e.name) });
-	site.push({ name: d.name, title: d.title, group: d.group, description: d.description, use_for: d.use_for, never: d.never, source: d.source, body: d.body, requires, dependencies: packages, files, examples: d.examples });
+	const { flavors: _full, ...listed } = item;
+	index.push({ ...listed, files, examples: d.examples.map((e) => e.name), flavors: flavorList(d.name) });
+	const r = flavors.react.get(d.name);
+	const e = flavors.elements.get(d.name);
+	site.push({ name: d.name, title: d.title, group: d.group, description: d.description, use_for: d.use_for, never: d.never, source: d.source, body: d.body, requires, dependencies: packages, files, examples: d.examples, flavors: {
+		...(r ? { react: { files: r.files.map((f) => f.path), dependencies: r.dependencies, requires: r.registryDependencies } } : {}),
+		...(e ? { elements: { files: e.files.map((f) => f.path), tag: e.tag, tags: e.tags, modules: e.modules, requires: e.registryDependencies } } : {}),
+	} });
 }
-writeFileSync(join(outDir, 'index.json'), `${JSON.stringify({ name: brand.name, registryUrl: brand.registryUrl, registryHost: brand.registryHost ?? brand.registryUrl, items: index }, null, 2)}\n`);
-writeFileSync(join(root, 'apps', 'www', 'app', 'registry.generated.json'), `${JSON.stringify({ groups: brand.groups, items: site }, null, 2)}\n`);
+const coverage = { total: flavors.coverage.total, vue: docs.length, react: flavors.coverage.react, elements: flavors.coverage.elements };
+writeFileSync(join(outDir, 'index.json'), `${JSON.stringify({ name: brand.name, registryUrl: brand.registryUrl, registryHost: brand.registryHost ?? brand.registryUrl, elementPrefix: flavors.elementPrefix, coverage, items: index }, null, 2)}\n`);
+writeFileSync(join(root, 'apps', 'www', 'app', 'registry.generated.json'), `${JSON.stringify({ groups: brand.groups, elementPrefix: flavors.elementPrefix, assetBase: brand.assetBase, items: site }, null, 2)}\n`);
+if (process.argv.includes('--require-all-flavors')) {
+	for (const n of flavors.coverage.missing.react) fail(`${n}: has no React port (registry/react/)`);
+	for (const n of flavors.coverage.missing.elements) fail(`${n}: has no web component port (registry/elements/)`);
+}
 
 // The value check over the whole library: components, composables and examples.
-for (const f of walk('.').filter((p) => /\.(vue|ts|css)$/.test(p))) {
+for (const f of walk('.').filter((p) => /\.(vue|ts|tsx|css|html)$/.test(p) && !p.endsWith('.d.ts'))) {
 	const { findings } = checkText(`registry/${f}`, readFileSync(join(reg, f), 'utf8'));
 	checked++;
 	for (const x of findings) fail(formatFinding(x));
 }
 
 if (!process.argv.includes('--no-tsc') && !errors.length) {
-	try {
-		execFileSync(join(root, 'node_modules', '.bin', 'vue-tsc'), ['--noEmit', '-p', join(root, 'tsconfig.registry.json')], { cwd: root, stdio: 'pipe' });
-	} catch (error) {
-		const e = error as { stdout?: Buffer; stderr?: Buffer };
-		fail(`vue-tsc:\n${e.stdout?.toString() ?? ''}${e.stderr?.toString() ?? ''}`);
+	// Vue with vue-tsc, the React flavor and the elements with tsc.
+	for (const [bin, config] of [['vue-tsc', 'tsconfig.registry.json'], ['tsc', 'tsconfig.registry-react.json'], ['tsc', 'tsconfig.registry-elements.json']]) {
+		try {
+			execFileSync(join(root, 'node_modules', '.bin', bin), ['--noEmit', '-p', join(root, config)], { cwd: root, stdio: 'pipe' });
+		} catch (error) {
+			const e = error as { stdout?: Buffer; stderr?: Buffer };
+			fail(`${bin} (${config}):\n${e.stdout?.toString() ?? ''}${e.stderr?.toString() ?? ''}`);
+		}
 	}
 }
 
@@ -182,3 +210,4 @@ if (errors.length) {
 	process.exit(1);
 }
 console.log(`registry: ${docs.length} items, ${checked} files checked, written to apps/www/public/r`);
+console.log(`flavors: vue ${docs.length} of ${docs.length}, react ${coverage.react} of ${docs.length}, elements ${coverage.elements} of ${docs.length}${coverage.react < docs.length || coverage.elements < docs.length ? ' (--require-all-flavors makes the rest fail)' : ''}`);

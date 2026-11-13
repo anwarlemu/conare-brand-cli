@@ -1,0 +1,48 @@
+import type { AnchorHTMLAttributes, ButtonHTMLAttributes, Ref } from 'react'
+import { cn } from '@/react/lib/cn'
+
+// Every action in the console (console2.css .v2-btn): square, 28px (40px on phones and touch), 12px medium labels.
+// secondary is the default; dark is the one main action of a view (it turns red on hover); primary is the red
+// action; ghost is a tool in a row; danger removes something (hold it with HoldButton); brand is the fix for a
+// failure, in the failure's red. Disabled is grey with a dark label, never faded. `press` gives a little under the
+// pointer (scale 0.97), for buttons pressed often in place. `href` renders a link.
+export type ButtonVariant = 'secondary' | 'dark' | 'primary' | 'ghost' | 'danger' | 'brand'
+
+const VARIANTS: Record<ButtonVariant, string> = {
+  secondary: 'border-action-secondary-edge bg-surface text-fg hover:enabled:border-action-secondary-edge-hover active:enabled:bg-surface-subtle',
+  dark: 'border-action-primary bg-action-primary text-action-primary-fg hover:enabled:border-edge-accent hover:enabled:bg-edge-accent',
+  primary: 'border-edge-accent bg-edge-accent text-off-white hover:enabled:border-home-red-hover hover:enabled:bg-home-red-hover active:enabled:border-home-red-press active:enabled:bg-home-red-press',
+  ghost: 'border-transparent bg-transparent text-fg-soft hover:enabled:border-edge hover:enabled:text-fg active:enabled:bg-surface-subtle disabled:!border-transparent disabled:!bg-transparent disabled:!text-fg-muted',
+  danger: 'border-action-danger bg-surface text-action-danger hover:enabled:bg-action-danger-hover hover:enabled:text-off-white disabled:!border-action-danger disabled:!bg-surface disabled:!text-action-danger',
+  brand: 'border-home-red-press bg-home-red-press text-off-white hover:enabled:border-surface-inverse hover:enabled:bg-surface-inverse',
+}
+
+export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'type'> {
+  variant?: ButtonVariant
+  icon?: boolean
+  press?: boolean
+  href?: string
+  type?: 'button' | 'submit' | 'reset'
+  ref?: Ref<HTMLButtonElement & HTMLAnchorElement>
+}
+
+export function buttonClasses({ variant = 'secondary', icon, press }: Pick<ButtonProps, 'variant' | 'icon' | 'press'> = {}) {
+  return cn(
+    'inline-flex h-control-sm shrink-0 cursor-pointer items-center justify-center gap-1.5 border text-meta leading-5 font-medium whitespace-nowrap select-none',
+    'transition-[color,background-color,border-color] duration-120 ease-standard',
+    'disabled:cursor-not-allowed disabled:border-edge disabled:bg-surface-sunken disabled:text-fg-soft',
+    'max-md:h-control-touch max-md:text-ui pointer-coarse:h-control-touch pointer-coarse:text-ui',
+    // One padding class, so the icon button's 0 never competes with the label's 10px in the stylesheet's order.
+    icon ? 'w-control-sm px-0 max-md:w-control-touch pointer-coarse:w-control-touch' : 'px-2.5',
+    press && 'transition-[color,background-color,border-color,scale] ease-out active:enabled:scale-97 motion-reduce:active:enabled:scale-100',
+    VARIANTS[variant],
+  )
+}
+
+export function Button({ variant = 'secondary', icon, press, href, type = 'button', disabled, className, children, ref, ...rest }: ButtonProps) {
+  const classes = cn(buttonClasses({ variant, icon, press }), className)
+  if (href) return <a data-ds="button" ref={ref} href={href} className={classes} {...(rest as AnchorHTMLAttributes<HTMLAnchorElement>)}>{children}</a>
+  return <button data-ds="button" ref={ref} type={type} disabled={disabled} className={classes} {...rest}>{children}</button>
+}
+
+export default Button

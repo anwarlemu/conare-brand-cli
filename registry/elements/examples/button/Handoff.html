@@ -1,0 +1,23 @@
+<!-- The dark button handing something off, as Copy prompt: hover runs the red squares across, a press darkens them at
+     once with no change of size, and once copied the red holds while it says so. -->
+<conare-pixel-button id="handoff"><i data-lucide="copy" data-size="12" data-stroke-width="1.5" aria-hidden="true"></i><i data-lucide="check" data-size="12" data-stroke-width="2" aria-hidden="true" hidden></i><span>Copy prompt</span></conare-pixel-button>
+<span class="sr-only" aria-live="polite" id="handoff-status"></span>
+<script type="module">
+  const button = document.getElementById('handoff')
+  const [copyIcon, checkIcon] = button.querySelectorAll('svg')
+  let timer
+  button.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText('Connect Conare to this project and run a first search.') } catch { return }
+    const show = (copied) => {
+      button.done = copied
+      copyIcon.toggleAttribute('hidden', copied)
+      checkIcon.toggleAttribute('hidden', !copied)
+      button.querySelector('span').textContent = copied ? 'Copied' : 'Copy prompt'
+      document.getElementById('handoff-status').textContent = copied ? 'prompt copied' : ''
+    }
+    show(true)
+    clearTimeout(timer)
+    // ds-latency: the Copied label stays 1.5s after the copy, which has already happened.
+    timer = setTimeout(() => show(false), 1500)
+  })
+</script>

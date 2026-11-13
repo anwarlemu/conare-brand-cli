@@ -6,6 +6,7 @@
   "registryHost": "https://conare-ds-registry.vercel.app",
   "site": "https://conare.ai",
   "framework": "vue",
+  "elementPrefix": "conare",
   "assetBase": "/conare-ds",
   "fonts": {
     "files": [
@@ -21,7 +22,7 @@
   },
   "icons": {
     "name": "Lucide",
-    "packages": ["lucide-vue-next"],
+    "packages": ["lucide-vue-next", "lucide-react", "lucide"],
     "stroke": 1.5
   },
   "type": {

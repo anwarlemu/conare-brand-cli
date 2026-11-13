@@ -1,0 +1,14 @@
+// The shared chunk (elements/shared.js): Lit and the library's helpers, loaded once for every element. Element modules
+// import 'lit', 'lit/...' and '@/elements/lib/...'; the build points all of them here, so add anything an element
+// imports from those to this list.
+export { LitElement, html, svg, css, nothing, noChange, unsafeCSS, render } from 'lit'
+export type { PropertyValues, TemplateResult, CSSResultGroup } from 'lit'
+export { html as staticHtml, unsafeStatic, literal } from 'lit/static-html.js'
+export { classMap } from 'lit/directives/class-map.js'
+export { styleMap } from 'lit/directives/style-map.js'
+export { ifDefined } from 'lit/directives/if-defined.js'
+export { repeat } from 'lit/directives/repeat.js'
+export { ref, createRef } from 'lit/directives/ref.js'
+export { live } from 'lit/directives/live.js'
+export * from './element'
+export * from './icon'

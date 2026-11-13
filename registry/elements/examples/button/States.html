@@ -1,0 +1,25 @@
+<!-- The states a button goes through: at rest, waiting (disabled is grey with a dark label, never faded), and done (the
+     check and "Copied" for 1.5s). -->
+<div class="flex flex-wrap items-center gap-2">
+  <conare-button>At rest</conare-button>
+  <conare-button variant="dark" disabled>Create key</conare-button>
+  <conare-button disabled>Disabled</conare-button>
+  <conare-button id="copy-id"><i data-lucide="copy" data-size="12" data-stroke-width="1.5" aria-hidden="true"></i><i data-lucide="check" data-size="12" data-stroke-width="2" aria-hidden="true" hidden></i><span>Copy ID</span></conare-button>
+</div>
+<script type="module">
+  const button = document.getElementById('copy-id')
+  const [copyIcon, checkIcon] = button.querySelectorAll('svg')
+  let timer
+  button.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText('ns_contracts') } catch { return }
+    const show = (copied) => {
+      copyIcon.toggleAttribute('hidden', copied)
+      checkIcon.toggleAttribute('hidden', !copied)
+      button.querySelector('span').textContent = copied ? 'Copied' : 'Copy ID'
+    }
+    show(true)
+    clearTimeout(timer)
+    // ds-latency: the Copied label stays 1.5s after the copy, which has already happened.
+    timer = setTimeout(() => show(false), 1500)
+  })
+</script>

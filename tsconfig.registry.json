@@ -13,5 +13,6 @@
     "paths": { "@/*": ["registry/*"] }
   },
   "vueCompilerOptions": { "strictTemplates": false },
-  "include": ["registry/**/*.ts", "registry/**/*.vue"]
+  "include": ["registry/**/*.ts", "registry/**/*.vue"],
+  "exclude": ["registry/react", "registry/elements"]
 }

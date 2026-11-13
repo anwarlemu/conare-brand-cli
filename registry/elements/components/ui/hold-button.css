@@ -1,0 +1,59 @@
+/* HoldButton.vue's <style>, as it is: it lands in the shadow root unlayered, as a Vue <style> block does. */
+.ds-hold {
+  position: relative;
+  display: inline-flex;
+  height: var(--ds-size-control-sm);
+  min-width: 92px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ds-space-sm);
+  overflow: hidden;
+  padding: 0 10px;
+  border: var(--ds-border-hairline) solid var(--ds-color-action-danger);
+  background: var(--ds-color-surface);
+  color: var(--ds-color-action-danger);
+  font-size: var(--ds-text-meta);
+  font-weight: var(--ds-font-weight-medium);
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+  will-change: transform;
+  transition: transform var(--ds-duration-enter) var(--ds-easing-out), border-color var(--ds-duration-micro) var(--ds-easing-standard);
+}
+.ds-hold[data-holding] { transform: scale(0.97); transition-duration: var(--ds-duration-micro); }
+.ds-hold-label { position: relative; display: inline-flex; align-items: center; gap: var(--ds-space-sm); }
+.ds-hold .lucide-trash-2 path:nth-last-child(-n + 2) { transform-box: fill-box; transform-origin: 0% 100%; transition: transform var(--ds-duration-enter) var(--ds-easing-out); }
+.ds-hold[data-holding] .lucide-trash-2 path:nth-last-child(-n + 2) { transform: translateY(-1.5px) rotate(-9deg); }
+.ds-hold-px { position: absolute; inset: -1px; z-index: 1; display: grid; grid-auto-rows: 6px; pointer-events: none; }
+.ds-hold-inks { position: absolute; inset: -1px; z-index: 2; display: grid; pointer-events: none; }
+.ds-hold-inks i { position: relative; overflow: hidden; font-style: normal; }
+.ds-hold-ink { position: absolute; top: 0; left: 0; display: flex; align-items: center; justify-content: center; gap: var(--ds-space-sm); color: var(--ds-color-off-white); font-size: var(--ds-text-meta); font-weight: var(--ds-font-weight-medium); line-height: 1.4; white-space: nowrap; }
+.ds-hold-word { position: relative; display: block; text-align: center; }
+.ds-hold-px i { background: var(--ds-color-home-red-press); }
+.ds-hold-px i, .ds-hold-inks i { opacity: 0; transition: opacity var(--ds-duration-cell) ease calc(var(--o) * 1ms); }
+.ds-hold:is([data-holding], [data-done]) :is(.ds-hold-px, .ds-hold-inks) i { opacity: 1; transition: opacity var(--ds-duration-press) linear calc(var(--d) * 1ms); }
+.ds-hold[data-done] :is(.ds-hold-px, .ds-hold-inks) i { transition-duration: 0ms; transition-delay: 0ms; }
+.ds-hold-done { position: absolute; inset: -1px; z-index: 3; display: flex; align-items: center; justify-content: center; gap: var(--ds-space-sm); background: var(--ds-color-home-red-press); color: var(--ds-color-off-white); opacity: 0; pointer-events: none; }
+.ds-hold-done path { stroke-dasharray: 24; stroke-dashoffset: 24; }
+.ds-hold[data-done] .ds-hold-done { opacity: 1; transition: opacity var(--ds-duration-cell) ease; }
+.ds-hold[data-done] .ds-hold-done path { stroke-dashoffset: 0; transition: stroke-dashoffset var(--ds-duration-settle) var(--ds-easing-out) 40ms; }
+/* The label rolls up to a copy of itself under the pointer or focus (console2.css .roll). */
+.ds-roll { position: relative; display: block; overflow: hidden; line-height: 1.4; }
+.ds-roll-a, .ds-roll-b { display: block; transition: transform var(--ds-duration-glide) var(--ds-easing-standard); }
+.ds-roll-b { position: absolute; inset-inline: 0; top: 0; text-align: center; transform: translateY(110%); }
+.ds-hold:focus-visible .ds-roll-a { transform: translateY(-110%); }
+.ds-hold:focus-visible .ds-roll-b { transform: none; }
+@media (hover: hover) and (pointer: fine) {
+  .ds-hold:hover .ds-roll-a { transform: translateY(-110%); }
+  .ds-hold:hover .ds-roll-b { transform: none; }
+}
+@media (pointer: coarse), (max-width: 767px) {
+  .ds-hold { height: var(--ds-size-control-touch); font-size: var(--ds-text-ui); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ds-hold, .ds-roll-a, .ds-roll-b, .ds-hold .lucide-trash-2 path { transition: none; }
+  .ds-hold[data-holding] { transform: none; }
+}

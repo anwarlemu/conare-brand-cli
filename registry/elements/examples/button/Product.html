@@ -1,0 +1,15 @@
+<!-- The console's buttons: one dark main action, secondary for the rest, ghost for tools in a row, danger for what
+     removes, the red fix for a failure, and an icon button with its name. -->
+<div class="flex flex-col gap-4">
+  <div class="flex flex-wrap items-center gap-2">
+    <conare-button variant="dark"><i data-lucide="plus" data-size="14" data-stroke-width="1.5" aria-hidden="true"></i>Create key</conare-button>
+    <conare-button><i data-lucide="copy" data-size="14" data-stroke-width="1.5" aria-hidden="true"></i>Copy as code</conare-button>
+    <conare-button>Cancel</conare-button>
+    <conare-button variant="ghost"><i data-lucide="rotate-cw" data-size="14" data-stroke-width="1.5" aria-hidden="true"></i>Sync now</conare-button>
+    <conare-button variant="ghost" icon aria-label="row actions"><i data-lucide="ellipsis" data-size="14" data-stroke-width="1.5"></i></conare-button>
+  </div>
+  <div class="flex flex-wrap items-center gap-2">
+    <conare-button variant="danger"><i data-lucide="trash-2" data-size="14" data-stroke-width="1.5" aria-hidden="true"></i>Revoke</conare-button>
+    <conare-button variant="brand">Reconnect HubSpot</conare-button>
+  </div>
+</div>
