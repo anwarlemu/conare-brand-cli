@@ -126,7 +126,7 @@ export async function init(root: string, opts: { dryRun?: boolean; whole?: boole
 			write(`${assets}/theme.css`, readFileSync(join(build, 'theme.css'), 'utf8'));
 			warnings.push(`Tailwind runs without a stylesheet this could find: add @import "${relative(root, join(root, assets, 'theme.css'))}" after @import "tailwindcss" in its input.`);
 		}
-		const lines = linkLines(project.publicUrl, files);
+		const lines = linkLines(project, files);
 		links.push(...lines);
 		let linked = 0;
 		// A page outside a selection (a plain site's other pages each have their own <head>) stays byte for byte.

@@ -1,9 +1,9 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { brand } from '../lib/brand.js';
+import { brand, elementPrefix } from '../lib/brand.js';
 import { type Flavor, type Project, readProject, unsupported } from '../library/project.js';
-import { chooseFlavor, flavorProblem, placedFiles, scriptLines } from '../library/flavors.js';
+import { chooseFlavor, elementTypesPath, flavorProblem, placedFiles, scriptLines } from '../library/flavors.js';
 import { flavorsOf, resolveItems } from '../library/registry.js';
 import { init } from './init.js';
 import { resolveNames } from './library.js';
@@ -36,10 +36,11 @@ export async function add(root: string, names: string[], opts: { dryRun?: boolea
 	const warnings: string[] = [];
 	for (const f of await placedFiles(project, items, flavor)) {
 		const abs = join(root, f.path);
-		if (existsSync(abs) && !opts.overwrite) {
+		if (existsSync(abs) && !opts.overwrite && !f.generated) {
 			if (readFileSync(abs, 'utf8') !== f.content) kept.push(f.path);
 			continue;
 		}
+		if (f.generated && existsSync(abs) && readFileSync(abs, 'utf8') === f.content) continue;
 		written.push(f.path);
 		if (!opts.dryRun) {
 			mkdirSync(dirname(abs), { recursive: true });
@@ -65,7 +66,12 @@ export async function add(root: string, names: string[], opts: { dryRun?: boolea
 		}
 	}
 	const scripts = flavor === 'elements' ? scriptLines(project, items) : [];
-	if (flavor === 'elements' && project.framework === 'angular') notes.push('Angular: add CUSTOM_ELEMENTS_SCHEMA to the schemas of the components that use them.');
+	if (flavor === 'elements') {
+		const setup = customElementSetup(project);
+		notes.push(...setup.notes);
+		if (setup.write && !opts.dryRun) writeFileSync(join(root, setup.write.path), setup.write.content);
+		if (setup.write) written.push(setup.write.path);
+	}
 
 	// The brand stylesheet, once: the components read its tokens.
 	const r = await init(root, { dryRun: opts.dryRun });
@@ -76,3 +82,40 @@ export async function add(root: string, names: string[], opts: { dryRun?: boolea
 
 export const flavorLabel = (f: Flavor) => (f === 'elements' ? 'web components' : f === 'react' ? 'React' : 'Vue');
 export const brandBin = () => brand().bin;
+
+/**
+ * What a framework needs to take the elements as custom elements, not as its own components: Vue and Nuxt are told
+ * (isCustomElement, set in their config where that is a safe edit), Angular's components need CUSTOM_ELEMENTS_SCHEMA
+ * (each component's own decorator, so the CLI says where), and Nuxt loads the modules from its head config.
+ */
+export function customElementSetup(project: Project): { notes: string[]; write?: { path: string; content: string } } {
+	const prefix = `${elementPrefix()}-`;
+	const check = `(tag) => tag.startsWith('${prefix}')`;
+	const read = (rel: string) => (existsSync(join(project.root, rel)) ? readFileSync(join(project.root, rel), 'utf8') : '');
+	if (project.framework === 'angular') {
+		return { notes: [`Angular: in each component that uses them, add schemas: [CUSTOM_ELEMENTS_SCHEMA] to its @Component (import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core'); without it the build stops with "'${prefix}button' is not a known element". The types for their properties are in ${elementTypesPath(project)}.`] };
+	}
+	if (project.framework === 'nuxt') {
+		const path = ['nuxt.config.ts', 'nuxt.config.js', 'nuxt.config.mjs'].find((f) => existsSync(join(project.root, f)));
+		const head = `Nuxt: load the modules from nuxt.config's app.head.script ({ type: 'module', src: '/${brand().assetBase.replace(/^\//, '')}/elements/<name>.js' }) or useHead on the pages that use them.`;
+		if (!path) return { notes: [`Nuxt: tell Vue the ${prefix}* tags are custom elements: vue: { compilerOptions: { isCustomElement: ${check} } } in nuxt.config.`, head] };
+		const text = read(path);
+		if (/isCustomElement/.test(text)) return { notes: [head] };
+		if (!/\bvue\s*:/.test(text) && /defineNuxtConfig\(\s*\{/.test(text)) {
+			const content = text.replace(/defineNuxtConfig\(\s*\{/, (m) => `${m}\n  // ${prefix}* tags are the design system's web components, not Vue components.\n  vue: { compilerOptions: { isCustomElement: ${check} } },`);
+			return { notes: [`Set vue.compilerOptions.isCustomElement in ${path}, so Vue leaves the ${prefix}* tags to the browser.`, head], write: { path, content } };
+		}
+		return { notes: [`Nuxt: add isCustomElement: ${check} to vue.compilerOptions in ${path} (it could not be edited safely), so Vue leaves the ${prefix}* tags to the browser.`, head] };
+	}
+	if (project.framework === 'vite-vue') {
+		const path = ['vite.config.ts', 'vite.config.js', 'vite.config.mts', 'vite.config.mjs'].find((f) => existsSync(join(project.root, f)));
+		const text = path ? read(path) : '';
+		if (/isCustomElement/.test(text)) return { notes: [] };
+		if (path && /\bvue\(\s*\)/.test(text)) {
+			const content = text.replace(/\bvue\(\s*\)/, `vue({ template: { compilerOptions: { isCustomElement: ${check} } } })`);
+			return { notes: [`Set the Vue plugin's isCustomElement in ${path}, so Vue leaves the ${prefix}* tags to the browser.`], write: { path, content } };
+		}
+		return { notes: [`Vue: pass vue({ template: { compilerOptions: { isCustomElement: ${check} } } }) in your Vite config, so Vue leaves the ${prefix}* tags to the browser.`] };
+	}
+	return { notes: [] };
+}
