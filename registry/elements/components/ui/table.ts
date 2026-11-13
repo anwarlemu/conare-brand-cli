@@ -1,5 +1,4 @@
 import { html } from 'lit'
-import { ifDefined } from 'lit/directives/if-defined.js'
 import { DsElement, define, tagName } from '@/elements/lib/element'
 import styles from 'virtual:tw'
 
@@ -53,7 +52,7 @@ function adoptRules(root: Node) {
  */
 export class Table extends DsElement {
 	static styles = [DsElement.styles, styles]
-	static properties = { variant: {}, framed: { type: Boolean }, label: {} }
+	static properties = { variant: {}, framed: { type: Boolean, reflect: true }, label: {} }
 
 	/** product or settings. */
 	variant: 'product' | 'settings' = 'product'
@@ -75,6 +74,13 @@ export class Table extends DsElement {
 		table.setAttribute('data-variant', this.variant)
 		if (this.framed) table.removeAttribute('data-ds')
 		else table.setAttribute('data-ds', 'table')
+		// Framed, the host is the frame (table.css), so a class on <conare-table> (w-full) lands on it as on Vue's
+		// root; it is the region a keyboard scrolls.
+		const region = this.framed && this.label
+		for (const [name, value] of [['role', 'region'], ['aria-label', this.label], ['tabindex', '0']] as const) {
+			if (region && value) this.setAttribute(name, value)
+			else this.removeAttribute(name)
+		}
 		if (this.variant === 'settings') void this.sizeButtons(table)
 	}
 
@@ -91,9 +97,7 @@ export class Table extends DsElement {
 	}
 
 	render() {
-		return this.framed
-			? html`<div data-ds="table" class="overflow-x-auto border border-edge bg-surface" role=${ifDefined(this.label ? 'region' : undefined)} aria-label=${ifDefined(this.label)} tabindex=${ifDefined(this.label ? '0' : undefined)}><slot @slotchange=${() => this.updated()}></slot></div>`
-			: html`<slot @slotchange=${() => this.updated()}></slot>`
+		return html`<slot @slotchange=${() => this.updated()}></slot>`
 	}
 }
 
