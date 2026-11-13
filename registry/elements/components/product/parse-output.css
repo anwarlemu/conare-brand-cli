@@ -1,0 +1,9 @@
+/* ParseOutput.vue's <style>, as it is. */
+.ds-parsetab { position: relative; padding: 10px 0; color: var(--ds-color-code-muted); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); cursor: pointer; touch-action: manipulation; transition: color var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-parsetab::after { position: absolute; inset: auto 0 -1px; height: 1px; background: var(--ds-color-surface-accent); content: ""; transform: scaleX(0); transform-origin: left; transition: transform var(--ds-duration-glide) var(--ds-easing-out); }
+.ds-parsetab[aria-selected="true"] { color: var(--ds-color-code-fg); }
+.ds-parsetab[aria-selected="true"]::after { transform: scaleX(1); }
+.ds-parsetab:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: -2px; }
+@media (hover: hover) and (pointer: fine) { .ds-parsetab:hover { color: var(--ds-color-code-fg); } }
+@media (pointer: coarse), (max-width: 767px) { .ds-parsetab { min-width: 40px; min-height: 40px; } }
+@media (prefers-reduced-motion: reduce) { .ds-parsetab::after { transition: none; } }
