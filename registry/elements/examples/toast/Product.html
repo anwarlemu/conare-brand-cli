@@ -1,0 +1,12 @@
+<!-- Press the button: a note comes up in the corner. Press it quickly and three show at most. -->
+<div class="min-h-50">
+  <conare-button id="delete-document">Delete a document</conare-button>
+  <conare-toaster></conare-toaster>
+</div>
+<script type="module">
+  let count = 0
+  document.getElementById('delete-document').addEventListener('click', () => {
+    count += 1
+    document.querySelector('conare-toaster').toast('Deleted', `northwind-msa-${count}.pdf`)
+  })
+</script>
