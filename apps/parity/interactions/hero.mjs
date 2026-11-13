@@ -4,3 +4,6 @@ export default [
 	{ focus: 'role=tab[name="Finance"]', key: 'ArrowRight', wait: 1600, shot: true, label: 'arrow to Engineering' },
 	{ key: 'End', wait: 1600, shot: true, label: 'End to Legal' },
 ]
+
+// The tab timer is an animation: screenshots let it run, so the settled shot does not end it (and advance the tab).
+export const settle = false

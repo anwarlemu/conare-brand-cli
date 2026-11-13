@@ -41,6 +41,8 @@ export function Tooltip({ text, side = 'bottom', align = 'center', children }: T
   }
   function leave() {
     clearTimeout(timer.current)
+    // Closed now, not after the next render: the pointer entering the next button lands in the same moment.
+    if (pop.open) lastClosed = Date.now()
     pop.hide()
   }
   function focus(event: FocusEvent) {
