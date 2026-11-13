@@ -1,4 +1,5 @@
 import { extname } from 'node:path';
+import { scriptLiterals } from '../convert/jsx.js';
 
 // A file as the check reads it: its styles (a stylesheet, or the <style> blocks and style
 // attributes of a template with everything else blanked, so offsets still point into the real
@@ -17,9 +18,9 @@ export type SourceFile = {
 	overrides: Map<number, string>;
 };
 
-export const STYLES = /\.(css|pcss|scss)$/i;
-export const MARKUP = /\.(vue|html?)$/i;
-export const SCRIPT = /\.(ts|js|mjs|tsx|jsx)$/i;
+export const STYLES = /\.(css|pcss|postcss|scss|less)$/i;
+export const MARKUP = /\.(vue|svelte|astro|html?|erb|php|hbs|handlebars|mustache|ejs|liquid|twig|njk|jinja2?|j2)$/i;
+export const SCRIPT = /\.(ts|js|mjs|cjs|mts|tsx|jsx)$/i;
 
 export function lineOf(file: SourceFile, offset: number) {
 	let lo = 0;
@@ -56,7 +57,7 @@ export function loadSource(path: string, text: string): SourceFile {
 		return file;
 	}
 	if (SCRIPT.test(ext)) {
-		file.strings = literals(text, 0);
+		file.strings = scriptLiterals(text, path).map((l) => ({ value: l.value, offset: l.start }));
 		return file;
 	}
 	// Markup: keep the style blocks and style attributes, read the class attributes.
@@ -69,13 +70,16 @@ export function loadSource(path: string, text: string): SourceFile {
 		semicolons.add(start + m[2].length);
 	}
 	for (const m of text.matchAll(/\sclass\s*=\s*(["'])([^"']*)\1/gi)) file.classTokens.push(...split(m[2], (m.index ?? 0) + m[0].length - m[2].length - 1));
-	// Bound classes (:class="...") hold literals that are class lists.
-	for (const m of text.matchAll(/\s(?::class|v-bind:class)\s*=\s*"([^"]*)"/gi)) {
+	// Bound classes (Vue :class, Angular [ngClass] and [class], Astro class:list, Alpine x-bind:class) hold literals that are class lists.
+	for (const m of text.matchAll(/\s(?::class|v-bind:class|x-bind:class|\[ngClass\]|\[class\]|class:list)\s*=\s*"([^"]*)"/gi)) {
 		const base = (m.index ?? 0) + m[0].length - m[1].length - 1;
 		for (const s of literals(m[1], base)) file.classTokens.push(...split(s.value, s.offset));
 	}
-	const script = text.match(/<script\b[^>]*>([\s\S]*?)<\/script>/i);
-	if (script) file.strings = literals(script[1], (script.index ?? 0) + script[0].indexOf('>') + 1);
+	// Code: every script block, Astro's frontmatter, and template code (ERB, Blade, PHP, Jinja, Liquid) where class strings live.
+	for (const m of text.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)) file.strings.push(...literals(m[1], (m.index ?? 0) + m[0].indexOf('>') + 1));
+	const front = text.match(/^\s*---\n([\s\S]*?)\n---/);
+	if (front && ext === '.astro') file.strings.push(...literals(front[1], (front.index ?? 0) + front[0].indexOf('\n') + 1));
+	if (!/\.(vue|svelte|astro)$/i.test(ext)) for (const m of text.matchAll(/<%[\s\S]*?%>|<\?php[\s\S]*?\?>|\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\}/g)) file.strings.push(...literals(m[0], m.index ?? 0));
 	let styles = '';
 	for (let i = 0; i < text.length; i++) styles += semicolons.has(i) ? ';' : keep[i] || text[i] === '\n' ? text[i] : ' ';
 	file.styles = styles;

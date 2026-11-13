@@ -35,6 +35,9 @@ export function tailwindDefaults(root: string): Map<string, string> {
 	}
 }
 
+/** Utilities Tailwind 4 builds without a theme key, which a brand key of the same name would take over. */
+const BUILT_IN: Record<string, string> = { '--radius-full': 'calc(infinity * 1px)' };
+
 export function scopeTheme(theme: string, appTheme: Map<string, string>, defaults: Map<string, string>): { theme: string; scoped: string[] } {
 	const scoped: string[] = [];
 	const app: string[] = [];
@@ -42,7 +45,7 @@ export function scopeTheme(theme: string, appTheme: Map<string, string>, default
 	const name = (key: string) => `--ds-scope-${key.slice(2).replace(/[^\w-]/g, '-')}`;
 	const out = theme.replace(/@theme inline\s*\{([^{}]*)\}/, (block) =>
 		block.replace(/^(\s*)(--[\w.\\-]+)\s*:\s*([^;]+);/gm, (line, pad: string, key: string, value: string) => {
-			const own = appTheme.get(key) ?? defaults.get(key);
+			const own = appTheme.get(key) ?? defaults.get(key) ?? BUILT_IN[key];
 			if (own === undefined || own.trim() === value.trim()) return line;
 			scoped.push(key);
 			app.push(`  ${name(key)}: ${own};`);

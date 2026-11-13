@@ -146,6 +146,8 @@ export const nearestDuration = (ms: number) => durationSteps().reduce((best, s) 
 
 /** One class converted. Returns the replacement (possibly empty, to drop it) or undefined to keep it. */
 export function convertClass(raw: string, ctx: ClassContext, list: Parsed[] = []): string | undefined {
+	// Template code in a class list (a placeholder for `{{ size }}`) is never a class to convert.
+	if (raw.includes('\u0000')) return undefined;
 	const p = parseClass(raw);
 	const neg = p.utility.startsWith('-') ? '-' : '';
 	const u = neg ? p.utility.slice(1) : p.utility;

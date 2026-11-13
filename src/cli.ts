@@ -3,7 +3,8 @@ import { brand, registryHost } from './lib/brand.js';
 import { formatFinding, runCheck } from './check/engine.js';
 import { add } from './commands/add.js';
 import { apply, formatApply, readState } from './commands/apply.js';
-import { init } from './commands/init.js';
+import { describeProject, init } from './commands/init.js';
+import { flavorLabel } from './commands/add.js';
 import { diff, formatInfo, formatView, info, search, view } from './commands/library.js';
 import { findTokens, list } from './commands/small.js';
 
@@ -20,6 +21,7 @@ const HELP = () => {
 		row('apply button card dialog', "Only those kinds, wherever the app uses them (its components and elements)"),
 		row('apply /settings /billing', 'Only those pages (by route), with the components only they use'),
 		row('apply app/pages/settings.vue', 'Pages by file (or a glob in quotes); an app component by name (PrimaryButton)'),
+		more('any stack: Vue, React, Svelte, Astro, Angular, Solid, HTML, ERB, Blade, Django, PHP, Liquid, Twig...'),
 		row('apply --components button,card --pages /settings', ''),
 		more('--with-shared  include layouts and components other pages share'),
 		more('--dry-run [--json]  list every file it would touch and why, write nothing'),
@@ -27,7 +29,8 @@ const HELP = () => {
 		'',
 		'Use the library:',
 		row('add <item...>', 'Copy items (Button, alert-dialog, badge...) and what they need into the app'),
-		more('--dry-run   --overwrite (replace files that differ)   --no-install (skip packages)'),
+		more('in its flavor: Vue (Vue, Nuxt), React (Next, Vite, React Router), web components (everything else)'),
+		more('--framework vue|react|elements   --dry-run   --overwrite   --no-install (skip packages)'),
 		row('view <item...> [--source]', 'How to use an item: rules, props, slots, events, examples, source'),
 		row('search <words>', 'Find items by what they do'),
 		row('list', 'Every item, with what it requires'),
@@ -44,7 +47,7 @@ const HELP = () => {
 	].join('\n');
 };
 
-const VALUE_FLAGS = new Set(['cwd', 'components', 'pages']);
+const VALUE_FLAGS = new Set(['cwd', 'components', 'pages', 'framework']);
 
 export function parse(argv: string[]) {
 	const flags: Record<string, string | boolean> = {};
@@ -68,13 +71,13 @@ const listFlag = (v: string | boolean | undefined) => (typeof v === 'string' ? v
 const COMMON = ['cwd', 'json', 'help'];
 const FLAGS: Record<string, string[]> = {
 	list: [],
-	add: ['dry-run', 'overwrite', 'install'],
+	add: ['dry-run', 'overwrite', 'install', 'framework'],
 	apply: ['components', 'pages', 'with-shared', 'dry-run', 'redo'],
-	view: ['source', 'full'],
-	show: ['source', 'full'],
+	view: ['source', 'full', 'framework'],
+	show: ['source', 'full', 'framework'],
 	search: [],
 	info: [],
-	diff: [],
+	diff: ['framework'],
 	init: ['dry-run'],
 	check: ['fix', 'all'],
 	tokens: [],
@@ -137,8 +140,8 @@ async function main() {
 			return;
 		}
 		case 'init': {
-			const r = init(cwd, { dryRun: flags['dry-run'] === true });
-			out({ framework: r.project.framework, writes: r.writes, warnings: r.warnings }, [`${r.project.framework} app at ${cwd}`, ...r.writes.map((w) => `  + ${w}`), ...r.warnings.map((w) => `warning: ${w}`)].join('\n'));
+			const r = await init(cwd, { dryRun: flags['dry-run'] === true });
+			out({ framework: r.project.framework, flavor: r.project.flavor, styling: r.styling, writes: r.writes, links: r.links, warnings: r.warnings }, [`${describeProject(r.project)} at ${cwd} (${r.styling})`, ...r.writes.map((w) => `  + ${w}`), ...(r.links.length ? [`Linked from ${r.project.layouts.length ? r.project.layouts.join(', ') : 'no layout'}:`, ...r.links.map((l) => `  ${l}`)] : []), ...r.warnings.map((w) => `warning: ${w}`)].join('\n'));
 			return;
 		}
 		case 'check': {

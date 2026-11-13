@@ -5,7 +5,7 @@ import { type Use, classify, cssRole, elements, hoverRole, parseColor, roleFor }
 // CSS converted by role, in place: stylesheets, <style> blocks and style attributes. Only values change; selectors,
 // comments, order and formatting are kept.
 
-export type CssContext = { changes?: Change[]; selector?: string; merge?: boolean };
+export type CssContext = { changes?: Change[]; selector?: string; merge?: boolean; plain?: boolean };
 
 const COLOR = /#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?|oklch)\([^()]*\)|(?<![\w-])(?:white|black)(?![\w-])/g;
 const DARK = /\.dark\b|\[data-(?:theme|mode)\s*=\s*["']?dark|prefers-color-scheme\s*:\s*dark/i;

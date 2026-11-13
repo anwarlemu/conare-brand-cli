@@ -12,7 +12,8 @@
     "dist",
     "brand",
     "build",
-    "r"
+    "r",
+    "elements"
   ],
   "engines": {
     "node": ">=20"
@@ -40,6 +41,8 @@
     "vue-tsc": "^2"
   },
   "dependencies": {
-    "@vue/compiler-sfc": "3.5.43"
+    "@babel/parser": "7.29.3",
+    "@vue/compiler-sfc": "3.5.43",
+    "tailwindcss": "4.3.4"
   }
 }

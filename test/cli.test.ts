@@ -58,16 +58,25 @@ describe('cli', () => {
 		writeFileSync(join(dir, 'app/good.vue'), '<template><div class="bg-surface text-fg" /></template>\n');
 		expect(JSON.parse(run(dir, 'check', 'app/good.vue')).findings).toEqual([]);
 	});
-	it('refuses a Tailwind 3 app with the fix and writes nothing (it used to half-install and break the build)', () => {
+	it('installs a Tailwind 3 app with a preset wired into its config (it used to refuse)', () => {
 		const dir = mkdtempSync(join(tmpdir(), 'conare-ds-'));
 		writeFileSync(join(dir, 'package.json'), JSON.stringify({ dependencies: { vue: '3.5.43' }, devDependencies: { tailwindcss: '^3.4.17' } }));
 		mkdirSync(join(dir, 'src'));
-		writeFileSync(join(dir, 'src/style.css'), '@tailwind base;\n');
-		let err = '';
-		try { execFileSync('node', [bin, 'init', '--cwd', dir], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }); } catch (e) { err = (e as { stderr: string }).stderr; }
-		expect(err).toContain('npx @tailwindcss/upgrade');
-		expect(readFileSync(join(dir, 'src/style.css'), 'utf8')).toBe('@tailwind base;\n');
-		expect(existsSync(join(dir, 'AGENTS.md'))).toBe(false);
+		writeFileSync(join(dir, 'src/main.ts'), "import './style.css'\n");
+		writeFileSync(join(dir, 'src/style.css'), '@tailwind base;\n@tailwind components;\n@tailwind utilities;\n');
+		writeFileSync(join(dir, 'tailwind.config.js'), "/** @type {import('tailwindcss').Config} */\nmodule.exports = {\n  content: ['./src/**/*.{vue,ts}'],\n  theme: { extend: {} },\n  plugins: [],\n};\n");
+		run(dir, 'init');
+		const css = readFileSync(join(dir, 'src/style.css'), 'utf8');
+		expect(css.startsWith('@import "./conare-ds/brand.css";\n@tailwind base;')).toBe(true);
+		expect(readFileSync(join(dir, 'tailwind.config.js'), 'utf8')).toContain("presets: [require('./src/conare-ds/tailwind-preset.cjs')]");
+		const preset = readFileSync(join(dir, 'src/conare-ds/tailwind-preset.cjs'), 'utf8');
+		expect(preset).toContain('"surface"');
+		expect(preset).toContain("addVariant('pointer-coarse'");
+		// The preset's keys Tailwind also has (font-sans) keep the app's value outside the brand's scope.
+		expect(preset).toContain('var(--ds-scope-fontFamily-sans)');
+		const once = readFileSync(join(dir, 'tailwind.config.js'), 'utf8');
+		run(dir, 'init');
+		expect(readFileSync(join(dir, 'tailwind.config.js'), 'utf8')).toBe(once);
 	});
 	it("installs with the workspace's package manager when the app sits in a monorepo", () => {
 		const root = mkdtempSync(join(tmpdir(), 'conare-ds-'));

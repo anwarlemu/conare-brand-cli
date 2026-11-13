@@ -1,9 +1,9 @@
 import { brand, tokens } from '../lib/brand.js';
-import { readIndex } from '../library/registry.js';
+import { flavorsOf, readIndex } from '../library/registry.js';
 
 export async function list() {
 	const items = await readIndex();
-	return items.map((i) => ({ name: i.name, title: i.title, group: brand().groups[i.group] ?? i.group, description: i.description, requires: i.requires, dependencies: i.dependencies }));
+	return items.map((i) => ({ name: i.name, title: i.title, group: brand().groups[i.group] ?? i.group, description: i.description, flavors: flavorsOf(i), requires: i.requires, dependencies: i.dependencies }));
 }
 
 /** Tokens whose name or value matches every term. */
