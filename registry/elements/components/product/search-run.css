@@ -1,0 +1,43 @@
+/* The namespaces read, as quiet words: those that held a result keep a red square, the rest step back. */
+.ds-runchip { display: inline-flex; align-items: center; gap: var(--ds-space-xs); color: var(--ds-color-fg-soft); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); white-space: nowrap; transition: color var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-runchip img { transition: opacity var(--ds-duration-enter) var(--ds-easing-standard); }
+.ds-runchip[data-hit="false"] { color: var(--ds-color-fg-muted); }
+.ds-runchip[data-hit="false"] img { opacity: 0.5; }
+.ds-runchip-mark { width: 4px; height: 4px; flex-shrink: 0; background: var(--ds-color-edge-accent); }
+/* Small to the eye, 24px to the pointer. */
+.ds-runchip-link { margin-block: -4px; padding-block: 4px; }
+@media (hover: hover) and (pointer: fine) { .ds-runchip-link:hover { color: var(--ds-color-fg); } }
+.ds-runchip-link:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: 1px; }
+/* Searching: light running across the word (.v2-shimmer). */
+.ds-run-shimmer { background: linear-gradient(90deg, var(--ds-color-neutral-400) 30%, var(--ds-color-neutral-700) 50%, var(--ds-color-neutral-400) 70%) 0 0 / 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: ds-run-shimmer 1400ms linear infinite; }
+@keyframes ds-run-shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
+/* The index: a field of 3px cells on a 5px pitch drawn by a mask over one fill. Cells flicker while it searches;
+   each document found is a 2 by 2 block of them, in red, so it sits on the field's grid. */
+.ds-index { position: relative; height: 19px; overflow: hidden; }
+.ds-run[data-found] .ds-index { overflow: visible; }
+.ds-index::before, .ds-hit {
+  -webkit-mask-image: linear-gradient(90deg, var(--ds-color-off-black) 3px, transparent 3px), linear-gradient(var(--ds-color-off-black) 3px, transparent 3px);
+  mask-image: linear-gradient(90deg, var(--ds-color-off-black) 3px, transparent 3px), linear-gradient(var(--ds-color-off-black) 3px, transparent 3px);
+  -webkit-mask-size: 5px 5px;
+  mask-size: 5px 5px;
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+.ds-index::before { position: absolute; inset: 0; background: var(--ds-color-neutral-700); content: ""; opacity: 0.6; }
+.ds-flick { position: absolute; z-index: 1; width: 3px; height: 3px; background: var(--ds-color-neutral-400); opacity: 0; animation: ds-flick 900ms var(--ds-easing-standard) infinite; animation-delay: calc(var(--s) * 1ms); }
+@keyframes ds-flick { 0%, 18%, 100% { opacity: 0; } 6% { opacity: 1; } }
+.ds-hitbtn { position: absolute; z-index: 2; display: grid; width: 24px; height: 24px; margin: -8px 0 0 -8px; padding: 0; place-items: center; cursor: pointer; }
+.ds-hit { position: static; display: block; width: 8px; height: 8px; background: var(--ds-color-edge-accent); animation: ds-hit-in var(--ds-duration-glide) steps(1, end) calc(var(--s) * 1ms) both; transition: transform var(--ds-duration-micro) var(--ds-easing-standard); }
+@keyframes ds-hit-in { from { opacity: 0; } }
+@media (hover: hover) and (pointer: fine) { .ds-hitbtn:hover .ds-hit { transform: scale(1.25); } }
+.ds-hitbtn:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-off-black); outline-offset: 2px; }
+.ds-hit-tip { position: absolute; top: calc(100% + 6px); z-index: 5; display: flex; max-width: 240px; flex-direction: column; gap: var(--ds-space-2xs); padding: var(--ds-space-sm) var(--ds-space-md); background: var(--ds-color-surface-inverse); color: var(--ds-color-off-white); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); pointer-events: none; }
+/* What the answer brings in. */
+.ds-run-in { animation: ds-run-in var(--ds-duration-enter) var(--ds-easing-out) both; }
+@keyframes ds-run-in { from { opacity: 0; transform: translateY(4px); } }
+@media (prefers-reduced-motion: reduce) {
+  .ds-flick, .ds-hit, .ds-run-in, .ds-run-shimmer { animation: none; }
+  .ds-run-shimmer { color: var(--ds-color-fg-muted); }
+  .ds-flick { opacity: 0.6; }
+  .ds-hit { transition: none; }
+}
