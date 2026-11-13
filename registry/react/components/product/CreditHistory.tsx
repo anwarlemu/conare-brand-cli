@@ -106,7 +106,7 @@ export function CreditHistory({ grants, currency = 'USD', step = 5, timeZone, cl
                     <span className="block">{g.reason}</span>
                     <span className="block type-meta text-fg-muted">{when(g.date)}</span>
                   </span>
-                  <span className="shrink-0 font-medium tabular-nums">+{money(g.amount)}</span>
+                  <span className="shrink-0 font-medium tabular-nums">{`+${money(g.amount)}`}</span>
                 </li>
               )
             })}
@@ -114,7 +114,7 @@ export function CreditHistory({ grants, currency = 'USD', step = 5, timeZone, cl
         </div>
         {bar.height > 0 && <span className="ds-grants-bar" data-on={moving || undefined} style={{ height: `${bar.height}px`, transform: `translateY(${bar.top}px)` }} aria-hidden="true" />}
       </div>
-      {more > 0 && <button type="button" className="ds-more self-start" onClick={showMore}>Show {more} more</button>}
+      {more > 0 && <button type="button" className="ds-more self-start" onClick={showMore}>{`Show ${more} more`}</button>}
     </div>
   )
 }

@@ -136,13 +136,13 @@ export class CreditHistory extends DsElement {
 								<span class="block">${g.reason}</span>
 								<span class="block type-meta text-fg-muted">${this.when(g.date)}</span>
 							</span>
-							<span class="shrink-0 font-medium tabular-nums">+${this.money(g.amount)}</span>
+							<span class="shrink-0 font-medium tabular-nums">${`+${this.money(g.amount)}`}</span>
 						</li>`
 					})}</ol>
 				</div>
 				${b.height ? html`<span class="ds-grants-bar" data-on=${ifDefined(this.moving ? 'true' : undefined)} style=${`height: ${b.height}px; transform: translateY(${b.top}px)`} aria-hidden="true"></span>` : nothing}
 			</div>
-			${more > 0 ? html`<button type="button" class="ds-more self-start" @click=${() => this.showMore()}>Show ${more} more</button>` : nothing}
+			${more > 0 ? html`<button type="button" class="ds-more self-start" @click=${() => this.showMore()}>${`Show ${more} more`}</button>` : nothing}
 		</div>`
 	}
 }
