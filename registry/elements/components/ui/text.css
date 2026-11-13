@@ -1,0 +1,16 @@
+/* The host is the text's box (Text.vue's root), so a class on <conare-text> lands on it as a class on <Text> does. */
+:host { display: block; }
+:host([data-inline]) { display: inline; }
+/* A link or button draws its own box inside. */
+:host([data-control]) { display: contents; }
+:host(:not([variant])), :host([variant="ui"]) { @apply type-ui text-fg; }
+:host([variant="title"]) { @apply type-heading-3 text-fg; }
+:host([variant="strong"]) { @apply type-ui-strong text-fg; }
+:host([variant="meta"]) { @apply type-meta text-fg-muted; }
+:host([variant="caption"]) { @apply type-caption text-fg-muted; }
+:host([variant="code"]) { @apply type-code text-fg; }
+:host([variant="code-sm"]) { @apply type-code-sm text-fg; }
+:host([variant="mark"]) { @apply font-medium text-fg; }
+/* Text.vue's <style>, as it is. */
+.ds-text-link { cursor: pointer; text-decoration: underline; text-decoration-color: var(--ds-color-edge-strong); text-underline-offset: 4px; transition: text-decoration-color var(--ds-duration-enter) var(--ds-easing-standard); }
+@media (hover: hover) and (pointer: fine) { .ds-text-link:hover { text-decoration-color: var(--ds-color-fg); } }
