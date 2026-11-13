@@ -1,0 +1,13 @@
+/* TextSwap.vue's <style>, with the host as .ds-swap (the cell) and `on` as its data-on="true". The check's stroke is
+   drawn on the slotted label: stroke-dasharray and stroke-dashoffset are inherited, so its paths take them from it. */
+:host { display: inline-grid; }
+.ds-swap-a, .ds-swap-b { display: inline-flex; grid-area: 1 / 1; align-items: center; justify-content: center; gap: var(--ds-space-sm); transition: opacity var(--ds-duration-glide) ease, filter var(--ds-duration-glide) ease, transform var(--ds-duration-settle) var(--ds-easing-out); }
+.ds-swap-b { opacity: 0; filter: blur(2px); transform: translateY(5px) scale(0.96); }
+:host([on]) .ds-swap-a { opacity: 0; filter: blur(2px); transform: translateY(-5px) scale(0.96); }
+:host([on]) .ds-swap-b { opacity: 1; filter: none; transform: none; }
+slot[name="b"]::slotted(*) { stroke-dasharray: 24; stroke-dashoffset: 24; transition: stroke-dashoffset var(--ds-duration-micro) ease; }
+:host([on]) slot[name="b"]::slotted(*) { stroke-dashoffset: 0; transition: stroke-dashoffset var(--ds-duration-enter) var(--ds-easing-out) 40ms; }
+@media (prefers-reduced-motion: reduce) {
+  .ds-swap-a, .ds-swap-b { filter: none !important; transform: none !important; transition: opacity var(--ds-duration-micro) ease; }
+  slot[name="b"]::slotted(*) { stroke-dashoffset: 0; transition: none; }
+}

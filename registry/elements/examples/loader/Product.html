@@ -1,0 +1,41 @@
+<!-- The dot matrix where the product uses it: beside what is working, inside a source's dark status, and in the dark
+     button while it syncs. Press Sync now to watch it go to Syncing, then Synced, and back. -->
+<div class="grid items-start gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8">
+  <p class="type-meta leading-7 text-fg-muted">Beside what is working</p>
+  <p class="flex items-center gap-2 type-meta text-fg-muted" aria-live="polite"><conare-dot-matrix></conare-dot-matrix>Syncing HubSpot</p>
+  <p class="mt-4 type-meta leading-7 text-fg-muted md:mt-0">In a status</p>
+  <div class="flex flex-wrap items-center gap-2">
+    <conare-status-tag status="syncing"></conare-status-tag>
+    <conare-status-tag status="connecting"></conare-status-tag>
+  </div>
+  <p class="mt-4 type-meta leading-7 text-fg-muted md:mt-0">In a button</p>
+  <div class="flex items-center">
+    <conare-pixel-button id="sync" aria-busy="false"><i data-lucide="check" data-size="12" data-stroke-width="2" aria-hidden="true" hidden></i><i data-lucide="refresh-cw" data-size="12" data-stroke-width="1.5" aria-hidden="true"></i><span>Sync now</span></conare-pixel-button>
+  </div>
+</div>
+<script type="module">
+  const button = document.getElementById('sync')
+  // The dot matrix is in the button only while it syncs, as Vue's v-if has it.
+  const matrix = document.createElement('conare-dot-matrix')
+  matrix.setAttribute('tone', 'inverse')
+  const [check, refresh] = button.querySelectorAll('svg')
+  let sync = 'idle'
+  const show = (next) => {
+    sync = next
+    button.done = sync === 'done'
+    button.setAttribute('aria-busy', String(sync === 'busy'))
+    if (sync === 'busy') button.prepend(matrix)
+    else matrix.remove()
+    check.toggleAttribute('hidden', sync !== 'done')
+    refresh.toggleAttribute('hidden', sync !== 'idle')
+    button.querySelector('span').textContent = sync === 'busy' ? 'Syncing' : sync === 'done' ? 'Synced' : 'Sync now'
+  }
+  button.addEventListener('click', () => {
+    if (sync !== 'idle') return
+    show('busy')
+    // ds-latency: stands in for the sync request and its confirmation in this example.
+    setTimeout(() => show('done'), 2200)
+    // ds-latency: the example returns to its start after showing Synced.
+    setTimeout(() => show('idle'), 4200)
+  })
+</script>

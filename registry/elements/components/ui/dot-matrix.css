@@ -1,0 +1,6 @@
+/* DotMatrix.vue's <style>, with the host as .ds-matrix (the root span), so a class on <conare-dot-matrix> lands on it. */
+:host { display: grid; grid-template-columns: repeat(3, 2px); gap: var(--ds-space-2xs); flex-shrink: 0; }
+i { width: 2px; height: 2px; background: var(--ds-color-neutral-500); animation: ds-blink 900ms steps(1, end) infinite; animation-delay: calc(var(--k) * 100ms); }
+:host([tone="inverse"]) i { background: var(--ds-color-surface); }
+@keyframes ds-blink { 0% { opacity: 1; } 50% { opacity: 0.2; } }
+@media (prefers-reduced-motion: reduce) { i { animation: none; } }

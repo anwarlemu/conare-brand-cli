@@ -1,0 +1,15 @@
+<!-- A source's states, and the quiet tags beside them. -->
+<div class="grid items-start gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8">
+  <p class="type-meta leading-7 text-fg-muted">A state</p>
+  <div class="flex flex-wrap items-center gap-2">
+    <conare-status-tag status="ready"></conare-status-tag>
+    <conare-status-tag status="syncing"></conare-status-tag>
+    <conare-status-tag status="connecting"></conare-status-tag>
+    <conare-status-tag status="error"></conare-status-tag>
+  </div>
+  <p class="mt-4 type-meta leading-7 text-fg-muted md:mt-0">A note</p>
+  <div class="flex flex-wrap items-center gap-2">
+    <conare-tag tone="quiet">default</conare-tag>
+    <conare-tag tone="quiet">invited</conare-tag>
+  </div>
+</div>

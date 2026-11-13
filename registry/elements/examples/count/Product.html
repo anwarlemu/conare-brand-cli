@@ -1,0 +1,10 @@
+<!-- The count climbs by itself, as a syncing source's documents do between polls. -->
+<p class="text-heading-4 font-medium"><conare-count id="documents" value="412830"></conare-count> <span class="type-meta font-normal text-fg-muted">documents</span></p>
+<script type="module">
+  await customElements.whenDefined('conare-count')
+  const count = document.getElementById('documents')
+  const timer = setInterval(() => {
+    if (!count.isConnected) return clearInterval(timer)
+    count.value += 1240
+  }, 2000)
+</script>
