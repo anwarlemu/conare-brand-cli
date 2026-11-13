@@ -1,0 +1,14 @@
+<!-- Two labels in one cell, so nothing around them moves: the first leaves up, the next arrives from below, each with
+     a touch of blur, and a check draws itself. Here it swaps by itself. -->
+<conare-text-swap id="swap" class="text-ui">
+  <span slot="a" class="contents"><i data-lucide="copy" data-size="12" data-stroke-width="1.5" aria-hidden="true"></i>Copy prompt</span>
+  <span slot="b" class="contents"><i data-lucide="check" data-size="12" data-stroke-width="2" aria-hidden="true"></i>Copied</span>
+</conare-text-swap>
+<script type="module">
+  await customElements.whenDefined('conare-text-swap')
+  const swap = document.getElementById('swap')
+  const timer = setInterval(() => {
+    if (!swap.isConnected) return clearInterval(timer)
+    swap.on = !swap.on
+  }, 1800)
+</script>
