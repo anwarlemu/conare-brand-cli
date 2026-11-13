@@ -1,0 +1,11 @@
+/* ParsePage.vue's <style>. */
+.ds-parsefiles { outline: var(--ds-border-hairline) dashed transparent; outline-offset: 4px; transition: outline-color var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-parsefiles[data-drag] { outline-color: var(--ds-color-edge-accent); }
+.ds-parsefile { position: relative; display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: var(--ds-space-md); padding: 8px 12px; border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface); text-align: left; cursor: pointer; transition: border-color var(--ds-duration-micro) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-parsefile::before { position: absolute; inset: -1px -1px auto; height: 2px; background: var(--ds-color-surface-accent); content: ""; transform: scaleX(0); transform-origin: left; transition: transform var(--ds-duration-enter) var(--ds-easing-out); }
+.ds-parsefile[aria-pressed="true"] { background: var(--ds-color-surface-subtle); }
+.ds-parsefile[aria-pressed="true"]::before { transform: scaleX(1); }
+.ds-parsefile:active { background: color-mix(in srgb, var(--ds-color-fg) 8%, var(--ds-color-surface-subtle)); }
+.ds-parsefile:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }
+@media (hover: hover) and (pointer: fine) { .ds-parsefile:hover { background: var(--ds-color-surface-subtle); } }
+@media (prefers-reduced-motion: reduce) { .ds-parsefile::before { transition: none; } }
