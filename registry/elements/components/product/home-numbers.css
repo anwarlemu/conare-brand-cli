@@ -1,0 +1,30 @@
+/* HomeNumbers.vue's <style>, as it is. */
+.ds-homefoot { position: fixed; right: 0; bottom: 0; left: 0; z-index: 1; display: flex; justify-content: space-between; gap: var(--ds-space-md); padding: 12px 16px; border-top: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface); color: var(--ds-color-fg-muted); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); white-space: nowrap; }
+@media (min-width: 768px) { .ds-homefoot { left: var(--ds-layout-sidebar); justify-content: center; gap: 32px; } }
+.ds-homefoot a, .ds-homeline a { transition: color var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-homefoot-num { color: var(--ds-color-fg); font-size: var(--ds-text-ui); font-variant-numeric: tabular-nums; }
+@media (hover: hover) and (pointer: fine) { .ds-homefoot a:hover, .ds-homeline a:hover { color: var(--ds-color-fg); } }
+@media (max-width: 767px) {
+  .ds-homefoot a { display: inline-flex; min-height: 40px; flex-wrap: wrap; align-items: baseline; align-content: center; gap: 0 4px; white-space: normal; }
+  .ds-homeline a { display: inline-flex; min-height: 40px; align-items: center; }
+}
+.ds-homecards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 16px; border: var(--ds-border-hairline) solid var(--ds-color-edge); outline: var(--ds-border-hairline) solid var(--ds-color-edge); outline-offset: 4px; }
+.ds-homecards > a { display: flex; min-width: 0; flex-direction: column; gap: var(--ds-space-xs); padding: 12px; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-homecards > a + a { border-left: var(--ds-border-hairline) solid var(--ds-color-edge); }
+.ds-homecards > a:active { background: color-mix(in srgb, var(--ds-color-fg) 8%, var(--ds-color-surface-subtle)); }
+@media (hover: hover) and (pointer: fine) { .ds-homecards > a:hover { background: var(--ds-color-surface-subtle); } }
+.ds-homecards > a:focus-visible, .ds-homefoot a:focus-visible, .ds-homeline a:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }
+.ds-homecards .type-meta { text-wrap: balance; }
+.ds-homecards-num { font-family: var(--ds-font-heading); font-size: var(--ds-text-heading-2); line-height: var(--ds-text-heading-2-leading); font-variant-numeric: tabular-nums; }
+.ds-homebars { display: flex; height: 16px; align-items: flex-end; gap: 1px; }
+.ds-homebars > span { min-width: 0; flex: 1; background: var(--ds-color-fg); transform-origin: bottom; }
+.ds-homebars > span:last-child { background: var(--ds-color-surface-accent); }
+@media (max-width: 767px) {
+  .ds-homecards { grid-template-columns: minmax(0, 1fr); }
+  .ds-homecards > a + a { border-top: var(--ds-border-hairline) solid var(--ds-color-edge); border-left: 0; }
+}
+.ds-homeline { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 8px; margin: 0; color: var(--ds-color-fg-muted); font-size: var(--ds-text-ui); line-height: var(--ds-text-ui-leading); }
+@media (prefers-reduced-motion: no-preference) {
+  .ds-homebars[data-plays] > span { animation: ds-homebar-rise var(--ds-duration-entrance) var(--ds-easing-out) both; animation-delay: calc(var(--i) * 12ms); }
+}
+@keyframes ds-homebar-rise { from { transform: scaleY(0.05); } }
