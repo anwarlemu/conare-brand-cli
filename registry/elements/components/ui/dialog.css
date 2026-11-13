@@ -1,0 +1,9 @@
+/* Dialog.vue's <style>, as it is. */
+.ds-dialog { width: min(480px, calc(100vw - 32px)); margin: auto; padding: 0; border: var(--ds-border-hairline) solid var(--ds-color-edge); border-radius: var(--ds-radius-container); background: var(--ds-color-surface); color: var(--ds-color-fg); font-size: var(--ds-text-ui); line-height: var(--ds-text-ui-leading); }
+.ds-dialog[data-wide] { width: min(720px, calc(100vw - 32px)); }
+.ds-dialog:focus { outline: none; }
+.ds-dialog::backdrop { background: var(--ds-color-scrim); }
+.ds-dialog[open] { animation: ds-dialog-rise var(--ds-duration-entrance) var(--ds-easing-standard); }
+@keyframes ds-dialog-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .ds-dialog[open] { animation: ds-dialog-fade var(--ds-duration-enter) var(--ds-easing-standard); } }
+@keyframes ds-dialog-fade { from { opacity: 0; } }

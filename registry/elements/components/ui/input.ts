@@ -19,6 +19,8 @@ import styles from 'virtual:tw'
 export class Input extends DsFormElement {
 	static styles = [DsFormElement.styles, styles]
 	static shadowRootOptions = { ...LitElement.shadowRootOptions, delegatesFocus: true }
+	/** A field: a dialog starts in the first one. */
+	static dsField = true
 	static properties = {
 		value: {},
 		type: {},

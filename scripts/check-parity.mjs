@@ -189,13 +189,12 @@ async function capture(url, width) {
 	return { context, page, png, styles, errors };
 }
 
-// A step: { label, example?, reload?, click?, focus?, hover?, hold? (selector, with ms), key?, down?, up?, type?, wait?,
+// A step: { label, example?, reload?, click?, clickAt? ([x, y]), focus?, hover?, hold? (selector, with ms), key?, down?, up?, type?, wait?,
 // shot? }. Selectors are Playwright's, which pierce shadow roots: prefer role=button[name="Create key"] or text=...,
 // which find the same control in every flavor. `shot` screenshots the example after the step and diffs it with Vue's.
 async function keyboard(page, steps) {
 	const trail = [];
-	await page.mouse.click(1, 1);
-	await page.evaluate(() => { document.activeElement?.blur?.(); });
+	// From the page as it loaded (a dialog that opens with the page keeps focus in it).
 	const record = async (label, shot) => {
 		const entry = { step: label, focus: await page.evaluate(FOCUS), state: await page.evaluate(STATE) };
 		if (shot) {
@@ -216,6 +215,7 @@ async function keyboard(page, steps) {
 			await page.waitForTimeout(400);
 		}
 		if (s.click) await page.locator(s.click).first().click();
+		if (s.clickAt) await page.mouse.click(s.clickAt[0], s.clickAt[1]);
 		if (s.focus) await page.locator(s.focus).first().focus();
 		if (s.hover) await page.locator(s.hover).first().hover();
 		if (s.hold) {
@@ -309,6 +309,7 @@ for (const name of names) {
 					const keys = await keyboard(got.page, exSteps);
 					r.keyboard = keys.map((k, i) => ({ ...k, vue: vueKeys[i] })).filter((k) => k.focus !== k.vue?.focus || JSON.stringify(k.state) !== JSON.stringify(k.vue?.state)).map(({ png, vue, ...k }) => ({ ...k, vue: vue && { focus: vue.focus, state: vue.state } }));
 					if (r.keyboard.length) r.notes.push(`keyboard: ${r.keyboard.map((k) => `${k.step}: ${k.vue?.focus} ${JSON.stringify(k.vue?.state)} in Vue, ${k.focus} ${JSON.stringify(k.state)} here`).join('; ')}`);
+					r.trail = keys.map(({ png, ...k }, i) => ({ ...k, vue: vueKeys[i]?.focus }));
 					r.shots = [];
 					keys.forEach((k, i) => {
 						if (!k.png || !vueKeys[i]?.png) return;

@@ -1,0 +1,29 @@
+<!-- The new-organization dialog, opened as the frame loads; close it and the button opens it again. Opening with the
+     page, focus rests on the window itself, so nothing shows selected until someone reaches for it. -->
+<div class="min-h-105">
+  <conare-button id="new-org">New organization</conare-button>
+  <conare-dialog id="new-org-dialog" heading="New organization">
+    <form class="flex flex-col gap-4">
+      <conare-field label="Name">
+        <conare-input placeholder="Legal team"></conare-input>
+      </conare-field>
+      <div class="flex justify-end gap-2">
+        <conare-button data-close>Cancel</conare-button>
+        <conare-button variant="dark" type="submit">Create</conare-button>
+      </div>
+    </form>
+  </conare-dialog>
+</div>
+<script type="module">
+  await customElements.whenDefined('conare-dialog')
+  const dialog = document.getElementById('new-org-dialog')
+  document.getElementById('new-org').addEventListener('click', () => { dialog.open = true })
+  dialog.querySelector('[data-close]').addEventListener('click', () => { dialog.open = false })
+  dialog.querySelector('form').addEventListener('submit', (event) => {
+    event.preventDefault()
+    dialog.open = false
+  })
+  dialog.open = true
+  await dialog.updateComplete
+  requestAnimationFrame(() => dialog.shadowRoot.querySelector('dialog[open]')?.focus())
+</script>
