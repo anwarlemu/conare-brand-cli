@@ -1,0 +1,4 @@
+/* GlideMark.vue's <style>, as it is. */
+.ds-rowmark { position: absolute; top: 0; right: 0; left: 0; z-index: 0; background: var(--ds-color-surface-subtle); pointer-events: none; transition: transform var(--ds-duration-enter) var(--ds-easing-out), height var(--ds-duration-enter) var(--ds-easing-out); }
+.ds-rowmark[data-instant] { transition: none; }
+@media (prefers-reduced-motion: reduce) { .ds-rowmark { transition: none; } }

@@ -1,0 +1,21 @@
+<!-- One block for a whole list: it glides to the row under the pointer and rests on the picked one when the pointer
+     leaves, so moving down a list is one movement, not a row of flickers. -->
+<ul id="rows" class="relative w-105 max-w-full border border-edge bg-surface">
+  <conare-glide-mark follow rest="0"></conare-glide-mark>
+  <li data-glide-row class="relative z-1 border-edge not-first:border-t"><button type="button" class="relative flex min-h-row w-full cursor-pointer items-center gap-4 pr-4 pl-5 text-left type-ui before:absolute before:top-1/2 before:left-2 before:-mt-0.5 before:size-1 before:bg-edge-accent before:opacity-0 before:transition-opacity before:duration-120 before:ease-standard focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-accent data-on:before:opacity-100" data-on="true" aria-pressed="true"><span class="min-w-0 flex-1 truncate">Queries</span></button></li>
+  <li data-glide-row class="relative z-1 border-edge not-first:border-t"><button type="button" class="relative flex min-h-row w-full cursor-pointer items-center gap-4 pr-4 pl-5 text-left type-ui before:absolute before:top-1/2 before:left-2 before:-mt-0.5 before:size-1 before:bg-edge-accent before:opacity-0 before:transition-opacity before:duration-120 before:ease-standard focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-accent data-on:before:opacity-100" aria-pressed="false"><span class="min-w-0 flex-1 truncate">Documents</span></button></li>
+  <li data-glide-row class="relative z-1 border-edge not-first:border-t"><button type="button" class="relative flex min-h-row w-full cursor-pointer items-center gap-4 pr-4 pl-5 text-left type-ui before:absolute before:top-1/2 before:left-2 before:-mt-0.5 before:size-1 before:bg-edge-accent before:opacity-0 before:transition-opacity before:duration-120 before:ease-standard focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-accent data-on:before:opacity-100" aria-pressed="false"><span class="min-w-0 flex-1 truncate">Indexing</span></button></li>
+  <li data-glide-row class="relative z-1 border-edge not-first:border-t"><button type="button" class="relative flex min-h-row w-full cursor-pointer items-center gap-4 pr-4 pl-5 text-left type-ui before:absolute before:top-1/2 before:left-2 before:-mt-0.5 before:size-1 before:bg-edge-accent before:opacity-0 before:transition-opacity before:duration-120 before:ease-standard focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-accent data-on:before:opacity-100" aria-pressed="false"><span class="min-w-0 flex-1 truncate">Storage</span></button></li>
+</ul>
+<script type="module">
+  const glide = document.querySelector('#rows conare-glide-mark')
+  const buttons = [...document.querySelectorAll('#rows button')]
+  buttons.forEach((button, i) => button.addEventListener('click', () => {
+    buttons.forEach((b, k) => {
+      if (k === i) b.setAttribute('data-on', 'true')
+      else b.removeAttribute('data-on')
+      b.setAttribute('aria-pressed', String(k === i))
+    })
+    glide.rest = i
+  }))
+</script>
