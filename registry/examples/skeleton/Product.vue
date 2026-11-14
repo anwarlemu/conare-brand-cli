@@ -4,7 +4,7 @@ import Button from '@/components/ui/Button.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
 import Table from '@/components/ui/Table.vue'
 // Held rows while the namespaces load: each is the real row from a blank record, so its rules stay and nothing moves
-// when the answer lands. Reload holds them for a second and a half; the rules come in only after 300ms.
+// when the answer lands. Reload holds them for three seconds; the rules come in only after 300ms.
 const BLANK = { name: 'namespace', documents: 0, queried: 'never' }
 const rows = [
   { name: 'contracts', documents: 412830, queried: '2 min ago' },
@@ -16,7 +16,7 @@ let timer: ReturnType<typeof setTimeout> | undefined
 function load() {
   held.value = true
   clearTimeout(timer)
-  timer = setTimeout(() => { held.value = false }, 1500)
+  timer = setTimeout(() => { held.value = false }, 3000)
 }
 load()
 onBeforeUnmount(() => clearTimeout(timer))

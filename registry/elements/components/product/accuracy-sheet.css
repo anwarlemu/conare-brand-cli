@@ -1,0 +1,30 @@
+/* AccuracySheet.vue's <style>, then the rules it shares from AccuracyDetail (.ds-verdict, .ds-chev, the opened row)
+   and AccuracyOpens (its table form), which Vue's page loads with it. */
+.ds-sheetline { position: absolute; inset: auto 0 0 0; height: 2px; background: var(--ds-color-surface-sunken); }
+.ds-sheetline > span { display: block; height: 100%; background: var(--ds-color-fg); transform-origin: left; transition: transform var(--ds-duration-glide) linear; }
+@media (prefers-reduced-motion: reduce) { .ds-sheetline > span { transition: none; } }
+/* A result's state (.v2-proc): 12px, its icon first; a miss in the darker red. */
+.ds-verdict { display: inline-flex; width: fit-content; align-items: center; gap: var(--ds-space-sm); color: var(--ds-color-fg-danger); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); }
+.ds-verdict[data-ok] { color: var(--ds-color-fg); }
+.ds-verdict svg { flex-shrink: 0; }
+td > .ds-verdict { font-size: var(--ds-text-ui); }
+/* The chevron turns on a transition, so a quick second click reverses it from where it is (.v2-chev). */
+.ds-chev { transition: rotate var(--ds-duration-micro) var(--ds-easing-out), color var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-chev[data-open] { rotate: 180deg; transition-duration: var(--ds-duration-slide), var(--ds-duration-micro); }
+.ds-table tbody tr.ds-row-open td { background: var(--ds-color-surface-subtle); }
+@media (prefers-reduced-motion: reduce) { .ds-chev { transition: none; } }
+.ds-opens-row > td { height: 0; max-width: 0; padding: 0 !important; background: var(--ds-color-surface-subtle); white-space: normal; }
+.ds-opens-grow { display: grid; grid-template-rows: 1fr; }
+.ds-opens-grow > div { min-height: 0; }
+:is(.ds-opens-enter-from, .ds-opens-leave-to) .ds-opens-grow { grid-template-rows: 0fr; }
+:is(.ds-opens-enter-active, .ds-opens-leave-active) .ds-opens-grow { transition: grid-template-rows var(--ds-duration-slide) var(--ds-easing-out); }
+.ds-opens-list:is(.ds-opens-enter-active) .ds-opens-grow { transition-duration: var(--ds-duration-enter); }
+.ds-opens-list:is(.ds-opens-leave-active) .ds-opens-grow { transition-duration: var(--ds-duration-fade); }
+:is(.ds-opens-enter-active, .ds-opens-leave-active) .ds-opens-grow > div { overflow: hidden; }
+.ds-opens-enter-active .ds-opens-grow > div { transition: opacity var(--ds-duration-micro) var(--ds-easing-out), transform var(--ds-duration-slide) var(--ds-easing-out); }
+.ds-opens-leave-active .ds-opens-grow > div { transition: opacity var(--ds-duration-cell) var(--ds-easing-out); }
+.ds-opens-enter-from .ds-opens-grow > div { opacity: 0; transform: translateY(-4px); }
+.ds-opens-leave-to .ds-opens-grow > div { opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  :is(.ds-opens-enter-active, .ds-opens-leave-active) :is(.ds-opens-grow, .ds-opens-grow > div) { transition: none; }
+}

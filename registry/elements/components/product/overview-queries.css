@@ -1,0 +1,13 @@
+/* OverviewQueries.vue's <style>, as it is. */
+.ds-ovstat { position: relative; width: 100%; padding: 8px 12px; border-right: var(--ds-border-hairline) solid var(--ds-color-edge); border-bottom: var(--ds-border-hairline) solid var(--ds-color-edge); text-align: left; cursor: pointer; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-ovstat[data-on] { background: var(--ds-color-surface-subtle); }
+@media (hover: hover) and (pointer: fine) { .ds-ovstat:hover { background: var(--ds-color-surface-subtle); } }
+.ds-ovstat[aria-pressed="true"]::before { position: absolute; top: -1px; right: -1px; left: -1px; height: 2px; background: var(--ds-color-edge-accent); content: ""; }
+.ds-ovstat:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }
+.ds-ovchart-enter-active { transition: opacity var(--ds-duration-enter) var(--ds-easing-out), transform var(--ds-duration-drawer) var(--ds-easing-out); }
+.ds-ovchart-leave-active { transition: opacity var(--ds-duration-exit) var(--ds-easing-standard), transform var(--ds-duration-exit) var(--ds-easing-standard); }
+.ds-ovchart-enter-from { opacity: 0; transform: translateY(6px); }
+.ds-ovchart-leave-to { opacity: 0; transform: translateY(-4px); }
+@media (prefers-reduced-motion: reduce) {
+  .ds-ovchart-enter-from, .ds-ovchart-leave-to { transform: none; }
+}

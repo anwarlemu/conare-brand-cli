@@ -1,0 +1,13 @@
+/* AccuracyDetail.vue's <style>, as it is. */
+.ds-answer { position: relative; display: flex; min-width: 0; flex-direction: column; align-items: flex-start; gap: var(--ds-space-lg); padding: 16px; }
+.ds-answer[data-won]::before { position: absolute; inset: 0 0 auto; height: 2px; background: var(--ds-color-edge-accent); content: ""; }
+/* A result's state (.v2-proc): 12px, its icon first; a miss in the darker red. */
+.ds-verdict { display: inline-flex; width: fit-content; align-items: center; gap: var(--ds-space-sm); color: var(--ds-color-fg-danger); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); }
+.ds-verdict[data-ok] { color: var(--ds-color-fg); }
+.ds-verdict svg { flex-shrink: 0; }
+td > .ds-verdict { font-size: var(--ds-text-ui); }
+/* The chevron turns on a transition, so a quick second click reverses it from where it is (.v2-chev). */
+.ds-chev { transition: rotate var(--ds-duration-micro) var(--ds-easing-out), color var(--ds-duration-micro) var(--ds-easing-standard); }
+.ds-chev[data-open] { rotate: 180deg; transition-duration: var(--ds-duration-slide), var(--ds-duration-micro); }
+.ds-table tbody tr.ds-row-open td { background: var(--ds-color-surface-subtle); }
+@media (prefers-reduced-motion: reduce) { .ds-chev { transition: none; } }

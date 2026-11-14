@@ -144,3 +144,34 @@ describe('stylesheet links', () => {
 		expect(insertLinks(layout, ['<link rel="stylesheet" href="/x.css">'])).toBe('<html>\n\t<head>\n\t\t<meta charset="utf-8" />\n\t\t<link rel="stylesheet" href="/x.css">\n\t</head>\n</html>\n');
 	});
 });
+
+describe('what people and agents read, per flavor', () => {
+	it('the contract says what this app takes: React in Next, the elements with their schema in Angular, {% static %} and npx from the source in Django', () => {
+		const next = app({ 'package.json': pkg({ react: '19.2.0', next: '16.0.0' }, { tailwindcss: '^4.1.0' }), 'app/globals.css': '@import "tailwindcss";\n', 'app/layout.tsx': 'import "./globals.css";\n' });
+		json(next, 'init');
+		expect(read(next, 'AGENTS.md')).toContain("- In this app (Next.js): the React flavor, in components/ (`import { Button } from '@/components/ui/Button'`).");
+		expect(read(next, '.ds/agent-guide.md')).toContain('## Library flavors');
+		expect(read(next, '.ds/agent-guide.md')).toContain('`value` + `onValueChange`');
+		const ng = app({ 'package.json': pkg({ '@angular/core': '20.0.0' }), 'angular.json': '{}', 'src/index.html': '<html><head></head><body></body></html>\n', 'src/styles.css': '' });
+		json(ng, 'init');
+		expect(read(ng, 'AGENTS.md')).toContain('In this app (Angular): the web components');
+		expect(read(ng, 'AGENTS.md')).toContain('CUSTOM_ELEMENTS_SCHEMA');
+		const django = app({ 'manage.py': '', 'acme/settings.py': "STATIC_URL = 'static/'\n", 'templates/base.html': '<html><head></head><body></body></html>\n' });
+		json(django, 'init');
+		const agents = read(django, 'AGENTS.md');
+		expect(agents).toContain("{% static 'conare-ds/elements/<name>.js' %}");
+		expect(agents).toContain('npx -y ');
+		expect(agents).not.toContain('{{');
+	});
+
+	it.skipIf(!has)('view gives an element example the CSS its layout classes need on a page without Tailwind, and not with Tailwind', () => {
+		const plain = app({ 'index.html': '<!doctype html><html><head></head><body></body></html>\n' });
+		const ex = json(plain, 'view', 'radio-group').items[0].examples[0].content as string;
+		expect(ex).toContain('<style>');
+		expect(ex).toContain('@layer ds-example');
+		expect(ex).toMatch(/\.md\\:grid-cols-\\\[112px_minmax\\\(0\\,1fr\\\)\\\]/);
+		expect(ex).toContain('var(--ds-text-meta)');
+		const tw = app({ 'package.json': pkg({ react: '19.2.0', next: '16.0.0' }, { tailwindcss: '^4.1.0' }), 'app/globals.css': '@import "tailwindcss";\n', 'app/layout.tsx': 'import "./globals.css";\n' });
+		expect(json(tw, 'view', 'radio-group', '--framework', 'elements').items[0].examples[0].content).not.toContain('<style>');
+	});
+});

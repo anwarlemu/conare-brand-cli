@@ -1,0 +1,4 @@
+.ds-written { display: flex; gap: var(--ds-space-xl); padding: var(--ds-space-lg) var(--ds-space-xl); border-left: var(--ds-border-focus) solid var(--ds-color-edge-accent); background: var(--ds-color-surface-subtle); }
+.ds-written .ds-matrix i { background: var(--ds-color-edge-accent); }
+.ds-written-page { display: flex; width: 132px; flex-shrink: 0; flex-direction: column; gap: var(--ds-space-sm); margin: 0; }
+@media (max-width: 767px) { .ds-written { flex-direction: column; } }

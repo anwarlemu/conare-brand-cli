@@ -20,11 +20,13 @@ import styles from 'virtual:tw'
  */
 export class ParseReading extends DsElement {
 	static styles = [DsElement.styles, styles]
-	static properties = { answer: { type: Object }, version: { type: Number } }
+	static properties = { answer: { type: Object }, version: { type: Number }, rootName: { attribute: false } }
 
 	answer?: ParseAnswer
 	/** 1 page beside text, 2 regions, 3 plain or Conare. */
 	version: 1 | 2 | 3 = 1
+	/** The root's data-ds (a page built on this one says its own, as Vue's fallthrough does). */
+	rootName = 'parse-reading'
 	private pt = new ParsePointController(this)
 
 	private onPoint = (e: CustomEvent<{ order: number | null }>) => this.pt.point(e.detail.order)
@@ -33,8 +35,8 @@ export class ParseReading extends DsElement {
 	render() {
 		const a = this.answer
 		if (!a) return nothing
-		if (this.version === 2) return staticHtml`<${tag('parse-regions')} .answer=${a} .rootName=${'parse-reading'}></${tag('parse-regions')}>`
-		if (this.version === 3) return staticHtml`<${tag('parse-plain')} .answer=${a} .rootName=${'parse-reading'}></${tag('parse-plain')}>`
+		if (this.version === 2) return staticHtml`<${tag('parse-regions')} .answer=${a} .rootName=${this.rootName}></${tag('parse-regions')}>`
+		if (this.version === 3) return staticHtml`<${tag('parse-plain')} .answer=${a} .rootName=${this.rootName}></${tag('parse-plain')}>`
 		const p = a.part
 		const tables = p.blocks.filter((b) => b.type === 'table').length
 		const facts: Array<{ label: string, value: string, count?: number }> = [
@@ -44,7 +46,7 @@ export class ParseReading extends DsElement {
 			{ label: 'OCR', value: p.ocr ? `${Math.round((p.confidence ?? 0) * 100)}% sure` : 'Not needed' },
 		]
 		const lit = this.pt.lit
-		return html`<section data-ds="parse-reading" class="m-1.25 grid grid-cols-2 border border-edge outline outline-offset-4 outline-edge max-lg:grid-cols-1" aria-label="the page and what was read"><div class="flex min-w-0 flex-col gap-2 bg-surface-subtle p-4">${staticHtml`<${tag('parse-sheet')} class="border border-edge" .parsed=${p} ?scan=${!!a.scan} .on=${lit} plays @point=${this.onPoint} @pick=${this.onPick}></${tag('parse-sheet')}>`}<p class="flex justify-between gap-4 type-meta text-fg-muted"><span class="truncate">${a.name}</span><span class="shrink-0">${`Page ${a.page} of ${a.pages}`}</span></p></div><div class="flex min-w-0 flex-col bg-code text-code-fg"><dl class="grid grid-cols-4 border-b border-code-edge max-md:grid-cols-2">${facts.map((f, i) => html`<div class=${['min-w-0 px-4 py-3', i > 0 ? 'border-code-edge md:border-l' : '', i % 2 === 1 ? 'max-md:border-l' : '', i > 1 ? 'max-md:border-t' : ''].join(' ')}><dt class="type-meta text-code-muted">${f.label}</dt><dd class="text-body tabular-nums">${f.count != null ? staticHtml`<${tag('count')} .value=${f.count} rolls></${tag('count')}>` : f.value}</dd></div>`)}</dl>${staticHtml`<${tag('parse-output')} .answer=${a} .on=${lit} plays @point=${this.onPoint} @pick=${this.onPick}></${tag('parse-output')}>`}</div></section>`
+		return html`<section data-ds="${this.rootName}" class="m-1.25 grid grid-cols-2 border border-edge outline outline-offset-4 outline-edge max-lg:grid-cols-1" aria-label="the page and what was read"><div class="flex min-w-0 flex-col gap-2 bg-surface-subtle p-4">${staticHtml`<${tag('parse-sheet')} class="border border-edge" .parsed=${p} ?scan=${!!a.scan} .on=${lit} plays @point=${this.onPoint} @pick=${this.onPick}></${tag('parse-sheet')}>`}<p class="flex justify-between gap-4 type-meta text-fg-muted"><span class="truncate">${a.name}</span><span class="shrink-0">${`Page ${a.page} of ${a.pages}`}</span></p></div><div class="flex min-w-0 flex-col bg-code text-code-fg"><dl class="grid grid-cols-4 border-b border-code-edge max-md:grid-cols-2">${facts.map((f, i) => html`<div class=${['min-w-0 px-4 py-3', i > 0 ? 'border-code-edge md:border-l' : '', i % 2 === 1 ? 'max-md:border-l' : '', i > 1 ? 'max-md:border-t' : ''].join(' ')}><dt class="type-meta text-code-muted">${f.label}</dt><dd class="text-body tabular-nums">${f.count != null ? staticHtml`<${tag('count')} .value=${f.count} rolls></${tag('count')}>` : f.value}</dd></div>`)}</dl>${staticHtml`<${tag('parse-output')} .answer=${a} .on=${lit} plays @point=${this.onPoint} @pick=${this.onPick}></${tag('parse-output')}>`}</div></section>`
 	}
 }
 

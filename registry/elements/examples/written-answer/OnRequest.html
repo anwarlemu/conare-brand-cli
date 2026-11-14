@@ -1,0 +1,22 @@
+<!-- On request: one button, since a written answer costs a second query. Here the answer is written on sample data. -->
+<div class="flex flex-col gap-3">
+  <conare-written-answer mode="request"></conare-written-answer>
+  <conare-search-results query="Acme renewal EU data"></conare-search-results>
+</div>
+<script type="module">
+  const answer = document.querySelector('conare-written-answer')
+  const list = document.querySelector('conare-search-results')
+  answer.results = list.results = [
+    { namespace: 'contracts', id: 'acme-msa-2026', score: 0.94, page: { number: 9, count: 24, top: 0.3, file: 'acme-msa-2026.pdf' }, text: 'Acme may renew for twelve months with 60 days written notice. On renewal, all customer data stays in the EU region named in Schedule C.' },
+    { namespace: 'slack', id: 'legal-thread-1182', score: 0.81, text: 'Legal confirmed that Acme needs EU data residency in the renewal, and that Schedule C covers it.' },
+    { namespace: 'crm', id: 'acme-renewal-2026', score: 0.71, text: 'Renewal open. Blocker: data processing addendum for the EU region.' },
+  ]
+  answer.addEventListener('write', () => {
+    answer.writing = true
+    setTimeout(() => {
+      answer.text = 'Acme can renew for twelve months with 60 days written notice, and its data stays in the EU region in Schedule C [1][2]. The open blocker is the data processing addendum [3].'
+      answer.writing = false
+    }, 1800)
+  })
+  answer.addEventListener('cite', (e) => { list.reveal = { key: e.detail.key, at: Date.now() } })
+</script>

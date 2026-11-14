@@ -1,0 +1,16 @@
+/* AccuracyOpens.vue's <style>, as it is. */
+.ds-opens-row > td { height: 0; max-width: 0; padding: 0 !important; background: var(--ds-color-surface-subtle); white-space: normal; }
+.ds-opens-grow { display: grid; grid-template-rows: 1fr; }
+.ds-opens-grow > div { min-height: 0; }
+:is(.ds-opens-enter-from, .ds-opens-leave-to) .ds-opens-grow { grid-template-rows: 0fr; }
+:is(.ds-opens-enter-active, .ds-opens-leave-active) .ds-opens-grow { transition: grid-template-rows var(--ds-duration-slide) var(--ds-easing-out); }
+.ds-opens-list:is(.ds-opens-enter-active) .ds-opens-grow { transition-duration: var(--ds-duration-enter); }
+.ds-opens-list:is(.ds-opens-leave-active) .ds-opens-grow { transition-duration: var(--ds-duration-fade); }
+:is(.ds-opens-enter-active, .ds-opens-leave-active) .ds-opens-grow > div { overflow: hidden; }
+.ds-opens-enter-active .ds-opens-grow > div { transition: opacity var(--ds-duration-micro) var(--ds-easing-out), transform var(--ds-duration-slide) var(--ds-easing-out); }
+.ds-opens-leave-active .ds-opens-grow > div { transition: opacity var(--ds-duration-cell) var(--ds-easing-out); }
+.ds-opens-enter-from .ds-opens-grow > div { opacity: 0; transform: translateY(-4px); }
+.ds-opens-leave-to .ds-opens-grow > div { opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  :is(.ds-opens-enter-active, .ds-opens-leave-active) :is(.ds-opens-grow, .ds-opens-grow > div) { transition: none; }
+}

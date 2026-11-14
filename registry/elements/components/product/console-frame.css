@@ -1,0 +1,7 @@
+/* ConsoleFrame.vue's <style>, as it is (the sidebar's host is the drawer). */
+@media (min-width: 768px) { .ds-frame-side { position: sticky; top: 0; height: 100vh; } }
+@media (max-width: 767px) {
+  .ds-frame-side { position: fixed; top: 0; bottom: 0; left: 0; z-index: 30; width: min(300px, 84vw); overscroll-behavior: contain; visibility: hidden; transform: translateX(-100%); transition: transform var(--ds-duration-slide) var(--ds-easing-out), visibility 0s linear var(--ds-duration-slide); }
+  .ds-frame-side[data-open] { visibility: visible; transform: none; transition: transform var(--ds-duration-drawer) var(--ds-easing-out); }
+}
+@media (prefers-reduced-motion: reduce) { .ds-frame-side, .ds-frame-side[data-open] { transition: none; } }
