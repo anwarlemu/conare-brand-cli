@@ -202,6 +202,7 @@ function parseTag(text: string, start: number, dialect: Dialect): Tag | undefine
 	return undefined;
 }
 
+const DRAWS_NOTHING = /^(script|style|link|meta|title|head|base|noscript|template)$/i;
 const isClassAttr = (name: string) => name === 'class' || name === 'className';
 const isComponentTag = (tag: string, dialect: Dialect) => /^[A-Z]/.test(tag) || tag.includes('.') || (dialect === 'svelte' && tag.startsWith('svelte:')) || (dialect !== 'html' && /^x-[\w.-]+$/.test(tag));
 const isExtraClass = (name: string) => /^[\w-]*(-class|Class)$/.test(name) && !isClassAttr(name);
@@ -230,7 +231,8 @@ export function convertMarkupInto(text: string, opts: FileOptions, dialect: Dial
 		// Components (Svelte and Astro <Layout>, Blade <x-card>, Angular <app-card>) take class as a prop: never given one.
 		// Their children count as roots when no element sits above them.
 		const component = isComponentTag(t.tag, dialect);
-		let root = !component;
+		// A tag that draws nothing (a Svelte or Astro file's top-level <script> and <style>) is never the root.
+		let root = !component && !DRAWS_NOTHING.test(t.tag);
 		for (let p = t.parent; p && root; p = p.parent) if (!isComponentTag(p.tag, dialect)) root = false;
 		const el: ElementInfo = { tag: t.tag, isRoot: root, attrs: {}, bindings: [], directives: [], styleBindings: [], extraClasses: [], insert: !t.spread && !component ? { at: t.nameEnd, attr: 'class' } : undefined };
 		for (const a of t.attrs) {

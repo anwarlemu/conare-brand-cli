@@ -188,10 +188,20 @@ describe('SvelteKit (Tailwind 4) and Vite + Svelte (plain CSS)', () => {
 		const page = read(dir, 'src/routes/settings/+page.svelte');
 		expect(page).toContain('class:opacity-50={on} onclick={() => (on = !on)}');
 		expect(page).toContain('color: var(--ds-color-fg);');
+		// The top-level script and style are roots of the file, but draw nothing: no scope class on them.
+		expect(page).toContain('<script lang="ts">\n  let on');
+		expect(page).toContain('<style>\n  h1 {');
 		expect(page).toMatch(/<button class="[^"]*bg-action-primary[^"]*"/);
 		expect(read(dir, 'src/routes/+page.svelte')).toBe(before['src/routes/+page.svelte']);
 		expect(read(dir, 'src/routes/+layout.svelte')).toBe(before['src/routes/+layout.svelte']);
 		expect(existsSync(join(dir, 'static/conare-ds/fonts/Geist-400.woff2'))).toBe(true);
+	});
+	it('a Svelte component restyled as its kind gives the look to its element root, never to its top-level script or style', () => {
+		const card = '<script lang="ts">\n\tlet { title, children } = $props();\n</script>\n\n<div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">\n\t<h2>{title}</h2>\n\t{@render children()}\n</div>\n\n<style>\n\th2 { color: #111827; }\n</style>\n';
+		const out = convertFile('src/lib/Card.svelte', card, { general: true, kinds: 'all', componentKind: 'card' }).text;
+		expect(out).toContain('<script lang="ts">');
+		expect(out).toContain('<style>');
+		expect(out).toMatch(/<div class="[^"]*border-edge[^"]*">/);
 	});
 	it('Vite + Svelte without Tailwind: semantic classes, kinds.css imported by app.css', () => {
 		const dir = app({
@@ -213,7 +223,7 @@ describe('Astro 5 (plain CSS)', () => {
 			'package.json': pkg({ astro: '5.14.0' }),
 			'src/layouts/Layout.astro': "---\nimport '../styles/global.css';\n---\n<html><head><title>x</title></head><body><slot /></body></html>\n",
 			'src/styles/global.css': PLAIN_CSS,
-			'src/pages/index.astro': "---\nimport Layout from '../layouts/Layout.astro';\nconst items = ['a'];\n---\n<Layout><h1 class=\"title\">Home</h1><button class=\"btn\">Go</button><div class:list={['card', { on: true }]}>x</div></Layout>\n",
+			'src/pages/index.astro': "---\nimport Layout from '../layouts/Layout.astro';\nconst items = ['a'];\n---\n<Layout><h1 class=\"title\">Home</h1><button class=\"btn\">Go</button><div class:list={['card', { on: true }]}>x</div></Layout>\n<style>\n  .title { color: #111827; }\n</style>\n",
 			'src/pages/about.astro': "---\nimport Layout from '../layouts/Layout.astro';\n---\n<Layout><h1>About</h1></Layout>\n",
 		});
 		const info = json(dir, 'info');
@@ -223,6 +233,8 @@ describe('Astro 5 (plain CSS)', () => {
 		const page = read(dir, 'src/pages/index.astro');
 		expect(page).toContain("const items = ['a'];");
 		expect(page).toContain('<Layout><h1 class="title ds-type-heading-1 ds-scope">Home</h1><button class="btn ds-button ds-button-dark ds-scope">Go</button>');
+		// A tag that draws nothing never takes the scope class (the file's top-level style counts as a root).
+		expect(page).toContain('<style>\n  .title { color: var(--ds-color-fg); }');
 		expect(read(dir, 'src/pages/about.astro')).toBe(before['src/pages/about.astro']);
 	});
 });

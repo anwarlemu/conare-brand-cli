@@ -328,6 +328,38 @@ describe.skipIf(!existsSync(CHROME))('registry flavors: elements in a browser', 
 		}
 	});
 
+	it('submits a field whose name was set as a property, as React 19 and Vue set it', async () => {
+		const { chromium } = await import('playwright-core');
+		const browser = await chromium.launch({ executablePath: CHROME });
+		try {
+			const p = await browser.newPage();
+			await p.goto(base, { waitUntil: 'networkidle' });
+			await p.waitForFunction(() => (window as unknown as { ready?: boolean }).ready);
+			const data = await p.evaluate(async (prefix) => {
+				type Field = HTMLElement & { name?: string, value?: string, checked?: boolean, updateComplete: Promise<unknown> };
+				const form = document.createElement('form');
+				const input = document.createElement(`${prefix}-input`) as Field;
+				input.name = 'ws';
+				input.value = 'Acme';
+				const sw = document.createElement(`${prefix}-switch`) as Field;
+				sw.name = 'live';
+				sw.checked = true;
+				form.append(input, sw);
+				document.body.append(form);
+				await input.updateComplete;
+				await sw.updateComplete;
+				const first = Object.fromEntries(new FormData(form));
+				// A name taken away takes the field out of the submission.
+				input.name = undefined;
+				await input.updateComplete;
+				return { first, after: Object.fromEntries(new FormData(form)), attr: input.hasAttribute('name') };
+			}, prefix);
+			expect(data).toEqual({ first: { ws: 'Acme', live: 'on' }, after: { live: 'on' }, attr: false });
+		} finally {
+			await browser.close();
+		}
+	});
+
 	it('reads lists set as text and keeps its own when a list does not parse', async () => {
 		const { chromium } = await import('playwright-core');
 		const browser = await chromium.launch({ executablePath: CHROME });

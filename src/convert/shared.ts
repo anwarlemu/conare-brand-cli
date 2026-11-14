@@ -225,7 +225,8 @@ export function convertElementInfo(text: string, el: ElementInfo, opts: FileOpti
 	}
 	const dynColored = !isPlain && dynTokens.some((t) => ['bg', 'text-color', 'border-color'].includes(groupOf(t)));
 	// In a selection, what it restyles carries ds-scope: the brand's type and defaults reach it and nothing around it.
-	const mark = !!opts.mark && /^[a-zA-Z]/.test(tag) && !/^(template|slot|Teleport|Transition|TransitionGroup|KeepAlive|Suspense|Fragment|svelte:.*|ng-container|ng-template)$/.test(tag) && (restyled !== undefined || (isRoot && opts.general));
+	// Never a tag that draws nothing (a Svelte or Astro file's top-level <script> and <style> count as its roots).
+	const mark = !!opts.mark && /^[a-zA-Z]/.test(tag) && !/^(template|slot|Teleport|Transition|TransitionGroup|KeepAlive|Suspense|Fragment|svelte:.*|ng-container|ng-template|script|style|link|meta|title|head|base|noscript)$/i.test(tag) && (restyled !== undefined || (isRoot && opts.general));
 	// The mark always goes last, so a restyle that reorders the list leaves it where it was.
 	const withMark = (list: string) => {
 		if (!mark) return list;

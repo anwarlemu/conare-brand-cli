@@ -189,6 +189,14 @@ export class DsFormElement extends DsElement {
 	}
 	protected updated(changed: PropertyValues) {
 		super.updated(changed)
+		// The form names a field by its `name` attribute; React 19 and Vue set `name` as a property, which leaves the
+		// attribute unset and the value out of the submission. The attribute follows the property.
+		if (changed.has('name' as never)) {
+			const name = (this as unknown as { name?: unknown }).name
+			if (typeof name === 'string' && name) {
+				if (this.getAttribute('name') !== name) this.setAttribute('name', name)
+			} else if (this.hasAttribute('name')) this.removeAttribute('name')
+		}
 		this.syncValidity()
 	}
 	get validity() {
