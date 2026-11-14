@@ -258,7 +258,8 @@ export class HostLayoutController implements ReactiveController {
 		if (cs.display !== 'contents') return
 		for (const p of LAYOUT) {
 			const v = cs.getPropertyValue(p)
-			if (v && v !== INITIAL[p]) {
+			// A min size of 0px is auto on a box with no flex or grid parent: neither says anything.
+			if (v && v !== INITIAL[p] && !((p === 'min-width' || p === 'min-height') && v === '0px')) {
 				box.style.setProperty(p, v)
 				this.set.add(p)
 			} else if (this.set.has(p)) {
