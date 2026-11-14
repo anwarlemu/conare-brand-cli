@@ -92,7 +92,7 @@ export class ParsePage extends DsElement {
 				? html`<p class="inline-flex items-center gap-1.5 type-meta" role="status">${ic(Check, 'check', 12, 2)}Added to <span class="font-code">${this.into}</span></p>`
 				: this.namespaces.length
 					? html`${staticHtml`<${tag('scope-menu')} .value=${this.into} .namespaces=${this.namespaces} single @change=${(e: Event) => { e.stopPropagation(); this.into = String((e.currentTarget as HTMLElement & { value: string }).value) }} @input=${(e: Event) => e.stopPropagation()}></${tag('scope-menu')}>`}${staticHtml`<${b} press ?disabled=${!this.into} @click=${() => this.add()}>Add to namespace</${b}>`}`
-					: nothing}<span class="ml-auto inline-flex">${staticHtml`<${tag('copy-button')} .text=${a.markdown} label="Copy Markdown"></${tag('copy-button')}>`}</span>${this.curl ? staticHtml`<${tag('code-pop')} .code=${this.curl} label="API call" heading="Parse this file from your code"></${tag('code-pop')}>` : nothing}</div>${this.own && a.name === this.own ? html`<p data-ds="parse-page" class="type-meta text-fg-muted">This shows a sample reading, not your file.</p>` : nothing}`}`
+					: nothing}${staticHtml`<${tag('copy-button')} class="ml-auto" .text=${a.markdown} label="Copy Markdown"></${tag('copy-button')}>`}${this.curl ? staticHtml`<${tag('code-pop')} .code=${this.curl} label="API call" heading="Parse this file from your code"></${tag('code-pop')}>` : nothing}</div>${this.own && a.name === this.own ? html`<p data-ds="parse-page" class="type-meta text-fg-muted">This shows a sample reading, not your file.</p>` : nothing}`}`
 	}
 }
 

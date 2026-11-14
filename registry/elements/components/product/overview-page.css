@@ -6,4 +6,4 @@
 @media (min-width: 1180px) { .ds-ovlead { grid-template-columns: 360px minmax(0, 1fr); } }
 .ds-ovlink { transition: color var(--ds-duration-micro) var(--ds-easing-standard); }
 @media (hover: hover) and (pointer: fine) { .ds-ovlink:hover { color: var(--ds-color-fg); } }
-@media (max-width: 639px) { .ds-ovlead :is(button, a) { min-height: 40px; } }
+@media (max-width: 639px) { .ds-ovlead :is(button, a), .ds-ovlead ::part(control) { min-height: 40px; } }
