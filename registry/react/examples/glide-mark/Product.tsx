@@ -15,7 +15,7 @@ export default function Product() {
     <ul ref={list} className="relative w-105 max-w-full border border-edge bg-surface" onPointerLeave={leave}>
       <GlideMark mark={mark} instant={instant} />
       {rows.map((r, i) => (
-        <li key={r} data-glide-row className="relative z-1 border-edge not-first:border-t">
+        <li key={r} data-glide-row className="relative z-1 border-edge [li+&]:border-t">
           <button
             type="button"
             className="relative flex min-h-row w-full cursor-pointer items-center gap-4 pr-4 pl-5 text-left type-ui before:absolute before:top-1/2 before:left-2 before:-mt-0.5 before:size-1 before:bg-edge-accent before:opacity-0 before:transition-opacity before:duration-120 before:ease-standard focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-accent data-on:before:opacity-100"
