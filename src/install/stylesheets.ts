@@ -45,16 +45,19 @@ export async function kindsCss(): Promise<string> {
 	// own padding and shadow on .btn would otherwise survive under the library's look.
 	// Form controls take no font from the page without Tailwind's preflight: the recipe's type comes with the text face.
 	const resets = (replace: string[] = [], list = '') => [replace.includes('padding') ? 'p-0' : '', replace.includes('shadow') ? 'shadow-none' : '', replace.includes('bg') && !/(^|\s)bg-/.test(list) ? 'bg-transparent' : '', replace.includes('type') && !/(^|\s)(type-|font-(text|heading|code|brand))/.test(list) ? 'font-text' : '', list].filter(Boolean).join(' ');
+	// Three classes deep: above an app's own class (.btn) and above a component's scoped one too (Angular's
+	// .save[_ngcontent-x], Vue's .save[data-v-x], Svelte's .save.svelte-x), which loads after kinds.css and would win a tie.
+	const x3 = (c: string) => `.${c}.${c}.${c}`;
 	for (const [kind, def] of Object.entries(elements().kinds) as [string, any][]) {
 		const k = semanticClass(kind);
-		rule(`.${k}.${k}`, def.base ? resets(def.replace, def.base) : '');
-		for (const [v, list] of Object.entries(def.variants ?? {})) rule(`.${k}.${semanticClass(kind, v)}`, list as string);
-		if (def.icon) rule(`.${k}.${semanticClass(kind, 'icon')}`, def.icon);
-		for (const part of ['th', 'td', 'tab']) if (def[part]) rule(`.${semanticClass(kind, part)}.${semanticClass(kind, part)}`, resets(def[part].replace, def[part].base));
-		if (def.backdrop) rule(`.${semanticClass(kind, 'backdrop')}.${semanticClass(kind, 'backdrop')}`, def.backdrop);
+		rule(x3(k), def.base ? resets(def.replace, def.base) : '');
+		for (const [v, list] of Object.entries(def.variants ?? {})) rule(`.${k}.${k}.${semanticClass(kind, v)}`, list as string);
+		if (def.icon) rule(`.${k}.${k}.${semanticClass(kind, 'icon')}`, def.icon);
+		for (const part of ['th', 'td', 'tab']) if (def[part]) rule(x3(semanticClass(kind, part)), resets(def[part].replace, def[part].base));
+		if (def.backdrop) rule(x3(semanticClass(kind, 'backdrop')), def.backdrop);
 	}
-	rule(`a.${semanticClass('button')}.${semanticClass('button')}`, 'inline-flex items-center justify-center no-underline');
-	for (const name of Object.keys(elements().text.headings)) rule(`.ds-type-${name}.ds-type-${name}`, `type-${name}`);
+	rule(`a${x3(semanticClass('button'))}`, 'inline-flex items-center justify-center no-underline');
+	for (const name of Object.keys(elements().text.headings)) rule(x3(`ds-type-${name}`), `type-${name}`);
 	const input = `@import "tailwindcss/theme.css" theme(inline);\n${build('theme.css')}\n${rules.join('\n')}\n`;
 	const compiler = await compile(input, {
 		base: packageRoot,

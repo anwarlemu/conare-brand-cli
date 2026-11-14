@@ -91,7 +91,7 @@ describe('Next.js (App Router, src/, Tailwind 4)', () => {
 });
 
 describe('Next.js (Pages Router, no src, no Tailwind)', () => {
-	it('plain CSS: brand.css and kinds.css imported by the global stylesheet; elements get kinds.css classes; CSS values become tokens', () => {
+	it('plain CSS: brand.css and kinds.css imported by the global stylesheet; elements get kinds.css classes; CSS values become tokens', async () => {
 		const dir = app({
 			'package.json': pkg({ next: '16.0.0', react: '19.2.0' }),
 			'styles/globals.css': PLAIN_CSS,
@@ -106,6 +106,20 @@ describe('Next.js (Pages Router, no src, no Tailwind)', () => {
 		expect(css.startsWith('@import "./conare-ds/brand.css";\n@import "./conare-ds/kinds.css";\n')).toBe(true);
 		expect(css).toContain('background: var(--ds-color-');
 		expect(read(dir, 'styles/conare-ds/kinds.css')).toContain('.ds-button.ds-button-danger');
+		// The look wins over a component's scoped rule loaded after it (Angular's .save[_ngcontent-x] and the like).
+		const chrome = '/Users/anwarlemu/Library/Caches/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-mac-arm64/chrome-headless-shell';
+		if (existsSync(process.env.PARITY_CHROMIUM ?? chrome)) {
+			const { chromium } = await import('playwright-core');
+			const browser = await chromium.launch({ executablePath: process.env.PARITY_CHROMIUM ?? chrome });
+			try {
+				const p = await browser.newPage();
+				const kinds = read(dir, 'styles/conare-ds/kinds.css');
+				await p.setContent(`<style>${kinds}</style><style>.save[_ngcontent-x] { padding: 8px 16px; }</style><button class="save ds-button ds-button-dark" _ngcontent-x>Save</button>`);
+				expect(await p.evaluate(() => getComputedStyle(document.querySelector('button')!).paddingTop)).toBe('0px');
+			} finally {
+				await browser.close();
+			}
+		}
 		const home = read(dir, 'pages/index.tsx');
 		expect(home).toContain('className="btn ds-button ds-button-dark"');
 		expect(home).toContain('className="btn btn-danger ds-button ds-button-danger"');
