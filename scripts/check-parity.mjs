@@ -336,7 +336,17 @@ for (const name of names) {
 					continue;
 				}
 				const url = `${parity}/${flavor}/${name}/${ex.name}`;
-				const got = await capture(url, width, settle);
+				let got;
+				try {
+					got = await capture(url, width, settle);
+				} catch (error) {
+					// A page that does not load fails its example, and the run goes on to the next.
+					r.ok = false;
+					r.notes.push(`load: ${String(error.message).split('\n')[0]}`);
+					failed++;
+					console.log(`FAIL ${name}/${ex.name} ${width} ${flavor}: ${r.notes[0]}`);
+					continue;
+				}
 				const file = `img/${name}-${ex.name}-${width}-${flavor}.png`;
 				writeFileSync(join(out, file), got.png);
 				const d = diff(vue.png, got.png, join(out, `img/${name}-${ex.name}-${width}-${flavor}-diff.png`));
