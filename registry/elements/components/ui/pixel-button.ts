@@ -25,6 +25,7 @@ export class PixelButton extends DsFormElement {
 		disabled: { type: Boolean, reflect: true },
 		label: { attribute: 'aria-label' },
 		busy: { attribute: 'aria-busy', converter: { fromAttribute: (v: string | null) => (v === null ? undefined : v === 'true') } },
+		rootName: { attribute: false },
 	}
 
 	/** Holds the red while an action shows it happened. */
@@ -37,6 +38,8 @@ export class PixelButton extends DsFormElement {
 	label?: string
 	/** Working (the aria-busy attribute), passed to the inner button as Vue's aria-busy falls through. */
 	busy?: boolean
+	/** The data-ds its box says: pixel-button, or the name of an item drawn as one (Vue's data-ds falls through). */
+	rootName = 'pixel-button'
 
 	private grid = new PixelGridController(this, () => this.renderRoot.querySelector<HTMLElement>('.ds-px'))
 
@@ -51,8 +54,8 @@ export class PixelButton extends DsFormElement {
 		const large = this.large ? 'true' : undefined
 		const busy = this.busy === undefined ? undefined : String(this.busy)
 		return this.href
-			? html`<a data-ds="pixel-button" part="control" href=${this.href} class="ds-px" data-done=${ifDefined(done)} data-large=${ifDefined(large)} aria-label=${ifDefined(this.label)} aria-busy=${ifDefined(busy)}>${inner}</a>`
-			: html`<button data-ds="pixel-button" part="control" type="button" ?disabled=${this.inactive} class="ds-px" data-done=${ifDefined(done)} data-large=${ifDefined(large)} aria-label=${ifDefined(this.label)} aria-busy=${ifDefined(busy)} @click=${this.onClick}>${inner}</button>`
+			? html`<a data-ds="${this.rootName}" part="control" href=${this.href} class="ds-px" data-done=${ifDefined(done)} data-large=${ifDefined(large)} aria-label=${ifDefined(this.label)} aria-busy=${ifDefined(busy)}>${inner}</a>`
+			: html`<button data-ds="${this.rootName}" part="control" type="button" ?disabled=${this.inactive} class="ds-px" data-done=${ifDefined(done)} data-large=${ifDefined(large)} aria-label=${ifDefined(this.label)} aria-busy=${ifDefined(busy)} @click=${this.onClick}>${inner}</button>`
 	}
 }
 

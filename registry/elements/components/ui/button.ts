@@ -45,6 +45,7 @@ export class Button extends DsFormElement {
 		expanded: { attribute: false },
 		haspopup: { attribute: false },
 		controls: { attribute: false },
+		rootName: { attribute: false },
 	}
 	static get observedAttributes() {
 		return [...super.observedAttributes, ...MOVED]
@@ -70,6 +71,8 @@ export class Button extends DsFormElement {
 	haspopup?: string
 	/** The id of what it opens (the aria-controls attribute); the button points at it across its shadow root. */
 	controls?: string
+	/** The data-ds its box says: button, or the name of an item drawn as a button (Vue's data-ds falls through). */
+	rootName = 'button'
 
 	attributeChangedCallback(name: string, old: string | null, value: string | null) {
 		const field = FIELD[name]
@@ -105,8 +108,8 @@ export class Button extends DsFormElement {
 			VARIANTS[this.variant] ?? VARIANTS.secondary,
 		].join(' ')
 		return this.href
-			? html`<a data-ds="button" part="control" href=${this.href} class=${classes} aria-label=${ifDefined(this.label)} aria-description=${ifDefined(this.description)} aria-expanded=${ifDefined(this.expanded)} aria-haspopup=${ifDefined(this.haspopup as never)}><slot></slot></a>`
-			: html`<button data-ds="button" part="control" type="button" ?disabled=${this.inactive} class=${classes} aria-label=${ifDefined(this.label)} aria-description=${ifDefined(this.description)} aria-expanded=${ifDefined(this.expanded)} aria-haspopup=${ifDefined(this.haspopup as never)} @click=${this.onClick}><slot></slot></button>`
+			? html`<a data-ds="${this.rootName}" part="control" href=${this.href} class=${classes} aria-label=${ifDefined(this.label)} aria-description=${ifDefined(this.description)} aria-expanded=${ifDefined(this.expanded)} aria-haspopup=${ifDefined(this.haspopup as never)}><slot></slot></a>`
+			: html`<button data-ds="${this.rootName}" part="control" type="button" ?disabled=${this.inactive} class=${classes} aria-label=${ifDefined(this.label)} aria-description=${ifDefined(this.description)} aria-expanded=${ifDefined(this.expanded)} aria-haspopup=${ifDefined(this.haspopup as never)} @click=${this.onClick}><slot></slot></button>`
 	}
 }
 

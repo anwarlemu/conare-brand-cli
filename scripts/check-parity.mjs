@@ -203,8 +203,15 @@ async function capture(url, width, settle = true) {
 	await page.waitForTimeout(900);
 	const height = await page.evaluate(HEIGHT);
 	// Settled: running animations jump to their end, unless the example opts out (a timer drawn as an animation).
+	// Margins first: the full-page screenshot resizes the page for a moment, and an mx-auto box's auto margins (computed
+	// in px) can come back from it a scrollbar's width apart in one flavor and not the other.
+	const margins = await page.evaluate(STYLES);
 	const png = await page.screenshot({ fullPage: true, clip: { x: 0, y: 0, width, height }, animations: settle ? 'disabled' : 'allow', caret: 'hide' });
 	const styles = await page.evaluate(STYLES);
+	styles.forEach((s, i) => {
+		const m = margins[i];
+		if (m && m.ds === s.ds) for (const p of ['margin-left', 'margin-right']) s.style[p] = m.style[p];
+	});
 	return { context, page, png, styles, errors };
 }
 

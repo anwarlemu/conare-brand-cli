@@ -17,12 +17,14 @@ import styles from 'virtual:tw'
  */
 export class CopyButton extends DsElement {
 	static styles = [DsElement.styles, styles]
-	static properties = { text: {}, label: {} }
+	static properties = { text: {}, label: {}, rootName: { attribute: false } }
 
 	/** What it copies. */
 	text = ''
 	/** The word at rest. */
 	label = 'Copy'
+	/** The data-ds its box says: copy-button, or the name of an item drawn as one (Vue's data-ds falls through). */
+	rootName = 'copy-button'
 	private copier = new CopyController(this)
 
 	private async run() {
@@ -31,7 +33,7 @@ export class CopyButton extends DsElement {
 
 	render() {
 		const copied = this.copier.copied
-		return html`<button data-ds="copy-button" type="button" class="ds-copy" data-done=${ifDefined(copied ? 'true' : undefined)} @click=${() => this.run()}>
+		return html`<button data-ds="${this.rootName}" part="control" type="button" class="ds-copy" data-done=${ifDefined(copied ? 'true' : undefined)} @click=${() => this.run()}>
 			<span class="ds-copy-icon" data-state=${copied ? 'b' : 'a'} aria-hidden="true">
 				${icon(Copy, 'copy', { size: 12, strokeWidth: 1.5, class: 'ds-copy-a' })}
 				<svg class="ds-copy-b ds-copy-check" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12 9 17 20 6" pathLength="1"></path></svg>

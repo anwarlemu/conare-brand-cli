@@ -200,7 +200,9 @@ define('thing', Thing)
 - **ARIA across shadow roots:** a `<label for>` or `aria-describedby` cannot point into another shadow root. The
   field element names its control with `aria-label` and describes it with `aria-description`, which the control passes
   to its inner element (input, button: a tooltip describes its button this way).
-- **Parts:** `<conare-button>` and `<conare-pixel-button>` expose their inner button or link as `part="control"`, so
+- **Parts:** `<conare-button>`, `<conare-pixel-button>` and `<conare-copy-button>` expose their inner button or link as
+  `part="control"` and take a `rootName` (the data-ds the box says, for an item drawn as one of them: Vue's data-ds
+  falls through; the build accepts a root named with `.rootName=`), so
   a page or another element styles the box they draw with `::part(control)` (the table's 92px settings buttons, the
   search box's send button). Give an element's own root a part where pages need it.
 - **Attribute names HTML already styles:** an `align` attribute is HTML's old alignment hint (text-align) even on a
