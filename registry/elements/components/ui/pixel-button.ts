@@ -1,6 +1,6 @@
 import { html, nothing } from 'lit'
 import { ifDefined } from 'lit/directives/if-defined.js'
-import { DsFormElement, define } from '@/elements/lib/element'
+import { DsFormElement, define, HostLayoutController } from '@/elements/lib/element'
 import { PixelGridController, vars } from '@/elements/controllers/pixel-grid'
 import styles from 'virtual:tw'
 
@@ -17,6 +17,8 @@ import styles from 'virtual:tw'
  */
 export class PixelButton extends DsFormElement {
 	static styles = [DsFormElement.styles, styles]
+	// Layout classes on the element (mt-2, ml-auto, w-full) land on the box it draws, as on Vue's root.
+	protected readonly layout = new HostLayoutController(this, () => this.renderRoot.querySelector<HTMLElement>('[part~="control"]'))
 	static properties = {
 		done: { type: Boolean, reflect: true },
 		large: { type: Boolean },

@@ -1,6 +1,6 @@
 import { html } from 'lit'
 import { ifDefined } from 'lit/directives/if-defined.js'
-import { DsFormElement, define } from '@/elements/lib/element'
+import { DsFormElement, define, HostLayoutController } from '@/elements/lib/element'
 import styles from 'virtual:tw'
 
 // Button.vue as a web component, <conare-button>. Every action in the console: square, 28px (40px on phones and
@@ -33,6 +33,8 @@ const VARIANTS: Record<ButtonVariant, string> = {
  */
 export class Button extends DsFormElement {
 	static styles = [DsFormElement.styles, styles]
+	// Layout classes on the element (mt-2, ml-auto, w-full) land on the box it draws, as on Vue's root.
+	protected readonly layout = new HostLayoutController(this, () => this.renderRoot.querySelector<HTMLElement>('[part~="control"]'))
 	static properties = {
 		variant: { reflect: true },
 		icon: { type: Boolean },

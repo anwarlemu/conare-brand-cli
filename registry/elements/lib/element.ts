@@ -1,4 +1,4 @@
-import { LitElement, type CSSResultGroup, type PropertyDeclaration, type PropertyDeclarations, type PropertyValues } from 'lit'
+import { LitElement, type CSSResultGroup, type ReactiveController, type ReactiveControllerHost, type PropertyDeclaration, type PropertyDeclarations, type PropertyValues } from 'lit'
 import { literal, unsafeStatic, type StaticValue } from 'lit/static-html.js'
 import base from 'virtual:ds-base'
 import properties from 'virtual:ds-properties'
@@ -237,3 +237,46 @@ export function missingMessage(kind: 'input' | 'checkbox' | 'select' | 'radio') 
 /** Light-DOM id for a part, unique per page (Vue's useId). */
 let ids = 0
 export const uid = (prefix: string) => `${prefix}-${PREFIX}${++ids}`
+
+// Layout classes on a host that is display: contents (a button's margin, width or flex) apply to nothing, as the host
+// draws no box. A Vue component's class lands on its root, so the element copies the host's layout onto the box it
+// draws: what the host's classes compute (margins, sizes, flex and grid placement) goes on the box's inline style,
+// again when its classes change and when the window resizes (responsive classes).
+const LAYOUT = ['margin-top', 'margin-right', 'margin-bottom', 'margin-left', 'width', 'min-width', 'max-width', 'height', 'min-height', 'max-height', 'flex-grow', 'flex-shrink', 'flex-basis', 'align-self', 'justify-self', 'order', 'grid-column-start', 'grid-column-end', 'grid-row-start', 'grid-row-end']
+const INITIAL: Record<string, string> = { 'margin-top': '0px', 'margin-right': '0px', 'margin-bottom': '0px', 'margin-left': '0px', width: 'auto', 'min-width': 'auto', 'max-width': 'none', height: 'auto', 'min-height': 'auto', 'max-height': 'none', 'flex-grow': '0', 'flex-shrink': '1', 'flex-basis': 'auto', 'align-self': 'auto', 'justify-self': 'auto', order: '0', 'grid-column-start': 'auto', 'grid-column-end': 'auto', 'grid-row-start': 'auto', 'grid-row-end': 'auto' }
+
+export class HostLayoutController implements ReactiveController {
+	private seen?: MutationObserver
+	private set = new Set<string>()
+	constructor(private host: ReactiveControllerHost & HTMLElement, private box: () => HTMLElement | null) {
+		host.addController(this)
+	}
+	private apply = () => {
+		const box = this.box()
+		if (!box) return
+		const cs = getComputedStyle(this.host)
+		if (cs.display !== 'contents') return
+		for (const p of LAYOUT) {
+			const v = cs.getPropertyValue(p)
+			if (v && v !== INITIAL[p]) {
+				box.style.setProperty(p, v)
+				this.set.add(p)
+			} else if (this.set.has(p)) {
+				box.style.removeProperty(p)
+				this.set.delete(p)
+			}
+		}
+	}
+	hostConnected() {
+		this.seen = new MutationObserver(this.apply)
+		this.seen.observe(this.host, { attributes: true, attributeFilter: ['class', 'style'] })
+		window.addEventListener('resize', this.apply)
+	}
+	hostDisconnected() {
+		this.seen?.disconnect()
+		window.removeEventListener('resize', this.apply)
+	}
+	hostUpdated() {
+		this.apply()
+	}
+}

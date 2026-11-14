@@ -1,7 +1,7 @@
 import { html } from 'lit'
 import { ifDefined } from 'lit/directives/if-defined.js'
 import { Copy } from 'lucide'
-import { DsElement, define } from '@/elements/lib/element'
+import { DsElement, define, HostLayoutController } from '@/elements/lib/element'
 import { icon } from '@/elements/lib/icon'
 import { CopyController } from '@/elements/controllers/copy'
 import styles from 'virtual:tw'
@@ -17,6 +17,8 @@ import styles from 'virtual:tw'
  */
 export class CopyButton extends DsElement {
 	static styles = [DsElement.styles, styles]
+	// Layout classes on the element (mt-2, ml-auto, w-full) land on the box it draws, as on Vue's root.
+	protected readonly layout = new HostLayoutController(this, () => this.renderRoot.querySelector<HTMLElement>('[part~="control"]'))
 	static properties = { text: {}, label: {}, rootName: { attribute: false } }
 
 	/** What it copies. */
