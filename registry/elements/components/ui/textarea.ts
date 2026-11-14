@@ -54,6 +54,14 @@ export class Textarea extends DsFormElement {
 		super.updated(changed)
 		if (changed.has('value')) this.internals.setFormValue(this.value)
 	}
+	// Setting the value as a property puts the caret (and the scroll) at the end; a native textarea starts at the top.
+	protected firstUpdated(changed: PropertyValues) {
+		super.firstUpdated(changed)
+		const area = this.validityControl()
+		if (!area) return
+		area.setSelectionRange(0, 0)
+		area.scrollTop = 0
+	}
 	protected validityControl() {
 		return this.renderRoot.querySelector<HTMLTextAreaElement>('textarea')
 	}
