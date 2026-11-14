@@ -55,8 +55,8 @@ export class DsElement extends LitElement {
 		if (options && (options.type === Array || options.type === Object) && !options.converter) options = { ...options, converter: { fromAttribute: parseJson, toAttribute: (v: unknown) => JSON.stringify(v) } }
 		super.createProperty(name, options)
 	}
-	private lastGood = new Map<PropertyKey, unknown>()
-	private lists(): PropertyKey[] {
+	#lastGood = new Map<PropertyKey, unknown>()
+	#listKeys(): PropertyKey[] {
 		return [...(this.constructor as typeof LitElement).elementProperties].filter(([, o]) => o.type === Array || o.type === Object).map(([k]) => k)
 	}
 	attributeChangedCallback(name: string, old: string | null, value: string | null) {
@@ -64,20 +64,20 @@ export class DsElement extends LitElement {
 		const key = (this.constructor as typeof LitElement).elementProperties
 		for (const [k, o] of key) if ((o.attribute === name || (o.attribute !== false && typeof o.attribute !== 'string' && String(k).toLowerCase() === name)) && (o.type === Array || o.type === Object)) {
 			const now = (this as unknown as Record<PropertyKey, unknown>)[k]
-			if (typeof now !== 'string') this.lastGood.set(k, now)
+			if (typeof now !== 'string') this.#lastGood.set(k, now)
 		}
 		super.attributeChangedCallback(name, old, value)
 	}
 	protected shouldUpdate(changed: PropertyValues) {
 		const self = this as unknown as Record<PropertyKey, unknown>
-		for (const k of this.lists()) {
+		for (const k of this.#listKeys()) {
 			const v = self[k]
 			if (typeof v !== 'string') {
-				this.lastGood.set(k, v)
+				this.#lastGood.set(k, v)
 				continue
 			}
 			const parsed = parseJson(v)
-			self[k] = typeof parsed === 'string' ? this.lastGood.get(k) : parsed
+			self[k] = typeof parsed === 'string' ? this.#lastGood.get(k) : parsed
 		}
 		return super.shouldUpdate(changed)
 	}
