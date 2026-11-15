@@ -1,0 +1,119 @@
+{
+  "product": {
+    "id": "product",
+    "title": "Product",
+    "appliesTo": "The console",
+    "source": "brand/principles.md",
+    "do": [
+      {
+        "id": "purpose",
+        "text": "Keep what each screen is for: its main action stays the most prominent thing, its key information easy to scan."
+      },
+      {
+        "id": "loading",
+        "text": "Loading is never empty: rows keep their layout while they load, and the dot matrix shows after 300ms."
+      },
+      {
+        "id": "focus",
+        "text": "Visible focus on every control (a 2px ink outline, red on dark buttons); touch targets at least 40px on phones."
+      },
+      {
+        "id": "press",
+        "text": "Press feedback starts on pointer-down, in colour; no size changes on hover."
+      }
+    ],
+    "dont": [
+      {
+        "id": "refuse",
+        "text": "Shadows, rounded corners in the console, gradients, a second accent colour, red body text, bold (600+) weights, capitals in the console, emoji, exclamation marks, more than one dark button in a view."
+      }
+    ],
+    "rules": [
+      {
+        "id": "ground",
+        "source": "brand/principles.md",
+        "text": "One ground. Pages are off-white (#FEFEFE). The sidebar and quiet panels (table heads, code hints, hovered rows) are the paper (#F7F6F4). Separation is a 1px hairline (#DEDDDC), never a shadow. Conare has no shadows."
+      },
+      {
+        "id": "ink",
+        "source": "brand/principles.md",
+        "text": "Ink is off-black (#020202). Secondary text is #494745; meta text (captions, timestamps, placeholders) is #6C6A68, the lightest text allowed. #989694 is never text."
+      },
+      {
+        "id": "red",
+        "source": "brand/principles.md",
+        "text": "Red is the website red (#EA3325) and it stays scarce, about 10% of a view: the red edge on the current sidebar row, the marker square in a menu row, the pixels of the dark button's hover, a failure. Small red text uses the darker #B42317. Never a second accent."
+      },
+      {
+        "id": "type",
+        "source": "brand/principles.md",
+        "text": "Faces: Geist for everything at 13px (the console's default) with 12px meta and 11px captions; Faculty Glyphic, regular weight only, for page titles (20px), greetings and heroes; Geist Mono for code, keys, IDs and namespace names. Weights 400 and 500 only. Sentence case everywhere in the console; the website's tag is the only capitals."
+      },
+      {
+        "id": "square",
+        "source": "brand/principles.md",
+        "text": "Everything is square: buttons, fields, tags, menus, cards and dialogs have no corner radius. The only round shape is none: even the status dot is a 4px square."
+      },
+      {
+        "id": "controls",
+        "source": "brand/principles.md",
+        "text": "Controls are 28px (32px fields, 40px table rows, 48px bars), and 40px on phones and touch. One dark button per view; it fills with red 6px squares from the left on hover. The rest are secondary (hairline border that turns ink on hover), ghost for tools in rows, danger (red label, filled red on hover) for what removes something, held to confirm."
+      },
+      {
+        "id": "fields",
+        "source": "brand/principles.md",
+        "text": "Fields: a #C3C1BF hairline that turns ink on focus; never a red border at rest; a red border and message when invalid. Labels are 12px #494745 over the field."
+      },
+      {
+        "id": "menus",
+        "source": "brand/principles.md",
+        "text": "Menus are square panels in a hairline, rows 32px with a 4px red square marker on the row under the pointer."
+      },
+      {
+        "id": "tables",
+        "source": "brand/principles.md",
+        "text": "Tables: a paper head in sentence case, 12px muted; 40px rows; numbers in tabular figures; IDs in mono."
+      },
+      {
+        "id": "motion",
+        "source": "brand/principles.md",
+        "text": "Motion is quick and quiet: 120ms colour changes on the console's curve cubic-bezier(0.2, 0, 0, 1); 160 to 200ms for things that move, on cubic-bezier(0.23, 1, 0.32, 1); exits faster than entrances; nothing over 320ms; never ease-in; reduced motion keeps opacity only. The command palette opens without animation."
+      }
+    ]
+  },
+  "website": {
+    "id": "website",
+    "title": "Website",
+    "source": "brand/principles.md",
+    "gap": "brand/principles.md has no website section. The rules below are only the sentences in that file, and the comments in brand/tokens.css, that name the website or a brand surface outside the console. Do not add website rules that those files do not state.",
+    "do": [],
+    "dont": [],
+    "rules": [
+      {
+        "id": "website-red",
+        "source": "brand/principles.md",
+        "text": "Red is the website red (#EA3325) and it stays scarce, about 10% of a view"
+      },
+      {
+        "id": "website-tag",
+        "source": "brand/principles.md",
+        "text": "the website's tag is the only capitals"
+      },
+      {
+        "id": "brand-radius",
+        "source": "brand/tokens.css",
+        "text": "Radius: the console is square; the brand kit's scale is for brand surfaces."
+      },
+      {
+        "id": "website-dark",
+        "source": "brand/tokens.css",
+        "text": "Dark theme (theme.dark.tokens.json): the docs and the website's dark bands."
+      },
+      {
+        "id": "website-art",
+        "source": "brand/tokens.css",
+        "text": "The website's art (home.css): slow on purpose, decorative, off for reduced motion."
+      }
+    ]
+  }
+}

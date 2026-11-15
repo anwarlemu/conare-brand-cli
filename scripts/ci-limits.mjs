@@ -10,7 +10,7 @@ const needle = new RegExp(`\\b(${brand.name}|${brand.bin})\\b`, 'i');
 for (const f of walk(join(root, 'src'))) {
 	readFileSync(f, 'utf8').split('\n').forEach((line, i) => { if (needle.test(line)) problems.push(`${f.slice(root.length + 1)}:${i + 1} names the brand; read it from brand/brand.json`); });
 }
-const prose = [...walk(join(root, 'brand')).filter((f) => f.endsWith('.md')), ...walk(join(root, 'registry')), join(root, 'README.md'), join(root, 'CLAUDE.md'), join(root, 'PLAN.md')];
+const prose = [...walk(join(root, 'brand')).filter((f) => f.endsWith('.md')), ...walk(join(root, 'registry')), join(root, 'README.md'), join(root, 'CLAUDE.md'), join(root, 'PLAN.md'), join(root, 'AGENTS.md')];
 for (const f of prose) {
 	try {
 		readFileSync(f, 'utf8').split('\n').forEach((line, i) => { if (line.includes('—')) problems.push(`${f.slice(root.length + 1)}:${i + 1} has an em dash`); });
