@@ -7,7 +7,7 @@ export default [
 	{ example: 'Product', click: 'role=button[name="previous page"]', wait: 300, label: 'previous page' },
 	{ example: 'Product', click: 'role=button[name=/Copy prompt/]', wait: 500, shot: true, label: 'Copy prompt copies' },
 	{ example: 'Product', click: 'role=button[name="other ways to connect"]', wait: 500, shot: true, label: 'the arrow opens the installs' },
-	{ example: 'Product', key: 'Escape', wait: 300, shot: true, label: 'Escape closes them' },
+	{ example: 'Product', key: 'Escape', wait: 500, shot: true, label: 'Escape closes them' },
 	{ example: 'Product', focus: 'role=button[name="other ways to connect"]', key: 'ArrowDown', wait: 300, label: 'ArrowDown opens on the first row' },
 	{ example: 'Product', key: 'Escape', wait: 300, label: 'Escape again' },
 ]
