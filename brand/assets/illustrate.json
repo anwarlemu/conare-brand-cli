@@ -1,0 +1,35 @@
+{
+	"$comment": "The brand's illustration style as data: the parts the playground and the site draw (brand/illustration.md says each rule and its source). Colors are token names (an alpha after a slash); the themes are the share images' (image.json). The engine is src/illustrate/.",
+	"pixels": {
+		"$comment": "The red pixel grid from the playground's pixels.png (86 by 86, six by six cells): R is home-red, p the pale cell (#FFD6D2 in the file; no token, drawn in home-wash-hover #FFDEDD). A seed reshuffles the cells, keeping the count of each.",
+		"pattern": ["RRpRRp", "RpRpRR", "RRppRR", "RRRRRp", "ppRppR", "RRppRp"],
+		"red": "home-red",
+		"pale": "home-wash-hover",
+		"gap": 0.08
+	},
+	"stack": {
+		"$comment": "A stack of documents (stack-tall.png 412 by 498, stack-wide.png 626 by 336): a front sheet with nested frames and the pixel grid at a corner, and some 28 sheets behind it stepping back 5 and 4 px.",
+		"sheet": "off-white",
+		"edge": "neutral-600",
+		"edgeBack": "neutral-600",
+		"sheets": 28,
+		"step": [5, -4],
+		"frames": 5,
+		"frameStep": 5,
+		"tall": { "w": 260, "h": 350, "grid": "top-left" },
+		"wide": { "w": 440, "h": 200, "grid": "top-right", "step": [5, 4] }
+	},
+	"subjects": {
+		"stack": "A stack of documents, tall or wide (--shape tall|wide). --image puts your picture on the front sheet.",
+		"stacks": "The share image's scene: the perspective room with stacks of documents squared up at the sides.",
+		"pixels": "The red pixel grid alone (--seed reshuffles it).",
+		"room": "The perspective room: a back wall, rings stepping out faster toward the edges, lines from the wall out past the frame.",
+		"tile": "The wordmark as a staggered tile, at the theme's faint strength.",
+		"outline": "The wordmark huge and hollow along the foot.",
+		"hatch": "Fine 45 degree hatching across a floor, a wide stack on it.",
+		"strip": "Documents searched: a strip of small squares with a few found in red (--seed moves them).",
+		"panel": "The dark agent window with its sample copy.",
+		"scene": "The product scene: the red room, stacks at the sides and the agent window in front (the feature layout's stand-in)."
+	},
+	"defaults": { "theme": "paper", "size": [1200, 1200] }
+}

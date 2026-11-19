@@ -1,4 +1,7 @@
 import { brand } from '../lib/brand.js';
+import { LAYOUTS } from '../assets/og.js';
+import { layoutVideoSizes, runLayoutVideo } from '../assets/layout-video.js';
+import { helpRow } from '../lib/help-row.js';
 import { renderVideo, writeVideos, type WrittenVideo } from '../video/render.js';
 import { refuseVideo, resolveVideo, videoCatalog, VIDEO_CODEC, VIDEO_FPS, VIDEO_FRAMES } from '../video/spec.js';
 
@@ -22,6 +25,16 @@ export function videoHelp(): string {
 		'--ground paper (the default) or ink. --out is a directory (default imagery/) or one .mp4 when there is one size.',
 		'Headline does not draw --text. Logo does not draw a title, --text or --eyebrow.',
 		'--text and --subtitle must match when both are set.',
+		'',
+		'Layout videos: any share-image layout coming in the way the site moves, through ffmpeg (H.264 MP4 or VP9 WebM):',
+		helpRow(`${b} video --template hero --title "..." --size landscape`, 'The homepage card, 30 fps MP4', 54),
+		helpRow(`${b} video --template room --size vertical --format both`, 'MP4 and WebM for a story', 54),
+		helpRow(`${b} video --template card --still`, 'The settled last frame as PNG', 54),
+		helpRow(`${b} video --template hero --at 0.5`, 'The frame half a second in, as PNG', 54),
+		`Layouts: ${LAYOUTS.join(', ')}. Sizes: ${layoutVideoSizes().map((s) => `${s.id} ${s.width}x${s.height}`).join(', ')}.`,
+		'The label and lockup settle up 12px over the entrance step, the headline letters wait faint and red and settle to ink (40ms apart, lines 100ms apart),',
+		'the line and footer follow, a window arrives on the long ease-out, then the frame holds 1.5s. Every curve and duration is a motion token; nothing eases in.',
+		'--fps 12 to 60 (default 30). --format mp4 (default), webm or both. --theme, --eyebrow, --badge, --highlight, --partner, --credit and --image as in image.',
 	].join('\n');
 }
 
@@ -43,6 +56,9 @@ export async function runVideo(cwd: string, args: string[], flags: Flags): Promi
 		].join('\n');
 		return { json: spec, text };
 	}
+	const asked = str(flags.template)?.toLowerCase();
+	if (asked && (LAYOUTS as readonly string[]).includes(asked)) return runLayoutVideo(cwd, args, flags);
+	for (const f of ['theme', 'badge', 'highlight', 'partner', 'credit', 'image', 'format', 'fps', 'at', 'still']) if (flags[f] !== undefined) throw new Error(`--${f} goes with a layout video (--template ${LAYOUTS.join(', ')}).`);
 	blank(flags, ['template', 'title', 'text', 'subtitle', 'eyebrow', 'size', 'ground', 'out']);
 	if (args.length) throw new Error(`Unexpected \`${args.join(' ')}\`. Pass --template, --size and --title.`);
 	const textFlag = str(flags.text);
