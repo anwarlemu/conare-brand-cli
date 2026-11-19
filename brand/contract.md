@@ -32,3 +32,9 @@
   statement, announcement and logo. There is no default template. The file is Motion JPEG in an MP4, 18 frames at
   12 fps, from the tokens, the vendored faces and the logo files. The same inputs write the same bytes. It is not
   H.264. `{{cli}} video --list` shows the templates and sizes.
+- For posts in the brand's layouts, `{{cli}} image --template hero|brief|tile|app|outline|hatch|room|feature|partner|funding|announce|card`
+  at any social size (`--size story,x-banner`, `--theme`, `--input posts.json`). Slides: `{{cli}} deck --input deck.json`.
+  Motion: `{{cli}} video --template <layout>` (MP4 or WebM through ffmpeg, `--still` for a PNG). Print files:
+  `{{cli}} merch <item>`. Illustrations: `{{cli}} illustrate <subject>` (rules in brand/illustration.md). Figma:
+  `{{cli}} figma tokens|push|pull|check` writes files and prints the MCP calls; it never calls Figma. Never draw
+  people, photos or third-party logos; use Acme and the person's own pictures (`--image`).

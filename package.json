@@ -33,7 +33,8 @@
     "registry:release": "bun scripts/build-registry.ts --require-all-flavors",
     "elements": "node scripts/build-elements.mjs",
     "parity": "node scripts/check-parity.mjs",
-    "port-order": "node scripts/port-order.mjs"
+    "port-order": "node scripts/port-order.mjs",
+    "assets:docs": "node scripts/docs-assets.mjs"
   },
   "devDependencies": {
     "@custom-elements-manifest/analyzer": "0.10.4",
