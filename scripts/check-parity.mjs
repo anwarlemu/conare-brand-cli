@@ -205,6 +205,16 @@ async function capture(url, width, settle = true) {
 	// Settled: running animations jump to their end, unless the example opts out (a timer drawn as an animation).
 	// Margins first: the full-page screenshot resizes the page for a moment, and an mx-auto box's auto margins (computed
 	// in px) can come back from it a scrollbar's width apart in one flavor and not the other.
+	// Every flavor laid out a second time first: Chrome reports an mx-auto box's used auto margins only after a relayout,
+	// which Vue's hydration happens to cause and the other flavors don't, so without this the same box reads 20px or 0px.
+	await page.evaluate(() => {
+		const root = document.documentElement;
+		const before = root.style.width;
+		root.style.width = '99%';
+		void root.offsetWidth;
+		root.style.width = before;
+		void root.offsetWidth;
+	});
 	const margins = await page.evaluate(STYLES);
 	const png = await page.screenshot({ fullPage: true, clip: { x: 0, y: 0, width, height }, animations: settle ? 'disabled' : 'allow', caret: 'hide' });
 	const styles = await page.evaluate(STYLES);
