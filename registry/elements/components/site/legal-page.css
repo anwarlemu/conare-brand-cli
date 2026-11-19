@@ -1,0 +1,4 @@
+/* LegalPage.vue's <style>, as it is. */
+.ds-legal-title { line-height: 1.15; text-wrap: balance; }
+.ds-legal-side { transition: color var(--ds-duration-micro) var(--ds-easing-standard); }
+@media (hover: hover) and (pointer: fine) { .ds-legal-side:hover { color: var(--ds-color-fg); } }

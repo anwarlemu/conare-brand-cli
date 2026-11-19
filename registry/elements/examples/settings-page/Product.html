@@ -1,0 +1,25 @@
+<!-- Settings in the console's frame, on sample data: rename the company, switch to Members or Sign-in, turn a way in on. -->
+<conare-console-frame crumbs='[{ "label": "Overview", "href": "#" }, { "label": "Settings" }]'>
+  <conare-sidebar-label slot="nav">Platform</conare-sidebar-label>
+  <conare-sidebar-link slot="nav" href="#"><i data-lucide="house" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Overview</conare-sidebar-link>
+  <conare-sidebar-link slot="nav" href="#"><i data-lucide="layers" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Namespaces</conare-sidebar-link>
+  <conare-sidebar-link slot="nav" href="#"><i data-lucide="network" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Sources</conare-sidebar-link>
+  <conare-sidebar-link slot="nav" href="#"><i data-lucide="square-terminal" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Agents</conare-sidebar-link>
+  <conare-sidebar-label slot="nav">Manage</conare-sidebar-label>
+  <conare-sidebar-link slot="nav" href="#"><i data-lucide="key-round" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>API keys</conare-sidebar-link>
+  <conare-sidebar-link slot="nav" href="#"><i data-lucide="activity" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Usage</conare-sidebar-link>
+  <conare-sidebar-link slot="nav" href="#" active><i data-lucide="settings" data-size="14" data-stroke-width="1.5" aria-hidden="true" slot="icon"></i>Settings</conare-sidebar-link>
+  <conare-settings-page
+    id="settings"
+    company='{"name": "Acme", "id": "cus_8f3k2m1q", "joined": "Mar 4, 2026"}'
+    members='[{"email": "admin@acme.com", "role": "admin", "joined": "Mar 4, 2026"}, {"email": "support@acme.com", "role": "member", "joined": "Apr 18, 2026"}, {"email": "data@acme.com", "role": "member", "joined": "Jun 2, 2026"}, {"email": "legal@acme.com", "role": "member", "joined": "Nov 10, 2026", "invited": true}]'
+    sign-in='[{"id": "google", "label": "Google", "description": "Sign in with a Google Workspace account.", "on": true}, {"id": "sso", "label": "Single sign-on", "description": "Sign in through your identity provider (SAML).", "on": false}, {"id": "domain", "label": "Join by domain", "description": "Anyone with an acme.com address joins as a member.", "on": false}]'
+    email="admin@acme.com"
+  ></conare-settings-page>
+</conare-console-frame>
+<script type="module">
+  await customElements.whenDefined('conare-settings-page')
+  const page = document.getElementById('settings')
+  page.addEventListener('rename', (e) => { page.company = { ...page.company, name: e.detail } })
+  page.addEventListener('toggle', (e) => { page.signIn = page.signIn.map(o => (o.id === e.detail.id ? { ...o, on: e.detail.on } : o)) })
+</script>

@@ -1,0 +1,22 @@
+<!-- Contact on sample data: send the form to see what happens next. -->
+<div class="-m-8">
+  <conare-contact-page
+    id="contact"
+    header='{"items": [{"label": "Search", "desc": "Find the answer in any file.", "href": "#search"}, {"label": "Sync", "desc": "Keep your apps in step.", "href": "#sync"}, {"label": "Parse", "desc": "Read every row and cell.", "href": "#parse"}], "links": [{"label": "Pricing", "href": "#pricing"}, {"label": "Blog", "href": "#blog"}, {"label": "Docs", "href": "#docs"}], "homeLabel": "Acme home"}'
+    footer='{"columns": [{"title": "Product", "links": [{"label": "Search", "href": "#search"}, {"label": "Sync", "href": "#sync"}, {"label": "Parse", "href": "#parse"}]}, {"title": "Company", "links": [{"label": "About", "href": "#about"}, {"label": "Blog", "href": "#blog"}, {"label": "Changelog", "href": "#changelog"}, {"label": "Contact", "href": "#contact"}]}, {"title": "Resources", "links": [{"label": "Docs", "href": "#docs"}, {"label": "Pricing", "href": "#pricing"}, {"label": "Status", "href": "#status"}]}], "tagline": "Search any data you bring. Get the right answer.", "legal": "© 2026 Acme, Inc.", "legalLinks": [{"label": "Privacy", "href": "#privacy"}, {"label": "Terms", "href": "#terms"}], "name": "Acme"}'
+    head='{"tag": "Contact", "title": "Talk to the team.", "body": "Tell us what you want to build. We reply by email."}'
+    channels='[{"label": "Sales", "value": "sales@acme.com", "href": "mailto:sales@acme.com"}, {"label": "Support", "value": "support@acme.com", "href": "mailto:support@acme.com"}, {"label": "Security", "value": "security@acme.com", "href": "mailto:security@acme.com"}]'
+  >
+    <span slot="logo" class="font-heading text-heading-3 text-fg">Acme</span>
+    <conare-button slot="actions" href="#contact">Contact us</conare-button>
+    <conare-pixel-button slot="actions" href="#sign-in">Sign in</conare-pixel-button>
+    <conare-button slot="sheet-actions" href="#contact">Contact us</conare-button>
+    <conare-pixel-button slot="sheet-actions" href="#sign-in">Sign in</conare-pixel-button>
+  </conare-contact-page>
+</div>
+<script type="module">
+  await customElements.whenDefined('conare-contact-page')
+  const page = document.getElementById('contact')
+  page.addEventListener('submit', () => { page.sent = true })
+  page.addEventListener('edit', () => { page.sent = false })
+</script>
