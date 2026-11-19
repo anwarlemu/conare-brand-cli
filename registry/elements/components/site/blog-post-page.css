@@ -1,0 +1,4 @@
+/* BlogPostPage.vue's <style>, as it is. */
+.ds-post-title { line-height: 1.15; text-wrap: balance; }
+.ds-post-trail { transition: color var(--ds-duration-micro) var(--ds-easing-standard); }
+@media (hover: hover) and (pointer: fine) { .ds-post-trail:hover { color: var(--ds-color-fg); } }
