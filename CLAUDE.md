@@ -46,6 +46,13 @@ owner's). It needs `build/` and the registry outputs first (`bun run ci`).
   logos, voice, principles), `component/` (list, inspect, emit), `library/`
   (registry and project detection), `lib/brand.ts`, `lib/names.ts`. `brand/elements.json` holds apply's roles and the
   per-kind recipes (the library components' own classes).
+- `src/assets/`: the asset engine on a Skia canvas (`@napi-rs/canvas`; PNG and SVG from the same calls): `og.ts` (the
+  agd-playground posts tool's twelve layouts, ported from its draw.ts and app.ts), `deck.ts`, `merch.ts`, `video.ts` and
+  `layout-video.ts` (frames streamed into ffmpeg), `motion.ts` (curves and durations from the motion tokens);
+  `src/illustrate/` (the illustration style), `src/figma/` (tokens as variables, push scripts, check). The brand's part
+  is `brand/assets/*.json` (themes as token names, copy, art, sizes, slides, merch items, subjects) and
+  `brand/illustration.md`. `scripts/docs-assets.mjs` (`bun run assets:docs`) regenerates the docs gallery
+  (`apps/www/public/gallery`) after a change to either. Compare layouts with the playground's `/conare/og` endpoint.
 - `registry/react/`: the React flavor (`components/<group>/<Name>.tsx`, `hooks/`, `lib/`, `examples/<item>/`), the same
   token classes as the Vue file. `registry/elements/`: the web components (Lit, shadow DOM, `<elementPrefix>-<item>`,
   styles compiled from the same classes at build time; prebuilt modules land in `apps/www/public/elements/`).

@@ -2,7 +2,11 @@ import { readFileSync } from 'node:fs';
 import { isAbsolute, resolve } from 'node:path';
 import { brand } from '../lib/brand.js';
 import { mimeOf, renderImages, resolveRequest, writeImages, type Written } from '../image/render.js';
-import { catalog, TEMPLATE_FIELDS, type TemplateId } from '../image/spec.js';
+import { catalog, TEMPLATE_FIELDS, templateById, type TemplateId } from '../image/spec.js';
+import { layoutCatalog, runLayouts } from '../assets/image.js';
+import { LAYOUTS } from '../assets/og.js';
+import { unknown } from '../assets/io.js';
+import { helpRow } from '../lib/help-row.js';
 
 // `image` renders Open Graph and social cards from copy. It does not need an app: the type, colors and mark come
 // from the package.
@@ -11,7 +15,7 @@ type Flags = Record<string, string | boolean | string[] | undefined>;
 
 export function imageHelp(): string {
 	const b = brand().bin;
-	const row = (cmd: string, what: string) => `  ${cmd.padEnd(46)}${what}`;
+	const row = (cmd: string, what: string) => helpRow(cmd, what, 46);
 	return [
 		`Open Graph and social images from the brand's type, colors and logo.`,
 		'Headless: the same copy gives the same file.',
@@ -31,12 +35,32 @@ export function imageHelp(): string {
 		'--image is a PNG or JPEG for the frame template. Without it, the frame holds a quiet stand-in of the console. Other templates reject --image.',
 		'--by is the speaker on a quote. Other templates reject it. --text and --subtitle must match when both are set; so must --by and --author.',
 		'A headline ends in a red full stop, as the site\'s headlines do. Write the copy in sentence case.',
+		'',
+		'Layouts from the posts tool (every size, five themes):',
+		row(`${b} image --template hero --title "..." --text "..."`, 'The homepage card at Open Graph size'),
+		row(`${b} image --template room --size all`, 'The red room at every size, with its sample copy'),
+		row(`${b} image --template card --eyebrow NEW --size square,story`, 'The new-feature card for a feed and a story'),
+		row(`${b} image --template feature --image shot.png`, 'Your picture in the product window'),
+		row(`${b} image --template partner --partner Acme --theme paper`, 'A partnership lockup'),
+		row(`${b} image --input posts.json --out posts`, 'Several images from a file: { "images": [ { "template": "hero", ... } ] }'),
+		`Layouts: ${LAYOUTS.join(', ')}.`,
+		`Layout sizes: ${layoutCatalog().sizes.map((s) => `${s.id} ${s.width}x${s.height}`).join(', ')}. --size all writes every one.`,
+		'--theme white, paper, red, black or grey (default: the layout\'s own). --badge label, pill, solid, dot or none; --eyebrow is its words.',
+		'--highlight red, black, white, grey or ink colors *starred words* and the final stop. --partner names a partner beside the lockup. --credit adds a small line (an @handle).',
+		'--image (PNG, JPEG, WebP) goes in the feature layout\'s window; without one it draws a stand-in scene from the brand\'s own parts.',
 	].join('\n');
 }
 
 export async function runImage(cwd: string, args: string[], flags: Flags): Promise<{ json: unknown; text: string }> {
+	const asked = str(flags.template)?.toLowerCase();
+	if (flags.input !== undefined || (asked && (LAYOUTS as readonly string[]).includes(asked))) return runLayouts(cwd, args, flags);
+	if (asked && !templateById(asked)) {
+		const pool = [...catalog().templates.map((t) => t.id), ...LAYOUTS];
+		throw unknown('template', asked, pool);
+	}
 	if (flags.list === true || args[0] === 'list') {
 		const spec = catalog();
+		const layouts = layoutCatalog();
 		const text = [
 			'Templates',
 			...spec.templates.map((t) => `  ${t.id.padEnd(16)}${t.description}`),
@@ -46,8 +70,16 @@ export async function runImage(cwd: string, args: string[], flags: Flags): Promi
 			'',
 			'Grounds',
 			...spec.grounds.map((g) => `  ${g.id.padEnd(16)}${g.description}`),
+			'',
+			'Layouts (the posts tool: every size, --theme, sample copy when --title is left out)',
+			...layouts.templates.map((t) => helpRow(t.id, `${t.description} Theme: ${t.theme}.`, 18)),
+			'',
+			'Layout sizes',
+			...layouts.sizes.map((s) => helpRow(s.id, `${String(s.width).padStart(4)}x${s.height}  ${s.label}`, 18)),
+			'',
+			`Layout themes: ${layouts.themes.map((t) => t.id).join(', ')}. Badges: ${layouts.badges.join(', ')}. Highlights: ${layouts.highlights.join(', ')}.`,
 		].join('\n');
-		return { json: spec, text };
+		return { json: { ...spec, layouts }, text };
 	}
 
 	for (const name of ['title', 'text', 'subtitle', 'eyebrow', 'by', 'author', 'image', 'template', 'size', 'ground', 'out', 'format']) {

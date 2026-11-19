@@ -1,0 +1,4 @@
+/* BlogPage.vue's <style>, as it is. */
+.ds-blog-cat { transition: color var(--ds-duration-micro) var(--ds-easing-standard); }
+@media (hover: hover) and (pointer: fine) { .ds-blog-cat:hover { color: var(--ds-color-fg); } }
+.ds-blog-cat:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }

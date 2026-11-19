@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="900" height="600">
+	<rect fill="#F7F6F4" width="900" height="600"/>
+	<rect fill="none" stroke="#020202" stroke-width="0.92966968" stroke-miterlimit="10" stroke-opacity="0.12156863" x="297" y="198" width="306" height="204"/>
+	<rect fill="none" stroke="#020202" stroke-width="0.92966968" stroke-miterlimit="10" stroke-opacity="0.12156863" x="275.99628" y="183.99753" width="348.00739" height="232.00494"/>
+	<rect fill="none" stroke="#020202" stroke-width="0.92966968" stroke-miterlimit="10" stroke-opacity="0.12156863" x="228.75874" y="152.50583" width="442.48254" height="294.98834"/>
+	<rect fill="none" stroke="#020202" stroke-width="0.92966968" stroke-miterlimit="10" stroke-opacity="0.12156863" x="161.04282" y="107.36189" width="577.91431" height="385.27625"/>
+	<rect fill="none" stroke="#020202" stroke-width="0.92966968" stroke-miterlimit="10" stroke-opacity="0.12156863" x="75.283516" y="50.189011" width="749.43298" height="499.62195"/>
+	<path fill="none" stroke="#020202" stroke-width="0.92966968" stroke-miterlimit="10" stroke-opacity="0.12156863" d="M297 198L-9 -6M297 402L-9 606M373.5 198L220.5 -6M373.5 402L220.5 606M297 249L-9 147M603 249L909 147M450 198L450 -6M450 402L450 606M297 300L-9 300M603 300L909 300M526.5 198L679.5 -6M526.5 402L679.5 606M297 351L-9 453M603 351L909 453M603 198L909 -6M603 402L909 606"/>
+</svg>

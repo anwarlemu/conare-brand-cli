@@ -10,7 +10,7 @@ From a checkout, build once (`bun run build`) and run `node bin.js`. When the pa
 conare-ds manifest --json
 ```
 
-`describe` is the same command. The JSON document (`schemaVersion` 1) lists every command, flag, brand section, token name, principle, group, component (with parts, states, and examples), image template and size, and video template and size. It also lists gaps: facts this repository does not contain. If a name is not in the document, the command exits 1 and names what is allowed. Do not substitute a nearby value.
+`describe` is the same command. The JSON document (`schemaVersion` 1) lists every command, flag, brand section, token name, principle, group, component (with parts, states, and examples), image template and size, video template and size, the layouts and their sizes, deck slides, merch items, illustration subjects and rules, logo lockups and the Figma actions. It also lists gaps: facts this repository does not contain. If a name is not in the document, the command exits 1 and names what is allowed. Do not substitute a nearby value.
 
 Pass `--json` on any command when you need a machine-readable result. `--help` prints that command's flags. An unknown flag is an error.
 
@@ -89,6 +89,44 @@ Each clip is 18 frames at 12 fps (1.5 seconds), Motion JPEG inside an MP4. The r
 
 Headline does not draw `--text`. Logo does not draw a title, `--text`, or `--eyebrow`. One sample per template is in `imagery/samples/` (`video-<template>-<size>.mp4` and a PNG of the last frame).
 
+## Layouts, decks, layout videos, merch, illustrations and Figma
+
+The posts tool's twelve layouts (`hero`, `brief`, `tile`, `app`, `outline`, `hatch`, `room`, `feature`, `partner`,
+`funding`, `announce`, `card`) draw at every social size through `image` and `video`, and the same parts make decks,
+merch and illustrations. Every color is a token, every face a brand font, the logo the brand's own file. Each command
+takes `--list`, `--json` and `--help`; an unknown name exits 1 and suggests the closest one.
+
+```sh
+conare-ds image --template hero --title "Everything your agent needs to know." --size og,story
+conare-ds image --template room --size all                      # sample copy when --title is left out
+conare-ds image --template feature --image ./shot.png           # your picture in the product window
+conare-ds image --input posts.json --out posts                  # { "images": [ { "template": "card", "size": ["og", "square"] } ] }
+conare-ds deck --input deck.json --out deck                     # slides at 1920x1080, a PNG each and deck.pdf
+conare-ds video --template hero --size landscape --format both  # H.264 MP4 and VP9 WebM through ffmpeg
+conare-ds video --template card --still                         # the settled frame as PNG (--at 0.5 for another)
+conare-ds merch tee-back --variant black                        # print files at real size, with bleed and safe area
+conare-ds illustrate stacks --size 1500x500                     # SVG of vector shapes and PNG
+conare-ds figma tokens                                          # files and the ordered Figma MCP calls
+```
+
+- `image` layouts: `--theme` white, paper, red, black or grey (default: the layout's), `--eyebrow` (the badge's words),
+  `--badge` label, pill, solid, dot or none, `--highlight` for `*starred words*` and the final stop, `--partner` (a
+  name beside the lockup; never a third-party logo), `--credit`. Sizes: og, landscape, linkedin, square, portrait,
+  story, linkedin-square, x-banner, linkedin-banner, linkedin-page, youtube, email, or all.
+- `deck` slides: cover, section, statement, bullets (up to six points), stat, quote, image and end, each on one of the
+  layouts. A slot left out takes the slide's opening copy.
+- `video` layouts come in the way the website moves (the label and lockup settle up, the headline's letters wait faint
+  and red and settle to ink, a window arrives on the long ease-out), then hold. Every curve and duration is a motion
+  token; nothing eases in. It needs ffmpeg; `--still` does not.
+- `merch` items: cap-front, tee-front, tee-back, hoodie-front, tote, mug-wrap, sticker (with its cut line in the SVG)
+  and poster. Variants print a theme to the bleed (red, paper, ink), full-color art on a transparent ground (color) or
+  one brand color (black, white, redline). Sizes are vendor conventions: confirm against the vendor's template.
+- `illustrate` subjects: stack, stacks, pixels, room, tile, outline, hatch, strip, panel and scene. The rules, each
+  with its source, are in `brand/illustration.md`. People, photos and third-party logos are never drawn.
+- `figma` never calls Figma: `tokens` (variables in Light and Dark), `push image|slide|illustration|asset|component|page`,
+  `pull <url>` and `check <files>` write files and print the MCP calls, in order. Do not call the Figma MCP tools
+  without the person's go-ahead; their seat may be rate limited.
+
 ## Determinism
 
 Same inputs produce the same bytes for stills and for video. Rendering does not read the clock into the file, does not load system fonts, and does not pick a random template, size, or component. Validation fails closed.
@@ -97,5 +135,5 @@ Same inputs produce the same bytes for stills and for video. Rendering does not 
 
 - A website principles section. Use `principles --surface website` and stop there.
 - Logo clearance, a minimum size, or an exclusion zone.
-- An H.264 video encoder. Clips are Motion JPEG.
+- An H.264 encoder of its own. The Motion JPEG clips need nothing; layout videos use ffmpeg from PATH.
 - Components or fonts beyond the files in `registry/` and `brand/fonts/`.

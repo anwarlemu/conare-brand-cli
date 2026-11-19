@@ -1,0 +1,72 @@
+{
+	"$comment": "Share images and social posts, from the agd-playground posts tool (src/components/conare-og: draw.ts, layouts.ts, brand.ts, content.ts, app.ts; route /conare and its PNG endpoint /conare/og). The layout rules are the engine's (src/assets/og.ts, ported from draw.ts); this file holds the brand's part: themes as token names (an alpha after a slash), the frame tones, highlight colors, the footer line, the art files, the agent panel's colors and sample copy, each template's opening theme and copy, and the sizes. Every playground hex matched a token except the ones in notes.",
+	"themes": {
+		"white": { "label": "White", "bg": "off-white", "ink": "off-black", "muted": "neutral-400", "line": "neutral-700", "tile": "off-black", "tileAlpha": 0.05, "border": "neutral-700", "room": "off-black/0.12", "dark": false },
+		"paper": { "label": "Paper", "bg": "home-paper", "ink": "off-black", "muted": "neutral-400", "line": "neutral-600", "tile": "off-black", "tileAlpha": 0.05, "border": "neutral-700", "room": "off-black/0.12", "dark": false },
+		"red": { "label": "Red", "bg": "home-red", "ink": "off-white", "muted": "off-white", "line": "off-white/0.42", "tile": "off-white", "tileAlpha": 0.14, "border": "off-white/0.42", "room": "off-white/0.34", "dark": true, "onAccent": { "highlight": "ink", "badgeFill": "off-white", "badgeInk": "home-red" } },
+		"black": { "label": "Black", "bg": "off-black", "ink": "off-white", "muted": "neutral-500", "line": "neutral-300", "tile": "off-white", "tileAlpha": 0.07, "border": "neutral-300", "room": "off-white/0.16", "dark": true },
+		"grey": { "label": "Grey", "bg": "home-grey", "ink": "off-black", "muted": "neutral-400", "line": "neutral-600", "tile": "off-black", "tileAlpha": 0.05, "border": "neutral-700", "room": "off-black/0.1", "dark": false }
+	},
+	"tones": { "light": "neutral-700", "grey": "neutral-500", "red": "home-red", "black": "off-black", "white": "off-white" },
+	"highlights": { "red": "home-red", "black": "off-black", "white": "off-white", "grey": "neutral-500", "ink": "" },
+	"accent": "home-red",
+	"foot": { "left": "SOC 2 Type I · GDPR", "right": "conare.ai" },
+	"art": {
+		"stack-tall": "assets/art/stack-tall.png",
+		"stack-wide": "assets/art/stack-wide.png",
+		"pixels": "assets/art/pixels.png"
+	},
+	"window": { "bg": "off-white", "placeholder": "home-paper", "shadow": "off-black" },
+	"panel": {
+		"$comment": "The dark agent window (app.ts), drawn on a 1040 by 640 grid. Sample copy replaces the playground's third-party product names (Granola, Salesforce, Gmail, Attio) and the Northwind account with neutral ones.",
+		"colors": { "bg": "neutral-100", "ink": "off-white", "muted": "neutral-500", "line": "neutral-200", "chip": "neutral-200", "chipEdge": "neutral-300", "faint": "neutral-400", "soft": "neutral-600", "accent": "home-red" },
+		"content": {
+			"title": "Deal desk",
+			"tag": "Internal agent",
+			"fields": "Account | Acme\nStage | Contract sent\nSeats | 300",
+			"task": "Preparing the Acme close plan",
+			"sources": "Call notes*, CRM*, Email*, Wiki, +2 more",
+			"found": "3 of 6,240,000 documents",
+			"kinds": "call recordings · emails · CRM records · proposals · signed contracts",
+			"section": "Before they sign",
+			"rows": "EU data | Written confirmation their data stays in the EU | Call notes\nSecurity review | Passed, and due by Friday | Email\nRollout | 300 seats in Berlin first | CRM",
+			"stats": "Done 10:24 AM | 262ms | 2,140 tokens"
+		}
+	},
+	"templates": {
+		"hero": { "label": "Homepage", "description": "The homepage: a red label, the headline centered with its red full stop, a grey line, the lockup above, hairline guides and a quiet footer.", "theme": "white", "badge": "label", "badgeText": "Search across 100M+ documents", "headline": "Everything your agent needs to know.", "body": "Conare finds the right answer in any data you bring, for your agents and the products you build on them." },
+		"brief": { "label": "Brief", "description": "The formal statement: the lockup top left, a red-marked line in mono capitals top right, the words set left, a hairline and the footer.", "theme": "white", "badge": "dot", "badgeText": "Announcement", "headline": "Everything your agent needs to know.", "body": "Conare finds the right answer in any data you bring, for your agents and the products you build on them." },
+		"tile": { "label": "Tile", "description": "The wordmark as a tile in a bordered panel, a stack of documents on it, the words set left.", "theme": "paper", "badge": "label", "badgeText": "Search across 100M+ documents", "headline": "Everything your agent needs to know.", "body": "" },
+		"app": { "label": "Product", "description": "Words over the dark agent panel, on the perspective room, stacks of documents at the sides.", "theme": "red", "badge": "label", "badgeText": "Search across 100M+ documents", "headline": "Everything your agent needs to know.", "body": "" },
+		"outline": { "label": "Outline", "description": "The wordmark, huge and hollow, along the foot; the words above it.", "theme": "paper", "badge": "label", "badgeText": "Search across 100M+ documents", "headline": "Everything your agent needs to know.", "body": "" },
+		"hatch": { "label": "Hatched", "description": "Fine hatching across the floor, a wide stack on it, the words set right.", "theme": "paper", "badge": "label", "badgeText": "Search across 100M+ documents", "headline": "Everything your agent needs to know.", "body": "" },
+		"room": { "label": "Red room", "description": "The share image: red, the perspective room, stacks of documents at the sides, the mark over the words.", "theme": "red", "badge": "label", "badgeText": "Search across 100M+ documents", "headline": "Everything your agent needs to know.", "body": "Conare finds the right answer in any data you bring, for your agents and the products you build on them." },
+		"feature": { "label": "Feature", "description": "A launch: a label, the words, and a product scene under them (your picture with --image).", "theme": "white", "badge": "label", "badgeText": "Product update", "headline": "Reranking on every query.", "body": "conare-rerank-1 orders retrieved passages by relevance before they reach your agent, within the same API and the same security controls." },
+		"partner": { "label": "Lockup", "description": "A partnership: the lockup and the partner's name, the words under them, on a faint wordmark tile in a hairline frame.", "theme": "white", "badge": "label", "badgeText": "Integration", "headline": "Conare now connects to Acme.", "body": "Acme data is indexed, kept in sync and searchable through the same API key.", "partner": "Acme" },
+		"funding": { "label": "Big number", "description": "A big number or milestone on the room, the mark alone at the top, stacks at the sides.", "theme": "red", "badge": "label", "badgeText": "Milestone", "headline": "Search across 100M+ documents.", "body": "Each one synced, parsed, embedded and returned with its source." },
+		"announce": { "label": "Announcement", "description": "A solid red border, the words set large at the top left, the lockup at the foot.", "theme": "white", "badge": "dot", "badgeText": "Careers", "headline": "Build retrieval for the enterprise.", "body": "" },
+		"card": { "label": "Card", "description": "The new-feature card: the lockup top left, a black chip top right, the words between them, a mono line along the foot.", "theme": "white", "badge": "solid", "badgeText": "NEW", "headline": "Reranking on every query.", "body": "conare-rerank-1 orders retrieved passages by relevance before they reach your agent, within the same API and the same security controls." }
+	},
+	"sizes": {
+		"og": { "w": 1200, "h": 630, "label": "Link preview" },
+		"landscape": { "w": 1200, "h": 675, "label": "X card, landscape 16:9", "aliases": ["card", "x", "wide", "twitter"] },
+		"linkedin": { "w": 1200, "h": 627, "label": "LinkedIn post and link", "aliases": ["li", "li-link", "li-post"] },
+		"square": { "w": 1080, "h": 1080, "label": "Square feed" },
+		"portrait": { "w": 1080, "h": 1350, "label": "Portrait 4:5", "aliases": ["4:5", "4x5"] },
+		"story": { "w": 1080, "h": 1920, "label": "Story 9:16", "aliases": ["9:16", "9x16", "vertical"] },
+		"linkedin-square": { "w": 1200, "h": 1200, "label": "LinkedIn square", "aliases": ["li-square"] },
+		"x-banner": { "w": 1500, "h": 500, "label": "X header", "aliases": ["x-header", "banner-x"] },
+		"linkedin-banner": { "w": 1584, "h": 396, "label": "LinkedIn profile banner", "aliases": ["li-profile"] },
+		"linkedin-page": { "w": 1128, "h": 191, "label": "LinkedIn page banner", "aliases": ["li-page"] },
+		"youtube": { "w": 2560, "h": 1440, "label": "YouTube channel art", "aliases": ["yt"] },
+		"email": { "w": 1200, "h": 300, "label": "Email header" }
+	},
+	"notes": [
+		"Every playground brand color (brand.ts INK) is a token: white off-white, black off-black, red home-red, paper home-paper, grey home-grey, n100 to n700 neutral-100 to neutral-700.",
+		"Agent panel: the playground's #1f1e1d ground is neutral-100 (#201F1E); its rules #3a3937 and chips #2c2b2a have no token and draw in neutral-200 (#31302F); the field chip edge #4a4846 is neutral-300 (#494745).",
+		"Product window ground: the playground's #ffffff is off-white (#FEFEFE); the empty window's #f4f2f7 is home-paper.",
+		"The card's chip and the footer use Geist Mono at 500 in the playground; the brand ships Geist Mono 400 only, so they draw at 400. The partner name draws at 600 in Faculty Glyphic, which ships at 400 only.",
+		"Left out: the playground's product scenes (public/conare-og/screens/*.jpg) show third-party logos (Granola, Salesforce, Gmail, Attio) and photos of people. The feature window takes your picture with --image; without one it draws a stand-in scene from the brand's own parts (the room, the stacks and the agent panel).",
+		"Left out: partner logos (third-party art; pass the partner's name), the editor's free stickers and gradients (not templates), and random layout seeds (in the playground a seed only picks one of these templates)."
+	]
+}

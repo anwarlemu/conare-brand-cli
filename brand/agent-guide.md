@@ -131,6 +131,44 @@ ffprobe, ffmpeg, VLC and QuickTime. It is not H.264.
 part of the system. `colour` is `color`. `{{cli}} brand --token --ds-color-fg` returns one token and errors on an
 unknown name. Logo clearance, a minimum size and an exclusion zone are not in this repository. Do not invent them.
 
+## Layouts, decks, layout videos, merch, illustrations and Figma
+
+The posts tool's twelve layouts (`hero`, `brief`, `tile`, `app`, `outline`, `hatch`, `room`, `feature`, `partner`,
+`funding`, `announce`, `card`) draw at every social size through `image` and `video`, and the same parts make decks,
+merch and illustrations. Every color is a token, every face a brand font, the logo the brand's own file. Each command
+takes `--list`, `--json` and `--help`; an unknown name exits 1 and suggests the closest one.
+
+```sh
+{{cli}} image --template hero --title "Everything your agent needs to know." --size og,story
+{{cli}} image --template room --size all                      # sample copy when --title is left out
+{{cli}} image --template feature --image ./shot.png           # your picture in the product window
+{{cli}} image --input posts.json --out posts                  # { "images": [ { "template": "card", "size": ["og", "square"] } ] }
+{{cli}} deck --input deck.json --out deck                     # slides at 1920x1080, a PNG each and deck.pdf
+{{cli}} video --template hero --size landscape --format both  # H.264 MP4 and VP9 WebM through ffmpeg
+{{cli}} video --template card --still                         # the settled frame as PNG (--at 0.5 for another)
+{{cli}} merch tee-back --variant black                        # print files at real size, with bleed and safe area
+{{cli}} illustrate stacks --size 1500x500                     # SVG of vector shapes and PNG
+{{cli}} figma tokens                                          # files and the ordered Figma MCP calls
+```
+
+- `image` layouts: `--theme` white, paper, red, black or grey (default: the layout's), `--eyebrow` (the badge's words),
+  `--badge` label, pill, solid, dot or none, `--highlight` for `*starred words*` and the final stop, `--partner` (a
+  name beside the lockup; never a third-party logo), `--credit`. Sizes: og, landscape, linkedin, square, portrait,
+  story, linkedin-square, x-banner, linkedin-banner, linkedin-page, youtube, email, or all.
+- `deck` slides: cover, section, statement, bullets (up to six points), stat, quote, image and end, each on one of the
+  layouts. A slot left out takes the slide's opening copy.
+- `video` layouts come in the way the website moves (the label and lockup settle up, the headline's letters wait faint
+  and red and settle to ink, a window arrives on the long ease-out), then hold. Every curve and duration is a motion
+  token; nothing eases in. It needs ffmpeg; `--still` does not.
+- `merch` items: cap-front, tee-front, tee-back, hoodie-front, tote, mug-wrap, sticker (with its cut line in the SVG)
+  and poster. Variants print a theme to the bleed (red, paper, ink), full-color art on a transparent ground (color) or
+  one brand color (black, white, redline). Sizes are vendor conventions: confirm against the vendor's template.
+- `illustrate` subjects: stack, stacks, pixels, room, tile, outline, hatch, strip, panel and scene. The rules, each
+  with its source, are in `brand/illustration.md`. People, photos and third-party logos are never drawn.
+- `figma` never calls Figma: `tokens` (variables in Light and Dark), `push image|slide|illustration|asset|component|page`,
+  `pull <url>` and `check <files>` write files and print the MCP calls, in order. Do not call the Figma MCP tools
+  without the person's go-ahead; their seat may be rate limited.
+
 ## Motion
 
 - Hover and colour: 120ms on `ease-standard`. Small moves: 160ms on `ease-out` (the strong curve). Menus and panels in:

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="900" height="600">
+	<rect fill="#F7F6F4" width="900" height="600"/>
+	<rect fill="#EA3325" x="242.8" y="92.800003" width="64.400009" height="64.400009"/>
+	<rect fill="#EA3325" x="312.79999" y="92.800003" width="64.399994" height="64.400009"/>
+	<rect fill="#FFDEDD" x="382.79999" y="92.800003" width="64.399994" height="64.400009"/>
+	<rect fill="#EA3325" x="452.79999" y="92.800003" width="64.400024" height="64.400009"/>
+	<rect fill="#EA3325" x="522.79999" y="92.800003" width="64.400024" height="64.400009"/>
+	<rect fill="#FFDEDD" x="592.79999" y="92.800003" width="64.400024" height="64.400009"/>
+	<rect fill="#EA3325" x="242.8" y="162.8" width="64.400009" height="64.400009"/>
+	<rect fill="#FFDEDD" x="312.79999" y="162.8" width="64.399994" height="64.400009"/>
+	<rect fill="#EA3325" x="382.79999" y="162.8" width="64.399994" height="64.400009"/>
+	<rect fill="#FFDEDD" x="452.79999" y="162.8" width="64.400024" height="64.400009"/>
+	<rect fill="#EA3325" x="522.79999" y="162.8" width="64.400024" height="64.400009"/>
+	<rect fill="#EA3325" x="592.79999" y="162.8" width="64.400024" height="64.400009"/>
+	<rect fill="#EA3325" x="242.8" y="232.8" width="64.400009" height="64.400009"/>
+	<rect fill="#EA3325" x="312.79999" y="232.8" width="64.399994" height="64.400009"/>
+	<rect fill="#FFDEDD" x="382.79999" y="232.8" width="64.399994" height="64.400009"/>
+	<rect fill="#FFDEDD" x="452.79999" y="232.8" width="64.400024" height="64.400009"/>
+	<rect fill="#EA3325" x="522.79999" y="232.8" width="64.400024" height="64.400009"/>
+	<rect fill="#EA3325" x="592.79999" y="232.8" width="64.400024" height="64.400009"/>
+	<rect fill="#EA3325" x="242.8" y="302.79999" width="64.400009" height="64.399994"/>
+	<rect fill="#EA3325" x="312.79999" y="302.79999" width="64.399994" height="64.399994"/>
+	<rect fill="#EA3325" x="382.79999" y="302.79999" width="64.399994" height="64.399994"/>
+	<rect fill="#EA3325" x="452.79999" y="302.79999" width="64.400024" height="64.399994"/>
+	<rect fill="#EA3325" x="522.79999" y="302.79999" width="64.400024" height="64.399994"/>
+	<rect fill="#FFDEDD" x="592.79999" y="302.79999" width="64.400024" height="64.399994"/>
+	<rect fill="#FFDEDD" x="242.8" y="372.79999" width="64.400009" height="64.399994"/>
+	<rect fill="#FFDEDD" x="312.79999" y="372.79999" width="64.399994" height="64.399994"/>
+	<rect fill="#EA3325" x="382.79999" y="372.79999" width="64.399994" height="64.399994"/>
+	<rect fill="#FFDEDD" x="452.79999" y="372.79999" width="64.400024" height="64.399994"/>
+	<rect fill="#FFDEDD" x="522.79999" y="372.79999" width="64.400024" height="64.399994"/>
+	<rect fill="#EA3325" x="592.79999" y="372.79999" width="64.400024" height="64.399994"/>
+	<rect fill="#EA3325" x="242.8" y="442.79999" width="64.400009" height="64.399994"/>
+	<rect fill="#EA3325" x="312.79999" y="442.79999" width="64.399994" height="64.399994"/>
+	<rect fill="#FFDEDD" x="382.79999" y="442.79999" width="64.399994" height="64.399994"/>
+	<rect fill="#FFDEDD" x="452.79999" y="442.79999" width="64.400024" height="64.399994"/>
+	<rect fill="#EA3325" x="522.79999" y="442.79999" width="64.400024" height="64.399994"/>
+	<rect fill="#FFDEDD" x="592.79999" y="442.79999" width="64.400024" height="64.399994"/>
+</svg>

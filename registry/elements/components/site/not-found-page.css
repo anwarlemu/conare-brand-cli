@@ -1,0 +1,4 @@
+/* NotFoundPage.vue's <style>, as it is. */
+.ds-lost-link { transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }
+@media (hover: hover) and (pointer: fine) { .ds-lost-link:hover { background-color: var(--ds-color-surface-subtle); } }
+.ds-lost-link:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }

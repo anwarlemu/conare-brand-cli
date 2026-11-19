@@ -12,10 +12,16 @@ import { imageHelp, runImage } from './commands/image.js';
 import { formatManifest, manifest, manifestHelp } from './commands/manifest.js';
 import { findTokens, list } from './commands/small.js';
 import { runVideo, videoHelp } from './commands/video.js';
+import { deckHelp, runDeck } from './commands/deck.js';
+import { helpRow } from './lib/help-row.js';
+import { suggest } from './lib/names.js';
+import { illustrateHelp, runIllustrate } from './commands/illustrate.js';
+import { merchHelp, runMerch } from './commands/merch.js';
+import { figmaHelp, runFigma } from './commands/figma.js';
 
 const HELP = () => {
 	const b = brand().bin;
-	const row = (cmd: string, what: string) => `  ${`${b} ${cmd}`.padEnd(44)}${what}`;
+	const row = (cmd: string, what: string) => helpRow(`${b} ${cmd}`, what, 42);
 	const more = (text: string) => `      ${text}`;
 	return [
 		`${brand().name} design system (${b})`,
@@ -58,22 +64,28 @@ const HELP = () => {
 		row('component emit <item>', 'Vue for one state. --state variant:dark, --state example:Dark, --prop name=value'),
 		'',
 		'Images:',
-		row('image --title "..."', 'Open Graph and social images (PNG and SVG) from a title and optional subtext'),
+		row('image --title "..."', 'Share images and social posts (PNG and SVG)'),
 		more('--template headline|statement|quote|announcement|frame   --size og,square,portrait,landscape,all'),
 		more('--ground paper|ink   --text   --eyebrow   --by   --image <file>   --out <dir>   --format png|svg|both'),
 		more('--list  templates, sizes and grounds. A field the template does not draw is an error'),
 		'',
-		'Video:',
-		row('video --template headline --title "..."', 'Motion JPEG MP4, 18 frames at 12 fps, from the tokens, faces and logos'),
-		more('--template headline|statement|announcement|logo   --size square,vertical,landscape,all'),
-		more('--ground paper|ink   --text   --eyebrow   --out <dir>. Logo takes no title. --list for the spec'),
+		more('Layouts: --template hero|brief|tile|app|outline|hatch|room|feature|partner|funding|announce|card at every'),
+		more('social size (story, x-banner, linkedin-banner, youtube...); --theme  --badge  --highlight  --partner  --input <json>'),
+		'',
+		'Assets:',
+		row('deck --input deck.json', 'Slides at 1920x1080: a PNG per slide and one PDF (deck cover --title "..." for one)'),
+		row('video --template hero --title "..."', 'A layout coming in the way the site moves: MP4 or WebM (ffmpeg), --still for a PNG'),
+		more('the Motion JPEG clips: --template headline|statement|announcement|logo --size square,vertical,landscape'),
+		row('merch tee-back --variant black', 'Print files at real size with bleed and safe area (merch --list)'),
+		row('illustrate stacks', "The brand's illustration style as SVG and PNG (illustrate --list)"),
+		row('figma tokens|push|pull|check', 'Files and the ordered Figma MCP calls; the CLI never calls Figma'),
 		'',
 		'Common options: --cwd <dir> (default: the current folder), --json (machine output on stdout).',
 		`Registry: ${registryHost()}/r/index.json`,
 	].join('\n');
 };
 
-const VALUE_FLAGS = new Set(['cwd', 'components', 'pages', 'framework', 'title', 'text', 'subtitle', 'eyebrow', 'by', 'author', 'image', 'template', 'size', 'ground', 'out', 'format', 'section', 'token', 'surface', 'group', 'state', 'part', 'prop']);
+const VALUE_FLAGS = new Set(['cwd', 'components', 'pages', 'framework', 'title', 'text', 'subtitle', 'eyebrow', 'by', 'author', 'image', 'template', 'size', 'ground', 'out', 'format', 'section', 'token', 'surface', 'group', 'state', 'part', 'prop', 'theme', 'badge', 'highlight', 'partner', 'credit', 'input', 'body', 'number', 'items', 'stat', 'quote', 'attribution', 'url', 'fps', 'at', 'seed', 'shape', 'variant', 'headline', 'dpi', 'file', 'example', 'width']);
 const REPEAT_FLAGS = new Set(['prop']);
 
 export function parse(argv: string[]) {
@@ -116,11 +128,15 @@ const FLAGS: Record<string, string[]> = {
 	check: ['fix', 'all'],
 	hook: [],
 	tokens: [],
-	image: ['title', 'text', 'subtitle', 'eyebrow', 'by', 'author', 'image', 'template', 'size', 'ground', 'out', 'format', 'list'],
-	video: ['title', 'text', 'subtitle', 'eyebrow', 'template', 'size', 'ground', 'out', 'list'],
+	image: ['title', 'text', 'subtitle', 'eyebrow', 'by', 'author', 'image', 'template', 'size', 'ground', 'out', 'format', 'list', 'theme', 'badge', 'highlight', 'partner', 'credit', 'input'],
+	video: ['title', 'text', 'subtitle', 'eyebrow', 'template', 'size', 'ground', 'out', 'list', 'theme', 'badge', 'highlight', 'partner', 'credit', 'image', 'format', 'fps', 'at', 'still'],
 	brand: ['section', 'token'],
 	principles: ['surface'],
 	component: ['group', 'part', 'state', 'prop', 'source'],
+	deck: ['input', 'title', 'body', 'eyebrow', 'number', 'items', 'stat', 'quote', 'attribution', 'url', 'image', 'theme', 'format', 'out', 'list'],
+	illustrate: ['size', 'theme', 'seed', 'shape', 'image', 'transparent', 'format', 'out', 'list'],
+	merch: ['variant', 'headline', 'url', 'dpi', 'format', 'out', 'guides', 'list'],
+	figma: ['out', 'file', 'size', 'theme', 'title', 'text', 'eyebrow', 'body', 'number', 'items', 'stat', 'quote', 'attribution', 'url', 'seed', 'example', 'width'],
 	manifest: [],
 	describe: [],
 };
@@ -135,7 +151,7 @@ async function main() {
 	const cwd = resolve(typeof flags.cwd === 'string' ? flags.cwd : process.cwd());
 	const json = flags.json === true;
 	const out = (value: unknown, text: string) => console.log(json ? JSON.stringify(value, null, 2) : text);
-	const ownHelp = new Set(['image', 'video', 'brand', 'principles', 'component', 'manifest', 'describe']);
+	const ownHelp = new Set(['image', 'deck', 'illustrate', 'merch', 'figma', 'video', 'brand', 'principles', 'component', 'manifest', 'describe']);
 	if (flags.help && command && !ownHelp.has(command)) {
 		console.log(HELP());
 		return;
@@ -245,6 +261,43 @@ async function main() {
 			out(r.json, r.text);
 			return;
 		}
+		case 'deck': {
+			if (flags.help) {
+				console.log(deckHelp());
+				return;
+			}
+			const r = await runDeck(cwd, args, flags);
+			out(r.json, r.text);
+			return;
+		}
+		case 'illustrate': {
+			if (flags.help) {
+				console.log(illustrateHelp());
+				return;
+			}
+			const r = await runIllustrate(cwd, args, flags);
+			out(r.json, r.text);
+			return;
+		}
+		case 'merch': {
+			if (flags.help) {
+				console.log(merchHelp());
+				return;
+			}
+			const r = await runMerch(cwd, args, flags);
+			out(r.json, r.text);
+			return;
+		}
+		case 'figma': {
+			if (flags.help) {
+				console.log(figmaHelp());
+				return;
+			}
+			const r = await runFigma(cwd, args, flags);
+			out(r.json, r.text);
+			if (r.failed) process.exitCode = 1;
+			return;
+		}
 		case 'video': {
 			if (flags.help) {
 				console.log(videoHelp());
@@ -295,7 +348,8 @@ async function main() {
 		default:
 			console.log(HELP());
 			if (command && command !== 'help' && command !== '--help') {
-				console.error(`\nUnknown command \`${command}\`.`);
+				const near = suggest(command, [...Object.keys(FLAGS), 'help']);
+				console.error(`\nUnknown command \`${command}\`.${near.length ? ` Did you mean ${near.map((n) => `\`${n}\``).join(' or ')}?` : ''}`);
 				process.exitCode = 1;
 			}
 	}

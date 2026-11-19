@@ -1,0 +1,518 @@
+{
+  "images": [
+    {
+      "id": "hero",
+      "label": "Homepage",
+      "description": "The homepage: a red label, the headline centered with its red full stop, a grey line, the lockup above, hairline guides and a quiet footer.",
+      "theme": "white",
+      "src": "/gallery/image-hero.png",
+      "width": 1200,
+      "height": 630,
+      "command": "conare-ds image --template hero --title \"Everything your agent needs to know.\""
+    },
+    {
+      "id": "brief",
+      "label": "Brief",
+      "description": "The formal statement: the lockup top left, a red-marked line in mono capitals top right, the words set left, a hairline and the footer.",
+      "theme": "white",
+      "src": "/gallery/image-brief.png",
+      "width": 1200,
+      "height": 630,
+      "command": "conare-ds image --template brief --title \"Everything your agent needs to know.\""
+    },
+    {
+      "id": "tile",
+      "label": "Tile",
+      "description": "The wordmark as a tile in a bordered panel, a stack of documents on it, the words set left.",
+      "theme": "paper",
+      "src": "/gallery/image-tile.png",
+      "width": 1200,
+      "height": 630,
+      "command": "conare-ds image --template tile --title \"Everything your agent needs to know.\""
+    },
+    {
+      "id": "app",
+      "label": "Product",
+      "description": "Words over the dark agent panel, on the perspective room, stacks of documents at the sides.",
+      "theme": "red",
+      "src": "/gallery/image-app.png",
+      "width": 1200,
+      "height": 630,
+      "command": "conare-ds image --template app --title \"Everything your agent needs to know.\""
+    },
+    {
+      "id": "outline",
+      "label": "Outline",
+      "description": "The wordmark, huge and hollow, along the foot; the words above it.",
+      "theme": "paper",
+      "src": "/gallery/image-outline.png",
+      "width": 1200,
+      "height": 630,
+      "command": "conare-ds image --template outline --title \"Everything your agent needs to know.\""
+    },
+    {
+      "id": "hatch",
+      "label": "Hatched",
+      "description": "Fine hatching across the floor, a wide stack on it, the words set right.",
+      "theme": "paper",
+      "src": "/gallery/image-hatch.png",
+      "width": 1200,
+      "height": 630,
+      "command": "conare-ds image --template hatch --title \"Everything your agent needs to know.\""
+    },
+    {
+      "id": "room",
+      "label": "Red room",
+      "description": "The share image: red, the perspective room, stacks of documents at the sides, the mark over the words.",
+      "theme": "red",
+      "src": "/gallery/image-room.png",
+      "width": 1200,
+      "height": 630,
+      "command": "conare-ds image --template room --title \"Everything your agent needs to know.\""
+    },
+    {
+      "id": "feature",
+      "label": "Feature",
+      "description": "A launch: a label, the words, and a product scene under them (your picture with --image).",
+      "theme": "white",
+      "src": "/gallery/image-feature.png",
+      "width": 1200,
+      "height": 630,
+      "command": "conare-ds image --template feature --title \"Reranking on every query.\""
+    },
+    {
+      "id": "partner",
+      "label": "Lockup",
+      "description": "A partnership: the lockup and the partner's name, the words under them, on a faint wordmark tile in a hairline frame.",
+      "theme": "white",
+      "src": "/gallery/image-partner.png",
+      "width": 1200,
+      "height": 630,
+      "command": "conare-ds image --template partner --title \"Conare now connects to Acme.\""
+    },
+    {
+      "id": "funding",
+      "label": "Big number",
+      "description": "A big number or milestone on the room, the mark alone at the top, stacks at the sides.",
+      "theme": "red",
+      "src": "/gallery/image-funding.png",
+      "width": 1200,
+      "height": 630,
+      "command": "conare-ds image --template funding --title \"Search across 100M+ documents.\""
+    },
+    {
+      "id": "announce",
+      "label": "Announcement",
+      "description": "A solid red border, the words set large at the top left, the lockup at the foot.",
+      "theme": "white",
+      "src": "/gallery/image-announce.png",
+      "width": 1200,
+      "height": 630,
+      "command": "conare-ds image --template announce --title \"Build retrieval for the enterprise.\""
+    },
+    {
+      "id": "card",
+      "label": "Card",
+      "description": "The new-feature card: the lockup top left, a black chip top right, the words between them, a mono line along the foot.",
+      "theme": "white",
+      "src": "/gallery/image-card.png",
+      "width": 1200,
+      "height": 630,
+      "command": "conare-ds image --template card --title \"Reranking on every query.\""
+    }
+  ],
+  "sizes": [
+    {
+      "id": "square",
+      "label": "Square feed",
+      "src": "/gallery/size-room-square.png",
+      "width": 1080,
+      "height": 1080,
+      "command": "conare-ds image --template room --size square"
+    },
+    {
+      "id": "portrait",
+      "label": "Portrait 4:5",
+      "src": "/gallery/size-room-portrait.png",
+      "width": 1080,
+      "height": 1350,
+      "command": "conare-ds image --template room --size portrait"
+    },
+    {
+      "id": "story",
+      "label": "Story 9:16",
+      "src": "/gallery/size-room-story.png",
+      "width": 1080,
+      "height": 1920,
+      "command": "conare-ds image --template room --size story"
+    },
+    {
+      "id": "x-banner",
+      "label": "X header",
+      "src": "/gallery/size-room-x-banner.png",
+      "width": 1500,
+      "height": 500,
+      "command": "conare-ds image --template room --size x-banner"
+    },
+    {
+      "id": "linkedin-banner",
+      "label": "LinkedIn profile banner",
+      "src": "/gallery/size-room-linkedin-banner.png",
+      "width": 1584,
+      "height": 396,
+      "command": "conare-ds image --template room --size linkedin-banner"
+    },
+    {
+      "id": "email",
+      "label": "Email header",
+      "src": "/gallery/size-room-email.png",
+      "width": 1200,
+      "height": 300,
+      "command": "conare-ds image --template room --size email"
+    }
+  ],
+  "slides": [
+    {
+      "id": "cover",
+      "label": "Cover",
+      "description": "The homepage layout: the lockup, a red label, the title centered with its red stop, a line under it and the footer.",
+      "src": "/gallery/slide-cover.png",
+      "width": 1920,
+      "height": 1080,
+      "command": "conare-ds deck cover"
+    },
+    {
+      "id": "section",
+      "label": "Section",
+      "description": "A divider on the red room: the mark, the section number in a label and the title, stacks at the sides.",
+      "src": "/gallery/slide-section.png",
+      "width": 1920,
+      "height": 1080,
+      "command": "conare-ds deck section"
+    },
+    {
+      "id": "statement",
+      "label": "Statement",
+      "description": "One sentence set left, the lockup top left, an optional red-marked line top right, the footer.",
+      "src": "/gallery/slide-statement.png",
+      "width": 1920,
+      "height": 1080,
+      "command": "conare-ds deck statement"
+    },
+    {
+      "id": "bullets",
+      "label": "Bullets",
+      "description": "A title and up to six points, each marked with the brand's small red square.",
+      "src": "/gallery/slide-bullets.png",
+      "width": 1920,
+      "height": 1080,
+      "command": "conare-ds deck bullets"
+    },
+    {
+      "id": "stat",
+      "label": "Stat",
+      "description": "A big number on the red room with a line under it, the mark at the top, stacks at the sides.",
+      "src": "/gallery/slide-stat.png",
+      "width": 1920,
+      "height": 1080,
+      "command": "conare-ds deck stat"
+    },
+    {
+      "id": "quote",
+      "label": "Quote",
+      "description": "A quote set large over the hollow wordmark, the attribution in a red-marked line above it.",
+      "src": "/gallery/slide-quote.png",
+      "width": 1920,
+      "height": 1080,
+      "command": "conare-ds deck quote"
+    },
+    {
+      "id": "image",
+      "label": "Image",
+      "description": "A label, a title and a line, and a picture in the product window (the stand-in scene without one).",
+      "src": "/gallery/slide-image.png",
+      "width": 1920,
+      "height": 1080,
+      "command": "conare-ds deck image"
+    },
+    {
+      "id": "end",
+      "label": "End",
+      "description": "The end card: the full lockup on the red room, a line and the address.",
+      "src": "/gallery/slide-end.png",
+      "width": 1920,
+      "height": 1080,
+      "command": "conare-ds deck end"
+    }
+  ],
+  "illustrations": [
+    {
+      "id": "stack",
+      "description": "A stack of documents, tall or wide (--shape tall|wide). --image puts your picture on the front sheet.",
+      "theme": "paper",
+      "src": "/gallery/illustration-stack.png",
+      "svg": "/gallery/illustration-stack.svg",
+      "width": 900,
+      "height": 600,
+      "command": "conare-ds illustrate stack --size 900x600"
+    },
+    {
+      "id": "stacks",
+      "description": "The share image's scene: the perspective room with stacks of documents squared up at the sides.",
+      "theme": "red",
+      "src": "/gallery/illustration-stacks.png",
+      "svg": "/gallery/illustration-stacks.svg",
+      "width": 900,
+      "height": 600,
+      "command": "conare-ds illustrate stacks --size 900x600"
+    },
+    {
+      "id": "pixels",
+      "description": "The red pixel grid alone (--seed reshuffles it).",
+      "theme": "paper",
+      "src": "/gallery/illustration-pixels.png",
+      "svg": "/gallery/illustration-pixels.svg",
+      "width": 900,
+      "height": 600,
+      "command": "conare-ds illustrate pixels --size 900x600"
+    },
+    {
+      "id": "room",
+      "description": "The perspective room: a back wall, rings stepping out faster toward the edges, lines from the wall out past the frame.",
+      "theme": "paper",
+      "src": "/gallery/illustration-room.png",
+      "svg": "/gallery/illustration-room.svg",
+      "width": 900,
+      "height": 600,
+      "command": "conare-ds illustrate room --size 900x600"
+    },
+    {
+      "id": "tile",
+      "description": "The wordmark as a staggered tile, at the theme's faint strength.",
+      "theme": "paper",
+      "src": "/gallery/illustration-tile.png",
+      "svg": "/gallery/illustration-tile.svg",
+      "width": 900,
+      "height": 600,
+      "command": "conare-ds illustrate tile --size 900x600"
+    },
+    {
+      "id": "outline",
+      "description": "The wordmark huge and hollow along the foot.",
+      "theme": "paper",
+      "src": "/gallery/illustration-outline.png",
+      "svg": "/gallery/illustration-outline.svg",
+      "width": 900,
+      "height": 600,
+      "command": "conare-ds illustrate outline --size 900x600"
+    },
+    {
+      "id": "hatch",
+      "description": "Fine 45 degree hatching across a floor, a wide stack on it.",
+      "theme": "paper",
+      "src": "/gallery/illustration-hatch.png",
+      "svg": "/gallery/illustration-hatch.svg",
+      "width": 900,
+      "height": 600,
+      "command": "conare-ds illustrate hatch --size 900x600"
+    },
+    {
+      "id": "strip",
+      "description": "Documents searched: a strip of small squares with a few found in red (--seed moves them).",
+      "theme": "paper",
+      "src": "/gallery/illustration-strip.png",
+      "svg": "/gallery/illustration-strip.svg",
+      "width": 900,
+      "height": 600,
+      "command": "conare-ds illustrate strip --size 900x600"
+    },
+    {
+      "id": "panel",
+      "description": "The dark agent window with its sample copy.",
+      "theme": "paper",
+      "src": "/gallery/illustration-panel.png",
+      "svg": "/gallery/illustration-panel.svg",
+      "width": 900,
+      "height": 600,
+      "command": "conare-ds illustrate panel --size 900x600"
+    },
+    {
+      "id": "scene",
+      "description": "The product scene: the red room, stacks at the sides and the agent window in front (the feature layout's stand-in).",
+      "theme": "red",
+      "src": "/gallery/illustration-scene.png",
+      "svg": "/gallery/illustration-scene.svg",
+      "width": 900,
+      "height": 600,
+      "command": "conare-ds illustrate scene --size 900x600"
+    }
+  ],
+  "merch": [
+    {
+      "id": "cap-front",
+      "label": "Cap front panel",
+      "variant": "black",
+      "variants": [
+        "white",
+        "black",
+        "redline"
+      ],
+      "trim": "4 x 1.75 in",
+      "bleed": 0,
+      "safe": 0.125,
+      "method": "embroidery",
+      "src": "/gallery/merch-cap-front.png",
+      "width": 200,
+      "height": 88,
+      "command": "conare-ds merch cap-front --variant black"
+    },
+    {
+      "id": "tee-front",
+      "label": "Tee front (chest)",
+      "variant": "color",
+      "variants": [
+        "color",
+        "black",
+        "white",
+        "redline"
+      ],
+      "trim": "12 x 16 in",
+      "bleed": 0,
+      "safe": 0.5,
+      "method": "DTG or screen print",
+      "src": "/gallery/merch-tee-front.png",
+      "width": 600,
+      "height": 800,
+      "command": "conare-ds merch tee-front --variant color"
+    },
+    {
+      "id": "tee-back",
+      "label": "Tee back",
+      "variant": "color",
+      "variants": [
+        "color",
+        "black",
+        "white"
+      ],
+      "trim": "12 x 16 in",
+      "bleed": 0,
+      "safe": 0.5,
+      "method": "DTG or screen print",
+      "src": "/gallery/merch-tee-back.png",
+      "width": 600,
+      "height": 800,
+      "command": "conare-ds merch tee-back --variant color"
+    },
+    {
+      "id": "hoodie-front",
+      "label": "Hoodie front",
+      "variant": "color",
+      "variants": [
+        "color",
+        "black",
+        "white",
+        "redline"
+      ],
+      "trim": "12 x 10 in",
+      "bleed": 0,
+      "safe": 0.5,
+      "method": "DTG or screen print",
+      "src": "/gallery/merch-hoodie-front.png",
+      "width": 600,
+      "height": 500,
+      "command": "conare-ds merch hoodie-front --variant color"
+    },
+    {
+      "id": "tote",
+      "label": "Tote bag",
+      "variant": "color",
+      "variants": [
+        "color",
+        "black",
+        "white"
+      ],
+      "trim": "12 x 14 in",
+      "bleed": 0,
+      "safe": 0.5,
+      "method": "screen print or DTG",
+      "src": "/gallery/merch-tote.png",
+      "width": 600,
+      "height": 700,
+      "command": "conare-ds merch tote --variant color"
+    },
+    {
+      "id": "mug-wrap",
+      "label": "Mug wrap (11 oz)",
+      "variant": "red",
+      "variants": [
+        "red",
+        "paper",
+        "ink"
+      ],
+      "trim": "9 x 3.5 in",
+      "bleed": 0.125,
+      "safe": 0.25,
+      "method": "sublimation",
+      "src": "/gallery/merch-mug-wrap.png",
+      "width": 463,
+      "height": 188,
+      "command": "conare-ds merch mug-wrap --variant red"
+    },
+    {
+      "id": "sticker",
+      "label": "Die-cut sticker",
+      "variant": "red",
+      "variants": [
+        "red",
+        "paper",
+        "ink"
+      ],
+      "trim": "3 x 1.75 in",
+      "bleed": 0.125,
+      "safe": 0.125,
+      "method": "die-cut vinyl",
+      "src": "/gallery/merch-sticker.png",
+      "width": 163,
+      "height": 100,
+      "command": "conare-ds merch sticker --variant red"
+    },
+    {
+      "id": "poster",
+      "label": "Poster",
+      "variant": "red",
+      "variants": [
+        "red",
+        "paper",
+        "ink"
+      ],
+      "trim": "18 x 24 in",
+      "bleed": 0.125,
+      "safe": 0.5,
+      "method": "digital or offset print",
+      "src": "/gallery/merch-poster.png",
+      "width": 913,
+      "height": 1213,
+      "command": "conare-ds merch poster --variant red"
+    }
+  ],
+  "videos": [
+    {
+      "id": "hero",
+      "src": "/gallery/video-hero.mp4",
+      "webm": "/gallery/video-hero.webm",
+      "poster": "/gallery/video-hero.png",
+      "width": 1200,
+      "height": 630,
+      "command": "conare-ds video --template hero --size og --format both"
+    },
+    {
+      "id": "room",
+      "src": "/gallery/video-room.mp4",
+      "webm": "/gallery/video-room.webm",
+      "poster": "/gallery/video-room.png",
+      "width": 1080,
+      "height": 1080,
+      "command": "conare-ds video --template room --size square --format both"
+    }
+  ]
+}

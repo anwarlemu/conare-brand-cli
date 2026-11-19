@@ -1,0 +1,13 @@
+{
+	"$comment": "How the asset commands draw the logo: the primary logo file holds the wordmark (its first path) and the ribbon mark (the rest), as the playground's brand.ts draws them (LOCKUP 662.6 by 107.5: the mark 119.06 by 107.5 at the left, the wordmark 482.2 by 61.17 from 180.41, 23.08). brand/logo has no clear space, minimum size or exclusion zone, so the commands set none and invent none.",
+	"file": "logo/svg/primary-logo.svg",
+	"lockup": { "w": 662.6, "h": 107.5 },
+	"mark": { "paths": [1, 2, 3, 4, 5], "x": 0, "y": 0, "w": 119.06, "h": 107.5 },
+	"wordmark": { "paths": [0], "x": 180.41, "y": 23.08, "w": 482.2, "h": 61.17 },
+	"colors": ["off-black", "off-white", "home-red"],
+	"lockups": {
+		"primary": "The mark beside the wordmark.",
+		"mark": "The ribbon mark alone.",
+		"wordmark": "The wordmark alone."
+	}
+}

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { BookOpen, Boxes, Menu as MenuIcon, Palette, Search, X } from 'lucide-vue-next'
+import { BookOpen, Boxes, Frame, Image, Menu as MenuIcon, Palette, PenTool, Search, X } from 'lucide-vue-next'
 import Button from '@/components/ui/Button.vue'
 import Input from '@/components/ui/Input.vue'
 import Sidebar from '@/components/ui/Sidebar.vue'
@@ -19,6 +19,9 @@ const pages = [
   { to: '/', label: 'Introduction', icon: BookOpen },
   { to: '/components', label: 'All components', icon: Boxes },
   { to: '/theme', label: 'Theme', icon: Palette },
+  { to: '/assets', label: 'Assets', icon: Image },
+  { to: '/illustrations', label: 'Illustrations', icon: PenTool },
+  { to: '/figma', label: 'Figma', icon: Frame },
 ]
 const groups = computed(() => {
   const q = filter.value.trim().toLowerCase()

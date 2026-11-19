@@ -108,7 +108,11 @@ styled with the theme's Tailwind utilities, so in an app without Tailwind `add` 
 | `principles` | Product and website rules, with do and do-not lists. `--surface product` or `website`. |
 | `component` | `list`, `inspect` and `emit` Vue for a real component, including props and states. |
 | `image` | Renders an Open Graph card or a social post from a title. PNG and SVG, from the brand's type, colors and mark. |
-| `video` | Short Motion JPEG MP4 clips from the tokens, faces and logos. Square, 9:16 and 16:9. |
+| `video` | Short Motion JPEG MP4 clips, and the layouts coming in the way the site moves (MP4 or WebM through ffmpeg). |
+| `deck` | Slides at 1920x1080 on the share layouts: a PNG per slide and one PDF. |
+| `merch` | Print files at real size with bleed and safe area. |
+| `illustrate` | The brand's illustration style as SVG and PNG. |
+| `figma` | Files and the ordered Figma MCP calls: tokens, push, pull, check. |
 
 All commands take `--cwd <dir>` and `--json`; an unknown option is an error, never ignored.
 
@@ -170,6 +174,44 @@ npx conare-ds video --template logo --size square
 ```
 
 There is no default template. Sizes are `square` (1080x1080, the default), `vertical` (1080x1920, 9:16) and `landscape` (1920x1080, 16:9). `og` is not a video size. `--ground paper` is the default; `--ground ink` is the off-black card. Headline does not draw `--text`. Logo does not draw a title, `--text` or `--eyebrow`. One sample per template, plus a PNG of its last frame, is in `imagery/samples/` (`video-<template>-<size>`).
+
+### Layouts, decks, layout videos, merch, illustrations and Figma
+
+The posts tool's twelve layouts (`hero`, `brief`, `tile`, `app`, `outline`, `hatch`, `room`, `feature`, `partner`,
+`funding`, `announce`, `card`) draw at every social size through `image` and `video`, and the same parts make decks,
+merch and illustrations. Every color is a token, every face a brand font, the logo the brand's own file. Each command
+takes `--list`, `--json` and `--help`; an unknown name exits 1 and suggests the closest one.
+
+```sh
+npx conare-ds image --template hero --title "Everything your agent needs to know." --size og,story
+npx conare-ds image --template room --size all                      # sample copy when --title is left out
+npx conare-ds image --template feature --image ./shot.png           # your picture in the product window
+npx conare-ds image --input posts.json --out posts                  # { "images": [ { "template": "card", "size": ["og", "square"] } ] }
+npx conare-ds deck --input deck.json --out deck                     # slides at 1920x1080, a PNG each and deck.pdf
+npx conare-ds video --template hero --size landscape --format both  # H.264 MP4 and VP9 WebM through ffmpeg
+npx conare-ds video --template card --still                         # the settled frame as PNG (--at 0.5 for another)
+npx conare-ds merch tee-back --variant black                        # print files at real size, with bleed and safe area
+npx conare-ds illustrate stacks --size 1500x500                     # SVG of vector shapes and PNG
+npx conare-ds figma tokens                                          # files and the ordered Figma MCP calls
+```
+
+- `image` layouts: `--theme` white, paper, red, black or grey (default: the layout's), `--eyebrow` (the badge's words),
+  `--badge` label, pill, solid, dot or none, `--highlight` for `*starred words*` and the final stop, `--partner` (a
+  name beside the lockup; never a third-party logo), `--credit`. Sizes: og, landscape, linkedin, square, portrait,
+  story, linkedin-square, x-banner, linkedin-banner, linkedin-page, youtube, email, or all.
+- `deck` slides: cover, section, statement, bullets (up to six points), stat, quote, image and end, each on one of the
+  layouts. A slot left out takes the slide's opening copy.
+- `video` layouts come in the way the website moves (the label and lockup settle up, the headline's letters wait faint
+  and red and settle to ink, a window arrives on the long ease-out), then hold. Every curve and duration is a motion
+  token; nothing eases in. It needs ffmpeg; `--still` does not.
+- `merch` items: cap-front, tee-front, tee-back, hoodie-front, tote, mug-wrap, sticker (with its cut line in the SVG)
+  and poster. Variants print a theme to the bleed (red, paper, ink), full-color art on a transparent ground (color) or
+  one brand color (black, white, redline). Sizes are vendor conventions: confirm against the vendor's template.
+- `illustrate` subjects: stack, stacks, pixels, room, tile, outline, hatch, strip, panel and scene. The rules, each
+  with its source, are in `brand/illustration.md`. People, photos and third-party logos are never drawn.
+- `figma` never calls Figma: `tokens` (variables in Light and Dark), `push image|slide|illustration|asset|component|page`,
+  `pull <url>` and `check <files>` write files and print the MCP calls, in order. Do not call the Figma MCP tools
+  without the person's go-ahead; their seat may be rate limited.
 
 ### What reaches the rest of the app
 
