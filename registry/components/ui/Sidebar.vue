@@ -8,7 +8,7 @@ defineProps<{ label?: string }>()
 <template>
   <nav data-ds="sidebar" class="flex w-sidebar flex-col border-r border-edge bg-surface-subtle" :aria-label="label ?? 'main'">
     <div v-if="$slots.head" class="h-bar shrink-0 border-b border-edge"><slot name="head" /></div>
-    <div class="flex min-h-0 flex-1 flex-col overflow-y-auto pb-4"><slot /></div>
+    <div class="fade-y flex min-h-0 flex-1 flex-col overflow-y-auto pb-4"><slot /></div>
     <div v-if="$slots.foot" class="shrink-0 border-t border-edge"><slot name="foot" /></div>
   </nav>
 </template>

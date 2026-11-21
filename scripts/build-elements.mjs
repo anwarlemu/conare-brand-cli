@@ -57,7 +57,10 @@ async function tailwind() {
 			const brandBase = readFileSync(join(root, 'brand', 'base.css'), 'utf8')
 				.replace(/\/\*[\s\S]*?\*\//g, '')
 				.replace(/\n\s*(html|body)\s*\{[^}]*\}/g, '');
-			let css = await run(`${head}@import "tailwindcss/preflight.css" layer(base);\n${themeImport}${brandBase}\n`, []);
+			// The scroll fade's keyframes too, so fade-y and fade-x find them inside every shadow root (its @property
+			// registrations come from brand.css on the page: a shadow root ignores @property).
+			const fade = stripProperties(readFileSync(join(root, 'brand', 'fade.css'), 'utf8'));
+			let css = await run(`${head}@import "tailwindcss/preflight.css" layer(base);\n${themeImport}${brandBase}\n${fade}\n`, []);
 			// Preflight sets the font, line height and tab size on `html, :host`: on a host that would replace what it inherits
 			// from the page, where a Vue or React component inherits it. The host inherits instead.
 			css = css.replace(/(^|\n)(\s*)html,\s*:host\s*\{/g, '$1$2html {');
@@ -140,7 +143,9 @@ export async function buildElements({ out = elementsOut } = {}) {
 	mkdirSync(out, { recursive: true });
 
 	const base = await tw.base();
-	const props = new Map();
+	// The scroll fade's two properties are registered with Tailwind's (brand.css on the page has them too; a second
+	// registration is caught).
+	const props = properties(readFileSync(join(root, 'brand', 'fade.css'), 'utf8'));
 	const define = { __DS_PREFIX__: JSON.stringify(prefix) };
 	const tsconfigRaw = { compilerOptions: { useDefineForClassFields: false, experimentalDecorators: false, target: 'es2022' } };
 	const alias = { '@': reg };

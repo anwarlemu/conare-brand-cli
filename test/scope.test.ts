@@ -32,7 +32,8 @@ function app() {
 const brandCss = (dir: string) => read(dir, 'app/assets/css/conare-ds/brand.css');
 const themeCss = (dir: string) => read(dir, 'app/assets/css/conare-ds/theme.css');
 /** Selectors of rules that apply to the whole page: anything not inside the library's or the selection's scope. */
-const globalRules = (css: string) => [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/(^|[{}])\s*([^{}@;]+)\{/g)].map((m) => m[2].trim()).filter((s) => !/^(:root|\[data-theme=|@)/.test(s) && !/:(where|is)\(\[data-ds\], \.ds-scope\)/.test(s));
+// Keyframe steps (from, to) are not rules on the page.
+const globalRules = (css: string) => [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/(^|[{}])\s*([^{}@;]+)\{/g)].map((m) => m[2].trim()).filter((s) => !/^(:root|\[data-theme=|@)/.test(s) && !/^(from|to|[\d.]+%)$/.test(s) && !/:(where|is)\(\[data-ds\], \.ds-scope\)/.test(s));
 
 describe('the base layer reaches only what was named', () => {
 	it('ships a scoped base: no html, body, heading or focus rule outside the library and the selection', () => {

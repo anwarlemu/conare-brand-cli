@@ -16,3 +16,5 @@ files:
 examples:
   - "Product | The console's navigation | center"
 ---
+
+The rows scroll under a fade (`fade-y`): an edge with more past it fades over 24px, so no row is ever cut off.

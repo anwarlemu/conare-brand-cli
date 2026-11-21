@@ -74,6 +74,8 @@ describe('cli', () => {
 		expect(preset).toContain("addVariant('pointer-coarse'");
 		// The preset's keys Tailwind also has (font-sans) keep the app's value outside the brand's scope.
 		expect(preset).toContain('var(--ds-scope-fontFamily-sans)');
+		// The scroll fade, its scroll-driven part nested as Tailwind 3 reads it.
+		expect(preset).toMatch(/"\.fade-y": \{[\s\S]*?"@supports \(animation-timeline: scroll\(\)\)": \{\s*"animation": "fade-start linear both, fade-end linear both"/);
 		const once = readFileSync(join(dir, 'tailwind.config.js'), 'utf8');
 		run(dir, 'init');
 		expect(readFileSync(join(dir, 'tailwind.config.js'), 'utf8')).toBe(once);

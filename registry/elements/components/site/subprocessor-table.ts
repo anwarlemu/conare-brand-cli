@@ -19,7 +19,7 @@ export class SubprocessorTable extends DsElement {
 	label = 'subprocessors'
 
 	render() {
-		return html`<div data-ds="subprocessor-table" class="ds-legal-table overflow-x-auto border border-edge outline outline-offset-4 outline-edge" role="region" aria-label=${this.label} tabindex="0">
+		return html`<div data-ds="subprocessor-table" class="ds-legal-table fade-x overflow-x-auto border border-edge outline outline-offset-4 outline-edge" role="region" aria-label=${this.label} tabindex="0">
 			<table class="w-full min-w-160 text-left type-body">
 				<thead>
 					<tr>

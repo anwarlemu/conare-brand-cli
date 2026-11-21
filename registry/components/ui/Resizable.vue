@@ -44,7 +44,7 @@ function onKey(e: KeyboardEvent) {
 
 <template>
   <div data-ds="resizable" ref="root" class="flex min-h-0 min-w-0" :class="[across ? 'flex-row' : 'flex-col', dragging && 'select-none']">
-    <div :id="firstId" class="min-h-0 min-w-0 overflow-auto" :style="{ flexBasis: `${size}%` }"><slot name="first" /></div>
+    <div :id="firstId" class="fade-xy min-h-0 min-w-0 overflow-auto" :style="{ flexBasis: `${size}%` }"><slot name="first" /></div>
     <div
       class="ds-resize-handle"
       :data-direction="direction"
@@ -63,7 +63,7 @@ function onKey(e: KeyboardEvent) {
       @pointercancel="onUp"
       @keydown="onKey"
     />
-    <div class="min-h-0 min-w-0 flex-1 overflow-auto"><slot name="second" /></div>
+    <div class="fade-xy min-h-0 min-w-0 flex-1 overflow-auto"><slot name="second" /></div>
   </div>
 </template>
 

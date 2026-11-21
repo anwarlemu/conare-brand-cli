@@ -287,7 +287,7 @@ const nextUpStyles = computed(() => nextUp.value.map((_, i) => ({ '--i': lastPar
                 <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="m1.5 1.5 7 7m0-7-7 7" /></svg>
               </button>
             </div>
-            <div v-if="turns.length" ref="threadEl" class="ds-prompt-turns" aria-live="polite">
+            <div v-if="turns.length" ref="threadEl" class="ds-prompt-turns fade-y" aria-live="polite">
               <template v-for="(turn, n) in turns" :key="turn.id">
                 <p class="ds-prompt-q">{{ turn.q }}</p>
                 <div class="ds-prompt-a">

@@ -11,7 +11,7 @@ export function Sidebar({ label, head, foot, className, children, ...rest }: Sid
   return (
     <nav data-ds="sidebar" className={cn('flex w-sidebar flex-col border-r border-edge bg-surface-subtle', className)} aria-label={label ?? 'main'} {...rest}>
       {head && <div className="h-bar shrink-0 border-b border-edge">{head}</div>}
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-4">{children}</div>
+      <div className="fade-y flex min-h-0 flex-1 flex-col overflow-y-auto pb-4">{children}</div>
       {foot && <div className="shrink-0 border-t border-edge">{foot}</div>}
     </nav>
   )

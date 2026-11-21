@@ -336,7 +336,7 @@ export class PromptBar extends DsElement {
 								</button>
 							</div>
 							${this.turns.length
-								? html`<div class="ds-prompt-turns" aria-live="polite">
+								? html`<div class="ds-prompt-turns fade-y" aria-live="polite">
 										${repeat(this.turns, (turn) => turn.id, (turn, n) => html`<p class="ds-prompt-q">${turn.q}</p>
 											<div class="ds-prompt-a">
 												<p>${answers[n]!.map((w, i) => (w.code ? html`<code class="ds-prompt-word ds-prompt-code" style=${`--i: ${i}`}>${w.text}</code>` : html`<span class="ds-prompt-word" style=${`--i: ${i}`}>${w.text}</span>`))}</p>

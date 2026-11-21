@@ -184,7 +184,7 @@ export function Combobox(props: ComboboxProps) {
           aria-label={label}
           tabIndex={filtering ? -1 : 0}
           aria-activedescendant={filtering ? undefined : activeId}
-          className="flex max-h-65 flex-col overflow-y-auto outline-none"
+          className="fade-y flex max-h-65 flex-col overflow-y-auto outline-none"
           onKeyDown={onKey}
         >
           {visible.map((o, i) => (

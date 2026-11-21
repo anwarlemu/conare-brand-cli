@@ -36,7 +36,7 @@ export function FilterMenu({ groups, value, defaultValue = {}, onValueChange }: 
         </>
       )}
     >
-      <div className="flex max-h-88 flex-col overflow-y-auto">
+      <div className="fade-y flex max-h-88 flex-col overflow-y-auto">
         {groups.map((g, i) => (
           <Fragment key={g.key}>
             {i > 0 && <MenuSeparator />}

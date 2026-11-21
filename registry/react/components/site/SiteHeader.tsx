@@ -139,7 +139,7 @@ export function SiteHeader({ items, more = [], links, productCurrent, homeHref =
         </div>
 
         {/* The sheet unrolls from under the bar; closed, it is inert, so out of the tab order. */}
-        <div id={sheetId} className="ds-site-sheet absolute inset-x-0 top-full max-h-[calc(100dvh-4rem)] overflow-y-auto border-b border-edge bg-surface md:hidden" data-open={menu || undefined} inert={!menu}>
+        <div id={sheetId} className="ds-site-sheet fade-y absolute inset-x-0 top-full max-h-[calc(100dvh-4rem)] overflow-y-auto border-b border-edge bg-surface md:hidden" data-open={menu || undefined} inert={!menu}>
           <div className="mx-auto max-w-[1440px] px-4 pt-4 pb-5 sm:px-6">
             <p className="ds-site-row ds-site-caps px-1 pb-1 text-caption text-fg-muted" style={{ '--i': 0 } as CSSProperties}>Product</p>
             <ul className="border-b border-edge pb-3">

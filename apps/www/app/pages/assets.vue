@@ -84,7 +84,7 @@ const postsJson = `{
             <source :src="v.src" type="video/mp4">
           </video>
           <figcaption class="flex min-w-0 items-center gap-2 p-3">
-            <code class="min-w-0 flex-1 overflow-x-auto type-code-sm whitespace-nowrap [scrollbar-width:none]" tabindex="0">{{ v.command }}</code>
+            <code class="fade-x min-w-0 flex-1 overflow-x-auto type-code-sm whitespace-nowrap [scrollbar-width:none]" tabindex="0">{{ v.command }}</code>
           </figcaption>
         </figure>
       </div>

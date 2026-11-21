@@ -20,7 +20,7 @@ const { shown, onCancel, onClick } = useSheet(dialog, open)
       <slot name="bar" />
       <button type="button" class="inline-flex size-control-sm shrink-0 cursor-pointer items-center justify-center border border-transparent text-fg-soft transition-[color,border-color] duration-120 ease-standard hover:border-edge-strong hover:text-fg focus-visible:outline-2 focus-visible:outline-edge-focus max-md:size-control-touch" aria-label="close" @click="open = false"><X :size="14" :stroke-width="1.5" /></button>
     </div>
-    <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6.5 pt-5 pb-12" data-sheet-body>
+    <div class="fade-y min-h-0 flex-1 overflow-y-auto overscroll-contain px-6.5 pt-5 pb-12" data-sheet-body>
       <p v-if="description" class="mb-4 type-ui text-fg-soft">{{ description }}</p>
       <slot />
     </div>

@@ -17,3 +17,5 @@ examples:
 
 Pass `groups` (`key`, `label`, `options`) and a v-model object with one value per key (`''` or `0` for none). For one
 button per filter, each naming its pick, use `filter-chip` instead: the console ships one or the other, not both.
+
+Its list scrolls under a fade (`fade-y`) at the edge with more past it.

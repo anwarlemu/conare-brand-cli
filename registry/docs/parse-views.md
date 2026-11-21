@@ -26,3 +26,5 @@ examples:
 `ParseReading` takes the reading (`answer`, a `ParseAnswer` from `useParse.ts`: the page's regions with their boxes,
 reading order and OCR confidence, its Markdown and what a plain reader gets) and `version` (1, 2 or 3). The page is
 drawn from the regions, so the page and the text can't disagree; in an app, put the file's own page image under them.
+
+Each view scrolls under a fade (`fade-xy`, down and across) at the edge with more past it.

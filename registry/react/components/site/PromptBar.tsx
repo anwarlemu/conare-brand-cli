@@ -335,7 +335,7 @@ export function PromptBar({ phrases = PHRASES, templates = NO_TEMPLATES, href = 
                 </button>
               </div>
               {turns.length > 0 && (
-                <div ref={threadEl} className="ds-prompt-turns" aria-live="polite">
+                <div ref={threadEl} className="ds-prompt-turns fade-y" aria-live="polite">
                   {turns.map((turn, n) => (
                     <TurnView key={turn.id} turn={turn} answer={answers[n]!} onLocal={clear} />
                   ))}

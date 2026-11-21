@@ -45,7 +45,7 @@ export function CodeBlock({ code, label, samples, onCopied, className }: CodeBlo
       <pre
         tabIndex={0}
         aria-label={`${tabs[samples ? picked : 0] ?? 'code'}, code`}
-        className="m-0 overflow-x-auto px-4 py-3 type-code-sm leading-5 whitespace-pre focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-surface-accent"
+        className="fade-x m-0 overflow-x-auto px-4 py-3 type-code-sm leading-5 whitespace-pre focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-surface-accent"
       >{shown}</pre>
     </div>
   )

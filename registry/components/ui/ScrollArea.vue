@@ -9,7 +9,7 @@ withDefaults(defineProps<{ label?: string, maxHeight?: string, axis?: 'y' | 'x' 
 <template>
   <div data-ds="scroll-area"
     class="ds-scroll overscroll-contain"
-    :class="{ 'overflow-y-auto overflow-x-hidden': axis === 'y', 'overflow-x-auto overflow-y-hidden': axis === 'x', 'overflow-auto': axis === 'both' }"
+    :class="{ 'fade-y overflow-y-auto overflow-x-hidden': axis === 'y', 'fade-x overflow-x-auto overflow-y-hidden': axis === 'x', 'fade-xy overflow-auto': axis === 'both' }"
     :data-tone="tone"
     :style="maxHeight ? { maxHeight } : undefined"
     :role="label ? 'region' : undefined"

@@ -213,7 +213,7 @@ export class CommandPalette extends DsElement {
 				${icon(Search, 'search', muted)}
 				<input .value=${live(this.text)} enterkeyhint="search" role="combobox" aria-controls="ds-cmd-list" aria-autocomplete="list" aria-expanded="true" aria-activedescendant=${rows.length ? `ds-cmd-${active}` : nothing} placeholder=${this.placeholder} aria-label=${this.placeholder.toLowerCase()} autocomplete="off" spellcheck="false" @input=${this.onInput} @keydown=${this.onKey}>
 			</label>
-			<div id="ds-cmd-list" class="ds-cmd-list" role="listbox" aria-label="results">
+			<div id="ds-cmd-list" class="ds-cmd-list fade-y" role="listbox" aria-label="results">
 				${groups.map((g) => html`<div role="group" aria-label=${g.label || nothing}>
 					${g.label ? html`<p class="ds-cmd-label" aria-hidden="true">${g.label}${g.label === 'Documents' && this.searching ? html`<span>Searching</span>` : nothing}</p>` : nothing}
 					${g.rows.map((row) => {

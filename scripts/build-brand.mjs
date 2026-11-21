@@ -17,6 +17,7 @@ const out = join(root, 'build');
 const brand = JSON.parse(readFileSync(join(brandDir, 'brand.json'), 'utf8'));
 const tokensCss = readFileSync(join(brandDir, 'tokens.css'), 'utf8');
 const baseCss = readFileSync(join(brandDir, 'base.css'), 'utf8');
+const fadeCss = readFileSync(join(brandDir, 'fade.css'), 'utf8');
 
 /** The declarations of the first block whose selector is `selector`. */
 export function block(css, selector) {
@@ -98,8 +99,9 @@ writeFileSync(join(out, 'tokens.css'), tokensOut);
 writeFileSync(join(out, 'base.css'), baseCss);
 writeFileSync(join(out, 'base-scoped.css'), scopedBase);
 writeFileSync(join(out, 'fonts.css'), `${header('fonts')}${fonts}\n`);
-writeFileSync(join(out, 'brand.css'), `${header('fonts, tokens and base styles')}${fonts}\n\n${tokensOut}\n${baseCss}`);
-writeFileSync(join(out, 'brand-scoped.css'), `${header('fonts, tokens and the base scoped to its components')}${fonts}\n\n${tokensOut}\n${scopedBase}`);
+writeFileSync(join(out, 'fade.css'), fadeCss);
+writeFileSync(join(out, 'brand.css'), `${header('fonts, tokens and base styles')}${fonts}\n\n${tokensOut}\n${baseCss}\n${fadeCss}`);
+writeFileSync(join(out, 'brand-scoped.css'), `${header('fonts, tokens and the base scoped to its components')}${fonts}\n\n${tokensOut}\n${scopedBase}\n${fadeCss}`);
 
 // The Tailwind theme. `inline` so a utility reads the variable itself and a [data-theme] block
 // switches it. Colors keep their token names: bg-surface, text-fg-muted, border-edge-strong,
@@ -162,9 +164,67 @@ const utilities = Object.entries(type).map(([name, [font, size, weight, tracking
 	return `@utility type-${name} {\n  ${body.join('\n  ')}\n}`;
 });
 
+// Scroll edges fade, never cut content off: fade-y on a list that scrolls down, fade-x on a line that scrolls sideways.
+// The first mask layer is the fade over the box's inside, reading --fade-start and --fade-end, which scroll-driven
+// animations (brand/fade.css, in brand.css) grow over the first and last 24px of scroll: no fade at an edge with
+// nothing past it, none when nothing scrolls. Browsers without scroll timelines get a short fixed fade. The other two
+// layers keep everything outside the padding box whole (a border, an outline, a shadow, a popover that leaves the box):
+// only the scrolled content fades. A scroller with the keyboard focus drops the mask so its whole ring shows. The mask
+// color only needs to be opaque.
+const opaque = 'var(--ds-color-off-black)';
+const fades = [
+	['y', 'bottom', 'block'],
+	['x', 'right', 'inline'],
+].map(([axis, to, scroll]) =>
+	[
+		`@utility fade-${axis} {`,
+		`  mask-image: linear-gradient(to ${to}, transparent, ${opaque} var(--fade-start), ${opaque} calc(100% - var(--fade-end)), transparent), linear-gradient(${opaque} 0 0), linear-gradient(${opaque} 0 0);`,
+		'  mask-clip: padding-box, border-box, padding-box;',
+		'  mask-clip: padding-box, no-clip, padding-box;',
+		'  mask-composite: add, exclude, add;',
+		'  @supports (animation-timeline: scroll()) {',
+		'    animation: fade-start linear both, fade-end linear both;',
+		`    animation-timeline: scroll(self ${scroll}), scroll(self ${scroll});`,
+		'    animation-range: 0px 24px, calc(100% - 24px) 100%;',
+		'  }',
+		'  @supports not (animation-timeline: scroll()) {',
+		'    --fade-start: 8px;',
+		'    --fade-end: 8px;',
+		'  }',
+		'  &:focus-visible { mask-image: none; }',
+		'}',
+	].join('\n'),
+);
+
+// Both axes: the vertical and the sideways fade intersect, and the space outside the padding box stays whole as above
+// (layers from the top: outside, inside, down, across; outside xor (inside minus both fades) leaves the fades inside).
+const both = (to, start, end) => `linear-gradient(to ${to}, transparent, ${opaque} var(${start}), ${opaque} calc(100% - var(${end})), transparent)`;
+fades.push(
+	[
+		'@utility fade-xy {',
+		`  mask-image: linear-gradient(${opaque} 0 0), linear-gradient(${opaque} 0 0), ${both('bottom', '--fade-start', '--fade-end')}, ${both('right', '--fade-x-start', '--fade-x-end')};`,
+		'  mask-clip: border-box, padding-box, padding-box, padding-box;',
+		'  mask-clip: no-clip, padding-box, padding-box, padding-box;',
+		'  mask-composite: exclude, subtract, intersect, add;',
+		'  @supports (animation-timeline: scroll()) {',
+		'    animation: fade-start linear both, fade-end linear both, fade-x-start linear both, fade-x-end linear both;',
+		'    animation-timeline: scroll(self block), scroll(self block), scroll(self inline), scroll(self inline);',
+		'    animation-range: 0px 24px, calc(100% - 24px) 100%, 0px 24px, calc(100% - 24px) 100%;',
+		'  }',
+		'  @supports not (animation-timeline: scroll()) {',
+		'    --fade-start: 8px;',
+		'    --fade-end: 8px;',
+		'    --fade-x-start: 8px;',
+		'    --fade-x-end: 8px;',
+		'  }',
+		'  &:focus-visible { mask-image: none; }',
+		'}',
+	].join('\n'),
+);
+
 writeFileSync(
 	join(out, 'theme.css'),
-	`${header('the Tailwind 4 theme')}/* Import after @import "tailwindcss" and brand.css. */\n@theme inline {\n${lines.join('\n')}\n}\n\n${utilities.join('\n')}\n`,
+	`${header('the Tailwind 4 theme')}/* Import after @import "tailwindcss" and brand.css. */\n@theme inline {\n${lines.join('\n')}\n}\n\n${utilities.join('\n')}\n${fades.join('\n')}\n`,
 );
 
 const json = { name: brand.name, tokens: {} };

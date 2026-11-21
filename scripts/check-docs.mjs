@@ -89,6 +89,49 @@ try {
 		console.log(`Rail: ${listed.length} items listed; filter checked.`);
 	}
 
+	// 2b. Scroll edges fade, never cut a row off: the rail's list and a library scroller (scroll-area) at rest show
+	// their first row in full (no top fade) and a 24px fade at the bottom; scrolled 200px, 24px at both edges; at
+	// the end, none at the bottom.
+	{
+		const fades = (loc) => loc.evaluate((el) => {
+			const s = getComputedStyle(el);
+			return { mask: s.maskImage, start: s.getPropertyValue('--fade-start').trim(), end: s.getPropertyValue('--fade-end').trim() };
+		});
+		const scrollTo = (loc, to) => loc.evaluate((el, y) => new Promise((done) => {
+			el.scrollTop = y === 'end' ? el.scrollHeight : y;
+			requestAnimationFrame(() => requestAnimationFrame(done));
+		}), to);
+		const expect = async (where, loc, label, start, end) => {
+			const f = await fades(loc);
+			if (!/gradient/.test(f.mask)) fail(where, `${label}: no fade mask (${f.mask})`);
+			if (f.start !== start || f.end !== end) fail(where, `${label}: fades ${f.start} at the top and ${f.end} at the bottom, expected ${start} and ${end}`);
+		};
+		for (const width of widths) {
+			const { page, context, where } = await open(width, '/components/button', `rail fade`);
+			try {
+				if (width < 768) await page.getByRole('button', { name: 'open menu' }).click();
+				const list = page.locator('#docs-rail > .fade-y');
+				await expect(where, list, 'rail at rest', '0px', '24px');
+				await scrollTo(list, 200);
+				await expect(where, list, 'rail scrolled 200px', '24px', '24px');
+				await scrollTo(list, 'end');
+				await expect(where, list, 'rail at the end', '24px', '0px');
+			} finally {
+				await context.close();
+			}
+			const lib = await open(width, '/preview/scroll-area/Product', 'scroll-area fade');
+			try {
+				const box = lib.page.locator('[data-ds="scroll-area"]').first();
+				await expect(lib.where, box, 'scroll area at rest', '0px', '24px');
+				await scrollTo(box, 'end');
+				await expect(lib.where, box, 'scroll area at the end', '24px', '0px');
+			} finally {
+				await lib.context.close();
+			}
+		}
+		console.log(`Fades: the rail and a scroll area checked at rest, scrolled and at the end, at ${widths.join(' and ')}.`);
+	}
+
 	// 3. Overlays: open from the trigger, Escape closes, focus returns to the trigger.
 	// [item, its trigger]: a menu button by default, the example's first button for a dialog it opens.
 	const POPUP = '[aria-haspopup]:visible, [aria-expanded]:visible';

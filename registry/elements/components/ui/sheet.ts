@@ -54,7 +54,7 @@ export class Sheet extends DsElement {
 				<slot name="bar"></slot>
 				<button type="button" class="inline-flex size-control-sm shrink-0 cursor-pointer items-center justify-center border border-transparent text-fg-soft transition-[color,border-color] duration-120 ease-standard hover:border-edge-strong hover:text-fg focus-visible:outline-2 focus-visible:outline-edge-focus max-md:size-control-touch" aria-label="close" @click=${() => this.setOpen(false)}>${icon(X, 'x', { size: 14, strokeWidth: 1.5 })}</button>
 			</div>
-			<div class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6.5 pt-5 pb-12" data-sheet-body>
+			<div class="fade-y min-h-0 flex-1 overflow-y-auto overscroll-contain px-6.5 pt-5 pb-12" data-sheet-body>
 				${this.description ? html`<p class="mb-4 type-ui text-fg-soft">${this.description}</p>` : nothing}
 				<slot></slot>
 			</div>

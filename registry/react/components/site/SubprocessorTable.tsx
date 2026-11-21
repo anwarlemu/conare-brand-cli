@@ -15,7 +15,7 @@ export function SubprocessorTable({ rows, label = 'subprocessors', className }: 
   return (
     <>
       <style href="ds-subprocessor-table" precedence="ds">{css}</style>
-      <div data-ds="subprocessor-table" className={cn('ds-legal-table overflow-x-auto border border-edge outline outline-offset-4 outline-edge', className)} role="region" aria-label={label} tabIndex={0}>
+      <div data-ds="subprocessor-table" className={cn('ds-legal-table fade-x overflow-x-auto border border-edge outline outline-offset-4 outline-edge', className)} role="region" aria-label={label} tabIndex={0}>
         <table className="w-full min-w-160 text-left type-body">
           <thead>
             <tr>

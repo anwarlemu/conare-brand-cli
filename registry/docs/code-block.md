@@ -17,3 +17,5 @@ examples:
   - "Product | A pill per language"
   - "Single | One command"
 ---
+
+A long line scrolls sideways under a fade (`fade-x`) at the edge with more past it.

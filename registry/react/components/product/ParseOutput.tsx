@@ -26,8 +26,8 @@ export function ParseOutput({ answer, on, plays, onPoint, onPick }: ParseOutputP
           {TABS.map(t => <button key={t.id} type="button" role="tab" className="ds-parsetab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}>{t.label}</button>)}
         </div>
         {tab === 'text'
-          ? <ParseRead role="tabpanel" className="min-h-0 flex-1 overflow-auto p-2" part={answer.part} on={on} plays={plays} onPoint={onPoint} onPick={onPick} />
-          : <pre className="m-0 min-h-0 flex-1 overflow-auto p-4 font-code text-meta leading-4.5 whitespace-pre" tabIndex={0} role="tabpanel">{tab === 'markdown' ? answer.markdown : json}</pre>}
+          ? <ParseRead role="tabpanel" className="fade-xy min-h-0 flex-1 overflow-auto p-2" part={answer.part} on={on} plays={plays} onPoint={onPoint} onPick={onPick} />
+          : <pre className="fade-xy m-0 min-h-0 flex-1 overflow-auto p-4 font-code text-meta leading-4.5 whitespace-pre" tabIndex={0} role="tabpanel">{tab === 'markdown' ? answer.markdown : json}</pre>}
       </div>
     </>
   )

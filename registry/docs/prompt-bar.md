@@ -25,3 +25,5 @@ only where the browser has it.
 It rises in over 280ms on the strong ease-out and leaves in 200ms; the templates settle up 40ms apart, the thread opens
 on grid rows over 160ms and the answer's words fade up 22ms apart. The suggestion's arrow opens out beside its label
 without moving. Reduced motion keeps colour and opacity only, and the placeholder stops typing.
+
+The thread scrolls under a fade (`fade-y`) at the edge with more past it.

@@ -17,3 +17,5 @@ examples:
 
 `actions` renders twice, in the bar and in the phone sheet (`place` says which). Mark where the reader is with a link's
 `current`, or `product-current` while the products are on screen.
+
+On a phone, a menu taller than the screen scrolls under a fade (`fade-y`).

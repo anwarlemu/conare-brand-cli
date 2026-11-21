@@ -14,7 +14,7 @@ export function DocsTable({ head, rows, label, className }: DocsTableProps) {
   return (
     <>
       <style href="ds-docs-table" precedence="ds">{css}</style>
-      <div data-ds="docs-table" className={cn('ds-docs-table overflow-x-auto border border-edge', className)} role="region" aria-label={label ?? head?.join(', ') ?? 'table'} tabIndex={0}>
+      <div data-ds="docs-table" className={cn('ds-docs-table fade-x overflow-x-auto border border-edge', className)} role="region" aria-label={label ?? head?.join(', ') ?? 'table'} tabIndex={0}>
         <table className="w-full text-left type-body">
           {head && (
             <thead className="bg-surface-subtle text-fg-muted">

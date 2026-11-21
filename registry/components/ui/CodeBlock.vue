@@ -35,7 +35,7 @@ const shown = computed(() => props.samples?.[picked.value]?.code ?? props.code ?
     <pre
       tabindex="0"
       :aria-label="`${tabs[samples ? picked : 0] ?? 'code'}, code`"
-      class="m-0 overflow-x-auto px-4 py-3 type-code-sm leading-5 whitespace-pre focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-surface-accent"
+      class="fade-x m-0 overflow-x-auto px-4 py-3 type-code-sm leading-5 whitespace-pre focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-surface-accent"
     >{{ shown }}</pre>
   </div>
 </template>

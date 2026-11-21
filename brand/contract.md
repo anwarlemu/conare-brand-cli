@@ -22,6 +22,9 @@
   `{{cli}} tokens <term>` finds values and errors when nothing matches; `{{cli}} principles --json` is the product and
   website guidance the repository states. No shadows, no corner radius in the
   console, no second accent colour, no ease-in, no transition-all.
+- A box that scrolls fades at its edges and never cuts content off: put `fade-y` on one that scrolls down, `fade-x` on
+  one that scrolls sideways and `fade-xy` on one that scrolls both ways (the theme, the preset and kinds.css all have
+  them; brand.css holds what they run on).
 - Icons are Lucide (`lucide-vue-next` in Vue, `lucide-react` in React, inline Lucide SVGs elsewhere) at a 1.5 stroke,
   12 to 14px in the console.
 - Run the project's checks and build, then `{{cli}} check --json`, and fix what it reports.

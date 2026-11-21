@@ -56,7 +56,7 @@ export function Carousel({ count, label, perView = 1, slide }: CarouselProps) {
       <section data-ds="carousel" className="flex flex-col gap-2" role="region" aria-roledescription="carousel" aria-label={label}>
         <div
           ref={track}
-          className="ds-carousel flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain border border-edge"
+          className="ds-carousel fade-x flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain border border-edge"
           data-per-view={perView}
           tabIndex={0}
           aria-label={`${label}, use the arrow keys to move`}

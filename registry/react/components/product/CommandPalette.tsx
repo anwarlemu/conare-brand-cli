@@ -163,7 +163,7 @@ export function CommandPalette({ pages, actions = [], namespaces = [], documents
             onKeyDown={onKey}
           />
         </label>
-        <div id="ds-cmd-list" className="ds-cmd-list" role="listbox" aria-label="results">
+        <div id="ds-cmd-list" className="ds-cmd-list fade-y" role="listbox" aria-label="results">
           {groups.map(g => (
             <div key={g.label || 'search'} role="group" aria-label={g.label || undefined}>
               {g.label && <p className="ds-cmd-label" aria-hidden="true">{g.label}{g.label === 'Documents' && searching && <span>Searching</span>}</p>}

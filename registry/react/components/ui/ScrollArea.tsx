@@ -13,7 +13,7 @@ export function ScrollArea({ label, maxHeight, axis = 'y', tone = 'default', cla
       <style href="ds-scroll-area" precedence="ds">{css}</style>
       <div
         data-ds="scroll-area"
-        className={cn('ds-scroll overscroll-contain', axis === 'y' && 'overflow-y-auto overflow-x-hidden', axis === 'x' && 'overflow-x-auto overflow-y-hidden', axis === 'both' && 'overflow-auto', className)}
+        className={cn('ds-scroll overscroll-contain', axis === 'y' && 'fade-y overflow-y-auto overflow-x-hidden', axis === 'x' && 'fade-x overflow-x-auto overflow-y-hidden', axis === 'both' && 'fade-xy overflow-auto', className)}
         data-tone={tone}
         style={maxHeight ? { maxHeight } : undefined}
         role={label ? 'region' : undefined}

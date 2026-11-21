@@ -15,3 +15,5 @@ files:
 examples:
   - "Product | Ways in"
 ---
+
+The track fades at an edge with another slide past it (`fade-x`); its hairline stays whole.

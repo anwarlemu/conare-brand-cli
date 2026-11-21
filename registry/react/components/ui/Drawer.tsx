@@ -34,7 +34,7 @@ export function Drawer({ title, side = 'left', bar, open: given, defaultOpen = f
           <button type="button" className="inline-flex size-control-touch shrink-0 cursor-pointer items-center justify-center border border-transparent text-fg-soft transition-[color,border-color] duration-120 ease-standard hover:border-edge-strong hover:text-fg focus-visible:outline-2 focus-visible:outline-edge-focus" aria-label="close" onClick={close}><X size={14} strokeWidth={1.5} /></button>
         </div>
       )}
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain" data-sheet-body="">
+      <div className="fade-y flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain" data-sheet-body="">
         {typeof children === 'function' ? children(close) : children}
       </div>
     </dialog>

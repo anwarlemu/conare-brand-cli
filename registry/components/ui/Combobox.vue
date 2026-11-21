@@ -159,7 +159,7 @@ const activeId = computed(() => (pop.open.value && visible.value.length ? option
       :aria-label="label"
       :tabindex="filtering ? -1 : 0"
       :aria-activedescendant="filtering ? undefined : activeId"
-      class="flex max-h-65 flex-col overflow-y-auto outline-none"
+      class="fade-y flex max-h-65 flex-col overflow-y-auto outline-none"
       @keydown="onKey"
     >
       <template v-for="(o, i) in visible" :key="`${o.pinned ? 'p' : 'o'}-${o.value}`">

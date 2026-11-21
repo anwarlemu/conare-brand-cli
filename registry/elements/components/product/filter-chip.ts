@@ -52,7 +52,7 @@ export class FilterChip extends DsElement {
 		].join(' ')
 		return html`${staticHtml`<${menu} data-ds="filter-chip" label=${this.label} width=${this.width}>
 			<button slot="trigger" type="button" class=${trigger}>${this.label}${chosen ? html`: <span class="font-medium">${chosen}</span>` : nothing}${icon(ChevronDown, 'chevron-down', { size: 12, strokeWidth: 1.5, class: 'text-fg-muted transition-[rotate] duration-120 ease-out motion-reduce:transition-none', attrs: { 'aria-hidden': 'true' } })}</button>
-			<div class="flex max-h-75 flex-col overflow-y-auto">
+			<div class="fade-y flex max-h-75 flex-col overflow-y-auto">
 				${all.map((o) => staticHtml`<${item} role="menuitemradio" aria-checked=${String(this.is(this.value, o.value))} @select=${() => this.commit(o.value)}>
 					<span class="min-w-0 flex-1 truncate">${o.label}</span>
 					${icon(Check, 'check', { size: 14, strokeWidth: 1.5, class: this.is(this.value, o.value) ? 'shrink-0' : 'shrink-0 invisible', attrs: { 'aria-hidden': 'true' } })}

@@ -22,7 +22,7 @@ export class DocsTable extends DsElement {
 
 	render() {
 		const inline = tag('docs-inline')
-		return html`<div data-ds="docs-table" class="ds-docs-table overflow-x-auto border border-edge" role="region" aria-label=${this.label ?? this.head?.join(', ') ?? 'table'} tabindex="0">
+		return html`<div data-ds="docs-table" class="ds-docs-table fade-x overflow-x-auto border border-edge" role="region" aria-label=${this.label ?? this.head?.join(', ') ?? 'table'} tabindex="0">
 			<table class="w-full text-left type-body">
 				${this.head ? html`<thead class="bg-surface-subtle text-fg-muted"><tr>${this.head.map((h) => html`<th class="px-4 py-3 text-meta font-normal whitespace-nowrap">${h}</th>`)}</tr></thead>` : nothing}
 				<tbody>

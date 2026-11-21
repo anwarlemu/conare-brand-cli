@@ -31,7 +31,7 @@ export class Sidebar extends DsElement {
 	}
 
 	render() {
-		return html`${this.hasSlot('head') ? html`<div class="h-bar shrink-0 border-b border-edge"><slot name="head"></slot></div>` : nothing}<div class="flex min-h-0 flex-1 flex-col overflow-y-auto pb-4"><slot></slot></div>${this.hasSlot('foot') ? html`<div class="shrink-0 border-t border-edge"><slot name="foot"></slot></div>` : nothing}`
+		return html`${this.hasSlot('head') ? html`<div class="h-bar shrink-0 border-b border-edge"><slot name="head"></slot></div>` : nothing}<div class="fade-y flex min-h-0 flex-1 flex-col overflow-y-auto pb-4"><slot></slot></div>${this.hasSlot('foot') ? html`<div class="shrink-0 border-t border-edge"><slot name="foot"></slot></div>` : nothing}`
 	}
 }
 

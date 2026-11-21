@@ -8,7 +8,7 @@ withDefaults(defineProps<{ variant?: 'product' | 'settings', framed?: boolean, l
 </script>
 
 <template>
-  <div data-ds="table" v-if="framed" class="overflow-x-auto border border-edge bg-surface" :role="label ? 'region' : undefined" :aria-label="label" :tabindex="label ? 0 : undefined">
+  <div data-ds="table" v-if="framed" class="fade-x overflow-x-auto border border-edge bg-surface" :role="label ? 'region' : undefined" :aria-label="label" :tabindex="label ? 0 : undefined">
     <table class="ds-table" :data-variant="variant"><slot /></table>
   </div>
   <table data-ds="table" v-else class="ds-table" :data-variant="variant"><slot /></table>

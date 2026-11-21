@@ -14,3 +14,5 @@ files:
 examples:
   - "Site | On the site"
 ---
+
+A wide table scrolls sideways under a fade (`fade-x`); its frame and outline stay whole.

@@ -19,3 +19,5 @@ examples:
 
 `useSheet` is the slide-in behavior Sheet and Drawer share: a native modal dialog (focus stays inside, the page is
 inert), the exit played before the dialog closes, Escape at once, focus back to the trigger.
+
+The body scrolls under a fade (`fade-y`) at the edge with more past it.

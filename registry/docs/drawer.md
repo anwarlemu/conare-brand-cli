@@ -18,3 +18,5 @@ examples:
 
 Drawer shares Sheet's behavior (`useSheet`): a native modal dialog, the exit played before it closes, focus back to
 the trigger. The default slot gets `close`.
+
+The body scrolls under a fade (`fade-y`) at the edge with more past it.

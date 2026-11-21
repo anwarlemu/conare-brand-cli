@@ -20,7 +20,7 @@ export function Table({ variant = 'product', framed, label, className, children 
       <style href="ds-table" precedence="ds">{css}</style>
       {framed
         ? (
-            <div data-ds="table" className={cn('overflow-x-auto border border-edge bg-surface', className)} role={label ? 'region' : undefined} aria-label={label} tabIndex={label ? 0 : undefined}>
+            <div data-ds="table" className={cn('fade-x overflow-x-auto border border-edge bg-surface', className)} role={label ? 'region' : undefined} aria-label={label} tabIndex={label ? 0 : undefined}>
               <table className="ds-table" data-variant={variant}>{children}</table>
             </div>
           )

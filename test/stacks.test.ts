@@ -106,6 +106,8 @@ describe('Next.js (Pages Router, no src, no Tailwind)', () => {
 		expect(css.startsWith('@import "./conare-ds/brand.css";\n@import "./conare-ds/kinds.css";\n')).toBe(true);
 		expect(css).toContain('background: var(--ds-color-');
 		expect(read(dir, 'styles/conare-ds/kinds.css')).toContain('.ds-button.ds-button-danger');
+		expect(read(dir, 'styles/conare-ds/kinds.css')).toMatch(/\.fade-y \{[\s\S]*?mask-image/);
+		expect(read(dir, 'styles/conare-ds/brand.css')).toContain('@keyframes fade-start');
 		// The look wins over a component's scoped rule loaded after it (Angular's .save[_ngcontent-x] and the like).
 		const chrome = '/Users/anwarlemu/Library/Caches/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-mac-arm64/chrome-headless-shell';
 		if (existsSync(process.env.PARITY_CHROMIUM ?? chrome)) {

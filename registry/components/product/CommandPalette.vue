@@ -141,7 +141,7 @@ function onDown(event: MouseEvent) {
         @keydown="onKey"
       >
     </label>
-    <div id="ds-cmd-list" class="ds-cmd-list" role="listbox" aria-label="results">
+    <div id="ds-cmd-list" class="ds-cmd-list fade-y" role="listbox" aria-label="results">
       <div v-for="g in groups" :key="g.label || 'search'" role="group" :aria-label="g.label || undefined">
         <p v-if="g.label" class="ds-cmd-label" aria-hidden="true">{{ g.label }}<span v-if="g.label === 'Documents' && searching">Searching</span></p>
         <div

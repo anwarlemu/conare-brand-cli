@@ -17,8 +17,8 @@ const json = computed(() => JSON.stringify({ id: props.answer.id, state: 'done',
     <div class="flex gap-4 border-b border-code-edge px-4" role="tablist" aria-label="what was read">
       <button v-for="t in TABS" :key="t.id" type="button" role="tab" class="ds-parsetab" :aria-selected="tab === t.id" @click="tab = t.id">{{ t.label }}</button>
     </div>
-    <ParseRead v-if="tab === 'text'" role="tabpanel" class="min-h-0 flex-1 overflow-auto p-2" :part="answer.part" :on="on" :plays="plays" @point="$emit('point', $event)" @pick="$emit('pick', $event)" />
-    <pre v-else class="m-0 min-h-0 flex-1 overflow-auto p-4 font-code text-meta leading-4.5 whitespace-pre" tabindex="0" role="tabpanel">{{ tab === 'markdown' ? answer.markdown : json }}</pre>
+    <ParseRead v-if="tab === 'text'" role="tabpanel" class="fade-xy min-h-0 flex-1 overflow-auto p-2" :part="answer.part" :on="on" :plays="plays" @point="$emit('point', $event)" @pick="$emit('pick', $event)" />
+    <pre v-else class="fade-xy m-0 min-h-0 flex-1 overflow-auto p-4 font-code text-meta leading-4.5 whitespace-pre" tabindex="0" role="tabpanel">{{ tab === 'markdown' ? answer.markdown : json }}</pre>
   </div>
 </template>
 

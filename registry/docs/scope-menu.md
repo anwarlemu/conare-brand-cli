@@ -23,3 +23,5 @@ examples:
 `Combobox` is shadcn's combobox and `Select` its select; both take `options` (`value`, `label`, `hint`, `disabled`,
 `pinned`) and v-model. The panel portals to the body (or the open dialog the trigger sits in), flips to the side with
 room and stays 8px inside the viewport. Opened from the keyboard it shows at once; Escape returns focus to the trigger.
+
+The combobox's list scrolls under a fade (`fade-y`) at the edge with more past it.

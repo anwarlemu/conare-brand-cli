@@ -45,7 +45,7 @@ export class FilterMenu extends DsElement {
 				${icon(ListFilter, 'list-filter', { size: 12, strokeWidth: 1.5, class: 'text-fg-muted', attrs: { 'aria-hidden': 'true' } })}
 				${'Filters'}${count ? html`<span class="inline-flex h-4 min-w-4 items-center justify-center bg-surface-inverse px-1 text-caption leading-4 text-fg-inverse tabular-nums">${count}</span>` : nothing}
 			</button>
-			<div class="flex max-h-88 flex-col overflow-y-auto">
+			<div class="fade-y flex max-h-88 flex-col overflow-y-auto">
 				${this.groups.map((g, i) => staticHtml`${i ? staticHtml`<${sep}></${sep}>` : nothing}
 				<${label}>${g.label}</${label}>
 				<div role="group" aria-label=${g.label} class="flex flex-col">

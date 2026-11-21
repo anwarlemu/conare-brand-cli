@@ -44,7 +44,7 @@ export function FilterChip<T extends string | number>({ label, any, options, wid
         </>
       )}
     >
-      <div className="flex max-h-75 flex-col overflow-y-auto">
+      <div className="fade-y flex max-h-75 flex-col overflow-y-auto">
         {all.map(o => (
           <MenuItem key={o.value} role="menuitemradio" aria-checked={model === o.value} onSelect={() => setModel(o.value)}>
             <span className="min-w-0 flex-1 truncate">{o.label}</span>

@@ -30,6 +30,17 @@ describe('build', () => {
 		expect(t['--ds-color-surface'].light).toBe('#FEFEFE');
 		expect(t['--ds-color-surface'].dark).toBe('#020202');
 	});
+	it('ships the scroll fade: the utilities in the theme, what they run on in both brand stylesheets', () => {
+		const theme = read('build/theme.css');
+		for (const u of ['fade-y', 'fade-x', 'fade-xy']) expect(theme).toContain(`@utility ${u} {`);
+		expect(theme).toContain('animation-timeline: scroll(self block), scroll(self block);');
+		expect(theme).toContain('animation-timeline: scroll(self inline), scroll(self inline);');
+		for (const f of ['build/brand.css', 'build/brand-scoped.css']) {
+			expect(read(f)).toContain('@property --fade-start');
+			expect(read(f)).toContain('@keyframes fade-end');
+			expect(read(f)).toContain('@keyframes fade-x-start');
+		}
+	});
 	it('keeps its own element styles on the tokens', () => {
 		expect(checkText('build/base.css', read('build/base.css')).findings).toEqual([]);
 	});

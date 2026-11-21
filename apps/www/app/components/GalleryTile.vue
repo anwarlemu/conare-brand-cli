@@ -13,7 +13,7 @@ defineProps<{ src: string, width: number, height: number, title: string, descrip
       <p class="flex items-baseline gap-2 type-ui-strong">{{ title }}<span class="type-caption text-fg-muted tabular-nums">{{ width }} x {{ height }}</span><a v-if="href" :href="href" class="ml-auto type-meta text-fg-muted underline decoration-edge-strong underline-offset-4 hover:text-fg">{{ hrefLabel ?? 'SVG' }}</a></p>
       <p v-if="description" class="type-meta text-fg-soft">{{ description }}</p>
       <div class="flex min-w-0 items-center gap-2 border border-edge bg-surface-subtle py-1 pr-1 pl-2">
-        <code class="min-w-0 flex-1 overflow-x-auto type-code-sm whitespace-nowrap [scrollbar-width:none]" tabindex="0">{{ command }}</code>
+        <code class="fade-x min-w-0 flex-1 overflow-x-auto type-code-sm whitespace-nowrap [scrollbar-width:none]" tabindex="0">{{ command }}</code>
         <CodeCopy :text="command" light />
       </div>
     </figcaption>

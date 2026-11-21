@@ -59,7 +59,7 @@ export function Resizable({ direction = 'horizontal', min = 20, max = 80, label 
     <>
       <style href="ds-resizable" precedence="ds">{css}</style>
       <div data-ds="resizable" ref={root} className={cn('flex min-h-0 min-w-0', [across ? 'flex-row' : 'flex-col', dragging && 'select-none'], className)}>
-        <div id={firstId} className="min-h-0 min-w-0 overflow-auto" style={{ flexBasis: `${size}%` }}>{first}</div>
+        <div id={firstId} className="fade-xy min-h-0 min-w-0 overflow-auto" style={{ flexBasis: `${size}%` }}>{first}</div>
         <div
           className="ds-resize-handle"
           data-direction={direction}
@@ -78,7 +78,7 @@ export function Resizable({ direction = 'horizontal', min = 20, max = 80, label 
           onPointerCancel={onUp}
           onKeyDown={onKey}
         />
-        <div className="min-h-0 min-w-0 flex-1 overflow-auto">{second}</div>
+        <div className="fade-xy min-h-0 min-w-0 flex-1 overflow-auto">{second}</div>
       </div>
     </>
   )

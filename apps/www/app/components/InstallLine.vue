@@ -7,7 +7,7 @@ defineProps<{ command: string }>()
 
 <template>
   <div class="flex w-fit max-w-full items-center gap-4 border border-edge bg-surface-subtle py-2 pr-2 pl-4">
-    <code class="min-w-0 overflow-x-auto type-code-sm whitespace-pre [scrollbar-width:none]" tabindex="0"><span v-if="/^(npx|bunx?|npm|pnpm|yarn) /.test(command)" class="text-fg-muted" aria-hidden="true">$ </span>{{ command }}</code>
+    <code class="fade-x min-w-0 overflow-x-auto type-code-sm whitespace-pre [scrollbar-width:none]" tabindex="0"><span v-if="/^(npx|bunx?|npm|pnpm|yarn) /.test(command)" class="text-fg-muted" aria-hidden="true">$ </span>{{ command }}</code>
     <CodeCopy :text="command" light />
   </div>
 </template>

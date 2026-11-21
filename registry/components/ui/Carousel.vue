@@ -44,7 +44,7 @@ onBeforeUnmount(() => ro?.disconnect())
   <section data-ds="carousel" class="flex flex-col gap-2" role="region" aria-roledescription="carousel" :aria-label="label">
     <div
       ref="track"
-      class="ds-carousel flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain border border-edge"
+      class="ds-carousel fade-x flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain border border-edge"
       :data-per-view="perView"
       tabindex="0"
       :aria-label="`${label}, use the arrow keys to move`"

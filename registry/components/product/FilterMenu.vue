@@ -29,7 +29,7 @@ function pick(key: string, value: string | number) {
       <ListFilter :size="12" :stroke-width="1.5" class="text-fg-muted" aria-hidden="true" />
       Filters<span v-if="count" class="inline-flex h-4 min-w-4 items-center justify-center bg-surface-inverse px-1 text-caption leading-4 text-fg-inverse tabular-nums">{{ count }}</span>
     </template>
-    <div class="flex max-h-88 flex-col overflow-y-auto">
+    <div class="fade-y flex max-h-88 flex-col overflow-y-auto">
       <template v-for="(g, i) in groups" :key="g.key">
         <MenuSeparator v-if="i" />
         <MenuLabel>{{ g.label }}</MenuLabel>

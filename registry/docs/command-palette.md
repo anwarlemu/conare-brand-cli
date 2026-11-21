@@ -19,3 +19,5 @@ examples:
 Bind ⌘K and / in the app to `open = true`. Listen for `query` and pass back `documents` (and `searching` while they
 load). `select` gives `{ kind: 'search' | 'document' | 'namespace' | 'page' | 'action', ... }`; it closes on every pick
 but the search row, which the app opens as a full search. `tone="light"` draws it on the paper without the title bar.
+
+The results scroll under a fade (`fade-y`) at the edge with more past it.

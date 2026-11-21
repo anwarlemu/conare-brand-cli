@@ -48,7 +48,7 @@ export class CodeBlock extends DsElement {
 					: html`<div class="flex min-w-0"><span class="inline-flex h-control-sm min-w-0 items-center bg-code-raised px-2.5 text-meta leading-5 font-medium text-code-fg [overflow-wrap:anywhere]">${tabs[0]}</span></div>`}
 				${staticHtml`<${copy} .text=${shown}></${copy}>`}
 			</div>
-			<pre tabindex="0" aria-label=${`${tabs[this.samples ? this.picked : 0] ?? 'code'}, code`} class="m-0 overflow-x-auto px-4 py-3 type-code-sm leading-5 whitespace-pre focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-surface-accent">${shown}</pre>`
+			<pre tabindex="0" aria-label=${`${tabs[this.samples ? this.picked : 0] ?? 'code'}, code`} class="fade-x m-0 overflow-x-auto px-4 py-3 type-code-sm leading-5 whitespace-pre focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-surface-accent">${shown}</pre>`
 	}
 }
 

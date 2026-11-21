@@ -1,8 +1,10 @@
 /* ScrollArea.vue's classes and <style>, with the scrolling box (.ds-scroll, the Vue root) as the host. */
-:host { @apply block overscroll-contain overflow-y-auto overflow-x-hidden; }
-:host([axis="x"]) { @apply overflow-x-auto overflow-y-hidden; }
-:host([axis="both"]) { @apply overflow-auto; }
+:host { @apply fade-y block overscroll-contain overflow-y-auto overflow-x-hidden; }
+:host([axis="x"]) { @apply fade-x overflow-x-auto overflow-y-hidden; }
+:host([axis="both"]) { @apply fade-xy overflow-auto; }
 :host { scrollbar-width: thin; scrollbar-color: var(--ds-color-neutral-600) transparent; }
 :host([tone="dark"]) { scrollbar-color: var(--ds-color-neutral-400) transparent; }
 :host(:focus-visible) { outline-offset: calc(var(--ds-border-focus) * -1) !important; }
 /* !important: the page's scoped focus ring (outline-offset 2px) wins over a plain :host rule. */
+/* The fade's own focus rule reads :host:focus-visible, which a host never matches: the whole ring shows, as in Vue. */
+:host(:focus-visible) { mask-image: none; }

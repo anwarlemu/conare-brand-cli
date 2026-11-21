@@ -16,3 +16,5 @@ examples:
 ---
 
 `label` names the filter, `any` the first row (its value is `''`, or `0` for numeric options), `options` the rest. The chip is 28px on the paper with a hairline; it takes an ink edge and the white ground while something is chosen or the menu is open, and its chevron turns. The menu is Menu's panel with `menuitemradio` rows and a check on the pick; arrows, Home, End and Escape work as in every Menu.
+
+Its list scrolls under a fade (`fade-y`) at the edge with more past it.

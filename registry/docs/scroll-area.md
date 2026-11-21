@@ -15,3 +15,5 @@ files:
 examples:
   - "Product | A list and a row"
 ---
+
+Its edges fade while there is more to scroll (`fade-y`, `fade-x` across, `fade-xy` both ways): nothing is cut off by a hard edge.

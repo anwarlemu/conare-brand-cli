@@ -14,3 +14,5 @@ files:
 examples:
   - "Product | A page and its docs"
 ---
+
+Each pane scrolls under a fade (`fade-xy`, down and across) at the edge with more past it.

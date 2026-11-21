@@ -33,7 +33,7 @@ export function Sheet({ title, description, open: given, defaultOpen = false, on
         {bar}
         <button type="button" className="inline-flex size-control-sm shrink-0 cursor-pointer items-center justify-center border border-transparent text-fg-soft transition-[color,border-color] duration-120 ease-standard hover:border-edge-strong hover:text-fg focus-visible:outline-2 focus-visible:outline-edge-focus max-md:size-control-touch" aria-label="close" onClick={() => setOpen(false)}><X size={14} strokeWidth={1.5} /></button>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6.5 pt-5 pb-12" data-sheet-body="">
+      <div className="fade-y min-h-0 flex-1 overflow-y-auto overscroll-contain px-6.5 pt-5 pb-12" data-sheet-body="">
         {description && <p className="mb-4 type-ui text-fg-soft">{description}</p>}
         {children}
       </div>

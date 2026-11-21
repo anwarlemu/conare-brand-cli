@@ -59,7 +59,7 @@ export class Drawer extends DsElement {
 						<button type="button" class="inline-flex size-control-touch shrink-0 cursor-pointer items-center justify-center border border-transparent text-fg-soft transition-[color,border-color] duration-120 ease-standard hover:border-edge-strong hover:text-fg focus-visible:outline-2 focus-visible:outline-edge-focus" aria-label="close" @click=${() => this.close()}>${icon(X, 'x', { size: 14, strokeWidth: 1.5 })}</button>
 					</div>`
 				: nothing}
-			<div class="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain" data-sheet-body><slot></slot></div>
+			<div class="fade-y flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain" data-sheet-body><slot></slot></div>
 		</dialog>`
 	}
 }

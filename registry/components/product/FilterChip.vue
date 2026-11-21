@@ -26,7 +26,7 @@ const trigger = computed(() => [
       {{ label }}<template v-if="chosen">: <span class="font-medium">{{ chosen }}</span></template>
       <ChevronDown :size="12" :stroke-width="1.5" class="text-fg-muted transition-[rotate] duration-120 ease-out motion-reduce:transition-none" :class="open && 'rotate-180'" aria-hidden="true" />
     </template>
-    <div class="flex max-h-75 flex-col overflow-y-auto">
+    <div class="fade-y flex max-h-75 flex-col overflow-y-auto">
       <MenuItem v-for="o in all" :key="o.value" role="menuitemradio" :aria-checked="model === o.value" @select="model = o.value">
         <span class="min-w-0 flex-1 truncate">{{ o.label }}</span>
         <Check :size="14" :stroke-width="1.5" class="shrink-0" :class="model === o.value ? '' : 'invisible'" aria-hidden="true" />

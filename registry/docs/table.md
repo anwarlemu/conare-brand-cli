@@ -16,3 +16,5 @@ examples:
   - "Product | Rows that open"
   - "Settings | In settings"
 ---
+
+Framed, the rows scroll sideways under a fade (`fade-x`); the hairline frame stays whole.

@@ -28,8 +28,8 @@ export class ParseOutput extends DsElement {
 		if (!a) return nothing
 		const json = JSON.stringify({ id: a.id, state: 'done', name: a.name, pages: a.pages, parts: [{ page: a.part.page, ocr: a.part.ocr, confidence: a.part.confidence, blocks: a.part.blocks }] }, null, 2)
 		return html`<div data-ds="parse-output" class="flex min-h-0 flex-1 flex-col"><div class="flex gap-4 border-b border-code-edge px-4" role="tablist" aria-label="what was read">${TABS.map((t) => html`<button type="button" role="tab" class="ds-parsetab" aria-selected=${String(this.tab === t.id)} @click=${() => { this.tab = t.id }}>${t.label}</button>`)}</div>${this.tab === 'text'
-			? staticHtml`<${tag('parse-read')} role="tabpanel" class="min-h-0 flex-1 overflow-auto p-2" .parsed=${a.part} .on=${this.on} ?plays=${this.plays}></${tag('parse-read')}>`
-			: html`<pre class="m-0 min-h-0 flex-1 overflow-auto p-4 font-code text-meta leading-4.5 whitespace-pre" tabindex="0" role="tabpanel">${this.tab === 'markdown' ? a.markdown : json}</pre>`}</div>`
+			? staticHtml`<${tag('parse-read')} role="tabpanel" class="fade-xy min-h-0 flex-1 overflow-auto p-2" .parsed=${a.part} .on=${this.on} ?plays=${this.plays}></${tag('parse-read')}>`
+			: html`<pre class="fade-xy m-0 min-h-0 flex-1 overflow-auto p-4 font-code text-meta leading-4.5 whitespace-pre" tabindex="0" role="tabpanel">${this.tab === 'markdown' ? a.markdown : json}</pre>`}</div>`
 	}
 }
 
