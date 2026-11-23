@@ -3,7 +3,7 @@ import type { DrawnLayer, LayerEdit, Rect } from '../design/types.js';
 import { artImage, logoDoc, markPath, wordmarkPath } from './art.js';
 import { blend, color, contrast, font, scratch, surface, toPng, toSvg, rgbOf, type Ctx } from './canvas.js';
 import { CopyError, roleFor, type FaceRole } from './glyphs.js';
-import { BADGES, customSize, imageDoc, largeType, LAYOUTS, logoFloor, sizeIds, sizeOf, sizesFor, smallFloor, specFor, unitOf, type Align, type BadgeStyle, type Layout, type Size, type Spec } from './layouts.js';
+import { BADGES, customSize, scaleBox, imageDoc, largeType, LAYOUTS, logoFloor, sizeIds, sizeOf, sizesFor, smallFloor, specFor, unitOf, type Align, type BadgeStyle, type Layout, type Size, type Spec } from './layouts.js';
 import { duration, mix, progress, settle } from './motion.js';
 import { drawPanel, PANEL_H, PANEL_W } from './panel.js';
 import { asTyped, mostWords, plain, readBack, setLines, type Line } from './words.js';
@@ -80,8 +80,8 @@ export function compose(o: Compose): Design {
 	const partner = pickSlot('partner');
 	if (o.template !== 'avatar' && !headline && !(o.template === 'partner' && partner) && !o.lenient) throw new CopyError(`${o.template} needs a headline (--headline "..."), or --sample for its sample copy.`);
 	const badgeText = pickSlot('badge');
-	const frame = size.frame;
-	const spec: Spec = { ...specFor(o.template, frame.w, frame.h), ...o.spec };
+	const box = scaleBox(size);
+	const spec: Spec = { ...specFor(o.template, box.w, box.h), ...o.spec };
 	const d: Design = {
 		template: o.template, size, w: size.w, h: size.h, theme, highlight: o.highlight ?? D.themes[theme]?.onAccent?.highlight ?? 'red',
 		badge: o.badge ?? (t.badge === 'none' ? 'label' : t.badge), badgeText, headline: headline ? emphasise(headline) : '', headlineAsked: headline, body: pickSlot('body'), credit: clean(o.credit),
@@ -169,6 +169,7 @@ function applyEdits(d: Design) {
 	if (h?.align) d.spec.align = h.align;
 	/* A centered logo over the words follows them when they are set to a side. */
 	if (d.spec.logo?.at === 'top' && !d.layers.logo?.anchor && d.spec.align !== 'center' && (h?.align || h?.anchor)) d.spec.logo = { ...d.spec.logo, at: d.spec.align === 'left' ? 'top-left' : 'top-right' };
+	if (d.layers.logo && !d.layers.logo.hidden && !d.spec.logo && Object.keys(d.layers.logo).length) throw new CopyError(`The logo does not fit ${d.template} at ${d.size.id}: the layout leaves it out there, so it takes no edit.`);
 	if (d.layers.logo?.anchor && d.spec.logo) d.spec.logo = { ...d.spec.logo, at: d.layers.logo.anchor };
 }
 
@@ -347,7 +348,7 @@ function setBlock(ctx: Ctx, d: Design, size: number, width: number, maxW: number
 		for (const l of lines) wide(l.w);
 		y += lines.length * size * s.leading;
 	}
-	const bodyMax = s.bodyWidth > 0 ? Math.min(maxW, s.bodyWidth * d.size.frame.w) : Math.min(maxW, Math.max(width, maxW * 0.6));
+	const bodyMax = s.bodyWidth > 0 ? Math.min(maxW, s.bodyWidth * scaleBox(d.size).w) : Math.min(maxW, Math.max(width, maxW * 0.6));
 	if (d.body && !hidden(d, 'body')) {
 		const role = roleFor('text', d.body.replaceAll('*', ''), 'body');
 		const fs = edited(d, 'body', size * s.bodyRatio, floorFor(d, C.muted, C.bg));
@@ -394,8 +395,9 @@ const headFloor = (d: Design) => Math.max(largeType(d.w), smallFloor(d.w, d.size
 function fitWords(ctx: Ctx, d: Design, box: { w: number; h: number }, logoH: number): Block {
 	const s = d.spec;
 	const floor = headFloor(d);
-	const nominal = Math.max(s.size, floor);
-	const narrow = Math.min(box.w, s.width * d.size.frame.w);
+	/* Fill before shrinking: from the layout's size grown into the room it has, down to the floor. */
+	const nominal = Math.max(s.size, floor) * s.fill;
+	const narrow = Math.min(box.w, s.width * scaleBox(d.size).w);
 	const fits = (b: Block, w: number) => b.h <= box.h + 0.5 && (b.head?.lines.every((l) => l.w <= w + 0.5) ?? true) && b.w <= box.w + 0.5;
 	const search = (w: number): Block | null => {
 		for (let size = nominal; ; size = Math.max(floor, size * 0.97)) {
@@ -422,7 +424,7 @@ function fitWords(ctx: Ctx, d: Design, box: { w: number; h: number }, logoH: num
 		if (size < floor - 0.01) throw new CopyError(`The headline at scale ${k} does not fit ${d.size.id}: it would be ${Math.round(size)} px, and reads from ${Math.ceil(floor)} px up (scale ${r2(floor / b.size)}).`);
 		if (k > 1) {
 			const tryAt = (n: number): [Block, number] | null => {
-				for (const ww of w < box.w - 1 ? [w, box.w] : [w]) {
+				for (const ww of [w]) {
 					const t = setBlock(ctx, d, n, ww, box.w, { breakLong: false, balance: false, logoH });
 					if (fits(t, ww)) return [t, ww];
 				}
@@ -551,7 +553,8 @@ export function planDesign(ctx: Ctx, d: Design, pic: Pic | null, own = Boolean(p
 	const s = d.spec;
 	const { w: W, h: H } = d;
 	const F = d.size.frame;
-	const u = unitOf(F.w, F.h);
+	const SB = scaleBox(d.size);
+	const u = unitOf(SB.w, SB.h);
 	const canvas: Rect = { x: 0, y: 0, w: W, h: H };
 	const borderPx = s.border && !hidden(d, 'border') ? s.border.px : 0;
 	let content = inset(F, s.margin);
@@ -630,22 +633,26 @@ export function planDesign(ctx: Ctx, d: Design, pic: Pic | null, own = Boolean(p
 		const L = logoDoc().wordmark;
 		const ratio = L.w / L.h;
 		const full = { ...zone };
-		for (const share of [0.36, 0.24, 0.16]) {
-			let n = 1;
-			let bh = 0;
-			for (; n < 5; n++) {
-				bh = content.w / (n * ratio + (n - 1) * 0.5);
-				if (bh <= F.h * share) break;
-			}
+		const steps = [1, 0.75, 0.55];
+		for (const k of steps) {
+			/* The posts tool's height, as many whole words as the width holds, centered. */
+			let bh = s.wordmarkH * k;
+			let n = Math.max(1, Math.floor((content.w + bh * 0.5) / (bh * ratio + bh * 0.5)));
+			if (n === 1 && bh * ratio > content.w) bh = content.w / ratio;
+			if (n > 3) n = 3;
 			const bw = bh * ratio;
-			const top = bottom(full) - bh;
-			plan.wordmark = { rects: Array.from({ length: n }, (_, i) => ({ x: content.x + i * (bw + bh * 0.5), y: top, w: bw, h: bh })), k: bh / L.h };
-			zone = { ...full, h: top - gap - full.y };
+			const span = n * bw + (n - 1) * bh * 0.5;
+			const x0 = content.x + (content.w - span) / 2;
+			/* It stands on the canvas's foot, as in the posts tool: a strip the platform may crop takes art, not words. */
+			const foot = F.x < 30 && !plan.foot ? Math.max(bottom(full), d.h - s.margin * 0.4) : bottom(full);
+			const top = foot - bh;
+			plan.wordmark = { rects: Array.from({ length: n }, (_, i) => ({ x: x0 + i * (bw + bh * 0.5), y: top, w: bw, h: bh })), k: bh / L.h };
+			zone = { ...full, h: Math.min(top - gap, bottom(full)) - full.y };
 			try {
 				fitWords(ctx, d, zone, aboveH);
 				break;
 			} catch (e) {
-				if (!(e instanceof CopyError) || share === 0.16) throw e;
+				if (!(e instanceof CopyError) || k === steps[steps.length - 1]) throw e;
 			}
 		}
 	}
@@ -653,6 +660,32 @@ export function planDesign(ctx: Ctx, d: Design, pic: Pic | null, own = Boolean(p
 	if (s.floor !== null && !hidden(d, 'floor')) {
 		plan.floorY = bottom(F) - s.floor - (plan.foot ? plan.foot.fs * 3 : 0);
 		bandBottom(plan.floorY - gap * 0.7);
+	}
+
+	/* What the platform covers at the lower left (a profile picture): the words keep out of it, either above it at the
+	   full width or beside it, whichever sets them larger. The art may still run under it. */
+	const leftAvoid = d.size.avoid.filter((r) => r.x <= 1 && meet(r, zone));
+	const panelLeft = s.pattern === 'panel' && !hidden(d, 'panel') && F.w / F.h >= 1.4 && d.size.avoid.some((r) => r.x === 0);
+	if (leftAvoid.length && !panelLeft) {
+		const top = Math.min(...leftAvoid.map((r) => r.y)) - gap * 0.6;
+		const edge = Math.max(...leftAvoid.map((r) => right(r))) + gap;
+		const inset = Math.max(0, edge - zone.x);
+		const above = { ...zone, h: top - zone.y };
+		const beside = s.align === 'center' ? { ...zone, x: zone.x + inset, w: zone.w - 2 * inset } : s.align === 'left' ? { ...zone, x: zone.x + inset, w: zone.w - inset } : zone;
+		const size = (z: Rect) => {
+			if (z.h <= 0 || z.w <= 0) return 0;
+			try {
+				return fitWords(ctx, d, { w: z.w, h: z.h * (s.window && !s.split ? s.limit + 0.16 : 1) }, aboveH).size;
+			} catch {
+				return 0;
+			}
+		};
+		const a1 = s.align === 'right' ? 0 : size(above);
+		const b1 = size(beside);
+		/* Set left, above it at full width unless that would shrink the words; centered, beside it unless above is clearly larger. */
+		/* Above it at the full width, unless beside it (where the words have the whole height) sets them clearly larger;
+		   the logo keeps the top left either way. */
+		zone = a1 > 0 && a1 >= b1 * (s.align === 'center' ? 0.9 : 0.85) ? above : beside;
 	}
 
 	let wordsZone = { ...zone };
@@ -695,7 +728,7 @@ export function planDesign(ctx: Ctx, d: Design, pic: Pic | null, own = Boolean(p
 
 	if (s.floor !== null && F.w / F.h >= 1 && !hidden(d, 'art')) {
 		/* Words on one side, the stack on the other. */
-		const w = Math.max(zone.w * 0.6, Math.min(zone.w, s.width * F.w));
+		const w = Math.max(zone.w * 0.6, Math.min(zone.w, s.width * scaleBox(d.size).w));
 		if (d.spec.align === 'right') wordsZone = { ...zone, x: right(zone) - w, w };
 		else if (d.spec.align === 'left') wordsZone = { ...zone, w };
 		if (plan.logo && plan.logo.rect.w + gap * 2 < zone.w - w && s.logo?.at === 'top-left' && d.spec.align === 'right') wordsZone = { ...wordsZone, y: content.y, h: bottom(zone) - content.y };
@@ -791,10 +824,12 @@ function planFoot(ctx: Ctx, d: Design, content: Rect): FootPlan | null {
 	};
 	let rightEdge = right(content);
 	for (const a of d.size.avoid) if (meet({ x: rightEdge - 200, y: y - fs, w: 200, h: fs * 2 }, a) && a.x > content.x + content.w / 2) rightEdge = a.x - fs;
+	let leftEdge = content.x;
+	for (const a of d.size.avoid) if (a.x <= 1 && meet({ x: content.x, y: y - fs * 2, w: 300, h: fs * 3 }, a)) leftEdge = Math.max(leftEdge, right(a) + fs);
 	const left = !hidden(d, 'note') && d.note ? d.note : '';
 	if (left) {
 		const role = roleFor('mono', left, 'note');
-		parts.push({ id: 'note', text: left, x: content.x, w: width(left, role), align: 'left', role });
+		parts.push({ id: 'note', text: left, x: leftEdge, w: width(left, role), align: 'left', role });
 	}
 	if (!hidden(d, 'address')) {
 		const role = roleFor('mono', d.address, 'address');
@@ -805,13 +840,13 @@ function planFoot(ctx: Ctx, d: Design, content: Rect): FootPlan | null {
 		const role = roleFor('mono', d.page, 'page number');
 		const w = width(d.page, role);
 		/* Alone at the left; in the middle beside a note. */
-		parts.push({ id: 'page', text: d.page, x: left ? content.x + (content.w - w) / 2 : content.x, w, align: 'left', role });
+		parts.push({ id: 'page', text: d.page, x: left ? leftEdge + (rightEdge - leftEdge - w) / 2 : leftEdge, w, align: 'left', role });
 	}
 	if (!parts.length) return null;
 	const sorted = [...parts].sort((a, b) => a.x - b.x);
 	for (let i = 1; i < sorted.length; i++) if (sorted[i - 1]!.x + sorted[i - 1]!.w + fs > sorted[i]!.x) throw new CopyError(`The note "${d.note}" does not fit the foot of ${d.template} at ${d.size.id}. Shorten it${parts.some((p) => p.id === 'address') ? ', or hide the address' : ''}.`);
-	if (sorted[0]!.x < content.x - 0.5 || right({ ...sorted[sorted.length - 1]!, y: 0, h: 0 }) > right(content) + 0.5) throw new CopyError(`The note "${d.note}" does not fit the foot of ${d.template} at ${d.size.id}. Shorten it.`);
-	const rule = d.spec.footRule && !hidden(d, 'rule') ? { x: content.x, y: y - fs * 1.7, w: rightEdge - content.x, h: Math.max(1, unitOf(d.size.frame.w, d.size.frame.h)) } : null;
+	if (sorted[0]!.x < leftEdge - 0.5 || right({ ...sorted[sorted.length - 1]!, y: 0, h: 0 }) > right(content) + 0.5) throw new CopyError(`The note "${d.note}" does not fit the foot of ${d.template} at ${d.size.id}. Shorten it.`);
+	const rule = d.spec.footRule && !hidden(d, 'rule') ? { x: leftEdge, y: y - fs * 1.7, w: rightEdge - leftEdge, h: Math.max(1, unitOf(d.size.frame.w, d.size.frame.h)) } : null;
 	return { y, fs, rule, parts };
 }
 
@@ -854,7 +889,8 @@ function planStacks(d: Design, plan: Plan, u: number, mirror: boolean): StackPla
 	if (s.stacks === 'floor' && plan.floorY !== null) {
 		const onRight = s.align === 'left';
 		for (let w = (F.h / F.w > 1.15 ? 420 : 260) * u; w > 110 * u; w *= 0.93) {
-			const cx = onRight ? right(plan.content) - w / 2 : plan.content.x + w / 2;
+			const start = Math.max(plan.content.x, ...d.size.avoid.filter((a) => a.x <= 1 && a.y < (plan.floorY ?? 0) + w).map((a) => right(a) + 0.03 * S));
+			const cx = onRight ? right(plan.content) - w / 2 : start + w / 2;
 			const r = boxOf('stack-wide', cx, plan.floorY - w * 0.04, w);
 			if (clear(r) && inside(r, inset(F, 2))) {
 				finish('stack-wide', r, onRight, 0);

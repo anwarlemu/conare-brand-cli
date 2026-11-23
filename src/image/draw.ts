@@ -69,7 +69,8 @@ export async function drawCard(copy: ImageCopy, size: SizeSpec): Promise<{ svg: 
 	checkEdits(copy);
 	const loaded = await faces();
 	const palette = theme(copy.ground);
-	const out = new Card(copy, size, loaded, palette).draw();
+	/* The cards do not place round what a platform covers, so they keep to the frame clear of all of it. */
+	const out = new Card(copy, size.clear ? { ...size, frame: size.clear } : size, loaded, palette).draw();
 	return { svg: document(size, palette, loaded, out.body), layers: out.layers };
 }
 

@@ -12,7 +12,7 @@ import type { FaceRole } from './glyphs.js';
 export type ThemeDoc = { label: string; bg: string; ink: string; muted: string; line: string; tile: string; tileAlpha: number; border: string; room: string; dark: boolean; onAccent?: { highlight?: string; badgeFill?: string; badgeInk?: string } };
 export type Sample = { headline?: string; body?: string; badge?: string; partner?: string; note?: string };
 type TemplateDoc = { label: string; description: string; theme: string; badge: BadgeStyle; sample: Sample };
-type SizeDoc = { w?: number; h?: number; label?: string; frame?: number[]; safe?: number[] };
+type SizeDoc = { w?: number; h?: number; label?: string; frame?: number[]; safe?: number[]; clear?: number[] };
 export type ImageDoc = {
 	themes: Record<string, ThemeDoc>;
 	tones: Record<string, string>;
@@ -43,7 +43,7 @@ export type Align = 'left' | 'center' | 'right';
 /* ------------------------------------------------------------ sizes */
 
 /** A size ready to draw on: the canvas, the frame everything seen stays in, what the platform covers, and how wide it is shown. */
-export type Size = { id: string; w: number; h: number; label: string; frame: Rect; safe: Rect; avoid: Rect[]; shown: number; note?: string };
+export type Size = { id: string; w: number; h: number; label: string; frame: Rect; /** The frame clear of everything the platform covers (for engines that do not place round it). */ clear?: Rect; safe: Rect; avoid: Rect[]; shown: number; note?: string };
 
 const rect = (a: number[]): Rect => ({ x: a[0]!, y: a[1]!, w: a[2]!, h: a[3]! });
 
@@ -52,7 +52,7 @@ function sizeFrom(id: string): Size {
 	const p = PLATFORMS.find((x) => x.id === id) ?? platformOf(id, own.w!, own.h!);
 	const full = { x: 0, y: 0, w: p.width, h: p.height };
 	const frame = own.frame ? rect(own.frame) : full;
-	return { id, w: p.width, h: p.height, label: own.label ?? p.label, frame, safe: own.safe ? rect(own.safe) : frame, avoid: p.avoid.map((z) => zonePx(z, p.width, p.height)), shown: p.shown, note: p.avoid.length || p.safe ? p.note : undefined };
+	return { id, w: p.width, h: p.height, label: own.label ?? p.label, frame, ...(own.clear ? { clear: rect(own.clear) } : {}), safe: own.safe ? rect(own.safe) : frame, avoid: p.avoid.map((z) => zonePx(z, p.width, p.height)), shown: p.shown, note: p.avoid.length || p.safe ? p.note : undefined };
 }
 
 export const sizeIds = () => [...PLATFORMS.map((p) => p.id), ...Object.keys(imageDoc().sizes).filter((k) => k !== '$comment' && !PLATFORMS.some((p) => p.id === k))];
@@ -77,6 +77,12 @@ export function sizeOf(id: string): Size | undefined {
 	const same = sizeIds().find((k) => k !== 'avatar' && sizeFrom(k).w === w && sizeFrom(k).h === h);
 	return same ? sizeFrom(same) : customSize(w, h);
 }
+
+/**
+ * The box a layout's type and spacing are scaled to: the whole canvas, as the posts tool scales them at that size,
+ * except where only a middle crop is seen everywhere (YouTube's channel art), which is then the canvas.
+ */
+export const scaleBox = (s: Pick<Size, 'w' | 'h' | 'frame'>) => (s.frame.x > 0 && s.frame.y > 0 && s.frame.h < s.h * 0.5 ? { w: s.frame.w, h: s.frame.h } : { w: s.w, h: s.h });
 
 /** Sizes a layout draws at. The profile picture takes the mark alone; nothing else fits a circle that small. */
 export function sizesFor(t: Layout): string[] {
@@ -128,7 +134,11 @@ export type Spec = {
 	pattern: 'panel' | 'full' | null;
 	patternTile: number;
 	patternStrength: number;
+	/** How far the headline may grow past its size to fill the room the layout gives it (a banner's height). */
+	fill: number;
 	wordmark: boolean;
+	/** The hollow wordmark's height (the posts tool's 150 px at the link preview, grown with the area). */
+	wordmarkH: number;
 	floor: number | null;
 	window: 'app' | 'picture' | null;
 	/** Window beside the words (a wide banner), not under them. */
@@ -150,13 +160,13 @@ export function specFor(t: Layout, fw: number, fh: number): Spec {
 	const m = ultra ? Math.min(44 * u, fh * 0.13) : (banner ? 48 : 44) * u * (banner ? hk : 1);
 	const lockH = 30 * hk * u;
 	/* A strip's headline grows with its height; the layouts' own numbers are for a 500 px tall banner. */
-	const head = (px: number) => (banner ? Math.max(px * hk * u, (fh * px) / 400) : px * hk * u);
+	const head = (px: number) => px * hk * u;
 	const side: Anchor = 'right';
 	const base: Spec = {
 		align: 'left', valign: 'middle', size: head(62), width: 0.66, tracking: -20, leading: 1.08, limit: 0, bodyRatio: 0.34, bodyLeading: 1.45,
 		bodyGap: 34, bodyWidth: 0, badgeAt: 'words', badgeRatio: 0.177, badgeFont: 'text', badgeWeight: 500, badgeTracking: 60, badgeRound: -1, badgeGap: 21,
 		logo: null, foot: false, footSize: 15 * hk * u, footRule: true, margin: m, room: null, guides: null, border: null, pattern: null, patternTile: 40 * u,
-		patternStrength: 100, wordmark: false, floor: null, window: null, split: false, stacks: null, stackScale: 1,
+		patternStrength: 100, fill: banner ? 1.7 : 1, wordmark: false, wordmarkH: 150 * hk * u, floor: null, window: null, split: false, stacks: null, stackScale: 1,
 	};
 	const ring = { min: 0.34, rings: 4 };
 	switch (t) {
@@ -164,7 +174,7 @@ export function specFor(t: Layout, fw: number, fh: number): Spec {
 			return {
 				...base, align: ultra ? 'left' : 'center', size: head(tall ? 78 : banner ? 52 : wide ? 62 : 70), width: banner ? 0.62 : tall ? 0.82 : wide ? 0.66 : 0.76,
 				badgeRatio: 0.152, bodyRatio: 0.3, bodyWidth: tall ? 0.78 : wide && !banner ? 0.56 : banner ? 0 : 0.7, guides: banner ? null : 48 * u,
-				logo: { at: ultra ? side : 'top', h: lockH, word: true }, foot: !ultra, margin: banner ? m : m + 48 * u,
+				logo: { at: ultra ? side : banner ? 'top-left' : 'top', h: lockH, word: true }, foot: !banner, margin: banner ? m : m + 48 * u,
 			};
 		case 'brief':
 			return {
@@ -193,13 +203,13 @@ export function specFor(t: Layout, fw: number, fh: number): Spec {
 			};
 		case 'app':
 			return {
-				...base, align: r >= 2.2 ? 'left' : 'center', valign: r >= 2.2 ? 'middle' : 'top', size: head(tall ? 72 : banner ? 46 : wide ? 52 : 60), width: 0.84, limit: r >= 2.2 ? 0 : 0.46,
+				...base, fill: r >= 2.4 ? 1.4 : 1, align: r >= 2.2 ? 'left' : 'center', valign: r >= 2.2 ? 'middle' : 'top', size: head(tall ? 72 : banner ? 46 : wide ? 52 : 60), width: 0.84, limit: r >= 2.2 ? 0 : 0.46,
 				badgeRatio: 0.17, room: { min: 0.3, rings: 4 }, window: 'app', split: r >= 2.2, stacks: r >= 2.2 ? null : 'lower', stackScale: 0.85,
 				margin: tall ? m + 24 * u : m,
 			};
 		case 'feature':
 			return {
-				...base, align: r >= 2.2 ? 'left' : 'center', valign: r >= 2.2 ? 'middle' : 'top', size: head(tall ? 76 : banner ? 46 : wide ? 52 : 62), width: 0.84, limit: r >= 2.2 ? 0 : 0.52,
+				...base, fill: r >= 2.4 ? 1.4 : 1, align: r >= 2.2 ? 'left' : 'center', valign: r >= 2.2 ? 'middle' : 'top', size: head(tall ? 76 : banner ? 46 : wide ? 52 : 62), width: 0.84, limit: r >= 2.2 ? 0 : 0.52,
 				badgeRatio: 0.183, bodyRatio: 0.306, window: 'picture', split: r >= 2.2, guides: r >= 2.2 ? null : 24 * u, margin: tall ? m + 24 * u : m,
 			};
 		case 'outline':

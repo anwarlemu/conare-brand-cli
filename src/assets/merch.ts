@@ -122,7 +122,8 @@ function placedLayers(item: MerchItem, v: Variant, slots: Record<string, string>
 	const gap = Math.max(0.5, Math.min(1.2, ...all.slice(1).map((l, i) => l.box[1] - (all[i]!.box[1] + all[i]!.box[3])).filter((g) => g > 0)));
 	for (const p of moving) {
 		p.box[1] = y;
-		y += p.box[3] + gap;
+		/* A logo keeps its clear space (a fifth of its height) from what follows. */
+		y += p.box[3] + (p.layer.type === 'logo' ? Math.max(gap, p.box[3] * 0.25) : gap);
 	}
 	if (item.flow === 'middle') {
 		const top = moving[0]!.box[1];

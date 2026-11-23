@@ -136,3 +136,36 @@ describe('the command', () => {
 		expect(refused.stderr).toMatch(/Shorten the headline to about \d+ words/);
 	});
 });
+
+describe('the logo', () => {
+	it('keeps its clear space from every word at every anchor, in every layout and size it can be anchored in', { timeout: 300_000 }, async () => {
+		const bad: string[] = [];
+		let drawn = 0;
+		for (const t of LAYOUTS) {
+			if (t === 'avatar') continue;
+			const anchors = A.templates().find((x) => x.id === t)!.layers.find((l) => l.id === 'logo')?.can.anchors ?? [];
+			for (const id of ['og', 'square', 'story', 'x-banner', 'linkedin-banner']) {
+				if (!sizesFor(t).includes(id)) continue;
+				for (const anchor of anchors) {
+					const size = sizeOf(id)!;
+					const copy = { headline: 'Every answer comes back with its source', body: 'Search across the documents you connect.', badge: 'New', note: 'For teams', ...(t === 'partner' ? { partner: 'Acme' } : {}) };
+					try {
+						const d = compose({ template: t, size, headline: copy.headline, body: copy.body, badgeText: copy.badge, note: copy.note, partner: (copy as { partner?: string }).partner, layers: { logo: { anchor } } });
+						const r = await renderDesign(d, null, { png: false, rgb: true, scale: 0.25 });
+						const logo = r.layers.find((l) => l.kind === 'logo')!;
+						const c = logo.logo!.clear;
+						const zone = { x: logo.box.x - c, y: logo.box.y - c, w: logo.box.w + 2 * c, h: logo.box.h + 2 * c };
+						for (const l of r.layers.filter((x) => x.text && x.id !== 'partner')) {
+							for (const b of l.ink ?? [l.box]) if (b.x < zone.x + zone.w && b.x + b.w > zone.x && b.y < zone.y + zone.h && b.y + b.h > zone.y) bad.push(`${t} ${id} logo ${anchor}: the ${l.id} is inside the logo's clear space`);
+						}
+						drawn++;
+					} catch (err) {
+						expect((err as Error).message, `${t} ${id} ${anchor}`).toMatch(ADVICE);
+					}
+				}
+			}
+		}
+		expect(bad).toEqual([]);
+		expect(drawn).toBeGreaterThan(100);
+	});
+});

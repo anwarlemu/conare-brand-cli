@@ -49,11 +49,11 @@
 		"avatar": { "label": "Profile picture", "description": "The mark alone, centered on the theme, inside the circle a profile picture is cropped to.", "theme": "red", "badge": "none", "sample": {} }
 	},
 	"sizes": {
-		"$comment": "The shared sizes (src/design/platforms.ts: pixels, what each platform covers, upload limits). Here: the frame the layouts keep to in a size with covered parts, and where the logo may be anchored (safe).",
+		"$comment": "The shared sizes (src/design/platforms.ts: pixels, what each platform covers, upload limits). Here: the frame the layouts keep to (the safe width; the layouts' words also keep out of what the platform covers inside it), and `clear`, a frame clear of all of it, which the five cards keep to.",
 		"story": { "frame": [0, 250, 1080, 1330] },
-		"x-banner": { "frame": [420, 64, 1050, 372], "safe": [24, 64, 1452, 372] },
-		"linkedin-banner": { "frame": [424, 12, 1136, 372], "safe": [24, 12, 1536, 372] },
-		"linkedin-page": { "frame": [244, 20, 1006, 216], "safe": [44, 20, 1424, 216] },
+		"x-banner": { "frame": [24, 64, 1452, 372], "clear": [420, 64, 1050, 372] },
+		"linkedin-banner": { "frame": [24, 12, 1536, 372], "clear": [424, 12, 1136, 372] },
+		"linkedin-page": { "frame": [44, 20, 1424, 216], "clear": [244, 20, 1006, 216] },
 		"youtube": { "frame": [510, 510, 1540, 420] },
 		"linkedin-square": { "w": 1200, "h": 1200, "label": "LinkedIn square" }
 	},
