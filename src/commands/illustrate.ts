@@ -1,16 +1,17 @@
-import { dirname, join, resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import { brand } from '../lib/brand.js';
 import { helpRow } from '../lib/help-row.js';
 import { display, num, pick, unknown, write, type OutFile } from '../assets/io.js';
-import { imageDoc, sizeOf } from '../assets/og.js';
+import { formatsFrom, sizesFrom, stemOf, str, type Flags } from '../assets/flags.js';
+import { scaleFlag } from '../assets/image.js';
+import { sizeIds, sizeOf } from '../assets/layouts.js';
+import { imageDoc } from '../assets/og.js';
 import { readPicture } from '../assets/picture.js';
 import { illustrateDoc, renderSubject, SUBJECTS } from '../illustrate/draw.js';
 
 // `illustrate <subject>`: the brand's own illustration style (brand/illustration.md) as SVG of real vector shapes and
 // PNG.
 
-type Flags = Record<string, string | boolean | string[] | undefined>;
-const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : undefined);
 const TAKES_IMAGE = ['stack', 'hatch'];
 
 export function illustrateCatalog() {
@@ -38,9 +39,10 @@ export function illustrateHelp(): string {
 		'',
 		`Subjects: ${SUBJECTS().join(', ')}.`,
 		`--theme ${Object.keys(imageDoc().themes).join(', ')} (stacks and scene default to red, the rest to paper).`,
-		'--size WxH (64 to 4000) or a share size name (og, square, story...). Default 1200x1200.',
+		'--size WxH (64 to 4000), a share size name (og, square, story...), several, all, or custom with --width and --height. Default 1200x1200.',
 		'--seed reshuffles the pixel grid and the found squares. --shape tall or wide for a stack. --transparent drops the ground.',
-		`--image (PNG, JPEG, WebP) goes on the front sheet of ${TAKES_IMAGE.join(' and ')}. --format both (default), png or svg. --out a directory or one file.`,
+		`--image (PNG, JPEG, WebP) goes on the front sheet of ${TAKES_IMAGE.join(' and ')}. --format png, svg, jpg, webp, a list, both (default) or all. --scale 1, 2 or 3. --out a directory or one file.`,
+		'panel and scene draw the agent window without words; --sample fills its sample content.',
 	].join('\n');
 }
 
@@ -52,40 +54,46 @@ export async function runIllustrate(cwd: string, args: string[], flags: Flags): 
 	for (const n of ['size', 'theme', 'seed', 'shape', 'image', 'format', 'out']) if (flags[n] === true) throw new Error(`--${n} needs a value.`);
 	if (args.length !== 1) throw new Error(`Name one subject: ${brand().bin} illustrate stack (one of ${SUBJECTS().join(', ')}).`);
 	const subject = pick('subject', args[0]!, SUBJECTS());
-	let width = illustrateDoc().defaults.size[0];
-	let height = illustrateDoc().defaults.size[1];
-	if (str(flags.size)) {
-		const t = str(flags.size)!.toLowerCase().replace('×', 'x');
-		const m = t.match(/^(\d+)x(\d+)$/);
+	const tokens = str(flags.size) ? str(flags.size)!.split(',') : flags.width !== undefined || flags.height !== undefined ? ['custom'] : [];
+	type Canvas = { name: string; w: number; h: number };
+	const sizes: Canvas[] = tokens.map((x) => x.trim()).filter(Boolean).flatMap((t): Canvas[] => {
+		const m = /^(\d+)[x×](\d+)$/i.exec(t) ?? (t.toLowerCase() === 'custom' ? [t, String(flags.width ?? ''), String(flags.height ?? '')] : null);
 		if (m) {
-			width = num('size width', m[1], 64, 4000, { integer: true })!;
-			height = num('size height', m[2], 64, 4000, { integer: true })!;
-		} else {
-			const s = sizeOf(t);
-			if (!s) throw unknown('size', t, ['WxH', ...Object.keys(imageDoc().sizes)]);
-			width = s.w;
-			height = s.h;
+			const w = num('size width', m[1], 64, 4000, { integer: true });
+			const h = num('size height', m[2], 64, 4000, { integer: true });
+			if (!w || !h) throw new Error('--size custom needs --width and --height.');
+			return [{ name: `${w}x${h}`, w, h }];
 		}
-	}
-	const seed = num('seed', flags.seed, 1, 1_000_000_000, { integer: true });
+		if (t.toLowerCase() === 'all') return sizeIds().map((id) => ({ name: id, w: sizeOf(id)!.w, h: sizeOf(id)!.h }));
+		const s = sizeOf(t);
+		if (!s) throw unknown('size', t, ['WxH', 'custom', ...sizeIds(), 'all']);
+		return [{ name: `${s.w}x${s.h}`, w: s.w, h: s.h }];
+	});
+	if (!sizes.length) sizes.push({ name: illustrateDoc().defaults.size.join('x'), w: illustrateDoc().defaults.size[0], h: illustrateDoc().defaults.size[1] });
+	const seed = num('seed', flags.seed, 0, 1_000_000_000, { integer: true });
 	const shape = str(flags.shape) ? (pick('shape', str(flags.shape)!, ['tall', 'wide'] as const)) : undefined;
 	if (shape && subject !== 'stack') throw new Error('--shape goes with the stack subject.');
 	if (str(flags.image) && !TAKES_IMAGE.includes(subject)) throw new Error(`${subject} holds no picture; --image goes with ${TAKES_IMAGE.join(' or ')}.`);
 	const p = str(flags.image) ? await readPicture(cwd, str(flags.image)!, 1600) : null;
 	const out = str(flags.out);
-	const named = out && /\.(png|svg)$/i.test(out) ? resolve(cwd, out) : undefined;
-	const format = named ? (named.toLowerCase().endsWith('.svg') ? 'svg' : 'png') : pick('format', str(flags.format) ?? 'both', ['both', 'png', 'svg'] as const);
-	const r = renderSubject({ subject, width, height, theme: str(flags.theme), seed, shape, picture: p ? { img: p.canvas, w: p.width, h: p.height } : null, transparent: flags.transparent === true }, { png: format !== 'svg', svg: format !== 'png' });
-	const stem = named ? named.replace(/\.(png|svg)$/i, '') : join(resolve(cwd, out ?? 'imagery'), `${subject}-${width}x${height}${str(flags.theme) ? `-${r.theme}` : ''}${seed ? `-s${seed}` : ''}`);
-	void dirname;
+	const { formats, named } = formatsFrom(flags, cwd, out);
+	if (named && sizes.length > 1) throw new Error('--out is a file, so pass one --size.');
+	const scale = scaleFlag(flags);
+	if (flags.transparent === true && formats.includes('jpg')) throw new Error('A JPEG has no transparency. Use png, webp or svg.');
+	const theme = str(flags.theme) ?? (str(flags.ground) === 'ink' ? 'black' : str(flags.ground));
+	const sample = flags.sample === true;
+	if (sample && subject !== 'panel' && subject !== 'scene') throw new Error('--sample fills the agent window of panel and scene; the other subjects have no words.');
 	const files: OutFile[] = [];
-	if (r.png) {
-		write(`${stem}.png`, r.png);
-		files.push({ path: display(cwd, `${stem}.png`), format: 'png', subject, theme: r.theme, width, height });
-	}
-	if (r.svg) {
-		write(`${stem}.svg`, r.svg);
-		files.push({ path: display(cwd, `${stem}.svg`), format: 'svg', subject, theme: r.theme, width, height });
+	for (const z of sizes) {
+		const r = renderSubject({ subject, width: z.w, height: z.h, theme, seed, shape, picture: p ? { img: p.canvas, w: p.width, h: p.height } : null, transparent: flags.transparent === true, sample }, { png: formats.includes('png'), svg: formats.includes('svg'), jpg: formats.includes('jpg'), webp: formats.includes('webp'), scale });
+		const stem = named ? stemOf(named) : join(resolve(cwd, out ?? 'imagery'), `${subject}-${z.name}${theme ? `-${r.theme}` : ''}${seed ? `-s${seed}` : ''}`);
+		for (const f of formats) {
+			const data = f === 'svg' ? r.svg! : f === 'png' ? r.png! : f === 'jpg' ? r.jpg! : r.webp!;
+			const path = `${stem}.${f === 'jpg' && named && /\.jpeg$/i.test(named) ? 'jpeg' : f}`;
+			write(path, data);
+			const k = f === 'svg' ? 1 : scale;
+			files.push({ path: display(cwd, path), format: f, subject, theme: r.theme, width: z.w * k, height: z.h * k });
+		}
 	}
 	return { json: { files }, text: files.map((f) => `${f.path}  ${f.width}x${f.height}`).join('\n') };
 }

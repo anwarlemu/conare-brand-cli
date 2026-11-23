@@ -1,5 +1,8 @@
 import { brand } from '../lib/brand.js';
 import { logos, principleSurfaces, tokenRecords, BRAND_SECTIONS, SURFACE_IDS } from '../brand/system.js';
+import { FLAGS } from './flags-table.js';
+import { designManifest } from '../design/index.js';
+import { adapter } from '../design/adapter.js';
 import { componentCatalog } from '../component/emit.js';
 import { catalog } from '../image/spec.js';
 import { videoCatalog } from '../video/spec.js';
@@ -18,27 +21,28 @@ import { packageRoot } from '../lib/brand.js';
 // Commands reject anything that is not in here.
 
 const COMMANDS = [
-	{ name: 'manifest', summary: 'This document. `describe` is the same command.', flags: ['help'] },
-	{ name: 'describe', summary: 'Alias of manifest.', flags: ['help'] },
-	{ name: 'brand', summary: 'Tokens (color, type, spacing, radii, motion), fonts, logos and voice.', flags: ['section', 'token', 'help'] },
-	{ name: 'principles', summary: 'Product and website rules, with do and do-not lists. Voice is included.', flags: ['surface', 'help'] },
-	{ name: 'component', summary: 'list, inspect and emit Vue for a real component, including props and states.', flags: ['group', 'part', 'state', 'prop', 'source', 'help'] },
-	{ name: 'image', summary: 'Share images and social posts (PNG and SVG): five card templates and the twelve posts-tool layouts at every social size.', flags: ['title', 'text', 'subtitle', 'eyebrow', 'by', 'author', 'image', 'template', 'size', 'ground', 'theme', 'badge', 'highlight', 'partner', 'credit', 'input', 'out', 'format', 'list', 'help'] },
-	{ name: 'deck', summary: 'Slides at 1920x1080 on the share layouts: a PNG per slide and one PDF, from a JSON file or one slide from flags.', flags: ['input', 'title', 'body', 'eyebrow', 'number', 'items', 'stat', 'quote', 'attribution', 'url', 'image', 'theme', 'format', 'out', 'list', 'help'] },
-	{ name: 'video', summary: 'Motion: a layout coming in the way the site moves (H.264 MP4 or VP9 WebM through ffmpeg, or a still PNG), and the Motion JPEG clips.', flags: ['title', 'text', 'subtitle', 'eyebrow', 'template', 'size', 'ground', 'theme', 'badge', 'highlight', 'partner', 'credit', 'image', 'format', 'fps', 'at', 'still', 'out', 'list', 'help'] },
-	{ name: 'merch', summary: 'Print files at real size with bleed and safe area (tee, hoodie, cap, tote, mug, sticker with cut line, poster).', flags: ['variant', 'headline', 'url', 'dpi', 'format', 'guides', 'out', 'list', 'help'] },
-	{ name: 'illustrate', summary: "The brand's illustration style as SVG (vector shapes) and PNG: stacks of documents, the pixel grid, the room and more.", flags: ['size', 'theme', 'seed', 'shape', 'image', 'transparent', 'format', 'out', 'list', 'help'] },
-	{ name: 'figma', summary: 'Files and ordered Figma MCP calls: tokens (variables), push (image, slide, illustration, asset, component, page), pull, check.', flags: ['out', 'file', 'size', 'theme', 'title', 'text', 'eyebrow', 'seed', 'example', 'url', 'width', 'help'] },
-	{ name: 'list', summary: 'Every library item. In JSON, group is the label and groupId is the id (ui, product, site, visuals).', flags: [] },
-	{ name: 'view', summary: 'How to use an item: rules, props, slots, events, examples. show is the same command.', flags: ['source', 'full'] },
-	{ name: 'add', summary: 'Copy items and what they need into an app.', flags: ['dry-run', 'overwrite', 'install'] },
-	{ name: 'search', summary: 'Find items by what they do.', flags: [] },
-	{ name: 'diff', summary: 'Compare an installed item with the library.', flags: [] },
-	{ name: 'apply', summary: 'Restyle an app onto the tokens and the library look, without changing copy or behavior.', flags: ['components', 'pages', 'with-shared', 'dry-run', 'redo'] },
-	{ name: 'init', summary: 'Install the stylesheet, theme, fonts and the agent contract.', flags: ['dry-run'] },
-	{ name: 'info', summary: 'The app setup, installed items and what to run next.', flags: [] },
-	{ name: 'check', summary: 'Report values that are off the tokens.', flags: ['fix', 'all'] },
-	{ name: 'tokens', summary: 'Find tokens by name or value. No match is an error. For one exact token, use brand --token.', flags: [] },
+	{ name: 'manifest', summary: 'This document. `describe` is the same command.' },
+	{ name: 'describe', summary: 'Alias of manifest.' },
+	{ name: 'brand', summary: 'Tokens (color, type, spacing, radii, motion), fonts, logos and voice.' },
+	{ name: 'principles', summary: 'Product and website rules, with do and do-not lists. Voice is included.' },
+	{ name: 'component', summary: 'list, inspect and emit Vue for a real component, including props and states.' },
+	{ name: 'image', summary: 'Share images and social posts (PNG, SVG, JPEG, WebP): five card templates and the posts-tool layouts at every social size, and numbered carousels. Only the copy passed is drawn.' },
+	{ name: 'design', summary: 'Make a design file, revise it in plain words or exact edits, check it, undo it, and show variants and other sizes. Brand rules block a write; see `design` in this document.' },
+	{ name: 'deck', summary: 'Slides at 1920x1080 on the share layouts: a PNG per slide and one PDF, from a JSON file or one slide from flags. Only the copy passed is drawn.' },
+	{ name: 'video', summary: 'Motion: a layout coming in the way the site moves (H.264 MP4 or VP9 WebM through ffmpeg, or a still PNG), and the Motion JPEG clips.' },
+	{ name: 'merch', summary: 'Print files at real size with bleed and safe area (tee, hoodie, cap, tote, mug, sticker with cut line, poster).' },
+	{ name: 'illustrate', summary: "The brand's illustration style as SVG (vector shapes) and PNG: stacks of documents, the pixel grid, the room and more." },
+	{ name: 'figma', summary: 'Files and ordered Figma MCP calls: tokens (variables), push (image, slide, illustration, asset, component, page), pull, check.' },
+	{ name: 'list', summary: 'Every library item. In JSON, group is the label and groupId is the id (ui, product, site, visuals).' },
+	{ name: 'view', summary: 'How to use an item: rules, props, slots, events, examples. show is the same command.' },
+	{ name: 'add', summary: 'Copy items and what they need into an app.' },
+	{ name: 'search', summary: 'Find items by what they do.' },
+	{ name: 'diff', summary: 'Compare an installed item with the library.' },
+	{ name: 'apply', summary: 'Restyle an app onto the tokens and the library look, without changing copy or behavior.' },
+	{ name: 'init', summary: 'Install the stylesheet, theme, fonts and the agent contract.' },
+	{ name: 'info', summary: 'The app setup, installed items and what to run next.' },
+	{ name: 'check', summary: 'Report values that are off the tokens.' },
+	{ name: 'tokens', summary: 'Find tokens by name or value. No match is an error. For one exact token, use brand --token.' },
 ] as const;
 
 export function manifestHelp(): string {
@@ -62,7 +66,7 @@ export async function manifest(): Promise<Record<string, unknown>> {
 		entry: 'manifest',
 		alias: 'describe',
 		validation: 'Every command checks its inputs against this document. An unknown command, flag, template, size, ground, format, section, surface, group, component, part, state, prop, prop value or token exits 1 and names what is allowed. The CLI does not substitute a nearby value.',
-		commands: COMMANDS,
+		commands: COMMANDS.map((c) => ({ ...c, flags: [...(FLAGS[c.name] ?? []), 'help'], ...(c.name === 'design' ? { note: 'Takes its own arguments: design --help, or the `design` entry.' } : {}) })),
 		commonFlags: ['cwd', 'json', 'help'],
 		brand: {
 			sections: [...BRAND_SECTIONS],
@@ -76,12 +80,13 @@ export async function manifest(): Promise<Record<string, unknown>> {
 		groups: Object.entries(brand().groups).map(([id, label]) => ({ id, label })),
 		components: components.map((item) => ({ name: item.name, group: item.group, part: item.part, parts: item.parts, states: item.states, examples: item.examples, description: item.description, use_for: item.use_for, never: item.never })),
 		image: { ...image, layouts: layoutCatalog() },
+		design: designManifest(adapter(), brand().bin),
 		deck: deckCatalog(),
 		video: { ...video, layouts: { templates: layoutCatalog().templates.map((t) => t.id), sizes: layoutVideoSizes(), formats: ['mp4', 'webm'], still: ['--still', '--at <seconds>'], fps: { default: 30, min: 12, max: 60 }, motion: 'Tokens only: settle (entrance, standard), headline reveal (enter, reveal-fade; reveal, reveal-ink), window (viz-card, viz). Never ease-in.', needs: 'ffmpeg on PATH' } },
 		merch: merchCatalog(),
 		illustrate: { ...illustrateCatalog(), rules: illustrationRules() },
 		figma: { actions: [...FIGMA_ACTIONS], push: [...PUSH_KINDS], note: 'The CLI never calls Figma; it writes files and prints the MCP calls in order.' },
-		logo: { lockups: Object.keys(logoDoc().lockups).map((id) => ({ id, description: logoDoc().lockups[id] })), colors: logoDoc().colors, clearSpace: null, minimumSize: null, note: 'brand/logo defines no clear space or minimum size; none is invented.' },
+		logo: { lockups: Object.keys(logoDoc().lockups).map((id) => ({ id, description: logoDoc().lockups[id] })), colors: logoDoc().colors, clearSpace: null, minimumSize: null, note: 'brand/logo defines no clear space or minimum size; none is invented. The image engine keeps its own layout spacing (a fifth of the lockup height) and a legible height (12 px as shown), as drawing rules, not brand rules.' },
 		gaps: [...logo.missing, principles.website.gap].filter((gap): gap is string => Boolean(gap)),
 	};
 }

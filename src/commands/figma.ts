@@ -3,7 +3,8 @@ import { basename, extname, join, resolve } from 'node:path';
 import { brand } from '../lib/brand.js';
 import { helpRow } from '../lib/help-row.js';
 import { display, pick, unknown, write } from '../assets/io.js';
-import { compose, LAYOUTS, renderDesign, sizeOf, type Layout } from '../assets/og.js';
+import { compose, imageDoc, LAYOUTS, renderDesign, sizeIds, sizeOf, type Layout } from '../assets/og.js';
+import { copyFlags, seedOf } from '../assets/flags.js';
 import { renderSlide, slideTypes } from '../assets/deck.js';
 import { renderSubject, SUBJECTS } from '../illustrate/draw.js';
 import { checkFigmaValues, dedupe } from '../figma/check.js';
@@ -33,8 +34,8 @@ export function figmaHelp(): string {
 		'Work in Figma through its MCP tools. The CLI never calls Figma: it writes files and prints the tool calls, in order.',
 		'',
 		row(`${b} figma tokens`, 'Brand tokens as Figma variables (Light and Dark) and use_figma scripts'),
-		row(`${b} figma push image hero --size og`, 'A share image as SVG plus the import steps'),
-		row(`${b} figma push slide cover`, 'A deck slide'),
+		row(`${b} figma push image hero --headline "..." --size og`, 'A share image as SVG plus the import steps'),
+		row(`${b} figma push slide cover --title "..."`, 'A deck slide'),
 		row(`${b} figma push illustration stacks`, 'An illustration as editable vectors'),
 		row(`${b} figma push asset logo.svg`, 'Any SVG, PNG, JPEG or self-contained HTML file'),
 		row(`${b} figma push component button --url http://localhost:3201`, 'A library example, captured from a running docs site'),
@@ -43,7 +44,7 @@ export function figmaHelp(): string {
 		row(`${b} figma check variables.json design.txt`, 'Off-brand values in saved MCP output, with the nearest token'),
 		'',
 		`Push kinds: ${PUSH_KINDS.join(', ')}. --out a directory (default figma/). --file <key> targets an existing Figma file.`,
-		'push image takes the image flags (--size, --theme, --title, --text, --eyebrow); push slide its slots (--title, --body...); push illustration --size WxH, --theme, --seed.',
+		'push image takes the image flags (--size, --theme, --headline, --body, --badge, --sample); push slide its slots (--title, --body...) or --sample; push illustration --size WxH, --theme, --seed.',
 		'component and page captures need playwright-core and a Chromium (PLAYWRIGHT_CHROMIUM or a Playwright install); a saved HTML file needs neither.',
 	].join('\n');
 }
@@ -152,8 +153,9 @@ async function pushAction(cwd: string, kind: string | undefined, target: string 
 		if (!target) throw new Error(`Name a layout: ${LAYOUTS.join(', ')}.`);
 		const layout = pick('layout', target, LAYOUTS) as Layout;
 		const size = sizeOf(str(flags.size) ?? 'og');
-		if (!size) throw unknown('size', String(flags.size), Object.keys((await import('../assets/og.js')).imageDoc().sizes));
-		const d = compose({ template: layout, w: size.w, h: size.h, theme: str(flags.theme), headline: typeof flags.title === 'string' ? flags.title : undefined, body: typeof flags.text === 'string' ? flags.text : undefined, badgeText: typeof flags.eyebrow === 'string' ? flags.eyebrow : undefined });
+		if (!size) throw unknown('size', String(flags.size), sizeIds());
+		const copy = copyFlags(flags);
+		const d = compose({ template: layout, size, theme: str(flags.theme) ? pick('theme', str(flags.theme)!, Object.keys(imageDoc().themes)) : undefined, headline: copy.headline, body: copy.body, badge: copy.badgeStyle, badgeText: copy.badge, partner: copy.partner, note: copy.note, credit: copy.credit, seed: seedOf(flags), sample: flags.sample === true });
 		const r = await renderDesign(d, null, { png: true, svg: true });
 		const name = `image-${layout}-${size.id}`;
 		write(join(dir, `${name}.png`), r.png!);
@@ -165,8 +167,8 @@ async function pushAction(cwd: string, kind: string | undefined, target: string 
 		if (!target) throw new Error(`Name a slide type: ${slideTypes().join(', ')}.`);
 		const type = pick('slide type', target, slideTypes());
 		const slots: Record<string, string> = {};
-		for (const k of ['title', 'body', 'eyebrow', 'number', 'items', 'stat', 'quote', 'attribution', 'url']) if (typeof flags[k] === 'string') slots[k] = flags[k] as string;
-		const r = await renderSlide({ type, ...slots, theme: str(flags.theme) }, { png: true, svg: true });
+		for (const k of ['title', 'headline', 'body', 'badge', 'eyebrow', 'number', 'items', 'stat', 'quote', 'attribution', 'url']) if (typeof flags[k] === 'string') slots[k] = flags[k] as string;
+		const r = await renderSlide({ type, ...slots, theme: str(flags.theme), sample: flags.sample === true }, { png: true, svg: true });
 		const name = `slide-${type}`;
 		write(join(dir, `${name}.png`), r.png!);
 		files.push(join(dir, `${name}.png`));

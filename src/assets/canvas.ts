@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 import { createCanvas, GlobalFonts, SvgExportFlag, type Canvas, type SKRSContext2D, type SvgCanvas } from '@napi-rs/canvas';
 import { brand, packageRoot, tokens } from '../lib/brand.js';
+import type { FaceRole } from './glyphs.js';
 import { encodePng } from './png.js';
 
 // The drawing surface the asset commands use: a 2D canvas (Skia, no browser) with the brand's faces registered under
@@ -13,7 +14,7 @@ export type AnyCanvas = Canvas | SvgCanvas;
 export type Surface = { canvas: AnyCanvas; ctx: Ctx; width: number; height: number; scale: number; svg: boolean };
 
 /** The faces by role: display (the heading face), text, ui (the product face) and mono. */
-export type FaceRole = 'display' | 'text' | 'ui' | 'mono';
+export type { FaceRole } from './glyphs.js';
 
 let registered: Map<string, { alias: string; weights: number[] }> | undefined;
 
@@ -126,6 +127,30 @@ export function color(spec: string): string {
 export function hexOf(spec: string): string {
 	const c = color(spec.split('/')[0]!);
 	return c;
+}
+
+const channels = (c: string): [number, number, number, number] => {
+	if (c.startsWith('#')) return [1, 3, 5].map((i) => Number.parseInt(c.slice(i, i + 2), 16)).concat(1) as [number, number, number, number];
+	const [r, g, b, a] = c.slice(c.indexOf('(') + 1, -1).split(',').map(Number) as [number, number, number, number?];
+	return [r, g, b, a ?? 1];
+};
+
+/** A color with alpha over an opaque one, as #rrggbb. */
+export function blend(over: string, under: string): string {
+	const [r, g, b, a] = channels(over);
+	const u = channels(under);
+	return `#${[r, g, b].map((v, i) => Math.round(v * a + u[i]! * (1 - a)).toString(16).padStart(2, '0')).join('')}`;
+}
+
+/** The WCAG contrast ratio of two opaque colors. */
+export function contrast(a: string, b: string): number {
+	const lum = (c: string) => {
+		const [r, g, bl] = channels(c).slice(0, 3).map((v) => ((v /= 255) <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)) as [number, number, number];
+		return 0.2126 * r + 0.7152 * g + 0.0722 * bl;
+	};
+	const x = lum(a);
+	const y = lum(b);
+	return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
 }
 
 /** Skia numbers clip paths and other ids from a counter that runs across documents; number them from 1 in each, so the

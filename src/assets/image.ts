@@ -1,39 +1,91 @@
 import { readFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
-import { BADGES, LAYOUTS, compose, imageDoc, renderDesign, sizeIds, sizeOf, type BadgeStyle, type Layout, type Pic } from './og.js';
+import { copyFlags, formatsFrom, overLimit, seedOf, sizeName, sizesFrom, stemOf, str, type Copy, type Flags, type Format } from './flags.js';
+import { assertDrawn } from '../design/adapter.js';
+import { platformOf } from '../design/platforms.js';
 import { display, pick, unknown, write, type OutFile } from './io.js';
-import { readPicture } from './picture.js';
+import { imageDoc, LAYOUTS, sizesFor, sizeOf, sizeIds, type Layout, type Size } from './layouts.js';
+import { BADGES, compose, layersOf, renderDesign, slotsOf, type BadgeStyle, type Pic } from './og.js';
+import { readPicture, type Picture } from './picture.js';
 
-// `image --template <layout>`: the posts tool's layouts at any of their sizes, from flags or a JSON file of several.
+// `image <layout>`: the posts tool's layouts at any of their sizes, from flags or a JSON file of several (or of one
+// carousel).
 
-type Flags = Record<string, string | boolean | string[] | undefined>;
-type Spec = { template: string; size?: string | string[]; theme?: string; title?: string; text?: string; eyebrow?: string; badge?: string; highlight?: string; partner?: string; credit?: string; image?: string; name?: string };
+type Spec = Copy & { template: string; size?: string | string[]; width?: number; height?: number; theme?: string; highlight?: string; image?: string; seed?: number; sample?: boolean; name?: string };
 
-const FIELDS = ['template', 'size', 'theme', 'title', 'text', 'eyebrow', 'badge', 'highlight', 'partner', 'credit', 'image', 'name'];
+/** Fields of an image in a JSON file, with the older names. */
+const FIELDS = ['template', 'size', 'width', 'height', 'theme', 'headline', 'title', 'body', 'text', 'badge', 'eyebrow', 'badge-style', 'badgeStyle', 'note', 'page', 'credit', 'partner', 'highlight', 'image', 'seed', 'sample', 'name'];
+const CAROUSEL = ['template', 'size', 'theme', 'highlight', 'numbering', 'note', 'name', 'slides', 'seed'];
 
 export function layoutCatalog() {
 	const D = imageDoc();
 	return {
-		templates: LAYOUTS.map((id) => ({ id, label: D.templates[id]!.label, description: D.templates[id]!.description, theme: D.templates[id]!.theme, badge: D.templates[id]!.badge, sample: { title: D.templates[id]!.headline, text: D.templates[id]!.body, eyebrow: D.templates[id]!.badgeText, partner: D.templates[id]!.partner }, takesImage: id === 'feature' })),
-		sizes: Object.entries(D.sizes).map(([id, s]) => ({ id, width: s.w, height: s.h, label: s.label, aliases: s.aliases ?? [] })),
+		templates: LAYOUTS.map((id) => ({ id, label: D.templates[id]!.label, description: D.templates[id]!.description, theme: D.templates[id]!.theme, badge: D.templates[id]!.badge, slots: slotsOf(id), requires: id === 'avatar' ? [] : id === 'partner' ? ['headline or partner'] : ['headline'], takesImage: id === 'feature' || id === 'app', sizes: sizesFor(id), layers: layersOf(id), sample: D.templates[id]!.sample })),
+		sizes: sizeIds().map((id) => {
+			const z = sizeOf(id)!;
+			const p = platformOf(id, z.w, z.h);
+			return { id, width: z.w, height: z.h, label: z.label, aliases: [...p.aliases, ...Object.entries(D.sizeAliases).filter(([, v]) => v === id).map(([k]) => k)], frame: z.frame, covered: p.avoid, safe: p.safe ?? null, note: p.note ?? null, source: p.source ?? null, uploadLimitMb: p.limit ? p.limit.bytes / 1048576 : null, shownAt: p.shown };
+		}),
+		customSize: { flags: ['--size custom --width W --height H', '--size WxH'], ...D.custom },
 		themes: Object.entries(D.themes).map(([id, t]) => ({ id, label: t.label, ground: t.bg })),
 		badges: BADGES,
 		highlights: Object.keys(D.highlights),
-		slots: ['title', 'text', 'eyebrow', 'badge', 'highlight', 'partner', 'credit', 'image'],
-		formats: ['png', 'svg', 'both'],
+		slots: ['headline', 'body', 'badge', 'badge-style', 'note', 'page', 'credit', 'partner', 'highlight', 'image'],
+		formats: ['png', 'svg', 'jpg', 'webp', 'both', 'all'],
+		seed: 'Rearranges the stacks (room, app, funding) or swaps the sides (tile, app and feature beside the words). Other layouts have no seeded art.',
+		carousel: { fields: CAROUSEL, note: 'One JSON file: { "carousel": { "template": "card", "size": "square", "slides": [ { "headline": "..." } ] } }. Numbered 1 / N at the foot unless "numbering" is false.' },
+		drawsOnly: 'The copy passed, the logo and the address. --sample fills sample copy.',
 		notes: D.notes,
 	};
 }
 
-const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : undefined);
+const SEEDED = new Set<Layout>(['room', 'app', 'funding', 'tile', 'feature']);
 
-export async function runLayouts(cwd: string, args: string[], flags: Flags): Promise<{ json: unknown; text: string }> {
-	for (const n of ['title', 'text', 'subtitle', 'eyebrow', 'image', 'template', 'size', 'theme', 'out', 'format', 'badge', 'highlight', 'partner', 'credit', 'input']) if (flags[n] === true) throw new Error(`--${n} needs a value.`);
-	if (str(flags.by) || str(flags.author)) throw new Error('A layout does not draw --by. Quote is one of the first five templates (image --template quote).');
+function fromJson(x: Record<string, unknown>, i: number, file: string): Spec {
+	for (const k of Object.keys(x)) if (!FIELDS.includes(k)) throw unknown(`field in image ${i + 1}`, k, FIELDS);
+	if (typeof x.template !== 'string') throw new Error(`Image ${i + 1} in ${file} needs a "template" (${LAYOUTS.join(', ')}).`);
+	const flags: Flags = {};
+	for (const [k, v] of Object.entries(x)) {
+		if (['template', 'size', 'width', 'height', 'seed', 'sample', 'name'].includes(k)) continue;
+		if (typeof v !== 'string') throw new Error(`Image ${i + 1} in ${file}: "${k}" takes text.`);
+		flags[k === 'badgeStyle' ? 'badge-style' : k] = v;
+	}
+	const size = x.size as string | string[] | undefined;
+	if (size !== undefined && typeof size !== 'string' && !(Array.isArray(size) && size.every((s) => typeof s === 'string'))) throw new Error(`Image ${i + 1} in ${file}: "size" takes a size or a list of sizes.`);
+	return { ...copyFlags(flags), template: x.template, size, width: x.width as number, height: x.height as number, theme: str(flags.theme), highlight: str(flags.highlight), image: str(flags.image), seed: x.seed as number | undefined, sample: x.sample === true, name: x.name as string | undefined };
+}
+
+function carouselSpecs(c: Record<string, unknown>, file: string): Spec[] {
+	for (const k of Object.keys(c)) if (!CAROUSEL.includes(k)) throw unknown('field in the carousel', k, CAROUSEL);
+	const slides = c.slides;
+	if (!Array.isArray(slides) || slides.length < 2) throw new Error(`The carousel in ${file} needs a "slides" list of two or more.`);
+	if (slides.length > 20) throw new Error(`The carousel in ${file} has ${slides.length} slides; platforms take up to 20.`);
+	const size = (c.size as string | undefined) ?? 'square';
+	if (typeof size !== 'string' || size.includes(',') || size === 'all') throw new Error('A carousel takes one size, so every slide matches.');
+	const name = (c.name as string | undefined) ?? 'carousel';
+	return slides.map((s, i) => {
+		if (!s || typeof s !== 'object') throw new Error(`Slide ${i + 1} of the carousel in ${file} is not an object.`);
+		const own = s as Record<string, unknown>;
+		for (const k of ['size', 'page', 'width', 'height', 'name']) if (own[k] !== undefined) throw new Error(`Slide ${i + 1} of the carousel sets "${k}"; that goes on the carousel.`);
+		const base = { template: c.template ?? 'card', ...(c.theme ? { theme: c.theme } : {}), ...(c.highlight ? { highlight: c.highlight } : {}), ...(c.note ? { note: c.note } : {}), ...(c.seed !== undefined ? { seed: c.seed } : {}) };
+		const spec = fromJson({ ...base, ...own, size }, i, file);
+		if (c.numbering !== false && spec.template !== 'avatar') spec.page = `${i + 1} / ${slides.length}`;
+		spec.name = `${name}-${String(i + 1).padStart(2, '0')}`;
+		return spec;
+	});
+}
+
+export type ImageResult = { json: { files: OutFile[]; notes: string[] }; text: string };
+
+export async function runLayouts(cwd: string, template: string | undefined, sizeArgs: string[], flags: Flags): Promise<ImageResult> {
+	for (const n of ['image', 'template', 'size', 'theme', 'out', 'format', 'highlight', 'input', 'ground', 'width', 'height', 'seed', 'scale']) if (flags[n] === true) throw new Error(`--${n} needs a value.`);
+	if (str(flags.by) || str(flags.author)) throw new Error('A layout does not draw --by. Quote is one of the five cards (image quote).');
 	if (str(flags.ground) && str(flags.theme)) throw new Error('Pass --theme or --ground, not both.');
-	const format = pick('format', str(flags.format) ?? 'both', ['png', 'svg', 'both'] as const);
+	const out = str(flags.out);
+	const { formats, named } = formatsFrom(flags, cwd, out);
 	let specs: Spec[];
 	let base = cwd;
+	let flat = false;
 	if (str(flags.input)) {
 		const path = isAbsolute(String(flags.input)) ? String(flags.input) : resolve(cwd, String(flags.input));
 		let parsed: unknown;
@@ -42,67 +94,83 @@ export async function runLayouts(cwd: string, args: string[], flags: Flags): Pro
 		} catch (err) {
 			throw new Error(`Could not read ${flags.input} as JSON (${(err as Error).message}).`);
 		}
-		const list = Array.isArray((parsed as { images?: unknown }).images) ? (parsed as { images: unknown[] }).images : [parsed];
-		specs = list.map((x, i) => {
-			if (!x || typeof x !== 'object') throw new Error(`Image ${i + 1} in ${flags.input} is not an object.`);
-			for (const k of Object.keys(x)) if (!FIELDS.includes(k)) throw unknown(`field in image ${i + 1}`, k, FIELDS);
-			if (typeof (x as Spec).template !== 'string') throw new Error(`Image ${i + 1} needs a "template" (${LAYOUTS.join(', ')}).`);
-			return x as Spec;
-		});
-		base = dirname(path);
-		for (const k of ['template', 'title', 'text', 'eyebrow', 'image', 'theme', 'badge', 'highlight', 'partner', 'credit']) if (flags[k] !== undefined) throw new Error(`--${k} goes with one image; with --input, put it in the file.`);
-	} else {
-		const sizes = [str(flags.size), ...args].filter(Boolean).join(',');
-		const text = str(flags.text);
-		const subtitle = str(flags.subtitle);
-		if (text && subtitle && text !== subtitle) throw new Error('--text and --subtitle disagree. Pass one.');
-		specs = [{ template: String(flags.template), size: sizes || undefined, theme: str(flags.theme) ?? (str(flags.ground) === 'ink' ? 'black' : str(flags.ground)), title: typeof flags.title === 'string' ? flags.title : undefined, text: text ?? subtitle ?? (typeof flags.text === 'string' ? flags.text : undefined), eyebrow: typeof flags.eyebrow === 'string' ? flags.eyebrow : undefined, badge: str(flags.badge), highlight: str(flags.highlight), partner: typeof flags.partner === 'string' ? flags.partner : undefined, credit: str(flags.credit), image: str(flags.image) }];
-	}
-	const out = str(flags.out);
-	const named = out && /\.(png|svg)$/i.test(out) ? resolve(cwd, out) : undefined;
-	const dir = named ? dirname(named) : resolve(cwd, out ?? 'imagery');
-	const jobs: { spec: Spec; size: string }[] = [];
-	for (const spec of specs) {
-		const raw = Array.isArray(spec.size) ? spec.size : String(spec.size ?? 'og').split(',');
-		const sizes: string[] = [];
-		for (const t of raw.map((s) => s.trim()).filter(Boolean)) {
-			if (t.toLowerCase() === 'all') sizes.push(...sizeIds());
-			else {
-				const s = sizeOf(t);
-				if (!s) throw unknown('size', t, [...sizeIds(), 'all']);
-				sizes.push(s.id);
-			}
+		const doc = parsed as { images?: unknown; carousel?: unknown };
+		if (doc.carousel && typeof doc.carousel === 'object') {
+			specs = carouselSpecs(doc.carousel as Record<string, unknown>, String(flags.input));
+			flat = true;
+		} else {
+			const list = Array.isArray(doc.images) ? doc.images : [parsed];
+			if (!list.length) throw new Error(`${flags.input} has no images.`);
+			specs = list.map((x, i) => {
+				if (!x || typeof x !== 'object') throw new Error(`Image ${i + 1} in ${flags.input} is not an object.`);
+				return fromJson(x as Record<string, unknown>, i, String(flags.input));
+			});
 		}
-		for (const size of [...new Set(sizes)]) jobs.push({ spec, size });
+		base = dirname(path);
+		for (const k of ['template', 'headline', 'title', 'body', 'text', 'subtitle', 'badge', 'eyebrow', 'note', 'page', 'image', 'theme', 'highlight', 'partner', 'credit', 'seed']) if (flags[k] !== undefined) throw new Error(`--${k} goes with one image; with --input, put it in the file.`);
+		if (template) throw new Error(`\`${template}\` goes with one image; with --input, put "template" in the file.`);
+	} else {
+		const sizes = [str(flags.size), ...sizeArgs].filter((x): x is string => Boolean(x));
+		const ground = str(flags.ground);
+		if (ground && !['paper', 'ink'].includes(ground)) throw unknown('ground', ground, ['paper', 'ink']);
+		specs = [{ ...copyFlags(flags), template: template ?? String(flags.template), size: sizes.length ? sizes : undefined, theme: str(flags.theme) ?? (ground === 'ink' ? 'black' : ground), highlight: str(flags.highlight), image: str(flags.image), seed: seedOf(flags), sample: flags.sample === true, width: flags.width as unknown as number, height: flags.height as unknown as number }];
+	}
+	const scale = scaleFlag(flags);
+	const dir = named ? dirname(named) : resolve(cwd, out ?? 'imagery');
+	const jobs: { spec: Spec; layout: Layout; size: Size }[] = [];
+	for (const spec of specs) {
+		const layout = pick('template', spec.template, LAYOUTS) as Layout;
+		const list = Array.isArray(spec.size) ? spec.size : spec.size ? [spec.size] : [];
+		const sizes = sizesFrom(list, { width: spec.width === undefined ? undefined : String(spec.width), height: spec.height === undefined ? undefined : String(spec.height) }, sizesFor(layout));
+		for (const size of sizes.length ? sizes : [sizeOf(layout === 'avatar' ? 'avatar' : 'og')!]) jobs.push({ spec, layout, size });
 	}
 	if (named && jobs.length > 1) throw new Error('--out is a file, so ask for one image. For several, pass a directory.');
 	const files: OutFile[] = [];
-	for (const { spec, size } of jobs) {
-		const template = pick('template', spec.template, LAYOUTS) as Layout;
+	const notes = new Set<string>();
+	const writes: { path: string; data: Buffer | string }[] = [];
+	for (const { spec, layout, size } of jobs) {
 		const theme = spec.theme ? pick('theme', spec.theme, Object.keys(imageDoc().themes)) : undefined;
-		const badge = spec.badge ? (pick('badge', spec.badge, BADGES) as BadgeStyle) : undefined;
 		const highlight = spec.highlight ? pick('highlight', spec.highlight, Object.keys(imageDoc().highlights)) : undefined;
-		if (spec.image && template !== 'feature') throw new Error(`${template} has no picture window. --image goes in the feature layout.`);
-		const pic: Pic | null = spec.image ? await picture(base, spec.image) : null;
-		const s = sizeOf(size)!;
-		const d = compose({ template, w: s.w, h: s.h, theme, headline: spec.title?.replace(/\\n/g, '\n'), body: spec.text?.replace(/\\n/g, '\n'), badge, badgeText: spec.eyebrow, highlight, partner: spec.partner, credit: spec.credit });
-		const want = named ? (named.toLowerCase().endsWith('.svg') ? 'svg' : 'png') : format;
-		const r = await renderDesign(d, pic, { png: want !== 'svg', svg: want !== 'png' });
-		const stem = named ? named.replace(/\.(png|svg)$/i, '') : join(dir, `${spec.name ?? template}-${size}${theme && theme !== imageDoc().templates[template]!.theme ? `-${theme}` : ''}`);
-		const meta = { template, size, theme: d.theme, width: s.w, height: s.h };
-		if (r.png) {
-			write(`${stem}.png`, r.png);
-			files.push({ path: display(cwd, `${stem}.png`), format: 'png', ...meta });
+		if (spec.image && layout !== 'feature' && layout !== 'app') throw new Error(`${layout} has no picture window. --image goes in the feature layout (or app).`);
+		if (spec.seed && !SEEDED.has(layout)) notes.add(`${layout} has no seeded art; --seed changes nothing.`);
+		const picture = spec.image ? await readPicture(base, spec.image, 2000) : null;
+		const d = compose({ template: layout, size, theme, headline: spec.headline, body: spec.body, badge: spec.badgeStyle as BadgeStyle, badgeText: spec.badge, note: spec.note, page: spec.page, highlight, partner: spec.partner, credit: spec.credit, seed: spec.seed, sample: spec.sample });
+		const r = await renderDesign(d, picture ? picOf(picture) : null, { png: formats.includes('png'), svg: formats.includes('svg'), jpg: formats.includes('jpg'), webp: formats.includes('webp'), scale });
+		assertDrawn({ kind: 'image', template: layout, size: { id: size.id, width: size.w, height: size.h }, copy: spec.sample ? {} : { headline: spec.headline, body: spec.body, badge: spec.badge, note: spec.note, page: spec.page, credit: spec.credit, partner: spec.partner }, layers: r.layers });
+		const stem = named ? stemOf(named) : join(dir, flat ? `${spec.name}-${sizeName(size)}` : `${spec.name ?? layout}-${sizeName(size)}${theme && theme !== imageDoc().templates[layout]!.theme ? `-${theme}` : ''}${spec.seed ? `-s${spec.seed}` : ''}`);
+		for (const n of pictureNotes(picture, r.layers.find((l) => l.id === 'picture')?.box.w ?? 0, spec.image)) notes.add(n);
+		const ext = (f: Format) => (f === 'jpg' && named && /\.jpeg$/i.test(named) ? 'jpeg' : f);
+		for (const f of formats) {
+			const data = f === 'svg' ? r.svg! : f === 'png' ? r.png! : f === 'jpg' ? r.jpg! : r.webp!;
+			const path = `${stem}.${ext(f)}`;
+			writes.push({ path, data });
+			const k = f === 'svg' ? 1 : scale;
+			files.push({ path: display(cwd, path), format: f, template: layout, size: size.id, theme: d.theme, width: Math.round(size.w * k), height: Math.round(size.h * k), bytes: data.length });
+			if (f !== 'svg') {
+				const n = overLimit(size, data.length, display(cwd, path));
+				if (n) notes.add(n);
+			}
 		}
-		if (r.svg) {
-			write(`${stem}.svg`, r.svg);
-			files.push({ path: display(cwd, `${stem}.svg`), format: 'svg', ...meta });
-		}
+		if (size.note) notes.add(`${size.label}: ${size.note}`);
 	}
-	return { json: { files }, text: files.map((f) => `${f.path}  ${f.width}x${f.height}`).join('\n') };
+	for (const w of writes) write(w.path, w.data);
+	return { json: { files, notes: [...notes] }, text: [...files.map((f) => `${f.path}  ${f.width}x${f.height}`), ...[...notes].map((n) => `note: ${n}`)].join('\n') };
 }
 
-async function picture(base: string, path: string): Promise<Pic> {
-	const p = await readPicture(base, path, 1600);
-	return { img: p.canvas, w: p.width, h: p.height };
+export function scaleFlag(flags: Flags): number {
+	const v = str(flags.scale);
+	if (v === undefined) return 1;
+	const n = Number(v);
+	if (![1, 2, 3].includes(n)) throw new Error(`--scale takes 1, 2 or 3, not ${v}.`);
+	return n;
 }
+
+export const picOf = (p: Picture): Pic => ({ img: p.canvas, w: p.width, h: p.height });
+
+/** A picture stretched past its own pixels looks soft; say so. */
+export function pictureNotes(p: Picture | null, drawn: number, path: string | undefined): string[] {
+	if (!p || !drawn || drawn <= p.natural * 1.25) return [];
+	return [`${path} is ${p.natural} px wide and is drawn ${Math.round(drawn)} px wide, so it will look soft.`];
+}
+
+export { sizeIds };

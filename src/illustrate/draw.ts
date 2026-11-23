@@ -1,9 +1,11 @@
 import { readFileSync } from 'node:fs';
+import type { Canvas } from '@napi-rs/canvas';
 import { join } from 'node:path';
 import { packageRoot } from '../lib/brand.js';
 import { color, surface, toPng, toSvg, type Ctx } from '../assets/canvas.js';
 import { pick } from '../assets/io.js';
-import { APP_H, APP_W, drawPanel, drawRoom, hatchLines, imageDoc, roomStacks, tileWords, unitOf, type Pic, type Sticker } from '../assets/og.js';
+import { APP_H, APP_W, drawRoom, hatchLines, imageDoc, roomStacks, tileWords, unitOf, wallOf, type Pic } from '../assets/og.js';
+import { drawPanel } from '../assets/panel.js';
 import { logoDoc, wordmarkPath } from '../assets/art.js';
 
 // The brand's illustration style as vector drawing calls (brand/assets/illustrate.json, rules in
@@ -140,9 +142,9 @@ const themeColors = (theme: string) => {
 	return { bg: color(t.bg), ink: color(t.ink), line: color(t.line), tile: color(t.tile), tileAlpha: t.tileAlpha, room: color(t.room), dark: t.dark };
 };
 
-export type IllustrateRequest = { subject: string; width: number; height: number; theme?: string; seed?: number; shape?: 'tall' | 'wide'; picture?: Pic | null; transparent?: boolean };
+export type IllustrateRequest = { subject: string; width: number; height: number; theme?: string; seed?: number; shape?: 'tall' | 'wide'; picture?: Pic | null; transparent?: boolean; sample?: boolean; /** Where a room's back wall stands (the words on it), when not the middle. */ wall?: { x: number; y: number; w: number; h: number } };
 
-const stickerAt = (ctx: Ctx, s: Sticker, S: number, W: number, H: number, seed?: number) => {
+const stickerAt = (ctx: Ctx, s: { src: string; x: number; y: number; size: number; flip?: boolean }, S: number, W: number, H: number, seed?: number) => {
 	const shape = s.src === 'stack-wide' ? 'wide' : 'tall';
 	drawStack(ctx, s.x * W, s.y * H, s.size * S, shape, { flip: s.flip, seed });
 };
@@ -170,34 +172,30 @@ export function drawSubject(ctx: Ctx, r: IllustrateRequest) {
 			drawPixels(ctx, (W - S * 0.7) / 2, (H - S * 0.7) / 2, S * 0.7, r.seed);
 			break;
 		case 'room':
-			drawRoom(ctx, W, H, u, 34, 4, C.room);
+			drawRoom(ctx, W, H, u, r.wall ?? wallOf(W, H, 0.34), 4, C.room);
 			break;
 		case 'stacks':
-			drawRoom(ctx, W, H, u, 34, 4, C.room);
-			for (const s of roomStacks(S, W, H, 0.9)) stickerAt(ctx, s, S, W, H, r.seed);
+			drawRoom(ctx, W, H, u, r.wall ?? wallOf(W, H, 0.34), 4, C.room);
+			for (const s of roomStacks(W, H, 0.9)) stickerAt(ctx, s, S, W, H, r.seed);
 			break;
 		case 'tile':
 			ctx.fillStyle = C.tile;
 			ctx.globalAlpha = Math.min(1, C.tileAlpha * 2);
-			tileWords(ctx, { x: 0, y: 0, w: W, h: H }, 40, u, true, 0, -40 * u * 0.4);
+			tileWords(ctx, { x: 24 * u, y: 24 * u, w: W - 48 * u, h: H - 48 * u }, 40 * u, true);
 			ctx.globalAlpha = 1;
 			break;
 		case 'outline': {
 			const L = logoDoc().wordmark;
-			const bh = Math.min(H * 0.5, (W / L.w) * L.h * 0.9);
-			const k = bh / L.h;
-			const bw = L.w * k;
-			const gap = bh * 0.12;
-			const top = H - bh * 0.92;
-			for (let x = W / 2 - bw / 2 - Math.ceil(W / (bw + gap)) * (bw + gap); x < W; x += bw + gap) {
-				ctx.save();
-				ctx.translate(x, top);
-				ctx.scale(k, k);
-				ctx.strokeStyle = C.line;
-				ctx.lineWidth = (1.2 * u) / k;
-				ctx.stroke(wordmarkPath());
-				ctx.restore();
-			}
+			const m = 40 * u;
+			const bw = Math.min(W - 2 * m, ((H * 0.5) / L.h) * L.w);
+			const k = bw / L.w;
+			ctx.save();
+			ctx.translate((W - bw) / 2, H - m - L.h * k);
+			ctx.scale(k, k);
+			ctx.strokeStyle = C.line;
+			ctx.lineWidth = (1.2 * u) / k;
+			ctx.stroke(wordmarkPath());
+			ctx.restore();
 			break;
 		}
 		case 'hatch': {
@@ -229,8 +227,8 @@ export function drawSubject(ctx: Ctx, r: IllustrateRequest) {
 		case 'panel':
 		case 'scene': {
 			if (subject === 'scene') {
-				drawRoom(ctx, W, H, u, 30, 4, C.room);
-				for (const s of [{ src: 'stack-tall', x: 0.16, y: 0.3, size: 0.42 }, { src: 'stack-tall', x: 0.84, y: 0.3, size: 0.42, flip: true }, { src: 'stack-wide', x: 0.17, y: 0.78, size: 0.5 }, { src: 'stack-wide', x: 0.83, y: 0.78, size: 0.5, flip: true }] as Sticker[]) stickerAt(ctx, s, H, W, H, r.seed);
+				drawRoom(ctx, W, H, u, wallOf(W, H, 0.3), 4, C.room);
+				for (const s of [{ src: 'stack-tall', x: 0.1, y: 0.28, size: 0.32 }, { src: 'stack-tall', x: 0.9, y: 0.28, size: 0.32, flip: true }, { src: 'stack-wide', x: 0.1, y: 0.78, size: 0.34 }, { src: 'stack-wide', x: 0.9, y: 0.78, size: 0.34, flip: true }]) stickerAt(ctx, s, Math.min(H, W / 2), W, H, r.seed);
 			}
 			const pw = Math.min(W * (subject === 'panel' ? 0.9 : 0.62), H * (subject === 'panel' ? 0.9 : 0.86) * (APP_W / APP_H));
 			const k = pw / APP_W;
@@ -244,7 +242,7 @@ export function drawSubject(ctx: Ctx, r: IllustrateRequest) {
 			ctx.save();
 			ctx.translate((W - pw) / 2, (H - APP_H * k) / 2);
 			ctx.scale(k, k);
-			drawPanel(ctx);
+			drawPanel(ctx, r.sample);
 			ctx.restore();
 			break;
 		}
@@ -252,16 +250,18 @@ export function drawSubject(ctx: Ctx, r: IllustrateRequest) {
 	return { subject, theme };
 }
 
-export type IllustrateRender = { png?: Buffer; svg?: string; width: number; height: number; subject: string; theme: string };
+export type IllustrateRender = { png?: Buffer; svg?: string; jpg?: Buffer; webp?: Buffer; width: number; height: number; subject: string; theme: string };
 
-export function renderSubject(r: IllustrateRequest, opts: { png?: boolean; svg?: boolean } = { png: true, svg: true }): IllustrateRender {
+export function renderSubject(r: IllustrateRequest, opts: { png?: boolean; svg?: boolean; jpg?: boolean; webp?: boolean; scale?: number } = { png: true, svg: true }): IllustrateRender {
 	const out: IllustrateRender = { width: r.width, height: r.height, subject: r.subject, theme: '' };
-	if (opts.png !== false) {
-		const s = surface(r.width, r.height);
+	if (opts.png !== false || opts.jpg || opts.webp) {
+		const s = surface(r.width, r.height, { scale: opts.scale ?? 1 });
 		const d = drawSubject(s.ctx, r);
 		out.subject = d.subject;
 		out.theme = d.theme;
-		out.png = toPng(s, { opaque: !r.transparent });
+		if (opts.png !== false) out.png = toPng(s, { opaque: !r.transparent });
+		if (opts.jpg) out.jpg = (s.canvas as Canvas).toBuffer('image/jpeg', 92);
+		if (opts.webp) out.webp = (s.canvas as Canvas).toBuffer('image/webp', 92);
 	}
 	if (opts.svg) {
 		const s = surface(r.width, r.height, { svg: true });

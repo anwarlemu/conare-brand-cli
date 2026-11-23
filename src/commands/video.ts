@@ -1,11 +1,11 @@
 import { brand } from '../lib/brand.js';
+import { copyFlags, str, type Flags } from '../assets/flags.js';
+import { unknown } from '../assets/io.js';
 import { LAYOUTS } from '../assets/og.js';
 import { layoutVideoSizes, runLayoutVideo } from '../assets/layout-video.js';
 import { helpRow } from '../lib/help-row.js';
 import { renderVideo, writeVideos, type WrittenVideo } from '../video/render.js';
-import { refuseVideo, resolveVideo, videoCatalog, VIDEO_CODEC, VIDEO_FPS, VIDEO_FRAMES } from '../video/spec.js';
-
-type Flags = Record<string, string | boolean | string[] | undefined>;
+import { refuseVideo, resolveVideo, videoCatalog, videoTemplate, VIDEO_CODEC, VIDEO_FPS, VIDEO_FRAMES, VIDEO_TEMPLATES } from '../video/spec.js';
 
 export function videoHelp(): string {
 	const b = brand().bin;
@@ -27,14 +27,15 @@ export function videoHelp(): string {
 		'--text and --subtitle must match when both are set.',
 		'',
 		'Layout videos: any share-image layout coming in the way the site moves, through ffmpeg (H.264 MP4 or VP9 WebM):',
-		helpRow(`${b} video --template hero --title "..." --size landscape`, 'The homepage card, 30 fps MP4', 54),
-		helpRow(`${b} video --template room --size vertical --format both`, 'MP4 and WebM for a story', 54),
-		helpRow(`${b} video --template card --still`, 'The settled last frame as PNG', 54),
-		helpRow(`${b} video --template hero --at 0.5`, 'The frame half a second in, as PNG', 54),
-		`Layouts: ${LAYOUTS.join(', ')}. Sizes: ${layoutVideoSizes().map((s) => `${s.id} ${s.width}x${s.height}`).join(', ')}.`,
+		helpRow(`${b} video hero --headline "..." --size landscape`, 'The homepage card, 30 fps MP4', 54),
+		helpRow(`${b} video room --sample --size vertical --format both`, 'MP4 and WebM for a story', 54),
+		helpRow(`${b} video card --sample --still`, 'The settled last frame as PNG', 54),
+		helpRow(`${b} video hero --sample --at 0.5`, 'The frame half a second in, as PNG', 54),
+		`Layouts: ${LAYOUTS.filter((l) => l !== 'avatar').join(', ')}. Sizes: ${layoutVideoSizes().map((s) => `${s.id} ${s.width}x${s.height}`).join(', ')}.`,
 		'The label and lockup settle up 12px over the entrance step, the headline letters wait faint and red and settle to ink (40ms apart, lines 100ms apart),',
 		'the line and footer follow, a window arrives on the long ease-out, then the frame holds 1.5s. Every curve and duration is a motion token; nothing eases in.',
-		'--fps 12 to 60 (default 30). --format mp4 (default), webm or both. --theme, --eyebrow, --badge, --highlight, --partner, --credit and --image as in image.',
+		'--fps 12 to 60 (default 30). --format mp4 (default), webm or both. --headline, --body, --badge, --theme, --highlight, --partner, --credit, --note, --image, --seed and --sample as in image.',
+		'Only the copy you pass is drawn; copy that does not fit whole is an error naming what to shorten.',
 	].join('\n');
 }
 
@@ -56,18 +57,24 @@ export async function runVideo(cwd: string, args: string[], flags: Flags): Promi
 		].join('\n');
 		return { json: spec, text };
 	}
-	const asked = str(flags.template)?.toLowerCase();
-	if (asked && (LAYOUTS as readonly string[]).includes(asked)) return runLayoutVideo(cwd, args, flags);
-	for (const f of ['theme', 'badge', 'highlight', 'partner', 'credit', 'image', 'format', 'fps', 'at', 'still']) if (flags[f] !== undefined) throw new Error(`--${f} goes with a layout video (--template ${LAYOUTS.join(', ')}).`);
-	blank(flags, ['template', 'title', 'text', 'subtitle', 'eyebrow', 'size', 'ground', 'out']);
-	if (args.length) throw new Error(`Unexpected \`${args.join(' ')}\`. Pass --template, --size and --title.`);
-	const textFlag = str(flags.text);
-	const subtitle = str(flags.subtitle);
-	if (textFlag && subtitle && textFlag !== subtitle) throw new Error('--text and --subtitle disagree. Pass one.');
-	const requested = resolveVideo({ template: str(flags.template), size: str(flags.size), ground: str(flags.ground) });
-	const title = str(flags.title);
-	const text = textFlag || subtitle;
-	const eyebrow = str(flags.eyebrow);
+	const first = args[0]?.toLowerCase();
+	const flagTemplate = str(flags.template)?.toLowerCase();
+	const known = (t: string) => (LAYOUTS as readonly string[]).includes(t) || Boolean(videoTemplate(t));
+	const firstIs = Boolean(first && known(first));
+	if (firstIs && flagTemplate && first !== flagTemplate) throw new Error(`\`${first}\` and --template ${flagTemplate} disagree. Pass one.`);
+	const asked = flagTemplate ?? (firstIs ? first : undefined);
+	const rest = firstIs ? args.slice(1) : args;
+	if (asked && (LAYOUTS as readonly string[]).includes(asked)) return runLayoutVideo(cwd, asked, rest, flags);
+	if (!asked && rest[0] && !/\s/.test(rest[0])) throw unknown('template', rest[0], [...VIDEO_TEMPLATES.map((t) => t.id), ...LAYOUTS.filter((l) => l !== 'avatar')]);
+	for (const f of ['highlight', 'partner', 'credit', 'note', 'page', 'badge-style', 'image', 'format', 'fps', 'at', 'still', 'seed', 'sample', 'width', 'height']) if (flags[f] !== undefined) throw new Error(`--${f} goes with a layout video (${LAYOUTS.filter((l) => l !== 'avatar').join(', ')}).`);
+	blank(flags, ['template', 'title', 'headline', 'text', 'body', 'subtitle', 'eyebrow', 'badge', 'size', 'ground', 'theme', 'out']);
+	if (rest.length) throw new Error(`Unexpected \`${rest.join(' ')}\`. Pass --template, --size and --title.`);
+	const copy = copyFlags(flags);
+	if (str(flags.out) && /\.(webm|mov|gif|png)$/i.test(str(flags.out)!)) throw new Error('The clips are MP4: name the file .mp4, or use a layout video for WebM.');
+	const requested = resolveVideo({ template: asked, size: str(flags.size), ground: str(flags.ground) ?? str(flags.theme) });
+	const title = copy.headline?.trim() || undefined;
+	const text = copy.body?.trim() || undefined;
+	const eyebrow = copy.badge?.trim() || undefined;
 	refuseVideo(requested.template, { title, text, eyebrow });
 	const clips = await renderVideo({ ...requested, title, text, eyebrow });
 	const files = writeVideos(cwd, str(flags.out), clips);
@@ -79,10 +86,6 @@ export async function runVideo(cwd: string, args: string[], flags: Flags): Promi
 
 function fileJson(file: WrittenVideo) {
 	return { path: file.path, format: file.format, template: file.template, size: file.size, ground: file.ground, width: file.width, height: file.height, fps: file.fps, frames: file.frames };
-}
-
-function str(value: string | boolean | string[] | undefined): string | undefined {
-	return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }
 
 function blank(flags: Flags, names: string[]) {

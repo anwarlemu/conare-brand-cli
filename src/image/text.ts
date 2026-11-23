@@ -29,31 +29,36 @@ export function blockHeight(face: Face, lines: string[], size: number, leading: 
 }
 
 /**
- * Largest size in the range whose wrap fits the width, the line cap and the height.
- * Below the floor, the last line is cut with an ellipsis.
+ * Largest size in the range whose wrap fits the width, the line cap and the height, or undefined: copy is never cut.
+ * `breakWords` lets a word wider than the line break between letters at the smallest size.
  */
-export function fit(face: Face, text: string, maxWidth: number, opts: { maxSize: number; minSize: number; maxLines: number; leading: number; tracking: number; maxHeight: number }): Fitted {
+export function fit(face: Face, text: string, maxWidth: number, opts: { maxSize: number; minSize: number; maxLines: number; leading: number; tracking: number; maxHeight: number; breakWords?: boolean }): Fitted | undefined {
 	const clean = normalize(text);
-	let size = Math.floor(opts.maxSize);
 	const floor = Math.floor(opts.minSize);
-	while (size >= floor) {
-		const lines = wrap(face, clean, size, maxWidth, opts.tracking);
+	for (let size = Math.floor(opts.maxSize); size >= floor; size -= 1) {
+		const lines = wrap(face, clean, size, maxWidth, opts.tracking, opts.breakWords === true && size === floor);
 		const tooWide = lines.some((l) => measure(face, l, size, opts.tracking) > maxWidth + 0.5);
-		if (!tooWide && lines.length <= opts.maxLines && blockHeight(face, lines, size, opts.leading) <= opts.maxHeight + 0.5) return { size, lines };
-		size -= 1;
+		if (!tooWide && lines.length <= opts.maxLines && blockHeight(face, lines, size, opts.leading) <= opts.maxHeight + 0.5) return { size, lines: balance(face, clean, size, maxWidth, opts.tracking, lines) };
 	}
-	const lines = wrap(face, clean, floor, maxWidth, opts.tracking);
-	const cut = lines.slice(0, opts.maxLines);
-	if (lines.length > opts.maxLines && cut.length) {
-		let last = cut[cut.length - 1] ?? '';
-		const ellipsis = '...';
-		while (last && measure(face, `${last}${ellipsis}`, floor, opts.tracking) > maxWidth) last = last.slice(0, -1).trimEnd();
-		cut[cut.length - 1] = `${last.replace(/[.,;: ]+$/, '')}${ellipsis}`;
-	}
-	return { size: floor, lines: cut.length ? cut : [''] };
+	return undefined;
 }
 
-export function wrap(face: Face, text: string, size: number, maxWidth: number, tracking: number): string[] {
+/** The same number of lines at the narrowest width that holds them, so the last line is not a word on its own. */
+function balance(face: Face, text: string, size: number, maxWidth: number, tracking: number, lines: string[]): string[] {
+	if (lines.length < 2 || lines.length > 6 || text.includes('\n')) return lines;
+	let lo = Math.max(...text.split(/\s+/).map((w) => measure(face, w, size, tracking)));
+	let hi = maxWidth;
+	if (lo >= hi) return lines;
+	for (let i = 0; i < 12; i++) {
+		const mid = (lo + hi) / 2;
+		if (wrap(face, text, size, mid, tracking).length <= lines.length) hi = mid;
+		else lo = mid;
+	}
+	const even = wrap(face, text, size, hi, tracking);
+	return even.length === lines.length ? even : lines;
+}
+
+export function wrap(face: Face, text: string, size: number, maxWidth: number, tracking: number, breakWords = true): string[] {
 	const lines: string[] = [];
 	for (const paragraph of text.split('\n')) {
 		const words = paragraph.split(/\s+/).filter(Boolean);
@@ -64,7 +69,7 @@ export function wrap(face: Face, text: string, size: number, maxWidth: number, t
 			if (measure(face, next, size, tracking) <= maxWidth) line = next;
 			else {
 				if (line) lines.push(line);
-				line = measure(face, word, size, tracking) <= maxWidth ? word : breakWord(face, word, size, maxWidth, tracking, lines);
+				line = !breakWords || measure(face, word, size, tracking) <= maxWidth ? word : breakWord(face, word, size, maxWidth, tracking, lines);
 			}
 		}
 		if (line) lines.push(line);

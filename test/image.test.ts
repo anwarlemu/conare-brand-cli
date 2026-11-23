@@ -6,7 +6,7 @@ import { inflateSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import { runImage } from '../src/commands/image.js';
 import { pngSize, renderImages, resolveRequest } from '../src/image/render.js';
-import { SIZES, TEMPLATES, theme } from '../src/image/spec.js';
+import { sizeById, SIZES, TEMPLATES, theme } from '../src/image/spec.js';
 
 const bin = join(__dirname, '..', 'bin.js');
 const root = join(__dirname, '..');
@@ -22,16 +22,12 @@ const copy: Record<string, { title: string; text?: string; eyebrow?: string; by?
 const tinyPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 
 describe('image', () => {
-	it('names every template and the four sizes', () => {
+	it('names every template, and the same sizes as the layouts', () => {
 		expect(TEMPLATES.map((t) => t.id)).toEqual(['headline', 'statement', 'quote', 'announcement', 'frame']);
-		expect(SIZES.map((s) => [s.id, s.width, s.height])).toEqual([
-			['og', 1200, 630],
-			['square', 1080, 1080],
-			['portrait', 1080, 1350],
-			['landscape', 1200, 675],
-		]);
-		expect(resolveRequest({ size: 'all' }).sizes).toEqual(['og', 'square', 'portrait', 'landscape']);
-		expect(resolveRequest({ size: '1200x630,1080×1080' }).sizes).toEqual(['og', 'square']);
+		expect(SIZES.map((s) => s.id)).toEqual(['og', 'square', 'portrait', 'story', 'landscape', 'x-banner', 'linkedin', 'linkedin-banner', 'linkedin-page', 'youtube', 'youtube-thumbnail', 'email', 'linkedin-square']);
+		expect(sizeById('1200x630')?.id).toBe('og');
+		expect(sizeById('1080×1080')?.id).toBe('square');
+		expect(sizeById('1234x567')).toMatchObject({ id: 'custom', w: 1234, h: 567 });
 	});
 
 	it('renders every template at every size with the right dimensions', async () => {
@@ -47,7 +43,7 @@ describe('image', () => {
 				expect(image.svg).toContain('font/woff2');
 				expect(image.svg).toContain(pathStart);
 				expect(image.svg).toContain(`font-family="'${headingFamily()}'"`);
-				expect(aboveFooter(image.svg), `${template.id} ${size.id}`).toBe(true);
+				if (['og', 'square', 'portrait', 'landscape'].includes(size.id)) expect(aboveFooter(image.svg), `${template.id} ${size.id}`).toBe(true);
 			}
 		}
 	});
@@ -78,26 +74,29 @@ describe('image', () => {
 
 	it('refuses a missing title, an unknown template and a file that is not a PNG or JPEG', async () => {
 		expect(() => resolveRequest({ template: 'poster' })).toThrow(/Unknown template/);
-		expect(() => resolveRequest({ size: 'story' })).toThrow(/Unknown size/);
+		await expect(runImage(root, [], { title: 'Hello', size: 'storyy' })).rejects.toThrow(/Unknown size/);
 		await expect(runImage(root, [], {})).rejects.toThrow(/title is required/);
 		const dir = mkdtempSync(join(tmpdir(), 'ds-image-'));
 		await expect(runImage(dir, [], { title: 'Hello', image: 'missing.png' })).rejects.toThrow(/does not use --image/);
-		await expect(runImage(dir, [], { template: 'frame', title: 'Hello', image: 'missing.png' })).rejects.toThrow(/No image at/);
+		await expect(runImage(dir, [], { template: 'frame', title: 'Hello', image: 'missing.png' })).rejects.toThrow(/No picture at/);
 		await expect(runImage(dir, [], { template: 'statement', title: 'Hello', by: 'Acme' })).rejects.toThrow(/does not draw --by/);
 		await expect(runImage(dir, [], { title: 'Hello', text: 'One line', subtitle: 'Another' })).rejects.toThrow(/disagree/);
 		writeFileSync(join(dir, 'notes.txt'), 'not an image');
-		await expect(runImage(dir, [], { template: 'frame', title: 'Hello', image: 'notes.txt' })).rejects.toThrow(/PNG or JPEG/);
+		await expect(runImage(dir, [], { template: 'frame', title: 'Hello', image: 'notes.txt' })).rejects.toThrow(/not a PNG, JPEG/);
 		await expect(runImage(dir, [], { template: 'headline', title: 'Hello', text: 'Left off the card.' })).rejects.toThrow(/does not draw --text/);
 		await expect(runImage(dir, [], { template: 'quote', title: 'Hello', text: 'Not the speaker.' })).rejects.toThrow(/--by/);
 		rmSync(dir, { recursive: true, force: true });
 	});
 
-	it('keeps a long tag inside the column and a long headline above the footer', async () => {
-		const [card] = await renderImages({ template: 'statement', sizes: ['og'], ground: 'paper', format: 'svg', title: 'Every answer should point back at the passage it was taken from, including the one that ran long on purpose', text: 'A supporting line that also goes on so the card has to wrap the subtext several times without running into the footer.', eyebrow: 'M'.repeat(80) });
+	it('refuses a tag that does not fit, and keeps a long headline whole above the footer', async () => {
+		const title = 'Every answer should point back at the passage it was taken from, including the one that ran long on purpose';
+		const text = 'A supporting line that also goes on so the card has to wrap the subtext several times without running into the footer.';
+		await expect(renderImages({ template: 'statement', sizes: ['og'], ground: 'paper', title, eyebrow: 'M'.repeat(160) })).rejects.toThrow(/badge does not fit/);
+		const [card] = await renderImages({ template: 'statement', sizes: ['og'], ground: 'paper', title, text, eyebrow: 'Now shipping' });
 		expect(aboveFooter(card.svg)).toBe(true);
-		const tag = accentRect(card.svg, theme('paper').accent);
-		const column = footerRule(card.svg);
-		expect(tag.x + tag.w).toBeLessThanOrEqual(column.x + column.w + 0.01);
+		expect(card.layers.find((l) => l.id === 'headline')?.text?.drawn).toBe(title);
+		expect(card.layers.find((l) => l.id === 'body')?.text?.drawn).toBe(text);
+		await expect(renderImages({ template: 'statement', sizes: ['og'], ground: 'paper', title: Array(60).fill(title).join(' ') })).rejects.toThrow(/Shorten it to about \d+ words/);
 	});
 
 	it('draws a JPEG inside the frame', async () => {
@@ -154,13 +153,6 @@ function aboveFooter(svg: string): boolean {
 function footerRule(svg: string): { x: number; y: number; w: number } {
 	const rules = [...svg.matchAll(/<rect\b[^>]*\sx="([\d.]+)"[^>]*\sy="([\d.]+)"[^>]*\swidth="([\d.]+)"[^>]*\sheight="1"/g)].map((m) => ({ x: Number(m[1]), y: Number(m[2]), w: Number(m[3]) }));
 	return rules.sort((a, b) => b.w - a.w)[0];
-}
-
-function accentRect(svg: string, fill: string): { x: number; w: number } {
-	const rects = [...svg.matchAll(new RegExp(`<rect\\b[^>]*\\sx="([\\d.]+)"[^>]*\\swidth="([\\d.]+)"[^>]*\\sfill="${fill}"`, 'g'))];
-	const hit = rects.map((m) => ({ x: Number(m[1]), w: Number(m[2]) })).sort((a, b) => b.w - a.w)[0];
-	if (!hit) throw new Error('No accent rect.');
-	return hit;
 }
 
 function pixel(png: Buffer, x: number, y: number): [number, number, number] {

@@ -1,72 +1,83 @@
 import { dirname, join, resolve } from 'node:path';
-import { BADGES, LAYOUTS, compose, imageDoc, motionLength, sizeIds, sizeOf, type BadgeStyle, type Layout, type Pic } from './og.js';
+import { assertDrawn } from '../design/adapter.js';
+import { copyFlags, seedOf, sizesFrom, str, type Flags } from './flags.js';
+import { picOf, pictureNotes } from './image.js';
 import { display, num, pick, unknown, write, type OutFile } from './io.js';
+import { customSize, imageDoc, LAYOUTS, sizeIds, sizeOf, type Layout, type Size } from './layouts.js';
+import { compose, motionLength, renderDesign, type Design, type Pic } from './og.js';
 import { readPicture } from './picture.js';
 import { renderVideo, still, VIDEO_FORMATS, type VideoFormat } from './video.js';
 import { VIDEO_SIZES } from '../video/spec.js';
 
-// `video --template <layout>`: a share-image layout coming in the way the site moves (the label and lockup settle up,
-// the headline's letters wait faint and red and settle to ink, the line follows, a window arrives on the long
-// ease-out), then holds. MP4 (H.264) or WebM (VP9) through ffmpeg, or --still for one PNG frame.
+// `video <layout>`: a share-image layout coming in the way the site moves (the label and lockup settle up, the
+// headline's letters wait faint and red and settle to ink, the line follows, a window arrives on the long ease-out),
+// then holds. MP4 (H.264) or WebM (VP9) through ffmpeg, or --still for one PNG frame.
 
-type Flags = Record<string, string | boolean | string[] | undefined>;
-const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : undefined);
+/** Video sizes: the video ids (a vertical keeps the story's safe area), then the share sizes. */
+export function videoSizeOf(token: string): Size | undefined {
+	const n = token.trim().toLowerCase().replace('×', 'x');
+	if (n === 'landscape' || n === '1920x1080') return { ...customSize(1920, 1080), id: 'landscape', label: 'Landscape 16:9', shown: 640 };
+	if (n === 'vertical' || n === 'story' || n === '1080x1920') return { ...sizeOf('story')!, id: n === 'story' ? 'story' : 'vertical' };
+	return sizeOf(n);
+}
 
 export function layoutVideoSizes() {
-	const video = VIDEO_SIZES.map((s) => ({ id: s.id, width: s.width, height: s.height }));
-	const image = sizeIds().filter((id) => !video.some((v) => v.id === id)).map((id) => ({ id, width: sizeOf(id)!.w, height: sizeOf(id)!.h }));
+	const video = VIDEO_SIZES.map((s) => ({ id: s.id as string, width: s.width, height: s.height }));
+	const image = sizeIds().filter((id) => id !== 'avatar' && !video.some((v) => v.id === id)).map((id) => ({ id, width: sizeOf(id)!.w, height: sizeOf(id)!.h }));
 	return [...video, ...image];
 }
 
-function sizeFor(token: string) {
-	const all = layoutVideoSizes();
-	const n = token.trim().toLowerCase().replace('×', 'x');
-	const hit = all.find((s) => s.id === n || `${s.width}x${s.height}` === n) ?? (sizeOf(n) ? all.find((s) => s.id === sizeOf(n)!.id) : undefined);
-	if (!hit) throw unknown('size', token, [...all.map((s) => s.id), 'all']);
-	return hit;
-}
-
-export async function runLayoutVideo(cwd: string, args: string[], flags: Flags): Promise<{ json: unknown; text: string }> {
-	if (args.length) throw new Error(`Unexpected \`${args.join(' ')}\`. Pass --template, --size and --title.`);
-	for (const n of ['title', 'text', 'eyebrow', 'image', 'size', 'theme', 'out', 'format', 'badge', 'highlight', 'partner', 'credit', 'fps', 'at']) if (flags[n] === true) throw new Error(`--${n} needs a value.`);
-	const template = pick('template', String(flags.template), LAYOUTS) as Layout;
+export async function runLayoutVideo(cwd: string, template: string, args: string[], flags: Flags): Promise<{ json: unknown; text: string }> {
+	if (args.length) throw new Error(`Unexpected \`${args.join(' ')}\`. Pass the layout, --size and --headline.`);
+	for (const n of ['image', 'size', 'theme', 'out', 'format', 'highlight', 'fps', 'at', 'seed']) if (flags[n] === true) throw new Error(`--${n} needs a value.`);
+	const layout = pick('template', template, LAYOUTS.filter((l) => l !== 'avatar')) as Layout;
+	if (str(flags.theme) && str(flags.ground)) throw new Error('Pass --theme or --ground, not both.');
 	const theme = str(flags.theme) ? pick('theme', str(flags.theme)!, Object.keys(imageDoc().themes)) : str(flags.ground) === 'ink' ? 'black' : str(flags.ground) ? pick('ground', str(flags.ground)!, ['paper']) : undefined;
-	const badge = str(flags.badge) ? (pick('badge', str(flags.badge)!, BADGES) as BadgeStyle) : undefined;
+	const copy = copyFlags(flags);
 	const highlight = str(flags.highlight) ? pick('highlight', str(flags.highlight)!, Object.keys(imageDoc().highlights)) : undefined;
 	const fps = num('fps', flags.fps, 12, 60, { integer: true }) ?? 30;
 	const at = num('at', flags.at, 0, 60);
 	const isStill = flags.still === true || at !== undefined;
-	const formatRaw = str(flags.format) ?? (isStill ? 'png' : 'mp4');
-	const formats: string[] = formatRaw === 'both' ? ['mp4', 'webm'] : [formatRaw];
-	if (isStill) pick('format', formatRaw, ['png']);
-	else for (const f of formats) pick('format', f, [...VIDEO_FORMATS, 'both']);
-	if (str(flags.image) && template !== 'feature') throw new Error(`${template} has no picture window. --image goes in the feature layout.`);
-	let pic: Pic | null = null;
-	if (str(flags.image)) {
-		const p = await readPicture(cwd, str(flags.image)!, 1600);
-		pic = { img: p.canvas, w: p.width, h: p.height };
-	}
-	const tokens = (str(flags.size) ?? 'square').split(',').map((s) => s.trim()).filter(Boolean);
-	const sizes = tokens.flatMap((t) => (t.toLowerCase() === 'all' ? layoutVideoSizes() : [sizeFor(t)]));
 	const out = str(flags.out);
-	const named = out && /\.(mp4|webm|png)$/i.test(out) ? resolve(cwd, out) : undefined;
-	if (named && sizes.length * formats.length > 1) throw new Error('--out is a file, so ask for one size and one format. For several, pass a directory.');
+	const outExt = out ? /\.(mp4|webm|png)$/i.exec(out)?.[1]?.toLowerCase() : undefined;
+	const formatRaw = str(flags.format) ?? (isStill ? 'png' : outExt === 'webm' ? 'webm' : 'mp4');
+	if (isStill) pick('format', formatRaw, ['png']);
+	const formats = isStill ? [] : formatRaw.split(',').flatMap((f) => (f === 'both' ? [...VIDEO_FORMATS] : [pick('format', f, [...VIDEO_FORMATS, 'both'] as const) as VideoFormat]));
+	if (outExt && outExt !== (isStill ? 'png' : formats[0])) throw new Error(`--out ends in .${outExt} and this writes ${isStill ? 'png' : formats.join(', ')}.`);
+	if (str(flags.image) && layout !== 'feature' && layout !== 'app') throw new Error(`${layout} has no picture window. --image goes in the feature layout (or app).`);
+	const picture = str(flags.image) ? await readPicture(cwd, str(flags.image)!, 2000) : null;
+	const pic: Pic | null = picture ? picOf(picture) : null;
+	const sizes = (str(flags.size) ?? (flags.width ? 'custom' : 'square')).split(',').map((s) => s.trim()).filter(Boolean).flatMap((t) => {
+		if (t.toLowerCase() === 'all') return layoutVideoSizes().map((s) => videoSizeOf(s.id)!);
+		if (t.toLowerCase() === 'custom') return sizesFrom(['custom'], flags, []);
+		const s = videoSizeOf(t);
+		if (!s || s.id === 'avatar') throw unknown('size', t, [...layoutVideoSizes().map((x) => x.id), 'all']);
+		return [s];
+	});
+	const named = outExt ? resolve(cwd, out!) : undefined;
+	if (named && sizes.length * Math.max(1, formats.length) > 1) throw new Error('--out is a file, so ask for one size and one format. For several, pass a directory.');
 	const dir = named ? dirname(named) : resolve(cwd, out ?? 'imagery');
 	const files: OutFile[] = [];
-	for (const s of [...new Map(sizes.map((x) => [x.id, x])).values()]) {
-		const d = compose({ template, w: s.width, h: s.height, theme, headline: typeof flags.title === 'string' ? flags.title : undefined, body: typeof flags.text === 'string' ? flags.text : undefined, badge, badgeText: typeof flags.eyebrow === 'string' ? flags.eyebrow : undefined, highlight, partner: typeof flags.partner === 'string' ? flags.partner : undefined, credit: str(flags.credit) });
-		const stem = named ? named.replace(/\.(mp4|webm|png)$/i, '') : join(dir, `${template}-${s.id}${theme ? `-${theme}` : ''}`);
+	const notes = new Set<string>();
+	const designs = [...new Map(sizes.map((x) => [x.id + x.w + x.h, x])).values()].map((size) => [size, compose({ template: layout, size, theme, headline: copy.headline, body: copy.body, badge: copy.badgeStyle, badgeText: copy.badge, note: copy.note, page: copy.page, highlight, partner: copy.partner, credit: copy.credit, seed: seedOf(flags), sample: flags.sample === true })] as [Size, Design]);
+	for (const [size, d] of designs) {
+		/* Draws the still first: copy that does not fit is refused before any frame is written. */
+		const first = await renderDesign(d, pic, { png: false, svg: false, rgb: true });
+		assertDrawn({ kind: 'image', template: layout, size: { id: size.id === 'vertical' ? 'story' : size.id === 'landscape' ? 'video' : size.id, width: size.w, height: size.h }, copy: flags.sample === true ? {} : { headline: copy.headline, body: copy.body, badge: copy.badge, note: copy.note, page: copy.page, credit: copy.credit, partner: copy.partner }, layers: first.layers });
+		for (const n of pictureNotes(picture, first.layers.find((l) => l.id === 'picture')?.box.w ?? 0, str(flags.image))) notes.add(n);
+		if (size.note) notes.add(`${size.label}: ${size.note}`);
+		const stem = named ? named.replace(/\.(mp4|webm|png)$/i, '') : join(dir, `${layout}-${size.id === 'custom' ? `${size.w}x${size.h}` : size.id}${theme ? `-${theme}` : ''}`);
 		if (isStill) {
 			const png = await still(d, pic, at === undefined ? undefined : at);
 			write(`${stem}.png`, png);
-			files.push({ path: display(cwd, `${stem}.png`), format: 'png', template, size: s.id, width: s.width, height: s.height, at: at ?? motionLength(d) });
+			files.push({ path: display(cwd, `${stem}.png`), format: 'png', template: layout, size: size.id, width: size.w, height: size.h, at: at ?? motionLength(d) });
 			continue;
 		}
-		for (const f of formats as VideoFormat[]) {
+		for (const f of formats) {
 			const v = await renderVideo(d, pic, fps, f);
 			write(`${stem}.${f}`, v.data);
-			files.push({ path: display(cwd, `${stem}.${f}`), format: f, template, size: s.id, width: s.width, height: s.height, fps, frames: v.frames, seconds: v.seconds });
+			files.push({ path: display(cwd, `${stem}.${f}`), format: f, template: layout, size: size.id, width: size.w, height: size.h, fps, frames: v.frames, seconds: v.seconds });
 		}
 	}
-	return { json: { files }, text: files.map((f) => `${f.path}  ${f.width}x${f.height}${f.frames ? `  ${f.frames} frames at ${f.fps} fps (${f.seconds}s)` : ''}`).join('\n') };
+	return { json: { files, notes: [...notes] }, text: [...files.map((f) => `${f.path}  ${f.width}x${f.height}${f.frames ? `  ${f.frames} frames at ${f.fps} fps (${f.seconds}s)` : ''}`), ...[...notes].map((n) => `note: ${n}`)].join('\n') };
 }

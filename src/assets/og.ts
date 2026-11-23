@@ -1,355 +1,178 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import type { Canvas, Image } from '@napi-rs/canvas';
-import { packageRoot } from '../lib/brand.js';
+import type { DrawnLayer, LayerEdit, Rect } from '../design/types.js';
 import { artImage, logoDoc, markPath, wordmarkPath } from './art.js';
-import { color, font, scratch, surface, toPng, toSvg, rgbOf, type Ctx, type FaceRole } from './canvas.js';
+import { blend, color, contrast, font, scratch, surface, toPng, toSvg, rgbOf, type Ctx } from './canvas.js';
+import { CopyError, roleFor, type FaceRole } from './glyphs.js';
+import { BADGES, customSize, imageDoc, largeType, LAYOUTS, logoFloor, sizeIds, sizeOf, sizesFor, smallFloor, specFor, unitOf, type Align, type BadgeStyle, type Layout, type Size, type Spec } from './layouts.js';
 import { duration, mix, progress, settle } from './motion.js';
+import { drawPanel, PANEL_H, PANEL_W } from './panel.js';
+import { asTyped, plain, readBack, setLines, type Line } from './words.js';
 
 // The share images, ported from the agd-playground posts tool (draw.ts and app.ts): a ground, the perspective room,
-// the wordmark tile, the outline band, hatching, guides, a border, the product window, the words with their badge, the
-// lockup, a footer and stacks of documents. Every position is a share of the image and every size a unit that grows
-// with its area, so one template redraws at any size. The brand's part (themes, copy, art, sizes) is
-// brand/assets/image.json; these are the layout rules.
+// the wordmark tile, the hollow wordmark, hatching, guides, a border, the product window, the words with their badge,
+// the lockup, a footer and stacks of documents. A design is planned first (every box, so nothing overlaps, nothing is
+// cut and every word is set whole), then painted from the plan; the layers it reports are what the painting drew.
 
-type Rect = { x: number; y: number; w: number; h: number };
+export { BADGES, imageDoc, LAYOUTS, sizeIds, sizeOf, sizesFor, unitOf, customSize };
+export type { BadgeStyle, Layout, Size };
 export type Pic = { img: Image | Canvas; w: number; h: number };
-
-type ThemeDoc = { label: string; bg: string; ink: string; muted: string; line: string; tile: string; tileAlpha: number; border: string; room: string; dark: boolean; onAccent?: { highlight?: string; badgeFill?: string; badgeInk?: string } };
-type TemplateDoc = { label: string; description: string; theme: string; badge: BadgeStyle; badgeText: string; headline: string; body: string; partner?: string };
-type SizeDoc = { w: number; h: number; label: string; aliases?: string[] };
-export type ImageDoc = {
-	themes: Record<string, ThemeDoc>;
-	tones: Record<string, string>;
-	highlights: Record<string, string>;
-	accent: string;
-	foot: { left: string; right: string };
-	art: Record<string, string>;
-	window: { bg: string; placeholder: string; shadow: string };
-	panel: { colors: Record<string, string>; content: Record<string, string> };
-	templates: Record<string, TemplateDoc>;
-	sizes: Record<string, SizeDoc>;
-	notes: string[];
-};
-
-let doc: ImageDoc | undefined;
-export const imageDoc = (): ImageDoc => (doc ??= JSON.parse(readFileSync(join(packageRoot, 'brand', 'assets', 'image.json'), 'utf8')) as ImageDoc);
-
-export const LAYOUTS = ['hero', 'brief', 'tile', 'app', 'outline', 'hatch', 'room', 'feature', 'partner', 'funding', 'announce', 'card'] as const;
-export type Layout = (typeof LAYOUTS)[number];
-export type BadgeStyle = 'label' | 'pill' | 'solid' | 'dot' | 'none';
-export const BADGES: BadgeStyle[] = ['label', 'pill', 'solid', 'dot', 'none'];
-type Align = 'left' | 'center' | 'right';
-
-export type Sticker = { src: 'stack-tall' | 'stack-wide' | 'pixels'; x: number; y: number; size: number; flip?: boolean; behind?: boolean };
+export const APP_W = PANEL_W;
+export const APP_H = PANEL_H;
 
 export type Design = {
 	template: Layout;
+	size: Size;
 	w: number;
 	h: number;
 	theme: string;
 	highlight: string;
 	badge: BadgeStyle;
 	badgeText: string;
-	badgeScale: number;
 	headline: string;
+	/** The headline as it was passed (without the stop the brand ends it on). */
+	headlineAsked: string;
 	body: string;
 	credit: string;
-	align: Align;
-	textX: number;
-	textY: number;
-	textSize: number;
-	textWidth: number;
-	tracking: number;
-	leading: number;
-	bodyScale: number;
-	textFit: number;
-	textMiddle: boolean;
-	badgeAt: 'words' | 'corner';
-	badgeX: number;
-	badgeY: number;
-	foot: boolean;
-	footLeft: string;
-	footRight: string;
-	logo: boolean;
-	logoX: number;
-	logoY: number;
-	logoSize: number;
-	logoAnchor: Align;
-	logoMark: boolean;
-	logoWord: boolean;
-	partnerName: string;
-	pattern: 'none' | 'panel' | 'full';
-	panelSide: 'right' | 'left' | 'bottom';
-	panelCols: number;
-	panelTop: number;
-	tileSize: number;
-	tileStrength: number;
-	tileStagger: boolean;
-	panelBorder: boolean;
-	outline: boolean;
-	outlineSize: number;
-	outlineY: number;
-	outlineStroke: number;
-	hatch: 'none' | 'floor';
-	hatchY: number;
-	hatchGap: number;
-	hatchAngle: number;
-	guides: boolean;
-	guideInset: number;
-	room: boolean;
-	roomScale: number;
-	roomFade: number;
-	frame: 'none' | 'line' | 'solid';
-	frameWidth: number;
-	frameTone: string;
-	window: 'none' | 'app' | 'picture';
-	winX: number;
-	winY: number;
-	winW: number;
-	winRatio: number;
-	winRadius: number;
-	winFollow: boolean;
-	winGap: number;
-	winBg: string;
-	winShadow: number;
-	winBorder: number;
-	stickers: Sticker[];
-	badgeGap: number;
-	badgeWeight: number;
-	badgeFill: string;
-	badgeInk: string;
-	badgeRound: number;
-	badgeFont: FaceRole;
-	badgeTracking: number;
-	bodyAlpha: number;
-	bodyLeading: number;
-	bodyGap: number;
-	bodyWidth: number;
-	footSize: number;
-	footInset: number;
-	footTracking: number;
-	footRule: boolean;
+	note: string;
+	page: string;
+	partner: string;
+	address: string;
+	items: string[];
+	sample: boolean;
+	seed: number;
+	layers: Record<string, LayerEdit>;
+	spec: Spec;
 };
 
-/* One unit: a pixel of the 1200 x 630 link preview, grown with the area. */
-export const unitOf = (W: number, H: number) => Math.sqrt((W * H) / (1200 * 630));
-const LOCK_H = 30;
-
-function panelWidth(cols: number, tile: number, u: number) {
-	const L = logoDoc().wordmark;
-	const tw = (tile * L.w) / L.h;
-	const gx = tile * (18.43 / 51.61);
-	return (24 + cols * tw + (cols - 1) * gx + 2) * u;
-}
-
-const stack = (src: Sticker['src'], x: number, y: number, size: number, extra: Partial<Sticker> = {}): Sticker => ({ src, x, y, size, ...extra });
-
-/* Stacks round the edges of a room, as on the brand's own share image: squared up, two a side, mirrored. */
-export function roomStacks(S: number, W: number, H: number, k = 1, behind = true, clearTop = false): Sticker[] {
-	const sz = (n: number) => (n * k * Math.min(W, H)) / S;
-	const tall = H / W > 1.15;
-	if (W / H > 3) return [];
-	const list: Sticker[] = tall
-		? [stack('stack-wide', 0.22, 0.08, sz(0.3), { behind }), stack('stack-wide', 0.78, 0.08, sz(0.3), { behind, flip: true }), stack('stack-tall', 0.14, 0.9, sz(0.24), { behind }), stack('stack-tall', 0.86, 0.9, sz(0.24), { behind, flip: true })]
-		: [stack('stack-tall', 0.075, 0.3, sz(0.22), { behind }), stack('stack-tall', 0.925, 0.3, sz(0.22), { behind, flip: true }), stack('stack-wide', 0.09, 0.8, sz(0.26), { behind }), stack('stack-wide', 0.91, 0.8, sz(0.26), { behind, flip: true })];
-	return clearTop ? list.filter((s) => s.y > 0.3) : list;
-}
-
-export const APP_W = 1040;
-export const APP_H = 640;
-
-/* Where a template puts everything at a size (layoutFor in the playground). */
-export function layoutFor(t: Layout, W: number, H: number): Partial<Design> {
-	const u = unitOf(W, H);
-	const S = Math.min(W, H);
-	const wide = W / H >= 1.4;
-	const banner = W / H >= 2.4;
-	const ultra = W / H > 4;
-	const tall = H / W > 1.15;
-	const squareish = !wide && !tall;
-	const m = (banner ? 48 : 44) * u;
-	const hk = banner ? Math.min(1, H / (500 * u)) : 1;
-	const fx = (px: number) => px / W;
-	const fy = (px: number) => px / H;
-	const lockH = LOCK_H * hk;
-	const lockTL = { logo: true, logoX: fx(m), logoY: fy(m), logoAnchor: 'left' as const, logoSize: lockH };
-	const base: Partial<Design> = {
-		pattern: 'none', outline: false, hatch: 'none', guides: false, room: false, frame: 'none', window: 'none', logo: false,
-		tracking: -20, leading: 1.08, badgeScale: 58, bodyScale: 100, textFit: 0, winFollow: false, winGap: 40, textMiddle: false,
-		badgeAt: 'words', foot: false, badgeFont: 'text', badgeTracking: 60, badgeWeight: 500, bodyAlpha: 64, bodyLeading: 1.45,
-		bodyGap: 34, bodyWidth: 0, logoMark: true, logoWord: true, winBorder: 1, winBg: imageDoc().window.bg, footRule: false, footTracking: 20,
-	};
-	switch (t) {
-		case 'hero':
-			return {
-				...base, align: 'center', textX: 0.5, textY: banner ? 0.52 : 0.5, textMiddle: true,
-				textSize: (tall ? 78 : banner ? 52 : wide ? 62 : 70) * hk, textWidth: banner ? 0.5 : tall ? 0.82 : wide ? 0.66 : 0.76,
-				textFit: banner ? 0.56 : tall ? 0.5 : 0.52, badge: 'label', badgeScale: 50, bodyScale: 88,
-				bodyWidth: banner ? 0 : tall ? 0.78 : wide ? 0.56 : 0.7, guides: !banner, guideInset: (banner ? 120 : 48) * hk,
-				...lockTL, logoX: banner ? fx(m * 2.5) : 0.5, logoAnchor: banner ? 'left' : 'center',
-				foot: !banner, footRule: true, footSize: (banner ? 13 : 15) * hk, footInset: (banner ? 48 : 44) * hk + (banner ? 0 : 48 * hk), stickers: [],
-			};
-		case 'brief': {
-			const mm = (banner ? 44 : 56) * u;
-			return {
-				...base, align: 'left', textX: fx(mm), textY: banner ? 0.54 : tall ? 0.46 : 0.5, textMiddle: true,
-				textSize: (tall ? 76 : banner ? 50 : wide ? 60 : 68) * hk, textWidth: banner ? 0.55 : tall ? 0.84 : wide ? 0.66 : 0.8,
-				textFit: 0.5, bodyScale: 86, bodyWidth: banner ? 0 : tall ? 0.8 : wide ? 0.56 : 0.74,
-				badge: 'dot', badgeAt: 'corner', badgeFont: 'mono', badgeWeight: 400, badgeTracking: 80, badgeScale: (100 * 14 * hk) / 19,
-				badgeX: fx(W - mm), badgeY: fy(mm + (lockH * u) / 2), logo: true, logoX: fx(mm), logoY: fy(mm), logoAnchor: 'left', logoSize: lockH,
-				foot: true, footRule: true, footSize: 14 * hk, footInset: mm / u, stickers: [],
-			};
-		}
-		case 'room':
-			return {
-				...base, align: 'center', textX: 0.5, textY: banner ? 0.58 : tall ? 0.54 : 0.58, textMiddle: true,
-				textSize: (tall ? 84 : banner ? 56 : wide ? 70 : 76) * hk, textWidth: banner ? 0.5 : tall ? 0.76 : 0.64,
-				textFit: banner ? 0.5 : tall ? 0.34 : 0.42, tracking: -16, badge: 'none', room: true, roomScale: 34, roomFade: 4,
-				logo: true, logoWord: false, logoSize: (tall ? 62 : banner ? 40 : 48) * hk, logoX: 0.5, logoY: banner ? 0.12 : tall ? 0.3 : 0.22,
-				logoAnchor: 'center', stickers: roomStacks(S, W, H, banner ? 0.8 : 0.9),
-			};
-		case 'app':
-			return {
-				...base, align: 'center', textX: 0.5, textY: fy(m + (tall ? 60 : 0) * u), textSize: (tall ? 72 : banner ? 46 : wide ? 52 : 60) * hk,
-				textWidth: banner ? 0.6 : 0.84, textFit: banner ? 0.4 : tall ? 0.3 : 0.34, badge: 'none', room: true, roomScale: 30,
-				window: 'app', winFollow: true, winGap: (tall ? 56 : banner ? 16 : 30) * hk, winX: 0.5, winY: 0.45,
-				winW: tall ? 0.9 : banner ? 0.5 : wide ? 0.66 : 0.84, winRatio: APP_H / APP_W, winRadius: 4, winBg: color(imageDoc().panel.colors.bg!),
-				winShadow: 120, winBorder: 0, stickers: roomStacks(S, W, H, 0.85, true, true),
-			};
-		case 'feature':
-			return {
-				...base, align: 'center', textX: 0.5, textY: fy(m * (banner ? 0.6 : 1) + (tall ? 80 : 6) * u), textSize: (tall ? 76 : banner ? 46 : wide ? 52 : 62) * hk,
-				textWidth: banner ? 0.6 : 0.84, textFit: banner ? 0.5 : tall ? 0.34 : 0.38, badge: 'label', badgeScale: 60, bodyScale: 90,
-				window: 'picture', winFollow: true, winGap: (tall ? 60 : banner ? 16 : 28) * hk, winX: 0.5, winY: 0.5,
-				winW: tall ? 0.96 : banner ? 0.5 : wide ? 0.86 : 0.92, winRatio: 719 / 1600, winRadius: 0, winShadow: 0, winBorder: 1,
-				guides: !banner, guideInset: 24, stickers: [],
-			};
-		case 'card': {
-			const mm = Math.min(71 * u, 0.09 * S);
-			const q = mm / 98;
-			const px = (n: number) => (n * q) / u;
-			const logoH = 46 * q;
-			const footH = 28 * q;
-			const top = mm + logoH + 40 * q;
-			const bottom = H - mm - footH - 40 * q;
-			return {
-				...base, align: 'left', textX: fx(mm), textY: fy((top + bottom) / 2), textMiddle: true, textSize: px(108), textWidth: (W - 2 * mm) / W,
-				textFit: Math.max(0.2, (bottom - top) / H), tracking: -22, leading: 1.06, bodyScale: 108, bodyLeading: 1.45, bodyGap: 38, bodyAlpha: 64,
-				bodyWidth: banner ? 0 : (0.86 * (W - 2 * mm)) / W, badge: 'solid', badgeAt: 'corner', badgeX: fx(W - mm), badgeY: fy(mm + logoH / 2),
-				badgeScale: (100 * 22 * q) / (19 * u), badgeFont: 'mono', badgeWeight: 500, badgeTracking: 90, badgeRound: 8,
-				logo: true, logoX: fx(mm), logoY: fy(mm), logoAnchor: 'left', logoSize: px(46), foot: true, footRule: true, footSize: px(24), footInset: px(98), stickers: [],
-			};
-		}
-		case 'outline': {
-			const size = 150 * hk;
-			const bottom = H + 4 * u * hk;
-			return {
-				...base, align: ultra ? 'left' : 'center', textX: ultra ? fx(m * 2) : 0.5, textY: fy((banner ? 40 : 80) * u * hk), textSize: (banner ? 60 : 68) * hk,
-				textWidth: ultra ? 0.6 : banner ? 0.6 : 0.84, textFit: ultra ? 0.62 : fy(bottom - size * u - 30 * u), badge: 'label',
-				outline: true, outlineSize: size, outlineY: fy(bottom), outlineStroke: 1.2, ...lockTL, logo: false, stickers: [],
-			};
-		}
-		case 'tile': {
-			const side = tall || squareish ? 'bottom' : 'right';
-			const cols = banner ? 3 : 2;
-			const pw = panelWidth(cols, 40, u);
-			const panelTop = tall ? 0.56 : squareish ? 0.54 : 0;
-			return {
-				...base, align: 'left', textX: fx(m), textY: fy(m + (banner ? 0 : lockH * u + 44 * u)), textSize: (banner ? 54 : 64) * hk,
-				textWidth: side === 'bottom' ? 0.84 : Math.min(0.52, (W - pw - m * 3) / W), textFit: side === 'bottom' ? panelTop - 0.05 : 0.92, badge: 'label',
-				pattern: 'panel', panelSide: side, panelCols: cols, panelTop, tileSize: 40, tileStrength: 100, tileStagger: true, panelBorder: true,
-				...lockTL, logo: !banner,
-				stickers: [side === 'bottom' ? stack('stack-tall', 0.66, (panelTop + 1) / 2 + 0.02, tall ? 0.4 : 0.32) : stack('stack-tall', fx(W - m - pw / 2), 0.52, Math.min(0.7 * pw, 0.7 * H) / S)],
-			};
-		}
-		case 'hatch': {
-			const floor = H - 150 * u * hk;
-			return {
-				...base, align: 'right', textX: fx(W - m), textY: fy(m + 20 * u * hk), textSize: (banner ? 54 : 64) * hk, textWidth: banner ? 0.45 : 0.6,
-				textFit: fy(floor - 20 * u), badge: 'label', hatch: 'floor', hatchY: fy(floor), hatchGap: 12, hatchAngle: 45, ...lockTL, logo: !banner,
-				stickers: [stack('stack-wide', fx(m + 150 * u * hk), fy(floor - 10 * u * hk), (260 * u * hk) / S)],
-			};
-		}
-		case 'partner':
-			return {
-				...base, align: 'center', textX: 0.5, textY: banner ? 0.5 : tall ? 0.52 : 0.5, textSize: (tall ? 72 : wide ? 54 : 62) * hk, textWidth: 0.8,
-				textFit: 0.94, badge: 'label', pattern: 'full', tileSize: 34 * hk, tileStrength: 35, tileStagger: true, panelBorder: false,
-				frame: 'line', frameWidth: 30 * hk, frameTone: 'grey', logo: true, logoSize: 40 * hk, logoX: 0.5,
-				logoY: banner ? 0.18 : tall ? 0.36 : wide ? 0.24 : 0.3, logoAnchor: 'center', stickers: [],
-			};
-		case 'funding':
-			return {
-				...base, align: ultra ? 'left' : 'center', textX: ultra ? fx(m * 2) : 0.5, textY: 0.54, textMiddle: true,
-				textSize: (tall ? 132 : banner ? 74 : wide ? 104 : 112) * hk, textWidth: ultra ? 0.6 : tall ? 0.8 : 0.7, textFit: banner ? 0.6 : 0.56,
-				badge: 'label', badgeScale: 46, room: true, roomScale: 40, logo: !banner, logoWord: false, logoSize: (tall ? 56 : 40) * hk,
-				logoX: 0.5, logoY: tall ? 0.16 : 0.08, logoAnchor: 'center', stickers: roomStacks(S, W, H, banner ? 0.7 : 0.9),
-			};
-		case 'announce': {
-			const inner = m + 34 * u * hk;
-			return {
-				...base, align: 'left', textX: fx(inner), textY: fy(inner + (banner ? 10 : 60) * u * hk), textSize: (tall ? 96 : banner ? 56 : wide ? 72 : 78) * hk,
-				textWidth: banner ? 0.6 : 0.76, textFit: banner ? 0.86 : fy(H - inner - lockH * u - 40 * u), badge: 'dot', frame: 'solid',
-				frameWidth: 34 * hk, frameTone: 'red', logo: true, logoX: banner ? fx(W - inner) : fx(inner), logoY: banner ? fy(inner) : fy(H - inner - lockH * u),
-				logoAnchor: banner ? 'right' : 'left', logoSize: lockH, stickers: [],
-			};
-		}
-	}
-}
-
-const START: Omit<Design, 'template' | 'w' | 'h' | 'theme' | 'headline' | 'body' | 'badge' | 'badgeText'> = {
-	highlight: 'red', badgeScale: 58, credit: '', align: 'left', textX: 0.033, textY: 0.064, textSize: 61.4, textWidth: 0.47, tracking: -10,
-	leading: 1, bodyScale: 100, textFit: 0, textMiddle: false, badgeAt: 'words', badgeX: 0.95, badgeY: 0.08, foot: false, footLeft: '', footRight: '',
-	logo: true, logoX: 0.033, logoY: 0.863, logoSize: 30, logoAnchor: 'left', logoMark: true, logoWord: true, partnerName: '', pattern: 'none',
-	panelSide: 'right', panelCols: 2, panelTop: 0, tileSize: 51.6, tileStrength: 100, tileStagger: false, panelBorder: true, outline: false,
-	outlineSize: 188.8, outlineY: 1.02, outlineStroke: 1.3, hatch: 'none', hatchY: 0.66, hatchGap: 19, hatchAngle: 45, guides: false, guideInset: 80,
-	room: false, roomScale: 34, roomFade: 4, frame: 'none', frameWidth: 24, frameTone: 'light', window: 'none', winX: 0.5, winY: 0.42, winW: 0.86,
-	winRatio: APP_H / APP_W, winRadius: 10, winFollow: false, winGap: 40, winBg: '', winShadow: 100, winBorder: 1, stickers: [],
-	badgeGap: 21, badgeWeight: 500, badgeFill: '', badgeInk: '', badgeRound: -1, badgeFont: 'text', badgeTracking: 0, bodyAlpha: 78,
-	bodyLeading: 1.4, bodyGap: 30, bodyWidth: 0, footSize: 20, footInset: 56, footTracking: 0, footRule: false,
+export type Compose = {
+	template: Layout; size?: Size; w?: number; h?: number; theme?: string; headline?: string; body?: string; badge?: BadgeStyle; badgeText?: string; highlight?: string;
+	partner?: string; credit?: string; note?: string; page?: string; items?: string[]; sample?: boolean; seed?: number; layers?: Record<string, LayerEdit>; spec?: Partial<Spec>;
+	/** Deck slides set their own rules on what a layout must be given. */
+	lenient?: boolean;
 };
 
-export type Compose = { template: Layout; w: number; h: number; theme?: string; headline?: string; body?: string; badge?: BadgeStyle; badgeText?: string; highlight?: string; partner?: string; credit?: string; extra?: Partial<Design> };
+const clean = (s: string | undefined) => (s ?? '').replace(/\r\n/g, '\n').split('\n').map((l) => l.replace(/[ \t]+/g, ' ').trim()).join('\n').trim();
 
-/* A finished design: the template's layout at the size, then its opening copy, then what was asked for. */
+/** The slots a layout can draw. */
+export function slotsOf(t: Layout): string[] {
+	if (t === 'avatar') return [];
+	const logo = t === 'hero' || t === 'brief' || t === 'card' || t === 'announce' || t === 'partner';
+	return ['headline', 'body', 'badge', 'credit', 'note', 'page', ...(logo ? ['partner'] : [])];
+}
+
+/** A design: the layout at the size with only the copy it was given (its sample copy when `sample`). */
 export function compose(o: Compose): Design {
 	const D = imageDoc();
 	const t = D.templates[o.template]!;
+	const size = o.size ?? sizeOf(`${o.w}x${o.h}`)!;
+	const ok = sizesFor(o.template);
+	if ((sizeIds().includes(size.id) || o.template === 'avatar') && !ok.includes(size.id)) throw new Error(`${o.template} does not draw at ${size.id}. ${o.template === 'avatar' ? 'It is the profile picture: use --size avatar.' : `At ${size.id}, use ${LAYOUTS.filter((l) => sizesFor(l).includes(size.id)).join(', ')}.`}`);
+	const s = o.sample ? t.sample : {};
 	const theme = o.theme ?? t.theme;
-	const onAccent = D.themes[theme]?.onAccent ?? {};
-	const d: Design = {
-		...START,
-		template: o.template, w: o.w, h: o.h, theme,
-		headline: t.headline, body: t.body, badge: t.badge, badgeText: t.badgeText,
-		...layoutFor(o.template, o.w, o.h),
-		footLeft: D.foot.left, footRight: D.foot.right,
-	} as Design;
-	/* The template's own badge style is the playground's occasion words over the layout's. */
-	d.badge = t.badge;
-	d.highlight = onAccent.highlight ?? 'red';
-	d.badgeFill = onAccent.badgeFill ? color(onAccent.badgeFill) : '';
-	d.badgeInk = onAccent.badgeInk ? color(onAccent.badgeInk) : '';
-	d.partnerName = t.partner ?? '';
-	if (o.headline !== undefined) {
-		d.headline = emphasise(o.headline);
-		if (o.partner === undefined) d.partnerName = '';
+	const given = { headline: o.headline, body: o.body, badge: o.badgeText, credit: o.credit, note: o.note, page: o.page, partner: o.partner };
+	const slots = slotsOf(o.template);
+	for (const [k, v] of Object.entries(given)) {
+		if (v === undefined || !clean(v) || slots.includes(k)) continue;
+		throw new Error(`${o.template} does not draw ${k === 'badge' ? 'a badge' : k === 'headline' || k === 'body' ? `a ${k}` : `--${k}`}.${slots.length ? ` It draws ${slots.join(', ')}.` : ' It is the mark alone.'}`);
 	}
-	if (o.body !== undefined) d.body = o.body;
-	if (o.badge) d.badge = o.badge;
-	if (o.badgeText !== undefined) d.badgeText = o.badgeText;
-	if (o.highlight) d.highlight = o.highlight;
-	if (o.partner !== undefined) d.partnerName = o.partner;
-	d.credit = o.credit ?? '';
-	if (d.partnerName) d.logo = true;
-	return o.extra ? { ...d, ...o.extra } : d;
+	const pickSlot = (k: 'headline' | 'body' | 'badge' | 'partner' | 'note') => clean(given[k] ?? s[k]);
+	const headline = pickSlot('headline');
+	const partner = pickSlot('partner');
+	if (o.template !== 'avatar' && !headline && !(o.template === 'partner' && partner) && !o.lenient) throw new CopyError(`${o.template} needs a headline (--headline "..."), or --sample for its sample copy.`);
+	const badgeText = pickSlot('badge');
+	const frame = size.frame;
+	const spec: Spec = { ...specFor(o.template, frame.w, frame.h), ...o.spec };
+	const d: Design = {
+		template: o.template, size, w: size.w, h: size.h, theme, highlight: o.highlight ?? D.themes[theme]?.onAccent?.highlight ?? 'red',
+		badge: o.badge ?? (t.badge === 'none' ? 'label' : t.badge), badgeText, headline: headline ? emphasise(headline) : '', headlineAsked: headline, body: pickSlot('body'), credit: clean(o.credit),
+		note: pickSlot('note'), page: clean(o.page), partner, address: D.address, items: (o.items ?? []).map(clean).filter(Boolean), sample: o.sample === true, seed: o.seed ?? 0, layers: o.layers ?? {}, spec,
+	};
+	if (d.note || d.page) spec.foot = true;
+	applyEdits(d);
+	return d;
 }
 
 /* The site's headlines end on a full stop, drawn in the highlight color. */
 export function emphasise(s: string) {
 	const t = s.replace(/\s+$/, '');
-	if (/[\p{L}\p{N})”’"']$/u.test(t) && !/[.!?…:]$/.test(t)) return `${t}.`;
+	if (/[\p{L}\p{N})”’"'*]$/u.test(t) && !/[.!?…:]["'”’)*]*$/u.test(t)) return `${t}.`;
 	return t;
 }
+
+/* ------------------------------------------------------- layer edits */
+
+const CAN: Record<string, DrawnLayer['can']> = {
+	logo: { move: true, scale: [0.6, 2.4], anchors: ['top-left', 'top', 'top-right', 'left', 'right', 'bottom-left', 'bottom', 'bottom-right'] },
+	headline: { move: true, scale: [0.5, 2], align: true, anchors: ['top-left', 'top', 'top-right', 'left', 'center', 'right', 'bottom-left', 'bottom', 'bottom-right'] },
+	body: { move: true, scale: [0.6, 1.8], hide: true },
+	badge: { move: true, scale: [0.6, 2], hide: true },
+	credit: { move: true, scale: [0.8, 2], hide: true },
+	items: { scale: [0.7, 1.4] },
+	partner: {},
+	note: { hide: true },
+	page: { hide: true },
+	address: { hide: true },
+	rule: { hide: true },
+	window: { move: true, scale: [0.5, 1.2], hide: true },
+	picture: { move: true, scale: [0.5, 1.2] },
+	art: { move: true, scale: [0.4, 1.8], hide: true },
+	room: { hide: true },
+	guides: { hide: true },
+	border: { hide: true },
+	panel: { hide: true },
+	pattern: { hide: true },
+	wordmark: { hide: true },
+	floor: { hide: true },
+};
+
+const AVATAR_CAN: DrawnLayer['can'] = { scale: [0.6, 1.4] };
+/** Layouts whose words may be placed anywhere; in the others the window, the panel or the floor says where they go. */
+const FREE_WORDS = new Set<Layout>(['hero', 'brief', 'room', 'announce', 'card', 'partner']);
+function canOf(t: Layout, id: string): DrawnLayer['can'] {
+	if (t === 'avatar') return AVATAR_CAN;
+	const c = CAN[id] ?? {};
+	return id === 'headline' && !FREE_WORDS.has(t) ? { move: c.move, scale: c.scale, align: c.align } : c;
+}
+
+/** The layers a layout can draw and what each can do (the drawn ones depend on the copy and the size). */
+export function layersOf(t: Layout): { id: string; can: DrawnLayer['can'] }[] {
+	const s = specFor(t, 1200, t === 'avatar' ? 1200 : 630);
+	const ids = t === 'avatar' ? ['logo'] : [
+		...(s.logo ? ['logo'] : []), 'headline', 'body', 'badge', 'credit', ...(slotsOf(t).includes('partner') ? ['partner'] : []), 'note', 'page', 'address', 'rule',
+		...(s.window ? ['window', 'picture'] : []), ...(s.stacks ? ['art'] : []), ...(s.room ? ['room'] : []), ...(s.guides !== null ? ['guides'] : []), ...(s.border ? ['border'] : []),
+		...(s.pattern ? ['pattern'] : []), ...(s.pattern === 'panel' ? ['panel'] : []), ...(s.wordmark ? ['wordmark'] : []), ...(s.floor !== null ? ['floor'] : []),
+	];
+	return ids.map((id) => ({ id, can: canOf(t, id) }));
+}
+
+/* Checks each edit against what its layer can do, and turns the ones that change the layout (alignment, anchors). */
+function applyEdits(d: Design) {
+	const known = layersOf(d.template);
+	for (const [id, e] of Object.entries(d.layers)) {
+		const l = known.find((k) => k.id === id) ?? (id === 'items' && d.items.length ? { id, can: CAN.items! } : undefined);
+		if (!l) throw new Error(`${d.template} has no "${id}" layer. It has ${known.map((k) => k.id).join(', ')}.`);
+		const can = l.can;
+		if ((e.dx || e.dy) && !can.move) throw new Error(`The ${id} of ${d.template} stays where the layout puts it.`);
+		if (e.scale !== undefined && e.scale !== 1) {
+			if (!can.scale) throw new Error(`The ${id} of ${d.template} does not take a scale.`);
+			if (e.scale < can.scale[0] || e.scale > can.scale[1]) throw new Error(`The ${id} scales from ${can.scale[0]} to ${can.scale[1]}, not ${e.scale}.`);
+		}
+		if (e.align && !can.align) throw new Error(`The ${id} of ${d.template} has no alignment of its own.`);
+		if (e.hidden && !can.hide) throw new Error(`The ${id} cannot be hidden${id === 'logo' ? ': an image without the logo is not the brand\'s' : ''}.`);
+		if (e.anchor && !can.anchors?.includes(e.anchor)) throw new Error(`The ${id} of ${d.template} does not take an anchor${can.anchors ? ` of ${e.anchor}; it takes ${can.anchors.join(', ')}` : ''}.`);
+	}
+	const h = d.layers.headline;
+	if (h?.anchor) {
+		d.spec.align = h.anchor.includes('left') ? 'left' : h.anchor.includes('right') ? 'right' : 'center';
+		d.spec.valign = h.anchor.startsWith('top') ? 'top' : h.anchor.startsWith('bottom') ? 'bottom' : 'middle';
+	}
+	if (h?.align) d.spec.align = h.align;
+	if (d.layers.logo?.anchor && d.spec.logo) d.spec.logo = { ...d.spec.logo, at: d.layers.logo.anchor };
+}
+
+const scaleOf = (d: Design, id: string) => d.layers[id]?.scale ?? 1;
+const hidden = (d: Design, id: string) => d.layers[id]?.hidden === true;
+const offset = (d: Design, id: string) => ({ x: (d.layers[id]?.dx ?? 0) * d.w, y: (d.layers[id]?.dy ?? 0) * d.h });
 
 /* ----------------------------------------------------------- motion */
 
@@ -361,27 +184,15 @@ export type Motion = { t: number; u: number };
 const T = { logo: 0, badge: 0.06, head: 0.18, body: 0.42, window: 0.5, stickers: 0.62, foot: 0.74 };
 
 /** When the last headline letter has settled, given each line's length in letters. */
-export function revealEnd(mo: Motion | { t: number }, lineLengths: number[]): number {
+function revealEnd(lineLengths: number[]): number {
 	let end = 0;
 	lineLengths.forEach((n, li) => {
 		end = Math.max(end, T.head + 0.1 * li + 0.04 * Math.max(0, n - 1) + duration('enter') + duration('reveal'));
 	});
-	void mo;
 	return end;
 }
 
-function withSettle<R>(ctx: Ctx, mo: Motion | undefined, delay: number, draw: () => R): R {
-	if (!mo) return draw();
-	const st = settle(mo.t, delay);
-	ctx.save();
-	ctx.globalAlpha *= st.alpha;
-	ctx.translate(0, st.dy * mo.u);
-	const r = draw();
-	ctx.restore();
-	return r;
-}
-
-async function settleAsync(ctx: Ctx, mo: Motion | undefined, delay: number, draw: () => Promise<void>) {
+async function settled(ctx: Ctx, mo: Motion | undefined, delay: number, draw: () => void | Promise<void>) {
 	if (!mo) return draw();
 	const st = settle(mo.t, delay);
 	ctx.save();
@@ -391,49 +202,269 @@ async function settleAsync(ctx: Ctx, mo: Motion | undefined, delay: number, draw
 	ctx.restore();
 }
 
+/* ----------------------------------------------------------- colors */
+
+export function colorsOf(d: Pick<Design, 'theme' | 'highlight'>) {
+	const D = imageDoc();
+	const t = D.themes[d.theme]!;
+	const bg = color(t.bg);
+	let hiName = D.highlights[d.highlight] ?? '';
+	if (hiName && contrast(color(hiName), bg) < 3) {
+		/* A highlight the ground hides: the nearest brand color that reads, or a refusal. */
+		const alt = D.highlightAlt[d.highlight];
+		if (alt && contrast(color(alt), bg) >= 3) hiName = alt;
+		else throw new Error(`The ${d.highlight} highlight does not read on the ${d.theme} theme. Use ${Object.keys(D.highlights).filter((k) => !D.highlights[k] || contrast(color(D.highlights[k]!), bg) >= 3 || (D.highlightAlt[k] && contrast(color(D.highlightAlt[k]!), bg) >= 3)).join(', ')}.`);
+	}
+	return { bg, ink: color(t.ink), muted: color(t.muted), line: color(t.line), tile: color(t.tile), border: color(t.border), hi: hiName ? color(hiName) : color(t.ink), room: color(t.room), dark: t.dark, tileAlpha: t.tileAlpha };
+}
+const tone = (name: string) => color(imageDoc().tones[name] ?? imageDoc().tones.light!);
+const accent = () => color(imageDoc().accent);
+
+/** The smallest type in a color on a ground at a size: the legible floor, and large type where the pair is under 4.5. */
+function floorFor(d: Design, ink: string, ground: string) {
+	const small = smallFloor(d.w, d.size.shown);
+	return contrast(ink, ground) >= 4.5 ? small : Math.max(small, largeType(d.w));
+}
+
+/* A chip's colors at a type size: the accent under large type, the deeper red under small (off-white on it passes 4.5). */
+function chipColors(d: Design, fs: number) {
+	const D = imageDoc();
+	const on = D.themes[d.theme]?.onAccent;
+	const C = colorsOf(d);
+	const large = fs >= largeType(d.w);
+	const red = color(large ? D.accent : D.accentSmall);
+	if (d.badge === 'solid') return { fill: on?.badgeFill ? color(on.badgeFill) : C.ink, ink: on?.badgeInk ? red : C.bg };
+	if (d.badge === 'label') return on?.badgeFill ? { fill: color(on.badgeFill), ink: red } : { fill: red, ink: tone('white') };
+	if (d.badge === 'pill') return { fill: blend(color(C.dark ? 'off-white/0.14' : 'off-black/0.04'), C.bg), ink: C.ink };
+	return { fill: '', ink: C.ink };
+}
+
+/* --------------------------------------------------------- geometry */
+
+const inset = (r: Rect, n: number): Rect => ({ x: r.x + n, y: r.y + n, w: r.w - 2 * n, h: r.h - 2 * n });
+const grow = (r: Rect, n: number): Rect => inset(r, -n);
+const right = (r: Rect) => r.x + r.w;
+const bottom = (r: Rect) => r.y + r.h;
+const meet = (a: Rect, b: Rect) => a.x < right(b) && right(a) > b.x && a.y < bottom(b) && bottom(a) > b.y;
+const intersect = (a: Rect, b: Rect): Rect => {
+	const x = Math.max(a.x, b.x);
+	const y = Math.max(a.y, b.y);
+	return { x, y, w: Math.max(0, Math.min(right(a), right(b)) - x), h: Math.max(0, Math.min(bottom(a), bottom(b)) - y) };
+};
+const union = (list: Rect[]): Rect => {
+	const x = Math.min(...list.map((r) => r.x));
+	const y = Math.min(...list.map((r) => r.y));
+	return { x, y, w: Math.max(...list.map(right)) - x, h: Math.max(...list.map(bottom)) - y };
+};
+
 /* ------------------------------------------------------------ words */
 
-type Word = { text: string; hi: boolean; space: boolean };
-const STAR = '\u0000';
-function parseLine(line: string): Word[] {
-	const out: Word[] = [];
-	let hi = false;
-	line = line.replaceAll('\\*', STAR);
-	for (const [i, chunk] of line.split('*').entries()) {
-		if (i > 0) hi = !hi;
-		for (const b of chunk.split(/(\s+)/)) {
-			if (!b) continue;
-			if (/^\s+$/.test(b)) {
-				if (out.length) out[out.length - 1]!.space = true;
-			} else out.push({ text: b.replaceAll(STAR, '*'), hi, space: false });
-		}
-	}
-	return out;
+type BadgeBox = { w: number; h: number; fs: number; role: FaceRole; text: string };
+type Block = {
+	size: number; w: number; h: number;
+	logo?: { y: number };
+	badge?: BadgeBox & { y: number };
+	head?: { y: number; lines: Line[]; role: FaceRole };
+	body?: { y: number; lines: Line[]; fs: number; role: FaceRole };
+	items?: { y: number; fs: number; role: FaceRole; rows: { y: number; lines: Line[] }[]; lead: number };
+	credit?: { y: number; lines: Line[]; fs: number; role: FaceRole };
+};
+
+function badgeBox(ctx: Ctx, d: Design, fs: number): BadgeBox | null {
+	const t = d.badgeText.trim();
+	if (d.badge === 'none' || !t || hidden(d, 'badge')) return null;
+	const text = d.badge === 'label' || d.badge === 'dot' ? t.toUpperCase() : t;
+	const role = roleFor(d.spec.badgeFont, text, 'badge');
+	const track = (d.spec.badgeTracking / 1000) * fs;
+	ctx.font = font(role, d.spec.badgeWeight, fs);
+	ctx.letterSpacing = `${track}px`;
+	const tw = ctx.measureText(text).width - (track > 0 ? track : 0);
+	ctx.letterSpacing = '0px';
+	if (d.badge === 'solid') return { w: tw + fs * 2.16, h: fs * 2.46, fs, role, text };
+	if (d.badge === 'pill') return { w: tw + fs * 2.4, h: fs * 1.9, fs, role, text };
+	if (d.badge === 'dot') return { w: fs * 1.15 + tw, h: fs * 1.2857, fs, role, text };
+	return { w: tw + fs * 1.24, h: fs * 1.75, fs, role, text };
 }
 
-function wrapWords(ctx: Ctx, words: Word[], max: number) {
-	const space = ctx.measureText(' ').width;
-	const lines: { words: Word[]; w: number }[] = [];
-	let cur: Word[] = [];
-	let w = 0;
-	for (const wd of words) {
-		const ww = ctx.measureText(wd.text).width;
-		const add = cur.length ? space + ww : ww;
-		if (cur.length && w + add > max) {
-			lines.push({ words: cur, w });
-			cur = [wd];
-			w = ww;
-		} else {
-			cur.push(wd);
-			w += add;
-		}
-	}
-	if (cur.length || !lines.length) lines.push({ words: cur, w });
-	return lines;
+/* A layer's type size: its own, never under its floor, times the edit (an edit under the floor is an error). */
+function edited(d: Design, id: string, base: number, floor: number): number {
+	const k = scaleOf(d, id);
+	const size = Math.max(base, floor) * k;
+	if (size < floor - 0.01) throw new CopyError(`The ${id} at scale ${k} does not fit ${d.size.id}: it would be ${Math.round(size)} px, and reads from ${Math.ceil(floor)} px up.`);
+	return size;
 }
 
-function plainLines(ctx: Ctx, s: string, max: number) {
-	return s.split('\n').flatMap((l) => wrapWords(ctx, parseLine(l), max)).map((l) => ({ text: l.words.map((w) => w.text).join(' '), w: l.w }));
+/* The badge at its size, or smaller down to its floor to stay inside `max`; too long for that is an error. */
+function fitBadge(ctx: Ctx, d: Design, base: number, max: number): BadgeBox | null {
+	if (!badgeBox(ctx, d, 10)) return null;
+	const C = chipColors(d, base);
+	const floor = floorFor(d, C.ink, C.fill || colorsOf(d).bg);
+	const k = scaleOf(d, 'badge');
+	let size = edited(d, 'badge', base, floor);
+	for (;;) {
+		const b = badgeBox(ctx, d, size)!;
+		if (b.w <= max) return b;
+		if (size <= floor || k > 1) {
+			const n = Math.max(1, Math.floor((d.badgeText.length * max) / b.w) - 1);
+			throw new CopyError(k > 1 ? `The badge at scale ${k} does not fit ${d.template} at ${d.size.id}.` : `The badge "${d.badgeText}" does not fit ${d.template} at ${d.size.id}. Shorten it to about ${n} characters.`);
+		}
+		size = Math.max(floor, size * 0.96);
+	}
+}
+
+const headFont = (ctx: Ctx, d: Design, role: FaceRole, size: number) => {
+	ctx.font = font(role, 400, size);
+	ctx.letterSpacing = `${(d.spec.tracking / 1000) * size}px`;
+};
+
+/* The words at a headline size, in lines, stacked from 0. */
+function setBlock(ctx: Ctx, d: Design, size: number, width: number, maxW: number, o: { breakLong: boolean; balance: boolean; logoH: number }): Block {
+	const s = d.spec;
+	const C = colorsOf(d);
+	const b: Block = { size, w: 0, h: 0 };
+	let y = 0;
+	const wide = (w: number) => (b.w = Math.max(b.w, w));
+	if (o.logoH > 0) {
+		b.logo = { y: 0 };
+		y += o.logoH + Math.max(size * 0.5, o.logoH * 0.55);
+	}
+	if (s.badgeAt === 'words') {
+		const bb = fitBadge(ctx, d, size * s.badgeRatio, maxW);
+		if (bb) {
+			b.badge = { ...bb, y };
+			wide(bb.w);
+			y += bb.h + size * (s.badgeGap / 100);
+		}
+	}
+	if (d.headline) {
+		const role = roleFor('display', plain(d.headline), 'headline');
+		headFont(ctx, d, role, size);
+		const lines = setLines(ctx, d.headline, width, { breakLong: o.breakLong, balance: o.balance });
+		ctx.letterSpacing = '0px';
+		b.head = { y, lines, role };
+		for (const l of lines) wide(l.w);
+		y += lines.length * size * s.leading;
+	}
+	const bodyMax = s.bodyWidth > 0 ? Math.min(maxW, s.bodyWidth * d.size.frame.w) : Math.min(maxW, Math.max(width, maxW * 0.6));
+	if (d.body && !hidden(d, 'body')) {
+		const role = roleFor('text', d.body.replaceAll('*', ''), 'body');
+		const fs = edited(d, 'body', size * s.bodyRatio, floorFor(d, C.muted, C.bg));
+		y += size * (s.bodyGap / 100);
+		ctx.font = font(role, 400, fs);
+		const lines = setLines(ctx, d.body, bodyMax, { breakLong: true, balance: o.balance });
+		b.body = { y, lines, fs, role };
+		for (const l of lines) wide(l.w);
+		y += lines.length * fs * s.bodyLeading;
+	}
+	if (d.items.length) {
+		const role = roleFor('text', d.items.join(' '), 'points');
+		const fs = edited(d, 'items', size * 0.42, floorFor(d, C.ink, C.bg));
+		const lead = fs * 1.1;
+		y += size * 0.56;
+		ctx.font = font(role, 400, fs);
+		const rows = d.items.map((it) => {
+			const lines = setLines(ctx, it, maxW * 0.92 - lead, { breakLong: true, balance: false });
+			const row = { y, lines };
+			for (const l of lines) wide(l.w + lead);
+			y += lines.length * fs * 1.36 + fs * 0.6;
+			return row;
+		});
+		y -= fs * 0.6;
+		b.items = { y: rows[0]!.y, fs, role, rows, lead };
+	}
+	if (d.credit && !hidden(d, 'credit')) {
+		const role = roleFor('text', d.credit, 'credit');
+		const fs = edited(d, 'credit', size * 0.2, floorFor(d, C.muted, C.bg));
+		y += size * (b.body ? 0.22 : 0.3);
+		ctx.font = font(role, 500, fs);
+		const lines = setLines(ctx, d.credit, maxW, { breakLong: true });
+		b.credit = { y, lines, fs, role };
+		for (const l of lines) wide(l.w);
+		y += lines.length * fs * 1.2;
+	}
+	b.h = y;
+	return b;
+}
+
+const headFloor = (d: Design) => Math.max(largeType(d.w), smallFloor(d.w, d.size.shown) * 1.5);
+
+/* The largest setting of the words that fits a box: at the layout's width, then (a long headline) the whole box. */
+function fitWords(ctx: Ctx, d: Design, box: { w: number; h: number }, logoH: number): Block {
+	const s = d.spec;
+	const floor = headFloor(d);
+	const nominal = Math.max(s.size, floor);
+	const narrow = Math.min(box.w, s.width * d.size.frame.w);
+	const fits = (b: Block, w: number) => b.h <= box.h + 0.5 && (b.head?.lines.every((l) => l.w <= w + 0.5) ?? true) && b.w <= box.w + 0.5;
+	const search = (w: number): Block | null => {
+		for (let size = nominal; ; size = Math.max(floor, size * 0.97)) {
+			const last = size <= floor;
+			const b = setBlock(ctx, d, size, w, box.w, { breakLong: last, balance: false, logoH });
+			if (fits(b, w)) return b;
+			if (last) return null;
+		}
+	};
+	let b = search(narrow);
+	let w = narrow;
+	if ((!b || b.size < nominal * 0.75) && narrow < box.w - 1) {
+		const wider = search(box.w);
+		if (wider && (!b || wider.size > b.size)) {
+			b = wider;
+			w = box.w;
+		}
+	}
+	if (!b) throw tooLong(ctx, d, box, logoH);
+	const k = scaleOf(d, 'headline');
+	let size = b.size;
+	if (k !== 1) {
+		size = b.size * k;
+		if (size < floor - 0.01) throw new CopyError(`The headline at scale ${k} does not fit ${d.size.id}: it would be ${Math.round(size)} px, and reads from ${Math.ceil(floor)} px up (scale ${r2(floor / b.size)}).`);
+		if (k > 1) {
+			const tryAt = (n: number): [Block, number] | null => {
+				for (const ww of w < box.w - 1 ? [w, box.w] : [w]) {
+					const t = setBlock(ctx, d, n, ww, box.w, { breakLong: false, balance: false, logoH });
+					if (fits(t, ww)) return [t, ww];
+				}
+				return null;
+			};
+			const hit = tryAt(size);
+			if (!hit) {
+				let max = 1;
+				for (let n = k - 0.02; n > 1; n -= 0.02) if (tryAt(b.size * n)) { max = n; break; }
+				throw new CopyError(`The headline at scale ${k} does not fit ${d.template} at ${d.size.id}. The largest that does is ${r2(max)}${max <= 1 ? ' (it already fills its place; shorten the words to make them bigger)' : ''}.`);
+			}
+			w = hit[1];
+		}
+	}
+	const set = setBlock(ctx, d, size, w, box.w, { breakLong: size <= floor + 0.01, balance: true, logoH });
+	return fits(set, box.w) ? set : setBlock(ctx, d, size, w, box.w, { breakLong: size <= floor + 0.01, balance: false, logoH });
+}
+
+const r2 = (n: number) => Math.floor(n * 100) / 100;
+
+/* What to shorten, and to about how many words, worked out by setting shorter copy in the same box. */
+function tooLong(ctx: Ctx, d: Design, box: { w: number; h: number }, logoH: number): CopyError {
+	const at = `${d.template} at ${d.size.id}`;
+	const fitsWith = (copy: Partial<Design>) => {
+		const t = { ...d, ...copy };
+		const b = setBlock(ctx, t, headFloor(d), box.w, box.w, { breakLong: true, balance: false, logoH });
+		return b.h <= box.h && b.w <= box.w + 0.5;
+	};
+	const cut = (key: 'headline' | 'body') => {
+		const words = plain(d[key]).split(' ');
+		for (let n = words.length - 1; n > 0; n--) if (fitsWith({ [key]: words.slice(0, n).join(' ') })) return n;
+		return 0;
+	};
+	if (d.items.length && !fitsWith({ items: d.items.slice(0, 1) })) return new CopyError(`The points do not fit ${at}. Shorten them.`);
+	if (d.items.length) {
+		for (let n = d.items.length - 1; n > 0; n--) if (fitsWith({ items: d.items.slice(0, n) })) return new CopyError(`The points do not fit ${at}: about ${n} of them do. Shorten or split them.`);
+	}
+	if (d.body) {
+		const n = cut('body');
+		if (n) return new CopyError(`The copy does not fit ${at}. Shorten the body to about ${n} words, or the headline.`);
+	}
+	const h = cut('headline');
+	if (h) return new CopyError(`The copy does not fit ${at}. Shorten the headline to about ${h} words${d.body ? ', or drop the body' : ''}.`);
+	return new CopyError(`The copy does not fit ${at}. ${d.body ? 'Drop the body' : 'Shorten it'}${d.badgeText ? ' or the badge' : ''}, or use a taller size.`);
 }
 
 function baselineIn(ctx: Ctx, lineTop: number, size: number, lh: number) {
@@ -443,19 +474,424 @@ function baselineIn(ctx: Ctx, lineTop: number, size: number, lh: number) {
 	return lineTop + (size * lh - (asc + desc)) / 2 + asc;
 }
 
-/* ----------------------------------------------------------- colors */
+/* ------------------------------------------------------------- plan */
 
-export function colorsOf(d: Design) {
-	const D = imageDoc();
-	const t = D.themes[d.theme]!;
-	const hi = D.highlights[d.highlight];
+type Placed = { rect: Rect };
+type LogoPlan = Placed & { k: number; word: boolean; lockup: Rect; partner?: { rect: Rect; fs: number; role: FaceRole; text: string; times: Rect } };
+type FootPlan = { y: number; fs: number; rule: Rect | null; parts: { id: 'note' | 'page' | 'address'; text: string; x: number; w: number; align: 'left' | 'right'; role: FaceRole }[] };
+type StackPlan = { src: 'stack-tall' | 'stack-wide'; rect: Rect; flip: boolean; pair: number };
+export type Plan = {
+	content: Rect; block: Block; at: { x: number; y: number }; words: Rect;
+	logo: LogoPlan | null; corner: (BadgeBox & Placed) | null; foot: FootPlan | null; window: Rect | null; pic: Pic | null; stacks: StackPlan[];
+	wall: Rect | null; panel: Rect | null; wordmark: { rects: Rect[]; k: number } | null; floorY: number | null; border: number;
+};
+
+function logoSizes(ctx: Ctx, d: Design, h: number): { w: number; h: number; k: number; lw: number; partner?: { fs: number; role: FaceRole; w: number; gap: number; times: number } } {
+	const L = logoDoc();
+	const k = h / L.lockup.h;
+	const word = d.spec.logo!.word;
+	const lw = word ? L.lockup.w * k : L.mark.w * k;
+	const p = d.partner;
+	if (!p || !word) return { w: lw, h, k, lw };
+	const fs = h * 0.72;
+	const role = roleFor('display', p, 'partner');
+	ctx.font = font(role, 600, fs);
+	ctx.letterSpacing = '0px';
+	const pw = ctx.measureText(p).width;
+	const gap = 26 * k;
+	const times = 24 * k;
+	return { w: lw + gap * 2 + times + pw, h, k, lw, partner: { fs, role, w: pw, gap, times } };
+}
+
+/* The logo's height at a size (never under its legible height), shrunk only so a partner's name fits beside it. */
+function logoHeight(ctx: Ctx, d: Design, max: number): number {
+	const s = d.spec.logo!;
+	const floor = logoFloor(d.w, d.size.shown) * (s.word ? 1 : 1.2);
+	const C = colorsOf(d);
+	/* A partner's name is set with the logo, so the pair is tall enough for the name to read. */
+	const least = d.partner && s.word ? Math.max(floor, floorFor(d, C.ink, C.bg) / 0.72) : floor;
+	let h = Math.max(s.h, least) * (d.layers.logo?.scale ?? 1);
+	if (h < least - 0.01) throw new CopyError(`The logo at scale ${d.layers.logo!.scale} does not fit ${d.size.id}: it would be ${Math.round(h)} px tall, and reads from ${Math.ceil(least)} px.`);
+	while (logoSizes(ctx, d, h).w > max) {
+		if (h <= least || (d.layers.logo?.scale ?? 1) > 1) throw new CopyError(d.partner ? `"${d.partner}" does not fit beside the logo in ${d.template} at ${d.size.id}. Shorten the partner's name.` : `The logo${(d.layers.logo?.scale ?? 1) > 1 ? ` at scale ${d.layers.logo!.scale}` : ''} does not fit ${d.template} at ${d.size.id}.`);
+		h = Math.max(least, h * 0.96);
+	}
+	return h;
+}
+
+function logoAt(ctx: Ctx, d: Design, h: number, x: number, y: number): LogoPlan {
+	const z = logoSizes(ctx, d, h);
+	const lockup = { x, y, w: z.lw, h };
+	const p = z.partner;
 	return {
-		bg: color(t.bg), ink: color(t.ink), line: color(t.line), tile: color(t.tile), border: color(t.border),
-		hi: hi ? color(hi) : '', room: color(t.room), dark: t.dark, tileAlpha: t.tileAlpha,
+		rect: { x, y, w: z.w, h }, k: z.k, word: d.spec.logo!.word, lockup,
+		partner: p ? { rect: { x: x + z.lw + p.gap * 2 + p.times, y, w: p.w, h }, fs: p.fs, role: p.role, text: d.partner, times: { x: x + z.lw + p.gap, y: y + h / 2 - p.times / 2, w: p.times, h: p.times } } : undefined,
 	};
 }
-const tone = (name: string) => color(imageDoc().tones[name] ?? imageDoc().tones.light!);
-const accent = () => color(imageDoc().accent);
+
+/* A box at an anchor of a region, pushed off what the platform covers. */
+function anchored(d: Design, at: string, w: number, h: number, region: Rect, gap: number): Rect {
+	const x = at.includes('left') ? region.x : at.includes('right') ? right(region) - w : region.x + (region.w - w) / 2;
+	const y = at.startsWith('top') ? region.y : at.startsWith('bottom') ? bottom(region) - h : region.y + (region.h - h) / 2;
+	const box = { x, y, w, h };
+	for (const a of d.size.avoid) {
+		if (!meet(box, grow(a, gap / 2))) continue;
+		const over = right(a) + gap / 2;
+		const up = a.y - gap / 2 - h;
+		if (a.x <= region.x && over + w <= right(region)) box.x = over;
+		else if (up >= region.y) box.y = up;
+		else box.x = a.x - gap / 2 - w;
+	}
+	return box;
+}
+
+/** Every box of a design, worked out before anything is drawn. `own` is whether the picture is the person's (not the stand-in). */
+export function planDesign(ctx: Ctx, d: Design, pic: Pic | null, own = Boolean(pic)): Plan {
+	const s = d.spec;
+	const { w: W, h: H } = d;
+	const F = d.size.frame;
+	const u = unitOf(F.w, F.h);
+	const canvas: Rect = { x: 0, y: 0, w: W, h: H };
+	const borderPx = s.border && !hidden(d, 'border') ? s.border.px : 0;
+	let content = inset(F, s.margin);
+	if (borderPx) content = intersect(content, inset(canvas, borderPx + s.margin * (s.border!.kind === 'solid' ? 0.8 : 0.5)));
+	const gap = Math.max(22 * u, smallFloor(W, d.size.shown));
+	const plan: Plan = { content, block: { size: 0, w: 0, h: 0 }, at: { x: 0, y: 0 }, words: { x: 0, y: 0, w: 0, h: 0 }, logo: null, corner: null, foot: null, window: null, pic, stacks: [], wall: null, panel: null, wordmark: null, floorY: null, border: borderPx };
+
+	if (d.template === 'avatar') {
+		const L = logoDoc();
+		const h = s.logo!.h * scaleOf(d, 'logo');
+		const w = (L.mark.w * h) / L.mark.h;
+		if (Math.hypot(w, h) > Math.min(W, H) * 0.86) throw new CopyError('The mark at that scale would leave the circle a profile picture is cropped to.');
+		plan.logo = { rect: { x: (W - w) / 2, y: (H - h) / 2, w, h }, k: h / L.mark.h, word: false, lockup: { x: (W - w) / 2, y: (H - h) / 2, w, h } };
+		return plan;
+	}
+
+	let zone = { ...content };
+	const bandTop = (y: number) => {
+		const b = bottom(zone);
+		zone.y = Math.max(zone.y, y);
+		zone.h = b - zone.y;
+	};
+	const bandBottom = (y: number) => (zone.h = Math.min(zone.h, y - zone.y));
+
+	/* The footer: a hairline, a note or page number left, the address right. */
+	if (s.foot) plan.foot = planFoot(ctx, d, content);
+	if (plan.foot) bandBottom((plan.foot.rule?.y ?? plan.foot.y - plan.foot.fs) - gap * 0.8);
+
+	/* The logo where it is anchored (a logo over the words is set with them). */
+	const above = s.logo?.at === 'above';
+	if (s.logo && !above) {
+		const edited = Boolean(d.layers.logo?.anchor);
+		const region = edited ? inset(intersect(d.size.safe, borderPx ? inset(canvas, borderPx + 4) : canvas), s.margin) : content;
+		const h = logoHeight(ctx, d, region.w * (s.logo.at === 'left' || s.logo.at === 'right' ? 0.45 : 1));
+		const z = logoSizes(ctx, d, h);
+		const footTop = plan.foot ? (plan.foot.rule?.y ?? plan.foot.y - plan.foot.fs) - gap * 0.7 : bottom(region);
+		const r = anchored(d, s.logo.at, z.w, h, s.logo.at.startsWith('top') ? region : { ...region, h: Math.min(bottom(region), footTop) - region.y }, gap);
+		const o = offset(d, 'logo');
+		const inFrame = meet(r, grow(zone, 2)) || meet(r, content);
+		plan.logo = logoAt(ctx, d, h, r.x + o.x, r.y + o.y);
+		if (inFrame) {
+			if (s.logo.at === 'left') {
+				const x = right(r) + Math.max(gap * 1.4, h * 0.3);
+				zone = { ...zone, x, w: right(zone) - x };
+			} else if (s.logo.at === 'right') zone.w = r.x - Math.max(gap * 1.4, h * 0.3) - zone.x;
+			else if (s.logo.at.startsWith('top')) bandTop(bottom(r) + gap * 1.25);
+			else if (s.logo.at.startsWith('bottom')) bandBottom(r.y - gap);
+		}
+	}
+
+	/* A badge in the corner, on the logo's row, opposite it. */
+	if (s.badgeAt === 'corner' && d.badgeText && !hidden(d, 'badge') && d.badge !== 'none') {
+		const L = plan.logo?.rect;
+		const topLogo = L && s.logo && s.logo.at.toString().startsWith('top') ? L : null;
+		const onLeft = Boolean(topLogo && s.logo!.at === 'top-right');
+		const room = topLogo ? (onLeft ? topLogo.x - content.x : s.logo!.at === 'top' ? right(content) - right(topLogo) : right(content) - right(topLogo)) - gap : content.w;
+		const b = fitBadge(ctx, d, s.size * s.badgeRatio, Math.max(gap * 3, room));
+		if (b) {
+			const rowH = Math.max(topLogo?.h ?? 0, b.h);
+			const cy = topLogo ? topLogo.y + topLogo.h / 2 : content.y + rowH / 2;
+			const o = offset(d, 'badge');
+			const r = { x: (onLeft ? content.x : right(content) - b.w) + o.x, y: Math.max(content.y, cy - b.h / 2) + o.y, w: b.w, h: b.h };
+			plan.corner = { ...b, rect: r };
+			bandTop(Math.max(bottom(r), topLogo ? bottom(topLogo) : 0) + gap);
+		}
+	}
+
+	/* What the platform lays over the far corner (a running time): nothing that must be read goes behind it. */
+	for (const a of d.size.avoid) if (a.x > W / 2 && meet(zone, a)) bandBottom(a.y - gap * 0.5);
+
+	const aboveH = above && s.logo ? logoHeight(ctx, d, zone.w) : 0;
+	const mirror = d.seed > 0 && d.seed % 2 === 1;
+
+	if (s.wordmark && !hidden(d, 'wordmark')) {
+		/* As wide as the words, whole, and lower when the words need the height. */
+		const L = logoDoc().wordmark;
+		const ratio = L.w / L.h;
+		const full = { ...zone };
+		for (const share of [0.36, 0.24, 0.16]) {
+			let n = 1;
+			let bh = 0;
+			for (; n < 5; n++) {
+				bh = content.w / (n * ratio + (n - 1) * 0.5);
+				if (bh <= F.h * share) break;
+			}
+			const bw = bh * ratio;
+			const top = bottom(full) - bh;
+			plan.wordmark = { rects: Array.from({ length: n }, (_, i) => ({ x: content.x + i * (bw + bh * 0.5), y: top, w: bw, h: bh })), k: bh / L.h };
+			zone = { ...full, h: top - gap - full.y };
+			try {
+				fitWords(ctx, d, zone, aboveH);
+				break;
+			} catch (e) {
+				if (!(e instanceof CopyError) || share === 0.16) throw e;
+			}
+		}
+	}
+
+	if (s.floor !== null && !hidden(d, 'floor')) {
+		plan.floorY = bottom(F) - s.floor - (plan.foot ? plan.foot.fs * 3 : 0);
+		bandBottom(plan.floorY - gap * 0.7);
+	}
+
+	let wordsZone = { ...zone };
+	if (s.pattern === 'panel' && !hidden(d, 'panel')) {
+		/* The tiled panel and the words share the frame: side by side, or the panel under the words on a tall one. */
+		const stacked = F.w / F.h < 1.4;
+		if (stacked) {
+			let panelTop = 0;
+			for (const share of [0.5, 0.56, 0.62, 0.68]) {
+				panelTop = content.y + content.h * share;
+				wordsZone = { ...zone, h: panelTop - gap - zone.y };
+				try {
+					fitWords(ctx, d, wordsZone, aboveH);
+					break;
+				} catch (e) {
+					if (!(e instanceof CopyError) || share === 0.68) throw e;
+				}
+			}
+			const top = plan.logo && s.logo?.at.toString().startsWith('bottom') ? plan.logo.rect.y : bottom(zone);
+			plan.panel = { x: content.x, y: panelTop, w: content.w, h: Math.min(bottom(zone), top) - panelTop };
+		} else {
+			const leftBar = d.size.avoid.some((a) => a.x === 0) && F.x > 0;
+			const pw = Math.min(content.w * 0.46, (2 * 40 * u * 9) * 1.1);
+			const py = plan.foot ? { y: content.y, h: zone.y + zone.h - content.y } : { y: content.y, h: content.h };
+			if (leftBar) {
+				const x = Math.min(20, F.x) + s.margin * 0.5;
+				plan.panel = { x, ...py, w: content.x + pw * 0.86 - x };
+				wordsZone = { ...zone, x: right(plan.panel) + gap * 1.6, w: right(zone) - right(plan.panel) - gap * 1.6 };
+				if (plan.logo && !d.layers.logo?.anchor) plan.logo = logoAt(ctx, d, plan.logo.rect.h, wordsZone.x, plan.logo.rect.y);
+			} else if (mirror) {
+				plan.panel = { x: content.x, ...py, w: pw };
+				wordsZone = { ...zone, x: content.x + pw + gap * 1.6, w: zone.w - pw - gap * 1.6 };
+				if (plan.logo && !d.layers.logo?.anchor) plan.logo = logoAt(ctx, d, plan.logo.rect.h, wordsZone.x, plan.logo.rect.y);
+			} else {
+				plan.panel = { x: right(content) - pw, ...py, w: pw };
+				wordsZone = { ...zone, w: zone.w - pw - gap * 1.6 };
+			}
+		}
+	}
+
+	if (s.floor !== null && F.w / F.h >= 1 && !hidden(d, 'art')) {
+		/* Words on one side, the stack on the other. */
+		const w = Math.max(zone.w * 0.6, Math.min(zone.w, s.width * F.w));
+		if (d.spec.align === 'right') wordsZone = { ...zone, x: right(zone) - w, w };
+		else if (d.spec.align === 'left') wordsZone = { ...zone, w };
+		if (plan.logo && plan.logo.rect.w + gap * 2 < zone.w - w && s.logo?.at === 'top-left' && d.spec.align === 'right') wordsZone = { ...wordsZone, y: content.y, h: bottom(zone) - content.y };
+	}
+
+	const win = s.window && !(hidden(d, 'window') && !own) ? s.window : null;
+	const ratio = win ? (pic ? pic.h / Math.max(1, pic.w) : win === 'app' ? PANEL_H / PANEL_W : 719 / 1600) : 0;
+	const winId = own ? 'picture' : 'window';
+	const winScale = scaleOf(d, winId);
+	const tooBig = (max: number) => new CopyError(`The ${winId} at scale ${winScale} does not fit ${d.template} at ${d.size.id}. The largest that does is ${r2(max)}.`);
+	if (win && s.split) {
+		/* Beside the words: the window whole, as tall as the frame lets it be. */
+		const winBox = { w: zone.w * 0.52, h: zone.h };
+		let ww = Math.min(winBox.w, winBox.h / ratio);
+		ww *= winScale;
+		if (ww > zone.w * 0.64 || ww * ratio > zone.h * 1.001) throw tooBig(Math.min((zone.w * 0.64) / ww, zone.h / (ww * ratio)) * winScale);
+		const wh = ww * ratio;
+		const onLeft = mirror;
+		plan.window = { x: onLeft ? zone.x : right(zone) - ww, y: zone.y + (zone.h - wh) / 2, w: ww, h: wh };
+		wordsZone = { ...zone, x: onLeft ? right(plan.window) + gap * 1.8 : zone.x, w: zone.w - ww - gap * 1.8 };
+		d.spec.width = 1;
+		plan.block = fitWords(ctx, d, wordsZone, aboveH);
+	} else if (win) {
+		/* Under the words: the words in their share, the window whole in what is left. */
+		const g = (F.h / F.w > 1.15 ? 56 : 30) * u;
+		let block: Block | null = null;
+		let last: unknown;
+		for (const share of [s.limit, s.limit + 0.08, s.limit + 0.16]) {
+			try {
+				block = fitWords(ctx, d, { w: zone.w, h: zone.h * share }, aboveH);
+				break;
+			} catch (e) {
+				if (!(e instanceof CopyError)) throw e;
+				last = e;
+			}
+		}
+		if (!block) throw last;
+		plan.block = block;
+		const room = zone.h - block.h - g;
+		const full = Math.min(zone.w, (F.h / F.w > 1.15 ? 0.96 : win === 'app' ? 0.8 : 0.9) * F.w, room / ratio);
+		const ww = full * winScale;
+		if (ww * ratio > room + 0.5 || ww > zone.w + 0.5) throw tooBig(Math.min(room / ratio, zone.w) / full);
+		const wh = ww * ratio;
+		const total = block.h + g + wh;
+		const top = zone.y + Math.max(0, (zone.h - total) / 2);
+		wordsZone = { x: zone.x, y: top, w: zone.w, h: block.h };
+		plan.window = { x: F.x + (F.w - ww) / 2, y: top + block.h + g, w: ww, h: wh };
+	} else plan.block = fitWords(ctx, d, { w: wordsZone.w, h: wordsZone.h * (s.limit || 1) }, aboveH);
+
+	/* The words in their zone. */
+	const b = plan.block;
+	const wx = s.align === 'left' ? wordsZone.x : s.align === 'right' ? right(wordsZone) - b.w : wordsZone.x + (wordsZone.w - b.w) / 2;
+	const wy = s.valign === 'top' ? wordsZone.y : s.valign === 'bottom' ? bottom(wordsZone) - b.h : wordsZone.y + (wordsZone.h - b.h) / 2;
+	const ho = offset(d, 'headline');
+	plan.at = { x: wx + ho.x, y: wy + ho.y };
+	plan.words = { x: plan.at.x, y: plan.at.y, w: b.w, h: b.h };
+	if (plan.window) {
+		const o = offset(d, winId);
+		plan.window = { ...plan.window, x: plan.window.x + o.x, y: plan.window.y + o.y };
+	}
+	if (b.logo && s.logo) {
+		const z = logoSizes(ctx, d, aboveH);
+		const x = s.align === 'left' ? plan.at.x : s.align === 'right' ? plan.at.x + b.w - z.w : plan.at.x + (b.w - z.w) / 2;
+		const o = offset(d, 'logo');
+		plan.logo = logoAt(ctx, d, aboveH, x + o.x, plan.at.y + o.y);
+	}
+
+	if (s.stacks && !hidden(d, 'art')) plan.stacks = planStacks(d, plan, u, mirror);
+	if (plan.stacks.some((k) => k.rect.x < -0.5 || k.rect.y < -0.5 || right(k.rect) > W + 0.5 || bottom(k.rect) > H + 0.5)) throw new CopyError(`The art does not fit ${d.template} at ${d.size.id} there: a stack would be cut off at the edge. Move it less or make it smaller.`);
+
+	if (s.room && !hidden(d, 'room')) {
+		/* The back wall holds the words and the window, so no line of the room runs behind them. */
+		const inner = [plan.words, ...(plan.window ? [plan.window] : []), ...(plan.logo ? [plan.logo.rect] : []), ...(plan.foot ? [{ x: content.x, y: plan.foot.y - plan.foot.fs, w: content.w, h: plan.foot.fs * 2 }] : [])];
+		const pad = 0.05 * Math.min(F.w, F.h);
+		const c = { x: F.x + F.w / 2, y: F.y + F.h / 2 };
+		const min = { x: c.x - (F.w * s.room.min) / 2, y: c.y - (F.h * s.room.min) / 2, w: F.w * s.room.min, h: F.h * s.room.min };
+		plan.wall = intersect(union([min, ...inner.map((r) => grow(r, pad))]), inset(canvas, Math.min(W, H) * 0.02));
+	}
+	return plan;
+}
+
+function planFoot(ctx: Ctx, d: Design, content: Rect): FootPlan | null {
+	const C = colorsOf(d);
+	const fs = Math.max(d.spec.footSize, floorFor(d, C.ink, C.bg));
+	const parts: FootPlan['parts'] = [];
+	const y = bottom(content) - fs * 0.6;
+	const width = (text: string, role: FaceRole) => {
+		ctx.font = font(role, 400, fs);
+		ctx.letterSpacing = `${0.02 * fs}px`;
+		const w = ctx.measureText(text).width - 0.02 * fs;
+		ctx.letterSpacing = '0px';
+		return w;
+	};
+	let rightEdge = right(content);
+	for (const a of d.size.avoid) if (meet({ x: rightEdge - 200, y: y - fs, w: 200, h: fs * 2 }, a) && a.x > content.x + content.w / 2) rightEdge = a.x - fs;
+	const left = !hidden(d, 'note') && d.note ? d.note : '';
+	if (left) {
+		const role = roleFor('mono', left, 'note');
+		parts.push({ id: 'note', text: left, x: content.x, w: width(left, role), align: 'left', role });
+	}
+	if (!hidden(d, 'address')) {
+		const role = roleFor('mono', d.address, 'address');
+		const w = width(d.address, role);
+		parts.push({ id: 'address', text: d.address, x: rightEdge - w, w, align: 'right', role });
+	}
+	if (!hidden(d, 'page') && d.page) {
+		const role = roleFor('mono', d.page, 'page number');
+		const w = width(d.page, role);
+		/* Alone at the left; in the middle beside a note. */
+		parts.push({ id: 'page', text: d.page, x: left ? content.x + (content.w - w) / 2 : content.x, w, align: 'left', role });
+	}
+	if (!parts.length) return null;
+	const sorted = [...parts].sort((a, b) => a.x - b.x);
+	for (let i = 1; i < sorted.length; i++) if (sorted[i - 1]!.x + sorted[i - 1]!.w + fs > sorted[i]!.x) throw new CopyError(`The note "${d.note}" does not fit the foot of ${d.template} at ${d.size.id}. Shorten it${parts.some((p) => p.id === 'address') ? ', or hide the address' : ''}.`);
+	if (sorted[0]!.x < content.x - 0.5 || right({ ...sorted[sorted.length - 1]!, y: 0, h: 0 }) > right(content) + 0.5) throw new CopyError(`The note "${d.note}" does not fit the foot of ${d.template} at ${d.size.id}. Shorten it.`);
+	const rule = d.spec.footRule && !hidden(d, 'rule') ? { x: content.x, y: y - fs * 1.7, w: rightEdge - content.x, h: Math.max(1, unitOf(d.size.frame.w, d.size.frame.h)) } : null;
+	return { y, fs, rule, parts };
+}
+
+const STACK_RATIO = { 'stack-tall': 498 / 412, 'stack-wide': 336 / 626 } as const;
+
+/** Stacks round the edges of a room, squared up, two a side, mirrored (shares of a frame, widths of its short side). */
+export function roomStacks(W: number, H: number, k = 1, lower = false): { src: 'stack-tall' | 'stack-wide'; x: number; y: number; size: number; flip: boolean }[] {
+	const tall = H / W > 1.15;
+	if (W / H > 3) return lower ? [] : [{ src: 'stack-tall', x: 0.06, y: 0.5, size: 0.5 * k, flip: false }, { src: 'stack-tall', x: 0.94, y: 0.5, size: 0.5 * k, flip: true }];
+	const list = tall
+		? [['stack-wide', 0.2, 0.09, 0.3, false], ['stack-wide', 0.8, 0.09, 0.3, true], ['stack-tall', 0.16, 0.88, 0.24, false], ['stack-tall', 0.84, 0.88, 0.24, true]] as const
+		: [['stack-tall', 0.075, 0.3, 0.22, false], ['stack-tall', 0.925, 0.3, 0.22, true], ['stack-wide', 0.09, 0.8, 0.26, false], ['stack-wide', 0.91, 0.8, 0.26, true]] as const;
+	return list.filter((s) => !lower || s[2] > 0.4).map(([src, x, y, size, flip]) => ({ src, x, y, size: size * k, flip }));
+}
+
+function planStacks(d: Design, plan: Plan, u: number, mirror: boolean): StackPlan[] {
+	const s = d.spec;
+	const F = d.size.frame;
+	const S = Math.min(F.w, F.h);
+	const scale = scaleOf(d, 'art');
+	const o = offset(d, 'art');
+	const keep = [plan.words, ...(plan.window ? [plan.window] : []), ...(plan.logo ? [plan.logo.rect] : []), ...(plan.corner ? [plan.corner.rect] : []), ...(plan.foot ? [{ x: plan.content.x, y: plan.foot.y - plan.foot.fs * 1.8, w: plan.content.w, h: plan.foot.fs * 3 }] : [])];
+	const pad = 0.028 * S;
+	const bounds = inset(F, 0.012 * S);
+	const boxOf = (src: StackPlan['src'], cx: number, cy: number, w: number): Rect => ({ x: cx - w / 2, y: cy - (w * STACK_RATIO[src]) / 2, w, h: w * STACK_RATIO[src] });
+	const clear = (r: Rect) => !keep.some((k) => meet(grow(r, pad), k)) && !d.size.avoid.some((a) => meet(grow(r, pad / 2), a));
+	const inside = (r: Rect, b: Rect) => r.x >= b.x && r.y >= b.y && right(r) <= right(b) && bottom(r) <= bottom(b);
+	const out: StackPlan[] = [];
+	const finish = (src: StackPlan['src'], r: Rect, flip: boolean, pair: number) => {
+		const w = r.w * scale;
+		out.push({ src, rect: { ...boxOf(src, r.x + r.w / 2 + o.x, r.y + r.h / 2 + o.y, w) }, flip, pair });
+	};
+	if (s.stacks === 'panel' && plan.panel) {
+		const p = plan.panel;
+		const vis = intersect(p, { x: F.x, y: 0, w: F.w, h: d.h });
+		const w = Math.min(vis.w * 0.72, (vis.h * 0.8) / STACK_RATIO['stack-tall']);
+		finish('stack-tall', boxOf('stack-tall', vis.x + vis.w / 2, vis.y + vis.h / 2, w), mirror, 0);
+		return out;
+	}
+	if (s.stacks === 'floor' && plan.floorY !== null) {
+		const onRight = s.align === 'left';
+		for (let w = (F.h / F.w > 1.15 ? 420 : 260) * u; w > 110 * u; w *= 0.93) {
+			const cx = onRight ? right(plan.content) - w / 2 : plan.content.x + w / 2;
+			const r = boxOf('stack-wide', cx, plan.floorY - w * 0.04, w);
+			if (clear(r) && inside(r, inset(F, 2))) {
+				finish('stack-wide', r, onRight, 0);
+				break;
+			}
+		}
+		return out;
+	}
+	if (s.stacks === 'side') {
+		/* A banner: one stack at the end of the line, opposite the words. */
+		for (let h = F.h * 0.62; h > F.h * 0.3; h *= 0.94) {
+			const w = h / STACK_RATIO['stack-tall'];
+			const left = s.align === 'right';
+			const r = boxOf('stack-tall', left ? plan.content.x + w / 2 : right(plan.content) - w / 2 - 0.04 * F.h, F.y + F.h / 2, w);
+			if (clear(r)) {
+				finish('stack-tall', r, !left, 0);
+				break;
+			}
+		}
+		return out;
+	}
+	/* Corners: each mirrored pair the same size, smaller if the words need the room, left out where they cannot stand clear. */
+	const list = roomStacks(F.w, F.h, s.stackScale, s.stacks === 'lower');
+	const alt = d.seed > 0;
+	for (let i = 0; i < list.length; i += 2) {
+		const pair = [list[i]!, list[i + 1]!].map((p) => (alt ? { ...p, src: (p.src === 'stack-tall') !== (d.seed % 4 > 1) ? 'stack-tall' as const : 'stack-wide' as const } : p));
+		for (let k = 1; k > 0.5; k *= 0.94) {
+			const rects = pair.map((p) => boxOf(p.src, F.x + p.x * F.w, F.y + p.y * F.h, p.size * S * k));
+			/* Pull a box that leaves the frame back in before judging it. */
+			const pulled = rects.map((r) => ({ ...r, x: Math.min(Math.max(r.x, bounds.x), right(bounds) - r.w), y: Math.min(Math.max(r.y, bounds.y), bottom(bounds) - r.h) }));
+			if (pulled.every(clear)) {
+				pulled.forEach((r, j) => finish(pair[j]!.src, r, pair[j]!.flip, i / 2));
+				break;
+			}
+		}
+	}
+	return out;
+}
 
 /* ---------------------------------------------------------- drawing */
 
@@ -477,24 +913,27 @@ export function hatchLines(ctx: Ctx, r: Rect, gap: number, angle = 45) {
 	ctx.restore();
 }
 
-export function tileWords(ctx: Ctx, r: Rect, tile: number, u: number, stagger: boolean, startX: number, startY: number) {
+/** The wordmark as a staggered tile filling a region with whole words only, leaving out those that touch `keep`. */
+export function tileWords(ctx: Ctx, r: Rect, tile: number, stagger: boolean, keep: Rect[] = []) {
 	const L = logoDoc().wordmark;
-	const th = tile * u;
-	const k = th / L.h;
-	const tw = L.w * k;
-	const gx = th * (18.43 / 51.61);
-	const gy = th * (10 / 51.61);
+	const ratio = L.w / L.h;
+	const gapK = 18.43 / 51.61;
+	const rowK = 10 / 51.61;
+	const n = Math.max(1, Math.round((r.w + tile * gapK) / (tile * (ratio + gapK))));
+	const th = r.w / (n * ratio + (n - 1) * gapK);
+	const tw = th * ratio;
+	const gx = th * gapK;
+	const gy = th * rowK;
+	const rows = Math.max(0, Math.floor((r.h + gy) / (th + gy)));
+	const y0 = r.y + (r.h - rows * th - (rows - 1) * gy) / 2;
 	const path = wordmarkPath();
-	ctx.save();
-	ctx.beginPath();
-	ctx.rect(r.x, r.y, r.w, r.h);
-	ctx.clip();
-	let row = 0;
-	for (let y = startY; y < r.y + r.h; y += th + gy, row++) {
-		const off = stagger && row % 2 ? (tw + gx) / 2 : 0;
-		let x = startX - off;
-		while (x > r.x) x -= tw + gx;
-		for (; x < r.x + r.w; x += tw + gx) {
+	const k = th / L.h;
+	for (let row = 0; row < rows; row++) {
+		const odd = stagger && n > 1 && row % 2 === 1;
+		for (let i = 0; i < (odd ? n - 1 : n); i++) {
+			const x = r.x + i * (tw + gx) + (odd ? (tw + gx) / 2 : 0);
+			const y = y0 + row * (th + gy);
+			if (keep.some((b) => meet(b, { x, y, w: tw, h: th }))) continue;
 			ctx.save();
 			ctx.translate(x, y);
 			ctx.scale(k, k);
@@ -502,834 +941,545 @@ export function tileWords(ctx: Ctx, r: Rect, tile: number, u: number, stagger: b
 			ctx.restore();
 		}
 	}
-	ctx.restore();
 }
 
-function drawLogoRow(ctx: Ctx, d: Design, u: number, ink: string): Rect | null {
-	if (!d.logo || (!d.logoMark && !d.logoWord)) return null;
-	const L = logoDoc();
-	const { w: W, h: H } = d;
-	const k = (d.logoSize * u) / L.lockup.h;
-	const markW = d.logoMark ? L.mark.w * k : 0;
-	const wordGap = d.logoMark && d.logoWord ? (L.wordmark.x - L.mark.w) * k : 0;
-	const wordW = d.logoWord ? L.wordmark.w * k : 0;
-	const lw = markW + wordGap + wordW;
-	const lh = L.lockup.h * k;
-	const pname = d.partnerName.trim();
-	const gap = 26 * k;
-	const times = 16 * k;
-	let pw = 0;
-	if (pname) {
-		ctx.font = font('display', 600, lh * 0.72);
-		ctx.letterSpacing = '0px';
-		pw = ctx.measureText(pname).width;
-	}
-	const total = pname ? lw + gap * 2 + times + pw : lw;
-	const x = d.logoAnchor === 'left' ? d.logoX * W : d.logoAnchor === 'center' ? d.logoX * W - total / 2 : d.logoX * W - total;
-	const y = d.logoY * H;
-	const mh = L.mark.h * k;
-	const my = y + lh / 2 - mh / 2;
-	ctx.fillStyle = ink;
-	if (d.logoMark) {
-		ctx.save();
-		ctx.translate(x, my);
-		ctx.scale(k, k);
-		ctx.fill(markPath(), 'evenodd');
-		ctx.restore();
-	}
-	if (d.logoWord) {
-		ctx.save();
-		ctx.translate(x + markW + wordGap, y + L.wordmark.y * k);
-		ctx.scale(k, k);
-		ctx.fill(wordmarkPath());
-		ctx.restore();
-	}
-	if (pname) {
-		const cy = y + lh / 2;
-		const cx = x + lw + gap + times / 2;
-		ctx.strokeStyle = ink;
-		const a0 = ctx.globalAlpha;
-		ctx.globalAlpha = a0 * 0.55;
-		ctx.lineWidth = 2.2 * k;
-		ctx.lineCap = 'round';
-		ctx.beginPath();
-		ctx.moveTo(cx - times / 2, cy - times / 2);
-		ctx.lineTo(cx + times / 2, cy + times / 2);
-		ctx.moveTo(cx + times / 2, cy - times / 2);
-		ctx.lineTo(cx - times / 2, cy + times / 2);
-		ctx.stroke();
-		ctx.globalAlpha = a0;
-		ctx.fillStyle = ink;
-		ctx.textBaseline = 'middle';
-		ctx.textAlign = 'left';
-		ctx.font = font('display', 600, lh * 0.72);
-		ctx.fillText(pname, cx + times / 2 + gap, cy + lh * 0.03);
-	}
-	return { x, y: Math.min(y, my), w: total, h: Math.max(y + lh, my + mh) - Math.min(y, my) };
-}
-
-function drawBadge(ctx: Ctx, d: Design, x: number, y: number, fs: number, ink: string, hi: string, dark: boolean, measureOnly: boolean, bg: string) {
-	if (d.badge === 'none' || !d.badgeText.trim()) return { w: 0, h: 0 };
-	const sq = fs * 1.2857;
-	const wordInk = d.badgeInk || (d.badge === 'solid' ? bg : d.badge === 'label' ? tone('white') : ink);
-	const track = (d.badgeTracking / 1000) * fs;
-	ctx.font = font(d.badgeFont, d.badgeWeight, fs);
-	ctx.letterSpacing = `${track}px`;
-	const text = d.badge === 'label' || d.badge === 'dot' ? d.badgeText.toUpperCase() : d.badgeText;
-	const tw = ctx.measureText(text).width - (track > 0 ? track : 0);
-	ctx.letterSpacing = '0px';
-	const words = (wx: number, wy: number) => {
-		ctx.font = font(d.badgeFont, d.badgeWeight, fs);
-		ctx.letterSpacing = `${track}px`;
-		ctx.fillStyle = wordInk;
-		ctx.textBaseline = 'middle';
-		ctx.textAlign = 'left';
-		ctx.fillText(text, wx, wy + fs * 0.04);
-		ctx.letterSpacing = '0px';
-	};
-	const round = (h: number, own: number) => (d.badgeRound < 0 ? own : (d.badgeRound / 100) * (h / 2));
-	if (d.badge === 'solid') {
-		const padX = fs * 1.08;
-		const h = fs * 2.46;
-		const w = tw + padX * 2;
-		if (!measureOnly) {
-			ctx.fillStyle = d.badgeFill || ink;
-			ctx.beginPath();
-			ctx.roundRect(x, y, w, h, round(h, h / 2));
-			ctx.fill();
-			words(x + padX, y + h / 2);
-		}
-		return { w, h };
-	}
-	if (d.badge === 'pill') {
-		const padX = fs * 0.75;
-		const h = fs * 1.9;
-		const w = tw + padX * 2 + fs * 0.9;
-		if (!measureOnly) {
-			ctx.fillStyle = dark ? color('off-white/0.14') : color('off-black/0.04');
-			ctx.strokeStyle = dark ? color('off-white/0.28') : color('off-black/0.16');
-			ctx.lineWidth = Math.max(1, fs * 0.06);
-			ctx.beginPath();
-			ctx.roundRect(x, y, w, h, round(h, h / 2));
-			ctx.fill();
-			ctx.stroke();
-			ctx.fillStyle = hi || accent();
-			ctx.beginPath();
-			ctx.arc(x + padX + fs * 0.22, y + h / 2, fs * 0.24, 0, Math.PI * 2);
-			ctx.fill();
-			words(x + padX + fs * 0.9, y + h / 2);
-		}
-		return { w, h };
-	}
-	if (d.badge === 'dot') {
-		const r = fs * 0.3;
-		const w = r * 2 + fs * 0.55 + tw;
-		if (!measureOnly) {
-			/* A line marked with a small red square, not a dot. */
-			ctx.fillStyle = hi || accent();
-			ctx.fillRect(x, y + sq / 2 - r * 0.9, r * 1.8, r * 1.8);
-			words(x + r * 2 + fs * 0.55, y + sq / 2);
-		}
-		return { w, h: sq };
-	}
-	/* The label chip: a red block with the words in capitals, squared off. */
-	const padX = fs * 0.62;
-	const h = fs * 1.75;
-	const w = tw + padX * 2;
-	if (!measureOnly) {
-		ctx.fillStyle = d.badgeFill || accent();
-		ctx.beginPath();
-		ctx.roundRect(x, y, w, h, round(h, h * 0.08));
-		ctx.fill();
-		words(x + padX, y + h / 2);
-	}
-	return { w, h };
-}
-
-function drawWords(ctx: Ctx, d: Design, size: number, ink: string, hiColor: string, dark: boolean, bg: string, dry = false, mo?: Motion): Rect {
-	const { w: W, h: H } = d;
-	const maxW = d.textWidth * W;
-	const lh = d.leading;
-	const ax = d.textX * W;
-	let y = d.textY * H;
-	const top = y;
-	const xFor = (w: number) => (d.align === 'left' ? ax : d.align === 'center' ? ax - w / 2 : ax - w);
-	const badgeSize = size * 0.3046 * (d.badgeScale / 100);
-	const b = d.badgeAt === 'corner' ? { w: 0, h: 0 } : drawBadge(ctx, d, 0, 0, badgeSize, ink, hiColor, dark, true, bg);
-	let widest = b.w;
-	if (b.w) {
-		if (!dry) withSettle(ctx, mo, T.badge, () => drawBadge(ctx, d, xFor(b.w), y, badgeSize, ink, hiColor, dark, false, bg));
-		y += b.h + size * (d.badgeGap / 100);
-	}
-	ctx.font = font('display', 400, size);
-	ctx.letterSpacing = `${(d.tracking / 1000) * size}px`;
-	ctx.textAlign = 'left';
-	ctx.textBaseline = 'alphabetic';
-	const hi = hiColor || ink;
-	const lines = d.headline.split('\n').flatMap((l) => wrapWords(ctx, parseLine(l), maxW));
-	const space = ctx.measureText(' ').width;
-	const revealFrom = (hiColor && !dark ? hiColor : '') || (dark ? ink : color(imageDoc().accent));
-	for (const [li, line] of lines.entries()) {
-		let x = xFor(line.w);
-		widest = Math.max(widest, line.w);
-		if (!dry && mo && mo.t < revealEnd(mo, lines.map((l) => l.words.map((w) => w.text).join(' ').length))) {
-			/* The headline reveal (HighlightText): each letter waits faint and red, fades up, then settles to its ink;
-			   lines 100ms apart, letters 40ms apart from the center (or from the start on left-set words). */
-			const base = baselineIn(ctx, y, size, lh);
-			const text = line.words.map((w) => w.text).join(' ');
-			const mid = (text.length - 1) / 2;
-			let ci = 0;
-			line.words.forEach((wd, wi) => {
-				const stop = !wd.hi && line === lines[lines.length - 1] && wi === line.words.length - 1 && /[^.]\.$/.test(wd.text);
-				for (let k = 0; k < wd.text.length; k++, ci++) {
-					const target = wd.hi || (stop && k === wd.text.length - 1) ? hiColor || ink : ink;
-					const step = d.align === 'left' ? ci : Math.abs(ci - mid);
-					const delay = T.head + 0.1 * li + 0.04 * step;
-					const a = 0.2 + 0.8 * progress(mo.t, delay, duration('enter'), 'reveal-fade');
-					const c = progress(mo.t, delay + duration('enter'), duration('reveal'), 'reveal-ink');
-					ctx.globalAlpha = a;
-					ctx.fillStyle = mix(revealFrom, target, c);
-					ctx.fillText(wd.text[k]!, x + ctx.measureText(wd.text.slice(0, k)).width, base);
-				}
-				ctx.globalAlpha = 1;
-				ci += 1;
-				x += ctx.measureText(wd.text).width + (wi < line.words.length - 1 ? space : 0);
-			});
-		} else if (!dry) {
-			const base = baselineIn(ctx, y, size, lh);
-			line.words.forEach((wd, i) => {
-				const ww = ctx.measureText(wd.text).width;
-				ctx.fillStyle = wd.hi ? hi : ink;
-				const stop = !wd.hi && line === lines[lines.length - 1] && i === line.words.length - 1 && /[^.]\.$/.test(wd.text);
-				if (stop) {
-					const head = wd.text.slice(0, -1);
-					ctx.fillText(head, x, base);
-					ctx.fillStyle = hiColor || ink;
-					ctx.fillText('.', x + ctx.measureText(head).width, base);
-				} else ctx.fillText(wd.text, x, base);
-				x += ww + (i < line.words.length - 1 ? space : 0);
-			});
-		}
-		y += size * lh;
-	}
-	ctx.letterSpacing = '0px';
-	if (d.body.trim()) {
-		const bs = size * 0.34 * (d.bodyScale / 100);
-		const bw = d.bodyWidth > 0 ? d.bodyWidth * W : maxW;
-		y += size * (d.bodyGap / 100);
-		ctx.font = font('text', 400, bs);
-		ctx.fillStyle = ink;
-		const st = mo ? settle(mo.t, T.body) : { alpha: 1, dy: 0 };
-		ctx.globalAlpha = (d.bodyAlpha / 100) * st.alpha;
-		for (const l of plainLines(ctx, d.body, bw)) {
-			widest = Math.max(widest, l.w);
-			if (!dry) ctx.fillText(l.text, xFor(l.w), baselineIn(ctx, y, bs, d.bodyLeading) + (mo ? st.dy * mo.u : 0));
-			y += bs * d.bodyLeading;
-		}
-		ctx.globalAlpha = 1;
-	}
-	const credit = d.credit.trim();
-	if (credit) {
-		const cs = Math.max(11, size * 0.2);
-		y += size * (d.body.trim() ? 0.12 : 0.2);
-		ctx.font = font('text', 500, cs);
-		ctx.fillStyle = ink;
-		ctx.globalAlpha = 0.72 * (mo ? settle(mo.t, T.body).alpha : 1);
-		const cw = d.bodyWidth > 0 ? d.bodyWidth * W : maxW;
-		for (const l of plainLines(ctx, credit, cw)) {
-			widest = Math.max(widest, l.w);
-			if (!dry) ctx.fillText(l.text, xFor(l.w), baselineIn(ctx, y, cs, 1.15));
-			y += cs * 1.15;
-		}
-		ctx.globalAlpha = 1;
-	}
-	return { x: xFor(widest), y: top, w: widest, h: y - top };
-}
-
-function fittedSize(ctx: Ctx, d: Design, u: number, bg: string) {
-	const H = d.h;
-	let size = d.textSize * u;
-	if (d.textFit <= 0) return size;
-	const limit = d.textMiddle ? d.textFit * H : d.textFit * H - d.textY * H;
-	if (limit <= 0) return size * 0.4;
-	for (let i = 0; i < 6; i++) {
-		const r = drawWords(ctx, d, size, '#000000', '', false, bg, true);
-		if (r.h <= limit + 0.5) break;
-		size = Math.max(d.textSize * u * 0.4, size * Math.max(0.6, Math.min(0.98, limit / r.h)));
-	}
-	return size;
-}
-
-async function drawSticker(ctx: Ctx, s: Sticker, S: number, W: number, H: number) {
-	const im = await artImage(imageDoc().art[s.src]!);
-	const w = s.size * S;
-	const h = w * (im.height / Math.max(1, im.width));
-	const cx = s.x * W;
-	const cy = s.y * H;
-	if (w < 1 || h < 0.5) return;
-	ctx.save();
-	ctx.translate(cx, cy);
-	if (s.flip) ctx.scale(-1, 1);
-	ctx.imageSmoothingQuality = 'high';
-	ctx.drawImage(im, -w / 2, -h / 2, w, h);
-	ctx.restore();
-}
-
-/* The window's frame and what is in it: the agent panel, or a picture shown whole at its own shape. */
-function drawWindow(ctx: Ctx, d: Design, u: number, pic: Pic | null, line: string, top: number): Rect | null {
-	if (d.window === 'none') return null;
-	const { w: W, h: H } = d;
-	let ww = d.winW * W;
-	const scene = d.window === 'picture' && !!pic;
-	const ratio = scene ? pic!.h / Math.max(1, pic!.w) : d.winRatio;
-	let room = 0;
-	if (scene) {
-		room = H - top - Math.max(28 * u, 0.05 * Math.min(W, H));
-		ww = Math.max(40 * u, Math.min(ww, room / ratio));
-	}
-	const wh = ww * ratio;
-	const x = d.winX * W - ww / 2;
-	const y = scene && d.winFollow ? top + Math.max(0, room - wh) * 0.5 : top;
-	const r = d.winRadius * u;
-	if (d.winShadow > 0) {
-		ctx.save();
-		ctx.shadowColor = color(`${imageDoc().window.shadow}/${Math.min(0.6, 0.16 * (d.winShadow / 100))}`);
-		ctx.shadowBlur = 40 * u * (d.winShadow / 100);
-		ctx.shadowOffsetY = 14 * u * (d.winShadow / 100);
-		ctx.fillStyle = d.winBg;
-		ctx.beginPath();
-		ctx.roundRect(x, y, ww, wh, r);
-		ctx.fill();
-		ctx.restore();
-	}
-	ctx.save();
-	ctx.beginPath();
-	ctx.roundRect(x, y, ww, wh, r);
-	ctx.clip();
-	ctx.fillStyle = d.winBg;
-	ctx.fillRect(x, y, ww, wh);
-	if (d.window === 'app') {
-		const s = ww / APP_W;
-		ctx.translate(x, y);
-		ctx.scale(s, s);
-		drawPanel(ctx);
-	} else if (pic) {
-		const cover = Math.max(ww / pic.w, wh / pic.h);
-		ctx.imageSmoothingQuality = 'high';
-		ctx.drawImage(pic.img, x - (pic.w * cover - ww) * 0, y - (pic.h * cover - wh) * 0, pic.w * cover, pic.h * cover);
-	} else {
-		ctx.fillStyle = color(imageDoc().window.placeholder);
-		ctx.fillRect(x, y, ww, wh);
-	}
-	ctx.restore();
-	if (d.winBorder > 0) {
-		ctx.strokeStyle = line;
-		ctx.lineWidth = Math.max(0.5, d.winBorder * u);
-		ctx.beginPath();
-		ctx.roundRect(x + ctx.lineWidth / 2, y + ctx.lineWidth / 2, ww - ctx.lineWidth, wh - ctx.lineWidth, r);
-		ctx.stroke();
-	}
-	return { x, y, w: ww, h: wh };
-}
-
-function drawFrame(ctx: Ctx, d: Design, u: number, W: number, H: number, bg: string) {
-	if (d.frame === 'none') return;
-	const fw = d.frameWidth * u;
-	const t = tone(d.frameTone);
-	ctx.save();
-	ctx.beginPath();
-	ctx.rect(0, 0, W, H);
-	ctx.rect(fw, fw, W - fw * 2, H - fw * 2);
-	ctx.clip('evenodd');
-	ctx.fillStyle = d.frame === 'solid' ? t : bg;
-	ctx.fillRect(0, 0, W, H);
-	ctx.restore();
-	if (d.frame !== 'solid') {
-		ctx.strokeStyle = t;
-		ctx.lineWidth = Math.max(0.5, u);
-		ctx.strokeRect(fw, fw, W - fw * 2, H - fw * 2);
-	}
-}
-
-/* The room: a back wall roomScale% of the image, rings stepping out faster as they near the edge, and lines from
-   the wall's edges out past the frame. */
-export function drawRoom(ctx: Ctx, W: number, H: number, u: number, roomScale: number, roomFade: number, stroke: string, cx = W / 2, cy = H / 2) {
-	const bw = (W * roomScale) / 100;
-	const bh = (H * roomScale) / 100;
-	const rings = Math.max(0, Math.round(roomFade));
-	const ringAt = (t: number) => {
-		const rw = bw + (W * 1.06 - bw) * t;
-		const rh = bh + (H * 1.06 - bh) * t;
-		return { x: cx - rw / 2, y: cy - rh / 2, w: rw, h: rh };
-	};
+/* The room: a back wall, rings stepping out faster as they near the edge, and lines from the wall's edges out past the
+   frame. The wall is the region left empty (the words stand on it). */
+export function drawRoom(ctx: Ctx, W: number, H: number, u: number, wall: Rect, rings: number, stroke: string) {
+	const outer = { x: -W * 0.03, y: -H * 0.03, w: W * 1.06, h: H * 1.06 };
+	const at = (t: number): Rect => ({ x: wall.x + (outer.x - wall.x) * t, y: wall.y + (outer.y - wall.y) * t, w: wall.w + (outer.w - wall.w) * t, h: wall.h + (outer.h - wall.h) * t });
 	ctx.save();
 	ctx.strokeStyle = stroke;
 	ctx.lineWidth = Math.max(0.5, 1.1 * u);
-	for (let i = 0; i <= rings; i++) {
-		const r = ringAt(i === 0 ? 0 : Math.pow(i / (rings + 1), 1.7));
+	/* Fewer rings where the wall leaves little depth. */
+	const depth = Math.min(1, Math.max((W - wall.w) / W, (H - wall.h) / H) / 0.5);
+	const n = Math.max(1, Math.round(rings * depth));
+	for (let i = 0; i <= n; i++) {
+		const r = at(i === 0 ? 0 : Math.pow(i / (n + 1), 1.7));
 		ctx.strokeRect(r.x, r.y, r.w, r.h);
 	}
-	const far = 3;
-	const out = (x: number, y: number) => {
-		ctx.moveTo(x, y);
-		ctx.lineTo(cx + (x - cx) * far, cy + (y - cy) * far);
+	const line = (fx: number, fy: number) => {
+		ctx.moveTo(wall.x + wall.w * fx, wall.y + wall.h * fy);
+		ctx.lineTo(outer.x + outer.w * fx, outer.y + outer.h * fy);
 	};
-	const B = ringAt(0);
 	ctx.beginPath();
-	const n = 4;
-	for (let i = 0; i <= n; i++) {
-		const t = i / n;
-		out(B.x + B.w * t, B.y);
-		out(B.x + B.w * t, B.y + B.h);
-		if (i > 0 && i < n) {
-			out(B.x, B.y + B.h * t);
-			out(B.x + B.w, B.y + B.h * t);
+	const m = 4;
+	for (let i = 0; i <= m; i++) {
+		line(i / m, 0);
+		line(i / m, 1);
+		if (i > 0 && i < m) {
+			line(0, i / m);
+			line(1, i / m);
 		}
 	}
 	ctx.stroke();
 	ctx.restore();
 }
 
-function drawFoot(ctx: Ctx, d: Design, u: number, W: number, H: number, ink: string) {
-	const fs = d.footSize * u;
-	const inset = d.footInset * u;
-	const mid = H - inset - fs * 0.5;
+/** A room's wall centered at a share of the frame (illustrations). */
+export const wallOf = (W: number, H: number, share: number): Rect => ({ x: (W * (1 - share)) / 2, y: (H * (1 - share)) / 2, w: W * share, h: H * share });
+
+async function drawStackArt(ctx: Ctx, src: StackPlan['src'], r: Rect, flip: boolean) {
+	const im = await artImage(imageDoc().art[src]!);
+	if (r.w < 1) return;
 	ctx.save();
-	if (d.footRule) {
-		const a0 = ctx.globalAlpha;
-		ctx.fillStyle = ink;
-		ctx.globalAlpha = a0 * 0.16;
-		ctx.fillRect(inset, H - inset - fs * 2.4, W - inset * 2, Math.max(1, u));
-		ctx.globalAlpha = a0;
-	}
+	ctx.translate(r.x + r.w / 2, r.y + r.h / 2);
+	if (flip) ctx.scale(-1, 1);
+	ctx.imageSmoothingQuality = 'high';
+	ctx.drawImage(im, -r.w / 2, -r.h / 2, r.w, r.h);
+	ctx.restore();
+}
+
+function paintLogo(ctx: Ctx, d: Design, p: LogoPlan, ink: string) {
+	const L = logoDoc();
 	ctx.fillStyle = ink;
-	ctx.font = font('mono', 400, fs);
-	const track = (d.footTracking / 1000) * fs;
-	ctx.letterSpacing = `${track}px`;
-	ctx.textBaseline = 'middle';
-	ctx.textAlign = 'left';
-	if (d.footLeft.trim()) ctx.fillText(d.footLeft, inset, mid);
-	ctx.textAlign = 'right';
-	if (d.footRight.trim()) ctx.fillText(d.footRight, W - inset + Math.max(0, track), mid);
-	ctx.restore();
-	ctx.letterSpacing = '0px';
-}
-
-/* -------------------------------------------------------- the panel */
-
-const split = (s: string, by: RegExp) => s.split(by).map((x) => x.trim()).filter(Boolean);
-function parts(s: string, n: number) {
-	return split(s, /\n/).map((l) => {
-		const p = l.split('|').map((x) => x.trim());
-		while (p.length < n) p.push('');
-		return p.slice(0, n);
-	});
-}
-function hash(s: string) {
-	let h = 2166136261;
-	for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
-	return h >>> 0;
-}
-
-/* The dark agent panel (app.ts) in a 1040 x 640 box at the current transform. */
-export function drawPanel(ctx: Ctx, content: Record<string, string> = imageDoc().panel.content) {
-	const C = Object.fromEntries(Object.entries(imageDoc().panel.colors).map(([k, v]) => [k, color(v)])) as Record<string, string>;
-	const a = { ...imageDoc().panel.content, ...content };
-	const W = APP_W;
-	const H = APP_H;
-	const padX = 34;
-	const f = (size: number, weight = 400) => font('ui', weight, size);
+	const { x, y, h } = p.lockup;
 	ctx.save();
-	ctx.textBaseline = 'middle';
-	ctx.textAlign = 'left';
-	ctx.letterSpacing = '0px';
-	const fit = (s: string, max: number) => {
-		if (ctx.measureText(s).width <= max) return s;
-		let t = s;
-		while (t.length > 1 && ctx.measureText(`${t}…`).width > max) t = t.slice(0, -1);
-		return `${t.trimEnd()}…`;
-	};
-	const chipAt = (x: number, y: number, h: number, w: number, fill: string, stroke?: string) => {
+	ctx.translate(x, y);
+	ctx.scale(p.k, p.k);
+	ctx.fill(markPath(), 'evenodd');
+	ctx.restore();
+	if (p.word) {
+		ctx.save();
+		ctx.translate(x + L.wordmark.x * p.k, y + L.wordmark.y * p.k);
+		ctx.scale(p.k, p.k);
+		ctx.fill(wordmarkPath());
+		ctx.restore();
+	}
+	if (p.partner) {
+		const t = p.partner.times;
+		const a0 = ctx.globalAlpha;
+		ctx.strokeStyle = ink;
+		ctx.globalAlpha = a0 * 0.7;
+		ctx.lineWidth = 4 * p.k;
+		ctx.lineCap = 'round';
 		ctx.beginPath();
-		ctx.roundRect(x, y, w, h, 3);
-		if (fill !== 'transparent') {
-			ctx.fillStyle = fill;
-			ctx.fill();
-		}
-		if (stroke) {
-			ctx.strokeStyle = stroke;
-			ctx.lineWidth = 1.4;
-			ctx.stroke();
-		}
+		ctx.moveTo(t.x, t.y);
+		ctx.lineTo(t.x + t.w, t.y + t.h);
+		ctx.moveTo(t.x + t.w, t.y);
+		ctx.lineTo(t.x, t.y + t.h);
+		ctx.stroke();
+		ctx.globalAlpha = a0;
+		ctx.fillStyle = ink;
+		ctx.textBaseline = 'middle';
+		ctx.textAlign = 'left';
+		ctx.letterSpacing = '0px';
+		ctx.font = font(p.partner.role, 600, p.partner.fs);
+		ctx.fillText(p.partner.text, p.partner.rect.x, y + h / 2 + h * 0.03);
+	}
+}
+
+function paintBadge(ctx: Ctx, d: Design, b: BadgeBox, x: number, y: number) {
+	const C = colorsOf(d);
+	const { fs } = b;
+	const c = chipColors(d, fs);
+	const track = (d.spec.badgeTracking / 1000) * fs;
+	const words = (wx: number, wy: number) => {
+		ctx.font = font(b.role, d.spec.badgeWeight, fs);
+		ctx.letterSpacing = `${track}px`;
+		ctx.fillStyle = c.ink;
+		ctx.textBaseline = 'middle';
+		ctx.textAlign = 'left';
+		ctx.fillText(b.text, wx, wy + fs * 0.04);
+		ctx.letterSpacing = '0px';
 	};
-	ctx.fillStyle = C.bg!;
-	ctx.fillRect(0, 0, W, H);
-	const tb = 64;
-	ctx.strokeStyle = C.ink!;
-	ctx.lineWidth = 2;
-	ctx.strokeRect(padX, tb / 2 - 8, 18, 16);
-	ctx.fillStyle = C.ink!;
-	ctx.fillRect(padX, tb / 2 - 8, 18, 4);
-	ctx.font = f(22, 500);
-	const title = fit(a.title!, 460);
-	ctx.fillText(title, padX + 32, tb / 2);
-	const tx = padX + 32 + ctx.measureText(title).width + 14;
-	if (a.tag!.trim()) {
-		ctx.font = f(15);
-		const tw = ctx.measureText(a.tag!).width;
-		chipAt(tx, tb / 2 - 15, 30, tw + 20, C.chip!);
-		ctx.fillStyle = C.muted!;
-		ctx.fillText(a.tag!, tx + 10, tb / 2);
+	const round = (own: number) => (d.spec.badgeRound < 0 ? own : (d.spec.badgeRound / 100) * (b.h / 2));
+	const box = (fill: string, r: number) => {
+		ctx.fillStyle = fill;
+		ctx.beginPath();
+		ctx.roundRect(x, y, b.w, b.h, r);
+		ctx.fill();
+	};
+	if (d.badge === 'solid') {
+		box(c.fill, round(b.h / 2));
+		words(x + fs * 1.08, y + b.h / 2);
+	} else if (d.badge === 'pill') {
+		box(c.fill, round(b.h / 2));
+		ctx.strokeStyle = C.dark ? color('off-white/0.28') : color('off-black/0.16');
+		ctx.lineWidth = Math.max(1, fs * 0.06);
+		ctx.stroke();
+		ctx.fillStyle = C.hi;
+		ctx.beginPath();
+		ctx.arc(x + fs * 0.97, y + b.h / 2, fs * 0.24, 0, Math.PI * 2);
+		ctx.fill();
+		words(x + fs * 1.65, y + b.h / 2);
+	} else if (d.badge === 'dot') {
+		/* A line marked with a small red square, not a dot. */
+		ctx.fillStyle = C.hi;
+		ctx.fillRect(x, y + b.h / 2 - fs * 0.27, fs * 0.54, fs * 0.54);
+		words(x + fs * 1.15, y + b.h / 2);
+	} else {
+		/* The label chip: a red block with the words in capitals, squared off. */
+		box(c.fill, round(b.h * 0.08));
+		words(x + fs * 0.62, y + b.h / 2);
 	}
-	ctx.strokeStyle = C.muted!;
-	ctx.lineWidth = 2;
-	ctx.lineCap = 'round';
-	const gx = W - padX - 10;
+}
+
+/* A window's frame and what is in it: the agent panel, the stand-in scene, or a picture shown whole at its own shape. */
+function paintWindow(ctx: Ctx, d: Design, r: Rect, u: number, pic: Pic | null, line: string) {
+	const app = d.spec.window === 'app';
+	const round = (app ? 4 : 0) * u;
+	const ground = color(app && !pic ? imageDoc().panel.colors.bg! : imageDoc().window.bg);
+	if (app) {
+		ctx.save();
+		ctx.shadowColor = color(`${imageDoc().window.shadow}/0.19`);
+		ctx.shadowBlur = 48 * u;
+		ctx.shadowOffsetY = 16 * u;
+		ctx.fillStyle = ground;
+		ctx.beginPath();
+		ctx.roundRect(r.x, r.y, r.w, r.h, round);
+		ctx.fill();
+		ctx.restore();
+	}
+	ctx.save();
 	ctx.beginPath();
-	ctx.moveTo(gx - 7, tb / 2 - 7);
-	ctx.lineTo(gx + 7, tb / 2 + 7);
-	ctx.moveTo(gx + 7, tb / 2 - 7);
-	ctx.lineTo(gx - 7, tb / 2 + 7);
-	ctx.moveTo(gx - 52, tb / 2 + 5);
-	ctx.lineTo(gx - 40, tb / 2 + 5);
-	ctx.moveTo(gx - 24, tb / 2 + 1);
-	ctx.lineTo(gx - 24, tb / 2 + 6);
-	ctx.lineTo(gx - 19, tb / 2 + 6);
-	ctx.moveTo(gx - 17, tb / 2 - 6);
-	ctx.lineTo(gx - 12, tb / 2 - 6);
-	ctx.lineTo(gx - 12, tb / 2 - 1);
-	ctx.stroke();
-	ctx.fillStyle = C.line!;
-	ctx.fillRect(0, tb, W, 1.5);
-	let y = tb + 30;
-	const inner = W - padX * 2;
-	{
-		let x = padX;
-		for (const [key, val] of parts(a.fields!, 2)) {
-			ctx.font = f(17);
-			const kw = ctx.measureText(key!).width;
-			const vw = ctx.measureText(val!).width;
-			const w = kw + vw + (val ? 30 : 22);
-			if (x + w > W - padX) break;
-			chipAt(x, y, 40, w, 'transparent', C.chipEdge);
-			ctx.fillStyle = C.muted!;
-			ctx.fillText(key!, x + 11, y + 20);
-			ctx.fillStyle = C.ink!;
-			ctx.fillText(val!, x + 11 + kw + 8, y + 20);
-			x += w + 10;
-		}
-		y += 62;
-	}
-	if (a.task!.trim()) {
-		ctx.fillStyle = C.accent!;
-		ctx.fillRect(padX, y + 7, 10, 10);
-		ctx.fillStyle = C.ink!;
-		ctx.font = f(21);
-		ctx.fillText(fit(a.task!, inner - 24), padX + 22, y + 12);
-		y += 44;
-	}
-	{
-		ctx.strokeStyle = C.muted!;
-		ctx.lineWidth = 1.6;
-		for (let i = 0; i < 4; i++) {
-			ctx.beginPath();
-			ctx.moveTo(padX, y + 22 - i * 4);
-			ctx.quadraticCurveTo(padX + 8 + i * 2, y + 18 - i * 4, padX + 14 + i, y + 4);
-			ctx.stroke();
-		}
-		ctx.fillStyle = C.muted!;
-		ctx.font = f(18);
-		ctx.fillText('Found in', padX + 30, y + 14);
-		let x = padX + 30 + ctx.measureText('Found in').width + 18;
-		for (const raw of split(a.sources!, /,/)) {
-			const on = raw.endsWith('*');
-			const name = raw.replace(/\*$/, '').trim();
-			ctx.font = f(17);
-			const w = ctx.measureText(name).width + (on ? 44 : 26);
-			if (x + w > W - padX) break;
-			chipAt(x, y - 4, 36, w, C.chip!);
-			ctx.fillStyle = on ? C.ink! : name.startsWith('+') ? C.faint! : C.muted!;
-			ctx.fillText(name, x + 13, y + 14);
-			if (on) {
-				ctx.fillStyle = C.accent!;
-				ctx.fillRect(x + w - 21, y + 10, 8, 8);
-			}
-			x += w + 8;
-		}
-		y += 50;
-	}
-	{
-		const s = 4.6;
-		const g = 2.6;
-		const rows = 5;
-		const cols = Math.floor(inner / (s + g));
-		const seed = hash(a.found! + a.task!);
-		for (let r = 0; r < rows; r++) {
-			for (let c = 0; c < cols; c++) {
-				const n = (Math.imul(seed ^ (r * 131 + c * 7919), 2654435761) >>> 0) % 1000;
-				ctx.fillStyle = n < 6 ? C.accent! : C.chipEdge!;
-				ctx.fillRect(padX + c * (s + g), y + r * (s + g), s, s);
-			}
-		}
-		y += rows * (s + g) + 18;
-	}
-	if (a.found!.trim()) {
-		ctx.font = f(17);
-		const m = a.found!.match(/^(\S+)(.*)$/);
-		const first = m?.[1] ?? a.found!;
-		ctx.fillStyle = C.accent!;
-		ctx.fillText(first, padX, y + 10);
-		ctx.fillStyle = C.muted!;
-		ctx.fillText(m?.[2] ?? '', padX + ctx.measureText(first).width, y + 10);
-		y += 30;
-	}
-	if (a.kinds!.trim()) {
-		ctx.font = f(15);
-		ctx.fillStyle = C.muted!;
-		ctx.fillText(fit(a.kinds!, inner), padX, y + 8);
-		y += 30;
-	}
-	const statsH = 70;
-	ctx.fillStyle = C.line!;
-	ctx.fillRect(padX, y + 6, inner, 1.5);
-	y += 24;
-	if (a.section!.trim()) {
-		ctx.font = f(17);
-		ctx.fillStyle = C.muted!;
-		ctx.fillText(a.section!, padX, y + 12);
-		y += 38;
-	}
-	const list = parts(a.rows!, 3);
-	const room = H - statsH - y;
-	const rh = Math.max(40, Math.min(60, room / Math.max(1, list.length)));
-	list.forEach(([name, what, src], i) => {
-		if (y + rh > H - statsH + 4) return;
-		const mid = y + rh / 2;
-		ctx.font = f(15);
-		const sw = src ? ctx.measureText(src).width + 26 : 0;
-		if (src) {
-			chipAt(W - padX - sw, mid - 18, 36, sw, C.chip!);
-			ctx.fillStyle = C.ink!;
-			ctx.fillText(src, W - padX - sw + 13, mid);
-		}
-		ctx.font = f(21);
-		ctx.fillStyle = C.ink!;
-		const nt = fit(name!, inner * 0.4);
-		ctx.fillText(nt, padX, mid);
-		const nw = ctx.measureText(nt).width;
-		ctx.font = f(16);
-		ctx.fillStyle = C.soft!;
-		ctx.fillText(fit(what!, inner - nw - sw - 40), padX + nw + 16, mid);
-		if (i < list.length - 1) {
-			ctx.fillStyle = C.line!;
-			ctx.fillRect(padX - 10, y + rh, inner + 20, 1.2);
-		}
-		y += rh;
-	});
-	ctx.fillStyle = C.line!;
-	ctx.fillRect(0, H - statsH, W, 1.5);
-	let sx = padX;
-	ctx.font = f(15);
-	for (const s of split(a.stats!, /\n|\|/)) {
-		const w = ctx.measureText(s).width + 18;
-		if (sx + w > W - padX) break;
-		chipAt(sx, H - statsH / 2 - 16, 32, w, C.chip!);
-		ctx.fillStyle = C.muted!;
-		ctx.fillText(s, sx + 9, H - statsH / 2);
-		sx += w + 8;
+	ctx.roundRect(r.x, r.y, r.w, r.h, round);
+	ctx.clip();
+	ctx.fillStyle = ground;
+	ctx.fillRect(r.x, r.y, r.w, r.h);
+	if (pic) {
+		ctx.imageSmoothingQuality = 'high';
+		ctx.drawImage(pic.img, r.x, r.y, r.w, r.h);
+	} else {
+		ctx.translate(r.x, r.y);
+		ctx.scale(r.w / PANEL_W, r.h / PANEL_H);
+		drawPanel(ctx, d.sample);
 	}
 	ctx.restore();
+	if (!app) {
+		ctx.strokeStyle = line;
+		ctx.lineWidth = Math.max(0.5, u);
+		ctx.strokeRect(r.x + ctx.lineWidth / 2, r.y + ctx.lineWidth / 2, r.w - ctx.lineWidth, r.h - ctx.lineWidth);
+	}
 }
 
 /* The stand-in product scene for the feature window: the brand's own red room, stacks and the agent panel, at the
    playground scenes' 1600 by 719. Used when no --image is passed. */
-let sceneCache: Promise<Pic> | undefined;
-export function standInScene(): Promise<Pic> {
-	sceneCache ??= (async () => {
-		const W = 1600;
-		const H = 719;
-		const { canvas, ctx } = scratch(W, H);
-		ctx.fillStyle = color(imageDoc().themes.red!.bg);
-		ctx.fillRect(0, 0, W, H);
-		drawRoom(ctx, W, H, 1.2, 30, 4, color(imageDoc().themes.red!.room));
-		for (const s of [stack('stack-tall', 0.16, 0.3, 0.42), stack('stack-tall', 0.84, 0.3, 0.42, { flip: true }), stack('stack-wide', 0.17, 0.78, 0.5), stack('stack-wide', 0.83, 0.78, 0.5, { flip: true })]) await drawSticker(ctx, s, H, W, H);
-		const pw = 0.86 * H * (APP_W / APP_H);
-		const k = pw / APP_W;
-		const px = (W - pw) / 2;
-		const py = (H - APP_H * k) / 2;
-		ctx.save();
-		ctx.shadowColor = color(`${imageDoc().window.shadow}/0.19`);
-		ctx.shadowBlur = 40;
-		ctx.shadowOffsetY = 14;
-		ctx.fillStyle = color(imageDoc().panel.colors.bg!);
-		ctx.fillRect(px, py, pw, APP_H * k);
-		ctx.restore();
-		ctx.save();
-		ctx.translate(px, py);
-		ctx.scale(k, k);
-		drawPanel(ctx);
-		ctx.restore();
-		return { img: canvas, w: W, h: H };
-	})();
-	return sceneCache;
+const sceneCache = new Map<boolean, Promise<Pic>>();
+function standInScene(sample: boolean): Promise<Pic> {
+	let p = sceneCache.get(sample);
+	if (!p) {
+		p = (async () => {
+			const W = 1600;
+			const H = 719;
+			const { canvas, ctx } = scratch(W, H);
+			ctx.fillStyle = color(imageDoc().themes.red!.bg);
+			ctx.fillRect(0, 0, W, H);
+			drawRoom(ctx, W, H, 1.2, wallOf(W, H, 0.3), 4, color(imageDoc().themes.red!.room));
+			for (const s of [['stack-tall', 0.1, 0.28, 0.32, false], ['stack-tall', 0.9, 0.28, 0.32, true], ['stack-wide', 0.1, 0.78, 0.34, false], ['stack-wide', 0.9, 0.78, 0.34, true]] as const) {
+				const w = s[3] * H;
+				const h = w * STACK_RATIO[s[0]];
+				await drawStackArt(ctx, s[0], { x: s[1] * W - w / 2, y: s[2] * H - h / 2, w, h }, s[4]);
+			}
+			const pw = 0.86 * H * (PANEL_W / PANEL_H);
+			const k = pw / PANEL_W;
+			const px = (W - pw) / 2;
+			const py = (H - PANEL_H * k) / 2;
+			ctx.save();
+			ctx.shadowColor = color(`${imageDoc().window.shadow}/0.19`);
+			ctx.shadowBlur = 40;
+			ctx.shadowOffsetY = 14;
+			ctx.fillStyle = color(imageDoc().panel.colors.bg!);
+			ctx.fillRect(px, py, pw, PANEL_H * k);
+			ctx.restore();
+			ctx.save();
+			ctx.translate(px, py);
+			ctx.scale(k, k);
+			drawPanel(ctx, sample);
+			ctx.restore();
+			return { img: canvas, w: W, h: H };
+		})();
+		sceneCache.set(sample, p);
+	}
+	return p;
 }
 
+export type Drawn = { layers: DrawnLayer[]; plan: Plan };
+
 /** Draws a design onto a context sized to the design's own frame. */
-export async function drawDesign(ctx: Ctx, d: Design, picture: Pic | null, mo?: Motion) {
+export async function drawDesign(ctx: Ctx, d: Design, picture: Pic | null, mo?: Motion): Promise<Drawn> {
 	const { w: W, h: H } = d;
-	const u = unitOf(W, H);
-	const S = Math.min(W, H);
+	const F = d.size.frame;
+	const u = unitOf(F.w, F.h);
+	const uc = unitOf(W, H);
 	const C = colorsOf(d);
+	if (picture && !d.spec.window) throw new Error(`${d.template} has no picture window. --image goes in the app and feature layouts.`);
+	const scene = d.spec.window === 'picture' && !picture && !hidden(d, 'window') ? await standInScene(d.sample) : null;
+	const plan = planDesign(ctx, d, picture ?? scene, Boolean(picture));
+	const layers: DrawnLayer[] = [];
+	const clear = plan.logo ? plan.logo.lockup.h * 0.2 : 0;
+	const full: Rect = { x: 0, y: 0, w: W, h: H };
+	const backs: { id: string; box: Rect }[] = [];
+	const report = (id: string, kind: DrawnLayer['kind'], box: Rect, extra: Partial<DrawnLayer> = {}) => {
+		const over = backs.filter((b) => (extra.ink ?? [box]).some((r) => meet(r, b.box))).map((b) => b.id);
+		layers.push({ id, kind, box, can: canOf(d.template, id), ...(over.length ? { over } : {}), ...extra });
+	};
+	/** A ground the rest may sit on. */
+	const back = (id: string, kind: DrawnLayer['kind'], box: Rect, extra: Partial<DrawnLayer> = {}) => {
+		report(id, kind, box, extra);
+		backs.push({ id, box });
+	};
+	if (mo) mo = { ...mo, u };
+
 	ctx.globalAlpha = 1;
 	ctx.letterSpacing = '0px';
 	ctx.fillStyle = C.bg;
 	ctx.fillRect(0, 0, W, H);
-	if (d.room) drawRoom(ctx, W, H, u, d.roomScale, d.roomFade, C.room);
-	if (d.pattern !== 'none') {
-		const alpha = Math.min(1, C.tileAlpha * (d.tileStrength / 100));
-		const th = d.tileSize * u;
-		if (d.pattern === 'full') {
-			ctx.fillStyle = C.tile;
-			ctx.globalAlpha = alpha;
-			tileWords(ctx, { x: 0, y: 0, w: W, h: H }, d.tileSize, u, d.tileStagger, 0, -th * 0.4);
-		} else {
-			let r: Rect;
-			const m = 40 * u;
-			if (d.panelSide === 'bottom') {
-				const top = d.panelTop * H;
-				r = { x: m, y: top, w: W - 2 * m, h: H - top + 2 - m };
-			} else {
-				const pw = panelWidth(d.panelCols, d.tileSize, u);
-				r = { x: d.panelSide === 'right' ? W - m - pw : m, y: -22 * u, w: pw, h: H + 44 * u };
-			}
-			ctx.save();
-			ctx.beginPath();
-			ctx.rect(r.x + 1, r.y + 1, r.w - 2, r.h - 2);
-			ctx.clip();
-			ctx.fillStyle = C.tile;
-			ctx.globalAlpha = alpha;
-			tileWords(ctx, r, d.tileSize, u, d.tileStagger, r.x + 13 * u, r.y + 1 * u);
-			ctx.restore();
-			ctx.globalAlpha = 1;
-			if (d.panelBorder) {
-				ctx.strokeStyle = C.border;
-				ctx.lineWidth = Math.max(1, u);
-				ctx.strokeRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1);
-			}
-		}
-		ctx.globalAlpha = 1;
+
+	if (plan.wall) {
+		drawRoom(ctx, W, H, uc, plan.wall, d.spec.room!.rings, C.room);
+		back('room', 'art', full, { bleeds: true });
 	}
-	if (d.outline) {
+	const obstacles = [plan.words, ...(plan.logo ? [plan.logo.rect] : []), ...(plan.corner ? [plan.corner.rect] : []), ...(plan.foot ? plan.foot.parts.map((p) => ({ x: p.x, y: plan.foot!.y - plan.foot!.fs, w: p.w, h: plan.foot!.fs * 2 })) : []), ...(plan.foot?.rule ? [plan.foot.rule] : [])];
+	if (d.spec.border && plan.border) {
+		const fw = plan.border;
+		const t = tone(d.spec.border.tone);
+		if (d.spec.border.kind === 'solid') {
+			ctx.fillStyle = t;
+			ctx.fillRect(0, 0, W, fw);
+			ctx.fillRect(0, H - fw, W, fw);
+			ctx.fillRect(0, fw, fw, H - 2 * fw);
+			ctx.fillRect(W - fw, fw, fw, H - 2 * fw);
+		} else {
+			ctx.strokeStyle = t;
+			ctx.lineWidth = Math.max(0.5, u);
+			ctx.strokeRect(fw, fw, W - fw * 2, H - fw * 2);
+		}
+		const px = d.spec.border.kind === 'solid' ? fw : u;
+		const off = d.spec.border.kind === 'solid' ? 0 : fw;
+		report('border', 'art', full, { bleeds: true, ink: [{ x: off, y: off, w: W - 2 * off, h: px }, { x: off, y: H - off - px, w: W - 2 * off, h: px }, { x: off, y: off, w: px, h: H - 2 * off }, { x: W - off - px, y: off, w: px, h: H - 2 * off }] });
+	}
+	if (d.spec.pattern === 'full' && !hidden(d, 'pattern')) {
+		const region = inset(full, plan.border + 14 * u);
+		ctx.fillStyle = C.tile;
+		ctx.globalAlpha = Math.min(1, C.tileAlpha * (d.spec.patternStrength / 100));
+		tileWords(ctx, region, d.spec.patternTile * (uc / u), true, obstacles.map((r) => grow(r, 16 * u)));
+		ctx.globalAlpha = 1;
+		back('pattern', 'art', region);
+	}
+	if (plan.panel) {
+		const r = plan.panel;
+		ctx.strokeStyle = C.border;
+		ctx.lineWidth = Math.max(1, u);
+		ctx.strokeRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1);
+		back('panel', 'panel', r);
+		if (!hidden(d, 'pattern')) {
+			const pad = 16 * u;
+			ctx.fillStyle = C.tile;
+			ctx.globalAlpha = Math.min(1, C.tileAlpha * (d.spec.patternStrength / 100));
+			tileWords(ctx, inset(r, pad), d.spec.patternTile, true);
+			ctx.globalAlpha = 1;
+			back('pattern', 'art', inset(r, pad));
+		}
+	}
+	if (plan.wordmark) {
 		const L = logoDoc().wordmark;
-		const bh = d.outlineSize * u;
-		const k = bh / L.h;
-		const bw = L.w * k;
-		const gap = bh * 0.12;
-		const top = d.outlineY * H - bh;
-		let x0 = W / 2 - bw / 2;
-		while (x0 > -bw) x0 -= bw + gap;
-		for (let x = x0; x < W; x += bw + gap) {
+		for (const r of plan.wordmark.rects) {
 			ctx.save();
-			ctx.translate(x, top);
-			ctx.scale(k, k);
-			ctx.fillStyle = C.bg;
-			ctx.fill(wordmarkPath());
+			ctx.translate(r.x, r.y);
+			ctx.scale(plan.wordmark.k, plan.wordmark.k);
 			ctx.strokeStyle = C.line;
-			ctx.lineWidth = (d.outlineStroke * u) / k;
+			ctx.lineWidth = (1.2 * u) / plan.wordmark.k;
 			ctx.stroke(wordmarkPath());
 			ctx.restore();
 		}
+		void L;
+		report('wordmark', 'art', union(plan.wordmark.rects));
 	}
-	if (d.hatch === 'floor') {
-		const g = d.hatchGap * u;
+	if (plan.floorY !== null) {
 		const lw = Math.max(0.5, u);
-		const hy = d.hatchY * H;
 		ctx.strokeStyle = C.line;
 		ctx.lineWidth = lw;
-		ctx.fillStyle = C.bg;
-		ctx.fillRect(0, hy, W, H - hy);
-		hatchLines(ctx, { x: 0, y: hy, w: W, h: H - hy }, g, d.hatchAngle);
+		const r = { x: 0, y: plan.floorY, w: W, h: H - plan.floorY };
+		if (plan.foot) {
+			/* The footer stands on a clear strip under the hatching. */
+			r.h = (plan.foot.rule?.y ?? plan.foot.y - plan.foot.fs) - 8 * u - plan.floorY;
+		}
+		hatchLines(ctx, r, 12 * u, 45);
 		ctx.fillStyle = C.line;
-		ctx.fillRect(0, hy, W, lw);
+		ctx.fillRect(0, r.y, W, lw);
+		if (plan.foot) ctx.fillRect(0, r.y + r.h, W, lw);
+		back('floor', 'art', r, { bleeds: true });
 	}
-	if (d.guides) {
-		const gi = d.guideInset * u;
+	if (d.spec.guides !== null && !hidden(d, 'guides')) {
+		const gi = d.spec.guides;
 		const gw = Math.max(0.5, u);
 		ctx.fillStyle = C.line;
 		ctx.fillRect(gi, 0, gw, H);
 		ctx.fillRect(W - gi - gw, 0, gw, H);
+		report('guides', 'art', full, { bleeds: true, ink: [{ x: gi, y: 0, w: gw, h: H }, { x: W - gi - gw, y: 0, w: gw, h: H }] });
 	}
-	drawFrame(ctx, d, u, W, H, C.bg);
 
-	const size = fittedSize(ctx, d, u, C.bg);
-	let laid = drawWords(ctx, d, size, C.ink, C.hi, C.dark, C.bg, true);
-	const dw = d.textMiddle ? { ...d, textY: d.textY - laid.h / 2 / H } : d;
-	if (d.textMiddle) laid = drawWords(ctx, dw, size, C.ink, C.hi, C.dark, C.bg, true);
-	const winTop = d.window === 'none' ? null : d.winFollow ? laid.y + laid.h + d.winGap * u : d.winY * H;
+	for (const [i, s] of plan.stacks.entries()) await settled(ctx, mo, T.stickers + i * 0.06, () => drawStackArt(ctx, s.src, s.rect, s.flip));
+	if (plan.stacks.length) {
+		/* The box is one stack (they all scale and move alike); the ink has every one, all inside the canvas. */
+		report('art', 'art', plan.stacks[0]!.rect, { ink: plan.stacks.map((s) => s.rect) });
+	}
 
-	if (mo) mo = { ...mo, u };
-	for (const [i, s] of d.stickers.entries()) if (s.behind) await settleAsync(ctx, mo, T.stickers + i * 0.06, () => drawSticker(ctx, s, S, W, H));
-	const pic = d.window === 'picture' ? picture ?? (await standInScene()) : null;
-	let win: Rect | null = null;
-	if (winTop !== null) {
+	if (plan.window) {
+		const r = plan.window;
 		/* A window arrives on the windows' long ease-out (viz-card). */
 		const p = mo ? progress(mo.t, T.window, duration('viz-card'), 'viz') : 1;
 		ctx.save();
 		ctx.globalAlpha = p;
 		ctx.translate(0, (1 - p) * 40 * u);
-		win = drawWindow(ctx, dw, u, pic, C.line, winTop);
+		paintWindow(ctx, d, r, u, picture ?? scene, C.line);
 		ctx.restore();
+		report(picture ? 'picture' : 'window', 'key', r);
 	}
-	const text = drawWords(ctx, dw, size, C.ink, C.hi, C.dark, C.bg, false, mo);
-	const logo = withSettle(ctx, mo, T.logo, () => drawLogoRow(ctx, d, u, C.ink));
-	if (d.badgeAt === 'corner') {
-		const fs = 19 * u * (d.badgeScale / 100);
-		const b = drawBadge(ctx, d, 0, 0, fs, C.ink, C.hi, C.dark, true, C.bg);
-		if (b.w) withSettle(ctx, mo, T.badge, () => drawBadge(ctx, d, d.badgeX * W - b.w, d.badgeY * H - b.h / 2, fs, C.ink, C.hi, C.dark, false, C.bg));
+
+	if (d.template !== 'avatar') await paintWords(ctx, d, plan, C, report, mo, clear);
+
+	if (plan.logo) {
+		const p = plan.logo;
+		await settled(ctx, mo, T.logo, () => paintLogo(ctx, d, p, C.ink));
+		report('logo', 'logo', p.lockup, { logo: { clear: d.template === 'avatar' ? 0 : clear, min: logoFloor(W, d.size.shown) } });
+		if (p.partner) report('partner', 'text', p.partner.rect, { text: { asked: d.partner, drawn: p.partner.text, size: p.partner.fs, color: C.ink, ground: [C.bg], ...(d.sample ? { sample: true } : {}) } });
 	}
-	if (d.foot) withSettle(ctx, mo, T.foot, () => drawFoot(ctx, d, u, W, H, C.ink));
-	for (const [i, s] of d.stickers.entries()) if (!s.behind) await settleAsync(ctx, mo, T.stickers + i * 0.06, () => drawSticker(ctx, s, S, W, H));
-	return { text, logo, window: win };
+	if (plan.corner) {
+		const b = plan.corner;
+		await settled(ctx, mo, T.badge, () => paintBadge(ctx, d, b, b.rect.x, b.rect.y));
+		report('badge', 'text', b.rect, { text: badgeText(d, b, C.bg) });
+	}
+	if (plan.foot) {
+		const f = plan.foot;
+		await settled(ctx, mo, T.foot, () => {
+			ctx.save();
+			const a0 = ctx.globalAlpha;
+			if (f.rule) {
+				ctx.fillStyle = C.ink;
+				ctx.globalAlpha = a0 * 0.16;
+				ctx.fillRect(f.rule.x, f.rule.y, f.rule.w, f.rule.h);
+				ctx.globalAlpha = a0;
+			}
+			ctx.fillStyle = C.ink;
+			ctx.textBaseline = 'middle';
+			ctx.textAlign = 'left';
+			for (const p of f.parts) {
+				ctx.font = font(p.role, 400, f.fs);
+				ctx.letterSpacing = `${0.02 * f.fs}px`;
+				ctx.fillText(p.text, p.x, f.y);
+			}
+			ctx.restore();
+			ctx.letterSpacing = '0px';
+		});
+		if (f.rule) report('rule', 'art', f.rule);
+		for (const p of f.parts) report(p.id, 'text', { x: p.x, y: f.y - f.fs * 0.6, w: p.w, h: f.fs * 1.2 }, { text: { asked: p.text, drawn: p.text, size: f.fs, color: C.ink, ground: [C.bg], ...(p.id === 'note' ? {} : { own: true }) } });
+	}
+	return { layers, plan };
 }
 
-export type OgRender = { png?: Buffer; svg?: string; rgb?: Buffer; width: number; height: number };
+const badgeText = (d: Design, b: BadgeBox, bg: string): NonNullable<DrawnLayer['text']> => {
+	const c = chipColors(d, b.fs);
+	return { asked: d.badgeText, drawn: b.text, size: b.fs, color: c.ink, ground: [c.fill || bg], ...(d.sample ? { sample: true } : {}) };
+};
 
-/** One design as PNG and, when asked, SVG (the same drawing through Skia's SVG backend). */
-export async function renderDesign(d: Design, picture: Pic | null, opts: { png?: boolean; svg?: boolean; rgb?: boolean } = { png: true }): Promise<OgRender> {
-	const out: OgRender = { width: d.w, height: d.h };
-	if (opts.png !== false || opts.rgb) {
-		const s = surface(d.w, d.h);
-		await drawDesign(s.ctx, d, picture);
+async function paintWords(ctx: Ctx, d: Design, plan: Plan, C: ReturnType<typeof colorsOf>, report: (id: string, kind: DrawnLayer['kind'], box: Rect, extra?: Partial<DrawnLayer>) => void, mo: Motion | undefined, _clear: number) {
+	const s = d.spec;
+	const b = plan.block;
+	const { x: x0, y: y0 } = plan.at;
+	const xFor = (w: number) => (s.align === 'left' ? x0 : s.align === 'right' ? x0 + b.w - w : x0 + (b.w - w) / 2);
+	if (b.badge) {
+		const bb = b.badge;
+		const o = offset(d, 'badge');
+		const r = { x: xFor(bb.w) + o.x, y: y0 + bb.y + o.y, w: bb.w, h: bb.h };
+		await settled(ctx, mo, T.badge, () => paintBadge(ctx, d, bb, r.x, r.y));
+		report('badge', 'text', r, { text: badgeText(d, bb, C.bg) });
+	}
+	if (b.head) {
+		const { lines, role } = b.head;
+		const size = b.size;
+		const lh = s.leading;
+		const ink: Rect[] = [];
+		let y = y0 + b.head.y;
+		headFont(ctx, d, role, size);
+		ctx.textAlign = 'left';
+		ctx.textBaseline = 'alphabetic';
+		const revealing = mo && mo.t < revealEnd(lines.map((l) => l.text.length));
+		const revealFrom = C.dark ? C.ink : accent();
+		const space = ctx.measureText(' ').width;
+		for (const [li, line] of lines.entries()) {
+			headFont(ctx, d, role, size);
+			let x = xFor(line.w);
+			const base = baselineIn(ctx, y, size, lh);
+			const m = ctx.measureText(line.text);
+			ink.push({ x, y: base - m.actualBoundingBoxAscent, w: line.w, h: m.actualBoundingBoxAscent + m.actualBoundingBoxDescent });
+			const mid = (line.text.length - 1) / 2;
+			let ci = 0;
+			line.words.forEach((wd, wi) => {
+				const glued = (wd as { glued?: boolean }).glued;
+				if (wi && !glued) {
+					x += space;
+					ci += 1;
+				}
+				const stop = !wd.hi && li === lines.length - 1 && wi === line.words.length - 1 && /(^|[^.])\.$/.test(wd.text);
+				if (revealing) {
+					/* The headline reveal (HighlightText): each letter waits faint and red, fades up, then settles to its ink;
+					   lines 100ms apart, letters 40ms apart from the center (or from the start on left-set words). */
+					for (let k = 0; k < wd.text.length; k++, ci++) {
+						const target = wd.hi || (stop && k === wd.text.length - 1) ? C.hi : C.ink;
+						const step = s.align === 'left' ? ci : Math.abs(ci - mid);
+						const delay = T.head + 0.1 * li + 0.04 * step;
+						ctx.globalAlpha = 0.2 + 0.8 * progress(mo!.t, delay, duration('enter'), 'reveal-fade');
+						ctx.fillStyle = mix(revealFrom, target, progress(mo!.t, delay + duration('enter'), duration('reveal'), 'reveal-ink'));
+						ctx.fillText(wd.text[k]!, x + ctx.measureText(wd.text.slice(0, k)).width, base);
+					}
+					ctx.globalAlpha = 1;
+				} else {
+					ctx.fillStyle = wd.hi ? C.hi : C.ink;
+					if (stop) {
+						const head = wd.text.slice(0, -1);
+						ctx.fillText(head, x, base);
+						ctx.fillStyle = C.hi;
+						ctx.fillText('.', x + ctx.measureText(head).width, base);
+					} else ctx.fillText(wd.text, x, base);
+				}
+				x += ctx.measureText(wd.text).width;
+			});
+			y += size * lh;
+		}
+		ctx.letterSpacing = '0px';
+		report('headline', 'text', union(ink), { ink, text: { asked: asTyped(d.headlineAsked), drawn: readBack(asTyped(d.headlineAsked), lines, d.headline !== d.headlineAsked), size, color: C.ink, ground: [C.bg], ...(d.sample ? { sample: true } : {}) } });
+	}
+	const para = (id: 'body' | 'credit', p: { y: number; lines: Line[]; fs: number; role: FaceRole }, weight: number, leading: number, fill: string, asked: string) => {
+		const o = offset(d, id);
+		const st = mo ? settle(mo.t, T.body) : { alpha: 1, dy: 0 };
+		ctx.font = font(p.role, weight, p.fs);
+		ctx.letterSpacing = '0px';
+		ctx.textAlign = 'left';
+		ctx.textBaseline = 'alphabetic';
+		ctx.fillStyle = fill;
+		ctx.globalAlpha = st.alpha;
+		let y = y0 + p.y + o.y;
+		const ink: Rect[] = [];
+		for (const l of p.lines) {
+			const base = baselineIn(ctx, y, p.fs, leading);
+			const m = ctx.measureText(l.text);
+			const x = xFor(l.w) + o.x;
+			ink.push({ x, y: base - m.actualBoundingBoxAscent, w: l.w, h: m.actualBoundingBoxAscent + m.actualBoundingBoxDescent });
+			ctx.fillText(l.text, x, base + (mo ? st.dy * mo.u : 0));
+			y += p.fs * leading;
+		}
+		ctx.globalAlpha = 1;
+		report(id, 'text', union(ink), { ink, text: { asked: asTyped(asked), drawn: readBack(asTyped(asked), p.lines), size: p.fs, color: fill, ground: [C.bg], ...(d.sample ? { sample: true } : {}), ...(asked === d.address ? { own: true } : {}) } });
+	};
+	if (b.body) para('body', b.body, 400, s.bodyLeading, C.muted, d.body);
+	if (b.items) {
+		const it = b.items;
+		ctx.textAlign = 'left';
+		ctx.textBaseline = 'alphabetic';
+		const ink: Rect[] = [];
+		ctx.globalAlpha = mo ? settle(mo.t, T.body).alpha : 1;
+		for (const row of it.rows) {
+			ctx.font = font(it.role, 400, it.fs);
+			const y = y0 + row.y;
+			const mark = it.fs * 0.35;
+			ctx.fillStyle = C.hi;
+			ctx.fillRect(x0, y + (it.fs * 1.36 - mark) / 2, mark, mark);
+			ctx.fillStyle = C.ink;
+			row.lines.forEach((l, i) => {
+				const base = baselineIn(ctx, y + i * it.fs * 1.36, it.fs, 1.36);
+				const m = ctx.measureText(l.text);
+				ink.push({ x: x0 + it.lead, y: base - m.actualBoundingBoxAscent, w: l.w, h: m.actualBoundingBoxAscent + m.actualBoundingBoxDescent });
+				ctx.fillText(l.text, x0 + it.lead, base);
+			});
+		}
+		ctx.globalAlpha = 1;
+		report('items', 'text', union([...ink, { x: x0, y: ink[0]!.y, w: 1, h: 1 }]), { ink, text: { asked: asTyped(d.items.join(' ')), drawn: readBack(asTyped(d.items.join(' ')), it.rows.flatMap((r) => r.lines)), size: it.fs, color: C.ink, ground: [C.bg] } });
+	}
+	if (b.credit) para('credit', b.credit, 500, 1.2, C.muted, d.credit);
+}
+
+/* ------------------------------------------------------------ files */
+
+export type OgRender = { png?: Buffer; svg?: string; rgb?: Buffer; jpg?: Buffer; webp?: Buffer; width: number; height: number; layers: DrawnLayer[] };
+export type RenderOpts = { png?: boolean; svg?: boolean; rgb?: boolean; jpg?: boolean; webp?: boolean; scale?: number };
+
+/** One design as PNG and, when asked, JPEG, WebP and SVG (the same drawing through Skia's SVG backend). */
+export async function renderDesign(d: Design, picture: Pic | null, opts: RenderOpts = { png: true }): Promise<OgRender> {
+	const out: OgRender = { width: d.w, height: d.h, layers: [] };
+	const scale = opts.scale ?? 1;
+	if (opts.png !== false || opts.rgb || opts.jpg || opts.webp) {
+		const s = surface(d.w, d.h, { scale });
+		out.layers = (await drawDesign(s.ctx, d, picture)).layers;
 		if (opts.png !== false) out.png = toPng(s, { opaque: true });
 		if (opts.rgb) out.rgb = rgbOf(s).rgb;
+		if (opts.jpg) out.jpg = (s.canvas as Canvas).toBuffer('image/jpeg', 92);
+		if (opts.webp) out.webp = (s.canvas as Canvas).toBuffer('image/webp', 92);
 	}
 	if (opts.svg) {
 		const s = surface(d.w, d.h, { svg: true });
-		await drawDesign(s.ctx, d, picture);
+		out.layers = (await drawDesign(s.ctx, d, picture)).layers;
 		out.svg = toSvg(s);
 	}
 	return out;
 }
 
-export const sizeIds = () => Object.keys(imageDoc().sizes);
-/** A size by id, alias or WxH. */
-export function sizeOf(id: string): (SizeDoc & { id: string }) | undefined {
-	const n = id.trim().toLowerCase().replace('×', 'x').replace(/\s+/g, '');
-	for (const [k, v] of Object.entries(imageDoc().sizes)) if (k === n || v.aliases?.includes(n) || `${v.w}x${v.h}` === n) return { id: k, ...v };
-	return undefined;
-}
-
 /** How long the animated version runs: until the last part has settled, then a 1.5 second hold. */
 export function motionLength(d: Design): number {
 	const { ctx } = scratch(4, 4);
-	const u = unitOf(d.w, d.h);
-	const C = colorsOf(d);
-	const size = fittedSize(ctx, d, u, C.bg);
-	ctx.font = font('display', 400, size);
-	ctx.letterSpacing = `${(d.tracking / 1000) * size}px`;
-	const lines = d.headline.split('\n').flatMap((l) => wrapWords(ctx, parseLine(l), d.textWidth * d.w));
-	ctx.letterSpacing = '0px';
-	const head = revealEnd({ t: 0 }, lines.map((l) => l.words.map((w) => w.text).join(' ').length));
-	const rest = Math.max(T.foot + duration('entrance'), d.window !== 'none' ? T.window + duration('viz-card') : 0, T.stickers + d.stickers.length * 0.06 + duration('entrance'));
+	const plan = planDesign(ctx, d, null);
+	const head = revealEnd((plan.block.head?.lines ?? []).map((l) => l.text.length));
+	const rest = Math.max(T.foot + duration('entrance'), plan.window ? T.window + duration('viz-card') : 0, T.stickers + plan.stacks.length * 0.06 + duration('entrance'));
 	return Math.round((Math.max(head, rest) + 1.5) * 10) / 10;
 }

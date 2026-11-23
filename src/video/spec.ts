@@ -55,7 +55,7 @@ export function videoCatalog() {
 
 export function videoSize(id: string): VideoSize | undefined {
 	const norm = id.trim().toLowerCase().replace('×', 'x').replace(/\s+/g, '');
-	const named = VIDEO_SIZES.find((size) => size.id === norm);
+	const named = VIDEO_SIZES.find((size) => size.id === (['story', '9:16', 'reel', '1080x1920'].includes(norm) ? 'vertical' : norm === '16:9' ? 'landscape' : norm === '1:1' ? 'square' : norm));
 	if (named) return named;
 	const fromPx = SIZE_BY_PX.get(norm);
 	return fromPx ? VIDEO_SIZES.find((size) => size.id === fromPx) : undefined;

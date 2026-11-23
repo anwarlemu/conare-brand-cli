@@ -132,7 +132,7 @@ describe('components', () => {
 describe('video', () => {
 	it('rejects unknown templates and sizes and fields a template does not draw', async () => {
 		expect(() => resolveVideo({ template: 'poster', size: 'square' })).toThrow(/Unknown template/);
-		expect(() => resolveVideo({ template: 'headline', size: 'story' })).toThrow(/Unknown size/);
+		expect(resolveVideo({ template: 'headline', size: 'story' }).sizes).toEqual(['vertical']);
 		expect(() => resolveVideo({ template: 'logo', size: 'og' })).toThrow(/Unknown size/);
 		expect(resolveVideo({ template: 'Headline', size: '1080x1920' }).sizes).toEqual(['vertical']);
 		expect(resolveVideo({ template: 'logo' }).sizes).toEqual(['square']);
@@ -157,8 +157,8 @@ describe('video', () => {
 		expect(first).not.toBe(last);
 		expect(last).toContain(theme('paper').fg);
 		expect(last).toContain(theme('paper').accentText);
-		expect(last).toContain('Context that stays');
-		expect(last).toContain('>current<tspan');
+		expect(last).toContain('>Context that<');
+		expect(last).toContain('>stays current<tspan');
 		expect(last).toContain('M89.9457');
 		expect(last).toContain('font/woff2');
 		const logo = await frameSvg({ template: 'logo', sizes: ['square'], ground: 'ink' }, { id: 'square', width: 1080, height: 1080, description: '' }, 1, 2);

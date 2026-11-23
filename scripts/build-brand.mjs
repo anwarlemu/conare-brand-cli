@@ -7,6 +7,7 @@
 //   build/tokens.json  every token, its value and its resolved value per theme
 //   build/fonts/, build/textures/  the assets, copied as they are
 // It also copies the assets into apps/www/public<assetBase>/ for the docs site.
+import { createRequire } from 'node:module';
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -243,3 +244,24 @@ if (existsSync(join(root, 'apps', 'www'))) {
 	cpSync(join(brandDir, 'logo', 'favicon', 'apple-touch-icon.png'), join(root, 'apps', 'www', 'public', 'apple-touch-icon.png'));
 }
 console.log(`build: ${names.length} tokens, ${brand.fonts.files.length} font files -> build/`);
+
+// Which characters each face can draw (build/glyphs.json): the image engines refuse copy a face would drop.
+{
+	const require = createRequire(import.meta.url);
+	const opentype = require('opentype.js');
+	const { decompress } = require('wawoff2');
+	const glyphs = {};
+	for (const f of brand.fonts.files) {
+		const ttf = Buffer.from(await decompress(readFileSync(join(brandDir, 'fonts', f.file))));
+		const font = opentype.parse(ttf.buffer.slice(ttf.byteOffset, ttf.byteOffset + ttf.byteLength));
+		const codes = Object.keys(font.tables.cmap.glyphIndexMap).map(Number).sort((a, b) => a - b);
+		const ranges = [];
+		for (const c of codes) {
+			const last = ranges[ranges.length - 1];
+			if (last && c === last[1] + 1) last[1] = c;
+			else ranges.push([c, c]);
+		}
+		glyphs[f.file] = ranges;
+	}
+	writeFileSync(join(out, 'glyphs.json'), JSON.stringify(glyphs));
+}

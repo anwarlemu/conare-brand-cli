@@ -18,6 +18,9 @@ import { suggest } from './lib/names.js';
 import { illustrateHelp, runIllustrate } from './commands/illustrate.js';
 import { merchHelp, runMerch } from './commands/merch.js';
 import { figmaHelp, runFigma } from './commands/figma.js';
+import { runDesign } from './design/index.js';
+import { adapter, paint } from './design/adapter.js';
+import { COMMON, FLAGS, REPEAT_FLAGS, VALUE_FLAGS } from './commands/flags-table.js';
 
 const HELP = () => {
 	const b = brand().bin;
@@ -64,17 +67,20 @@ const HELP = () => {
 		row('component emit <item>', 'Vue for one state. --state variant:dark, --state example:Dark, --prop name=value'),
 		'',
 		'Images:',
-		row('image --title "..."', 'Share images and social posts (PNG and SVG)'),
-		more('--template headline|statement|quote|announcement|frame   --size og,square,portrait,landscape,all'),
-		more('--ground paper|ink   --text   --eyebrow   --by   --image <file>   --out <dir>   --format png|svg|both'),
-		more('--list  templates, sizes and grounds. A field the template does not draw is an error'),
+		row('image --headline "..."', 'Share images and social posts (PNG, SVG, JPEG, WebP); only the copy you pass is drawn'),
+		more('image headline|statement|quote|announcement|frame   --body  --badge  --by  --image <file>  --theme paper|ink'),
+		more('image hero|brief|tile|app|outline|hatch|room|feature|partner|funding|announce|card|avatar   --theme  --highlight'),
+		more('--size og,square,story,x-banner,linkedin-banner,youtube...,all or WxH   --format   --seed   --sample   --input <json>'),
+		more('--list  templates, slots, sizes and themes. A field the template does not draw is an error'),
 		'',
-		more('Layouts: --template hero|brief|tile|app|outline|hatch|room|feature|partner|funding|announce|card at every'),
-		more('social size (story, x-banner, linkedin-banner, youtube...); --theme  --badge  --highlight  --partner  --input <json>'),
+		'Designs you can revise:',
+		row('design new hero --headline "..."', 'A design file and its picture; then revise it in plain words or exact edits'),
+		more('design revise <file> "bigger headline, logo top right, darker theme"   design edit <file> --set headline="..."'),
+		more('design undo | redo | history | show | variants | compare | sizes | render | check   (design --help)'),
 		'',
 		'Assets:',
 		row('deck --input deck.json', 'Slides at 1920x1080: a PNG per slide and one PDF (deck cover --title "..." for one)'),
-		row('video --template hero --title "..."', 'A layout coming in the way the site moves: MP4 or WebM (ffmpeg), --still for a PNG'),
+		row('video hero --headline "..."', 'A layout coming in the way the site moves: MP4 or WebM (ffmpeg), --still for a PNG'),
 		more('the Motion JPEG clips: --template headline|statement|announcement|logo --size square,vertical,landscape'),
 		row('merch tee-back --variant black', 'Print files at real size with bleed and safe area (merch --list)'),
 		row('illustrate stacks', "The brand's illustration style as SVG and PNG (illustrate --list)"),
@@ -84,9 +90,6 @@ const HELP = () => {
 		`Registry: ${registryHost()}/r/index.json`,
 	].join('\n');
 };
-
-const VALUE_FLAGS = new Set(['cwd', 'components', 'pages', 'framework', 'title', 'text', 'subtitle', 'eyebrow', 'by', 'author', 'image', 'template', 'size', 'ground', 'out', 'format', 'section', 'token', 'surface', 'group', 'state', 'part', 'prop', 'theme', 'badge', 'highlight', 'partner', 'credit', 'input', 'body', 'number', 'items', 'stat', 'quote', 'attribution', 'url', 'fps', 'at', 'seed', 'shape', 'variant', 'headline', 'dpi', 'file', 'example', 'width']);
-const REPEAT_FLAGS = new Set(['prop']);
 
 export function parse(argv: string[]) {
 	const flags: Record<string, string | boolean | string[]> = {};
@@ -113,35 +116,20 @@ export function parse(argv: string[]) {
 
 const listFlag = (v: string | boolean | string[] | undefined) => (typeof v === 'string' ? v.split(',').map((s) => s.trim()).filter(Boolean) : undefined);
 
-// The flags each command takes; anything else is a mistake to report, not to ignore (a typo would widen an apply).
-const COMMON = ['cwd', 'json', 'help'];
-const FLAGS: Record<string, string[]> = {
-	list: [],
-	add: ['update', 'dry-run', 'overwrite', 'install', 'framework'],
-	apply: ['components', 'pages', 'with-shared', 'dry-run', 'redo'],
-	view: ['source', 'full', 'framework'],
-	show: ['source', 'full', 'framework'],
-	search: [],
-	info: [],
-	diff: ['framework'],
-	init: ['dry-run'],
-	check: ['fix', 'all'],
-	hook: [],
-	tokens: [],
-	image: ['title', 'text', 'subtitle', 'eyebrow', 'by', 'author', 'image', 'template', 'size', 'ground', 'out', 'format', 'list', 'theme', 'badge', 'highlight', 'partner', 'credit', 'input'],
-	video: ['title', 'text', 'subtitle', 'eyebrow', 'template', 'size', 'ground', 'out', 'list', 'theme', 'badge', 'highlight', 'partner', 'credit', 'image', 'format', 'fps', 'at', 'still'],
-	brand: ['section', 'token'],
-	principles: ['surface'],
-	component: ['group', 'part', 'state', 'prop', 'source'],
-	deck: ['input', 'title', 'body', 'eyebrow', 'number', 'items', 'stat', 'quote', 'attribution', 'url', 'image', 'theme', 'format', 'out', 'list'],
-	illustrate: ['size', 'theme', 'seed', 'shape', 'image', 'transparent', 'format', 'out', 'list'],
-	merch: ['variant', 'headline', 'url', 'dpi', 'format', 'out', 'guides', 'list'],
-	figma: ['out', 'file', 'size', 'theme', 'title', 'text', 'eyebrow', 'body', 'number', 'items', 'stat', 'quote', 'attribution', 'url', 'seed', 'example', 'width'],
-	manifest: [],
-	describe: [],
-};
-
 async function main() {
+	if (process.argv[2] === 'design') {
+		/* The design core reads its own arguments; only --cwd is ours. */
+		const argv = process.argv.slice(3);
+		const at = argv.findIndex((a) => a === '--cwd' || a.startsWith('--cwd='));
+		let cwd = process.cwd();
+		if (at >= 0) {
+			const [flag, value] = argv[at]!.includes('=') ? [1, argv[at]!.slice(6)] : [2, argv[at + 1] ?? ''];
+			cwd = resolve(value);
+			argv.splice(at, flag);
+		}
+		process.exitCode = await runDesign(argv, adapter(), { cwd, bin: brand().bin, out: console.log, err: console.error, paint });
+		return;
+	}
 	const { command, args, flags } = parse(process.argv.slice(2));
 	const known = command ? FLAGS[command] : undefined;
 	if (known) {
@@ -348,7 +336,7 @@ async function main() {
 		default:
 			console.log(HELP());
 			if (command && command !== 'help' && command !== '--help') {
-				const near = suggest(command, [...Object.keys(FLAGS), 'help']);
+				const near = suggest(command, [...Object.keys(FLAGS), 'design', 'help']);
 				console.error(`\nUnknown command \`${command}\`.${near.length ? ` Did you mean ${near.map((n) => `\`${n}\``).join(' or ')}?` : ''}`);
 				process.exitCode = 1;
 			}

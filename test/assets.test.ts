@@ -4,7 +4,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
-import { compose, imageDoc, LAYOUTS, renderDesign, sizeIds, sizeOf } from '../src/assets/og.js';
+import { compose, imageDoc, LAYOUTS, renderDesign, sizesFor, sizeOf } from '../src/assets/og.js';
 import { renderSlide, slideTypes } from '../src/assets/deck.js';
 import { merchItems, PX_PER_IN, renderItem } from '../src/assets/merch.js';
 import { renderSubject, SUBJECTS, pixelCells } from '../src/illustrate/draw.js';
@@ -26,10 +26,10 @@ function cli(args: string[]) {
 describe('image layouts', () => {
 	it('draws every layout at the link preview size, the same bytes twice', async () => {
 		for (const t of LAYOUTS) {
-			const d = compose({ template: t, w: 1200, h: 630 });
-			const a = await renderDesign(d, null, { png: true });
-			const b = await renderDesign(compose({ template: t, w: 1200, h: 630 }), null, { png: true });
-			expect(pngSize(a.png!), t).toEqual({ width: 1200, height: 630 });
+			const size = sizeOf(t === 'avatar' ? 'avatar' : 'og')!;
+			const a = await renderDesign(compose({ template: t, size, sample: true }), null, { png: true });
+			const b = await renderDesign(compose({ template: t, size, sample: true }), null, { png: true });
+			expect(pngSize(a.png!), t).toEqual({ width: size.w, height: size.h });
 			expect(sha(a.png!), t).toBe(sha(b.png!));
 		}
 	});
@@ -37,9 +37,9 @@ describe('image layouts', () => {
 	it('offers the social set and draws one layout at every size', async () => {
 		const want: [string, number, number][] = [['og', 1200, 630], ['square', 1080, 1080], ['portrait', 1080, 1350], ['story', 1080, 1920], ['landscape', 1200, 675], ['x-banner', 1500, 500], ['linkedin-banner', 1584, 396]];
 		for (const [id, w, h] of want) expect(sizeOf(id), id).toMatchObject({ w, h });
-		for (const id of sizeIds()) {
+		for (const id of sizesFor('hero')) {
 			const s = sizeOf(id)!;
-			const r = await renderDesign(compose({ template: 'hero', w: s.w, h: s.h }), null, { png: true });
+			const r = await renderDesign(compose({ template: 'hero', size: s, headline: 'Ship it today' }), null, { png: true });
 			expect(pngSize(r.png!)).toEqual({ width: s.w, height: s.h });
 		}
 	});
@@ -60,14 +60,14 @@ describe('image layouts', () => {
 		const bad = cli(['image', '--template', 'heor']);
 		expect(bad.code).toBe(1);
 		expect(bad.err).toMatch(/Did you mean `hero`/);
-		const size = cli(['image', '--template', 'hero', '--size', 'storyy']);
+		const size = cli(['image', '--template', 'hero', '--title', 'x', '--size', 'storyy']);
 		expect(size.code).toBe(1);
 		expect(size.err).toMatch(/Did you mean `story`/);
-		expect(cli(['image', '--template', 'room', '--image', 'x.png']).err).toMatch(/feature layout/);
+		expect(cli(['image', '--template', 'room', '--title', 'x', '--image', 'x.png']).err).toMatch(/feature layout/);
 	});
 
 	it('renders several images from a JSON file', () => {
-		writeFileSync(join(dir, 'posts.json'), JSON.stringify({ images: [{ template: 'card', size: ['square', 'og'], title: 'One' }, { template: 'brief', eyebrow: 'News' }] }));
+		writeFileSync(join(dir, 'posts.json'), JSON.stringify({ images: [{ template: 'card', size: ['square', 'og'], title: 'One' }, { template: 'brief', title: 'Two', eyebrow: 'News' }] }));
 		const r = cli(['image', '--input', 'posts.json', '--out', 'posts', '--format', 'png', '--json']);
 		expect(r.code).toBe(0);
 		expect(JSON.parse(r.out).files).toHaveLength(3);
@@ -79,7 +79,7 @@ describe('image layouts', () => {
 describe('deck', () => {
 	it('draws every slide type at 1920x1080 and writes a PDF', async () => {
 		for (const type of slideTypes()) {
-			const r = await renderSlide({ type }, { png: true });
+			const r = await renderSlide({ type, sample: true }, { png: true });
 			expect(pngSize(r.png!), type).toEqual({ width: 1920, height: 1080 });
 		}
 		writeFileSync(join(dir, 'deck.json'), JSON.stringify({ slides: [{ type: 'cover', title: 'One' }, { type: 'bullets', items: ['A', 'B'] }, { type: 'end' }] }));
@@ -89,23 +89,23 @@ describe('deck', () => {
 		expect(pdf.toString('latin1', 0, 8)).toBe('%PDF-1.4');
 		expect(pdf.toString('latin1')).toContain('/Count 3');
 		expect(cli(['deck', 'covr']).err).toMatch(/Did you mean `cover`/);
-		expect(cli(['deck', 'cover', '--stat', '9']).err).toMatch(/does not take "stat"/);
+		expect(cli(['deck', 'cover', '--title', 'x', '--stat', '9']).err).toMatch(/does not take "stat"/);
 	});
 });
 
 describe('video', () => {
 	it('writes a still frame, and with ffmpeg the same MP4 bytes twice', async () => {
-		const s = cli(['video', '--template', 'card', '--size', 'linkedin-page', '--at', '0.4', '--out', 'v/still.png', '--json']);
+		const s = cli(['video', '--template', 'card', '--title', 'Hi', '--size', 'linkedin-page', '--at', '0.4', '--out', 'v/still.png', '--json']);
 		expect(s.code).toBe(0);
-		expect(pngSize(readFileSync(join(dir, 'v', 'still.png')))).toEqual({ width: 1128, height: 191 });
+		expect(pngSize(readFileSync(join(dir, 'v', 'still.png')))).toEqual({ width: 1512, height: 256 });
 		if (!hasFfmpeg()) return;
-		const a = cli(['video', '--template', 'card', '--size', 'linkedin-page', '--out', 'v/a.mp4']);
-		const b = cli(['video', '--template', 'card', '--size', 'linkedin-page', '--out', 'v/b.mp4']);
+		const a = cli(['video', '--template', 'card', '--title', 'Hi', '--size', 'linkedin-page', '--out', 'v/a.mp4']);
+		const b = cli(['video', '--template', 'card', '--title', 'Hi', '--size', 'linkedin-page', '--out', 'v/b.mp4']);
 		expect(a.code).toBe(0);
 		expect(b.code).toBe(0);
 		expect(sha(readFileSync(join(dir, 'v', 'a.mp4')))).toBe(sha(readFileSync(join(dir, 'v', 'b.mp4'))));
 		const probe = execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'stream=codec_name,width,height', '-of', 'csv=p=0', join(dir, 'v', 'a.mp4')], { encoding: 'utf8' });
-		expect(probe.trim()).toBe('h264,1128,192');
+		expect(probe.trim()).toBe('h264,1512,256');
 		expect(cli(['video', '--template', 'hero', '--format', 'gif']).err).toMatch(/Unknown format/);
 	});
 });

@@ -6,7 +6,9 @@ import type { Face, Faces } from '../image/fonts.js';
 import { faces } from '../image/fonts.js';
 import { rasterize } from '../image/render.js';
 import { theme, type GroundId, type Theme } from '../image/spec.js';
-import { blockHeight, capHeight, descent, fit, measure, withStop } from '../image/text.js';
+import { blockHeight, capHeight, descent, fit, measure, withStop, type Fitted } from '../image/text.js';
+import { contrast } from '../assets/canvas.js';
+import { CopyError, roleFor } from '../assets/glyphs.js';
 import { muxMjpeg } from './mp4.js';
 import { refuseVideo, videoSize, VIDEO_FPS, VIDEO_FRAMES, VIDEO_JPEG_QUALITY, type VideoSize, type VideoSizeId, type VideoTemplateId } from './spec.js';
 
@@ -183,9 +185,9 @@ function phase(t: number, start: number, end: number, ease: (n: number) => numbe
 }
 
 function rhythm(id: VideoSizeId): Rhythm {
-	if (id === 'vertical') return { padX: 88, padTop: 128, padBottom: 72, mark: 44, url: 22, footerGap: 28, headline: 108, headlineMin: 36, headlineLines: 6, body: 32, bodyMin: 20, bodyLines: 4, bodyLeading: 1.4, eyebrow: 18, gapTag: 36, gapBody: 28 };
-	if (id === 'landscape') return { padX: 96, padTop: 72, padBottom: 48, mark: 36, url: 20, footerGap: 22, headline: 80, headlineMin: 32, headlineLines: 3, body: 26, bodyMin: 18, bodyLines: 2, bodyLeading: 1.35, eyebrow: 16, gapTag: 22, gapBody: 18 };
-	return { padX: 84, padTop: 92, padBottom: 56, mark: 40, url: 20, footerGap: 24, headline: 100, headlineMin: 34, headlineLines: 5, body: 28, bodyMin: 18, bodyLines: 4, bodyLeading: 1.4, eyebrow: 17, gapTag: 32, gapBody: 24 };
+	if (id === 'vertical') return { padX: 88, padTop: 270, padBottom: 360, mark: 44, url: 24, footerGap: 28, headline: 108, headlineMin: 36, headlineLines: 6, body: 34, bodyMin: 24, bodyLines: 4, bodyLeading: 1.4, eyebrow: 24, gapTag: 36, gapBody: 28 };
+	if (id === 'landscape') return { padX: 96, padTop: 72, padBottom: 48, mark: 36, url: 24, footerGap: 22, headline: 80, headlineMin: 39, headlineLines: 3, body: 30, bodyMin: 24, bodyLines: 2, bodyLeading: 1.35, eyebrow: 24, gapTag: 22, gapBody: 18 };
+	return { padX: 84, padTop: 92, padBottom: 56, mark: 40, url: 20, footerGap: 24, headline: 100, headlineMin: 34, headlineLines: 5, body: 28, bodyMin: 20, bodyLines: 4, bodyLeading: 1.4, eyebrow: 20, gapTag: 32, gapBody: 24 };
 }
 
 function textBody(req: VideoRequest, size: VideoSize, palette: Theme, loaded: Faces, t: number, ease: (n: number) => number): string {
@@ -197,29 +199,38 @@ function textBody(req: VideoRequest, size: VideoSize, palette: Theme, loaded: Fa
 	const column = size.width - r.padX * 2;
 	const contentBottom = size.height - r.padBottom - r.mark - r.footerGap - 12;
 	const budget = contentBottom - r.padTop;
-	const tag = eyebrow ? fitTag(eyebrow, loaded.medium, r.eyebrow, column, palette) : undefined;
-	if (eyebrow && !tag) throw new Error('The eyebrow does not fit this size.');
+	const tag = eyebrow ? fitTag(eyebrow, loaded.medium, r.eyebrow, column, palette, size.id) : undefined;
 	const tagBlock = tag ? tag.height + r.gapTag : 0;
 	const ruleGap = req.template === 'announcement' && showSub ? r.gapBody : 0;
 	const subGap = showSub ? (req.template === 'announcement' ? ruleGap + 1 + r.gapBody : r.gapBody) : 0;
 	const leading = 1.08;
-	let head = fit(loaded.heading, title, column, { maxSize: r.headline, minSize: r.headlineMin, maxLines: r.headlineLines, leading, tracking: palette.trackingDisplay, maxHeight: Math.max(r.headlineMin, budget - tagBlock - subGap - (showSub ? r.bodyMin : 0)) });
-	let subLines: string[] = [];
-	let subSize = r.body;
-	if (showSub) {
-		const subWidth = Math.min(column, Math.round(size.width * 0.72));
-		for (let guard = 0; guard < 40; guard++) {
-			const headH = blockHeight(loaded.heading, head.lines, head.size, leading);
-			const room = budget - tagBlock - subGap - headH;
-			const fitted = fit(loaded.text, sub, subWidth, { maxSize: r.body, minSize: r.bodyMin, maxLines: r.bodyLines, leading: r.bodyLeading, tracking: 0, maxHeight: Math.max(r.bodyMin, room) });
-			subLines = fitted.lines;
-			subSize = fitted.size;
-			const used = headH + blockHeight(loaded.text, subLines, subSize, r.bodyLeading);
-			if (tagBlock + subGap + used <= budget + 0.5 || head.size <= r.headlineMin) break;
-			head = fit(loaded.heading, title, column, { maxSize: Math.max(r.headlineMin, head.size - 2), minSize: r.headlineMin, maxLines: r.headlineLines, leading, tracking: palette.trackingDisplay, maxHeight: budget });
+	const headFace = roleFor('display', title, 'title') === 'display' ? loaded.heading : loaded.text;
+	if (showSub) roleFor('ui', sub, 'text');
+	const subWidth = Math.min(column, Math.round(size.width * 0.72));
+	const search = (t: string, b: string): { head: Fitted; sub?: Fitted } | undefined => {
+		for (const extra of [0, 3, 99]) {
+			for (let n = r.headline; n >= r.headlineMin; n -= 1) {
+				const h = fit(headFace, t, column, { maxSize: n, minSize: n, maxLines: r.headlineLines + extra, leading, tracking: palette.trackingDisplay, maxHeight: budget - tagBlock - subGap, breakWords: n === r.headlineMin });
+				if (!h) continue;
+				if (!b) return { head: h };
+				const u = fit(loaded.text, b, subWidth, { maxSize: r.body, minSize: r.bodyMin, maxLines: r.bodyLines + extra, leading: r.bodyLeading, tracking: 0, maxHeight: budget - tagBlock - subGap - blockHeight(headFace, h.lines, h.size, leading), breakWords: true });
+				if (u) return { head: h, sub: u };
+			}
 		}
+		return undefined;
+	};
+	const found = search(title, showSub ? sub : '');
+	if (!found) {
+		const what = showSub && search(title, '') ? 'text' : 'title';
+		const words = (what === 'text' ? sub : title).split(/\s+/);
+		let n = words.length - 1;
+		while (n > 0 && !(what === 'text' ? search(title, words.slice(0, n).join(' ')) : search(words.slice(0, n).join(' '), ''))) n--;
+		throw new CopyError(`The ${what} does not fit ${req.template} at ${size.id}. Shorten it to about ${Math.max(1, n)} words.`);
 	}
-	const headH = blockHeight(loaded.heading, head.lines, head.size, leading);
+	const head = found.head;
+	const subLines = found.sub?.lines ?? [];
+	const subSize = found.sub?.size ?? r.body;
+	const headH = blockHeight(headFace, head.lines, head.size, leading);
 	const subH = showSub ? blockHeight(loaded.text, subLines, subSize, r.bodyLeading) : 0;
 	const stackH = tagBlock + headH + subGap + subH;
 	const top = r.padTop + Math.max(0, Math.round((budget - stackH) * (size.id === 'vertical' ? 0.28 : 0.36)));
@@ -231,11 +242,11 @@ function textBody(req: VideoRequest, size: VideoSize, palette: Theme, loaded: Fa
 		parts.push(tag.draw(r.padX, y, phase(t, 0, 0.32, ease)));
 		y += tag.height + r.gapTag;
 	}
-	parts.push(lines(loaded.heading, head.lines, head.size, leading, palette.trackingDisplay, palette.fg, palette.accentText, r.padX, y, headP, phase(t, 0.28, 0.74, ease)));
+	parts.push(lines(headFace, head.lines, head.size, leading, palette.trackingDisplay, palette.fg, palette.accentText, r.padX, y, headP, phase(t, 0.28, 0.74, ease)));
 	y += headH;
 	if (showSub && req.template === 'announcement') {
 		y += ruleGap;
-		const ruleW = Math.max(48, ...head.lines.map((line) => measure(loaded.heading, line.endsWith('.') ? line.slice(0, -1) : line, head.size, palette.trackingDisplay)));
+		const ruleW = Math.max(48, ...head.lines.map((line) => measure(headFace, line.endsWith('.') ? line.slice(0, -1) : line, head.size, palette.trackingDisplay)));
 		parts.push(rect(r.padX, y, ruleW * phase(t, 0.36, 0.7, ease), 1, palette.edge));
 		y += 1 + r.gapBody;
 	} else if (showSub) y += r.gapBody;
@@ -262,18 +273,14 @@ function logoBody(size: VideoSize, palette: Theme, t: number, ease: (n: number) 
 
 type Tag = { height: number; draw: (x: number, y: number, opacity: number) => string };
 
-function fitTag(label: string, face: Face, size: number, maxWidth: number, palette: Theme): Tag | undefined {
+function fitTag(label: string, face: Face, size: number, maxWidth: number, palette: Theme, at: string): Tag {
+	roleFor('ui', label, 'eyebrow');
 	let s = size;
-	let text = label.trim().toUpperCase();
-	if (!text || maxWidth < 8) return undefined;
+	const text = label.trim().toUpperCase();
 	const padXFor = (n: number) => Math.round(n * 0.48);
 	const boxWidth = (n: number, value: string) => measure(face, value, n, palette.trackingTag) + padXFor(n) * 2;
-	while (boxWidth(s, text) > maxWidth && s > 11) s -= 1;
-	if (boxWidth(s, text) > maxWidth) {
-		while (text.length > 0 && boxWidth(s, `${text}...`) > maxWidth) text = text.slice(0, -1).trimEnd();
-		text = text ? `${text}...` : '';
-	}
-	if (!text || boxWidth(s, text) > maxWidth) return undefined;
+	while (boxWidth(s, text) > maxWidth && s > 16) s -= 1;
+	if (boxWidth(s, text) > maxWidth) throw new CopyError(`The eyebrow does not fit at ${at}. Shorten it to about ${Math.floor((text.length * maxWidth) / boxWidth(s, text))} characters.`);
 	const cap = capHeight(face, s);
 	const padX = padXFor(s);
 	const padY = Math.round(s * 0.36);
@@ -281,7 +288,7 @@ function fitTag(label: string, face: Face, size: number, maxWidth: number, palet
 	const boxW = Math.min(maxWidth, Math.ceil(boxWidth(s, text)));
 	return {
 		height,
-		draw: (x, y, opacity) => `<g opacity="${op(opacity)}">${rect(x, y, boxW, height, palette.accent)}${textAt(face, text, x + padX, y + padY + cap, s, palette.trackingTag, palette.onAccent)}</g>`,
+		draw: (x, y, opacity) => `<g opacity="${op(opacity)}">${rect(x, y, boxW, height, contrast(palette.onAccent, palette.accent) >= 4.5 || s >= 24 ? palette.accent : palette.accentSmall)}${textAt(face, text, x + padX, y + padY + cap, s, palette.trackingTag, palette.onAccent)}</g>`,
 	};
 }
 

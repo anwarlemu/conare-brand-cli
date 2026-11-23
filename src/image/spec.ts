@@ -1,23 +1,23 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { packageRoot } from '../lib/brand.js';
+import { imageDoc, sizeIds, sizeOf, type Size } from '../assets/layouts.js';
 
 // Sizes, templates and colors for the image command. Colors resolve from brand/tokens.css, the same file the
 // stylesheet is built from, so a render does not need build/.
 
-export const SIZES = [
-	{ id: 'og', width: 1200, height: 630, description: 'Open Graph, 1200 by 630.' },
-	{ id: 'square', width: 1080, height: 1080, description: 'Square feed, 1080 by 1080.' },
-	{ id: 'portrait', width: 1080, height: 1350, description: 'Portrait feed, 1080 by 1350.' },
-	{ id: 'landscape', width: 1200, height: 675, description: 'X and LinkedIn, 1200 by 675.' },
-] as const;
+/** The share sizes a card draws at: the same ids as the layouts (brand/assets/image.json), the profile picture aside. */
+export const SIZES = sizeIds().filter((id) => id !== 'avatar').map((id) => {
+	const z = sizeOf(id)!;
+	return { id, width: z.w, height: z.h, description: `${z.label}, ${z.w} by ${z.h}.` };
+});
 
 export const TEMPLATES = [
 	{ id: 'headline', description: 'A headline on its own.' },
 	{ id: 'statement', description: 'A headline and a line of subtext. The default.' },
 	{ id: 'quote', description: 'A quotation, and with --by the name under it.' },
 	{ id: 'announcement', description: 'A tag, a headline and one line under a short rule.' },
-	{ id: 'frame', description: 'A headline, subtext and a framed screenshot. Pass --image, or leave it for a quiet stand-in.' },
+	{ id: 'frame', description: 'A headline, subtext and your picture whole in the double rule. Without --image, a quiet wordless stand-in.' },
 ] as const;
 
 export const GROUNDS = [
@@ -34,10 +34,10 @@ export const TEMPLATE_FIELDS: Record<(typeof TEMPLATES)[number]['id'], { accepts
 	frame: { accepts: ['text', 'eyebrow', 'image'], refuses: ['by'] },
 };
 
-export type SizeId = (typeof SIZES)[number]['id'];
+export type SizeId = string;
 export type TemplateId = (typeof TEMPLATES)[number]['id'];
 export type GroundId = (typeof GROUNDS)[number]['id'];
-export type SizeSpec = (typeof SIZES)[number];
+export type SizeSpec = Size;
 
 export type Theme = {
 	bg: string;
@@ -48,6 +48,7 @@ export type Theme = {
 	edge: string;
 	edgeStrong: string;
 	accent: string;
+	accentSmall: string;
 	accentText: string;
 	edgeAccent: string;
 	onAccent: string;
@@ -55,14 +56,9 @@ export type Theme = {
 	trackingTag: number;
 };
 
-const SIZE_BY_PX = new Map(SIZES.map((s) => [`${s.width}x${s.height}`, s.id]));
-
 export function sizeById(id: string): SizeSpec | undefined {
-	const norm = id.trim().toLowerCase().replace('×', 'x').replace(/\s+/g, '');
-	const named = SIZES.find((s) => s.id === norm);
-	if (named) return named;
-	const fromPx = SIZE_BY_PX.get(norm);
-	return fromPx ? SIZES.find((s) => s.id === fromPx) : undefined;
+	const s = sizeOf(id);
+	return s && s.id !== 'avatar' ? s : undefined;
 }
 
 export function templateById(id: string): TemplateId | undefined {
@@ -71,7 +67,8 @@ export function templateById(id: string): TemplateId | undefined {
 }
 
 export function groundById(id: string): GroundId | undefined {
-	const hit = GROUNDS.find((g) => g.id === id.trim().toLowerCase());
+	const norm = id.trim().toLowerCase();
+	const hit = GROUNDS.find((g) => g.id === (norm === 'white' ? 'paper' : norm === 'black' ? 'ink' : norm));
 	return hit?.id;
 }
 
@@ -80,7 +77,7 @@ export function catalog() {
 		templates: TEMPLATES.map((t) => ({ ...t, accepts: [...TEMPLATE_FIELDS[t.id].accepts], refuses: [...TEMPLATE_FIELDS[t.id].refuses] })),
 		sizes: [...SIZES],
 		grounds: [...GROUNDS],
-		formats: ['png', 'svg', 'both'],
+		formats: ['png', 'svg', 'jpg', 'webp', 'both', 'all'],
 		defaults: { template: 'statement', size: 'og', ground: 'paper', format: 'both' },
 	};
 }
@@ -144,6 +141,7 @@ function toTheme(raw: Record<string, string>): Theme {
 		edge: hex(raw, '--ds-color-edge'),
 		edgeStrong: hex(raw, '--ds-color-edge-strong'),
 		accent: hex(raw, '--ds-color-surface-accent'),
+		accentSmall: hex(raw, `--ds-color-${imageDoc().accentSmall}`),
 		accentText: hex(raw, '--ds-color-fg-accent-display'),
 		edgeAccent: hex(raw, '--ds-color-edge-accent'),
 		onAccent: hex(raw, '--ds-color-fg-on-accent'),
