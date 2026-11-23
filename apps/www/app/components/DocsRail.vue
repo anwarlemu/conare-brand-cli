@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { BookOpen, Boxes, Frame, Image, Menu as MenuIcon, Palette, PenTool, Search, X } from 'lucide-vue-next'
+import { BookOpen, Boxes, Frame, Image, Layers, Menu as MenuIcon, Palette, PenTool, Search, X } from 'lucide-vue-next'
 import Button from '@/components/ui/Button.vue'
 import Input from '@/components/ui/Input.vue'
 import Sidebar from '@/components/ui/Sidebar.vue'
@@ -20,6 +20,7 @@ const pages = [
   { to: '/components', label: 'All components', icon: Boxes },
   { to: '/theme', label: 'Theme', icon: Palette },
   { to: '/assets', label: 'Assets', icon: Image },
+  { to: '/designs', label: 'Designs', icon: Layers },
   { to: '/illustrations', label: 'Illustrations', icon: PenTool },
   { to: '/figma', label: 'Figma', icon: Frame },
 ]

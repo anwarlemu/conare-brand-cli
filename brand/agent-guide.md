@@ -102,7 +102,7 @@ pass functions (callbacks, render props) only from client components. Web compon
 
 ## Imagery
 
-`{{cli}} image` renders an Open Graph card (1200 by 630) or a social post (1080 by 1080, 1080 by 1350, 1200 by 675) from a title. It writes PNG and SVG, using the brand's type, colors and mark. No browser, and the same copy writes the same files.
+`{{cli}} image` renders an Open Graph card or a social post at any of the shared sizes from a title. It writes PNG and SVG, using the brand's type, colors and mark. No browser, and the same copy writes the same files.
 
 ```sh
 {{cli}} image --title "The right context, on every call" --text "Store it and keep it current."
@@ -139,24 +139,30 @@ merch and illustrations. Every color is a token, every face a brand font, the lo
 takes `--list`, `--json` and `--help`; an unknown name exits 1 and suggests the closest one.
 
 ```sh
-{{cli}} image --template hero --title "Everything your agent needs to know." --size og,story
-{{cli}} image --template room --size all                      # sample copy when --title is left out
-{{cli}} image --template feature --image ./shot.png           # your picture in the product window
-{{cli}} image --input posts.json --out posts                  # { "images": [ { "template": "card", "size": ["og", "square"] } ] }
+{{cli}} image hero --headline "Everything your agent needs to know." --size og,story
+{{cli}} image room --sample --size all                        # sample copy only when asked for
+{{cli}} image feature --headline "..." --image ./shot.png     # your picture in the product window, whole
+{{cli}} image --input posts.json --out posts                  # { "images": [ { "template": "card", "size": ["og", "square"], "headline": "..." } ] }
+{{cli}} image --input carousel.json                           # { "carousel": { "template": "card", "slides": [ { "headline": "..." } ] } }
 {{cli}} deck --input deck.json --out deck                     # slides at 1920x1080, a PNG each and deck.pdf
-{{cli}} video --template hero --size landscape --format both  # H.264 MP4 and VP9 WebM through ffmpeg
-{{cli}} video --template card --still                         # the settled frame as PNG (--at 0.5 for another)
+{{cli}} video hero --headline "..." --size landscape --format both  # H.264 MP4 and VP9 WebM
+{{cli}} video card --headline "..." --still                         # the settled frame as PNG (--at 0.5 for another)
 {{cli}} merch tee-back --variant black                        # print files at real size, with bleed and safe area
 {{cli}} illustrate stacks --size 1500x500                     # SVG of vector shapes and PNG
 {{cli}} figma tokens                                          # files and the ordered Figma MCP calls
 ```
 
-- `image` layouts: `--theme` white, paper, red, black or grey (default: the layout's), `--eyebrow` (the badge's words),
-  `--badge` label, pill, solid, dot or none, `--highlight` for `*starred words*` and the final stop, `--partner` (a
-  name beside the lockup; never a third-party logo), `--credit`. Sizes: og, landscape, linkedin, square, portrait,
-  story, linkedin-square, x-banner, linkedin-banner, linkedin-page, youtube, email, or all.
+- `image` layouts: `--headline`, `--body`, `--badge` (its words; `--badge-style` label, pill, solid, dot or none),
+  `--note` and `--page` at the foot, `--theme` white, paper, red, black or grey, `--highlight` for `*starred words*` and
+  the final stop, `--partner` (a name beside the lockup; never a third-party logo), `--credit`, `--seed`. Only the copy
+  passed is drawn; `--sample` fills sample copy. Sizes: og, square, portrait, story, landscape, x-banner, linkedin,
+  linkedin-banner, linkedin-page, youtube, youtube-thumbnail, email, avatar (the `avatar` layout), linkedin-square,
+  WxH or custom with `--width` and `--height`, or all. Words, the logo and key art keep out of what each platform
+  covers (the X profile picture, story bars, YouTube's crop). `--format` png, svg, jpg, webp; `--scale 2`.
+- Copy is drawn whole: it shrinks and re-wraps to a size that reads where the image is shown, then the command fails
+  saying what to shorten. Characters no brand face has (emoji, CJK) are refused by name.
 - `deck` slides: cover, section, statement, bullets (up to six points), stat, quote, image and end, each on one of the
-  layouts. A slot left out takes the slide's opening copy.
+  layouts. Only the slots passed are drawn; a slide's needed slot missing is an error (`--sample` fills them).
 - `video` layouts come in the way the website moves (the label and lockup settle up, the headline's letters wait faint
   and red and settle to ink, a window arrives on the long ease-out), then hold. Every curve and duration is a motion
   token; nothing eases in. It needs ffmpeg; `--still` does not.
@@ -168,6 +174,32 @@ takes `--list`, `--json` and `--help`; an unknown name exits 1 and suggests the 
 - `figma` never calls Figma: `tokens` (variables in Light and Dark), `push image|slide|illustration|asset|component|page`,
   `pull <url>` and `check <files>` write files and print the MCP calls, in order. Do not call the Figma MCP tools
   without the person's go-ahead; their seat may be rate limited.
+
+## Revising a design
+
+When the person wants a graphic they can shape (an X banner, a post, a slide), make a design file instead of a one-off
+image, and change it until they are happy:
+
+```sh
+{{cli}} design new hero --size x-banner --headline "Every answer comes back with its source" -o banner.design.json
+{{cli}} design revise banner.design.json "bigger logo, paper theme, left align the headline"
+{{cli}} design edit banner.design.json --set badge="Now in beta" --layer logo.anchor=top-right
+{{cli}} design undo banner.design.json
+{{cli}} design variants banner.design.json --by theme      # files and one labeled sheet
+{{cli}} design sizes banner.design.json --to og,square,story,linkedin-banner
+{{cli}} design check banner.design.json
+```
+
+1. Make it with `design new`, look at the PNG it writes, and show it to the person.
+2. Turn what they say into `design revise` (plain words) or, when you know the exact change, `design edit`.
+3. Every write is checked. An error (a lost word, an overlap, contrast, a safe area, an off-brand request) changes
+   nothing and says why: tell the person, offer what the message suggests, and try again.
+4. Repeat until they are happy; `design undo` and `design redo` step through what was done.
+5. Never edit the PNG or SVG by hand, and never draw the words some other way: change the design file and render again.
+
+Only the copy the person passed is drawn, plus the logo and the address. `--sample` fills sample copy on purpose.
+Copy that does not fit whole is refused with what to shorten. `{{cli}} manifest --json` has a `design` entry with every
+template, layer, what each can do, the phrases `revise` understands and the rules.
 
 ## Motion
 

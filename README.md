@@ -107,7 +107,8 @@ styled with the theme's Tailwind utilities, so in an app without Tailwind `add` 
 | `brand` | Tokens (color, type, spacing, radii, motion), fonts, logos and voice. `--section`, `--token`. `colour` is `color`. |
 | `principles` | Product and website rules, with do and do-not lists. `--surface product` or `website`. |
 | `component` | `list`, `inspect` and `emit` Vue for a real component, including props and states. |
-| `image` | Renders an Open Graph card or a social post from a title. PNG and SVG, from the brand's type, colors and mark. |
+| `image` | Renders an Open Graph card or a social post from a title. PNG, SVG, JPEG or WebP, from the brand's type, colors and mark. Only the copy passed is drawn. |
+| `design` | A design file you revise in plain words or exact edits, with undo, variants, other sizes and a check on every write. |
 | `video` | Short Motion JPEG MP4 clips, and the layouts coming in the way the site moves (MP4 or WebM through ffmpeg). |
 | `deck` | Slides at 1920x1080 on the share layouts: a PNG per slide and one PDF. |
 | `merch` | Print files at real size with bleed and safe area. |
@@ -115,6 +116,27 @@ styled with the theme's Tailwind utilities, so in an app without Tailwind `add` 
 | `figma` | Files and the ordered Figma MCP calls: tokens, push, pull, check. |
 
 All commands take `--cwd <dir>` and `--json`; an unknown option is an error, never ignored.
+
+### Designs you can revise
+
+`design` keeps a graphic as a small JSON file, so a person or an agent can change it until it is right. Each write draws
+it again and runs the check (every word drawn whole, nothing invented, no overlaps, contrast, the logo, platform safe
+areas, nothing cut off); an error changes nothing.
+
+```sh
+npx conare-ds design new hero --size x-banner --headline "Every answer comes back with its source" -o banner.design.json
+npx conare-ds design revise banner.design.json "bigger logo, paper theme, left align the headline"
+npx conare-ds design edit banner.design.json --set badge="Now in beta" --layer logo.anchor=top-right
+npx conare-ds design undo banner.design.json
+npx conare-ds design variants banner.design.json --by theme
+npx conare-ds design sizes banner.design.json --to og,square,story,linkedin-banner
+npx conare-ds design compare a.design.json b.design.json
+npx conare-ds design render banner.design.json --format png,svg,jpg --scale 2
+```
+
+`revise` understands plain words with no model or key; a part it does not understand changes nothing and lists what it
+can do. `design --help` lists every command; `manifest --json` has the templates, layers, phrases and rules. Designs
+cover the layouts, the five cards, slides, merch, illustrations and layout videos.
 
 ### Open Graph and social images
 
@@ -136,7 +158,7 @@ npx conare-ds image --list
 | `announcement` | A tag, a headline and a short line under a rule. |
 | `frame` | Headline, subtext and a screenshot in a double rule. Without `--image`, a quiet stand-in of the console. |
 
-Sizes are `og` (1200x630), `square` (1080x1080), `portrait` (1080x1350) and `landscape` (1200x675, for X and LinkedIn). `--size all` writes every size. `--ground paper` is the default; `--ground ink` is the off-black card. `--format` is `png`, `svg` or `both` (the default). `--out` is a directory (default `imagery/`), or one file when there is a single size. `--eyebrow` sets the red tag. `--image` is a PNG or JPEG for `frame`.
+Sizes are the shared set: `og`, `square`, `portrait`, `story`, `landscape`, `x-banner`, `linkedin`, `linkedin-banner`, `linkedin-page`, `youtube`, `youtube-thumbnail`, `email` and `linkedin-square`, a `WxH`, or `custom` with `--width` and `--height`. `--size all` writes every size. Words and the logo keep out of what each platform covers. `--ground paper` is the default; `--ground ink` is the off-black card. `--format` is `png`, `svg`, `jpg`, `webp`, a list, `both` (PNG and SVG, the default) or `all`. `--out` is a directory (default `imagery/`), or one file when there is a single size. `--eyebrow` sets the red tag. `--image` is a PNG or JPEG for `frame`.
 
 A headline ends in a red full stop, as the site's headlines do, including when the title is wrapped in quotes. Write the copy in sentence case. A template refuses a field it does not draw: headline refuses `--text`, `--by` and `--image`; statement and announcement refuse `--by` and `--image`; quote refuses `--text` and `--image`; frame refuses `--by`. `--text` and `--subtitle` must agree when both are set, and so must `--by` and `--author`. `--json` prints `{ template, ground, files: [{ path, format, template, size, ground, width, height }] }`. Rendered examples of each template are in `imagery/samples/`.
 
@@ -183,10 +205,10 @@ merch and illustrations. Every color is a token, every face a brand font, the lo
 takes `--list`, `--json` and `--help`; an unknown name exits 1 and suggests the closest one.
 
 ```sh
-npx conare-ds image --template hero --title "Everything your agent needs to know." --size og,story
-npx conare-ds image --template room --size all                      # sample copy when --title is left out
-npx conare-ds image --template feature --image ./shot.png           # your picture in the product window
-npx conare-ds image --input posts.json --out posts                  # { "images": [ { "template": "card", "size": ["og", "square"] } ] }
+npx conare-ds image hero --headline "Everything your agent needs to know." --size og,story
+npx conare-ds image room --sample --size all                        # sample copy only when asked for
+npx conare-ds image feature --headline "..." --image ./shot.png     # your picture in the product window, whole
+npx conare-ds image --input posts.json --out posts                  # { "images": [ { "template": "card", "size": ["og", "square"], "headline": "..." } ] }
 npx conare-ds deck --input deck.json --out deck                     # slides at 1920x1080, a PNG each and deck.pdf
 npx conare-ds video --template hero --size landscape --format both  # H.264 MP4 and VP9 WebM through ffmpeg
 npx conare-ds video --template card --still                         # the settled frame as PNG (--at 0.5 for another)

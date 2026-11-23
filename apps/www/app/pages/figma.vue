@@ -6,7 +6,7 @@ import Table from '@/components/ui/Table.vue'
 useHead({ title: 'Figma | Conare design system' })
 const actions = [
   ['tokens', 'Every token as a Figma variable, typed and scoped, linked to its CSS variable, in two modes (Light and Dark); tokens.json and use_figma scripts that create or update them. On a plan with one mode per collection the script makes one collection per mode.', 'figma tokens --file <key>'],
-  ['push image', 'A share image as SVG and PNG, with the steps that import it as editable layers (or upload it).', 'figma push image hero --size og'],
+  ['push image', 'A share image as SVG and PNG, with the steps that import it as editable layers (or upload it).', 'figma push image hero --headline "..." --size og'],
   ['push slide', 'A deck slide, the same way.', 'figma push slide cover --title "..."'],
   ['push illustration', 'An illustration subject as editable vectors.', 'figma push illustration stacks --size 1500x500'],
   ['push asset', 'Any SVG, PNG, JPEG, WebP, GIF or self-contained HTML file.', 'figma push asset logo.svg'],

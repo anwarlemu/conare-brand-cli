@@ -8,9 +8,10 @@ import { SOURCE } from '~/utils/registry'
 // here was made by the command under it (scripts/docs-assets.mjs), from the tokens, the faces and the logo only.
 useHead({ title: 'Assets | Conare design system' })
 const commands = [
-  ['image', 'Share images and social posts, PNG and SVG: the twelve layouts at every social size, plus five card templates', 'image --template hero --title "..." --size og,story'],
+  ['image', 'Share images and social posts, PNG, SVG, JPEG or WebP: the layouts at every social size, five card templates and numbered carousels. Only the copy you pass is drawn', 'image hero --headline "..." --size og,story'],
+  ['design', 'A design file you revise in plain words or exact edits, with undo, variants, other sizes and a check on every write (see Designs)', 'design new hero --size x-banner --headline "..."'],
   ['deck', 'Slides at 1920x1080 on the same layouts: a PNG per slide and one PDF', 'deck --input deck.json --out deck'],
-  ['video', 'A layout coming in the way the site moves: H.264 MP4 or VP9 WebM through ffmpeg, or one PNG frame', 'video --template room --size vertical --format both'],
+  ['video', 'A layout coming in the way the site moves: H.264 MP4 or VP9 WebM through ffmpeg, or one PNG frame', 'video room --headline "..." --size vertical --format both'],
   ['merch', 'Print files at real size, with bleed, safe area and the sticker cut line', 'merch all --out merch'],
   ['illustrate', 'The illustration style as SVG and PNG (see Illustrations)', 'illustrate stacks --size 1500x500'],
   ['figma', 'Files and the ordered Figma MCP calls (see Figma)', 'figma tokens'],
@@ -28,9 +29,9 @@ const deckJson = `{
 }`
 const postsJson = `{
   "images": [
-    { "template": "card", "size": ["og", "square", "story"], "eyebrow": "NEW", "title": "Reranking on every query." },
-    { "template": "partner", "partner": "Acme", "title": "Conare now connects to Acme.", "theme": "paper" },
-    { "template": "feature", "image": "shot.png", "title": "See the source of every answer." }
+    { "template": "card", "size": ["og", "square", "story"], "badge": "New", "headline": "Reranking on every query." },
+    { "template": "partner", "partner": "Acme", "headline": "Conare now connects to Acme.", "theme": "paper" },
+    { "template": "feature", "image": "shot.png", "headline": "See the source of every answer." }
   ]
 }`
 </script>
@@ -50,7 +51,7 @@ const postsJson = `{
 
     <section class="flex flex-col gap-4" aria-labelledby="images">
       <SectionHead id="images" title="Share images and posts" />
-      <p class="max-w-170 type-ui text-fg-soft">Twelve layouts, each in its own theme (white, paper, red, black or grey with <code class="type-code-sm">--theme</code>). Copy comes from flags or a JSON file; <code class="type-code-sm">*stars*</code> mark a highlighted phrase, and a headline ends on the red full stop. <code class="type-code-sm">--image</code> puts your picture in the feature layout's window.</p>
+      <p class="max-w-170 type-ui text-fg-soft">The layouts, each in its own theme (white, paper, red, black or grey with <code class="type-code-sm">--theme</code>). Only the copy you pass is drawn (these show <code class="type-code-sm">--sample</code>); copy that does not fit whole is refused with what to shorten. Copy comes from flags or a JSON file; <code class="type-code-sm">*stars*</code> mark a highlighted phrase, and a headline ends on the red full stop. <code class="type-code-sm">--image</code> puts your picture in the feature layout's window.</p>
       <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <GalleryTile v-for="i in gallery.images" :key="i.id" :src="i.src" :width="i.width" :height="i.height" :title="i.label" :description="i.description" :command="i.command" />
       </div>
@@ -59,7 +60,7 @@ const postsJson = `{
 
     <section class="flex flex-col gap-4" aria-labelledby="sizes">
       <SectionHead id="sizes" title="Every social size" />
-      <p class="max-w-170 type-ui text-fg-soft">A layout keeps its margins and type at any size: link preview, X card, LinkedIn post and square, feed square, portrait, story, X and LinkedIn banners, LinkedIn page, YouTube channel art and an email header. <code class="type-code-sm">--size all</code> writes every one.</p>
+      <p class="max-w-170 type-ui text-fg-soft">A layout lays itself out again at any size: link preview, X card, LinkedIn post and square, feed square, portrait, story, X and LinkedIn banners, LinkedIn page, YouTube channel art and thumbnail, an email header and a profile picture. Words, the logo and key art keep out of what each platform covers (the X profile picture, the story bars, YouTube's crop). <code class="type-code-sm">--size all</code> writes every one.</p>
       <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <GalleryTile v-for="s in gallery.sizes" :key="s.id" :src="s.src" :width="s.width" :height="s.height" :title="s.label" :command="s.command" />
       </div>
@@ -67,7 +68,7 @@ const postsJson = `{
 
     <section class="flex flex-col gap-4" aria-labelledby="deck">
       <SectionHead id="deck" title="Deck" />
-      <p class="max-w-170 type-ui text-fg-soft">Eight slide types at 1920x1080, each on one of the share layouts, from a JSON file: a PNG per slide and one PDF with 16:9 pages. A slot left out takes the slide's opening copy.</p>
+      <p class="max-w-170 type-ui text-fg-soft">Eight slide types at 1920x1080, each on one of the share layouts, from a JSON file: a PNG per slide and one PDF with 16:9 pages. Only the slots you pass are drawn; <code class="type-code-sm">--sample</code> fills the rest.</p>
       <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <GalleryTile v-for="s in gallery.slides" :key="s.id" :src="s.src" :width="s.width" :height="s.height" :title="s.label" :description="s.description" :command="s.command" />
       </div>

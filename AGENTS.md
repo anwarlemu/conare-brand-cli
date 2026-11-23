@@ -97,10 +97,10 @@ merch and illustrations. Every color is a token, every face a brand font, the lo
 takes `--list`, `--json` and `--help`; an unknown name exits 1 and suggests the closest one.
 
 ```sh
-conare-ds image --template hero --title "Everything your agent needs to know." --size og,story
-conare-ds image --template room --size all                      # sample copy when --title is left out
-conare-ds image --template feature --image ./shot.png           # your picture in the product window
-conare-ds image --input posts.json --out posts                  # { "images": [ { "template": "card", "size": ["og", "square"] } ] }
+conare-ds image hero --headline "Everything your agent needs to know." --size og,story
+conare-ds image room --sample --size all                        # sample copy only when asked for
+conare-ds image feature --headline "..." --image ./shot.png     # your picture in the product window, whole
+conare-ds image --input posts.json --out posts                  # { "images": [ { "template": "card", "size": ["og", "square"], "headline": "..." } ] }
 conare-ds deck --input deck.json --out deck                     # slides at 1920x1080, a PNG each and deck.pdf
 conare-ds video --template hero --size landscape --format both  # H.264 MP4 and VP9 WebM through ffmpeg
 conare-ds video --template card --still                         # the settled frame as PNG (--at 0.5 for another)
@@ -137,3 +137,24 @@ Same inputs produce the same bytes for stills and for video. Rendering does not 
 - Logo clearance, a minimum size, or an exclusion zone.
 - An H.264 encoder of its own. The Motion JPEG clips need nothing; layout videos use ffmpeg from PATH.
 - Components or fonts beyond the files in `registry/` and `brand/fonts/`.
+
+## Revising a design
+
+For a graphic the person will shape (an X banner, a post, a slide), make a design file and change it until they are
+happy. Never edit the PNG or SVG by hand.
+
+```sh
+conare-ds design new hero --size x-banner --headline "Every answer comes back with its source" -o banner.design.json
+conare-ds design revise banner.design.json "bigger logo, paper theme, left align the headline"
+conare-ds design edit banner.design.json --set badge="Now in beta" --layer logo.anchor=top-right
+conare-ds design undo banner.design.json
+conare-ds design variants banner.design.json --by theme
+conare-ds design sizes banner.design.json --to og,square,story
+conare-ds design check banner.design.json
+```
+
+Make it, look at the PNG, turn what the person says into `revise` (plain words) or `edit` (exact), and repeat. Every
+write runs the check: a lost word, an overlap, low contrast, a platform's covered area or an off-brand request changes
+nothing and says why. Only the copy passed is drawn, plus the logo and the address; `--sample` fills sample copy.
+`manifest --json` has a `design` entry with every template, layer, what each can do, the phrases and the rules.
+

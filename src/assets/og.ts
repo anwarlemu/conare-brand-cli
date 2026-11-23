@@ -167,6 +167,8 @@ function applyEdits(d: Design) {
 		d.spec.valign = h.anchor.startsWith('top') ? 'top' : h.anchor.startsWith('bottom') ? 'bottom' : 'middle';
 	}
 	if (h?.align) d.spec.align = h.align;
+	/* A centered logo over the words follows them when they are set to a side. */
+	if (d.spec.logo?.at === 'top' && !d.layers.logo?.anchor && d.spec.align !== 'center' && (h?.align || h?.anchor)) d.spec.logo = { ...d.spec.logo, at: d.spec.align === 'left' ? 'top-left' : 'top-right' };
 	if (d.layers.logo?.anchor && d.spec.logo) d.spec.logo = { ...d.spec.logo, at: d.layers.logo.anchor };
 }
 
@@ -430,7 +432,7 @@ function fitWords(ctx: Ctx, d: Design, box: { w: number; h: number }, logoH: num
 			if (!hit) {
 				let max = 1;
 				for (let n = k - 0.02; n > 1; n -= 0.02) if (tryAt(b.size * n)) { max = n; break; }
-				throw new CopyError(`The headline at scale ${k} does not fit ${d.template} at ${d.size.id}. The largest that does is ${r2(max)}${max <= 1 ? ' (it already fills its place; shorten the words to make them bigger)' : ''}.`);
+				throw new CopyError(`The headline at scale ${k} does not fit ${d.template} at ${d.size.id}. The largest that does is ${r2(max)}${max <= 1 ? ' (it already fills its place; shorten the words to make them bigger)' : ''}. Reset the headline, or give it a scale it can take.`);
 			}
 			w = hit[1];
 		}
