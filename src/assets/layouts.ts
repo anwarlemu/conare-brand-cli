@@ -143,6 +143,8 @@ export type Spec = {
 	window: 'app' | 'picture' | null;
 	/** Window beside the words (a wide banner), not under them. */
 	split: boolean;
+	/** The window's width in the posts tool, as a share of the scale box; a window that cannot be whole at it runs off the foot and fades. */
+	winW: number;
 	stacks: 'corners' | 'lower' | 'side' | 'panel' | 'floor' | null;
 	stackScale: number;
 };
@@ -166,7 +168,7 @@ export function specFor(t: Layout, fw: number, fh: number): Spec {
 		align: 'left', valign: 'middle', size: head(62), width: 0.66, tracking: -20, leading: 1.08, limit: 0, bodyRatio: 0.34, bodyLeading: 1.45,
 		bodyGap: 34, bodyWidth: 0, badgeAt: 'words', badgeRatio: 0.177, badgeFont: 'text', badgeWeight: 500, badgeTracking: 60, badgeRound: -1, badgeGap: 21,
 		logo: null, foot: false, footSize: 15 * hk * u, footRule: true, margin: m, room: null, guides: null, border: null, pattern: null, patternTile: 40 * u,
-		patternStrength: 100, fill: banner ? 1.7 : 1, wordmark: false, wordmarkH: 150 * hk * u, floor: null, window: null, split: false, stacks: null, stackScale: 1,
+		patternStrength: 100, fill: banner ? 1.7 : 1, wordmark: false, wordmarkH: 150 * hk * u, floor: null, window: null, split: false, winW: 0.8, stacks: null, stackScale: 1,
 	};
 	const ring = { min: 0.34, rings: 4 };
 	switch (t) {
@@ -203,14 +205,14 @@ export function specFor(t: Layout, fw: number, fh: number): Spec {
 			};
 		case 'app':
 			return {
-				...base, fill: r >= 2.4 ? 1.4 : 1, align: r >= 2.2 ? 'left' : 'center', valign: r >= 2.2 ? 'middle' : 'top', size: head(tall ? 72 : banner ? 46 : wide ? 52 : 60), width: 0.84, limit: r >= 2.2 ? 0 : 0.46,
-				badgeRatio: 0.17, room: { min: 0.3, rings: 4 }, window: 'app', split: r >= 2.2, stacks: r >= 2.2 ? null : 'lower', stackScale: 0.85,
+				...base, fill: banner ? 1.4 : 1, align: 'center', valign: 'top', size: head(tall ? 72 : banner ? 46 : wide ? 52 : 60), width: banner ? 0.62 : 0.84, limit: banner ? 0.46 : 0.46,
+				badgeRatio: 0.17, room: { min: 0.3, rings: 4 }, window: 'app', split: false, winW: tall ? 0.9 : banner ? 0.5 : wide ? 0.66 : 0.84, stacks: 'lower', stackScale: 0.85,
 				margin: tall ? m + 24 * u : m,
 			};
 		case 'feature':
 			return {
 				...base, fill: r >= 2.4 ? 1.4 : 1, align: r >= 2.2 ? 'left' : 'center', valign: r >= 2.2 ? 'middle' : 'top', size: head(tall ? 76 : banner ? 46 : wide ? 52 : 62), width: 0.84, limit: r >= 2.2 ? 0 : 0.52,
-				badgeRatio: 0.183, bodyRatio: 0.306, window: 'picture', split: r >= 2.2, guides: r >= 2.2 ? null : 24 * u, margin: tall ? m + 24 * u : m,
+				badgeRatio: 0.183, bodyRatio: 0.306, window: 'picture', split: r >= 2.2, winW: tall ? 0.96 : banner ? 0.5 : wide ? 0.86 : 0.92, guides: r >= 2.2 ? null : 24 * u, margin: tall ? m + 24 * u : m,
 			};
 		case 'outline':
 			return { ...base, align: ultra ? 'left' : 'center', size: head(banner ? 60 : 68), width: banner ? 0.8 : 0.84, badgeRatio: 0.16, wordmark: true };

@@ -486,7 +486,7 @@ type StackPlan = { src: 'stack-tall' | 'stack-wide'; rect: Rect; flip: boolean; 
 export type Plan = {
 	content: Rect; block: Block; at: { x: number; y: number }; words: Rect;
 	logo: LogoPlan | null; corner: (BadgeBox & Placed) | null; foot: FootPlan | null; window: Rect | null; pic: Pic | null; stacks: StackPlan[];
-	wall: Rect | null; panel: Rect | null; wordmark: { rects: Rect[]; k: number } | null; floorY: number | null; border: number;
+	wall: Rect | null; panel: Rect | null; fade?: { from: number; to: number }; wordmark: { rects: Rect[]; k: number } | null; floorY: number | null; border: number;
 };
 
 function logoSizes(ctx: Ctx, d: Design, h: number): { w: number; h: number; k: number; lw: number; partner?: { fs: number; role: FaceRole; w: number; gap: number; times: number } } {
@@ -664,7 +664,9 @@ export function planDesign(ctx: Ctx, d: Design, pic: Pic | null, own = Boolean(p
 
 	/* What the platform covers at the lower left (a profile picture): the words keep out of it, either above it at the
 	   full width or beside it, whichever sets them larger. The art may still run under it. */
-	const leftAvoid = d.size.avoid.filter((r) => r.x <= 1 && meet(r, zone));
+	/* A window beside the words still has the whole height; only the words step round the covered corner. */
+	const tall = { ...zone };
+	const leftAvoid = d.size.avoid.filter((r) => r.x <= 1 && r.w < d.w / 2 && meet(r, zone));
 	const panelLeft = s.pattern === 'panel' && !hidden(d, 'panel') && F.w / F.h >= 1.4 && d.size.avoid.some((r) => r.x === 0);
 	if (leftAvoid.length && !panelLeft) {
 		const top = Math.min(...leftAvoid.map((r) => r.y)) - gap * 0.6;
@@ -707,7 +709,7 @@ export function planDesign(ctx: Ctx, d: Design, pic: Pic | null, own = Boolean(p
 			const top = plan.logo && s.logo?.at.toString().startsWith('bottom') ? plan.logo.rect.y : bottom(zone);
 			plan.panel = { x: content.x, y: panelTop, w: content.w, h: Math.min(bottom(zone), top) - panelTop };
 		} else {
-			const leftBar = d.size.avoid.some((a) => a.x === 0) && F.x > 0;
+			const leftBar = d.size.avoid.some((a) => a.x === 0 && a.w < d.w / 2) && F.x > 0;
 			const pw = Math.min(content.w * 0.46, (2 * 40 * u * 9) * 1.1);
 			const py = plan.foot ? { y: content.y, h: zone.y + zone.h - content.y } : { y: content.y, h: content.h };
 			if (leftBar) {
@@ -728,7 +730,11 @@ export function planDesign(ctx: Ctx, d: Design, pic: Pic | null, own = Boolean(p
 
 	if (s.floor !== null && F.w / F.h >= 1 && !hidden(d, 'art')) {
 		/* Words on one side, the stack on the other. */
-		const w = Math.max(zone.w * 0.6, Math.min(zone.w, s.width * scaleBox(d.size).w));
+		let w = Math.max(zone.w * 0.6, Math.min(zone.w, s.width * scaleBox(d.size).w));
+		/* Keep a column for the box on the floor (the posts tool's 260 at the link preview), clear of a covered corner. */
+		const sw = (F.h / F.w > 1.15 ? 420 : 260) * u;
+		const start = Math.max(content.x, ...d.size.avoid.filter((a) => a.x <= 1 && a.w < d.w / 2).map((a) => right(a) + 0.03 * Math.min(F.w, F.h)));
+		if (d.spec.align === 'right') w = Math.min(w, right(zone) - (start + sw + gap * 1.5));
 		if (d.spec.align === 'right') wordsZone = { ...zone, x: right(zone) - w, w };
 		else if (d.spec.align === 'left') wordsZone = { ...zone, w };
 		if (plan.logo && plan.logo.rect.w + gap * 2 < zone.w - w && s.logo?.at === 'top-left' && d.spec.align === 'right') wordsZone = { ...wordsZone, y: content.y, h: bottom(zone) - content.y };
@@ -739,20 +745,32 @@ export function planDesign(ctx: Ctx, d: Design, pic: Pic | null, own = Boolean(p
 	const winId = own ? 'picture' : 'window';
 	const winScale = scaleOf(d, winId);
 	const tooBig = (max: number) => new CopyError(`The ${winId} at scale ${winScale} does not fit ${d.template} at ${d.size.id}. The largest that does is ${r2(max)}.`);
+	/* The posts tool's window width. A drawn window too tall to be whole at it runs off the foot and fades into the
+	   ground there (as in the tool); the person's own picture is always shown whole. */
+	const toolW = s.winW * SB.w;
+	const canBleed = !own && !plan.foot;
 	if (win && s.split) {
-		/* Beside the words: the window whole, as tall as the frame lets it be. */
-		const winBox = { w: zone.w * 0.52, h: zone.h };
-		let ww = Math.min(winBox.w, winBox.h / ratio);
-		ww *= winScale;
-		if (ww > zone.w * 0.64 || ww * ratio > zone.h * 1.001) throw tooBig(Math.min((zone.w * 0.64) / ww, zone.h / (ww * ratio)) * winScale);
-		const wh = ww * ratio;
+		/* Beside the words, as wide as the tool sets it. */
+		const wz = tall;
+		let ww = Math.min(toolW, wz.w * 0.58) * winScale;
+		if (ww > wz.w * 0.64) throw tooBig((wz.w * 0.64) / (ww / winScale));
+		let wh = ww * ratio;
+		/* It runs off the foot only when it is too tall to stop short of it; otherwise it is shown whole. */
+		if (wh > wz.h + 0.5 && !canBleed) {
+			ww = Math.min(ww, wz.h / ratio);
+			wh = ww * ratio;
+		}
+		const bleeds = wh > wz.h + 0.5;
 		const onLeft = mirror;
-		plan.window = { x: onLeft ? zone.x : right(zone) - ww, y: zone.y + (zone.h - wh) / 2, w: ww, h: wh };
-		wordsZone = { ...zone, x: onLeft ? right(plan.window) + gap * 1.8 : zone.x, w: zone.w - ww - gap * 1.8 };
+		plan.window = { x: onLeft ? wz.x : right(wz) - ww, y: bleeds ? Math.max(wz.y, H - wh * 0.85) : wz.y + (wz.h - wh) / 2, w: ww, h: wh };
+		if (bleeds) plan.fade = { from: plan.window.y + (H - plan.window.y) * 0.62, to: H };
+		const wl = onLeft ? Math.max(zone.x, right(plan.window) + gap * 1.8) : zone.x;
+		const wr = onLeft ? right(zone) : Math.min(right(zone), plan.window.x - gap * 1.8);
+		wordsZone = { ...zone, x: wl, w: wr - wl };
 		d.spec.width = 1;
 		plan.block = fitWords(ctx, d, wordsZone, aboveH);
 	} else if (win) {
-		/* Under the words: the words in their share, the window whole in what is left. */
+		/* Under the words: the words in their share, the window in what is left. */
 		const g = (F.h / F.w > 1.15 ? 56 : 30) * u;
 		let block: Block | null = null;
 		let last: unknown;
@@ -768,14 +786,19 @@ export function planDesign(ctx: Ctx, d: Design, pic: Pic | null, own = Boolean(p
 		if (!block) throw last;
 		plan.block = block;
 		const room = zone.h - block.h - g;
-		const full = Math.min(zone.w, (F.h / F.w > 1.15 ? 0.96 : win === 'app' ? 0.8 : 0.9) * F.w, room / ratio);
+		const tool = Math.min(zone.w, toolW);
+		const whole = Math.min(tool, room / ratio);
+		const top0 = zone.y + block.h + g;
+		const bleed = canBleed && win === 'app' && whole < tool * 0.92 && top0 + tool * ratio > H + 2 && H - top0 >= tool * ratio * 0.45;
+		const full = bleed ? tool : whole;
 		const ww = full * winScale;
-		if (ww * ratio > room + 0.5 || ww > zone.w + 0.5) throw tooBig(Math.min(room / ratio, zone.w) / full);
+		if (!bleed && (ww * ratio > room + 0.5 || ww > zone.w + 0.5)) throw tooBig(Math.min(room / ratio, zone.w) / full);
+		if (bleed && (ww > zone.w + 0.5 || H - top0 < ww * ratio * 0.4)) throw tooBig(Math.min(zone.w / full, (H - top0) / (full * ratio * 0.4)));
 		const wh = ww * ratio;
-		const total = block.h + g + wh;
-		const top = zone.y + Math.max(0, (zone.h - total) / 2);
+		const top = bleed ? zone.y : zone.y + Math.max(0, (zone.h - (block.h + g + wh)) / 2);
 		wordsZone = { x: zone.x, y: top, w: zone.w, h: block.h };
 		plan.window = { x: F.x + (F.w - ww) / 2, y: top + block.h + g, w: ww, h: wh };
+		if (bleed) plan.fade = { from: plan.window.y + (H - plan.window.y) * 0.62, to: H };
 	} else plan.block = fitWords(ctx, d, { w: wordsZone.w, h: wordsZone.h * (s.limit || 1) }, aboveH);
 
 	/* The words in their zone. */
@@ -825,7 +848,7 @@ function planFoot(ctx: Ctx, d: Design, content: Rect): FootPlan | null {
 	let rightEdge = right(content);
 	for (const a of d.size.avoid) if (meet({ x: rightEdge - 200, y: y - fs, w: 200, h: fs * 2 }, a) && a.x > content.x + content.w / 2) rightEdge = a.x - fs;
 	let leftEdge = content.x;
-	for (const a of d.size.avoid) if (a.x <= 1 && meet({ x: content.x, y: y - fs * 2, w: 300, h: fs * 3 }, a)) leftEdge = Math.max(leftEdge, right(a) + fs);
+	for (const a of d.size.avoid) if (a.x <= 1 && a.w < d.w / 2 && meet({ x: content.x, y: y - fs * 2, w: 300, h: fs * 3 }, a)) leftEdge = Math.max(leftEdge, right(a) + fs);
 	const left = !hidden(d, 'note') && d.note ? d.note : '';
 	if (left) {
 		const role = roleFor('mono', left, 'note');
@@ -868,7 +891,7 @@ function planStacks(d: Design, plan: Plan, u: number, mirror: boolean): StackPla
 	const S = Math.min(F.w, F.h);
 	const scale = scaleOf(d, 'art');
 	const o = offset(d, 'art');
-	const keep = [plan.words, ...(plan.window ? [plan.window] : []), ...(plan.logo ? [plan.logo.rect] : []), ...(plan.corner ? [plan.corner.rect] : []), ...(plan.foot ? [{ x: plan.content.x, y: plan.foot.y - plan.foot.fs * 1.8, w: plan.content.w, h: plan.foot.fs * 3 }] : [])];
+	const keep = [plan.words, ...(plan.window ? [plan.window] : []), ...(plan.fade && plan.window ? [{ x: plan.window.x - 64 * u, y: plan.fade.from, w: plan.window.w + 128 * u, h: d.h - plan.fade.from }] : []), ...(plan.logo ? [plan.logo.rect] : []), ...(plan.corner ? [plan.corner.rect] : []), ...(plan.foot ? [{ x: plan.content.x, y: plan.foot.y - plan.foot.fs * 1.8, w: plan.content.w, h: plan.foot.fs * 3 }] : [])];
 	const pad = 0.028 * S;
 	const bounds = inset(F, 0.012 * S);
 	const boxOf = (src: StackPlan['src'], cx: number, cy: number, w: number): Rect => ({ x: cx - w / 2, y: cy - (w * STACK_RATIO[src]) / 2, w, h: w * STACK_RATIO[src] });
@@ -882,14 +905,18 @@ function planStacks(d: Design, plan: Plan, u: number, mirror: boolean): StackPla
 	if (s.stacks === 'panel' && plan.panel) {
 		const p = plan.panel;
 		const vis = intersect(p, { x: F.x, y: 0, w: F.w, h: d.h });
-		const w = Math.min(vis.w * 0.72, (vis.h * 0.8) / STACK_RATIO['stack-tall']);
-		finish('stack-tall', boxOf('stack-tall', vis.x + vis.w / 2, vis.y + vis.h / 2, w), mirror, 0);
+		/* As tall as the posts tool sets it, nearly the panel's height; clear of a covered corner. */
+		const w = Math.min(vis.w * 0.78, (vis.h * 0.9) / STACK_RATIO['stack-tall']);
+		let cx = vis.x + vis.w / 2;
+		const box = boxOf('stack-tall', cx, vis.y + vis.h / 2, w);
+		for (const a of d.size.avoid) if (a.x <= 1 && a.w < d.w / 2 && meet(box, a)) cx = Math.min(right(vis) - w / 2, Math.max(cx, right(a) + 0.02 * S + w / 2));
+		finish('stack-tall', boxOf('stack-tall', cx, vis.y + vis.h / 2, w), mirror, 0);
 		return out;
 	}
 	if (s.stacks === 'floor' && plan.floorY !== null) {
 		const onRight = s.align === 'left';
 		for (let w = (F.h / F.w > 1.15 ? 420 : 260) * u; w > 110 * u; w *= 0.93) {
-			const start = Math.max(plan.content.x, ...d.size.avoid.filter((a) => a.x <= 1 && a.y < (plan.floorY ?? 0) + w).map((a) => right(a) + 0.03 * S));
+			const start = Math.max(plan.content.x, ...d.size.avoid.filter((a) => a.x <= 1 && a.w < d.w / 2 && a.y < (plan.floorY ?? 0) + w).map((a) => right(a) + 0.03 * S));
 			const cx = onRight ? right(plan.content) - w / 2 : start + w / 2;
 			const r = boxOf('stack-wide', cx, plan.floorY - w * 0.04, w);
 			if (clear(r) && inside(r, inset(F, 2))) {
@@ -1322,7 +1349,17 @@ export async function drawDesign(ctx: Ctx, d: Design, picture: Pic | null, mo?: 
 		ctx.translate(0, (1 - p) * 40 * u);
 		paintWindow(ctx, d, r, u, picture ?? scene, C.line);
 		ctx.restore();
-		report(picture ? 'picture' : 'window', 'key', r);
+		if (plan.fade && !picture) {
+			/* The window fades into the ground before the foot: the ground, clear at the top of the band, solid at the edge. */
+			const pad = 64 * u;
+			const grad = ctx.createLinearGradient(0, plan.fade.from, 0, plan.fade.to);
+			grad.addColorStop(0, color(`${imageDoc().themes[d.theme]!.bg}/0`));
+			grad.addColorStop(0.75, color(`${imageDoc().themes[d.theme]!.bg}/0.92`));
+			grad.addColorStop(1, C.bg);
+			ctx.fillStyle = grad;
+			ctx.fillRect(r.x - pad, plan.fade.from, r.w + 2 * pad, H - plan.fade.from + 1);
+			report('window', 'art', r, { fades: true });
+		} else report(picture ? 'picture' : 'window', 'key', r);
 	}
 
 	if (d.template !== 'avatar') await paintWords(ctx, d, plan, C, report, mo, clear);
