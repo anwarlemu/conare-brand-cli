@@ -54,12 +54,6 @@ const rules = [
       </div>
     </section>
 
-    <section class="flex flex-col gap-4" aria-labelledby="file">
-      <SectionHead id="file" title="The file" />
-      <p class="max-w-170 type-ui text-fg-soft">Only what was asked for: the copy, the theme, the size and each layer's edit, with the history for undo. No timestamps, so the same steps write the same bytes. Never edit the PNG or SVG by hand; change the file.</p>
-      <CodeBlock :samples="[{ label: 'banner.design.json', code: d.file }]" label="design file" />
-    </section>
-
     <section class="flex flex-col gap-4" aria-labelledby="commands">
       <SectionHead id="commands" title="Commands" />
       <Table framed label="design commands">
@@ -80,5 +74,11 @@ const rules = [
         </tbody>
       </Table>
     </section>
+    <section class="flex flex-col gap-4" aria-labelledby="file">
+      <SectionHead id="file" title="The file" />
+      <p class="max-w-170 type-ui text-fg-soft">Only what was asked for: the copy, the theme, the size and each layer's edit, with the history for undo. No timestamps, so the same steps write the same bytes. Never edit the PNG or SVG by hand; change the file.</p>
+      <CodeBlock :samples="[{ label: 'banner.design.json', code: d.file }]" label="design file" />
+    </section>
+
   </div>
 </template>
