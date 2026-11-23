@@ -82,7 +82,8 @@ if (video.hasFfmpeg()) {
 		[['revise', 'banner.design.json', 'left align the headline'], 'Words set left; the logo follows'],
 		[['edit', 'banner.design.json', '--set', 'badge=Now in beta'], 'A badge'],
 		[['revise', 'banner.design.json', 'paper theme, hide the guides'], 'Paper, without the guides'],
-		[['revise', 'banner.design.json', 'headline a bit bigger'], 'A bigger headline, set again'],
+		[['revise', 'banner.design.json', 'smaller headline'], 'A smaller headline, set again in the same column'],
+		[['revise', 'banner.design.json', 'headline a bit bigger'], 'A bit bigger: larger type, the same column'],
 	];
 	const shell = (argv) => argv.map((a) => (/[\s"]/.test(a) ? `"${a}"` : a)).join(' ');
 	for (const [i, [argv, label]] of steps.entries()) {
