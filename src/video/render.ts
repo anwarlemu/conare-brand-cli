@@ -8,6 +8,7 @@ import { rasterize } from '../image/render.js';
 import { theme, type GroundId, type Theme } from '../image/spec.js';
 import { blockHeight, capHeight, descent, fit, measure, withStop, type Fitted } from '../image/text.js';
 import { contrast } from '../assets/canvas.js';
+import { mostWords } from '../assets/words.js';
 import { CopyError, roleFor } from '../assets/glyphs.js';
 import { muxMjpeg } from './mp4.js';
 import { refuseVideo, videoSize, VIDEO_FPS, VIDEO_FRAMES, VIDEO_JPEG_QUALITY, type VideoSize, type VideoSizeId, type VideoTemplateId } from './spec.js';
@@ -223,8 +224,7 @@ function textBody(req: VideoRequest, size: VideoSize, palette: Theme, loaded: Fa
 	if (!found) {
 		const what = showSub && search(title, '') ? 'text' : 'title';
 		const words = (what === 'text' ? sub : title).split(/\s+/);
-		let n = words.length - 1;
-		while (n > 0 && !(what === 'text' ? search(title, words.slice(0, n).join(' ')) : search(words.slice(0, n).join(' '), ''))) n--;
+		const n = mostWords(words.length, (k) => k > 0 && Boolean(what === 'text' ? search(title, words.slice(0, k).join(' ')) : search(words.slice(0, k).join(' '), '')));
 		throw new CopyError(`The ${what} does not fit ${req.template} at ${size.id}. Shorten it to about ${Math.max(1, n)} words.`);
 	}
 	const head = found.head;

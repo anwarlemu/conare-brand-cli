@@ -59,6 +59,18 @@ export function readBack(asked: string, lines: Line[], stop = false): string {
 	return bare(drawn) === bare(asked) ? asked : drawn;
 }
 
+/** The most words (fewer than `n`) for which `fits` holds, found by halving: what to shorten copy to. 0 when none fit. */
+export function mostWords(n: number, fits: (count: number) => boolean): number {
+	let lo = 0;
+	let hi = n - 1;
+	while (lo < hi) {
+		const mid = Math.ceil((lo + hi) / 2);
+		if (fits(mid)) lo = mid;
+		else hi = mid - 1;
+	}
+	return lo;
+}
+
 /** The plain words of a headline, stars removed, as they are read. */
 export const plain = (s: string) => s.split('\n').map((l) => lineText(parseLine(l))).join(' ').replace(/\s+/g, ' ').trim();
 

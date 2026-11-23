@@ -6,7 +6,7 @@ import { color, font, rgbOf, surface, toPng, toSvg, type Ctx } from './canvas.js
 import { CopyError, roleFor, type FaceRole } from './glyphs.js';
 import { pick } from './io.js';
 import { imagesToPdf } from './pdf.js';
-import { plain, setLines } from './words.js';
+import { mostWords, plain, setLines } from './words.js';
 import type { DrawnLayer } from '../design/types.js';
 import { emphasise, imageDoc } from './og.js';
 import { drawSubject } from '../illustrate/draw.js';
@@ -17,7 +17,7 @@ import { drawSubject } from '../illustrate/draw.js';
 
 export const PX_PER_IN = 300;
 type B = [number, number, number, number];
-type Layer = { fixed?: boolean } & (
+type Layer = { fixed?: boolean; only?: 'one' } & (
 	| { type: 'logo'; part: 'primary' | 'mark'; box: B }
 	| { type: 'text'; slot: string; box: B; size: number; face: 'display' | 'mono' }
 	| { type: 'art'; subject: string; shape?: 'tall' | 'wide'; box: B; bleed?: boolean }
@@ -78,8 +78,7 @@ function setText(ctx: Ctx, item: MerchItem, l: TextLayer, value: string, b: Rect
 		if (size <= floor) break;
 	}
 	const words = text.split(/\s+/);
-	let n = words.length - 1;
-	while (n > 0 && !at(floor, words.slice(0, n).join(' ')).ok) n--;
+	const n = mostWords(words.length, (k) => k > 0 && at(floor, words.slice(0, k).join(' ')).ok);
 	throw new CopyError(`The ${l.slot} does not fit the ${item.id}. Shorten it to about ${Math.max(1, n)} words.`);
 }
 
@@ -111,15 +110,15 @@ function paintText(ctx: Ctx, l: TextLayer, t: SetText, b: Rect, ink: string, hi:
 
 /* What an item draws in a variant, with the boxes of parts that are missing closed up. */
 function placedLayers(item: MerchItem, v: Variant, slots: Record<string, string>): { layer: Layer; box: B }[] {
-	const drawn = (l: Layer) => (l.type === 'art' ? !v.one : l.type === 'text' ? Boolean((slots[l.slot] ?? '').trim()) : true);
+	const drawn = (l: Layer) => (l.only === 'one' && !v.one ? false : l.type === 'art' ? !v.one : l.type === 'text' ? Boolean((slots[l.slot] ?? '').trim()) : true);
 	const list = item.layers.filter(drawn).map((layer) => ({ layer, box: [...layer.box] as B }));
-	const missing = item.layers.filter((l) => !drawn(l) && !(l.type === 'art' && l.bleed));
+	const missing = item.layers.filter((l) => !drawn(l) && !(l.type === 'art' && l.bleed) && !(l.only === 'one' && !v.one));
 	if (!missing.length || !item.flow) return list;
 	const moving = list.filter((p) => !p.layer.fixed && !(p.layer.type === 'art' && p.layer.bleed)).sort((a, b) => a.box[1] - b.box[1]);
 	if (!moving.length) return list;
 	/* Stack what is left with the gaps it had; a middle flow keeps the group round the middle of the print. */
-	let y = Math.min(...item.layers.filter((l) => !l.fixed && !(l.type === 'art' && l.bleed)).map((l) => l.box[1]));
-	const all = item.layers.filter((l) => !l.fixed && !(l.type === 'art' && l.bleed)).sort((a, b) => a.box[1] - b.box[1]);
+	let y = Math.min(...item.layers.filter((l) => !l.fixed && !(l.type === 'art' && l.bleed) && (l.only !== 'one' || v.one)).map((l) => l.box[1]));
+	const all = item.layers.filter((l) => !l.fixed && !(l.type === 'art' && l.bleed) && (l.only !== 'one' || v.one)).sort((a, b) => a.box[1] - b.box[1]);
 	const gap = Math.max(0.5, Math.min(1.2, ...all.slice(1).map((l, i) => l.box[1] - (all[i]!.box[1] + all[i]!.box[3])).filter((g) => g > 0)));
 	for (const p of moving) {
 		p.box[1] = y;

@@ -6,7 +6,7 @@ import { CopyError, roleFor, type FaceRole } from './glyphs.js';
 import { BADGES, customSize, imageDoc, largeType, LAYOUTS, logoFloor, sizeIds, sizeOf, sizesFor, smallFloor, specFor, unitOf, type Align, type BadgeStyle, type Layout, type Size, type Spec } from './layouts.js';
 import { duration, mix, progress, settle } from './motion.js';
 import { drawPanel, PANEL_H, PANEL_W } from './panel.js';
-import { asTyped, plain, readBack, setLines, type Line } from './words.js';
+import { asTyped, mostWords, plain, readBack, setLines, type Line } from './words.js';
 
 // The share images, ported from the agd-playground posts tool (draw.ts and app.ts): a ground, the perspective room,
 // the wordmark tile, the hollow wordmark, hatching, guides, a border, the product window, the words with their badge,
@@ -451,8 +451,7 @@ function tooLong(ctx: Ctx, d: Design, box: { w: number; h: number }, logoH: numb
 	};
 	const cut = (key: 'headline' | 'body') => {
 		const words = plain(d[key]).split(' ');
-		for (let n = words.length - 1; n > 0; n--) if (fitsWith({ [key]: words.slice(0, n).join(' ') })) return n;
-		return 0;
+		return mostWords(words.length, (n) => n > 0 && fitsWith({ [key]: words.slice(0, n).join(' ') }));
 	};
 	if (d.items.length && !fitsWith({ items: d.items.slice(0, 1) })) return new CopyError(`The points do not fit ${at}. Shorten them.`);
 	if (d.items.length) {

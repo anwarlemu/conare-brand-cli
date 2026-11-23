@@ -8,6 +8,7 @@ import { largeType, logoFloor, smallFloor, unitOf } from '../assets/layouts.js';
 import type { Face, Faces } from './fonts.js';
 import { faces } from './fonts.js';
 import { paperTheme, theme, type GroundId, type SizeSpec, type TemplateId, type Theme } from './spec.js';
+import { mostWords } from '../assets/words.js';
 import { blockHeight, capHeight, descent, fit, measure, normalize, withStop } from './text.js';
 
 // Layouts follow the site: the heading face with a red full stop, the red tag for an eyebrow, the text face
@@ -140,8 +141,7 @@ class Card {
 
 	private tooLong(what: 'headline' | 'body' | 'badge' | 'name', text: string, ok: (t: string) => boolean): CopyError {
 		const words = text.split(/\s+/);
-		let n = words.length - 1;
-		while (n > 0 && !ok(words.slice(0, n).join(' '))) n--;
+		const n = mostWords(words.length, (k) => ok(words.slice(0, k).join(' ')));
 		const at = `${this.copy.template} at ${this.size.id}`;
 		return new CopyError(n > 0 ? `The ${what} does not fit ${at}. Shorten it to about ${n} word${n === 1 ? '' : 's'}.` : `The ${what} does not fit ${at}. Shorten it.`);
 	}
