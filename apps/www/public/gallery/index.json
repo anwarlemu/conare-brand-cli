@@ -3,42 +3,42 @@
     {
       "id": "hero",
       "label": "Homepage",
-      "description": "The homepage: a red label, the headline centered with its red full stop, a grey line, the lockup above, hairline guides and a quiet footer.",
+      "description": "The homepage: the headline centered with its red full stop, a label over it, a grey line under it, the lockup above, hairline guides and the address at the foot.",
       "theme": "white",
       "src": "/gallery/image-hero.png",
       "width": 1200,
       "height": 630,
-      "command": "conare-ds image --template hero --title \"Everything your agent needs to know.\""
+      "command": "conare-ds image hero --headline \"Everything your agent needs to know.\" --body \"Conare finds the right answer in any data you bring, for your agents and the products you build on them.\" --badge \"Search across 100M+ documents\" --note \"SOC 2 Type I · GDPR\""
     },
     {
       "id": "brief",
       "label": "Brief",
-      "description": "The formal statement: the lockup top left, a red-marked line in mono capitals top right, the words set left, a hairline and the footer.",
+      "description": "The formal statement: the lockup top left, a red-marked line in mono capitals top right, the words set left, a hairline and the address.",
       "theme": "white",
       "src": "/gallery/image-brief.png",
       "width": 1200,
       "height": 630,
-      "command": "conare-ds image --template brief --title \"Everything your agent needs to know.\""
+      "command": "conare-ds image brief --headline \"Everything your agent needs to know.\" --body \"Conare finds the right answer in any data you bring, for your agents and the products you build on them.\" --badge \"Announcement\" --note \"SOC 2 Type I · GDPR\""
     },
     {
       "id": "tile",
       "label": "Tile",
-      "description": "The wordmark as a tile in a bordered panel, a stack of documents on it, the words set left.",
+      "description": "The wordmark as a tile in a bordered panel, a stack of documents on it, the words beside it.",
       "theme": "paper",
       "src": "/gallery/image-tile.png",
       "width": 1200,
       "height": 630,
-      "command": "conare-ds image --template tile --title \"Everything your agent needs to know.\""
+      "command": "conare-ds image tile --headline \"Everything your agent needs to know.\" --badge \"Search across 100M+ documents\""
     },
     {
       "id": "app",
       "label": "Product",
-      "description": "Words over the dark agent panel, on the perspective room, stacks of documents at the sides.",
+      "description": "Words with the dark agent window (or your picture) on the perspective room, stacks of documents at the sides.",
       "theme": "red",
       "src": "/gallery/image-app.png",
       "width": 1200,
       "height": 630,
-      "command": "conare-ds image --template app --title \"Everything your agent needs to know.\""
+      "command": "conare-ds image app --headline \"Everything your agent needs to know.\" --badge \"Search across 100M+ documents\""
     },
     {
       "id": "outline",
@@ -48,17 +48,17 @@
       "src": "/gallery/image-outline.png",
       "width": 1200,
       "height": 630,
-      "command": "conare-ds image --template outline --title \"Everything your agent needs to know.\""
+      "command": "conare-ds image outline --headline \"Everything your agent needs to know.\" --badge \"Search across 100M+ documents\""
     },
     {
       "id": "hatch",
       "label": "Hatched",
-      "description": "Fine hatching across the floor, a wide stack on it, the words set right.",
+      "description": "Fine hatching across the floor, a wide stack standing on it, the words set right.",
       "theme": "paper",
       "src": "/gallery/image-hatch.png",
       "width": 1200,
       "height": 630,
-      "command": "conare-ds image --template hatch --title \"Everything your agent needs to know.\""
+      "command": "conare-ds image hatch --headline \"Everything your agent needs to know.\" --badge \"Search across 100M+ documents\""
     },
     {
       "id": "room",
@@ -68,7 +68,7 @@
       "src": "/gallery/image-room.png",
       "width": 1200,
       "height": 630,
-      "command": "conare-ds image --template room --title \"Everything your agent needs to know.\""
+      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --body \"Conare finds the right answer in any data you bring, for your agents and the products you build on them.\" --badge \"Search across 100M+ documents\""
     },
     {
       "id": "feature",
@@ -78,7 +78,7 @@
       "src": "/gallery/image-feature.png",
       "width": 1200,
       "height": 630,
-      "command": "conare-ds image --template feature --title \"Reranking on every query.\""
+      "command": "conare-ds image feature --headline \"Reranking on every query.\" --body \"conare-rerank-1 orders retrieved passages by relevance before they reach your agent, within the same API and the same security controls.\" --badge \"Product update\""
     },
     {
       "id": "partner",
@@ -88,7 +88,7 @@
       "src": "/gallery/image-partner.png",
       "width": 1200,
       "height": 630,
-      "command": "conare-ds image --template partner --title \"Conare now connects to Acme.\""
+      "command": "conare-ds image partner --headline \"Conare now connects to Acme.\" --body \"Acme data is indexed, kept in sync and searchable through the same API key.\" --badge \"Integration\" --partner \"Acme\""
     },
     {
       "id": "funding",
@@ -98,7 +98,7 @@
       "src": "/gallery/image-funding.png",
       "width": 1200,
       "height": 630,
-      "command": "conare-ds image --template funding --title \"Search across 100M+ documents.\""
+      "command": "conare-ds image funding --headline \"Search across 100M+ documents.\" --body \"Each one synced, parsed, embedded and returned with its source.\" --badge \"Milestone\""
     },
     {
       "id": "announce",
@@ -108,7 +108,7 @@
       "src": "/gallery/image-announce.png",
       "width": 1200,
       "height": 630,
-      "command": "conare-ds image --template announce --title \"Build retrieval for the enterprise.\""
+      "command": "conare-ds image announce --headline \"Build retrieval for the enterprise.\" --badge \"Careers\""
     },
     {
       "id": "card",
@@ -118,33 +118,43 @@
       "src": "/gallery/image-card.png",
       "width": 1200,
       "height": 630,
-      "command": "conare-ds image --template card --title \"Reranking on every query.\""
+      "command": "conare-ds image card --headline \"Reranking on every query.\" --body \"conare-rerank-1 orders retrieved passages by relevance before they reach your agent, within the same API and the same security controls.\" --badge \"NEW\" --note \"SOC 2 Type I · GDPR\""
+    },
+    {
+      "id": "avatar",
+      "label": "Profile picture",
+      "description": "The mark alone, centered on the theme, inside the circle a profile picture is cropped to.",
+      "theme": "red",
+      "src": "/gallery/image-avatar.png",
+      "width": 800,
+      "height": 800,
+      "command": "conare-ds image avatar --size avatar"
     }
   ],
   "sizes": [
     {
       "id": "square",
-      "label": "Square feed",
+      "label": "Square post",
       "src": "/gallery/size-room-square.png",
       "width": 1080,
       "height": 1080,
-      "command": "conare-ds image --template room --size square"
+      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size square"
     },
     {
       "id": "portrait",
-      "label": "Portrait 4:5",
+      "label": "Portrait post",
       "src": "/gallery/size-room-portrait.png",
       "width": 1080,
       "height": 1350,
-      "command": "conare-ds image --template room --size portrait"
+      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size portrait"
     },
     {
       "id": "story",
-      "label": "Story 9:16",
+      "label": "Story",
       "src": "/gallery/size-room-story.png",
       "width": 1080,
       "height": 1920,
-      "command": "conare-ds image --template room --size story"
+      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size story"
     },
     {
       "id": "x-banner",
@@ -152,34 +162,34 @@
       "src": "/gallery/size-room-x-banner.png",
       "width": 1500,
       "height": 500,
-      "command": "conare-ds image --template room --size x-banner"
+      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size x-banner"
     },
     {
       "id": "linkedin-banner",
-      "label": "LinkedIn profile banner",
+      "label": "LinkedIn profile cover",
       "src": "/gallery/size-room-linkedin-banner.png",
       "width": 1584,
       "height": 396,
-      "command": "conare-ds image --template room --size linkedin-banner"
+      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size linkedin-banner"
     },
     {
       "id": "email",
       "label": "Email header",
       "src": "/gallery/size-room-email.png",
       "width": 1200,
-      "height": 300,
-      "command": "conare-ds image --template room --size email"
+      "height": 400,
+      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size email"
     }
   ],
   "slides": [
     {
       "id": "cover",
       "label": "Cover",
-      "description": "The homepage layout: the lockup, a red label, the title centered with its red stop, a line under it and the footer.",
+      "description": "The homepage layout: the lockup, the title centered with its red stop, a red label, a line under it and the address.",
       "src": "/gallery/slide-cover.png",
       "width": 1920,
       "height": 1080,
-      "command": "conare-ds deck cover"
+      "command": "conare-ds deck cover --sample"
     },
     {
       "id": "section",
@@ -188,7 +198,7 @@
       "src": "/gallery/slide-section.png",
       "width": 1920,
       "height": 1080,
-      "command": "conare-ds deck section"
+      "command": "conare-ds deck section --sample"
     },
     {
       "id": "statement",
@@ -197,7 +207,7 @@
       "src": "/gallery/slide-statement.png",
       "width": 1920,
       "height": 1080,
-      "command": "conare-ds deck statement"
+      "command": "conare-ds deck statement --sample"
     },
     {
       "id": "bullets",
@@ -206,7 +216,7 @@
       "src": "/gallery/slide-bullets.png",
       "width": 1920,
       "height": 1080,
-      "command": "conare-ds deck bullets"
+      "command": "conare-ds deck bullets --sample"
     },
     {
       "id": "stat",
@@ -215,7 +225,7 @@
       "src": "/gallery/slide-stat.png",
       "width": 1920,
       "height": 1080,
-      "command": "conare-ds deck stat"
+      "command": "conare-ds deck stat --sample"
     },
     {
       "id": "quote",
@@ -224,16 +234,16 @@
       "src": "/gallery/slide-quote.png",
       "width": 1920,
       "height": 1080,
-      "command": "conare-ds deck quote"
+      "command": "conare-ds deck quote --sample"
     },
     {
       "id": "image",
       "label": "Image",
-      "description": "A label, a title and a line, and a picture in the product window (the stand-in scene without one).",
+      "description": "A title, a label and a line, and your picture in the product window (a wordless stand-in scene without one).",
       "src": "/gallery/slide-image.png",
       "width": 1920,
       "height": 1080,
-      "command": "conare-ds deck image"
+      "command": "conare-ds deck image --sample"
     },
     {
       "id": "end",
@@ -242,7 +252,7 @@
       "src": "/gallery/slide-end.png",
       "width": 1920,
       "height": 1080,
-      "command": "conare-ds deck end"
+      "command": "conare-ds deck end --sample"
     }
   ],
   "illustrations": [
@@ -362,8 +372,8 @@
       "safe": 0.125,
       "method": "embroidery",
       "src": "/gallery/merch-cap-front.png",
-      "width": 200,
-      "height": 88,
+      "width": 288,
+      "height": 126,
       "command": "conare-ds merch cap-front --variant black"
     },
     {
@@ -381,8 +391,8 @@
       "safe": 0.5,
       "method": "DTG or screen print",
       "src": "/gallery/merch-tee-front.png",
-      "width": 600,
-      "height": 800,
+      "width": 864,
+      "height": 1152,
       "command": "conare-ds merch tee-front --variant color"
     },
     {
@@ -399,9 +409,9 @@
       "safe": 0.5,
       "method": "DTG or screen print",
       "src": "/gallery/merch-tee-back.png",
-      "width": 600,
-      "height": 800,
-      "command": "conare-ds merch tee-back --variant color"
+      "width": 864,
+      "height": 1152,
+      "command": "conare-ds merch tee-back --variant color --sample"
     },
     {
       "id": "hoodie-front",
@@ -418,8 +428,8 @@
       "safe": 0.5,
       "method": "DTG or screen print",
       "src": "/gallery/merch-hoodie-front.png",
-      "width": 600,
-      "height": 500,
+      "width": 864,
+      "height": 720,
       "command": "conare-ds merch hoodie-front --variant color"
     },
     {
@@ -436,8 +446,8 @@
       "safe": 0.5,
       "method": "screen print or DTG",
       "src": "/gallery/merch-tote.png",
-      "width": 600,
-      "height": 700,
+      "width": 864,
+      "height": 1008,
       "command": "conare-ds merch tote --variant color"
     },
     {
@@ -454,8 +464,8 @@
       "safe": 0.25,
       "method": "sublimation",
       "src": "/gallery/merch-mug-wrap.png",
-      "width": 463,
-      "height": 188,
+      "width": 666,
+      "height": 270,
       "command": "conare-ds merch mug-wrap --variant red"
     },
     {
@@ -472,8 +482,8 @@
       "safe": 0.125,
       "method": "die-cut vinyl",
       "src": "/gallery/merch-sticker.png",
-      "width": 163,
-      "height": 100,
+      "width": 234,
+      "height": 144,
       "command": "conare-ds merch sticker --variant red"
     },
     {
@@ -490,9 +500,9 @@
       "safe": 0.5,
       "method": "digital or offset print",
       "src": "/gallery/merch-poster.png",
-      "width": 913,
-      "height": 1213,
-      "command": "conare-ds merch poster --variant red"
+      "width": 1314,
+      "height": 1746,
+      "command": "conare-ds merch poster --variant red --sample"
     }
   ],
   "videos": [
@@ -503,7 +513,7 @@
       "poster": "/gallery/video-hero.png",
       "width": 1200,
       "height": 630,
-      "command": "conare-ds video --template hero --size og --format both"
+      "command": "conare-ds video hero --sample --size og --format both"
     },
     {
       "id": "room",
@@ -512,7 +522,76 @@
       "poster": "/gallery/video-room.png",
       "width": 1080,
       "height": 1080,
-      "command": "conare-ds video --template room --size square --format both"
+      "command": "conare-ds video room --sample --size square --format both"
     }
-  ]
+  ],
+  "design": {
+    "steps": [
+      {
+        "step": 1,
+        "label": "A new X header",
+        "src": "/gallery/design-1.png",
+        "width": 1500,
+        "height": 500,
+        "command": "conare-ds design new hero --size x-banner --headline \"Every answer comes back with its source\" --body \"Search across the documents you connect, from one API.\" -o banner.design.json"
+      },
+      {
+        "step": 2,
+        "label": "Bigger logo",
+        "src": "/gallery/design-2.png",
+        "width": 1500,
+        "height": 500,
+        "command": "conare-ds design revise banner.design.json \"bigger logo\""
+      },
+      {
+        "step": 3,
+        "label": "Words set left; the logo follows",
+        "src": "/gallery/design-3.png",
+        "width": 1500,
+        "height": 500,
+        "command": "conare-ds design revise banner.design.json \"left align the headline\""
+      },
+      {
+        "step": 4,
+        "label": "A badge",
+        "src": "/gallery/design-4.png",
+        "width": 1500,
+        "height": 500,
+        "command": "conare-ds design edit banner.design.json --set \"badge=Now in beta\""
+      },
+      {
+        "step": 5,
+        "label": "Paper, without the guides",
+        "src": "/gallery/design-5.png",
+        "width": 1500,
+        "height": 500,
+        "command": "conare-ds design revise banner.design.json \"paper theme, hide the guides\""
+      },
+      {
+        "step": 6,
+        "label": "A bigger headline, set again",
+        "src": "/gallery/design-6.png",
+        "width": 1500,
+        "height": 500,
+        "command": "conare-ds design revise banner.design.json \"headline a bit bigger\""
+      }
+    ],
+    "refused": {
+      "command": "conare-ds design revise banner.design.json \"make the logo neon green\"",
+      "message": "Nothing was changed. \"make the logo neon green\": Effects are not part of the brand."
+    },
+    "variants": {
+      "src": "/gallery/design-variants.png",
+      "width": 1920,
+      "height": 856,
+      "command": "conare-ds design variants banner.design.json --by theme"
+    },
+    "sizes": {
+      "src": "/gallery/design-sizes.png",
+      "width": 1920,
+      "height": 1000,
+      "command": "conare-ds design sizes banner.design.json --to og,square,story"
+    },
+    "file": "{\n\t\"version\": 1,\n\t\"brand\": \"conare-ds\",\n\t\"kind\": \"image\",\n\t\"template\": \"hero\",\n\t\"size\": {\n\t\t\"id\": \"x-banner\",\n\t\t\"width\": 1500,\n\t\t\"height\": 500\n\t},\n\t\"theme\": \"paper\",\n\t\"copy\": {\n\t\t\"badge\": \"Now in beta\",\n\t\t\"body\": \"Search across the documents you connect, from one API.\",\n\t\t\"headline\": \"Every answer comes back with its source\"\n\t},\n\t\"images\": {},\n\t\"options\": {},\n\t\"layers\": {\n\t\t\"guides\": {\n\t\t\t\"hidden\": true\n\t\t},\n\t\t\"headline\": {\n\t\t\t\"scale\": 1.08,\n\t\t\t\"align\": \"left\"\n\t\t},\n\t\t\"logo\": {\n\t\t\t\"scale\": 1.2\n\t\t}\n\t},\n\t\"history\": [\n\t\t{\n\t\t\t\"change\": \"bigger logo\",\n\t\t\t\"before\": {\n\t\t\t\t\"layers\": {}\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"left align the headline\",\n\t\t\t\"before\": {\n\t\t\t\t\"layers\": {\n\t\t\t\t\t\"logo\": {\n\t\t\t\t\t\t\"scale\": 1.2\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"badge \\\"Now in beta\\\"\",\n\t\t\t\"before\": {\n\t\t\t\t\"copy\": {\n\t\t\t\t\t\"body\": \"Search across the documents you connect, from one API.\",\n\t\t\t\t\t\"headline\": \"Every answer comes back with its source\"\n\t\t\t\t}\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"paper theme, hide the guides\",\n\t\t\t\"before\": {\n\t\t\t\t\"theme\": \"white\",\n\t\t\t\t\"layers\": {\n\t\t\t\t\t\"headline\": {\n\t\t\t\t\t\t\"align\": \"left\"\n\t\t\t\t\t},\n\t\t\t\t\t\"logo\": {\n\t\t\t\t\t\t\"scale\": 1.2\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"headline a bit bigger\",\n\t\t\t\"before\": {\n\t\t\t\t\"layers\": {\n\t\t\t\t\t\"guides\": {\n\t\t\t\t\t\t\"hidden\": true\n\t\t\t\t\t},\n\t\t\t\t\t\"headline\": {\n\t\t\t\t\t\t\"align\": \"left\"\n\t\t\t\t\t},\n\t\t\t\t\t\"logo\": {\n\t\t\t\t\t\t\"scale\": 1.2\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t],\n\t\"future\": []\n}\n"
+  }
 }
