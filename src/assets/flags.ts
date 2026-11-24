@@ -91,7 +91,7 @@ export const stemOf = (named: string) => named.replace(/\.(png|svg|jpe?g|webp)$/
 
 /** A note when a raster file is over what the platform takes. */
 export function overLimit(s: Size, bytes: number, path: string): string | undefined {
-	const limit = platformOf(s.id, s.w, s.h).limit;
+	const limit = s.limit ?? platformOf(s.id, s.w, s.h).limit;
 	if (!limit || bytes <= limit.bytes) return undefined;
 	return `${path} is ${(bytes / 1048576).toFixed(1)} MB; ${s.label} takes ${(limit.bytes / 1048576).toFixed(0)} MB${limit.official ? '' : ' (approximate)'}. Write it as jpg or webp (--format jpg).`;
 }

@@ -12,7 +12,7 @@ import type { FaceRole } from './glyphs.js';
 export type ThemeDoc = { label: string; bg: string; ink: string; muted: string; line: string; tile: string; tileAlpha: number; border: string; room: string; dark: boolean; onAccent?: { highlight?: string; badgeFill?: string; badgeInk?: string } };
 export type Sample = { headline?: string; body?: string; badge?: string; partner?: string; note?: string };
 type TemplateDoc = { label: string; description: string; theme: string; badge: BadgeStyle; sample: Sample };
-type SizeDoc = { w?: number; h?: number; label?: string; frame?: number[]; safe?: number[]; clear?: number[] };
+type SizeDoc = { w?: number; h?: number; label?: string; frame?: number[]; safe?: number[]; clear?: number[]; shown?: number; avoid?: number[][]; limitMb?: number; note?: string };
 export type ImageDoc = {
 	themes: Record<string, ThemeDoc>;
 	tones: Record<string, string>;
@@ -43,16 +43,18 @@ export type Align = 'left' | 'center' | 'right';
 /* ------------------------------------------------------------ sizes */
 
 /** A size ready to draw on: the canvas, the frame everything seen stays in, what the platform covers, and how wide it is shown. */
-export type Size = { id: string; w: number; h: number; label: string; frame: Rect; /** The frame clear of everything the platform covers (for engines that do not place round it). */ clear?: Rect; safe: Rect; avoid: Rect[]; shown: number; note?: string };
+export type Size = { id: string; w: number; h: number; label: string; frame: Rect; /** The frame clear of everything the platform covers (for engines that do not place round it). */ clear?: Rect; safe: Rect; avoid: Rect[]; shown: number; note?: string; /** The largest file the platform takes, in bytes. */ limit?: { bytes: number; official: boolean } };
 
 const rect = (a: number[]): Rect => ({ x: a[0]!, y: a[1]!, w: a[2]!, h: a[3]! });
 
 function sizeFrom(id: string): Size {
 	const own = imageDoc().sizes[id] ?? {};
-	const p = PLATFORMS.find((x) => x.id === id) ?? platformOf(id, own.w!, own.h!);
+	const base = PLATFORMS.find((x) => x.id === id) ?? platformOf(id, own.w!, own.h!);
+	/* A size of this brand's own (an ad, a wallpaper) brings its own shown width, covered parts and note. */
+	const p = PLATFORMS.some((x) => x.id === id) ? base : { ...base, label: own.label ?? base.label, shown: Math.min(own.shown ?? base.shown, base.shown) /* the shared check reads sizes it does not know as shown at least 540 px wide */, avoid: (own.avoid ?? []).map((a) => ({ name: 'what the platform covers', official: false, rect: { x: a[0]! / base.width, y: a[1]! / base.height, w: a[2]! / base.width, h: a[3]! / base.height } })), note: own.note, ...(own.limitMb ? { limit: { bytes: own.limitMb * 1048576, official: false } } : {}) };
 	const full = { x: 0, y: 0, w: p.width, h: p.height };
 	const frame = own.frame ? rect(own.frame) : full;
-	return { id, w: p.width, h: p.height, label: own.label ?? p.label, frame, ...(own.clear ? { clear: rect(own.clear) } : {}), safe: own.safe ? rect(own.safe) : frame, avoid: p.avoid.map((z) => zonePx(z, p.width, p.height)), shown: p.shown, note: p.avoid.length || p.safe ? p.note : undefined };
+	return { id, w: p.width, h: p.height, label: own.label ?? p.label, frame, ...(own.clear ? { clear: rect(own.clear) } : {}), safe: own.safe ? rect(own.safe) : frame, avoid: p.avoid.map((z) => zonePx(z, p.width, p.height)), shown: p.shown, note: p.avoid.length || p.safe || own.note ? p.note : undefined, limit: p.limit };
 }
 
 export const sizeIds = () => [...PLATFORMS.map((p) => p.id), ...Object.keys(imageDoc().sizes).filter((k) => k !== '$comment' && !PLATFORMS.some((p) => p.id === k))];
