@@ -86,12 +86,15 @@ export function sizeOf(id: string): Size | undefined {
  */
 export const scaleBox = (s: Pick<Size, 'w' | 'h' | 'frame'>) => (s.frame.x > 0 && s.frame.y > 0 && s.frame.h < s.h * 0.5 ? { w: s.frame.w, h: s.frame.h } : { w: s.w, h: s.h });
 
-/** Sizes a layout draws at. The profile picture takes the mark alone; nothing else fits a circle that small. Hatch's box
- * needs a floor beside the words, which a 50 px strip does not have. A video call background keeps its words to the top
+/** Pages and cards for print, and the signature strip: `print`, `email` and compose make them, not the share layouts. */
+export const PRINT_SIZES = ['a4', 'letter', 'business-card', 'email-signature'];
+
+/** Sizes a layout draws at. The profile picture takes the mark alone; nothing else fits a circle that small. Hatch's box,
+ * the app and feature windows and the hollow wordmark need more height than a 50 px strip has. A video call background keeps its words to the top
  * band over the person, where the layouts whose art is a window or the hollow wordmark have no room for it. */
 export function sizesFor(t: Layout): string[] {
 	if (t === 'avatar') return ['avatar'];
-	return sizeIds().filter((id) => id !== 'avatar' && !(t === 'hatch' && (sizeOf(id)?.h ?? 100) < 60) && !(id === 'zoom-background' && ['app', 'feature', 'outline', 'hatch'].includes(t)));
+	return sizeIds().filter((id) => id !== 'avatar' && !PRINT_SIZES.includes(id) && !(['hatch', 'app', 'outline', 'feature'].includes(t) && (sizeOf(id)?.h ?? 100) < 60) && !(id === 'meeting' && ['app', 'feature', 'outline', 'hatch'].includes(t)));
 }
 
 /* One unit: a pixel of the 1200 x 630 link preview, grown with the area. */
@@ -99,8 +102,8 @@ export const unitOf = (W: number, H: number) => Math.sqrt((W * H) / (1200 * 630)
 
 /** The smallest a word may be at a size, so it is read at the width the platform shows the image: 8 px there. */
 export const smallFloor = (w: number, shown: number) => (8 * w) / shown;
-/** Type that counts as large for contrast: 24 px on a 1200 px wide canvas, scaled. */
-export const largeType = (w: number) => (24 * w) / 1200;
+/** Type that counts as large for contrast: 24 px where the image is shown (the shared check's line). */
+export const largeType = (w: number, shown: number) => (24 * w) / shown;
 /** The lockup's legible height at a size: 12 px as shown. */
 export const logoFloor = (w: number, shown: number) => (12 * w) / shown;
 

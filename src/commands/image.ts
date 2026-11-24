@@ -128,7 +128,7 @@ async function runCards(cwd: string, template: string | undefined, sizeArgs: str
 	const sizes = sizesFrom([str(flags.size), ...sizeArgs].filter((x): x is string => Boolean(x)), flags, all);
 	if (!sizes.length) sizes.push(sizeOf('og')!);
 	for (const s of sizes) if (s.id === 'avatar') throw new Error(`${requested.template} does not draw at ${s.id}. Use image avatar for the profile picture.`);
-	for (const s of sizes) if (s.id === 'zoom-background') throw new Error(`${requested.template} does not draw at ${s.id}: a video call background keeps its words to a band over the person. Use a layout (${LAYOUTS.filter((l) => sizesFor(l).includes('zoom-background')).join(', ')}).`);
+	for (const s of sizes) if (s.id === 'meeting') throw new Error(`${requested.template} does not draw at ${s.id}: a video call background keeps its words to a band over the person. Use a layout (${LAYOUTS.filter((l) => sizesFor(l).includes('meeting')).join(', ')}).`);
 	const out = str(flags.out);
 	const { formats, named } = formatsFrom(flags, cwd, out);
 	if (named && sizes.length > 1) throw new Error('--out is a file, so pass one --size. For several images, pass a directory.');

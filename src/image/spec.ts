@@ -1,14 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { packageRoot } from '../lib/brand.js';
-import { imageDoc, sizeIds, sizeOf, type Size } from '../assets/layouts.js';
+import { imageDoc, PRINT_SIZES, sizeIds, sizeOf, type Size } from '../assets/layouts.js';
 
 // Sizes, templates and colors for the image command. Colors resolve from brand/tokens.css, the same file the
 // stylesheet is built from, so a render does not need build/.
 
 /** The share sizes a card draws at: the same ids as the layouts (brand/assets/image.json), the profile picture aside, and
  * the video call background (its words keep to a band over the person, which the layouts fill and a card does not). */
-export const SIZES = sizeIds().filter((id) => id !== 'avatar' && id !== 'zoom-background').map((id) => {
+export const SIZES = sizeIds().filter((id) => id !== 'avatar' && id !== 'meeting' && !PRINT_SIZES.includes(id)).map((id) => {
 	const z = sizeOf(id)!;
 	return { id, width: z.w, height: z.h, description: `${z.label}, ${z.w} by ${z.h}.` };
 });
@@ -59,7 +59,7 @@ export type Theme = {
 
 export function sizeById(id: string): SizeSpec | undefined {
 	const s = sizeOf(id);
-	return s && s.id !== 'avatar' && s.id !== 'zoom-background' ? s : undefined;
+	return s && s.id !== 'avatar' && s.id !== 'meeting' && !PRINT_SIZES.includes(s.id) ? s : undefined;
 }
 
 export function templateById(id: string): TemplateId | undefined {

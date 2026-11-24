@@ -137,7 +137,7 @@ class Card {
 	}
 
 	private headFloor() {
-		return Math.max(largeType(this.size.w), this.small * 1.4);
+		return Math.max(largeType(this.size.w, this.size.shown), this.small * 1.4);
 	}
 
 	private tooLong(what: 'headline' | 'body' | 'badge' | 'name', text: string, ok: (t: string) => boolean): CopyError {
@@ -154,7 +154,7 @@ class Card {
 	}
 
 	/* The mark's row and the address, and the box left for the rest. */
-	private chrome(): { svg: string; top: number; bottom: number; right: number } {
+	private chrome(): { svg: string; top: number; bottom: number; right: number; left: number } {
 		const { r, size, palette, fw, fh } = this;
 		const ultra = fw / fh >= 3.9;
 		const anchor = this.edit('logo').anchor ?? 'bottom-left';
@@ -189,7 +189,8 @@ class Card {
 			const x = onLeft ? r.padX : fw - r.padX - mw;
 			logo(x, (fh - mh) / 2);
 			right = onLeft ? right : x - r.padX * 0.8;
-			return { svg: parts.join(''), top, bottom, right };
+			/* The words start after a mark set at the left end. */
+			return { svg: parts.join(''), top, bottom, right, left: onLeft ? x + mw + r.padX * 0.8 : r.padX };
 		}
 		const topRow = anchor.startsWith('top');
 		const atRight = anchor.endsWith('right');
@@ -214,7 +215,7 @@ class Card {
 			else address(topRow && atRight ? edge : r.padX, rowY + rowH / 2, url, topRow && atRight);
 			bottom = ruleY - r.ruleGap;
 		}
-		return { svg: parts.join(''), top, bottom, right };
+		return { svg: parts.join(''), top, bottom, right, left: r.padX };
 	}
 
 	private headlineBox(text: string, size: number, lines: string[], face: Face, leading: number): Box {
@@ -252,7 +253,7 @@ class Card {
 		const padY = Math.round(s * 0.36);
 		const height = Math.ceil(cap + padY * 2);
 		const boxW = Math.min(column, Math.ceil(width(s)));
-		const fill = contrast(p.onAccent, p.accent) >= 4.5 || s >= largeType(this.size.w) ? p.accent : p.accentSmall;
+		const fill = contrast(p.onAccent, p.accent) >= 4.5 || s >= largeType(this.size.w, this.size.shown) ? p.accent : p.accentSmall;
 		const o = this.off('badge');
 		return {
 			height,
@@ -337,7 +338,7 @@ class Card {
 	private poster(): string {
 		const { r, palette, copy } = this;
 		const chrome = this.chrome();
-		const column = chrome.right - r.padX;
+		const column = chrome.right - chrome.left;
 		const budget = chrome.bottom - chrome.top;
 		const quote = copy.template === 'quote';
 		const announce = copy.template === 'announcement';
@@ -365,7 +366,7 @@ class Card {
 		const slack = budget - boxes.reduce((sum, b) => sum + b.height, 0);
 		const ultra = this.fw / this.fh >= 3.9;
 		const top = chrome.top + Math.max(0, Math.round(slack * (ultra ? 0.5 : quote ? 0.4 : 0.38)));
-		return `${paint(boxes, r.padX, top)}${chrome.svg}`;
+		return `${paint(boxes, chrome.left, top)}${chrome.svg}`;
 	}
 
 	private frame(): string {
@@ -374,7 +375,7 @@ class Card {
 		const sub = this.hidden('body') ? '' : normalize(copy.text ?? '');
 		const wide = this.fw / this.fh > 1.35;
 		const contentH = chrome.bottom - chrome.top;
-		const innerW = chrome.right - r.padX;
+		const innerW = chrome.right - chrome.left;
 		const gutter = Math.round(r.padX * 0.7);
 		const show = Boolean(copy.image) || !this.hidden('window');
 		const ratio = copy.image ? copy.image.h / copy.image.w : 0;
@@ -392,7 +393,7 @@ class Card {
 		if (w.sub) boxes.push(gap(subGap), this.bodyBox(w.sub, sub));
 		const textH = boxes.reduce((s, b) => s + b.height, 0);
 		const gapY = Math.round(r.gapBody * 1.1);
-		const region: Rect = wide ? { x: r.padX + textW + gutter, y: chrome.top, w: innerW - textW - gutter, h: contentH } : { x: r.padX, y: chrome.top + textH + gapY, w: innerW, h: contentH - textH - gapY };
+		const region: Rect = wide ? { x: chrome.left + textW + gutter, y: chrome.top, w: innerW - textW - gutter, h: contentH } : { x: chrome.left, y: chrome.top + textH + gapY, w: innerW, h: contentH - textH - gapY };
 		let shot = '';
 		if (show) {
 			/* The picture whole, at its own shape, inside the double rule. */
@@ -407,7 +408,7 @@ class Card {
 			this.report(copy.image ? 'picture' : 'window', 'key', box);
 		}
 		const textY = wide ? chrome.top + Math.max(0, Math.round((contentH - textH) * 0.46)) : chrome.top;
-		return `${shot}${paint(boxes, r.padX, textY)}${chrome.svg}`;
+		return `${shot}${paint(boxes, chrome.left, textY)}${chrome.svg}`;
 	}
 }
 

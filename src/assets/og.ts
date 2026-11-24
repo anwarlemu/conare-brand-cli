@@ -229,7 +229,7 @@ const accent = () => color(imageDoc().accent);
 /** The smallest type in a color on a ground at a size: the legible floor, and large type where the pair is under 4.5. */
 function floorFor(d: Design, ink: string, ground: string) {
 	const small = smallFloor(d.w, d.size.shown);
-	return contrast(ink, ground) >= 4.5 ? small : Math.max(small, largeType(d.w));
+	return contrast(ink, ground) >= 4.5 ? small : Math.max(small, largeType(d.w, d.size.shown));
 }
 
 /* A chip's colors at a type size: the accent under large type, the deeper red under small (off-white on it passes 4.5). */
@@ -237,7 +237,7 @@ function chipColors(d: Design, fs: number) {
 	const D = imageDoc();
 	const on = D.themes[d.theme]?.onAccent;
 	const C = colorsOf(d);
-	const large = fs >= largeType(d.w);
+	const large = fs >= largeType(d.w, d.size.shown);
 	const red = color(large ? D.accent : D.accentSmall);
 	if (d.badge === 'solid') return { fill: on?.badgeFill ? color(on.badgeFill) : C.ink, ink: on?.badgeInk ? red : C.bg };
 	if (d.badge === 'label') return on?.badgeFill ? { fill: color(on.badgeFill), ink: red } : { fill: red, ink: tone('white') };
@@ -392,7 +392,12 @@ function setBlock(ctx: Ctx, d: Design, size: number, width: number, maxW: number
 	return b;
 }
 
-const headFloor = (d: Design) => Math.max(largeType(d.w), smallFloor(d.w, d.size.shown) * 1.5);
+/* The headline's least size: half again the legible floor, and large type where its ink (or the highlight of *starred*
+   words) on the ground is under 4.5 (white on the red room), so it may take the 3 to 1 of large text. */
+const headFloor = (d: Design) => {
+	const C = colorsOf(d);
+	return Math.max(smallFloor(d.w, d.size.shown) * 1.5, floorFor(d, C.ink, C.bg), /\*[^*]+\*/.test(d.headlineAsked) ? floorFor(d, C.hi, C.bg) : 0);
+};
 
 /* The largest setting of the words that fits a box: at the layout's width, then (a long headline) the whole box. */
 function fitWords(ctx: Ctx, d: Design, box: { w: number; h: number }, logoH: number): Block {
@@ -593,7 +598,8 @@ export function planDesign(ctx: Ctx, d: Design, pic: Pic | null, own = Boolean(p
 		const region = edited ? inset(intersect(d.size.safe, borderPx ? inset(canvas, borderPx + 4) : canvas), s.margin) : content;
 		const h = logoHeight(ctx, d, region.w * (s.logo.at === 'left' || s.logo.at === 'right' ? 0.45 : 1));
 		const z = logoSizes(ctx, d, h);
-		const footTop = plan.foot ? (plan.foot.rule?.y ?? plan.foot.y - plan.foot.fs) - gap * 0.7 : bottom(region);
+		/* Above the foot by its clear space at least (the rule keeps out of it). */
+		const footTop = plan.foot ? (plan.foot.rule?.y ?? plan.foot.y - plan.foot.fs) - Math.max(gap * 0.7, h * 0.2 + 2) : bottom(region);
 		const r = anchored(d, s.logo.at, z.w, h, s.logo.at.startsWith('top') ? region : { ...region, h: Math.min(bottom(region), footTop) - region.y }, gap);
 		const o = offset(d, 'logo');
 		const inFrame = meet(r, grow(zone, 2)) || meet(r, content);
@@ -603,8 +609,8 @@ export function planDesign(ctx: Ctx, d: Design, pic: Pic | null, own = Boolean(p
 				const x = right(r) + Math.max(gap * 1.4, h * 0.3);
 				zone = { ...zone, x, w: right(zone) - x };
 			} else if (s.logo.at === 'right') zone.w = r.x - Math.max(gap * 1.4, h * 0.3) - zone.x;
-			else if (s.logo.at.startsWith('top')) bandTop(bottom(r) + gap * 1.25);
-			else if (s.logo.at.startsWith('bottom')) bandBottom(r.y - gap);
+			else if (s.logo.at.startsWith('top')) bandTop(bottom(r) + Math.max(gap * 1.25, h * 0.2 + 4));
+			else if (s.logo.at.startsWith('bottom')) bandBottom(r.y - Math.max(gap, h * 0.2 + 4));
 		}
 	}
 
@@ -629,7 +635,9 @@ export function planDesign(ctx: Ctx, d: Design, pic: Pic | null, own = Boolean(p
 	for (const a of d.size.avoid) if (a.x > W / 2 && meet(zone, a)) bandBottom(a.y - gap * 0.5);
 
 	const aboveH = above && s.logo ? logoHeight(ctx, d, zone.w) : 0;
-	const mirror = d.seed > 0 && d.seed % 2 === 1;
+	/* A side panel or window goes to the side opposite a logo anchored at the middle of an edge. */
+	const logoSide = d.layers.logo?.anchor === 'right' ? 'right' : d.layers.logo?.anchor === 'left' ? 'left' : null;
+	const mirror = logoSide ? logoSide === 'right' : d.seed > 0 && d.seed % 2 === 1;
 
 	if (s.wordmark && !hidden(d, 'wordmark')) {
 		/* As wide as the words, whole, and lower when the words need the height. */
@@ -727,6 +735,13 @@ export function planDesign(ctx: Ctx, d: Design, pic: Pic | null, own = Boolean(p
 			} else {
 				plan.panel = { x: right(content) - pw, ...py, w: pw };
 				wordsZone = { ...zone, w: zone.w - pw - gap * 1.6 };
+			}
+			/* Clear of a logo anchored in a corner above or below it, by the logo's clear space. */
+			const L = plan.logo?.rect;
+			if (L && meet(grow(L, L.h * 0.2 + 2), plan.panel)) {
+				const P = plan.panel;
+				if (L.y + L.h / 2 < P.y + P.h / 2) { const y = bottom(L) + L.h * 0.2 + gap * 0.5; plan.panel = { ...P, y, h: bottom(P) - y }; }
+				else plan.panel = { ...P, h: L.y - L.h * 0.2 - gap * 0.5 - P.y };
 			}
 		}
 	}

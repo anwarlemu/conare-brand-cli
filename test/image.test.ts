@@ -24,7 +24,7 @@ const tinyPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUl
 describe('image', () => {
 	it('names every template, and the same sizes as the layouts', () => {
 		expect(TEMPLATES.map((t) => t.id)).toEqual(['headline', 'statement', 'quote', 'announcement', 'frame']);
-		expect(SIZES.map((s) => s.id)).toEqual(['og', 'square', 'portrait', 'story', 'landscape', 'x-banner', 'linkedin', 'linkedin-banner', 'linkedin-page', 'youtube', 'youtube-thumbnail', 'email', 'linkedin-square', 'facebook-cover', 'pinterest', 'ad-300x250', 'ad-336x280', 'ad-728x90', 'ad-300x600', 'ad-320x50', 'ad-160x600', 'ad-970x250', 'wallpaper-desktop', 'wallpaper-phone']);
+		expect(SIZES.map((s) => s.id)).toEqual(['og', 'square', 'portrait', 'story', 'landscape', 'x-banner', 'linkedin', 'linkedin-banner', 'linkedin-page', 'youtube', 'youtube-thumbnail', 'email', 'pinterest', 'facebook-cover', 'facebook', 'ad-300x250', 'ad-336x280', 'ad-728x90', 'ad-300x600', 'ad-320x50', 'ad-160x600', 'ad-970x250', 'desktop', 'phone-wallpaper', 'linkedin-square']);
 		expect(sizeById('1200x630')?.id).toBe('og');
 		expect(sizeById('1080×1080')?.id).toBe('square');
 		expect(sizeById('1234x567')).toMatchObject({ id: 'custom', w: 1234, h: 567 });

@@ -35,6 +35,7 @@ for (const t of og.LAYOUTS) {
 }
 const roomHead = og.imageDoc().templates.room.sample.headline;
 for (const size of og.sizeIds()) {
+	if (!og.LAYOUTS.some((l) => og.sizesFor(l).includes(size))) continue; // pages and cards for print: the print command
 	const s = og.sizeOf(size);
 	/* The room layout where it lays out; the hero (logo and words) on the sizes too small or too thin for the room. */
 	const t = size === 'avatar' ? 'avatar' : og.sizesFor('room').includes(size) ? 'room' : 'hero';
@@ -194,6 +195,36 @@ if (video.hasFfmpeg()) {
 	index.design.variants = { src: '/gallery/design-variants.png', ...dims('design-variants.png'), command: `${b} design variants banner.design.json --by theme` };
 	index.design.sizes = { src: '/gallery/design-sizes.png', ...dims('design-sizes.png'), command: `${b} design sizes banner.design.json --to og,square,story` };
 	index.design.file = readFileSync(join(cwd, 'banner.design.json'), 'utf8');
+	/* Open composition: a graphic no template has, built from the brand's blocks on the grid, then a page from an outline. */
+	const csteps = [
+		[['new', 'compose', '--size', 'og', '-o', 'open.design.json'], 'An empty design on the 12 by 12 grid'],
+		[['compose', 'add', 'open.design.json', 'logo'], 'The lockup, top left'],
+		[['compose', 'add', 'open.design.json', 'badge', 'Customer story', '--at', '0,2,4,1'], 'A label'],
+		[['compose', 'add', 'open.design.json', 'headline', 'How Acme searches every file', '--at', '0,3,7,3'], 'The headline in its cells'],
+		[['revise', 'open.design.json', 'add a stat "3x" top right'], 'A stat, in plain words'],
+		[['compose', 'add', 'open.design.json', 'quote', 'We stopped searching folders by hand.', '--set', 'attribution=Head of search, Acme', '--at', '0,7,7,4'], 'A quote with who said it'],
+		[['compose', 'add', 'open.design.json', 'window', '--at', '8,4,4,6'], 'The product window'],
+		[['revise', 'open.design.json', 'paper theme'], 'Paper'],
+	];
+	index.design.compose = { steps: [] };
+	for (const [i, [argv, label]] of csteps.entries()) {
+		if ((await runDesign(argv, adapter(), io)) !== 0) throw new Error(`design ${shell(argv)} failed`);
+		copyFileSync(join(cwd, 'open.png'), join(out, `compose-${i + 1}.png`));
+		index.design.compose.steps.push({ step: i + 1, label, src: `/gallery/compose-${i + 1}.png`, width: 1200, height: 630, command: `${b} design ${shell(argv)}` });
+	}
+	index.design.compose.file = readFileSync(join(cwd, 'open.design.json'), 'utf8');
+	const outline = { title: 'Acme search', sections: [
+		{ type: 'header', copy: { action: 'Sign in', 'action-href': '#sign-in' }, items: [{ label: 'Pricing', href: '#pricing' }, { label: 'Docs', href: '#docs' }] },
+		{ type: 'hero', copy: { eyebrow: 'Search', title: 'Every answer comes back with its source', body: 'Search the documents you connect, from one API.', action: 'Start building', 'action-href': '#start' } },
+		{ type: 'bento', copy: { title: 'One place for everything you search', tag: 'Features' }, items: [{ title: 'Search every file', body: 'Ask in plain words.', size: 'large' }, { title: 'Keep apps in step', body: 'Files are read as they arrive.' }, { title: 'Answers you can check', body: 'Every answer links to its source.' }] },
+		{ type: 'newsletter', copy: { title: 'News once a month', sent: 'You are on the list.' } },
+		{ type: 'cta', copy: { title: 'Start building today', action: 'Get started', 'action-href': '#start' } },
+		{ type: 'footer', copy: { legal: '© 2026 Acme, Inc.' }, items: [{ label: 'Pricing', href: '#pricing', column: 'Product' }, { label: 'Blog', href: '#blog', column: 'Company' }] },
+	] };
+	writeFileSync(join(cwd, 'outline.json'), `${JSON.stringify(outline, null, 2)}\n`);
+	if ((await runDesign(['page', 'compose', 'outline.json', '-o', 'page'], adapter(), io)) !== 0) throw new Error('design page compose failed');
+	const { readdirSync } = await import('node:fs');
+	index.design.page = { outline: readFileSync(join(cwd, 'outline.json'), 'utf8'), command: `${b} design page compose outline.json -o page`, files: Object.fromEntries(readdirSync(join(cwd, 'page')).sort().map((f) => [f, readFileSync(join(cwd, 'page', f), 'utf8')])) };
 }
 save('index.json', `${JSON.stringify(index, null, 2)}\n`);
 const du = spawnSync('du', ['-sh', out], { encoding: 'utf8' }).stdout.trim();

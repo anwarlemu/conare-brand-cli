@@ -1,7 +1,7 @@
 import type { DrawnLayer, Rect } from '../design/types.js';
 import { color, contrast, font, type Ctx } from './canvas.js';
 import { CopyError, roleFor, type FaceRole } from './glyphs.js';
-import { imageDoc } from './layouts.js';
+import { imageDoc, largeType } from './layouts.js';
 import { colorsOf, type Design, type Pic, type Plan } from './og.js';
 import { setLines } from './words.js';
 
@@ -22,7 +22,7 @@ type Out = DrawnLayer[];
 function textAt(ctx: Ctx, out: Out, id: string, role: FaceRole, weight: number, size: number, text: string, x: number, top: number, maxW: number, fill: string, ground: string, opts: { lead?: number; align?: 'left' | 'center' } = {}): Rect {
 	const r = roleFor(role, text, id);
 	/* Small words in the accent take the deeper red, which reads 4.5 to 1 (as the share images do). */
-	if (size < (24 * 1920) / 1200 && contrast(fill, ground) < 4.5 && contrast(color(imageDoc().accentSmall), ground) >= 4.5) fill = color(imageDoc().accentSmall);
+	if (size < largeType(1920, 640) && contrast(fill, ground) < 4.5 && contrast(color(imageDoc().accentSmall), ground) >= 4.5) fill = color(imageDoc().accentSmall);
 	for (let s = size; ; s = Math.max(FLOOR, s * 0.94)) {
 		ctx.font = font(r, weight, s);
 		ctx.letterSpacing = role === 'mono' ? `${0.04 * s}px` : role === 'display' ? `${-0.02 * s}px` : '0px';
