@@ -4,7 +4,7 @@ title: Not found page
 type: registry:block
 group: site
 description: "The page for an address that leads nowhere: the code in the tag, one line on what happened, the one dark way home, then where people usually meant to go, in the site's frame."
-use_for: "The website's 404 page."
+use_for: "The website's 404 page, and its 500 page (code 500 with its own line)."
 never:
   - "A joke in place of the way home"
   - "A page without the header and footer"
@@ -13,6 +13,7 @@ files:
   - components/site/NotFoundPage.vue
 examples:
   - "Site | Not found, on sample data"
+  - "ServerError | Server error (500)"
 ---
 
 Built on `site-page`: `header`, `footer` and `announcement` are its props, and the `logo` and `actions` slots go to the header (`sheet-actions` too, in web components).

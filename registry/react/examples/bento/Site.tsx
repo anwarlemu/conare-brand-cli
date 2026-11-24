@@ -1,0 +1,34 @@
+import { Bento, type BentoCell } from '@/react/components/site/Bento'
+// The bento on sample data: a large cell, a tall one, a wide one and two plain ones.
+const cells: BentoCell[] = [
+  {
+    "title": "Search every file",
+    "body": "Ask in plain words and get the passage that answers, with the file it came from.",
+    "size": "large"
+  },
+  {
+    "title": "Keep apps in step",
+    "body": "New and changed files are read as they arrive."
+  },
+  {
+    "title": "Read every row",
+    "body": "Tables, cells and scans become text you can search.",
+    "size": "tall"
+  },
+  {
+    "title": "Answers you can check",
+    "body": "Every answer links to its source."
+  },
+  {
+    "title": "One API",
+    "body": "Search, sync and parse from the same key, in any language you use.",
+    "size": "wide"
+  }
+]
+export default function Site() {
+  return (
+    <div className="-mx-8 pt-8">
+      <Bento tag="Features" title="One place for everything you search." body="Bring any data. The rest is set up for you." cells={cells} />
+    </div>
+  )
+}

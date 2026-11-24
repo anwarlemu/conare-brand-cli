@@ -1,0 +1,4 @@
+/* CareersPage.vue's <style>, as it is. */
+.ds-role-link { transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }
+@media (hover: hover) and (pointer: fine) { .ds-role-link:hover { background-color: var(--ds-color-surface-subtle); } }
+.ds-role-link:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }

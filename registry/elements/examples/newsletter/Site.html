@@ -1,0 +1,9 @@
+<!-- The sign-up on sample data: send it with an address to see the line that follows. -->
+<div class="-mx-8 pt-8">
+  <conare-newsletter id="newsletter" tag="Newsletter" heading="News from the team, once a month." body="What shipped, what we learned, and nothing else." sent-text="You are on the list. The next issue comes at the start of the month."></conare-newsletter>
+</div>
+<script type="module">
+  await customElements.whenDefined('conare-newsletter')
+  const form = document.getElementById('newsletter')
+  form.addEventListener('submit', () => { form.sent = true })
+</script>
