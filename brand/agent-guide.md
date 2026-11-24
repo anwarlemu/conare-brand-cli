@@ -30,7 +30,9 @@ can read text and edit project files.
 | A product or marketing card (quote, stat, launch, feature, framed screenshot) | `{{cli}} image --template quote\|statement\|announcement\|frame ...`, or the `card`, `funding`, `announce`, `feature` layouts |
 | A carousel | `{{cli}} image --input carousel.json` |
 | A graphic to revise in plain words | `{{cli}} design new <template> --size ...`, then `design revise <file> "bigger logo"` |
-| A video call background or wallpaper | `{{cli}} image room --headline "..." --size zoom-background` (`wallpaper-desktop`, `wallpaper-phone`), or `illustrate <subject> --size WxH` for art alone |
+| A graphic no template anticipated | `{{cli}} design new compose --size og -o x.design.json`, then `design compose add x.design.json stat "42%" --place top-right` (blocks: `design --json` lists them) |
+| A whole page from sections | `{{cli}} design page compose outline.json -o page` (Vue, React, web components and plain HTML) |
+| A video call background or wallpaper | `{{cli}} image room --headline "..." --size meeting` (`desktop`, `phone-wallpaper`), or `illustrate <subject> --size WxH` for art alone |
 | A slide deck (agenda, chart, timeline, comparison, team, image grid, questions...) | `{{cli}} deck --input deck.json --out deck` (`deck <slide> ...` for one) |
 | A short video, loop or GIF of a layout | `{{cli}} video <layout> --headline "..." --format mp4,webm,gif --loop` |
 | A logo sting, lower third, counting stat or screenshot walkthrough | `{{cli}} video logo-reveal`, `video lower-third --name "..." --role "..."`, `video stat --headline "100M+"`, `video walkthrough --image a.png,b.png` |
@@ -183,7 +185,7 @@ takes `--list`, `--json` and `--help`; an unknown name exits 1 and suggests the 
   passed is drawn; `--sample` fills sample copy. Sizes: og, square, portrait, story, landscape, x-banner, linkedin,
   linkedin-banner, linkedin-page, youtube, youtube-thumbnail, email, avatar (the `avatar` layout), linkedin-square,
   facebook-cover, pinterest, the IAB ads (ad-300x250, ad-336x280, ad-728x90, ad-300x600, ad-320x50, ad-160x600,
-  ad-970x250), zoom-background, wallpaper-desktop, wallpaper-phone, WxH or custom with `--width` and `--height`, or
+  ad-970x250), facebook (Threads and Meta feed too), meeting (a video call background), desktop, phone-wallpaper, WxH or custom with `--width` and `--height`, or
   all (Threads, TikTok and Meta names map to the shared sizes). Words, the logo and key art keep out of what each
   platform covers (the X profile picture, story bars, YouTube's crop, the person on a call, a phone's clock). `--format` png, svg, jpg, webp; `--scale 2`.
 - Copy is drawn whole: it shrinks and re-wraps to a size that reads where the image is shown, then the command fails
@@ -236,6 +238,21 @@ image, and change it until they are happy:
    nothing and says why: tell the person, offer what the message suggests, and try again.
 4. Repeat until they are happy; `design undo` and `design redo` step through what was done.
 5. Never edit the PNG or SVG by hand, and never draw the words some other way: change the design file and render again.
+
+When no template fits, compose one from the brand's blocks on a 12 by 12 grid (any size, the platform's safe area kept):
+
+```sh
+{{cli}} design new compose --size og -o open.design.json
+{{cli}} design compose add open.design.json logo
+{{cli}} design compose add open.design.json headline "How Acme searches every file" --at 0,3,7,3
+{{cli}} design revise open.design.json 'add a stat "3x" top right'
+{{cli}} design compose move open.design.json stat --place bottom-right
+{{cli}} design page compose outline.json -o page     # a page from sections, in every flavor and plain HTML
+```
+
+The blocks are the layouts' parts and the site's (headline, body, badge, logo, mark, wordmark, window, picture, stack,
+room, tile, hatch, card, stat, quote, list, button, search, chart, divider, icon); words fit their cells or the write
+fails saying what to shorten. Every layout can be recreated as blocks.
 
 Only the copy the person passed is drawn, plus the logo and the address. `--sample` fills sample copy on purpose.
 Copy that does not fit whole is refused with what to shorten. `{{cli}} manifest --json` has a `design` entry with every

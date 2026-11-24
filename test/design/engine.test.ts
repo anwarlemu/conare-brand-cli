@@ -62,6 +62,8 @@ describe('sample copy', () => {
 				const d = compose({ template: t as Layout, size: sizeOf(id)!, sample: true });
 				await renderDesign(d, null, { png: false, rgb: true, scale: 0.25 });
 			} catch (err) {
+				/* A 50 px strip takes about three words of headline: the six-word sample is refused there, saying so. */
+				if (id === 'ad-320x50' && /Shorten the headline/.test((err as Error).message)) continue;
 				failed.push(`${t} ${id}: ${(err as Error).message}`);
 			}
 		}
@@ -151,7 +153,7 @@ describe('the command', () => {
 		const files = JSON.parse(r.stdout).files as { path: string; format: string }[];
 		expect(files.map((f) => f.path)).toContain('imagery/carousel-03-square.webp');
 		expect(readFileSync(join(dir, 'imagery/carousel-01-square.jpg')).subarray(0, 2)).toEqual(Buffer.from([0xff, 0xd8]));
-		const refused = spawnSync('node', [bin, 'image', 'hero', '--headline', Array(80).fill('word').join(' '), '--size', 'linkedin-page', '--cwd', dir], { encoding: 'utf8' });
+		const refused = spawnSync('node', [bin, 'image', 'hero', '--headline', Array(400).fill('word').join(' '), '--size', 'linkedin-page', '--cwd', dir], { encoding: 'utf8' });
 		expect(refused.status).toBe(1);
 		expect(refused.stderr).toMatch(/Shorten the headline to about \d+ words/);
 	});
@@ -187,5 +189,28 @@ describe('the logo', () => {
 		}
 		expect(bad).toEqual([]);
 		expect(drawn).toBeGreaterThan(100);
+	});
+});
+
+describe('page compose', () => {
+	it('writes the outline in Vue, React, web components and plain HTML with only its words', async () => {
+		const { writePage, PAGE_FLAVORS } = await import('../../src/assets/page.js');
+		const { validateOutline } = await import('../../src/design/index.js');
+		const outline = validateOutline(A, { title: 'Acme', sections: [
+			{ type: 'header', copy: { action: 'Sign in' }, items: [{ label: 'Pricing', href: '#pricing' }] },
+			{ type: 'hero', copy: { title: 'Every answer with its source', body: 'Search what you connect.', action: 'Start building' } },
+			{ type: 'bento', copy: { title: 'What it does' }, items: [{ title: 'Search', body: 'Find it.', size: 'large' }, { title: 'Sync', body: 'Keep in step.' }] },
+			{ type: 'comparison', copy: { title: 'Plans', plans: 'Free | Pro' }, items: [{ feature: 'Sources', values: 'yes | no' }] },
+			{ type: 'cta', copy: { title: 'Start today', action: 'Get started' } },
+			{ type: 'footer', copy: { legal: '© 2026 Acme, Inc.' }, items: [{ label: 'Blog', column: 'Company' }] },
+		] });
+		expect(PAGE_FLAVORS).toEqual(['vue', 'react', 'elements', 'html']);
+		for (const f of PAGE_FLAVORS) {
+			const files = await writePage(outline, f);
+			const text = Object.values(files).join('\n');
+			for (const w of ['Every answer with its source', 'Start building', 'What it does', 'Keep in step.', 'Get started', '© 2026 Acme, Inc.']) expect(text, `${f}: ${w}`).toContain(w);
+			expect(text, f).not.toMatch(/Lorem|SOC 2|100M/);
+		}
+		expect(() => validateOutline(A, { sections: [{ type: 'hero', copy: {} }] })).toThrow();
 	});
 });

@@ -7,6 +7,7 @@ import gallery from '../../public/gallery/index.json'
 // Every picture here was made by the command under it (scripts/docs-assets.mjs).
 useHead({ title: 'Designs | Conare design system' })
 const d = gallery.design
+const blocks = 'headline, body, label, lockup, mark, hollow wordmark, product window, your picture, stack, room, wordmark tile, hatch, card, stat, quote, list, button, search field, chart, hairline and icon'
 const commands = [
   ['new', 'Write a design file from a template and draw it', 'design new hero --size x-banner --headline "..." -o banner.design.json'],
   ['revise', 'Change it in plain words (no model, no key); a part it does not understand changes nothing and says what it can do', 'design revise banner.design.json "bigger logo, darker theme"'],
@@ -17,6 +18,8 @@ const commands = [
   ['compare', 'Two designs side by side, with every difference listed', 'design compare a.design.json b.design.json'],
   ['render', 'Draw it again in any format and scale', 'design render banner.design.json --format png,svg,jpg --scale 2'],
   ['check', 'Every brand and layout rule; exit 1 on errors', 'design check banner.design.json'],
+  ['new compose, compose add|move|remove|order|span|grid', 'A graphic no template has: the brand\'s blocks placed on a 12 by 12 grid of any size', 'design compose add open.design.json stat 42% --place top-right'],
+  ['page compose', 'A page from an outline of sections, in Vue, React, web components and plain HTML', 'design page compose outline.json -o page'],
 ]
 const rules = [
   ['words', 'Every word passed is drawn, whole. Copy shrinks and re-wraps to a size that reads, then the write fails saying what to shorten.'],
@@ -52,6 +55,22 @@ const rules = [
         <GalleryTile :src="d.variants.src" :width="d.variants.width" :height="d.variants.height" title="By theme" :command="d.variants.command" />
         <GalleryTile :src="d.sizes.src" :width="d.sizes.width" :height="d.sizes.height" title="Other sizes" :command="d.sizes.command" />
       </div>
+    </section>
+
+    <section class="flex flex-col gap-4" aria-labelledby="compose">
+      <SectionHead id="compose" title="Open composition" />
+      <p class="max-w-170 type-ui text-fg-soft">When no template fits, build the graphic from the brand's blocks: {{ blocks }}. Each sits in cells of a 12 by 12 grid inside the platform's safe area, at any size; words fit their cells or the write fails saying what to shorten, and the same check runs. Plain words work too ("add a stat "42%" top right", "move the logo to the bottom left").</p>
+      <div class="grid gap-4 lg:grid-cols-2">
+        <GalleryTile v-for="s in d.compose.steps" :key="s.step" :src="s.src" :width="s.width" :height="s.height" :title="`${s.step}. ${s.label}`" :command="s.command" />
+      </div>
+      <CodeBlock :samples="[{ label: 'open.design.json', code: d.compose.file }]" label="compose file" />
+    </section>
+
+    <section class="flex flex-col gap-4" aria-labelledby="pages">
+      <SectionHead id="pages" title="Pages from an outline" />
+      <p class="max-w-170 type-ui text-fg-soft">An outline of sections (header, hero, logos, features, bento, comparison, testimonial, FAQ, newsletter, call to action, footer) becomes a page in every flavor the library ships, using its components, and a plain HTML page that needs only the brand stylesheet. The outline is checked first: known sections, the words each needs, nothing else. Only its words go on the page.</p>
+      <CodeBlock :samples="[{ label: 'outline.json', code: d.page.outline }, ...Object.entries(d.page.files).map(([label, code]) => ({ label, code }))]" label="page compose" />
+      <p class="type-meta text-fg-muted"><code class="type-code-sm">{{ d.page.command }}</code></p>
     </section>
 
     <section class="flex flex-col gap-4" aria-labelledby="commands">

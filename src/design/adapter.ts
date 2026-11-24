@@ -7,12 +7,16 @@ import { imageDoc, LAYOUTS, sizeIds, sizesFor, sizeOf, type Layout, type Size } 
 import { merchDoc, merchItems, renderItem, findItem, PX_PER_IN } from '../assets/merch.js';
 import { BADGES, compose, customSize, layersOf, renderDesign, slotsOf, type BadgeStyle, type Pic } from '../assets/og.js';
 import { readPicture } from '../assets/picture.js';
+import { BLOCKS, blockPictures, drawBlocks, recipeFor } from '../assets/blocks.js';
+import { PAGE_FLAVORS, SECTIONS, writePage } from '../assets/page.js';
+import { rgbOf, surface, toPng, toSvg } from '../assets/canvas.js';
+import { PLATFORMS } from './platforms.js';
 import { renderVideo } from '../assets/video.js';
 import { illustrateDoc, renderSubject, SUBJECTS } from '../illustrate/draw.js';
 import { cardLayers } from '../image/draw.js';
 import { cardPicture } from '../image/picture.js';
 import { encodeAs, renderImages } from '../image/render.js';
-import { GROUNDS, TEMPLATE_FIELDS, TEMPLATES, theme as cardTheme, type GroundId, type TemplateId } from '../image/spec.js';
+import { GROUNDS, SIZES, TEMPLATE_FIELDS, TEMPLATES, theme as cardTheme, type GroundId, type TemplateId } from '../image/spec.js';
 import { checkDesign, checkText, errorsOf, sheetCanvas, type Adapter, type DesignDoc, type DrawnLayer, type Format, type Painter, type TemplateInfo } from './index.js';
 
 // This brand's side of the design core: what can be made, and how a document becomes the engines' own requests.
@@ -57,11 +61,21 @@ const layoutOptions = (): TemplateInfo['options'] => [
 	{ id: 'highlight', values: Object.keys(imageDoc().highlights), description: 'The color of *starred words* and the final stop' },
 ];
 
+/* The lockup, the words and a window are one column, set as a block and centered in what is left: a larger, smaller or
+   hidden part moves the others in it, and the foot (address, note, page, rule) gives the column its room. The art,
+   patterns and grounds stay put. */
+const COLUMN = ['logo', 'badge', 'headline', 'body', 'credit', 'items', 'window', 'picture', 'partner', 'quote', 'by'];
+const FOOT = ['address', 'note', 'page', 'rule'];
+const REFLOWS: Record<string, string[]> = Object.fromEntries([
+	...COLUMN.map((id) => [id, [...COLUMN.filter((x) => x !== id), ...(id === 'logo' ? [...FOOT, 'panel', 'pattern', 'art'] : [])]]),
+	...FOOT.map((id) => [id, [...COLUMN, ...FOOT.filter((x) => x !== id)]]),
+]);
+
 function layoutInfo(t: Layout): TemplateInfo {
 	return {
 		id: t, kind: 'image', description: imageDoc().templates[t]!.description, sizes: [...sizesFor(t), ...(t === 'avatar' ? [] : ['custom'])], themes: themes(),
 		copy: slotsOf(t).map((id) => ({ id, ...(id === (t === 'partner' ? 'partner' : 'headline') ? { required: true } : {}), ...(COPY_NOTES[id] ? { description: COPY_NOTES[id] } : {}) })),
-		images: t === 'app' || t === 'feature' ? [{ id: 'picture' }] : [], options: t === 'avatar' ? [] : layoutOptions(), layers: layersOf(t), grounds: grounds(), formats: RASTERS,
+		images: t === 'app' || t === 'feature' ? [{ id: 'picture' }] : [], options: t === 'avatar' ? [] : layoutOptions(), layers: layersOf(t), grounds: grounds(), formats: RASTERS, reflows: REFLOWS,
 	};
 }
 
@@ -70,9 +84,9 @@ const COPY_NOTES: Record<string, string> = { badge: 'The label over the words, o
 function cardInfo(t: TemplateId): TemplateInfo {
 	const f = TEMPLATE_FIELDS[t].accepts;
 	return {
-		id: t, kind: 'image', description: TEMPLATES.find((x) => x.id === t)!.description, sizes: [...sizeIds().filter((s) => s !== 'avatar'), 'custom'], themes: GROUNDS.map((g) => g.id),
+		id: t, kind: 'image', description: TEMPLATES.find((x) => x.id === t)!.description, sizes: [...SIZES.map((s) => s.id), 'custom'], themes: GROUNDS.map((g) => g.id),
 		copy: [{ id: 'headline', required: true }, ...(f.includes('text') ? [{ id: 'body' }] : []), ...(f.includes('eyebrow') ? [{ id: 'badge' }] : []), ...(f.includes('by') ? [{ id: 'by', description: COPY_NOTES.by }] : [])],
-		images: f.includes('image') ? [{ id: 'picture' }] : [], options: [], layers: cardLayers(t), grounds: Object.fromEntries(GROUNDS.map((g) => [g.id, cardTheme(g.id).bg.toLowerCase()])), formats: RASTERS,
+		images: f.includes('image') ? [{ id: 'picture' }] : [], options: [], layers: cardLayers(t), grounds: Object.fromEntries(GROUNDS.map((g) => [g.id, cardTheme(g.id).bg.toLowerCase()])), formats: RASTERS, reflows: REFLOWS,
 	};
 }
 
@@ -84,7 +98,7 @@ function slideInfo(t: SlideType): TemplateInfo {
 		copy: Object.entries(map).map(([id, slot]) => ({ id, ...(d.required.includes(slot) ? { required: true } : {}), ...(COPY_NOTES[id] ? { description: COPY_NOTES[id] } : {}) })),
 		images: d.slots.includes('image') ? [{ id: 'picture' }] : [], options: [{ id: 'highlight', values: Object.keys(imageDoc().highlights) }],
 		layers: [...layersOf(d.layout).filter((l) => !['note', 'page', 'credit', 'partner'].includes(l.id)), ...(t === 'bullets' ? [{ id: 'items', can: { scale: [0.7, 1.4] as [number, number] } }] : [])],
-		grounds: grounds(), formats: [...RASTERS, 'pdf'], layouts: [`${t} slide`],
+		grounds: grounds(), formats: [...RASTERS, 'pdf'], layouts: [`${t} slide`], reflows: REFLOWS,
 	};
 }
 
@@ -146,9 +160,34 @@ function collect(formats: Format[], r: { png?: Buffer; svg?: string; jpg?: Buffe
 	return files;
 }
 
+/** A compose design: the brand's blocks in their cells (src/assets/blocks.ts), PNG, JPEG, WebP and SVG. */
+async function renderCompose(doc: DesignDoc, dir: string, formats: Format[], scale: number): Promise<Out> {
+	const pics = await blockPictures(doc, async (slot) => {
+		const v = doc.images[slot];
+		if (!v || v === 'none') return null;
+		const p = await readPicture(dir, v, 2000);
+		return { img: p.canvas, w: p.width, h: p.height };
+	});
+	const { width: W, height: H } = doc.size;
+	const s = surface(W, H, { scale: formats.length ? scale : 1 });
+	const layers = drawBlocks(s.ctx, doc, pics);
+	const r: { png?: Buffer; svg?: string; jpg?: Buffer; webp?: Buffer } = {};
+	if (formats.includes('png') || !formats.length) r.png = toPng(s, { opaque: true });
+	if (formats.includes('jpg')) r.jpg = (s.canvas as unknown as { toBuffer(t: string, q: number): Buffer }).toBuffer('image/jpeg', 92);
+	if (formats.includes('webp')) r.webp = (s.canvas as unknown as { toBuffer(t: string, q: number): Buffer }).toBuffer('image/webp', 92);
+	if (formats.includes('svg')) {
+		const v = surface(W, H, { svg: true });
+		drawBlocks(v.ctx, doc, pics);
+		r.svg = toSvg(v);
+	}
+	void rgbOf;
+	return { files: collect(formats, r), layers };
+}
+
 async function renderDoc(doc: DesignDoc, dir: string, out: { formats: Format[]; scale: number }): Promise<Out> {
 	const t = doc.template;
 	const { formats, scale } = out;
+	if (t === 'compose') return renderCompose(doc, dir, formats, scale);
 	if (isLayout(t)) {
 		const r = await renderDesign(layoutDesign(doc, t), await picture(doc, dir), { ...want(formats), rgb: !formats.length, scale: formats.length ? scale : 1 });
 		return { files: collect(formats, r), layers: r.layers };
@@ -214,6 +253,11 @@ export function adapter(): Adapter {
 		brand: brand().bin,
 		templates: () => [...LAYOUTS.map(layoutInfo), ...TEMPLATES.map((t) => cardInfo(t.id)), ...DESIGN_SLIDES().map(slideInfo), ...merchItems().map((i) => merchInfo(i.id)), ...SUBJECTS().map(artInfo), ...LAYOUTS.filter((l) => l !== 'avatar').map(videoInfo)],
 		defaults(template, size) {
+			if (template === 'compose') {
+				const z = size === 'custom' ? { id: 'custom', w: 1200, h: 800 } : sizeOf(size) ?? (() => { const p = PLATFORMS.find((x) => x.id === size); return p ? { id: p.id, w: p.width, h: p.height } : undefined; })();
+				if (!z) throw new Error(`Unknown size ${size}.`);
+				return { size: { id: z.id, width: z.w, height: z.h }, theme: 'white', seed: undefined, options: {} };
+			}
 			const slide = after(template, 'slide-') as SlideType | undefined;
 			if (slide) return { size: { id: 'slide', width: deckDoc().width, height: deckDoc().height }, theme: imageDoc().templates[deckDoc().slides[slide].layout]!.theme, seed: undefined, options: {} };
 			const art = after(template, 'illustration-');
@@ -227,6 +271,16 @@ export function adapter(): Adapter {
 			return { size: dims, theme: imageDoc().templates[layout]!.theme, seed: SEEDED.has(layout) ? 0 : undefined, options: {} };
 		},
 		render: renderDoc,
+		compose: {
+			blocks: () => BLOCKS,
+			themes: themes(),
+			grounds: grounds(),
+			/* The share sizes first (the conformance draws every block at the first four), then the rest, print and custom. */
+			sizes: [...new Set(['og', 'square', 'story', 'x-banner', ...sizeIds(), ...PLATFORMS.map((p) => p.id)]), 'custom'],
+			formats: RASTERS,
+			recipe: (template, size, copy) => recipeFor(template, size, copy),
+		},
+		page: { sections: () => SECTIONS, flavors: PAGE_FLAVORS, write: writePage },
 		sample(template) {
 			const layout = isLayout(template) ? template : after(template, 'video-');
 			if (layout) return Object.fromEntries(Object.entries(imageDoc().templates[layout]!.sample).filter(([k, v]) => v && slotsOf(layout as Layout).includes(k))) as Record<string, string>;

@@ -244,35 +244,33 @@
       "command": "conare-ds image avatar --size avatar"
     },
     {
-      "id": "linkedin-square",
-      "label": "LinkedIn square",
-      "src": "/gallery/size-room-linkedin-square.png",
-      "width": 1200,
-      "height": 1200,
-      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size linkedin-square"
-    },
-    {
-      "id": "facebook-cover",
-      "label": "Facebook cover",
-      "note": "Facebook shows the cover at 820 by 312 on a computer and crops its sides to about 640 by 360 on a phone; the profile picture covers the lower left on a computer. Facebook publishes the display sizes; the covered corner is measured, so approximate.",
-      "src": "/gallery/size-room-facebook-cover.png",
-      "width": 1640,
-      "height": 624,
-      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size facebook-cover"
-    },
-    {
       "id": "pinterest",
       "label": "Pinterest pin",
-      "note": "Pinterest recommends 2:3 at 1000 by 1500.",
       "src": "/gallery/size-room-pinterest.png",
       "width": 1000,
       "height": 1500,
       "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size pinterest"
     },
     {
+      "id": "facebook-cover",
+      "label": "Facebook page cover",
+      "note": "Facebook recommends 851 x 315 (this is twice that) and under 100 KB for fast loading; phones show 2.4:1, so the sides are cropped. The profile picture covers part of the left: where is approximate.",
+      "src": "/gallery/size-room-facebook-cover.png",
+      "width": 1702,
+      "height": 630,
+      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size facebook-cover"
+    },
+    {
+      "id": "facebook",
+      "label": "Facebook post",
+      "src": "/gallery/size-room-facebook.png",
+      "width": 1080,
+      "height": 1350,
+      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size facebook"
+    },
+    {
       "id": "ad-300x250",
-      "label": "Display ad, medium rectangle",
-      "note": "IAB medium rectangle. Ad networks take about 150 KB; write jpg or webp, and --scale 2 for sharp screens.",
+      "label": "Medium rectangle ad",
       "src": "/gallery/size-room-ad-300x250.png",
       "width": 300,
       "height": 250,
@@ -280,8 +278,7 @@
     },
     {
       "id": "ad-336x280",
-      "label": "Display ad, large rectangle",
-      "note": "IAB large rectangle; about 150 KB.",
+      "label": "Large rectangle ad",
       "src": "/gallery/size-room-ad-336x280.png",
       "width": 336,
       "height": 280,
@@ -289,8 +286,7 @@
     },
     {
       "id": "ad-728x90",
-      "label": "Display ad, leaderboard",
-      "note": "IAB leaderboard; about 150 KB.",
+      "label": "Leaderboard ad",
       "src": "/gallery/size-room-ad-728x90.png",
       "width": 728,
       "height": 90,
@@ -298,8 +294,7 @@
     },
     {
       "id": "ad-300x600",
-      "label": "Display ad, half page",
-      "note": "IAB half page; about 150 KB.",
+      "label": "Half page ad",
       "src": "/gallery/size-room-ad-300x600.png",
       "width": 300,
       "height": 600,
@@ -307,8 +302,7 @@
     },
     {
       "id": "ad-320x50",
-      "label": "Display ad, mobile banner",
-      "note": "IAB mobile banner; about 150 KB.",
+      "label": "Mobile banner ad",
       "src": "/gallery/size-room-ad-320x50.png",
       "width": 320,
       "height": 50,
@@ -316,8 +310,7 @@
     },
     {
       "id": "ad-160x600",
-      "label": "Display ad, wide skyscraper",
-      "note": "IAB wide skyscraper; about 150 KB.",
+      "label": "Wide skyscraper ad",
       "src": "/gallery/size-room-ad-160x600.png",
       "width": 160,
       "height": 600,
@@ -325,38 +318,45 @@
     },
     {
       "id": "ad-970x250",
-      "label": "Display ad, billboard",
-      "note": "IAB billboard; about 150 KB.",
+      "label": "Billboard ad",
       "src": "/gallery/size-room-ad-970x250.png",
       "width": 970,
       "height": 250,
       "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size ad-970x250"
     },
     {
-      "id": "zoom-background",
+      "id": "meeting",
       "label": "Video call background",
-      "note": "Zoom and Meet take 16:9 at 1920 by 1080. The person sits in the middle; words and the logo keep to the sides and top. The middle's size is a convention, so approximate. The picture is mirrored to the person but not to others.",
-      "src": "/gallery/size-room-zoom-background.png",
+      "note": "Zoom recommends 1920 x 1080. The middle is covered by the person on the call (approximate), and apps mirror the picture for the person themselves.",
+      "src": "/gallery/size-room-meeting.png",
       "width": 1920,
       "height": 1080,
-      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size zoom-background"
+      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size meeting"
     },
     {
-      "id": "wallpaper-desktop",
+      "id": "desktop",
       "label": "Desktop wallpaper",
-      "src": "/gallery/size-room-wallpaper-desktop.jpg",
-      "width": 2560,
-      "height": 1440,
-      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size wallpaper-desktop"
+      "src": "/gallery/size-room-desktop.jpg",
+      "width": 2880,
+      "height": 1800,
+      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size desktop"
     },
     {
-      "id": "wallpaper-phone",
+      "id": "phone-wallpaper",
       "label": "Phone wallpaper",
-      "note": "The clock covers the top and the dock or swipe bar the bottom on a phone lock screen; the middle is kept for words, measured on a 6.1 in phone, so approximate.",
-      "src": "/gallery/size-room-wallpaper-phone.jpg",
-      "width": 1179,
-      "height": 2556,
-      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size wallpaper-phone"
+      "note": "An iPhone at 3x. Where the clock and controls sit is approximate.",
+      "src": "/gallery/size-room-phone-wallpaper.jpg",
+      "width": 1170,
+      "height": 2532,
+      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size phone-wallpaper"
+    },
+    {
+      "id": "linkedin-square",
+      "label": "LinkedIn square",
+      "src": "/gallery/size-room-linkedin-square.png",
+      "width": 1200,
+      "height": 1200,
+      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size linkedin-square"
     }
   ],
   "slides": [
@@ -1297,7 +1297,7 @@
     ],
     "refused": {
       "command": "conare-ds design revise banner.design.json \"make the logo neon green\"",
-      "message": "Nothing was changed. \"make the logo neon green\": Effects are not part of the brand."
+      "message": "Nothing was changed. \"make the logo neon green\": Colors outside the brand palette are refused. The palette: #fefefe, #020202, #6c6a68, #f7f6f4, #d02a1d, #989694, #f3f3f3, #ea3325, #f4f4f4, #edecea, #d6483d, #252525, #e9e9e9, in the themes white, paper, red, black, grey."
     },
     "variants": {
       "src": "/gallery/design-variants.png",
@@ -1311,7 +1311,86 @@
       "height": 1000,
       "command": "conare-ds design sizes banner.design.json --to og,square,story"
     },
-    "file": "{\n\t\"version\": 1,\n\t\"brand\": \"conare-ds\",\n\t\"kind\": \"image\",\n\t\"template\": \"hero\",\n\t\"size\": {\n\t\t\"id\": \"x-banner\",\n\t\t\"width\": 1500,\n\t\t\"height\": 500\n\t},\n\t\"theme\": \"paper\",\n\t\"copy\": {\n\t\t\"badge\": \"Now in beta\",\n\t\t\"body\": \"Search across the documents you connect, from one API.\",\n\t\t\"headline\": \"Every answer comes back with its source\"\n\t},\n\t\"images\": {},\n\t\"options\": {},\n\t\"layers\": {\n\t\t\"guides\": {\n\t\t\t\"hidden\": true\n\t\t},\n\t\t\"headline\": {\n\t\t\t\"scale\": 0.9,\n\t\t\t\"align\": \"left\"\n\t\t},\n\t\t\"logo\": {\n\t\t\t\"scale\": 1.2\n\t\t}\n\t},\n\t\"history\": [\n\t\t{\n\t\t\t\"change\": \"bigger logo\",\n\t\t\t\"before\": {\n\t\t\t\t\"layers\": {}\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"left align the headline\",\n\t\t\t\"before\": {\n\t\t\t\t\"layers\": {\n\t\t\t\t\t\"logo\": {\n\t\t\t\t\t\t\"scale\": 1.2\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"badge \\\"Now in beta\\\"\",\n\t\t\t\"before\": {\n\t\t\t\t\"copy\": {\n\t\t\t\t\t\"body\": \"Search across the documents you connect, from one API.\",\n\t\t\t\t\t\"headline\": \"Every answer comes back with its source\"\n\t\t\t\t}\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"paper theme, hide the guides\",\n\t\t\t\"before\": {\n\t\t\t\t\"theme\": \"white\",\n\t\t\t\t\"layers\": {\n\t\t\t\t\t\"headline\": {\n\t\t\t\t\t\t\"align\": \"left\"\n\t\t\t\t\t},\n\t\t\t\t\t\"logo\": {\n\t\t\t\t\t\t\"scale\": 1.2\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"smaller headline\",\n\t\t\t\"before\": {\n\t\t\t\t\"layers\": {\n\t\t\t\t\t\"guides\": {\n\t\t\t\t\t\t\"hidden\": true\n\t\t\t\t\t},\n\t\t\t\t\t\"headline\": {\n\t\t\t\t\t\t\"align\": \"left\"\n\t\t\t\t\t},\n\t\t\t\t\t\"logo\": {\n\t\t\t\t\t\t\"scale\": 1.2\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"headline a bit bigger\",\n\t\t\t\"before\": {\n\t\t\t\t\"layers\": {\n\t\t\t\t\t\"guides\": {\n\t\t\t\t\t\t\"hidden\": true\n\t\t\t\t\t},\n\t\t\t\t\t\"headline\": {\n\t\t\t\t\t\t\"scale\": 0.833,\n\t\t\t\t\t\t\"align\": \"left\"\n\t\t\t\t\t},\n\t\t\t\t\t\"logo\": {\n\t\t\t\t\t\t\"scale\": 1.2\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t],\n\t\"future\": []\n}\n"
+    "file": "{\n\t\"version\": 1,\n\t\"brand\": \"conare-ds\",\n\t\"kind\": \"image\",\n\t\"template\": \"hero\",\n\t\"size\": {\n\t\t\"id\": \"x-banner\",\n\t\t\"width\": 1500,\n\t\t\"height\": 500\n\t},\n\t\"theme\": \"paper\",\n\t\"copy\": {\n\t\t\"badge\": \"Now in beta\",\n\t\t\"body\": \"Search across the documents you connect, from one API.\",\n\t\t\"headline\": \"Every answer comes back with its source\"\n\t},\n\t\"images\": {},\n\t\"options\": {},\n\t\"layers\": {\n\t\t\"guides\": {\n\t\t\t\"hidden\": true\n\t\t},\n\t\t\"headline\": {\n\t\t\t\"scale\": 0.9,\n\t\t\t\"align\": \"left\"\n\t\t},\n\t\t\"logo\": {\n\t\t\t\"scale\": 1.2\n\t\t}\n\t},\n\t\"history\": [\n\t\t{\n\t\t\t\"change\": \"bigger logo\",\n\t\t\t\"before\": {\n\t\t\t\t\"layers\": {}\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"left align the headline\",\n\t\t\t\"before\": {\n\t\t\t\t\"layers\": {\n\t\t\t\t\t\"logo\": {\n\t\t\t\t\t\t\"scale\": 1.2\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"badge \\\"Now in beta\\\"\",\n\t\t\t\"before\": {\n\t\t\t\t\"copy\": {\n\t\t\t\t\t\"body\": \"Search across the documents you connect, from one API.\",\n\t\t\t\t\t\"headline\": \"Every answer comes back with its source\"\n\t\t\t\t}\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"paper theme, hide the guides\",\n\t\t\t\"before\": {\n\t\t\t\t\"theme\": \"white\",\n\t\t\t\t\"layers\": {\n\t\t\t\t\t\"headline\": {\n\t\t\t\t\t\t\"align\": \"left\"\n\t\t\t\t\t},\n\t\t\t\t\t\"logo\": {\n\t\t\t\t\t\t\"scale\": 1.2\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"smaller headline\",\n\t\t\t\"before\": {\n\t\t\t\t\"layers\": {\n\t\t\t\t\t\"guides\": {\n\t\t\t\t\t\t\"hidden\": true\n\t\t\t\t\t},\n\t\t\t\t\t\"headline\": {\n\t\t\t\t\t\t\"align\": \"left\"\n\t\t\t\t\t},\n\t\t\t\t\t\"logo\": {\n\t\t\t\t\t\t\"scale\": 1.2\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"headline a bit bigger\",\n\t\t\t\"before\": {\n\t\t\t\t\"layers\": {\n\t\t\t\t\t\"guides\": {\n\t\t\t\t\t\t\"hidden\": true\n\t\t\t\t\t},\n\t\t\t\t\t\"headline\": {\n\t\t\t\t\t\t\"scale\": 0.833,\n\t\t\t\t\t\t\"align\": \"left\"\n\t\t\t\t\t},\n\t\t\t\t\t\"logo\": {\n\t\t\t\t\t\t\"scale\": 1.2\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t],\n\t\"future\": []\n}\n",
+    "compose": {
+      "steps": [
+        {
+          "step": 1,
+          "label": "An empty design on the 12 by 12 grid",
+          "src": "/gallery/compose-1.png",
+          "width": 1200,
+          "height": 630,
+          "command": "conare-ds design new compose --size og -o open.design.json"
+        },
+        {
+          "step": 2,
+          "label": "The lockup, top left",
+          "src": "/gallery/compose-2.png",
+          "width": 1200,
+          "height": 630,
+          "command": "conare-ds design compose add open.design.json logo"
+        },
+        {
+          "step": 3,
+          "label": "A label",
+          "src": "/gallery/compose-3.png",
+          "width": 1200,
+          "height": 630,
+          "command": "conare-ds design compose add open.design.json badge \"Customer story\" --at 0,2,4,1"
+        },
+        {
+          "step": 4,
+          "label": "The headline in its cells",
+          "src": "/gallery/compose-4.png",
+          "width": 1200,
+          "height": 630,
+          "command": "conare-ds design compose add open.design.json headline \"How Acme searches every file\" --at 0,3,7,3"
+        },
+        {
+          "step": 5,
+          "label": "A stat, in plain words",
+          "src": "/gallery/compose-5.png",
+          "width": 1200,
+          "height": 630,
+          "command": "conare-ds design revise open.design.json \"add a stat \"3x\" top right\""
+        },
+        {
+          "step": 6,
+          "label": "A quote with who said it",
+          "src": "/gallery/compose-6.png",
+          "width": 1200,
+          "height": 630,
+          "command": "conare-ds design compose add open.design.json quote \"We stopped searching folders by hand.\" --set \"attribution=Head of search, Acme\" --at 0,7,7,4"
+        },
+        {
+          "step": 7,
+          "label": "The product window",
+          "src": "/gallery/compose-7.png",
+          "width": 1200,
+          "height": 630,
+          "command": "conare-ds design compose add open.design.json window --at 8,4,4,6"
+        },
+        {
+          "step": 8,
+          "label": "Paper",
+          "src": "/gallery/compose-8.png",
+          "width": 1200,
+          "height": 630,
+          "command": "conare-ds design revise open.design.json \"paper theme\""
+        }
+      ],
+      "file": "{\n\t\"version\": 1,\n\t\"brand\": \"conare-ds\",\n\t\"kind\": \"image\",\n\t\"template\": \"compose\",\n\t\"size\": {\n\t\t\"id\": \"og\",\n\t\t\"width\": 1200,\n\t\t\"height\": 630\n\t},\n\t\"theme\": \"paper\",\n\t\"copy\": {\n\t\t\"badge.text\": \"Customer story\",\n\t\t\"headline.text\": \"How Acme searches every file\",\n\t\t\"quote.attribution\": \"Head of search, Acme\",\n\t\t\"quote.text\": \"We stopped searching folders by hand.\",\n\t\t\"stat.value\": \"3x\"\n\t},\n\t\"images\": {},\n\t\"options\": {},\n\t\"layers\": {},\n\t\"blocks\": [\n\t\t{\n\t\t\t\"id\": \"logo\",\n\t\t\t\"type\": \"logo\",\n\t\t\t\"at\": {\n\t\t\t\t\"col\": 0,\n\t\t\t\t\"row\": 0,\n\t\t\t\t\"cols\": 4,\n\t\t\t\t\"rows\": 1\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"id\": \"badge\",\n\t\t\t\"type\": \"badge\",\n\t\t\t\"at\": {\n\t\t\t\t\"col\": 0,\n\t\t\t\t\"row\": 2,\n\t\t\t\t\"cols\": 4,\n\t\t\t\t\"rows\": 1\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"id\": \"headline\",\n\t\t\t\"type\": \"headline\",\n\t\t\t\"at\": {\n\t\t\t\t\"col\": 0,\n\t\t\t\t\"row\": 3,\n\t\t\t\t\"cols\": 7,\n\t\t\t\t\"rows\": 3\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"id\": \"stat\",\n\t\t\t\"type\": \"stat\",\n\t\t\t\"at\": {\n\t\t\t\t\"col\": 8,\n\t\t\t\t\"row\": 0,\n\t\t\t\t\"cols\": 4,\n\t\t\t\t\"rows\": 4\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"id\": \"quote\",\n\t\t\t\"type\": \"quote\",\n\t\t\t\"at\": {\n\t\t\t\t\"col\": 0,\n\t\t\t\t\"row\": 7,\n\t\t\t\t\"cols\": 7,\n\t\t\t\t\"rows\": 4\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"id\": \"window\",\n\t\t\t\"type\": \"window\",\n\t\t\t\"at\": {\n\t\t\t\t\"col\": 8,\n\t\t\t\t\"row\": 4,\n\t\t\t\t\"cols\": 4,\n\t\t\t\t\"rows\": 6\n\t\t\t}\n\t\t}\n\t],\n\t\"history\": [\n\t\t{\n\t\t\t\"change\": \"compose add logo\",\n\t\t\t\"before\": {\n\t\t\t\t\"blocks\": []\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"compose add badge Customer story\",\n\t\t\t\"before\": {\n\t\t\t\t\"copy\": {},\n\t\t\t\t\"blocks\": [\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"logo\",\n\t\t\t\t\t\t\"type\": \"logo\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 0,\n\t\t\t\t\t\t\t\"cols\": 4,\n\t\t\t\t\t\t\t\"rows\": 1\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t]\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"compose add headline How Acme searches every file\",\n\t\t\t\"before\": {\n\t\t\t\t\"copy\": {\n\t\t\t\t\t\"badge.text\": \"Customer story\"\n\t\t\t\t},\n\t\t\t\t\"blocks\": [\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"logo\",\n\t\t\t\t\t\t\"type\": \"logo\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 0,\n\t\t\t\t\t\t\t\"cols\": 4,\n\t\t\t\t\t\t\t\"rows\": 1\n\t\t\t\t\t\t}\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"badge\",\n\t\t\t\t\t\t\"type\": \"badge\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 2,\n\t\t\t\t\t\t\t\"cols\": 4,\n\t\t\t\t\t\t\t\"rows\": 1\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t]\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"add a stat \\\"3x\\\" top right\",\n\t\t\t\"before\": {\n\t\t\t\t\"copy\": {\n\t\t\t\t\t\"badge.text\": \"Customer story\",\n\t\t\t\t\t\"headline.text\": \"How Acme searches every file\"\n\t\t\t\t},\n\t\t\t\t\"blocks\": [\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"logo\",\n\t\t\t\t\t\t\"type\": \"logo\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 0,\n\t\t\t\t\t\t\t\"cols\": 4,\n\t\t\t\t\t\t\t\"rows\": 1\n\t\t\t\t\t\t}\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"badge\",\n\t\t\t\t\t\t\"type\": \"badge\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 2,\n\t\t\t\t\t\t\t\"cols\": 4,\n\t\t\t\t\t\t\t\"rows\": 1\n\t\t\t\t\t\t}\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"headline\",\n\t\t\t\t\t\t\"type\": \"headline\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 3,\n\t\t\t\t\t\t\t\"cols\": 7,\n\t\t\t\t\t\t\t\"rows\": 3\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t]\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"compose add quote We stopped searching folders by hand.\",\n\t\t\t\"before\": {\n\t\t\t\t\"copy\": {\n\t\t\t\t\t\"badge.text\": \"Customer story\",\n\t\t\t\t\t\"headline.text\": \"How Acme searches every file\",\n\t\t\t\t\t\"stat.value\": \"3x\"\n\t\t\t\t},\n\t\t\t\t\"blocks\": [\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"logo\",\n\t\t\t\t\t\t\"type\": \"logo\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 0,\n\t\t\t\t\t\t\t\"cols\": 4,\n\t\t\t\t\t\t\t\"rows\": 1\n\t\t\t\t\t\t}\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"badge\",\n\t\t\t\t\t\t\"type\": \"badge\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 2,\n\t\t\t\t\t\t\t\"cols\": 4,\n\t\t\t\t\t\t\t\"rows\": 1\n\t\t\t\t\t\t}\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"headline\",\n\t\t\t\t\t\t\"type\": \"headline\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 3,\n\t\t\t\t\t\t\t\"cols\": 7,\n\t\t\t\t\t\t\t\"rows\": 3\n\t\t\t\t\t\t}\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"stat\",\n\t\t\t\t\t\t\"type\": \"stat\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 8,\n\t\t\t\t\t\t\t\"row\": 0,\n\t\t\t\t\t\t\t\"cols\": 4,\n\t\t\t\t\t\t\t\"rows\": 4\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t]\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"compose add window\",\n\t\t\t\"before\": {\n\t\t\t\t\"blocks\": [\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"logo\",\n\t\t\t\t\t\t\"type\": \"logo\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 0,\n\t\t\t\t\t\t\t\"cols\": 4,\n\t\t\t\t\t\t\t\"rows\": 1\n\t\t\t\t\t\t}\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"badge\",\n\t\t\t\t\t\t\"type\": \"badge\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 2,\n\t\t\t\t\t\t\t\"cols\": 4,\n\t\t\t\t\t\t\t\"rows\": 1\n\t\t\t\t\t\t}\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"headline\",\n\t\t\t\t\t\t\"type\": \"headline\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 3,\n\t\t\t\t\t\t\t\"cols\": 7,\n\t\t\t\t\t\t\t\"rows\": 3\n\t\t\t\t\t\t}\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"stat\",\n\t\t\t\t\t\t\"type\": \"stat\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 8,\n\t\t\t\t\t\t\t\"row\": 0,\n\t\t\t\t\t\t\t\"cols\": 4,\n\t\t\t\t\t\t\t\"rows\": 4\n\t\t\t\t\t\t}\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"quote\",\n\t\t\t\t\t\t\"type\": \"quote\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 7,\n\t\t\t\t\t\t\t\"cols\": 7,\n\t\t\t\t\t\t\t\"rows\": 4\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t]\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"paper theme\",\n\t\t\t\"before\": {\n\t\t\t\t\"theme\": \"white\"\n\t\t\t}\n\t\t}\n\t],\n\t\"future\": []\n}\n"
+    },
+    "page": {
+      "outline": "{\n  \"title\": \"Acme search\",\n  \"sections\": [\n    {\n      \"type\": \"header\",\n      \"copy\": {\n        \"action\": \"Sign in\",\n        \"action-href\": \"#sign-in\"\n      },\n      \"items\": [\n        {\n          \"label\": \"Pricing\",\n          \"href\": \"#pricing\"\n        },\n        {\n          \"label\": \"Docs\",\n          \"href\": \"#docs\"\n        }\n      ]\n    },\n    {\n      \"type\": \"hero\",\n      \"copy\": {\n        \"eyebrow\": \"Search\",\n        \"title\": \"Every answer comes back with its source\",\n        \"body\": \"Search the documents you connect, from one API.\",\n        \"action\": \"Start building\",\n        \"action-href\": \"#start\"\n      }\n    },\n    {\n      \"type\": \"bento\",\n      \"copy\": {\n        \"title\": \"One place for everything you search\",\n        \"tag\": \"Features\"\n      },\n      \"items\": [\n        {\n          \"title\": \"Search every file\",\n          \"body\": \"Ask in plain words.\",\n          \"size\": \"large\"\n        },\n        {\n          \"title\": \"Keep apps in step\",\n          \"body\": \"Files are read as they arrive.\"\n        },\n        {\n          \"title\": \"Answers you can check\",\n          \"body\": \"Every answer links to its source.\"\n        }\n      ]\n    },\n    {\n      \"type\": \"newsletter\",\n      \"copy\": {\n        \"title\": \"News once a month\",\n        \"sent\": \"You are on the list.\"\n      }\n    },\n    {\n      \"type\": \"cta\",\n      \"copy\": {\n        \"title\": \"Start building today\",\n        \"action\": \"Get started\",\n        \"action-href\": \"#start\"\n      }\n    },\n    {\n      \"type\": \"footer\",\n      \"copy\": {\n        \"legal\": \"© 2026 Acme, Inc.\"\n      },\n      \"items\": [\n        {\n          \"label\": \"Pricing\",\n          \"href\": \"#pricing\",\n          \"column\": \"Product\"\n        },\n        {\n          \"label\": \"Blog\",\n          \"href\": \"#blog\",\n          \"column\": \"Company\"\n        }\n      ]\n    }\n  ]\n}\n",
+      "command": "conare-ds design page compose outline.json -o page",
+      "files": {
+        "index.html": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Acme search</title>\n  <link rel=\"stylesheet\" href=\"conare-ds/brand.css\">\n</head>\n<body class=\"bg-bg text-fg\">\n  <!-- Built by conare-ds design page compose from the outline: only its words are on the page. -->\n  <header class=\"mx-auto flex max-w-[1440px] items-center justify-between px-4 py-4 sm:px-6 lg:px-10\"><a href=\"/\" class=\"font-heading text-heading-3 text-fg\">Conare</a><nav aria-label=\"Main\"><ul class=\"flex gap-6 type-ui\"><li><a href=\"#pricing\">Pricing</a></li><li><a href=\"#docs\">Docs</a></li></ul></nav><a class=\"bg-fg px-4 py-2 type-ui text-bg\" href=\"#sign-in\">Sign in</a></header>\n  <section class=\"mx-auto max-w-[1440px] px-4 pt-24 pb-20 text-center sm:px-6 lg:px-10\" aria-label=\"Introduction\"><p class=\"type-meta text-fg-muted\">Search</p><h1 class=\"font-heading text-hero text-fg\">Every answer comes back with its source</h1><p class=\"mx-auto mt-4 max-w-[640px] type-body-lg text-fg-muted\">Search the documents you connect, from one API.</p><a class=\"mt-8 inline-flex items-center px-5 py-3 type-ui bg-fg text-bg\" href=\"#start\">Start building</a></section>\n  <section class=\"mx-auto max-w-[1440px] px-4 py-20 sm:px-6 lg:px-10\" aria-label=\"One place for everything you search\"><p class=\"type-meta text-fg-muted\">Features</p><h2 class=\"font-heading text-heading-1 text-fg\">One place for everything you search</h2><ul class=\"mt-10 grid gap-px border border-edge bg-edge sm:grid-cols-2 lg:grid-cols-3\"><li class=\"bg-surface px-6 py-6 sm:col-span-2\"><h3 class=\"type-heading-3 text-fg\">Search every file</h3><p class=\"mt-2 text-body text-fg-muted\">Ask in plain words.</p></li><li class=\"bg-surface px-6 py-6\"><h3 class=\"type-heading-3 text-fg\">Keep apps in step</h3><p class=\"mt-2 text-body text-fg-muted\">Files are read as they arrive.</p></li><li class=\"bg-surface px-6 py-6\"><h3 class=\"type-heading-3 text-fg\">Answers you can check</h3><p class=\"mt-2 text-body text-fg-muted\">Every answer links to its source.</p></li></ul></section>\n  <section class=\"mx-auto max-w-[1440px] px-4 py-20 sm:px-6 lg:px-10\" aria-label=\"News once a month\"><h2 class=\"font-heading text-heading-1 text-fg\">News once a month</h2><form class=\"mt-8 flex max-w-[560px] gap-3\" action=\"#\"><label class=\"sr-only\" for=\"newsletter-email\">Work email</label><input id=\"newsletter-email\" type=\"email\" required autocomplete=\"email\" class=\"min-w-0 flex-1 border border-edge px-3 py-2\"><button class=\"bg-fg px-5 py-2 type-ui text-bg\">Subscribe</button></form></section>\n  <section class=\"bg-surface-accent px-4 py-24 text-center sm:px-6 lg:px-10\" aria-label=\"Start building today\"><h2 class=\"font-heading text-heading-1 text-fg-on-accent\">Start building today</h2><a class=\"mt-8 inline-flex items-center px-5 py-3 type-ui bg-fg text-bg\" href=\"#start\">Get started</a></section>\n  <footer class=\"mx-auto max-w-[1440px] border-t border-edge px-4 py-16 sm:px-6 lg:px-10\"><div class=\"mt-8 grid gap-8 sm:grid-cols-3\"><nav aria-label=\"Product\"><h2 class=\"type-meta text-fg-muted\">Product</h2><ul class=\"mt-3 flex flex-col gap-2 type-ui\"><li><a href=\"#pricing\">Pricing</a></li></ul></nav><nav aria-label=\"Company\"><h2 class=\"type-meta text-fg-muted\">Company</h2><ul class=\"mt-3 flex flex-col gap-2 type-ui\"><li><a href=\"#blog\">Blog</a></li></ul></nav></div><p class=\"mt-12 type-meta text-fg-muted\">© 2026 Acme, Inc.</p></footer>\n</body>\n</html>\n",
+        "page.html": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Acme search</title>\n  <link rel=\"stylesheet\" href=\"/conare-ds/brand.css\">\n  <script type=\"module\" src=\"/conare-ds/elements/site-page.js\"></script>\n  <script type=\"module\" src=\"/conare-ds/elements/button-link.js\"></script>\n  <script type=\"module\" src=\"/conare-ds/elements/hero.js\"></script>\n  <script type=\"module\" src=\"/conare-ds/elements/bento.js\"></script>\n  <script type=\"module\" src=\"/conare-ds/elements/newsletter.js\"></script>\n  <script type=\"module\" src=\"/conare-ds/elements/call-to-action.js\"></script>\n</head>\n<body>\n  <!-- Built by conare-ds design page compose from the outline: only its words are on the page. -->\n  <conare-site-page header='{&quot;items&quot;:[],&quot;links&quot;:[{&quot;label&quot;:&quot;Pricing&quot;,&quot;href&quot;:&quot;#pricing&quot;},{&quot;label&quot;:&quot;Docs&quot;,&quot;href&quot;:&quot;#docs&quot;}],&quot;homeLabel&quot;:&quot;Conare home&quot;}' footer='{&quot;columns&quot;:[{&quot;title&quot;:&quot;Product&quot;,&quot;links&quot;:[{&quot;label&quot;:&quot;Pricing&quot;,&quot;href&quot;:&quot;#pricing&quot;}]},{&quot;title&quot;:&quot;Company&quot;,&quot;links&quot;:[{&quot;label&quot;:&quot;Blog&quot;,&quot;href&quot;:&quot;#blog&quot;}]}],&quot;legal&quot;:&quot;© 2026 Acme, Inc.&quot;,&quot;name&quot;:&quot;Conare&quot;}'>\n    <span slot=\"logo\" class=\"font-heading text-heading-3 text-fg\">Conare</span>\n    <conare-button-link slot=\"actions\" size=\"sm\" href=\"#sign-in\">Sign in</conare-button-link>\n    <conare-button-link slot=\"sheet-actions\" size=\"sm\" href=\"#sign-in\">Sign in</conare-button-link>\n    <conare-hero eyebrow=\"Search\" heading=\"Every answer comes back with its source\" body=\"Search the documents you connect, from one API.\"><conare-button-link slot=\"action\" grain href=\"#start\" pixels arrow>Start building</conare-button-link></conare-hero>\n    <conare-bento heading=\"One place for everything you search\" tag=\"Features\" cells='[{&quot;title&quot;:&quot;Search every file&quot;,&quot;body&quot;:&quot;Ask in plain words.&quot;,&quot;size&quot;:&quot;large&quot;},{&quot;title&quot;:&quot;Keep apps in step&quot;,&quot;body&quot;:&quot;Files are read as they arrive.&quot;},{&quot;title&quot;:&quot;Answers you can check&quot;,&quot;body&quot;:&quot;Every answer links to its source.&quot;}]'></conare-bento>\n    <conare-newsletter heading=\"News once a month\" sent-text=\"You are on the list.\"></conare-newsletter>\n    <conare-call-to-action heading=\"Start building today\"><conare-button-link variant=\"light\" fill=\"black\" href=\"#start\" pixels arrow>Get started</conare-button-link></conare-call-to-action>\n  </conare-site-page>\n</body>\n</html>\n",
+        "page.tsx": "import { SitePage } from '@/components/site/SitePage'\nimport { Hero } from '@/components/site/Hero'\nimport { ButtonLink } from '@/components/site/ButtonLink'\nimport { Bento } from '@/components/site/Bento'\nimport { Newsletter } from '@/components/site/Newsletter'\nimport { CallToAction } from '@/components/site/CallToAction'\n\n// Built by conare-ds design page compose from the outline: only its words are on the page.\nexport default function Page() {\n  return (\n    <SitePage header={{\"items\":[],\"links\":[{\"label\":\"Pricing\",\"href\":\"#pricing\"},{\"label\":\"Docs\",\"href\":\"#docs\"}],\"homeLabel\":\"Conare home\"}} footer={{\"columns\":[{\"title\":\"Product\",\"links\":[{\"label\":\"Pricing\",\"href\":\"#pricing\"}]},{\"title\":\"Company\",\"links\":[{\"label\":\"Blog\",\"href\":\"#blog\"}]}],\"legal\":\"© 2026 Acme, Inc.\",\"name\":\"Conare\"}} logo={<span className=\"font-heading text-heading-3 text-fg\">{\"Conare\"}</span>} actions={() => <ButtonLink href={\"#sign-in\"} size=\"sm\">{\"Sign in\"}</ButtonLink>}>\n      <Hero eyebrow={\"Search\"} title={\"Every answer comes back with its source\"} body={\"Search the documents you connect, from one API.\"} action={<ButtonLink href={\"#start\"} grain pixels arrow>{\"Start building\"}</ButtonLink>} />\n      <Bento title={\"One place for everything you search\"} tag={\"Features\"} cells={[{\"title\":\"Search every file\",\"body\":\"Ask in plain words.\",\"size\":\"large\"},{\"title\":\"Keep apps in step\",\"body\":\"Files are read as they arrive.\"},{\"title\":\"Answers you can check\",\"body\":\"Every answer links to its source.\"}]} />\n      <Newsletter title={\"News once a month\"} sentText={\"You are on the list.\"} />\n      <CallToAction title={\"Start building today\"}>\n        <ButtonLink href={\"#start\"} variant=\"light\" fill=\"black\" pixels arrow>{\"Get started\"}</ButtonLink>\n      </CallToAction>\n    </SitePage>\n  )\n}\n",
+        "page.vue": "<script setup lang=\"ts\">\nimport SitePage from '@/components/site/SitePage.vue'\nimport Hero from '@/components/site/Hero.vue'\nimport ButtonLink from '@/components/site/ButtonLink.vue'\nimport Bento from '@/components/site/Bento.vue'\nimport Newsletter from '@/components/site/Newsletter.vue'\nimport CallToAction from '@/components/site/CallToAction.vue'\n// Built by conare-ds design page compose from the outline: only its words are on the page.\nconst header = {\"items\":[],\"links\":[{\"label\":\"Pricing\",\"href\":\"#pricing\"},{\"label\":\"Docs\",\"href\":\"#docs\"}],\"homeLabel\":\"Conare home\"}\nconst footer = {\"columns\":[{\"title\":\"Product\",\"links\":[{\"label\":\"Pricing\",\"href\":\"#pricing\"}]},{\"title\":\"Company\",\"links\":[{\"label\":\"Blog\",\"href\":\"#blog\"}]}],\"legal\":\"© 2026 Acme, Inc.\",\"name\":\"Conare\"}\nconst s2_cells = [{\"title\":\"Search every file\",\"body\":\"Ask in plain words.\",\"size\":\"large\"},{\"title\":\"Keep apps in step\",\"body\":\"Files are read as they arrive.\"},{\"title\":\"Answers you can check\",\"body\":\"Every answer links to its source.\"}]\n// The page's title: Acme search (set it with your router's head).\n</script>\n\n<template>\n  <SitePage :header=\"header\" :footer=\"footer\">\n    <template #logo><span class=\"font-heading text-heading-3 text-fg\">Conare</span></template>\n    <template #actions><ButtonLink href=\"#sign-in\" size=\"sm\">Sign in</ButtonLink></template>\n    <Hero eyebrow=\"Search\" title=\"Every answer comes back with its source\" body=\"Search the documents you connect, from one API.\">\n      <template #action><ButtonLink href=\"#start\" grain pixels arrow>Start building</ButtonLink></template>\n    </Hero>\n    <Bento title=\"One place for everything you search\" tag=\"Features\" :cells=\"s2_cells\" />\n    <Newsletter title=\"News once a month\" sent-text=\"You are on the list.\" />\n    <CallToAction title=\"Start building today\">\n      <ButtonLink href=\"#start\" variant=\"light\" fill=\"black\" pixels arrow>Get started</ButtonLink>\n    </CallToAction>\n  </SitePage>\n</template>\n"
+      }
+    }
   },
   "iconSet": {
     "count": 42,
