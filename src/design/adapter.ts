@@ -2,6 +2,7 @@ import { createCanvas, loadImage } from '@napi-rs/canvas';
 import { brand } from '../lib/brand.js';
 import { blend, color, familyFor, font, scratch } from '../assets/canvas.js';
 import { deckDoc, renderSlide, slideTypes, type SlideType } from '../assets/deck.js';
+import { EXTRAS } from '../assets/slides-extra.js';
 import { imageDoc, LAYOUTS, sizeIds, sizesFor, sizeOf, type Layout, type Size } from '../assets/layouts.js';
 import { merchDoc, merchItems, renderItem, findItem, PX_PER_IN } from '../assets/merch.js';
 import { BADGES, compose, customSize, layersOf, renderDesign, slotsOf, type BadgeStyle, type Pic } from '../assets/og.js';
@@ -40,7 +41,16 @@ const SLIDE_COPY: Record<SlideType, Record<string, string>> = {
 	quote: { quote: 'quote', by: 'attribution' },
 	image: { headline: 'title', body: 'body', badge: 'eyebrow' },
 	end: { headline: 'title', body: 'url' },
+	qa: { headline: 'title', body: 'body' },
+	agenda: { headline: 'title', items: 'items' },
+	timeline: { headline: 'title', items: 'items' },
+	comparison: { headline: 'title', left: 'left', right: 'right', leftItems: 'leftItems', rightItems: 'rightItems' },
+	chart: { headline: 'title', data: 'data' },
+	team: { headline: 'title', people: 'people' },
+	grid: { headline: 'title' },
 };
+/** Slides whose part under the title is drawn beside the layout (deck only for now; their parts are not layers a design edits). */
+const DESIGN_SLIDES = () => slideTypes().filter((t) => !(EXTRAS as string[]).includes(t));
 
 const layoutOptions = (): TemplateInfo['options'] => [
 	{ id: 'badge-style', values: [...BADGES], description: 'How the badge is drawn' },
@@ -202,7 +212,7 @@ export function wordColors(): string[] {
 export function adapter(): Adapter {
 	return {
 		brand: brand().bin,
-		templates: () => [...LAYOUTS.map(layoutInfo), ...TEMPLATES.map((t) => cardInfo(t.id)), ...slideTypes().map(slideInfo), ...merchItems().map((i) => merchInfo(i.id)), ...SUBJECTS().map(artInfo), ...LAYOUTS.filter((l) => l !== 'avatar').map(videoInfo)],
+		templates: () => [...LAYOUTS.map(layoutInfo), ...TEMPLATES.map((t) => cardInfo(t.id)), ...DESIGN_SLIDES().map(slideInfo), ...merchItems().map((i) => merchInfo(i.id)), ...SUBJECTS().map(artInfo), ...LAYOUTS.filter((l) => l !== 'avatar').map(videoInfo)],
 		defaults(template, size) {
 			const slide = after(template, 'slide-') as SlideType | undefined;
 			if (slide) return { size: { id: 'slide', width: deckDoc().width, height: deckDoc().height }, theme: imageDoc().templates[deckDoc().slides[slide].layout]!.theme, seed: undefined, options: {} };

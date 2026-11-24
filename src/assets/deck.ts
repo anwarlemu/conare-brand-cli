@@ -9,11 +9,12 @@ import { pick } from './io.js';
 import { imagesToPdf } from './pdf.js';
 import { imageDoc, specFor, unitOf, type Layout, type Size, type Spec } from './layouts.js';
 import { compose, drawDesign, type Design, type Pic } from './og.js';
+import { drawExtra, EXTRAS, type Extra } from './slides-extra.js';
 
 // Deck slides at 1920 by 1080 (brand/assets/deck.json), each drawn on one of the share-image layouts at slide size.
 // A slide draws the copy it is given (its sample copy with `sample`); a slot it needs and was not given is an error.
 
-export type SlideType = 'cover' | 'section' | 'statement' | 'bullets' | 'stat' | 'quote' | 'image' | 'end';
+export type SlideType = 'cover' | 'section' | 'agenda' | 'statement' | 'bullets' | 'stat' | 'chart' | 'timeline' | 'comparison' | 'quote' | 'image' | 'grid' | 'team' | 'qa' | 'end';
 type DeckDoc = { width: number; height: number; slides: Record<SlideType, { name: string; layout: Layout; description: string; slots: string[]; required: string[]; sample: Record<string, string> }> };
 
 let doc: DeckDoc | undefined;
@@ -25,8 +26,8 @@ export const slideSize = (): Size => {
 	return { id: 'slide', w: W, h: H, label: 'Slide 16:9', frame: full, safe: full, avoid: [], shown: 640 };
 };
 
-export type Slide = { type: string; theme?: string; picture?: Pic | null; layers?: Record<string, LayerEdit>; seed?: number; sample?: boolean; highlight?: string } & Record<string, unknown>;
-const META = ['type', 'theme', 'picture', 'layers', 'seed', 'sample', 'highlight'];
+export type Slide = { type: string; theme?: string; picture?: Pic | null; pictures?: Pic[]; layers?: Record<string, LayerEdit>; seed?: number; sample?: boolean; highlight?: string } & Record<string, unknown>;
+const META = ['type', 'theme', 'picture', 'pictures', 'images', 'layers', 'seed', 'sample', 'highlight'];
 
 export function deckCatalog() {
 	const d = deckDoc();
@@ -89,6 +90,16 @@ export function slideDesign(slide: Slide): Design {
 				return make({ headline: s.quote, badgeText: s.attribution, badge: 'dot' }, { badgeFont: 'mono', badgeWeight: 400, badgeTracking: 80, badgeRatio: 0.225, badgeGap: 34 });
 			case 'image':
 				return make({ headline: s.title, body: s.body, badgeText: s.eyebrow });
+			case 'agenda':
+			case 'timeline':
+			case 'comparison':
+			case 'chart':
+			case 'team':
+			case 'grid':
+				/* The title at the top in its share; the slide's part fills what is under it. */
+				return make({ headline: s.title || undefined }, { valign: 'top', limit: s.title ? 0.32 : 0.01, width: 0.86, fill: 1 });
+			case 'qa':
+				return make({ headline: s.title, body: s.body });
 			case 'end':
 				return make({ headline: s.title, body: s.url || imageDoc().address }, { logo: { ...own.logo!, word: true, h: 64 * u } });
 		}
@@ -101,10 +112,17 @@ export type SlideRender = { png?: Buffer; svg?: string; pdf?: Buffer; rgb?: Buff
 
 export async function renderSlide(slide: Slide, opts: { png?: boolean; svg?: boolean; jpg?: boolean; webp?: boolean; pdf?: boolean; scale?: number } = { png: true }): Promise<SlideRender> {
 	const d = slideDesign(slide);
+	const type = slide.type as SlideType;
+	const extra = (EXTRAS as string[]).includes(type) ? (type as Extra) : null;
+	const slots = extra ? slotsFor(type, slide, slide.sample === true) : {};
+	const paint = async (ctx: Parameters<typeof drawDesign>[0]) => {
+		const r = await drawDesign(ctx, d, slide.picture ?? null);
+		return extra ? [...r.layers, ...(await drawExtra(ctx, extra, d, r.plan, slots, slide.pictures ?? []))] : r.layers;
+	};
 	const out: SlideRender = { width: W, height: H, layers: [] };
 	if (opts.png !== false || opts.jpg || opts.webp || opts.pdf) {
 		const sf = surface(W, H, { scale: opts.scale ?? 1 });
-		out.layers = (await drawDesign(sf.ctx, d, slide.picture ?? null)).layers;
+		out.layers = await paint(sf.ctx);
 		out.png = toPng(sf, { opaque: true });
 		const rgb = rgbOf(sf);
 		out.rgb = rgb.rgb;
@@ -114,7 +132,7 @@ export async function renderSlide(slide: Slide, opts: { png?: boolean; svg?: boo
 	}
 	if (opts.svg) {
 		const sf = surface(W, H, { svg: true });
-		out.layers = (await drawDesign(sf.ctx, d, slide.picture ?? null)).layers;
+		out.layers = await paint(sf.ctx);
 		out.svg = toSvg(sf);
 	}
 	return out;

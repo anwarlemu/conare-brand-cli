@@ -1,7 +1,7 @@
 // Every command's flags in one place: the parser, the unknown-flag check and the manifest all read it.
 
 /** Flags that take a value (the rest are switches). */
-export const VALUE_FLAGS = new Set(['cwd', 'components', 'pages', 'framework', 'title', 'text', 'subtitle', 'eyebrow', 'by', 'author', 'image', 'template', 'size', 'ground', 'out', 'format', 'section', 'token', 'surface', 'group', 'state', 'part', 'prop', 'theme', 'badge', 'highlight', 'partner', 'credit', 'input', 'body', 'number', 'items', 'stat', 'quote', 'attribution', 'url', 'fps', 'at', 'seed', 'shape', 'variant', 'headline', 'dpi', 'file', 'example', 'width', 'height', 'note', 'page', 'badge-style', 'scale', 'name', 'role', 'email', 'phone', 'date']);
+export const VALUE_FLAGS = new Set(['cwd', 'components', 'pages', 'framework', 'title', 'text', 'subtitle', 'eyebrow', 'by', 'author', 'image', 'template', 'size', 'ground', 'out', 'format', 'section', 'token', 'surface', 'group', 'state', 'part', 'prop', 'theme', 'badge', 'highlight', 'partner', 'credit', 'input', 'body', 'number', 'items', 'stat', 'quote', 'attribution', 'url', 'fps', 'at', 'seed', 'shape', 'variant', 'headline', 'dpi', 'file', 'example', 'width', 'height', 'note', 'page', 'badge-style', 'scale', 'name', 'role', 'email', 'phone', 'date', 'data', 'people', 'left', 'right', 'leftItems', 'rightItems']);
 export const REPEAT_FLAGS = new Set(['prop']);
 
 
@@ -25,7 +25,7 @@ export const FLAGS: Record<string, string[]> = {
 	brand: ['section', 'token'],
 	principles: ['surface'],
 	component: ['group', 'part', 'state', 'prop', 'source'],
-	deck: ['input', 'sample', 'scale', 'seed', 'headline', 'badge', 'title', 'body', 'eyebrow', 'number', 'items', 'stat', 'quote', 'attribution', 'url', 'image', 'theme', 'format', 'out', 'list'],
+	deck: ['data', 'people', 'left', 'right', 'leftItems', 'rightItems', 'input', 'sample', 'scale', 'seed', 'headline', 'badge', 'title', 'body', 'eyebrow', 'number', 'items', 'stat', 'quote', 'attribution', 'url', 'image', 'theme', 'format', 'out', 'list'],
 	illustrate: ['size', 'width', 'height', 'ground', 'sample', 'scale', 'theme', 'seed', 'shape', 'image', 'transparent', 'format', 'out', 'list'],
 	merch: ['variant', 'theme', 'sample', 'seed', 'title', 'headline', 'url', 'dpi', 'format', 'out', 'guides', 'list'],
 	print: ['variant', 'theme', 'sample', 'seed', 'title', 'headline', 'body', 'text', 'badge', 'eyebrow', 'name', 'role', 'email', 'phone', 'date', 'stat', 'quote', 'by', 'note', 'url', 'dpi', 'format', 'out', 'guides', 'list'],

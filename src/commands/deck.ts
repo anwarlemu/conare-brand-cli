@@ -12,7 +12,7 @@ import { readPicture } from '../assets/picture.js';
 
 // `deck`: slides at 1920 by 1080 from a JSON file or one slide from flags: a PNG per slide and one PDF.
 
-export const DECK_SLOTS = ['title', 'headline', 'body', 'badge', 'eyebrow', 'number', 'items', 'stat', 'quote', 'attribution', 'url'];
+export const DECK_SLOTS = ['title', 'headline', 'body', 'badge', 'data', 'people', 'left', 'right', 'leftItems', 'rightItems', 'eyebrow', 'number', 'items', 'stat', 'quote', 'attribution', 'url'];
 
 export function deckHelp(): string {
 	const b = brand().bin;
@@ -89,12 +89,19 @@ export async function runDeck(cwd: string, args: string[], flags: Flags): Promis
 	for (const [i, s] of slides.entries()) {
 		if (!s || typeof s.type !== 'string') throw new Error(`Slide ${i + 1} needs a "type" (${slideTypes().join(', ')}).`);
 		const id = pick('slide type', s.type, slideTypes());
-		const { image, ...rest } = s as Slide & { image?: unknown };
+		const { image, images, ...rest } = s as Slide & { image?: unknown; images?: unknown };
+		if (images !== undefined && id !== 'grid') throw new Error(`Slide ${i + 1} (${id}) takes no "images"; they go on a grid slide.`);
+		if (images !== undefined && !(Array.isArray(images) && images.every((x) => typeof x === 'string'))) throw new Error(`Slide ${i + 1}: "images" is a list of picture paths.`);
+		const pics = [];
+		for (const f of (images as string[] | undefined) ?? []) {
+			const p = await readPicture(base, f, 2000);
+			pics.push({ img: p.canvas, w: p.width, h: p.height });
+		}
 		if (image !== undefined && !deckDoc().slides[id].slots.includes('image')) throw new Error(`Slide ${i + 1} (${id}) has no picture; "image" goes on an image slide.`);
 		const pic = typeof image === 'string' && image.trim() ? await readPicture(base, image, 2000) : null;
 		let r;
 		try {
-			r = await renderSlide({ ...rest, type: id, picture: pic ? { img: pic.canvas, w: pic.width, h: pic.height } : null }, { png: true, svg: formats.includes('svg'), jpg: formats.includes('jpg'), webp: formats.includes('webp'), scale });
+			r = await renderSlide({ ...rest, type: id, pictures: pics, picture: pic ? { img: pic.canvas, w: pic.width, h: pic.height } : null }, { png: true, svg: formats.includes('svg'), jpg: formats.includes('jpg'), webp: formats.includes('webp'), scale });
 		} catch (err) {
 			throw new Error(`Slide ${i + 1} (${id}): ${(err as Error).message}`);
 		}
