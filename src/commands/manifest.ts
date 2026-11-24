@@ -31,6 +31,7 @@ const COMMANDS = [
 	{ name: 'deck', summary: 'Slides at 1920x1080 on the share layouts: a PNG per slide and one PDF, from a JSON file or one slide from flags. Only the copy passed is drawn.' },
 	{ name: 'video', summary: 'Motion: a layout coming in the way the site moves (H.264 MP4 or VP9 WebM through ffmpeg, or a still PNG), and the Motion JPEG clips.' },
 	{ name: 'merch', summary: 'Print files at real size with bleed and safe area (tee, hoodie, cap, tote, mug, sticker with cut line, poster).' },
+	{ name: 'icons', summary: 'Favicon set (ico, 16 to 512, apple touch, maskable, svg, web manifest), app icon, profile pictures, a default share image, and the icons the library uses as SVG (lucide, ISC).' },
 	{ name: 'print', summary: 'Documents at paper size with bleed and safe area, PNG, SVG and PDF: business card, letterhead, report cover, one-pager, case study, event badge, name tag, certificate.' },
 	{ name: 'illustrate', summary: "The brand's illustration style as SVG (vector shapes) and PNG: stacks of documents, the pixel grid, the room and more." },
 	{ name: 'figma', summary: 'Files and ordered Figma MCP calls: tokens (variables), push (image, slide, illustration, asset, component, page), pull, check.' },

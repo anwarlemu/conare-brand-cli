@@ -18,6 +18,7 @@ import { suggest } from './lib/names.js';
 import { illustrateHelp, runIllustrate } from './commands/illustrate.js';
 import { merchHelp, runMerch } from './commands/merch.js';
 import { figmaHelp, runFigma } from './commands/figma.js';
+import { iconsHelp, runIcons } from './commands/icons.js';
 import { runDesign } from './design/index.js';
 import { adapter, paint } from './design/adapter.js';
 import { COMMON, FLAGS, REPEAT_FLAGS, VALUE_FLAGS } from './commands/flags-table.js';
@@ -84,6 +85,7 @@ const HELP = () => {
 		more('the Motion JPEG clips: --template headline|statement|announcement|logo --size square,vertical,landscape'),
 		row('merch tee-back --variant black', 'Print files at real size with bleed and safe area (merch --list)'),
 		row('print business-card --name "..."', 'Documents: business cards, letterheads, report covers, one-pagers, case studies, badges, certificates'),
+		row('icons', 'Favicons, app icons, profile pictures, a default share image and the icon set'),
 		row('illustrate stacks', "The brand's illustration style as SVG and PNG (illustrate --list)"),
 		row('figma tokens|push|pull|check', 'Files and the ordered Figma MCP calls; the CLI never calls Figma'),
 		'',
@@ -140,7 +142,7 @@ async function main() {
 	const cwd = resolve(typeof flags.cwd === 'string' ? flags.cwd : process.cwd());
 	const json = flags.json === true;
 	const out = (value: unknown, text: string) => console.log(json ? JSON.stringify(value, null, 2) : text);
-	const ownHelp = new Set(['image', 'print', 'deck', 'illustrate', 'merch', 'figma', 'video', 'brand', 'principles', 'component', 'manifest', 'describe']);
+	const ownHelp = new Set(['image', 'icons', 'print', 'deck', 'illustrate', 'merch', 'figma', 'video', 'brand', 'principles', 'component', 'manifest', 'describe']);
 	if (flags.help && command && !ownHelp.has(command)) {
 		console.log(HELP());
 		return;
@@ -265,6 +267,15 @@ async function main() {
 				return;
 			}
 			const r = await runIllustrate(cwd, args, flags);
+			out(r.json, r.text);
+			return;
+		}
+		case 'icons': {
+			if (flags.help) {
+				console.log(iconsHelp());
+				return;
+			}
+			const r = await runIcons(cwd, args, flags);
 			out(r.json, r.text);
 			return;
 		}

@@ -265,3 +265,29 @@ console.log(`build: ${names.length} tokens, ${brand.fonts.files.length} font fil
 	}
 	writeFileSync(join(out, 'glyphs.json'), JSON.stringify(glyphs));
 }
+
+// The icons the library draws (lucide, ISC licence: build/icons/LICENSE), one SVG each, in the brand's stroke.
+{
+	const require = createRequire(import.meta.url);
+	const lucide = require('lucide');
+	const { readdirSync, statSync } = await import('node:fs');
+	const walk = (d) => readdirSync(d).flatMap((f) => (statSync(join(d, f)).isDirectory() ? walk(join(d, f)) : [join(d, f)]));
+	const names = new Set();
+	for (const f of walk(join(root, 'registry', 'components'))) {
+		for (const m of readFileSync(f, 'utf8').matchAll(/import \{([^}]+)\} from 'lucide-vue-next'/g)) for (const n of m[1].split(',')) names.add(n.trim().split(/\s+as\s+/)[0]);
+	}
+	const stroke = brand.icons?.stroke ?? 1.5;
+	const dir = join(out, 'icons');
+	mkdirSync(dir, { recursive: true });
+	const kebab = (s) => s.replace(/([a-z0-9])([A-Z])/g, '$1-$2').replace(/([A-Z])([A-Z][a-z])/g, '$1-$2').toLowerCase();
+	const used = [];
+	for (const n of [...names].filter(Boolean).sort()) {
+		const node = lucide[n] ?? lucide.icons?.[n];
+		if (!node) continue;
+		const body = node.map(([tag, attrs]) => `<${tag} ${Object.entries(attrs).map(([k, v]) => `${k}="${v}"`).join(' ')}/>`).join('');
+		writeFileSync(join(dir, `${kebab(n)}.svg`), `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round">${body}</svg>\n`);
+		used.push(kebab(n));
+	}
+	writeFileSync(join(dir, 'LICENSE'), readFileSync(join(root, 'node_modules', 'lucide', 'LICENSE'), 'utf8'));
+	writeFileSync(join(dir, 'index.json'), `${JSON.stringify({ source: 'lucide (the icons the library uses)', licence: 'ISC', stroke, icons: used }, null, 2)}\n`);
+}

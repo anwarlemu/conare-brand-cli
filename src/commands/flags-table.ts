@@ -28,6 +28,7 @@ export const FLAGS: Record<string, string[]> = {
 	deck: ['data', 'people', 'left', 'right', 'leftItems', 'rightItems', 'input', 'sample', 'scale', 'seed', 'headline', 'badge', 'title', 'body', 'eyebrow', 'number', 'items', 'stat', 'quote', 'attribution', 'url', 'image', 'theme', 'format', 'out', 'list'],
 	illustrate: ['size', 'width', 'height', 'ground', 'sample', 'scale', 'theme', 'seed', 'shape', 'image', 'transparent', 'format', 'out', 'list'],
 	merch: ['variant', 'theme', 'sample', 'seed', 'title', 'headline', 'url', 'dpi', 'format', 'out', 'guides', 'list'],
+	icons: ['theme', 'out'],
 	print: ['variant', 'theme', 'sample', 'seed', 'title', 'headline', 'body', 'text', 'badge', 'eyebrow', 'name', 'role', 'email', 'phone', 'date', 'stat', 'quote', 'by', 'note', 'url', 'dpi', 'format', 'out', 'guides', 'list'],
 	figma: ['out', 'file', 'size', 'theme', 'headline', 'badge', 'badge-style', 'note', 'partner', 'credit', 'sample', 'subtitle', 'title', 'text', 'eyebrow', 'body', 'number', 'items', 'stat', 'quote', 'attribution', 'url', 'seed', 'example', 'width'],
 	manifest: [],
