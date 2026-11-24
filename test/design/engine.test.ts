@@ -275,3 +275,18 @@ describe('nothing blank', () => {
 		expect(r.notes?.[0]).toMatch(/Add a block/);
 	});
 });
+
+describe('the red theme', () => {
+	it('grounds on the original red, sets every line large, and refuses what cannot be that large naming the theme', async () => {
+		expect(imageDoc().themes.red!.bg).toBe('home-red');
+		const size = sizeOf('og')!;
+		const r = await renderDesign(compose({ template: 'room', size, headline: 'Ship your next idea today', body: 'One line about it' }), null, { png: false, rgb: true });
+		const shown = size.shown;
+		for (const l of r.layers.filter((x) => x.text && x.text.ground.includes('#ea3325'))) expect((l.text!.size * shown) / size.w, `${l.id} is large where it is shown`).toBeGreaterThanOrEqual(23.99);
+		const long = compose({ template: 'room', size, headline: 'Ship your next idea today', body: 'Acme indexes the documents you bring, keeps them in sync and returns the right passage with its source, every time.', credit: '@acme', note: 'For teams' });
+		await expect(renderDesign(long, null, { png: false, rgb: true })).rejects.toThrow(/On the red theme every line is set as large text.*(paper|white|black)/);
+		const sample = compose({ template: 'room', size, sample: true });
+		const s = await renderDesign(sample, null, { png: false, rgb: true });
+		expect(s.layers.some((l) => l.id === 'headline')).toBe(true);
+	});
+});

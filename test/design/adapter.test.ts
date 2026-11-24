@@ -20,9 +20,11 @@ g.fillStyle = '#336699';
 g.fillRect(0, 0, 900, 600);
 writeFileSync(picture, c.toBuffer('image/png'));
 
+/* Short copy is what a post carries: the headline, a line and a label. The foot's note, page and credit go with the long
+   copy (on the red theme every line is large, so a full foot is refused there with a suggestion, which tryDraw allows). */
 const words = (long: boolean) => (t: TemplateInfo) =>
 	Object.fromEntries(
-		t.copy.map(({ id }) => [
+		t.copy.filter(({ id }) => long || !['note', 'page', 'credit'].includes(id) || t.copy.filter((c) => c.required).some((c) => c.id === id)).map(({ id }) => [
 			id,
 			id === 'headline' || id === 'quote' ? (long ? 'Everything your agents need to search, buy and reply in one place' : 'Ship your next idea today')
 			: id === 'stat' ? (long ? '1,000,000+' : '42%')

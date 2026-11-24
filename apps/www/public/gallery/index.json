@@ -303,10 +303,10 @@
     {
       "id": "ad-320x50",
       "label": "Mobile banner ad",
-      "src": "/gallery/size-room-ad-320x50.png",
+      "src": "/gallery/size-hero-ad-320x50.png",
       "width": 320,
       "height": 50,
-      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size ad-320x50"
+      "command": "conare-ds image hero --headline \"Everything your agent needs to know.\" --size ad-320x50"
     },
     {
       "id": "ad-160x600",
@@ -1297,12 +1297,12 @@
     ],
     "refused": {
       "command": "conare-ds design revise banner.design.json \"make the logo neon green\"",
-      "message": "Nothing was changed. \"make the logo neon green\": Colors outside the brand palette are refused. The palette: #fefefe, #020202, #6c6a68, #f7f6f4, #d02a1d, #989694, #f3f3f3, #ea3325, #f4f4f4, #edecea, #d6483d, #252525, #e9e9e9, in the themes white, paper, red, black, grey."
+      "message": "Nothing was changed. \"make the logo neon green\": Colors outside the brand palette are refused. The palette: #fefefe, #020202, #6c6a68, #f7f6f4, #ea3325, #989694, #f3f3f3, #d02a1d, #f4f4f4, #edecea, #ed4f43, #252525, #e9e9e9, in the themes white, paper, red, black, grey."
     },
     "variants": {
       "src": "/gallery/design-variants.png",
       "width": 1920,
-      "height": 784,
+      "height": 856,
       "command": "conare-ds design variants banner.design.json --by theme"
     },
     "sizes": {
@@ -1333,18 +1333,18 @@
         },
         {
           "id": "launch",
-          "label": "A launch post, square, on red",
+          "label": "A launch post, square, on red: every line large",
           "src": "/gallery/compose-launch.png",
           "width": 1080,
           "height": 1080,
           "commands": [
             "conare-ds design new compose --size square -o launch.design.json",
+            "conare-ds design revise launch.design.json \"red theme\"",
             "conare-ds design compose add launch.design.json logo --at 0,0,4,1",
             "conare-ds design compose add launch.design.json badge New --at 0,2,3,1",
-            "conare-ds design compose add launch.design.json headline \"Search now reads every table\" --at 0,3,11,3",
-            "conare-ds design compose add launch.design.json body \"Rows and cells in PDFs, sheets and scans become text you can ask about.\" --at 0,6,10,2",
-            "conare-ds design compose add launch.design.json window --at 0,8,12,4",
-            "conare-ds design revise launch.design.json \"red theme\""
+            "conare-ds design compose add launch.design.json headline \"Search now reads every table\" --at 0,3,12,3",
+            "conare-ds design compose add launch.design.json body \"Rows and cells become text you can ask about.\" --at 0,6,12,3",
+            "conare-ds design compose add launch.design.json window --at 0,9,12,3"
           ]
         },
         {

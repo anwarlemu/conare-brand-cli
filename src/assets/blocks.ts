@@ -54,7 +54,8 @@ function iconNames(): string[] {
 }
 
 const infoOf = (type: string) => BLOCKS.find((b) => b.type === type)!;
-const tooLong = (id: string) => new CopyError(`The ${id} is too long for its cells. Shorten it, or give it more cells (make it wider or taller).`);
+let onRed = '';
+const tooLong = (id: string) => new CopyError(`The ${id} is too long for its cells. Shorten it, or give it more cells (make it wider or taller).${onRed}`);
 const meet = (a: Rect, b: Rect) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 const inset = (r: Rect, n: number): Rect => ({ x: r.x + n, y: r.y + n, w: r.w - 2 * n, h: r.h - 2 * n });
 
@@ -97,6 +98,7 @@ export function drawBlocks(ctx: Ctx, doc: DesignDoc, pictures: BlockPictures): D
 	const large = largeType(W, shown);
 	/* The red square, and the chart's largest bar: in the ink where the ground is red itself. */
 	const mark = contrast(color(imageDoc().accent), C.bg) >= 2 ? color(imageDoc().accent) : C.ink;
+	onRed = contrast(C.ink, C.bg) < 4.5 || contrast(C.muted, C.bg) < 4.5 ? ` On the ${theme} theme every line is set as large text so it reads: use the paper, white or black theme for more words.` : '';
 	const layers: DrawnLayer[] = [];
 	const e = (id: string): LayerEdit => doc.layers[id] ?? {};
 	const k = (id: string) => e(id).scale ?? 1;
@@ -267,7 +269,9 @@ export function drawBlocks(ctx: Ctx, doc: DesignDoc, pictures: BlockPictures): D
 				const ratio = pic ? pic.h / pic.w : PANEL_H / PANEL_W;
 				const w = Math.min(R.w, R.h / ratio) * Math.min(1, k(id));
 				const h = w * ratio;
-				const x = align === 'left' ? R.x : align === 'right' ? R.x + R.w - w : R.x + (R.w - w) / 2;
+				/* Pictures sit centered in their cells unless aligned. */
+				const pa = e(id).align ?? 'center';
+				const x = pa === 'left' ? R.x : pa === 'right' ? R.x + R.w - w : R.x + (R.w - w) / 2;
 				const y = R.y + (R.h - h) / 2;
 				if (pic) {
 					ctx.drawImage(pic.img, x, y, w, h);
@@ -530,16 +534,19 @@ export function recipeFor(template: string, size: string, copy: Record<string, s
 	};
 	const side = ['tile', 'app', 'feature', 'frame'].includes(template);
 	const cols = side ? 6 : 12;
+	/* On red every line is large: the headline and the line get more rows. */
+	const T0 = imageDoc().themes[theme];
+	const big = Boolean(T0 && (contrast(color(T0.ink), color(T0.bg)) < 4.5 || contrast(color(T0.muted), color(T0.bg)) < 4.5));
 	const quote = template === 'quote';
 	const head = copy.headline ?? copy.quote;
 	const blocks = [
 		...(art[template] ?? []),
 		{ id: 'logo', type: 'logo', at: at(0, 0, 3, 1) },
 		...(copy.badge ? [{ id: 'badge', type: 'badge', at: at(0, 2, Math.min(cols, 5), 1) }] : []),
-		...(head ? [{ id: quote ? 'quote' : 'headline', type: quote ? 'quote' : 'headline', at: at(0, 3, cols, quote ? 5 : 3) }] : []),
-		...(copy.body ? [{ id: 'body', type: 'body', at: at(0, 6, cols, 2) }] : []),
+		...(head ? [{ id: quote ? 'quote' : 'headline', type: quote ? 'quote' : 'headline', at: at(0, 3, cols, quote ? 5 : big ? 4 : 3) }] : []),
+		...(copy.body ? [{ id: 'body', type: 'body', at: at(0, big ? 7 : 6, cols, big ? 3 : 2) }] : []),
 		...(copy.partner ? [{ id: 'partner', type: 'body', at: at(4, 0, 4, 1) }] : []),
-		...(copy.credit ? [{ id: 'credit', type: 'body', at: at(0, 8, cols, 1) }] : []),
+		...(copy.credit ? [{ id: 'credit', type: 'body', at: at(0, big ? 10 : 8, cols, 1) }] : []),
 		...(copy.note ? [{ id: 'note', type: 'body', at: at(0, 11, 4, 1) }] : []),
 		...(copy.page ? [{ id: 'page', type: 'body', at: at(9, 11, 3, 1) }] : []),
 	];

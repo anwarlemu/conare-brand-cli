@@ -38,10 +38,18 @@ for (const size of og.sizeIds()) {
 	if (!og.LAYOUTS.some((l) => og.sizesFor(l).includes(size))) continue; // pages and cards for print: the print command
 	const s = og.sizeOf(size);
 	/* The room layout where it lays out; the hero (logo and words) on the sizes too small or too thin for the room. */
-	const t = size === 'avatar' ? 'avatar' : og.sizesFor('room').includes(size) ? 'room' : 'hero';
-	const copy = t === 'avatar' ? {} : t === 'room' ? { headline: roomHead } : { headline: og.imageDoc().templates.hero.sample.headline };
+	let t = size === 'avatar' ? 'avatar' : og.sizesFor('room').includes(size) ? 'room' : 'hero';
+	let copy = t === 'avatar' ? {} : t === 'room' ? { headline: roomHead } : { headline: og.imageDoc().templates.hero.sample.headline };
 	const big = s.w * s.h > 2_500_000;
-	const r = await og.renderDesign(og.compose({ template: t, size: s, ...copy }), null, big ? { jpg: true } : { png: true });
+	let r;
+	try {
+		r = await og.renderDesign(og.compose({ template: t, size: s, ...copy }), null, big ? { jpg: true } : { png: true });
+	} catch (e) {
+		/* On red every line is large: where the room's headline cannot be that large (a 50 px strip), the white hero. */
+		t = 'hero';
+		copy = { headline: og.imageDoc().templates.hero.sample.headline };
+		r = await og.renderDesign(og.compose({ template: t, size: s, ...copy }), null, big ? { jpg: true } : { png: true });
+	}
 	const file = `size-${t}-${size}.${big ? 'jpg' : 'png'}`;
 	save(file, big ? r.jpg : r.png);
 	index.sizes.push({ id: size, label: s.label, note: s.note, src: `/gallery/${file}`, width: s.w, height: s.h, command: `${b} image ${t}${copy.headline ? ` --headline "${copy.headline}"` : ''} --size ${size}` });
@@ -208,14 +216,14 @@ if (video.hasFfmpeg()) {
 			['compose', 'add', 'story.design.json', 'window', '--at', '8,6,4,5'],
 			['revise', 'story.design.json', 'paper theme'],
 		]],
-		['launch', 'A launch post, square, on red', [
+		['launch', 'A launch post, square, on red: every line large', [
 			['new', 'compose', '--size', 'square', '-o', 'launch.design.json'],
+			['revise', 'launch.design.json', 'red theme'],
 			['compose', 'add', 'launch.design.json', 'logo', '--at', '0,0,4,1'],
 			['compose', 'add', 'launch.design.json', 'badge', 'New', '--at', '0,2,3,1'],
-			['compose', 'add', 'launch.design.json', 'headline', 'Search now reads every table', '--at', '0,3,11,3'],
-			['compose', 'add', 'launch.design.json', 'body', 'Rows and cells in PDFs, sheets and scans become text you can ask about.', '--at', '0,6,10,2'],
-			['compose', 'add', 'launch.design.json', 'window', '--at', '0,8,12,4'],
-			['revise', 'launch.design.json', 'red theme'],
+			['compose', 'add', 'launch.design.json', 'headline', 'Search now reads every table', '--at', '0,3,12,3'],
+			['compose', 'add', 'launch.design.json', 'body', 'Rows and cells become text you can ask about.', '--at', '0,6,12,3'],
+			['compose', 'add', 'launch.design.json', 'window', '--at', '0,9,12,3'],
 		]],
 		['stat', 'A number for a story, with points and a button', [
 			['new', 'compose', '--size', 'story', '-o', 'stat.design.json'],

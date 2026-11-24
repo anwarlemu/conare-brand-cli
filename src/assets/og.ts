@@ -89,6 +89,12 @@ export function compose(o: Compose): Design {
 		badge: o.badge ?? (t.badge === 'none' ? 'label' : t.badge), badgeText, headline: headline ? emphasise(headline) : '', headlineAsked: headline, body: pickSlot('body'), credit: clean(o.credit),
 		note: pickSlot('note'), page: clean(o.page), partner, address: D.address, items: (o.items ?? []).map(clean).filter(Boolean), sample: o.sample === true, seed: o.seed ?? 0, layers: o.layers ?? {}, spec,
 	};
+	/* On a ground small words cannot stand on (white on the red), a label set on the ground (dot) or a tinted pill would
+	   have to be large: it goes on the off-white chip instead, unless the person asked for that style. */
+	{
+		const C = colorsOf(d);
+		if (!o.badge && (d.badge === 'dot' || d.badge === 'pill') && (contrast(C.ink, C.bg) < 4.5 || contrast(C.muted, C.bg) < 4.5)) d.badge = 'label';
+	}
 	if (o.sample) d.fromSample = (['note', 'body', 'badge'] as const).filter((k) => !clean(given[k]) && clean(s[k]));
 	if (d.note || d.page) spec.foot = true;
 	applyEdits(d);
@@ -229,7 +235,11 @@ const accent = () => color(imageDoc().accent);
 /** The smallest type in a color on a ground at a size: the legible floor, and large type where the pair is under 4.5. */
 function floorFor(d: Design, ink: string, ground: string) {
 	const small = smallFloor(d.w, d.size.shown);
-	return contrast(ink, ground) >= 4.5 ? small : Math.max(small, largeType(d.w, d.size.shown));
+	/* A layout whose own theme is red keeps its large lines in every theme, so changing the theme moves nothing. */
+	const own = imageDoc().themes[imageDoc().templates[d.template]?.theme ?? ''];
+	const ownLarge = own && (contrast(color(own.ink), color(own.bg)) < 4.5 || contrast(color(own.muted), color(own.bg)) < 4.5);
+	const onGround = ground.toLowerCase() === colorsOf(d).bg.toLowerCase();
+	return contrast(ink, ground) >= 4.5 && !(ownLarge && onGround) ? small : Math.max(small, largeType(d.w, d.size.shown));
 }
 
 /* A chip's colors at a type size: the accent under large type, the deeper red under small (off-white on it passes 4.5). */
@@ -736,13 +746,13 @@ export function planDesign(ctx: Ctx, d: Design, pic: Pic | null, own = Boolean(p
 				plan.panel = { x: right(content) - pw, ...py, w: pw };
 				wordsZone = { ...zone, w: zone.w - pw - gap * 1.6 };
 			}
-			/* Clear of a logo anchored in a corner above or below it, by the logo's clear space. */
-			const L = plan.logo?.rect;
-			if (L && meet(grow(L, L.h * 0.2 + 2), plan.panel)) {
-				const P = plan.panel;
-				if (L.y + L.h / 2 < P.y + P.h / 2) { const y = bottom(L) + L.h * 0.2 + gap * 0.5; plan.panel = { ...P, y, h: bottom(P) - y }; }
-				else plan.panel = { ...P, h: L.y - L.h * 0.2 - gap * 0.5 - P.y };
-			}
+		}
+		/* Clear of a logo anchored above or below it, by the logo's clear space. */
+		const L = plan.logo?.rect;
+		if (L && plan.panel && meet(grow(L, L.h * 0.2 + 2), plan.panel)) {
+			const P = plan.panel;
+			if (L.y + L.h / 2 < P.y + P.h / 2) { const y = bottom(L) + L.h * 0.2 + gap * 0.5; plan.panel = { ...P, y, h: bottom(P) - y }; }
+			else plan.panel = { ...P, h: L.y - L.h * 0.2 - gap * 0.5 - P.y };
 		}
 	}
 
@@ -817,7 +827,7 @@ export function planDesign(ctx: Ctx, d: Design, pic: Pic | null, own = Boolean(p
 		wordsZone = { x: zone.x, y: top, w: zone.w, h: block.h };
 		plan.window = { x: F.x + (F.w - ww) / 2, y: top + block.h + g, w: ww, h: wh };
 		if (bleed) plan.fade = { from: plan.window.y + (H - plan.window.y) * 0.62, to: H };
-	} else plan.block = fitWords(ctx, d, { w: wordsZone.w, h: wordsZone.h * (s.limit || 1) }, aboveH);
+	} else plan.block = fitWords(ctx, d, { w: wordsZone.w, h: wordsZone.h * (s.window ? 1 : s.limit || 1) }, aboveH); // a hidden window leaves the words its room
 
 	/* The window keeps out of what the platform covers beside it (a profile picture, a page's buttons): it moves off a
 	   zone on its left, and narrows from the side of a zone on its right. It may still run into a crop strip and fade. */
@@ -1589,6 +1599,16 @@ export async function renderDesign(d: Design, picture: Pic | null, opts: RenderO
 	return out;
 }
 
+/* On a ground where the ink is under 4.5 to 1 (white on the red), every line is set as large text; words that cannot be
+   set that large are refused, saying so and naming the themes that take more words. */
+export function largeOnly(d: Pick<Design, 'theme' | 'highlight'>, e: CopyError): CopyError {
+	const C = colorsOf(d);
+	if (contrast(C.ink, C.bg) >= 4.5 && contrast(C.muted, C.bg) >= 4.5) return e;
+	const D = imageDoc();
+	const ok = Object.keys(D.themes).filter((t) => contrast(color(D.themes[t]!.ink), color(D.themes[t]!.bg)) >= 4.5 && contrast(color(D.themes[t]!.muted), color(D.themes[t]!.bg)) >= 4.5);
+	return new CopyError(`${e.message} On the ${d.theme} theme every line is set as large text so it reads, which leaves room for fewer words: shorten it, or use the ${ok.join(', ')} theme.`);
+}
+
 /* The sample copy is the brand's longest: where it cannot fit (a small ad, a thin banner), the sample drops its note,
    then its line, then its label, and never a word anyone passed. */
 function planSample(ctx: Ctx, d: Design, pic: Pic | null, own: boolean): Plan {
@@ -1597,7 +1617,7 @@ function planSample(ctx: Ctx, d: Design, pic: Pic | null, own: boolean): Plan {
 			return planDesign(ctx, d, pic, own);
 		} catch (e) {
 			const k = e instanceof CopyError ? d.fromSample?.find((x) => (x === 'badge' ? d.badgeText : d[x])) : undefined;
-			if (!k) throw e;
+			if (!k) throw e instanceof CopyError ? largeOnly(d, e) : e;
 			if (k === 'badge') d.badgeText = '';
 			else d[k] = '';
 			if (k === 'note' && !d.page) d.spec.foot = specFor(d.template, scaleBox(d.size).w, scaleBox(d.size).h).foot;

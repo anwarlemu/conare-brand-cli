@@ -25,7 +25,7 @@ const rules = [
   ['words', 'Every word passed is drawn, whole. Copy shrinks and re-wraps to a size that reads, then the write fails saying what to shorten.'],
   ['invented', 'No words are drawn that were not passed, besides the logo and the address. --sample fills sample copy on purpose.'],
   ['overlap', 'Words, art, the window and panel edges never touch; the logo keeps its space.'],
-  ['contrast', 'Small words stand 4.5 to 1 from what is behind them, large words 3 to 1; small words on red draw on the deeper red.'],
+  ['contrast', 'Small words stand 4.5 to 1 from what is behind them, large words 3 to 1 (24 px, or 18.66 px bold, where the picture is shown). On the red every line is set large; what cannot be is refused, naming the themes that take more words.'],
   ['safe-area', 'Words, the logo and key art keep out of what the platform covers: the X profile picture, story bars, YouTube\'s crop.'],
   ['cut', 'Nothing is cut off at the edge: windows are placed whole and patterns draw whole words.'],
   ['color and type', 'Only brand colors and faces. These, the logo and whole words can never be allowed; composition rules can, with --allow.'],
