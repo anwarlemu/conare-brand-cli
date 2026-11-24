@@ -1,3 +1,4 @@
+import { createCanvas } from '@napi-rs/canvas';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -78,8 +79,10 @@ describe('image layouts', () => {
 
 describe('deck', () => {
 	it('draws every slide type at 1920x1080 and writes a PDF', async () => {
+		/* The slides whose data is always the person's have no sample copy: they are given Acme's. */
+		const own: Record<string, Record<string, unknown>> = { agenda: { items: ['One', 'Two'] }, chart: { data: 'Mon 120 | Tue 180' }, timeline: { items: ['May: One', 'June: Two'] }, comparison: { left: 'Before', right: 'After' }, grid: { title: 'Pictures', pictures: [(() => { const c = createCanvas(40, 30); return { img: c, w: 40, h: 30 }; })()] }, team: { people: ['Acme admin, Head of search'] }, qa: { title: 'Questions?' } };
 		for (const type of slideTypes()) {
-			const r = await renderSlide({ type, sample: true }, { png: true });
+			const r = await renderSlide(own[type] ? { type, ...own[type] } : { type, sample: true }, { png: true });
 			expect(pngSize(r.png!), type).toEqual({ width: 1920, height: 1080 });
 		}
 		writeFileSync(join(dir, 'deck.json'), JSON.stringify({ slides: [{ type: 'cover', title: 'One' }, { type: 'bullets', items: ['A', 'B'] }, { type: 'end' }] }));
@@ -106,7 +109,7 @@ describe('video', () => {
 		expect(sha(readFileSync(join(dir, 'v', 'a.mp4')))).toBe(sha(readFileSync(join(dir, 'v', 'b.mp4'))));
 		const probe = execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'stream=codec_name,width,height', '-of', 'csv=p=0', join(dir, 'v', 'a.mp4')], { encoding: 'utf8' });
 		expect(probe.trim()).toBe('h264,1512,256');
-		expect(cli(['video', '--template', 'hero', '--format', 'gif']).err).toMatch(/Unknown format/);
+		expect(cli(['video', 'hero', '--sample', '--format', 'avi']).err).toMatch(/Unknown format/);
 	});
 });
 

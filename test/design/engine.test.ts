@@ -38,6 +38,9 @@ describe('layouts at every size', () => {
 						const d = compose({ template: t as Layout, size, headline: c.headline, body: c.body, badgeText: c.badge, note: c.note, partner: c.partner });
 						const r = await renderDesign(d, null, { png: false, rgb: true, scale: 0.25 });
 						bad.push(...problems(id, size.w, size.h, c, r.layers).map((p) => `${id}: ${p}`));
+						/* What a platform covers (the brand's own sizes too, which the shared check does not know): no words, logo or window in it. */
+						const meets = (a: { x: number; y: number; w: number; h: number }, b: typeof a) => a.x < b.x + b.w - 0.5 && b.x < a.x + a.w - 0.5 && a.y < b.y + b.h - 0.5 && b.y < a.y + a.h - 0.5;
+						for (const l of r.layers) if ((l.kind === 'text' || l.kind === 'logo' || l.id === 'window' || l.id === 'picture') && size.avoid.some((z) => meets(l.box, z) && !((l.bleeds || l.fades) && z.w >= size.w * 0.9))) bad.push(`${id}: ${l.id} is in what the platform covers`);
 						const said = r.layers.filter((l) => l.text && !l.text.own).map((l) => l.id);
 						expect(said.every((s) => Object.keys(c).includes(s)), `${t} ${id} draws ${said}`).toBe(true);
 					} catch (err) {
@@ -49,6 +52,23 @@ describe('layouts at every size', () => {
 			expect(bad).toEqual([]);
 		});
 	}
+});
+
+describe('sample copy', () => {
+	it('draws at every size: where the long sample cannot fit it drops its note, line or label, never a passed word', { timeout: 300_000 }, async () => {
+		const failed: string[] = [];
+		for (const t of LAYOUTS) for (const id of sizesFor(t)) {
+			try {
+				const d = compose({ template: t as Layout, size: sizeOf(id)!, sample: true });
+				await renderDesign(d, null, { png: false, rgb: true, scale: 0.25 });
+			} catch (err) {
+				failed.push(`${t} ${id}: ${(err as Error).message}`);
+			}
+		}
+		expect(failed).toEqual([]);
+		const d = compose({ template: 'hero', size: sizeOf('ad-320x50')!, sample: true, body: 'Acme keeps every file in step with the apps your team already uses every day, reads every row and cell of every table, and returns the passage that answers with the file it came from, in any language your team writes in.' });
+		await expect(renderDesign(d, null, { png: false, rgb: true, scale: 0.25 })).rejects.toThrow(ADVICE);
+	});
 });
 
 describe('cards at every size', () => {

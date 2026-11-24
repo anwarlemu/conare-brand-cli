@@ -86,10 +86,12 @@ export function sizeOf(id: string): Size | undefined {
  */
 export const scaleBox = (s: Pick<Size, 'w' | 'h' | 'frame'>) => (s.frame.x > 0 && s.frame.y > 0 && s.frame.h < s.h * 0.5 ? { w: s.frame.w, h: s.frame.h } : { w: s.w, h: s.h });
 
-/** Sizes a layout draws at. The profile picture takes the mark alone; nothing else fits a circle that small. */
+/** Sizes a layout draws at. The profile picture takes the mark alone; nothing else fits a circle that small. Hatch's box
+ * needs a floor beside the words, which a 50 px strip does not have. A video call background keeps its words to the top
+ * band over the person, where the layouts whose art is a window or the hollow wordmark have no room for it. */
 export function sizesFor(t: Layout): string[] {
 	if (t === 'avatar') return ['avatar'];
-	return sizeIds().filter((id) => id !== 'avatar');
+	return sizeIds().filter((id) => id !== 'avatar' && !(t === 'hatch' && (sizeOf(id)?.h ?? 100) < 60) && !(id === 'zoom-background' && ['app', 'feature', 'outline', 'hatch'].includes(t)));
 }
 
 /* One unit: a pixel of the 1200 x 630 link preview, grown with the area. */

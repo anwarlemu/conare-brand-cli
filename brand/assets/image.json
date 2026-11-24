@@ -65,7 +65,7 @@
 		"ad-320x50": { "w": 320, "h": 50, "label": "Display ad, mobile banner", "shown": 320, "limitMb": 0.15, "note": "IAB mobile banner; about 150 KB." },
 		"ad-160x600": { "w": 160, "h": 600, "label": "Display ad, wide skyscraper", "shown": 160, "limitMb": 0.15, "note": "IAB wide skyscraper; about 150 KB." },
 		"ad-970x250": { "w": 970, "h": 250, "label": "Display ad, billboard", "shown": 970, "limitMb": 0.15, "note": "IAB billboard; about 150 KB." },
-		"zoom-background": { "w": 1920, "h": 1080, "label": "Video call background", "shown": 960, "avoid": [[480, 160, 960, 920]], "note": "Zoom and Meet take 16:9 at 1920 by 1080. The person sits in the middle; words and the logo keep to the sides and top. The middle's size is a convention, so approximate. The picture is mirrored to the person but not to others." },
+		"zoom-background": { "w": 1920, "h": 1080, "label": "Video call background", "shown": 960, "frame": [64, 24, 1792, 128], "avoid": [[480, 160, 960, 920]], "note": "Zoom and Meet take 16:9 at 1920 by 1080. The person sits in the middle; words and the logo keep to the sides and top. The middle's size is a convention, so approximate. The picture is mirrored to the person but not to others." },
 		"wallpaper-desktop": { "w": 2560, "h": 1440, "label": "Desktop wallpaper", "shown": 1280 },
 		"wallpaper-phone": { "w": 1179, "h": 2556, "label": "Phone wallpaper", "shown": 393, "frame": [0, 560, 1179, 1600], "note": "The clock covers the top and the dock or swipe bar the bottom on a phone lock screen; the middle is kept for words, measured on a 6.1 in phone, so approximate." }
 	},

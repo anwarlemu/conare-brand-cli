@@ -39,6 +39,8 @@ export type Design = {
 	address: string;
 	items: string[];
 	sample: boolean;
+	/** The slots filled from the sample copy (not passed): they are the ones a sample may drop where it cannot fit. */
+	fromSample?: ('note' | 'body' | 'badge')[];
 	seed: number;
 	layers: Record<string, LayerEdit>;
 	spec: Spec;
@@ -87,6 +89,7 @@ export function compose(o: Compose): Design {
 		badge: o.badge ?? (t.badge === 'none' ? 'label' : t.badge), badgeText, headline: headline ? emphasise(headline) : '', headlineAsked: headline, body: pickSlot('body'), credit: clean(o.credit),
 		note: pickSlot('note'), page: clean(o.page), partner, address: D.address, items: (o.items ?? []).map(clean).filter(Boolean), sample: o.sample === true, seed: o.seed ?? 0, layers: o.layers ?? {}, spec,
 	};
+	if (o.sample) d.fromSample = (['note', 'body', 'badge'] as const).filter((k) => !clean(given[k]) && clean(s[k]));
 	if (d.note || d.page) spec.foot = true;
 	applyEdits(d);
 	return d;
@@ -801,6 +804,28 @@ export function planDesign(ctx: Ctx, d: Design, pic: Pic | null, own = Boolean(p
 		if (bleed) plan.fade = { from: plan.window.y + (H - plan.window.y) * 0.62, to: H };
 	} else plan.block = fitWords(ctx, d, { w: wordsZone.w, h: wordsZone.h * (s.limit || 1) }, aboveH);
 
+	/* The window keeps out of what the platform covers beside it (a profile picture, a page's buttons): it moves off a
+	   zone on its left, and narrows from the side of a zone on its right. It may still run into a crop strip and fade. */
+	if (plan.window) {
+		const pad = gap * 0.5;
+		for (const z of d.size.avoid) {
+			const w0: Rect = plan.window!;
+			if (z.w >= W * 0.9 || !meet(w0, z)) continue;
+			const mid = w0.y + w0.h / 2;
+			let x: number = w0.x;
+			let r = right(w0);
+			if (z.x + z.w / 2 < w0.x + w0.w / 2) {
+				x = right(z) + pad;
+				r = Math.min(right(F), x + w0.w);
+			} else r = z.x - pad;
+			const ww = r - x;
+			if (ww < w0.w * 0.6) throw new CopyError(`The ${winId} does not fit beside what ${d.size.label} covers. Use another layout at ${d.size.id}.`);
+			const wh = ww * ratio;
+			plan.window = { x, y: plan.fade ? w0.y : mid - wh / 2, w: ww, h: wh };
+			if (plan.fade) plan.fade = { from: plan.window.y + (H - plan.window.y) * 0.62, to: H };
+		}
+	}
+
 	/* The words in their zone. */
 	const b = plan.block;
 	const wx = s.align === 'left' ? wordsZone.x : s.align === 'right' ? right(wordsZone) - b.w : wordsZone.x + (wordsZone.w - b.w) / 2;
@@ -1229,7 +1254,7 @@ export async function drawDesign(ctx: Ctx, d: Design, picture: Pic | null, mo?: 
 	const C = colorsOf(d);
 	if (picture && !d.spec.window) throw new Error(`${d.template} has no picture window. --image goes in the app and feature layouts.`);
 	const scene = d.spec.window === 'picture' && !picture && !hidden(d, 'window') ? await standInScene(d.sample) : null;
-	const plan = planDesign(ctx, d, picture ?? scene, Boolean(picture));
+	const plan = planSample(ctx, d, picture ?? scene, Boolean(picture));
 	const layers: DrawnLayer[] = [];
 	const clear = plan.logo ? plan.logo.lockup.h * 0.2 : 0;
 	const full: Rect = { x: 0, y: 0, w: W, h: H };
@@ -1398,7 +1423,7 @@ export async function drawDesign(ctx: Ctx, d: Design, picture: Pic | null, mo?: 
 			ctx.letterSpacing = '0px';
 		});
 		if (f.rule) report('rule', 'art', f.rule);
-		for (const p of f.parts) report(p.id, 'text', { x: p.x, y: f.y - f.fs * 0.6, w: p.w, h: f.fs * 1.2 }, { text: { asked: p.text, drawn: p.text, size: f.fs, color: C.ink, ground: [C.bg], ...(p.id === 'note' ? {} : { own: true }) } });
+		for (const p of f.parts) report(p.id, 'text', { x: p.x, y: f.y - f.fs * 0.6, w: p.w, h: f.fs * 1.2 }, { text: { asked: p.text, drawn: p.text, size: f.fs, color: C.ink, ground: [C.bg], ...(p.id === 'note' ? (d.sample ? { sample: true } : {}) : { own: true }) } });
 	}
 	return { layers, plan };
 }
@@ -1549,10 +1574,26 @@ export async function renderDesign(d: Design, picture: Pic | null, opts: RenderO
 	return out;
 }
 
+/* The sample copy is the brand's longest: where it cannot fit (a small ad, a thin banner), the sample drops its note,
+   then its line, then its label, and never a word anyone passed. */
+function planSample(ctx: Ctx, d: Design, pic: Pic | null, own: boolean): Plan {
+	for (;;) {
+		try {
+			return planDesign(ctx, d, pic, own);
+		} catch (e) {
+			const k = e instanceof CopyError ? d.fromSample?.find((x) => (x === 'badge' ? d.badgeText : d[x])) : undefined;
+			if (!k) throw e;
+			if (k === 'badge') d.badgeText = '';
+			else d[k] = '';
+			if (k === 'note' && !d.page) d.spec.foot = specFor(d.template, scaleBox(d.size).w, scaleBox(d.size).h).foot;
+		}
+	}
+}
+
 /** How long the animated version runs: until the last part has settled, then a 1.5 second hold. */
 export function motionLength(d: Design): number {
 	const { ctx } = scratch(4, 4);
-	const plan = planDesign(ctx, d, null);
+	const plan = planSample(ctx, d, null, false);
 	const head = revealEnd((plan.block.head?.lines ?? []).map((l) => l.text.length));
 	const rest = Math.max(T.foot + duration('entrance'), plan.window ? T.window + duration('viz-card') : 0, T.stickers + plan.stacks.length * 0.06 + duration('entrance'));
 	return Math.round((Math.max(head, rest) + 1.5) * 10) / 10;

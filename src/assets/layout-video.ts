@@ -69,8 +69,8 @@ export async function runLayoutVideo(cwd: string, template: string, args: string
 	const at = num('at', flags.at, 0, 60);
 	const isStill = flags.still === true || at !== undefined;
 	const out = str(flags.out);
-	const outExt = out ? /\.(mp4|webm|png)$/i.exec(out)?.[1]?.toLowerCase() : undefined;
-	const formatRaw = str(flags.format) ?? (isStill ? 'png' : outExt === 'webm' ? 'webm' : 'mp4');
+	const outExt = out ? /\.(mp4|webm|gif|png)$/i.exec(out)?.[1]?.toLowerCase() : undefined;
+	const formatRaw = str(flags.format) ?? (isStill ? 'png' : outExt === 'webm' || outExt === 'gif' ? outExt : 'mp4');
 	if (isStill) pick('format', formatRaw, ['png']);
 	const formats = isStill ? [] : formatRaw.split(',').flatMap((f) => (f === 'both' ? [...VIDEO_FORMATS] : [pick('format', f, [...VIDEO_FORMATS, 'both'] as const) as VideoFormat]));
 	if (outExt && outExt !== (isStill ? 'png' : formats[0])) throw new Error(`--out ends in .${outExt} and this writes ${isStill ? 'png' : formats.join(', ')}.`);
@@ -96,7 +96,7 @@ export async function runLayoutVideo(cwd: string, template: string, args: string
 		assertDrawn({ kind: 'image', template: layout, size: { id: size.id === 'vertical' ? 'story' : size.id === 'landscape' ? 'video' : size.id, width: size.w, height: size.h }, copy: flags.sample === true ? {} : { headline: copy.headline, body: copy.body, badge: copy.badge, note: copy.note, page: copy.page, credit: copy.credit, partner: copy.partner }, layers: first.layers });
 		for (const n of pictureNotes(picture, first.layers.find((l) => l.id === 'picture')?.box.w ?? 0, str(flags.image))) notes.add(n);
 		if (size.note) notes.add(`${size.label}: ${size.note}`);
-		const stem = named ? named.replace(/\.(mp4|webm|png)$/i, '') : join(dir, `${layout}-${size.id === 'custom' ? `${size.w}x${size.h}` : size.id}${theme ? `-${theme}` : ''}`);
+		const stem = named ? named.replace(/\.(mp4|webm|gif|png)$/i, '') : join(dir, `${layout}-${size.id === 'custom' ? `${size.w}x${size.h}` : size.id}${theme ? `-${theme}` : ''}`);
 		if (isStill) {
 			const png = await still(d, pic, at === undefined ? undefined : at);
 			write(`${stem}.png`, png);

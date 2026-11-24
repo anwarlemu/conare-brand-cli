@@ -10,6 +10,8 @@ import { layoutCatalog } from '../assets/image.js';
 import { layoutVideoSizes } from '../assets/layout-video.js';
 import { deckCatalog } from '../assets/deck.js';
 import { merchCatalog } from '../assets/merch.js';
+import { MOTIONS } from '../assets/motion-extra.js';
+import { EMAILS } from './email.js';
 import { logoDoc } from '../assets/art.js';
 import { illustrateCatalog } from './illustrate.js';
 import { FIGMA_ACTIONS, PUSH_KINDS } from './figma.js';
@@ -85,8 +87,11 @@ export async function manifest(): Promise<Record<string, unknown>> {
 		image: { ...image, layouts: layoutCatalog() },
 		design: designManifest(adapter(), brand().bin),
 		deck: deckCatalog(),
-		video: { ...video, layouts: { templates: layoutCatalog().templates.map((t) => t.id), sizes: layoutVideoSizes(), formats: ['mp4', 'webm'], still: ['--still', '--at <seconds>'], fps: { default: 30, min: 12, max: 60 }, motion: 'Tokens only: settle (entrance, standard), headline reveal (enter, reveal-fade; reveal, reveal-ink), window (viz-card, viz). Never ease-in.', needs: 'ffmpeg on PATH' } },
+		video: { ...video, layouts: { templates: layoutCatalog().templates.map((t) => t.id), sizes: layoutVideoSizes(), formats: ['mp4', 'webm', 'gif'], loop: '--loop fades to the ground at the end (gif always loops)', clips: [...MOTIONS], clipNotes: { 'logo-reveal': 'the logo coming in, then holding', 'lower-third': '--name and --role on a transparent ground (WebM)', stat: '--headline is the number; it counts up', walkthrough: '--image a.png,b.png shown in turn' }, still: ['--still', '--at <seconds>'], fps: { default: 30, min: 12, max: 60 }, motion: 'Tokens only: settle (entrance, standard), headline reveal (enter, reveal-fade; reveal, reveal-ink), window (viz-card, viz). Never ease-in.', needs: 'ffmpeg on PATH' } },
 		merch: merchCatalog(),
+		print: { items: merchCatalog().items.filter((i) => i.kind === 'document').map((i) => i.id), command: `${brand().bin} print <item>`, note: 'The documents are in merch.items with kind document.' },
+		icons: { command: `${brand().bin} icons --out <dir>`, writes: ['favicon.ico', 'favicon.svg', 'favicon-16.png', 'favicon-32.png', 'favicon-48.png', 'favicon-192.png', 'favicon-512.png', 'apple-touch-icon.png', 'maskable-512.png', 'app-icon-1024.png', 'avatar-400.png', 'avatar-800.png', 'og-default.png', 'site.webmanifest', 'svg/ (with LICENSE)'] },
+		email: { templates: [...EMAILS], command: `${brand().bin} email <template>`, note: 'HTML tables with inline styles; logo.png is written beside them (--asset-base).' },
 		illustrate: { ...illustrateCatalog(), rules: illustrationRules() },
 		figma: { actions: [...FIGMA_ACTIONS], push: [...PUSH_KINDS], note: 'The CLI never calls Figma; it writes files and prints the MCP calls in order.' },
 		logo: { lockups: Object.keys(logoDoc().lockups).map((id) => ({ id, description: logoDoc().lockups[id] })), colors: logoDoc().colors, clearSpace: null, minimumSize: null, note: 'brand/logo defines no clear space or minimum size; none is invented. The image engine keeps its own layout spacing (a fifth of the lockup height) and a legible height (12 px as shown), as drawing rules, not brand rules.' },
