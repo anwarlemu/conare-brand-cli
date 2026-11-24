@@ -133,6 +133,14 @@
   ],
   "sizes": [
     {
+      "id": "og",
+      "label": "Link preview",
+      "src": "/gallery/size-room-og.png",
+      "width": 1200,
+      "height": 630,
+      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size og"
+    },
+    {
       "id": "square",
       "label": "Square post",
       "src": "/gallery/size-room-square.png",
@@ -151,26 +159,72 @@
     {
       "id": "story",
       "label": "Story",
+      "note": "Meta asks for about 14% at the top (250 px) and 20% at the bottom (340 px) to stay free. Its page draws the numbers with a script and could not be read, so they are approximate. Reels covers are stricter (about 35% at the bottom).",
       "src": "/gallery/size-room-story.png",
       "width": 1080,
       "height": 1920,
       "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size story"
     },
     {
+      "id": "landscape",
+      "label": "Landscape post",
+      "src": "/gallery/size-room-landscape.png",
+      "width": 1200,
+      "height": 675,
+      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size landscape"
+    },
+    {
       "id": "x-banner",
       "label": "X header",
+      "note": "X recommends 1500 x 500 and the header is cropped by up to about 60 px at the top and bottom. The profile picture covers the lower left: its place is measured on x.com at its 600 px column, so it is approximate.",
       "src": "/gallery/size-room-x-banner.png",
       "width": 1500,
       "height": 500,
       "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size x-banner"
     },
     {
+      "id": "linkedin",
+      "label": "LinkedIn post",
+      "src": "/gallery/size-room-linkedin.png",
+      "width": 1200,
+      "height": 627,
+      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size linkedin"
+    },
+    {
       "id": "linkedin-banner",
       "label": "LinkedIn profile cover",
+      "note": "1584 x 396 and under 8 MB are LinkedIn's. Where the profile picture sits is measured on the desktop page, so it is approximate.",
       "src": "/gallery/size-room-linkedin-banner.png",
       "width": 1584,
       "height": 396,
       "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size linkedin-banner"
+    },
+    {
+      "id": "linkedin-page",
+      "label": "LinkedIn page cover",
+      "note": "1512 x 256, 3 MB, and \"keep key details away from the edges, especially the lower-right corner\" are LinkedIn's. The widths of those edges are approximate, as it gives none. (The older 1128 x 191 is the same shape to within 1%.)",
+      "src": "/gallery/size-room-linkedin-page.png",
+      "width": 1512,
+      "height": 256,
+      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size linkedin-page"
+    },
+    {
+      "id": "youtube",
+      "label": "YouTube channel art",
+      "note": "YouTube: 2560 x 1440 recommended, words and logos inside 1235 x 338 of 2048 x 1152, 6 MB or smaller.",
+      "src": "/gallery/size-room-youtube.jpg",
+      "width": 2560,
+      "height": 1440,
+      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size youtube"
+    },
+    {
+      "id": "youtube-thumbnail",
+      "label": "YouTube thumbnail",
+      "note": "YouTube takes 2 MB from a phone and 50 MB from a computer; the check warns at 2 MB. Where the video length sits is approximate.",
+      "src": "/gallery/size-room-youtube-thumbnail.png",
+      "width": 1280,
+      "height": 720,
+      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size youtube-thumbnail"
     },
     {
       "id": "email",
@@ -179,6 +233,130 @@
       "width": 1200,
       "height": 400,
       "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size email"
+    },
+    {
+      "id": "avatar",
+      "label": "Profile picture",
+      "note": "X takes 2 MB; YouTube takes 15 MB. Shown as a circle, so everything stays inside the square the circle holds.",
+      "src": "/gallery/size-avatar-avatar.png",
+      "width": 800,
+      "height": 800,
+      "command": "conare-ds image avatar --size avatar"
+    },
+    {
+      "id": "linkedin-square",
+      "label": "LinkedIn square",
+      "src": "/gallery/size-room-linkedin-square.png",
+      "width": 1200,
+      "height": 1200,
+      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size linkedin-square"
+    },
+    {
+      "id": "facebook-cover",
+      "label": "Facebook cover",
+      "note": "Facebook shows the cover at 820 by 312 on a computer and crops its sides to about 640 by 360 on a phone; the profile picture covers the lower left on a computer. Facebook publishes the display sizes; the covered corner is measured, so approximate.",
+      "src": "/gallery/size-room-facebook-cover.png",
+      "width": 1640,
+      "height": 624,
+      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size facebook-cover"
+    },
+    {
+      "id": "pinterest",
+      "label": "Pinterest pin",
+      "note": "Pinterest recommends 2:3 at 1000 by 1500.",
+      "src": "/gallery/size-room-pinterest.png",
+      "width": 1000,
+      "height": 1500,
+      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size pinterest"
+    },
+    {
+      "id": "ad-300x250",
+      "label": "Display ad, medium rectangle",
+      "note": "IAB medium rectangle. Ad networks take about 150 KB; write jpg or webp, and --scale 2 for sharp screens.",
+      "src": "/gallery/size-room-ad-300x250.png",
+      "width": 300,
+      "height": 250,
+      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size ad-300x250"
+    },
+    {
+      "id": "ad-336x280",
+      "label": "Display ad, large rectangle",
+      "note": "IAB large rectangle; about 150 KB.",
+      "src": "/gallery/size-room-ad-336x280.png",
+      "width": 336,
+      "height": 280,
+      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size ad-336x280"
+    },
+    {
+      "id": "ad-728x90",
+      "label": "Display ad, leaderboard",
+      "note": "IAB leaderboard; about 150 KB.",
+      "src": "/gallery/size-room-ad-728x90.png",
+      "width": 728,
+      "height": 90,
+      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size ad-728x90"
+    },
+    {
+      "id": "ad-300x600",
+      "label": "Display ad, half page",
+      "note": "IAB half page; about 150 KB.",
+      "src": "/gallery/size-room-ad-300x600.png",
+      "width": 300,
+      "height": 600,
+      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size ad-300x600"
+    },
+    {
+      "id": "ad-320x50",
+      "label": "Display ad, mobile banner",
+      "note": "IAB mobile banner; about 150 KB.",
+      "src": "/gallery/size-room-ad-320x50.png",
+      "width": 320,
+      "height": 50,
+      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size ad-320x50"
+    },
+    {
+      "id": "ad-160x600",
+      "label": "Display ad, wide skyscraper",
+      "note": "IAB wide skyscraper; about 150 KB.",
+      "src": "/gallery/size-room-ad-160x600.png",
+      "width": 160,
+      "height": 600,
+      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size ad-160x600"
+    },
+    {
+      "id": "ad-970x250",
+      "label": "Display ad, billboard",
+      "note": "IAB billboard; about 150 KB.",
+      "src": "/gallery/size-room-ad-970x250.png",
+      "width": 970,
+      "height": 250,
+      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size ad-970x250"
+    },
+    {
+      "id": "zoom-background",
+      "label": "Video call background",
+      "note": "Zoom and Meet take 16:9 at 1920 by 1080. The person sits in the middle; words and the logo keep to the sides and top. The middle's size is a convention, so approximate. The picture is mirrored to the person but not to others.",
+      "src": "/gallery/size-room-zoom-background.png",
+      "width": 1920,
+      "height": 1080,
+      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size zoom-background"
+    },
+    {
+      "id": "wallpaper-desktop",
+      "label": "Desktop wallpaper",
+      "src": "/gallery/size-room-wallpaper-desktop.jpg",
+      "width": 2560,
+      "height": 1440,
+      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size wallpaper-desktop"
+    },
+    {
+      "id": "wallpaper-phone",
+      "label": "Phone wallpaper",
+      "note": "The clock covers the top and the dock or swipe bar the bottom on a phone lock screen; the middle is kept for words, measured on a 6.1 in phone, so approximate.",
+      "src": "/gallery/size-room-wallpaper-phone.jpg",
+      "width": 1179,
+      "height": 2556,
+      "command": "conare-ds image room --headline \"Everything your agent needs to know.\" --size wallpaper-phone"
     }
   ],
   "slides": [
@@ -199,6 +377,15 @@
       "width": 1920,
       "height": 1080,
       "command": "conare-ds deck section --sample"
+    },
+    {
+      "id": "agenda",
+      "label": "Agenda",
+      "description": "The title and up to eight numbered points in the display face, a hairline between them.",
+      "src": "/gallery/slide-agenda.png",
+      "width": 1920,
+      "height": 1080,
+      "command": "conare-ds deck agenda --title \"Today.\" --items \"Where Acme searches today | What changes | The rollout | Questions\""
     },
     {
       "id": "statement",
@@ -228,6 +415,33 @@
       "command": "conare-ds deck stat --sample"
     },
     {
+      "id": "chart",
+      "label": "Chart",
+      "description": "Bars from data (\"label number | ...\"): the brand has no chart style, so bars are its hairline grey with the largest in the accent, labels and values in mono.",
+      "src": "/gallery/slide-chart.png",
+      "width": 1920,
+      "height": 1080,
+      "command": "conare-ds deck chart --title \"Searches a week at Acme.\" --data \"Mon 120 | Tue 180 | Wed 240 | Thu 210 | Fri 160\""
+    },
+    {
+      "id": "timeline",
+      "label": "Timeline",
+      "description": "Two to six points along a hairline, each marked with the red square: \"when: what\".",
+      "src": "/gallery/slide-timeline.png",
+      "width": 1920,
+      "height": 1080,
+      "command": "conare-ds deck timeline --title \"The rollout.\" --items \"May: Connect the help center | June: Sync the shared drive | July: Open search to every team\""
+    },
+    {
+      "id": "comparison",
+      "label": "Comparison",
+      "description": "Two columns under a title, each a heading and up to six points, split by a hairline; the right column is marked in red.",
+      "src": "/gallery/slide-comparison.png",
+      "width": 1920,
+      "height": 1080,
+      "command": "conare-ds deck comparison --title \"Before and after.\" --left \"Before\" --right \"After\" --leftItems \"Folders searched by hand | Answers without sources\" --rightItems \"One search across every file | Every answer with its source\""
+    },
+    {
       "id": "quote",
       "label": "Quote",
       "description": "A quote set large over the hollow wordmark, the attribution in a red-marked line above it.",
@@ -244,6 +458,33 @@
       "width": 1920,
       "height": 1080,
       "command": "conare-ds deck image --sample"
+    },
+    {
+      "id": "grid",
+      "label": "Image grid",
+      "description": "One to four of your pictures, each shown whole in a hairline frame (\"images\": [...] in the deck file).",
+      "src": "/gallery/slide-grid.png",
+      "width": 1920,
+      "height": 1080,
+      "command": "conare-ds deck grid --title \"What the team made.\""
+    },
+    {
+      "id": "team",
+      "label": "Team",
+      "description": "Up to eight people as name and role in hairline cards (\"Name, role | ...\"); no photos.",
+      "src": "/gallery/slide-team.png",
+      "width": 1920,
+      "height": 1080,
+      "command": "conare-ds deck team --title \"The Acme team.\" --people \"Acme admin, Head of search | Acme engineer, Platform | Acme designer, Product | Acme lead, Support\""
+    },
+    {
+      "id": "qa",
+      "label": "Questions",
+      "description": "A closing slide for questions on the red room: your title and a line (an address or a name to write to).",
+      "src": "/gallery/slide-qa.png",
+      "width": 1920,
+      "height": 1080,
+      "command": "conare-ds deck qa --title \"Questions?\" --body \"Write to admin@acme.com\""
     },
     {
       "id": "end",
@@ -355,6 +596,217 @@
       "width": 900,
       "height": 600,
       "command": "conare-ds illustrate scene --size 900x600"
+    }
+  ],
+  "documents": [
+    {
+      "id": "business-card",
+      "label": "Business card",
+      "variant": "paper",
+      "variants": [
+        "paper",
+        "ink",
+        "red",
+        "plain"
+      ],
+      "trim": "3.5 x 2 in",
+      "bleed": 0.125,
+      "safe": 0.125,
+      "method": "digital or offset print",
+      "src": "/gallery/merch-business-card.png",
+      "width": 270,
+      "height": 162,
+      "command": "conare-ds print business-card --variant paper --name \"Acme admin\" --role \"Head of search\" --email \"admin@acme.com\" --url \"acme.com\""
+    },
+    {
+      "id": "letterhead-letter",
+      "label": "Letterhead, US Letter",
+      "variant": "plain",
+      "variants": [
+        "plain",
+        "paper"
+      ],
+      "trim": "8.5 x 11 in",
+      "bleed": 0,
+      "safe": 0.5,
+      "method": "office or digital print",
+      "src": "/gallery/merch-letterhead-letter.png",
+      "width": 612,
+      "height": 792,
+      "command": "conare-ds print letterhead-letter --variant plain --url \"acme.com\" --body \"Acme connected its help center and shared drive in a week. Every team now asks in plain words and gets the passage that answers, with the file it came from.\" --note \"Acme, Inc.\""
+    },
+    {
+      "id": "letterhead-a4",
+      "label": "Letterhead, A4",
+      "variant": "plain",
+      "variants": [
+        "plain",
+        "paper"
+      ],
+      "trim": "8.27 x 11.69 in",
+      "bleed": 0,
+      "safe": 0.5,
+      "method": "office or digital print",
+      "src": "/gallery/merch-letterhead-a4.png",
+      "width": 595,
+      "height": 842,
+      "command": "conare-ds print letterhead-a4 --variant plain --url \"acme.com\" --body \"Acme connected its help center and shared drive in a week. Every team now asks in plain words and gets the passage that answers, with the file it came from.\" --note \"Acme, Inc.\""
+    },
+    {
+      "id": "report-cover-letter",
+      "label": "Report cover, US Letter",
+      "variant": "red",
+      "variants": [
+        "red",
+        "paper",
+        "ink"
+      ],
+      "trim": "8.5 x 11 in",
+      "bleed": 0.125,
+      "safe": 0.5,
+      "method": "digital print",
+      "src": "/gallery/merch-report-cover-letter.png",
+      "width": 630,
+      "height": 810,
+      "command": "conare-ds print report-cover-letter --variant red --headline \"How Acme searches every file\" --body \"Acme connected its help center and shared drive in a week. Every team now asks in plain words and gets the passage that answers, with the file it came from.\" --date \"24 Nov 2026\" --url \"acme.com\""
+    },
+    {
+      "id": "report-cover-a4",
+      "label": "Report cover, A4",
+      "variant": "red",
+      "variants": [
+        "red",
+        "paper",
+        "ink"
+      ],
+      "trim": "8.27 x 11.69 in",
+      "bleed": 0.125,
+      "safe": 0.5,
+      "method": "digital print",
+      "src": "/gallery/merch-report-cover-a4.png",
+      "width": 613,
+      "height": 860,
+      "command": "conare-ds print report-cover-a4 --variant red --headline \"How Acme searches every file\" --body \"Acme connected its help center and shared drive in a week. Every team now asks in plain words and gets the passage that answers, with the file it came from.\" --date \"24 Nov 2026\" --url \"acme.com\""
+    },
+    {
+      "id": "one-pager-letter",
+      "label": "One-pager, US Letter",
+      "variant": "plain",
+      "variants": [
+        "plain",
+        "paper"
+      ],
+      "trim": "8.5 x 11 in",
+      "bleed": 0,
+      "safe": 0.5,
+      "method": "digital print or PDF",
+      "src": "/gallery/merch-one-pager-letter.png",
+      "width": 612,
+      "height": 792,
+      "command": "conare-ds print one-pager-letter --variant plain --badge \"Case study\" --headline \"How Acme searches every file\" --body \"Acme connected its help center and shared drive in a week. Every team now asks in plain words and gets the passage that answers, with the file it came from.\" --url \"acme.com\""
+    },
+    {
+      "id": "one-pager-a4",
+      "label": "One-pager, A4",
+      "variant": "plain",
+      "variants": [
+        "plain",
+        "paper"
+      ],
+      "trim": "8.27 x 11.69 in",
+      "bleed": 0,
+      "safe": 0.5,
+      "method": "digital print or PDF",
+      "src": "/gallery/merch-one-pager-a4.png",
+      "width": 595,
+      "height": 842,
+      "command": "conare-ds print one-pager-a4 --variant plain --badge \"Case study\" --headline \"How Acme searches every file\" --body \"Acme connected its help center and shared drive in a week. Every team now asks in plain words and gets the passage that answers, with the file it came from.\" --url \"acme.com\""
+    },
+    {
+      "id": "case-study-letter",
+      "label": "Case study, US Letter",
+      "variant": "plain",
+      "variants": [
+        "plain",
+        "paper"
+      ],
+      "trim": "8.5 x 11 in",
+      "bleed": 0,
+      "safe": 0.5,
+      "method": "digital print or PDF",
+      "src": "/gallery/merch-case-study-letter.png",
+      "width": 612,
+      "height": 792,
+      "command": "conare-ds print case-study-letter --variant plain --badge \"Case study\" --headline \"How Acme searches every file\" --stat \"3x\" --body \"Acme connected its help center and shared drive in a week. Every team now asks in plain words and gets the passage that answers, with the file it came from.\" --quote \"We stopped searching folders by hand.\" --by \"Head of search, Acme\" --url \"acme.com\""
+    },
+    {
+      "id": "case-study-a4",
+      "label": "Case study, A4",
+      "variant": "plain",
+      "variants": [
+        "plain",
+        "paper"
+      ],
+      "trim": "8.27 x 11.69 in",
+      "bleed": 0,
+      "safe": 0.5,
+      "method": "digital print or PDF",
+      "src": "/gallery/merch-case-study-a4.png",
+      "width": 595,
+      "height": 842,
+      "command": "conare-ds print case-study-a4 --variant plain --badge \"Case study\" --headline \"How Acme searches every file\" --stat \"3x\" --body \"Acme connected its help center and shared drive in a week. Every team now asks in plain words and gets the passage that answers, with the file it came from.\" --quote \"We stopped searching folders by hand.\" --by \"Head of search, Acme\" --url \"acme.com\""
+    },
+    {
+      "id": "event-badge",
+      "label": "Event badge",
+      "variant": "red",
+      "variants": [
+        "red",
+        "paper",
+        "ink"
+      ],
+      "trim": "4 x 3 in",
+      "bleed": 0.125,
+      "safe": 0.2,
+      "method": "digital print, in a 4 by 3 in sleeve",
+      "src": "/gallery/merch-event-badge.png",
+      "width": 306,
+      "height": 234,
+      "command": "conare-ds print event-badge --variant red --name \"Acme admin\" --role \"Head of search\" --headline \"How Acme searches every file\""
+    },
+    {
+      "id": "name-tag",
+      "label": "Name tag",
+      "variant": "plain",
+      "variants": [
+        "plain",
+        "paper"
+      ],
+      "trim": "3.5 x 2.25 in",
+      "bleed": 0,
+      "safe": 0.15,
+      "method": "adhesive label",
+      "src": "/gallery/merch-name-tag.png",
+      "width": 252,
+      "height": 162,
+      "command": "conare-ds print name-tag --variant plain --name \"Acme admin\" --role \"Head of search\""
+    },
+    {
+      "id": "certificate",
+      "label": "Certificate",
+      "variant": "paper",
+      "variants": [
+        "paper",
+        "plain"
+      ],
+      "trim": "11 x 8.5 in",
+      "bleed": 0.125,
+      "safe": 0.5,
+      "method": "digital print",
+      "src": "/gallery/merch-certificate.png",
+      "width": 810,
+      "height": 630,
+      "command": "conare-ds print certificate --variant paper --headline \"Certificate of completion\" --badge \"Acme search course\" --name \"Acme admin\" --body \"Acme connected its help center and shared drive in a week. Every team now asks in plain words and gets the passage that answers, with the file it came from.\" --date \"24 Nov 2026\" --url \"acme.com\""
     }
   ],
   "merch": [
@@ -503,6 +955,150 @@
       "width": 1314,
       "height": 1746,
       "command": "conare-ds merch poster --variant red --sample"
+    },
+    {
+      "id": "sticker-sheet",
+      "label": "Sticker sheet, US Letter",
+      "variant": "red",
+      "variants": [
+        "red",
+        "paper",
+        "ink"
+      ],
+      "trim": "8.5 x 11 in",
+      "bleed": 0.125,
+      "safe": 0.25,
+      "method": "kiss-cut vinyl sheet",
+      "src": "/gallery/merch-sticker-sheet.png",
+      "width": 630,
+      "height": 810,
+      "command": "conare-ds merch sticker-sheet --variant red"
+    },
+    {
+      "id": "poster-a3",
+      "label": "Poster, A3",
+      "variant": "red",
+      "variants": [
+        "red",
+        "paper",
+        "ink"
+      ],
+      "trim": "11.69 x 16.54 in",
+      "bleed": 0.125,
+      "safe": 0.5,
+      "method": "digital or offset print",
+      "src": "/gallery/merch-poster-a3.png",
+      "width": 860,
+      "height": 1209,
+      "command": "conare-ds merch poster-a3 --variant red --sample"
+    },
+    {
+      "id": "poster-a2",
+      "label": "Poster, A2",
+      "variant": "red",
+      "variants": [
+        "red",
+        "paper",
+        "ink"
+      ],
+      "trim": "16.54 x 23.39 in",
+      "bleed": 0.125,
+      "safe": 0.5,
+      "method": "digital or offset print",
+      "src": "/gallery/merch-poster-a2.png",
+      "width": 1209,
+      "height": 1702,
+      "command": "conare-ds merch poster-a2 --variant red --sample"
+    },
+    {
+      "id": "poster-11x17",
+      "label": "Poster, 11 by 17 in",
+      "variant": "red",
+      "variants": [
+        "red",
+        "paper",
+        "ink"
+      ],
+      "trim": "11 x 17 in",
+      "bleed": 0.125,
+      "safe": 0.5,
+      "method": "digital or offset print",
+      "src": "/gallery/merch-poster-11x17.png",
+      "width": 810,
+      "height": 1242,
+      "command": "conare-ds merch poster-11x17 --variant red --sample"
+    },
+    {
+      "id": "poster-24x36",
+      "label": "Poster, 24 by 36 in",
+      "variant": "red",
+      "variants": [
+        "red",
+        "paper",
+        "ink"
+      ],
+      "trim": "24 x 36 in",
+      "bleed": 0.125,
+      "safe": 0.5,
+      "method": "digital or offset print",
+      "src": "/gallery/merch-poster-24x36.png",
+      "width": 1746,
+      "height": 2610,
+      "command": "conare-ds merch poster-24x36 --variant red --sample"
+    },
+    {
+      "id": "socks",
+      "label": "Socks (one side of one sock)",
+      "variant": "red",
+      "variants": [
+        "red",
+        "paper",
+        "ink"
+      ],
+      "trim": "4 x 14 in",
+      "bleed": 0.125,
+      "safe": 0.25,
+      "method": "sublimation",
+      "src": "/gallery/merch-socks.png",
+      "width": 306,
+      "height": 1026,
+      "command": "conare-ds merch socks --variant red"
+    },
+    {
+      "id": "notebook",
+      "label": "Notebook cover, A5",
+      "variant": "red",
+      "variants": [
+        "red",
+        "paper",
+        "ink"
+      ],
+      "trim": "5.83 x 8.27 in",
+      "bleed": 0.125,
+      "safe": 0.25,
+      "method": "digital print",
+      "src": "/gallery/merch-notebook.png",
+      "width": 438,
+      "height": 613,
+      "command": "conare-ds merch notebook --variant red --sample"
+    },
+    {
+      "id": "lanyard",
+      "label": "Lanyard strap",
+      "variant": "red",
+      "variants": [
+        "red",
+        "ink",
+        "paper"
+      ],
+      "trim": "36 x 0.75 in",
+      "bleed": 0,
+      "safe": 0.06,
+      "method": "sublimation or screen print",
+      "src": "/gallery/merch-lanyard.png",
+      "width": 2592,
+      "height": 54,
+      "command": "conare-ds merch lanyard --variant red"
     }
   ],
   "videos": [
@@ -523,6 +1119,121 @@
       "width": 1080,
       "height": 1080,
       "command": "conare-ds video room --sample --size square --format both"
+    }
+  ],
+  "motion": [
+    {
+      "id": "logo-reveal",
+      "label": "The logo coming in on the brand ease, then holding",
+      "src": "/gallery/motion-logo-reveal.mp4",
+      "type": "video/mp4",
+      "poster": "/gallery/motion-logo-reveal.png",
+      "width": 1080,
+      "height": 1080,
+      "command": "conare-ds video logo-reveal --size square"
+    },
+    {
+      "id": "stat",
+      "label": "A number counting up to its value",
+      "src": "/gallery/motion-stat.mp4",
+      "type": "video/mp4",
+      "poster": "/gallery/motion-stat.png",
+      "width": 1080,
+      "height": 1080,
+      "command": "conare-ds video stat --size square --headline 100M+ --body \"Documents searched.\""
+    },
+    {
+      "id": "lower-third",
+      "label": "A name and role over your video (WebM with transparency)",
+      "src": "/gallery/motion-lower-third.webm",
+      "type": "video/webm",
+      "poster": "/gallery/motion-lower-third.png",
+      "width": 1920,
+      "height": 1080,
+      "command": "conare-ds video lower-third --name \"Acme speaker\" --role \"Head of search, Acme\""
+    },
+    {
+      "id": "walkthrough",
+      "label": "Screenshots shown in turn in the brand frame (here, three of the slides above)",
+      "src": "/gallery/motion-walkthrough.mp4",
+      "type": "video/mp4",
+      "poster": "/gallery/motion-walkthrough.png",
+      "width": 1920,
+      "height": 1080,
+      "command": "conare-ds video walkthrough --size landscape --headline \"See every answer with its source.\" --image one.png,two.png,three.png"
+    },
+    {
+      "id": "loop",
+      "label": "A layout as a GIF loop",
+      "src": "/gallery/motion-loop.gif",
+      "type": "image/gif",
+      "width": 1080,
+      "height": 1080,
+      "command": "conare-ds video hero --sample --size square --format gif --loop"
+    }
+  ],
+  "icons": [
+    {
+      "id": "favicon-512.png",
+      "label": "Favicon 512",
+      "src": "/gallery/icons-favicon-512.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "id": "maskable-512.png",
+      "label": "Maskable icon",
+      "src": "/gallery/icons-maskable-512.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "id": "app-icon-1024.png",
+      "label": "App icon",
+      "src": "/gallery/icons-app-icon-1024.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "id": "avatar-400.png",
+      "label": "Social avatar",
+      "src": "/gallery/icons-avatar-400.png",
+      "width": 400,
+      "height": 400
+    },
+    {
+      "id": "og-default.png",
+      "label": "Default share image",
+      "src": "/gallery/icons-og-default.png",
+      "width": 1200,
+      "height": 630
+    }
+  ],
+  "emails": [
+    {
+      "id": "newsletter",
+      "src": "/gallery/email/newsletter.html",
+      "command": "conare-ds email newsletter --headline \"What shipped at Acme this month\" --body \"Three changes to how the team searches.\" --items \"Help center: every article is searchable | Shared drive: new files are read as they arrive | Sources: every answer links to its file\""
+    },
+    {
+      "id": "announcement",
+      "src": "/gallery/email/announcement.html",
+      "command": "conare-ds email announcement --badge New --headline \"Search now covers the shared drive\" --body \"Every file in the drive is read and kept in step.\" --button \"Read more\" --url https://acme.com/news"
+    },
+    {
+      "id": "receipt",
+      "src": "/gallery/email/receipt.html",
+      "command": "conare-ds email receipt --headline \"Your receipt\" --items \"Pro plan, $49 | Extra seats, $20\" --total \"$69\" --date \"24 Nov 2026\""
+    },
+    {
+      "id": "password-reset",
+      "src": "/gallery/email/password-reset.html",
+      "command": "conare-ds email password-reset --body \"Someone asked to reset the password for admin@acme.com. If it was you, choose a new one.\" --button \"Reset password\" --url https://acme.com/reset"
+    },
+    {
+      "id": "signature",
+      "src": "/gallery/email/signature.html",
+      "command": "conare-ds email signature --name \"Acme admin\" --role \"Head of search\" --email admin@acme.com"
     }
   ],
   "design": {
@@ -601,5 +1312,123 @@
       "command": "conare-ds design sizes banner.design.json --to og,square,story"
     },
     "file": "{\n\t\"version\": 1,\n\t\"brand\": \"conare-ds\",\n\t\"kind\": \"image\",\n\t\"template\": \"hero\",\n\t\"size\": {\n\t\t\"id\": \"x-banner\",\n\t\t\"width\": 1500,\n\t\t\"height\": 500\n\t},\n\t\"theme\": \"paper\",\n\t\"copy\": {\n\t\t\"badge\": \"Now in beta\",\n\t\t\"body\": \"Search across the documents you connect, from one API.\",\n\t\t\"headline\": \"Every answer comes back with its source\"\n\t},\n\t\"images\": {},\n\t\"options\": {},\n\t\"layers\": {\n\t\t\"guides\": {\n\t\t\t\"hidden\": true\n\t\t},\n\t\t\"headline\": {\n\t\t\t\"scale\": 0.9,\n\t\t\t\"align\": \"left\"\n\t\t},\n\t\t\"logo\": {\n\t\t\t\"scale\": 1.2\n\t\t}\n\t},\n\t\"history\": [\n\t\t{\n\t\t\t\"change\": \"bigger logo\",\n\t\t\t\"before\": {\n\t\t\t\t\"layers\": {}\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"left align the headline\",\n\t\t\t\"before\": {\n\t\t\t\t\"layers\": {\n\t\t\t\t\t\"logo\": {\n\t\t\t\t\t\t\"scale\": 1.2\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"badge \\\"Now in beta\\\"\",\n\t\t\t\"before\": {\n\t\t\t\t\"copy\": {\n\t\t\t\t\t\"body\": \"Search across the documents you connect, from one API.\",\n\t\t\t\t\t\"headline\": \"Every answer comes back with its source\"\n\t\t\t\t}\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"paper theme, hide the guides\",\n\t\t\t\"before\": {\n\t\t\t\t\"theme\": \"white\",\n\t\t\t\t\"layers\": {\n\t\t\t\t\t\"headline\": {\n\t\t\t\t\t\t\"align\": \"left\"\n\t\t\t\t\t},\n\t\t\t\t\t\"logo\": {\n\t\t\t\t\t\t\"scale\": 1.2\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"smaller headline\",\n\t\t\t\"before\": {\n\t\t\t\t\"layers\": {\n\t\t\t\t\t\"guides\": {\n\t\t\t\t\t\t\"hidden\": true\n\t\t\t\t\t},\n\t\t\t\t\t\"headline\": {\n\t\t\t\t\t\t\"align\": \"left\"\n\t\t\t\t\t},\n\t\t\t\t\t\"logo\": {\n\t\t\t\t\t\t\"scale\": 1.2\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"headline a bit bigger\",\n\t\t\t\"before\": {\n\t\t\t\t\"layers\": {\n\t\t\t\t\t\"guides\": {\n\t\t\t\t\t\t\"hidden\": true\n\t\t\t\t\t},\n\t\t\t\t\t\"headline\": {\n\t\t\t\t\t\t\"scale\": 0.833,\n\t\t\t\t\t\t\"align\": \"left\"\n\t\t\t\t\t},\n\t\t\t\t\t\"logo\": {\n\t\t\t\t\t\t\"scale\": 1.2\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t],\n\t\"future\": []\n}\n"
+  },
+  "iconSet": {
+    "count": 42,
+    "files": [
+      "app-icon-1024.png",
+      "apple-touch-icon.png",
+      "avatar-400.png",
+      "avatar-800.png",
+      "favicon-16.png",
+      "favicon-192.png",
+      "favicon-32.png",
+      "favicon-48.png",
+      "favicon-512.png",
+      "favicon.ico",
+      "favicon.svg",
+      "maskable-512.png",
+      "og-default.png",
+      "site.webmanifest"
+    ],
+    "samples": [
+      {
+        "name": "arrow-down",
+        "src": "/gallery/icon-arrow-down.svg"
+      },
+      {
+        "name": "arrow-left",
+        "src": "/gallery/icon-arrow-left.svg"
+      },
+      {
+        "name": "arrow-right",
+        "src": "/gallery/icon-arrow-right.svg"
+      },
+      {
+        "name": "arrow-up-down",
+        "src": "/gallery/icon-arrow-up-down.svg"
+      },
+      {
+        "name": "arrow-up-right",
+        "src": "/gallery/icon-arrow-up-right.svg"
+      },
+      {
+        "name": "arrow-up",
+        "src": "/gallery/icon-arrow-up.svg"
+      },
+      {
+        "name": "braces",
+        "src": "/gallery/icon-braces.svg"
+      },
+      {
+        "name": "calendar-days",
+        "src": "/gallery/icon-calendar-days.svg"
+      },
+      {
+        "name": "check",
+        "src": "/gallery/icon-check.svg"
+      },
+      {
+        "name": "chevron-down",
+        "src": "/gallery/icon-chevron-down.svg"
+      },
+      {
+        "name": "chevron-left",
+        "src": "/gallery/icon-chevron-left.svg"
+      },
+      {
+        "name": "chevron-right",
+        "src": "/gallery/icon-chevron-right.svg"
+      },
+      {
+        "name": "chevrons-up-down",
+        "src": "/gallery/icon-chevrons-up-down.svg"
+      },
+      {
+        "name": "clipboard-type",
+        "src": "/gallery/icon-clipboard-type.svg"
+      },
+      {
+        "name": "code",
+        "src": "/gallery/icon-code.svg"
+      },
+      {
+        "name": "copy",
+        "src": "/gallery/icon-copy.svg"
+      },
+      {
+        "name": "corner-down-left",
+        "src": "/gallery/icon-corner-down-left.svg"
+      },
+      {
+        "name": "database",
+        "src": "/gallery/icon-database.svg"
+      },
+      {
+        "name": "download",
+        "src": "/gallery/icon-download.svg"
+      },
+      {
+        "name": "file-text",
+        "src": "/gallery/icon-file-text.svg"
+      },
+      {
+        "name": "file-up",
+        "src": "/gallery/icon-file-up.svg"
+      },
+      {
+        "name": "grip-vertical",
+        "src": "/gallery/icon-grip-vertical.svg"
+      },
+      {
+        "name": "image",
+        "src": "/gallery/icon-image.svg"
+      },
+      {
+        "name": "layers",
+        "src": "/gallery/icon-layers.svg"
+      }
+    ],
+    "command": "conare-ds icons --out icons"
   }
 }

@@ -19,6 +19,31 @@ can read text and edit project files.
    `{{cli}} view <item> --json` return the real parts, props and states in the app's flavor. Do not recreate a
    component from a screenshot.
 
+## I need X: which command
+
+| I need | Run |
+| --- | --- |
+| A social post, share image or link preview | `{{cli}} image <layout> --headline "..." --size og,square,story` (twelve layouts; `--size all`) |
+| A profile banner (X, LinkedIn, Facebook, YouTube) or profile picture | `{{cli}} image hero --headline "..." --size x-banner` (`linkedin-banner`, `facebook-cover`, `youtube`; `image avatar --size avatar`) |
+| A display ad (IAB) | `{{cli}} image room --headline "..." --size ad-300x250,ad-728x90,ad-300x600,ad-320x50,ad-160x600,ad-336x280,ad-970x250` |
+| A Pinterest pin, Threads or TikTok cover | `{{cli}} image <layout> --size pinterest` (`threads`, `tiktok-cover`) |
+| A product or marketing card (quote, stat, launch, feature, framed screenshot) | `{{cli}} image --template quote\|statement\|announcement\|frame ...`, or the `card`, `funding`, `announce`, `feature` layouts |
+| A carousel | `{{cli}} image --input carousel.json` |
+| A graphic to revise in plain words | `{{cli}} design new <template> --size ...`, then `design revise <file> "bigger logo"` |
+| A video call background or wallpaper | `{{cli}} image room --headline "..." --size zoom-background` (`wallpaper-desktop`, `wallpaper-phone`), or `illustrate <subject> --size WxH` for art alone |
+| A slide deck (agenda, chart, timeline, comparison, team, image grid, questions...) | `{{cli}} deck --input deck.json --out deck` (`deck <slide> ...` for one) |
+| A short video, loop or GIF of a layout | `{{cli}} video <layout> --headline "..." --format mp4,webm,gif --loop` |
+| A logo sting, lower third, counting stat or screenshot walkthrough | `{{cli}} video logo-reveal`, `video lower-third --name "..." --role "..."`, `video stat --headline "100M+"`, `video walkthrough --image a.png,b.png` |
+| A business card, letterhead, report cover, one-pager, case study, badge, name tag or certificate | `{{cli}} print <item> --headline "..." --name "..."` (`print --list`) |
+| A poster, sticker sheet, tee, mug, cap, socks, notebook or lanyard | `{{cli}} merch <item> --variant red` (`merch --list`) |
+| Favicons, app icons, avatars, a default share image or the icon set | `{{cli}} icons --out public` |
+| An email (newsletter, announcement, receipt, password reset, signature) | `{{cli}} email <kind> --headline "..."` |
+| An illustration | `{{cli}} illustrate <subject> --size 1500x500` |
+| A component, section or page | `{{cli}} add <item>` (`component list`; sections include newsletter, bento, comparison-table, careers-page, not-found-page with `code="500"`) |
+| Figma files | `{{cli}} figma tokens` (prints the MCP calls; never calls Figma itself) |
+
+Kinds the brand has no source for are not made: no photos of people, no third-party logos, no invented claims.
+
 ## Install and prepare a project
 
 Requires Node.js 20 or later. Run commands from the app's root (an app with no package.json, such as Rails, Django or
@@ -157,17 +182,32 @@ takes `--list`, `--json` and `--help`; an unknown name exits 1 and suggests the 
   the final stop, `--partner` (a name beside the lockup; never a third-party logo), `--credit`, `--seed`. Only the copy
   passed is drawn; `--sample` fills sample copy. Sizes: og, square, portrait, story, landscape, x-banner, linkedin,
   linkedin-banner, linkedin-page, youtube, youtube-thumbnail, email, avatar (the `avatar` layout), linkedin-square,
-  WxH or custom with `--width` and `--height`, or all. Words, the logo and key art keep out of what each platform
-  covers (the X profile picture, story bars, YouTube's crop). `--format` png, svg, jpg, webp; `--scale 2`.
+  facebook-cover, pinterest, the IAB ads (ad-300x250, ad-336x280, ad-728x90, ad-300x600, ad-320x50, ad-160x600,
+  ad-970x250), zoom-background, wallpaper-desktop, wallpaper-phone, WxH or custom with `--width` and `--height`, or
+  all (Threads, TikTok and Meta names map to the shared sizes). Words, the logo and key art keep out of what each
+  platform covers (the X profile picture, story bars, YouTube's crop, the person on a call, a phone's clock). `--format` png, svg, jpg, webp; `--scale 2`.
 - Copy is drawn whole: it shrinks and re-wraps to a size that reads where the image is shown, then the command fails
   saying what to shorten. Characters no brand face has (emoji, CJK) are refused by name.
-- `deck` slides: cover, section, statement, bullets (up to six points), stat, quote, image and end, each on one of the
-  layouts. Only the slots passed are drawn; a slide's needed slot missing is an error (`--sample` fills them).
+- `deck` slides: cover, section, agenda, statement, bullets (up to six points), stat, chart (`--data "Mon 120 | Tue
+  180"`), timeline (`--items "May: ... | June: ..."`), comparison (`--left`, `--right`, `--leftItems`, `--rightItems`),
+  quote, image, grid (`"images": [...]` in the deck file), team (`--people "Name, role | ..."`, no photos), qa and end,
+  each on one of the layouts. Only the slots passed are drawn; a slide's needed slot missing is an error (`--sample`
+  fills them where the brand has sample copy).
 - `video` layouts come in the way the website moves (the label and lockup settle up, the headline's letters wait faint
   and red and settle to ink, a window arrives on the long ease-out), then hold. Every curve and duration is a motion
-  token; nothing eases in. It needs ffmpeg; `--still` does not.
-- `merch` items: cap-front, tee-front, tee-back, hoodie-front, tote, mug-wrap, sticker (with its cut line in the SVG)
-  and poster. Variants print a theme to the bleed (red, paper, ink), full-color art on a transparent ground (color) or
+  token; nothing eases in. `--format gif` and `--loop` make clean loops. The clips `logo-reveal`, `lower-third` (WebM
+  with a transparent ground), `stat` and `walkthrough` (`--image a.png,b.png`) use the same motion steps. It needs
+  ffmpeg; `--still` does not.
+- `print` documents at paper size (PDF, SVG, PNG): business-card (with bleed), letterhead-letter and -a4,
+  report-cover-letter and -a4, one-pager-letter and -a4, case-study-letter and -a4, event-badge, name-tag,
+  certificate. Words: `--headline --body --badge --name --role --email --phone --date --stat --quote --by --note --url`,
+  only where a document has them. Use Acme or the person's own details.
+- `icons`: the shipped favicons plus 192, maskable and a 1024 app icon in their colors, avatars at 400 and 800, a
+  default share image, `site.webmanifest`, and the library's icons as SVG with their licence (Lucide, ISC).
+- `email newsletter|announcement|receipt|password-reset|signature`: HTML tables with inline styles; `logo.png` is
+  written beside them (`--asset-base` for where it is hosted).
+- `merch` items: cap-front, tee-front, tee-back, hoodie-front, tote, mug-wrap, sticker (with its cut line in the SVG),
+  sticker-sheet (kiss cuts), poster, poster-a3, poster-a2, poster-11x17, poster-24x36, socks, notebook and lanyard. Variants print a theme to the bleed (red, paper, ink), full-color art on a transparent ground (color) or
   one brand color (black, white, redline). Sizes are vendor conventions: confirm against the vendor's template.
 - `illustrate` subjects: stack, stacks, pixels, room, tile, outline, hatch, strip, panel and scene. The rules, each
   with its source, are in `brand/illustration.md`. People, photos and third-party logos are never drawn.
