@@ -117,7 +117,7 @@ const postsJson = `{
 
     <section class="flex flex-col gap-4" aria-labelledby="documents">
       <SectionHead id="documents" title="Documents" />
-      <p class="max-w-170 type-ui text-fg-soft">Print documents at paper size (Letter and A4 where both are used), as PDF, SVG and PNG at 300 dpi, shown here on Acme's details with <code class="type-code-sm">--guides</code>. Only the words you pass are drawn. The brand has no stationery of its own: these are set from its type, hairlines, lockups and the red room, and the business card carries bleed for the printer.</p>
+      <p class="max-w-170 type-ui text-fg-soft">Print documents at paper size (Letter and A4 where both are used), as PDF, SVG and PNG at 300 dpi, shown here on Acme's details. Only the words you pass are drawn. The brand has no stationery of its own: these are set from its type, hairlines, lockups and the red room, and the business card carries bleed for the printer.</p>
       <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <GalleryTile v-for="m in gallery.documents" :key="m.id" :src="m.src" :width="m.width" :height="m.height" :title="m.label" :description="`${m.trim}, bleed ${m.bleed} in, safe ${m.safe} in.`" :command="m.command" />
       </div>
@@ -125,7 +125,7 @@ const postsJson = `{
 
     <section class="flex flex-col gap-4" aria-labelledby="merch">
       <SectionHead id="merch" title="Merch" />
-      <p class="max-w-170 type-ui text-fg-soft">Print files only, no mockups: SVG at physical size in inches and PNG at 300 dpi, with the approved lockups, the themes and the illustration parts. Shown here with <code class="type-code-sm">--guides</code> (the trim and the safe area). Trim, bleed and safe areas are common vendor conventions: confirm against your vendor's template.</p>
+      <p class="max-w-170 type-ui text-fg-soft">Print files only, no mockups: SVG at physical size in inches and PNG at 300 dpi, with the approved lockups, the themes and the illustration parts. Shown as printed; <code class="type-code-sm">--guides</code> writes the trim and the safe area to a separate file to lay over a proof, never into the print file. Trim, bleed and safe areas are common vendor conventions: confirm against your vendor's template.</p>
       <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <GalleryTile v-for="m in gallery.merch" :key="m.id" :src="m.src" :width="m.width" :height="m.height" :title="m.label" :description="`${m.trim}, bleed ${m.bleed} in, safe ${m.safe} in, ${m.method}. Variants: ${m.variants.join(', ')}.`" :command="m.command" />
       </div>

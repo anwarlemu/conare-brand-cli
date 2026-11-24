@@ -214,3 +214,64 @@ describe('page compose', () => {
 		expect(() => validateOutline(A, { sections: [{ type: 'hero', copy: {} }] })).toThrow();
 	});
 });
+
+/* Ink beyond the ground: the most common color is the ground; a picture needs 0.2% of its pixels off it (faint hairline art included). */
+async function inkShare(png: Uint8Array): Promise<number> {
+	const { createCanvas, loadImage } = await import('@napi-rs/canvas');
+	const im = await loadImage(Buffer.from(png));
+	const c = createCanvas(im.width, im.height);
+	c.getContext('2d').drawImage(im, 0, 0);
+	const p = { width: im.width, height: im.height, data: c.getContext('2d').getImageData(0, 0, im.width, im.height).data };
+	const n = p.width * p.height;
+	const ch = 4;
+	const count = new Map<number, number>();
+	const step = Math.max(1, Math.floor(n / 200_000));
+	for (let i = 0; i < n; i += step) {
+		const k = (p.data[i * ch]! << 16) | (p.data[i * ch + 1]! << 8) | p.data[i * ch + 2]!;
+		count.set(k, (count.get(k) ?? 0) + 1);
+	}
+	const ground = [...count].sort((a, b) => b[1] - a[1])[0]![0];
+	const [r, g, b] = [ground >> 16, (ground >> 8) & 255, ground & 255];
+	/* A transparent ground (merch on a garment): anything opaque is ink. */
+	const clear = (() => { let t = 0; for (let i = 0; i < n; i += step * 7) if (p.data[i * ch + 3]! < 24) t++; return t > n / step / 7 / 2; })();
+	let off = 0;
+	let seen = 0;
+	for (let i = 0; i < n; i += step) {
+		seen++;
+		const a = ch === 4 ? p.data[i * ch + 3]! : 255;
+		if (clear ? a > 24 : a > 24 && Math.max(Math.abs(p.data[i * ch]! - r), Math.abs(p.data[i * ch + 1]! - g), Math.abs(p.data[i * ch + 2]! - b)) > 12) off++;
+	}
+	return off / seen;
+}
+
+describe('nothing blank', () => {
+	it('every picture in the docs gallery has ink beyond its ground', async () => {
+		const { readdirSync } = await import('node:fs');
+		const dir = join(__dirname, '..', '..', 'apps', 'www', 'public', 'gallery');
+		const blank: string[] = [];
+		for (const f of readdirSync(dir).filter((x) => x.endsWith('.png'))) if ((await inkShare(readFileSync(join(dir, f)))) < 0.002) blank.push(f);
+		expect(blank).toEqual([]);
+	});
+
+	it('every template draws ink at its first size, and an empty compose writes no picture', { timeout: 300_000 }, async () => {
+		const { create } = await import('../../src/design/index.js');
+		const blank: string[] = [];
+		for (const t of A.templates().filter((x) => x.kind === 'image' || x.kind === 'slide' || x.kind === 'merch' || x.kind === 'illustration')) {
+			const copy = Object.fromEntries(t.copy.filter((c) => c.required).map((c) => [c.id, c.id === 'items' || c.id === 'people' || c.id === 'data' ? 'One 1 | Two 2' : c.id === 'left' || c.id === 'right' ? 'Before' : 'Ship it today']));
+			let doc;
+			try {
+				doc = create(A, t.id, t.sizes[0]!, Object.entries(copy).map(([slot, value]) => ({ op: 'copy', slot, value }))).doc;
+				if (t.images.some((i) => i.required)) continue;
+				const r = await A.render(doc, tmpdir(), { formats: ['png'], scale: 1 });
+				if (r.files.png && (await inkShare(r.files.png)) < 0.002) blank.push(t.id);
+			} catch (err) {
+				expect((err as Error).message, t.id).toMatch(/shorten|too long|does not fit|needs|takes|cannot/i);
+			}
+		}
+		expect(blank).toEqual([]);
+		const empty = create(A, 'compose', 'og', []).doc;
+		const r = await A.render(empty, tmpdir(), { formats: ['png'], scale: 1 });
+		expect(r.files.png).toBeUndefined();
+		expect(r.notes?.[0]).toMatch(/Add a block/);
+	});
+});

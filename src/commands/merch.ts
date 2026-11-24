@@ -3,7 +3,7 @@ import { brand } from '../lib/brand.js';
 import { oneOf, seedOf, str, type Flags } from '../assets/flags.js';
 import { helpRow } from '../lib/help-row.js';
 import { display, num, pick, write, type OutFile } from '../assets/io.js';
-import { findItem, merchCatalog, merchItems, renderItem } from '../assets/merch.js';
+import { findItem, merchCatalog, merchItems, renderGuides, renderItem } from '../assets/merch.js';
 
 // `merch`: print files at real size with bleed and safe area, from the approved lockups, themes and illustration.
 
@@ -21,7 +21,7 @@ export function merchHelp(kind: 'merch' | 'document' = 'merch'): string {
 		'',
 		row(`${b} merch tee-back --variant black`, 'The tee back in off-black on a transparent ground'),
 		row(`${b} merch poster --headline "..."`, 'An 18x24 in poster with your headline'),
-		row(`${b} merch sticker --variant paper --guides`, 'The sticker with its trim and safe area drawn'),
+		row(`${b} merch sticker --variant paper --guides`, 'The sticker, and its trim and safe area in a separate -guides file to lay over a proof'),
 		row(`${b} merch all --out merch`, 'Every item in its first variant'),
 		row(`${b} merch --list`, 'Items, sizes, variants and sources'),
 		'',
@@ -87,7 +87,7 @@ export async function runMerch(cwd: string, args: string[], flags: Flags, kind: 
 	const files: OutFile[] = [];
 	for (const item of items) {
 		const own = args[0] === 'all' ? Object.fromEntries(Object.entries(slots).filter(([k]) => item.layers.some((l) => l.type === 'text' && l.slot === k))) : slots;
-		const r = renderItem(item, { variant, slots: own, guides: flags.guides === true, sample: flags.sample === true, seed: seedOf(flags), dpi, png: want.includes('png'), svg: want.includes('svg'), pdf: want.includes('pdf') });
+		const r = renderItem(item, { variant, slots: own, sample: flags.sample === true, seed: seedOf(flags), dpi, png: want.includes('png'), svg: want.includes('svg'), pdf: want.includes('pdf') });
 		const stem = ext ? dir.replace(/\.(png|svg|pdf)$/i, '') : join(dir, `${item.id}-${r.variant}`);
 		const meta = { item: item.id, variant: r.variant, widthIn: r.widthIn, heightIn: r.heightIn, bleedIn: item.bleed, safeIn: item.safe, dieCut: Boolean(item.cut) };
 		if (r.png) {
@@ -101,6 +101,12 @@ export async function runMerch(cwd: string, args: string[], flags: Flags, kind: 
 		if (r.svg) {
 			writes.push({ path: `${stem}.svg`, data: r.svg });
 			files.push({ path: display(cwd, `${stem}.svg`), format: 'svg', width: Math.round(r.widthIn * 300), height: Math.round(r.heightIn * 300), ...meta });
+		}
+		/* The trim and safe area go in their own file, to lay over a proof; the print file never carries them. */
+		if (flags.guides === true) {
+			const g = renderGuides(item, dpi);
+			writes.push({ path: `${stem}-guides.png`, data: g.png }, { path: `${stem}-guides.svg`, data: g.svg });
+			files.push({ path: display(cwd, `${stem}-guides.png`), format: 'png', width: r.width, height: r.height, dpi: r.dpi, guides: true, ...meta }, { path: display(cwd, `${stem}-guides.svg`), format: 'svg', width: Math.round(r.widthIn * 300), height: Math.round(r.heightIn * 300), guides: true, ...meta });
 		}
 	}
 	for (const w of writes) write(w.path, w.data);

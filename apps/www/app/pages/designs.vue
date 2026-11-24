@@ -60,10 +60,14 @@ const rules = [
     <section class="flex flex-col gap-4" aria-labelledby="compose">
       <SectionHead id="compose" title="Open composition" />
       <p class="max-w-170 type-ui text-fg-soft">When no template fits, build the graphic from the brand's blocks: {{ blocks }}. Each sits in cells of a 12 by 12 grid inside the platform's safe area, at any size; words fit their cells or the write fails saying what to shorten, and the same check runs. Plain words work too ("add a stat "42%" top right", "move the logo to the bottom left").</p>
-      <div class="grid gap-4 lg:grid-cols-2">
-        <GalleryTile v-for="s in d.compose.steps" :key="s.step" :src="s.src" :width="s.width" :height="s.height" :title="`${s.step}. ${s.label}`" :command="s.command" />
+      <div v-for="x in d.compose.designs" :key="x.id" class="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <figure class="flex min-w-0 flex-col border border-edge bg-surface">
+          <img :src="x.src" :width="x.width" :height="x.height" :alt="x.label" loading="lazy" class="h-auto max-h-[560px] w-full border-b border-edge bg-surface-subtle object-contain">
+          <figcaption class="p-3 type-ui">{{ x.label }}</figcaption>
+        </figure>
+        <CodeBlock :samples="[{ label: 'Shell', code: x.commands.join('\n') }]" :label="x.label" />
       </div>
-      <CodeBlock :samples="[{ label: 'open.design.json', code: d.compose.file }]" label="compose file" />
+      <CodeBlock :samples="[{ label: 'story.design.json', code: d.compose.file }]" label="compose file" />
     </section>
 
     <section class="flex flex-col gap-4" aria-labelledby="pages">

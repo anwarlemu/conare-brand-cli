@@ -149,7 +149,7 @@ function layoutDesign(doc: DesignDoc, t: Layout) {
 	});
 }
 
-type Out = { files: Record<string, Uint8Array>; layers: DrawnLayer[] };
+type Out = { files: Record<string, Uint8Array>; layers: DrawnLayer[]; notes?: string[] };
 const want = (formats: Format[]) => ({ png: formats.includes('png'), svg: formats.includes('svg'), jpg: formats.includes('jpg'), webp: formats.includes('webp') });
 function collect(formats: Format[], r: { png?: Buffer; svg?: string; jpg?: Buffer; webp?: Buffer; pdf?: Buffer }): Record<string, Uint8Array> {
 	const files: Record<string, Uint8Array> = {};
@@ -169,6 +169,8 @@ async function renderCompose(doc: DesignDoc, dir: string, formats: Format[], sca
 		return { img: p.canvas, w: p.width, h: p.height };
 	});
 	const { width: W, height: H } = doc.size;
+	/* A design with nothing to draw writes no picture: a blank ground is never a result. */
+	if (!(doc.blocks ?? []).some((b) => !doc.layers[b.id]?.hidden)) return { files: {}, layers: [], notes: [`Nothing is drawn yet, so no picture was written. Add a block: ${brand().bin} design compose add <file> headline "..." (blocks: ${BLOCKS.map((b) => b.type).join(', ')}).`] };
 	const s = surface(W, H, { scale: formats.length ? scale : 1 });
 	const layers = drawBlocks(s.ctx, doc, pics);
 	const r: { png?: Buffer; svg?: string; jpg?: Buffer; webp?: Buffer } = {};

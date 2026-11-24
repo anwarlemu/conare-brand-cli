@@ -46,7 +46,7 @@ export function merchCatalog() {
 	};
 }
 
-export type MerchRequest = { variant?: string; slots?: Record<string, string>; guides?: boolean; sample?: boolean; seed?: number };
+export type MerchRequest = { variant?: string; slots?: Record<string, string>; sample?: boolean; seed?: number };
 
 function inks(v: Variant) {
 	if (v.one) return { ink: color(v.one), hi: color(v.one), bg: '', muted: color(v.one), line: color(v.one) };
@@ -220,16 +220,6 @@ export function drawItem(ctx: Ctx, item: MerchItem, req: MerchRequest = {}) {
 			report(l.slot, 'text', { x, y, w: Math.max(...ink.map((r) => r.x + r.w)) - x, h: Math.max(...ink.map((r) => r.y + r.h)) - y }, { ink, text: { asked: slots[l.slot]!.replace(/\s+/g, ' ').trim(), drawn: bare(t.lines.join('')) === bare(plain(t.text)) ? slots[l.slot]!.replace(/\s+/g, ' ').trim() : t.lines.join(' '), ...(l.slot === 'url' && !req.slots?.url ? { own: true } : {}), size: t.size, color: fill, ground: [v.one ? (v.one === 'off-white' ? color('off-black') : color('off-white')) : ground] } });
 		}
 	}
-	if (req.guides) {
-		ctx.save();
-		ctx.strokeStyle = color(imageDoc().accent);
-		ctx.lineWidth = 3;
-		if (item.bleed) ctx.strokeRect(o, o, item.size[0] * PX_PER_IN, item.size[1] * PX_PER_IN);
-		const s = item.safe * PX_PER_IN;
-		ctx.setLineDash([18, 12]);
-		ctx.strokeRect(o + s, o + s, item.size[0] * PX_PER_IN - 2 * s, item.size[1] * PX_PER_IN - 2 * s);
-		ctx.restore();
-	}
 	return { variant, width: W, height: H, layers };
 }
 
@@ -245,6 +235,29 @@ function cutPath(item: MerchItem): string {
 }
 
 export type MerchRender = { png?: Buffer; svg?: string; pdf?: Buffer; layers: DrawnLayer[]; variant: string; width: number; height: number; widthIn: number; heightIn: number; dpi: number };
+
+/** The trim (solid) and the safe area (dashed) on a transparent ground: a separate file to lay over the print file in a
+ * proof, never part of what is printed. */
+export function renderGuides(item: MerchItem, dpi = PX_PER_IN): { png: Buffer; svg: string } {
+	const widthIn = item.size[0] + 2 * item.bleed;
+	const heightIn = item.size[1] + 2 * item.bleed;
+	const W = Math.round(widthIn * PX_PER_IN);
+	const H = Math.round(heightIn * PX_PER_IN);
+	const o = item.bleed * PX_PER_IN;
+	const draw = (ctx: Ctx) => {
+		ctx.strokeStyle = color(imageDoc().accent);
+		ctx.lineWidth = 3;
+		if (item.bleed) ctx.strokeRect(o, o, item.size[0] * PX_PER_IN, item.size[1] * PX_PER_IN);
+		const s = item.safe * PX_PER_IN;
+		ctx.setLineDash([18, 12]);
+		ctx.strokeRect(o + s, o + s, item.size[0] * PX_PER_IN - 2 * s, item.size[1] * PX_PER_IN - 2 * s);
+	};
+	const p = surface(W, H, { scale: dpi / PX_PER_IN });
+	draw(p.ctx);
+	const v = surface(W, H, { svg: true });
+	draw(v.ctx);
+	return { png: toPng(p, { dpi }), svg: toSvg(v, { widthIn, heightIn }) };
+}
 
 export function renderItem(item: MerchItem, req: MerchRequest & { png?: boolean; svg?: boolean; pdf?: boolean; dpi?: number } = {}): MerchRender {
 	const widthIn = item.size[0] + 2 * item.bleed;

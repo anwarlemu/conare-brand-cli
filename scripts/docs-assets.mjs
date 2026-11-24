@@ -80,7 +80,8 @@ for (const item of merch.merchItems()) {
 	const variant = item.variants.find((v) => v !== 'white') ?? item.variants[0];
 	const doc = item.kind === 'document';
 	const slots = doc ? Object.fromEntries([...new Set(item.layers.filter((l) => l.type === 'text').map((l) => l.slot))].filter((k) => PRINT[k]).map((k) => [k, k === 'headline' && item.id === 'certificate' ? 'Certificate of completion' : k === 'badge' && item.id === 'certificate' ? 'Acme search course' : PRINT[k]])) : undefined;
-	const r = merch.renderItem(item, { variant, dpi: 72, png: true, guides: true, ...(doc ? { slots } : { sample: true }) });
+	/* The print file as printed (no guides; the trim and safe area are in the description), sharp enough to read. */
+	const r = merch.renderItem(item, { variant, dpi: Math.max(...item.size) <= 5 ? 300 : 150, png: true, ...(doc ? { slots } : { sample: true }) });
 	save(`merch-${item.id}.png`, r.png);
 	(item.kind === 'document' ? index.documents : index.merch).push({ id: item.id, label: item.name, variant: r.variant, variants: item.variants, trim: `${item.size[0]} x ${item.size[1]} in`, bleed: item.bleed, safe: item.safe, method: item.method, src: `/gallery/merch-${item.id}.png`, width: r.width, height: r.height, command: doc ? `${b} print ${item.id} --variant ${r.variant} ${flagLine(slots)}` : `${b} merch ${item.id} --variant ${r.variant}${item.layers.some((l) => l.type === 'text' && l.slot === 'headline') ? ' --sample' : ''}` });
 }
@@ -196,23 +197,43 @@ if (video.hasFfmpeg()) {
 	index.design.sizes = { src: '/gallery/design-sizes.png', ...dims('design-sizes.png'), command: `${b} design sizes banner.design.json --to og,square,story` };
 	index.design.file = readFileSync(join(cwd, 'banner.design.json'), 'utf8');
 	/* Open composition: a graphic no template has, built from the brand's blocks on the grid, then a page from an outline. */
-	const csteps = [
-		[['new', 'compose', '--size', 'og', '-o', 'open.design.json'], 'An empty design on the 12 by 12 grid'],
-		[['compose', 'add', 'open.design.json', 'logo'], 'The lockup, top left'],
-		[['compose', 'add', 'open.design.json', 'badge', 'Customer story', '--at', '0,2,4,1'], 'A label'],
-		[['compose', 'add', 'open.design.json', 'headline', 'How Acme searches every file', '--at', '0,3,7,3'], 'The headline in its cells'],
-		[['revise', 'open.design.json', 'add a stat "3x" top right'], 'A stat, in plain words'],
-		[['compose', 'add', 'open.design.json', 'quote', 'We stopped searching folders by hand.', '--set', 'attribution=Head of search, Acme', '--at', '0,7,7,4'], 'A quote with who said it'],
-		[['compose', 'add', 'open.design.json', 'window', '--at', '8,4,4,6'], 'The product window'],
-		[['revise', 'open.design.json', 'paper theme'], 'Paper'],
+	const designs = [
+		['story', 'A customer story at the link preview, on paper', [
+			['new', 'compose', '--size', 'og', '-o', 'story.design.json'],
+			['compose', 'add', 'story.design.json', 'logo', '--at', '0,0,3,1'],
+			['compose', 'add', 'story.design.json', 'badge', 'Customer story', '--at', '0,2,4,1'],
+			['compose', 'add', 'story.design.json', 'headline', 'How Acme searches every file', '--at', '0,3,7,3'],
+			['compose', 'add', 'story.design.json', 'quote', 'We stopped searching folders by hand.', '--set', 'attribution=Head of search, Acme', '--at', '0,7,7,4'],
+			['compose', 'add', 'story.design.json', 'stat', '3x', '--set', 'label=faster answers at Acme', '--at', '8,0,4,5'],
+			['compose', 'add', 'story.design.json', 'window', '--at', '8,6,4,5'],
+			['revise', 'story.design.json', 'paper theme'],
+		]],
+		['launch', 'A launch post, square, on red', [
+			['new', 'compose', '--size', 'square', '-o', 'launch.design.json'],
+			['compose', 'add', 'launch.design.json', 'logo', '--at', '0,0,4,1'],
+			['compose', 'add', 'launch.design.json', 'badge', 'New', '--at', '0,2,3,1'],
+			['compose', 'add', 'launch.design.json', 'headline', 'Search now reads every table', '--at', '0,3,11,3'],
+			['compose', 'add', 'launch.design.json', 'body', 'Rows and cells in PDFs, sheets and scans become text you can ask about.', '--at', '0,6,10,2'],
+			['compose', 'add', 'launch.design.json', 'window', '--at', '0,8,12,4'],
+			['revise', 'launch.design.json', 'red theme'],
+		]],
+		['stat', 'A number for a story, with points and a button', [
+			['new', 'compose', '--size', 'story', '-o', 'stat.design.json'],
+			['compose', 'add', 'stat.design.json', 'logo', '--at', '0,0,5,1'],
+			['compose', 'add', 'stat.design.json', 'stat', '42%', '--set', 'label=less time searching at Acme', '--at', '0,2,12,4'],
+			['compose', 'add', 'stat.design.json', 'divider', '--at', '0,6,12,1'],
+			['compose', 'add', 'stat.design.json', 'list', 'Every file in one search | Answers with their source | Set up in a week', '--at', '0,7,12,4'],
+			['compose', 'add', 'stat.design.json', 'button', 'Read the story', '--at', '0,11,6,1'],
+		]],
 	];
-	index.design.compose = { steps: [] };
-	for (const [i, [argv, label]] of csteps.entries()) {
-		if ((await runDesign(argv, adapter(), io)) !== 0) throw new Error(`design ${shell(argv)} failed`);
-		copyFileSync(join(cwd, 'open.png'), join(out, `compose-${i + 1}.png`));
-		index.design.compose.steps.push({ step: i + 1, label, src: `/gallery/compose-${i + 1}.png`, width: 1200, height: 630, command: `${b} design ${shell(argv)}` });
+	index.design.compose = { designs: [] };
+	for (const [name, label, steps] of designs) {
+		for (const argv of steps) if ((await runDesign(argv, adapter(), io)) !== 0) throw new Error(`design ${shell(argv)} failed`);
+		copyFileSync(join(cwd, `${name}.png`), join(out, `compose-${name}.png`));
+		const p = readFileSync(join(out, `compose-${name}.png`));
+		index.design.compose.designs.push({ id: name, label, src: `/gallery/compose-${name}.png`, width: p.readUInt32BE(16), height: p.readUInt32BE(20), commands: steps.map((a) => `${b} design ${shell(a)}`) });
 	}
-	index.design.compose.file = readFileSync(join(cwd, 'open.design.json'), 'utf8');
+	index.design.compose.file = readFileSync(join(cwd, 'story.design.json'), 'utf8');
 	const outline = { title: 'Acme search', sections: [
 		{ type: 'header', copy: { action: 'Sign in', 'action-href': '#sign-in' }, items: [{ label: 'Pricing', href: '#pricing' }, { label: 'Docs', href: '#docs' }] },
 		{ type: 'hero', copy: { eyebrow: 'Search', title: 'Every answer comes back with its source', body: 'Search the documents you connect, from one API.', action: 'Start building', 'action-href': '#start' } },

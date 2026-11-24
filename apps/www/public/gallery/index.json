@@ -614,8 +614,8 @@
       "safe": 0.125,
       "method": "digital or offset print",
       "src": "/gallery/merch-business-card.png",
-      "width": 270,
-      "height": 162,
+      "width": 1125,
+      "height": 675,
       "command": "conare-ds print business-card --variant paper --name \"Acme admin\" --role \"Head of search\" --email \"admin@acme.com\" --url \"acme.com\""
     },
     {
@@ -631,8 +631,8 @@
       "safe": 0.5,
       "method": "office or digital print",
       "src": "/gallery/merch-letterhead-letter.png",
-      "width": 612,
-      "height": 792,
+      "width": 1275,
+      "height": 1650,
       "command": "conare-ds print letterhead-letter --variant plain --url \"acme.com\" --body \"Acme connected its help center and shared drive in a week. Every team now asks in plain words and gets the passage that answers, with the file it came from.\" --note \"Acme, Inc.\""
     },
     {
@@ -648,8 +648,8 @@
       "safe": 0.5,
       "method": "office or digital print",
       "src": "/gallery/merch-letterhead-a4.png",
-      "width": 595,
-      "height": 842,
+      "width": 1241,
+      "height": 1754,
       "command": "conare-ds print letterhead-a4 --variant plain --url \"acme.com\" --body \"Acme connected its help center and shared drive in a week. Every team now asks in plain words and gets the passage that answers, with the file it came from.\" --note \"Acme, Inc.\""
     },
     {
@@ -666,8 +666,8 @@
       "safe": 0.5,
       "method": "digital print",
       "src": "/gallery/merch-report-cover-letter.png",
-      "width": 630,
-      "height": 810,
+      "width": 1313,
+      "height": 1688,
       "command": "conare-ds print report-cover-letter --variant red --headline \"How Acme searches every file\" --body \"Acme connected its help center and shared drive in a week. Every team now asks in plain words and gets the passage that answers, with the file it came from.\" --date \"24 Nov 2026\" --url \"acme.com\""
     },
     {
@@ -684,8 +684,8 @@
       "safe": 0.5,
       "method": "digital print",
       "src": "/gallery/merch-report-cover-a4.png",
-      "width": 613,
-      "height": 860,
+      "width": 1278,
+      "height": 1791,
       "command": "conare-ds print report-cover-a4 --variant red --headline \"How Acme searches every file\" --body \"Acme connected its help center and shared drive in a week. Every team now asks in plain words and gets the passage that answers, with the file it came from.\" --date \"24 Nov 2026\" --url \"acme.com\""
     },
     {
@@ -701,8 +701,8 @@
       "safe": 0.5,
       "method": "digital print or PDF",
       "src": "/gallery/merch-one-pager-letter.png",
-      "width": 612,
-      "height": 792,
+      "width": 1275,
+      "height": 1650,
       "command": "conare-ds print one-pager-letter --variant plain --badge \"Case study\" --headline \"How Acme searches every file\" --body \"Acme connected its help center and shared drive in a week. Every team now asks in plain words and gets the passage that answers, with the file it came from.\" --url \"acme.com\""
     },
     {
@@ -718,8 +718,8 @@
       "safe": 0.5,
       "method": "digital print or PDF",
       "src": "/gallery/merch-one-pager-a4.png",
-      "width": 595,
-      "height": 842,
+      "width": 1241,
+      "height": 1754,
       "command": "conare-ds print one-pager-a4 --variant plain --badge \"Case study\" --headline \"How Acme searches every file\" --body \"Acme connected its help center and shared drive in a week. Every team now asks in plain words and gets the passage that answers, with the file it came from.\" --url \"acme.com\""
     },
     {
@@ -735,8 +735,8 @@
       "safe": 0.5,
       "method": "digital print or PDF",
       "src": "/gallery/merch-case-study-letter.png",
-      "width": 612,
-      "height": 792,
+      "width": 1275,
+      "height": 1650,
       "command": "conare-ds print case-study-letter --variant plain --badge \"Case study\" --headline \"How Acme searches every file\" --stat \"3x\" --body \"Acme connected its help center and shared drive in a week. Every team now asks in plain words and gets the passage that answers, with the file it came from.\" --quote \"We stopped searching folders by hand.\" --by \"Head of search, Acme\" --url \"acme.com\""
     },
     {
@@ -752,8 +752,8 @@
       "safe": 0.5,
       "method": "digital print or PDF",
       "src": "/gallery/merch-case-study-a4.png",
-      "width": 595,
-      "height": 842,
+      "width": 1241,
+      "height": 1754,
       "command": "conare-ds print case-study-a4 --variant plain --badge \"Case study\" --headline \"How Acme searches every file\" --stat \"3x\" --body \"Acme connected its help center and shared drive in a week. Every team now asks in plain words and gets the passage that answers, with the file it came from.\" --quote \"We stopped searching folders by hand.\" --by \"Head of search, Acme\" --url \"acme.com\""
     },
     {
@@ -770,8 +770,8 @@
       "safe": 0.2,
       "method": "digital print, in a 4 by 3 in sleeve",
       "src": "/gallery/merch-event-badge.png",
-      "width": 306,
-      "height": 234,
+      "width": 1275,
+      "height": 975,
       "command": "conare-ds print event-badge --variant red --name \"Acme admin\" --role \"Head of search\" --headline \"How Acme searches every file\""
     },
     {
@@ -787,8 +787,8 @@
       "safe": 0.15,
       "method": "adhesive label",
       "src": "/gallery/merch-name-tag.png",
-      "width": 252,
-      "height": 162,
+      "width": 1050,
+      "height": 675,
       "command": "conare-ds print name-tag --variant plain --name \"Acme admin\" --role \"Head of search\""
     },
     {
@@ -804,8 +804,8 @@
       "safe": 0.5,
       "method": "digital print",
       "src": "/gallery/merch-certificate.png",
-      "width": 810,
-      "height": 630,
+      "width": 1688,
+      "height": 1313,
       "command": "conare-ds print certificate --variant paper --headline \"Certificate of completion\" --badge \"Acme search course\" --name \"Acme admin\" --body \"Acme connected its help center and shared drive in a week. Every team now asks in plain words and gets the passage that answers, with the file it came from.\" --date \"24 Nov 2026\" --url \"acme.com\""
     }
   ],
@@ -824,8 +824,8 @@
       "safe": 0.125,
       "method": "embroidery",
       "src": "/gallery/merch-cap-front.png",
-      "width": 288,
-      "height": 126,
+      "width": 1200,
+      "height": 525,
       "command": "conare-ds merch cap-front --variant black"
     },
     {
@@ -843,8 +843,8 @@
       "safe": 0.5,
       "method": "DTG or screen print",
       "src": "/gallery/merch-tee-front.png",
-      "width": 864,
-      "height": 1152,
+      "width": 1800,
+      "height": 2400,
       "command": "conare-ds merch tee-front --variant color"
     },
     {
@@ -861,8 +861,8 @@
       "safe": 0.5,
       "method": "DTG or screen print",
       "src": "/gallery/merch-tee-back.png",
-      "width": 864,
-      "height": 1152,
+      "width": 1800,
+      "height": 2400,
       "command": "conare-ds merch tee-back --variant color --sample"
     },
     {
@@ -880,8 +880,8 @@
       "safe": 0.5,
       "method": "DTG or screen print",
       "src": "/gallery/merch-hoodie-front.png",
-      "width": 864,
-      "height": 720,
+      "width": 1800,
+      "height": 1500,
       "command": "conare-ds merch hoodie-front --variant color"
     },
     {
@@ -898,8 +898,8 @@
       "safe": 0.5,
       "method": "screen print or DTG",
       "src": "/gallery/merch-tote.png",
-      "width": 864,
-      "height": 1008,
+      "width": 1800,
+      "height": 2100,
       "command": "conare-ds merch tote --variant color"
     },
     {
@@ -916,8 +916,8 @@
       "safe": 0.25,
       "method": "sublimation",
       "src": "/gallery/merch-mug-wrap.png",
-      "width": 666,
-      "height": 270,
+      "width": 1388,
+      "height": 563,
       "command": "conare-ds merch mug-wrap --variant red"
     },
     {
@@ -934,8 +934,8 @@
       "safe": 0.125,
       "method": "die-cut vinyl",
       "src": "/gallery/merch-sticker.png",
-      "width": 234,
-      "height": 144,
+      "width": 975,
+      "height": 600,
       "command": "conare-ds merch sticker --variant red"
     },
     {
@@ -952,8 +952,8 @@
       "safe": 0.5,
       "method": "digital or offset print",
       "src": "/gallery/merch-poster.png",
-      "width": 1314,
-      "height": 1746,
+      "width": 2738,
+      "height": 3638,
       "command": "conare-ds merch poster --variant red --sample"
     },
     {
@@ -970,8 +970,8 @@
       "safe": 0.25,
       "method": "kiss-cut vinyl sheet",
       "src": "/gallery/merch-sticker-sheet.png",
-      "width": 630,
-      "height": 810,
+      "width": 1313,
+      "height": 1688,
       "command": "conare-ds merch sticker-sheet --variant red"
     },
     {
@@ -988,8 +988,8 @@
       "safe": 0.5,
       "method": "digital or offset print",
       "src": "/gallery/merch-poster-a3.png",
-      "width": 860,
-      "height": 1209,
+      "width": 1791,
+      "height": 2519,
       "command": "conare-ds merch poster-a3 --variant red --sample"
     },
     {
@@ -1006,8 +1006,8 @@
       "safe": 0.5,
       "method": "digital or offset print",
       "src": "/gallery/merch-poster-a2.png",
-      "width": 1209,
-      "height": 1702,
+      "width": 2519,
+      "height": 3546,
       "command": "conare-ds merch poster-a2 --variant red --sample"
     },
     {
@@ -1024,8 +1024,8 @@
       "safe": 0.5,
       "method": "digital or offset print",
       "src": "/gallery/merch-poster-11x17.png",
-      "width": 810,
-      "height": 1242,
+      "width": 1688,
+      "height": 2588,
       "command": "conare-ds merch poster-11x17 --variant red --sample"
     },
     {
@@ -1042,8 +1042,8 @@
       "safe": 0.5,
       "method": "digital or offset print",
       "src": "/gallery/merch-poster-24x36.png",
-      "width": 1746,
-      "height": 2610,
+      "width": 3638,
+      "height": 5438,
       "command": "conare-ds merch poster-24x36 --variant red --sample"
     },
     {
@@ -1060,8 +1060,8 @@
       "safe": 0.25,
       "method": "sublimation",
       "src": "/gallery/merch-socks.png",
-      "width": 306,
-      "height": 1026,
+      "width": 638,
+      "height": 2138,
       "command": "conare-ds merch socks --variant red"
     },
     {
@@ -1078,8 +1078,8 @@
       "safe": 0.25,
       "method": "digital print",
       "src": "/gallery/merch-notebook.png",
-      "width": 438,
-      "height": 613,
+      "width": 912,
+      "height": 1278,
       "command": "conare-ds merch notebook --variant red --sample"
     },
     {
@@ -1096,8 +1096,8 @@
       "safe": 0.06,
       "method": "sublimation or screen print",
       "src": "/gallery/merch-lanyard.png",
-      "width": 2592,
-      "height": 54,
+      "width": 5400,
+      "height": 113,
       "command": "conare-ds merch lanyard --variant red"
     }
   ],
@@ -1313,73 +1313,57 @@
     },
     "file": "{\n\t\"version\": 1,\n\t\"brand\": \"conare-ds\",\n\t\"kind\": \"image\",\n\t\"template\": \"hero\",\n\t\"size\": {\n\t\t\"id\": \"x-banner\",\n\t\t\"width\": 1500,\n\t\t\"height\": 500\n\t},\n\t\"theme\": \"paper\",\n\t\"copy\": {\n\t\t\"badge\": \"Now in beta\",\n\t\t\"body\": \"Search across the documents you connect, from one API.\",\n\t\t\"headline\": \"Every answer comes back with its source\"\n\t},\n\t\"images\": {},\n\t\"options\": {},\n\t\"layers\": {\n\t\t\"guides\": {\n\t\t\t\"hidden\": true\n\t\t},\n\t\t\"headline\": {\n\t\t\t\"scale\": 0.9,\n\t\t\t\"align\": \"left\"\n\t\t},\n\t\t\"logo\": {\n\t\t\t\"scale\": 1.2\n\t\t}\n\t},\n\t\"history\": [\n\t\t{\n\t\t\t\"change\": \"bigger logo\",\n\t\t\t\"before\": {\n\t\t\t\t\"layers\": {}\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"left align the headline\",\n\t\t\t\"before\": {\n\t\t\t\t\"layers\": {\n\t\t\t\t\t\"logo\": {\n\t\t\t\t\t\t\"scale\": 1.2\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"badge \\\"Now in beta\\\"\",\n\t\t\t\"before\": {\n\t\t\t\t\"copy\": {\n\t\t\t\t\t\"body\": \"Search across the documents you connect, from one API.\",\n\t\t\t\t\t\"headline\": \"Every answer comes back with its source\"\n\t\t\t\t}\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"paper theme, hide the guides\",\n\t\t\t\"before\": {\n\t\t\t\t\"theme\": \"white\",\n\t\t\t\t\"layers\": {\n\t\t\t\t\t\"headline\": {\n\t\t\t\t\t\t\"align\": \"left\"\n\t\t\t\t\t},\n\t\t\t\t\t\"logo\": {\n\t\t\t\t\t\t\"scale\": 1.2\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"smaller headline\",\n\t\t\t\"before\": {\n\t\t\t\t\"layers\": {\n\t\t\t\t\t\"guides\": {\n\t\t\t\t\t\t\"hidden\": true\n\t\t\t\t\t},\n\t\t\t\t\t\"headline\": {\n\t\t\t\t\t\t\"align\": \"left\"\n\t\t\t\t\t},\n\t\t\t\t\t\"logo\": {\n\t\t\t\t\t\t\"scale\": 1.2\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"headline a bit bigger\",\n\t\t\t\"before\": {\n\t\t\t\t\"layers\": {\n\t\t\t\t\t\"guides\": {\n\t\t\t\t\t\t\"hidden\": true\n\t\t\t\t\t},\n\t\t\t\t\t\"headline\": {\n\t\t\t\t\t\t\"scale\": 0.833,\n\t\t\t\t\t\t\"align\": \"left\"\n\t\t\t\t\t},\n\t\t\t\t\t\"logo\": {\n\t\t\t\t\t\t\"scale\": 1.2\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t],\n\t\"future\": []\n}\n",
     "compose": {
-      "steps": [
+      "designs": [
         {
-          "step": 1,
-          "label": "An empty design on the 12 by 12 grid",
-          "src": "/gallery/compose-1.png",
+          "id": "story",
+          "label": "A customer story at the link preview, on paper",
+          "src": "/gallery/compose-story.png",
           "width": 1200,
           "height": 630,
-          "command": "conare-ds design new compose --size og -o open.design.json"
+          "commands": [
+            "conare-ds design new compose --size og -o story.design.json",
+            "conare-ds design compose add story.design.json logo --at 0,0,3,1",
+            "conare-ds design compose add story.design.json badge \"Customer story\" --at 0,2,4,1",
+            "conare-ds design compose add story.design.json headline \"How Acme searches every file\" --at 0,3,7,3",
+            "conare-ds design compose add story.design.json quote \"We stopped searching folders by hand.\" --set \"attribution=Head of search, Acme\" --at 0,7,7,4",
+            "conare-ds design compose add story.design.json stat 3x --set \"label=faster answers at Acme\" --at 8,0,4,5",
+            "conare-ds design compose add story.design.json window --at 8,6,4,5",
+            "conare-ds design revise story.design.json \"paper theme\""
+          ]
         },
         {
-          "step": 2,
-          "label": "The lockup, top left",
-          "src": "/gallery/compose-2.png",
-          "width": 1200,
-          "height": 630,
-          "command": "conare-ds design compose add open.design.json logo"
+          "id": "launch",
+          "label": "A launch post, square, on red",
+          "src": "/gallery/compose-launch.png",
+          "width": 1080,
+          "height": 1080,
+          "commands": [
+            "conare-ds design new compose --size square -o launch.design.json",
+            "conare-ds design compose add launch.design.json logo --at 0,0,4,1",
+            "conare-ds design compose add launch.design.json badge New --at 0,2,3,1",
+            "conare-ds design compose add launch.design.json headline \"Search now reads every table\" --at 0,3,11,3",
+            "conare-ds design compose add launch.design.json body \"Rows and cells in PDFs, sheets and scans become text you can ask about.\" --at 0,6,10,2",
+            "conare-ds design compose add launch.design.json window --at 0,8,12,4",
+            "conare-ds design revise launch.design.json \"red theme\""
+          ]
         },
         {
-          "step": 3,
-          "label": "A label",
-          "src": "/gallery/compose-3.png",
-          "width": 1200,
-          "height": 630,
-          "command": "conare-ds design compose add open.design.json badge \"Customer story\" --at 0,2,4,1"
-        },
-        {
-          "step": 4,
-          "label": "The headline in its cells",
-          "src": "/gallery/compose-4.png",
-          "width": 1200,
-          "height": 630,
-          "command": "conare-ds design compose add open.design.json headline \"How Acme searches every file\" --at 0,3,7,3"
-        },
-        {
-          "step": 5,
-          "label": "A stat, in plain words",
-          "src": "/gallery/compose-5.png",
-          "width": 1200,
-          "height": 630,
-          "command": "conare-ds design revise open.design.json \"add a stat \"3x\" top right\""
-        },
-        {
-          "step": 6,
-          "label": "A quote with who said it",
-          "src": "/gallery/compose-6.png",
-          "width": 1200,
-          "height": 630,
-          "command": "conare-ds design compose add open.design.json quote \"We stopped searching folders by hand.\" --set \"attribution=Head of search, Acme\" --at 0,7,7,4"
-        },
-        {
-          "step": 7,
-          "label": "The product window",
-          "src": "/gallery/compose-7.png",
-          "width": 1200,
-          "height": 630,
-          "command": "conare-ds design compose add open.design.json window --at 8,4,4,6"
-        },
-        {
-          "step": 8,
-          "label": "Paper",
-          "src": "/gallery/compose-8.png",
-          "width": 1200,
-          "height": 630,
-          "command": "conare-ds design revise open.design.json \"paper theme\""
+          "id": "stat",
+          "label": "A number for a story, with points and a button",
+          "src": "/gallery/compose-stat.png",
+          "width": 1080,
+          "height": 1920,
+          "commands": [
+            "conare-ds design new compose --size story -o stat.design.json",
+            "conare-ds design compose add stat.design.json logo --at 0,0,5,1",
+            "conare-ds design compose add stat.design.json stat 42% --set \"label=less time searching at Acme\" --at 0,2,12,4",
+            "conare-ds design compose add stat.design.json divider --at 0,6,12,1",
+            "conare-ds design compose add stat.design.json list \"Every file in one search | Answers with their source | Set up in a week\" --at 0,7,12,4",
+            "conare-ds design compose add stat.design.json button \"Read the story\" --at 0,11,6,1"
+          ]
         }
       ],
-      "file": "{\n\t\"version\": 1,\n\t\"brand\": \"conare-ds\",\n\t\"kind\": \"image\",\n\t\"template\": \"compose\",\n\t\"size\": {\n\t\t\"id\": \"og\",\n\t\t\"width\": 1200,\n\t\t\"height\": 630\n\t},\n\t\"theme\": \"paper\",\n\t\"copy\": {\n\t\t\"badge.text\": \"Customer story\",\n\t\t\"headline.text\": \"How Acme searches every file\",\n\t\t\"quote.attribution\": \"Head of search, Acme\",\n\t\t\"quote.text\": \"We stopped searching folders by hand.\",\n\t\t\"stat.value\": \"3x\"\n\t},\n\t\"images\": {},\n\t\"options\": {},\n\t\"layers\": {},\n\t\"blocks\": [\n\t\t{\n\t\t\t\"id\": \"logo\",\n\t\t\t\"type\": \"logo\",\n\t\t\t\"at\": {\n\t\t\t\t\"col\": 0,\n\t\t\t\t\"row\": 0,\n\t\t\t\t\"cols\": 4,\n\t\t\t\t\"rows\": 1\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"id\": \"badge\",\n\t\t\t\"type\": \"badge\",\n\t\t\t\"at\": {\n\t\t\t\t\"col\": 0,\n\t\t\t\t\"row\": 2,\n\t\t\t\t\"cols\": 4,\n\t\t\t\t\"rows\": 1\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"id\": \"headline\",\n\t\t\t\"type\": \"headline\",\n\t\t\t\"at\": {\n\t\t\t\t\"col\": 0,\n\t\t\t\t\"row\": 3,\n\t\t\t\t\"cols\": 7,\n\t\t\t\t\"rows\": 3\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"id\": \"stat\",\n\t\t\t\"type\": \"stat\",\n\t\t\t\"at\": {\n\t\t\t\t\"col\": 8,\n\t\t\t\t\"row\": 0,\n\t\t\t\t\"cols\": 4,\n\t\t\t\t\"rows\": 4\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"id\": \"quote\",\n\t\t\t\"type\": \"quote\",\n\t\t\t\"at\": {\n\t\t\t\t\"col\": 0,\n\t\t\t\t\"row\": 7,\n\t\t\t\t\"cols\": 7,\n\t\t\t\t\"rows\": 4\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"id\": \"window\",\n\t\t\t\"type\": \"window\",\n\t\t\t\"at\": {\n\t\t\t\t\"col\": 8,\n\t\t\t\t\"row\": 4,\n\t\t\t\t\"cols\": 4,\n\t\t\t\t\"rows\": 6\n\t\t\t}\n\t\t}\n\t],\n\t\"history\": [\n\t\t{\n\t\t\t\"change\": \"compose add logo\",\n\t\t\t\"before\": {\n\t\t\t\t\"blocks\": []\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"compose add badge Customer story\",\n\t\t\t\"before\": {\n\t\t\t\t\"copy\": {},\n\t\t\t\t\"blocks\": [\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"logo\",\n\t\t\t\t\t\t\"type\": \"logo\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 0,\n\t\t\t\t\t\t\t\"cols\": 4,\n\t\t\t\t\t\t\t\"rows\": 1\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t]\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"compose add headline How Acme searches every file\",\n\t\t\t\"before\": {\n\t\t\t\t\"copy\": {\n\t\t\t\t\t\"badge.text\": \"Customer story\"\n\t\t\t\t},\n\t\t\t\t\"blocks\": [\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"logo\",\n\t\t\t\t\t\t\"type\": \"logo\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 0,\n\t\t\t\t\t\t\t\"cols\": 4,\n\t\t\t\t\t\t\t\"rows\": 1\n\t\t\t\t\t\t}\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"badge\",\n\t\t\t\t\t\t\"type\": \"badge\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 2,\n\t\t\t\t\t\t\t\"cols\": 4,\n\t\t\t\t\t\t\t\"rows\": 1\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t]\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"add a stat \\\"3x\\\" top right\",\n\t\t\t\"before\": {\n\t\t\t\t\"copy\": {\n\t\t\t\t\t\"badge.text\": \"Customer story\",\n\t\t\t\t\t\"headline.text\": \"How Acme searches every file\"\n\t\t\t\t},\n\t\t\t\t\"blocks\": [\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"logo\",\n\t\t\t\t\t\t\"type\": \"logo\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 0,\n\t\t\t\t\t\t\t\"cols\": 4,\n\t\t\t\t\t\t\t\"rows\": 1\n\t\t\t\t\t\t}\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"badge\",\n\t\t\t\t\t\t\"type\": \"badge\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 2,\n\t\t\t\t\t\t\t\"cols\": 4,\n\t\t\t\t\t\t\t\"rows\": 1\n\t\t\t\t\t\t}\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"headline\",\n\t\t\t\t\t\t\"type\": \"headline\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 3,\n\t\t\t\t\t\t\t\"cols\": 7,\n\t\t\t\t\t\t\t\"rows\": 3\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t]\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"compose add quote We stopped searching folders by hand.\",\n\t\t\t\"before\": {\n\t\t\t\t\"copy\": {\n\t\t\t\t\t\"badge.text\": \"Customer story\",\n\t\t\t\t\t\"headline.text\": \"How Acme searches every file\",\n\t\t\t\t\t\"stat.value\": \"3x\"\n\t\t\t\t},\n\t\t\t\t\"blocks\": [\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"logo\",\n\t\t\t\t\t\t\"type\": \"logo\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 0,\n\t\t\t\t\t\t\t\"cols\": 4,\n\t\t\t\t\t\t\t\"rows\": 1\n\t\t\t\t\t\t}\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"badge\",\n\t\t\t\t\t\t\"type\": \"badge\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 2,\n\t\t\t\t\t\t\t\"cols\": 4,\n\t\t\t\t\t\t\t\"rows\": 1\n\t\t\t\t\t\t}\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"headline\",\n\t\t\t\t\t\t\"type\": \"headline\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 3,\n\t\t\t\t\t\t\t\"cols\": 7,\n\t\t\t\t\t\t\t\"rows\": 3\n\t\t\t\t\t\t}\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"stat\",\n\t\t\t\t\t\t\"type\": \"stat\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 8,\n\t\t\t\t\t\t\t\"row\": 0,\n\t\t\t\t\t\t\t\"cols\": 4,\n\t\t\t\t\t\t\t\"rows\": 4\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t]\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"compose add window\",\n\t\t\t\"before\": {\n\t\t\t\t\"blocks\": [\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"logo\",\n\t\t\t\t\t\t\"type\": \"logo\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 0,\n\t\t\t\t\t\t\t\"cols\": 4,\n\t\t\t\t\t\t\t\"rows\": 1\n\t\t\t\t\t\t}\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"badge\",\n\t\t\t\t\t\t\"type\": \"badge\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 2,\n\t\t\t\t\t\t\t\"cols\": 4,\n\t\t\t\t\t\t\t\"rows\": 1\n\t\t\t\t\t\t}\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"headline\",\n\t\t\t\t\t\t\"type\": \"headline\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 3,\n\t\t\t\t\t\t\t\"cols\": 7,\n\t\t\t\t\t\t\t\"rows\": 3\n\t\t\t\t\t\t}\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"stat\",\n\t\t\t\t\t\t\"type\": \"stat\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 8,\n\t\t\t\t\t\t\t\"row\": 0,\n\t\t\t\t\t\t\t\"cols\": 4,\n\t\t\t\t\t\t\t\"rows\": 4\n\t\t\t\t\t\t}\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"quote\",\n\t\t\t\t\t\t\"type\": \"quote\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 7,\n\t\t\t\t\t\t\t\"cols\": 7,\n\t\t\t\t\t\t\t\"rows\": 4\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t]\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"paper theme\",\n\t\t\t\"before\": {\n\t\t\t\t\"theme\": \"white\"\n\t\t\t}\n\t\t}\n\t],\n\t\"future\": []\n}\n"
+      "file": "{\n\t\"version\": 1,\n\t\"brand\": \"conare-ds\",\n\t\"kind\": \"image\",\n\t\"template\": \"compose\",\n\t\"size\": {\n\t\t\"id\": \"og\",\n\t\t\"width\": 1200,\n\t\t\"height\": 630\n\t},\n\t\"theme\": \"paper\",\n\t\"copy\": {\n\t\t\"badge.text\": \"Customer story\",\n\t\t\"headline.text\": \"How Acme searches every file\",\n\t\t\"quote.attribution\": \"Head of search, Acme\",\n\t\t\"quote.text\": \"We stopped searching folders by hand.\",\n\t\t\"stat.label\": \"faster answers at Acme\",\n\t\t\"stat.value\": \"3x\"\n\t},\n\t\"images\": {},\n\t\"options\": {},\n\t\"layers\": {},\n\t\"blocks\": [\n\t\t{\n\t\t\t\"id\": \"logo\",\n\t\t\t\"type\": \"logo\",\n\t\t\t\"at\": {\n\t\t\t\t\"col\": 0,\n\t\t\t\t\"row\": 0,\n\t\t\t\t\"cols\": 3,\n\t\t\t\t\"rows\": 1\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"id\": \"badge\",\n\t\t\t\"type\": \"badge\",\n\t\t\t\"at\": {\n\t\t\t\t\"col\": 0,\n\t\t\t\t\"row\": 2,\n\t\t\t\t\"cols\": 4,\n\t\t\t\t\"rows\": 1\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"id\": \"headline\",\n\t\t\t\"type\": \"headline\",\n\t\t\t\"at\": {\n\t\t\t\t\"col\": 0,\n\t\t\t\t\"row\": 3,\n\t\t\t\t\"cols\": 7,\n\t\t\t\t\"rows\": 3\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"id\": \"quote\",\n\t\t\t\"type\": \"quote\",\n\t\t\t\"at\": {\n\t\t\t\t\"col\": 0,\n\t\t\t\t\"row\": 7,\n\t\t\t\t\"cols\": 7,\n\t\t\t\t\"rows\": 4\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"id\": \"stat\",\n\t\t\t\"type\": \"stat\",\n\t\t\t\"at\": {\n\t\t\t\t\"col\": 8,\n\t\t\t\t\"row\": 0,\n\t\t\t\t\"cols\": 4,\n\t\t\t\t\"rows\": 5\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"id\": \"window\",\n\t\t\t\"type\": \"window\",\n\t\t\t\"at\": {\n\t\t\t\t\"col\": 8,\n\t\t\t\t\"row\": 6,\n\t\t\t\t\"cols\": 4,\n\t\t\t\t\"rows\": 5\n\t\t\t}\n\t\t}\n\t],\n\t\"history\": [\n\t\t{\n\t\t\t\"change\": \"compose add logo\",\n\t\t\t\"before\": {\n\t\t\t\t\"blocks\": []\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"compose add badge Customer story\",\n\t\t\t\"before\": {\n\t\t\t\t\"copy\": {},\n\t\t\t\t\"blocks\": [\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"logo\",\n\t\t\t\t\t\t\"type\": \"logo\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 0,\n\t\t\t\t\t\t\t\"cols\": 3,\n\t\t\t\t\t\t\t\"rows\": 1\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t]\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"compose add headline How Acme searches every file\",\n\t\t\t\"before\": {\n\t\t\t\t\"copy\": {\n\t\t\t\t\t\"badge.text\": \"Customer story\"\n\t\t\t\t},\n\t\t\t\t\"blocks\": [\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"logo\",\n\t\t\t\t\t\t\"type\": \"logo\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 0,\n\t\t\t\t\t\t\t\"cols\": 3,\n\t\t\t\t\t\t\t\"rows\": 1\n\t\t\t\t\t\t}\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"badge\",\n\t\t\t\t\t\t\"type\": \"badge\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 2,\n\t\t\t\t\t\t\t\"cols\": 4,\n\t\t\t\t\t\t\t\"rows\": 1\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t]\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"compose add quote We stopped searching folders by hand.\",\n\t\t\t\"before\": {\n\t\t\t\t\"copy\": {\n\t\t\t\t\t\"badge.text\": \"Customer story\",\n\t\t\t\t\t\"headline.text\": \"How Acme searches every file\"\n\t\t\t\t},\n\t\t\t\t\"blocks\": [\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"logo\",\n\t\t\t\t\t\t\"type\": \"logo\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 0,\n\t\t\t\t\t\t\t\"cols\": 3,\n\t\t\t\t\t\t\t\"rows\": 1\n\t\t\t\t\t\t}\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"badge\",\n\t\t\t\t\t\t\"type\": \"badge\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 2,\n\t\t\t\t\t\t\t\"cols\": 4,\n\t\t\t\t\t\t\t\"rows\": 1\n\t\t\t\t\t\t}\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"headline\",\n\t\t\t\t\t\t\"type\": \"headline\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 3,\n\t\t\t\t\t\t\t\"cols\": 7,\n\t\t\t\t\t\t\t\"rows\": 3\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t]\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"compose add stat 3x\",\n\t\t\t\"before\": {\n\t\t\t\t\"copy\": {\n\t\t\t\t\t\"badge.text\": \"Customer story\",\n\t\t\t\t\t\"headline.text\": \"How Acme searches every file\",\n\t\t\t\t\t\"quote.attribution\": \"Head of search, Acme\",\n\t\t\t\t\t\"quote.text\": \"We stopped searching folders by hand.\"\n\t\t\t\t},\n\t\t\t\t\"blocks\": [\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"logo\",\n\t\t\t\t\t\t\"type\": \"logo\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 0,\n\t\t\t\t\t\t\t\"cols\": 3,\n\t\t\t\t\t\t\t\"rows\": 1\n\t\t\t\t\t\t}\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"badge\",\n\t\t\t\t\t\t\"type\": \"badge\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 2,\n\t\t\t\t\t\t\t\"cols\": 4,\n\t\t\t\t\t\t\t\"rows\": 1\n\t\t\t\t\t\t}\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"headline\",\n\t\t\t\t\t\t\"type\": \"headline\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 3,\n\t\t\t\t\t\t\t\"cols\": 7,\n\t\t\t\t\t\t\t\"rows\": 3\n\t\t\t\t\t\t}\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"quote\",\n\t\t\t\t\t\t\"type\": \"quote\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 7,\n\t\t\t\t\t\t\t\"cols\": 7,\n\t\t\t\t\t\t\t\"rows\": 4\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t]\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"compose add window\",\n\t\t\t\"before\": {\n\t\t\t\t\"blocks\": [\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"logo\",\n\t\t\t\t\t\t\"type\": \"logo\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 0,\n\t\t\t\t\t\t\t\"cols\": 3,\n\t\t\t\t\t\t\t\"rows\": 1\n\t\t\t\t\t\t}\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"badge\",\n\t\t\t\t\t\t\"type\": \"badge\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 2,\n\t\t\t\t\t\t\t\"cols\": 4,\n\t\t\t\t\t\t\t\"rows\": 1\n\t\t\t\t\t\t}\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"headline\",\n\t\t\t\t\t\t\"type\": \"headline\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 3,\n\t\t\t\t\t\t\t\"cols\": 7,\n\t\t\t\t\t\t\t\"rows\": 3\n\t\t\t\t\t\t}\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"quote\",\n\t\t\t\t\t\t\"type\": \"quote\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 0,\n\t\t\t\t\t\t\t\"row\": 7,\n\t\t\t\t\t\t\t\"cols\": 7,\n\t\t\t\t\t\t\t\"rows\": 4\n\t\t\t\t\t\t}\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\t\"id\": \"stat\",\n\t\t\t\t\t\t\"type\": \"stat\",\n\t\t\t\t\t\t\"at\": {\n\t\t\t\t\t\t\t\"col\": 8,\n\t\t\t\t\t\t\t\"row\": 0,\n\t\t\t\t\t\t\t\"cols\": 4,\n\t\t\t\t\t\t\t\"rows\": 5\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t]\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"change\": \"paper theme\",\n\t\t\t\"before\": {\n\t\t\t\t\"theme\": \"white\"\n\t\t\t}\n\t\t}\n\t],\n\t\"future\": []\n}\n"
     },
     "page": {
       "outline": "{\n  \"title\": \"Acme search\",\n  \"sections\": [\n    {\n      \"type\": \"header\",\n      \"copy\": {\n        \"action\": \"Sign in\",\n        \"action-href\": \"#sign-in\"\n      },\n      \"items\": [\n        {\n          \"label\": \"Pricing\",\n          \"href\": \"#pricing\"\n        },\n        {\n          \"label\": \"Docs\",\n          \"href\": \"#docs\"\n        }\n      ]\n    },\n    {\n      \"type\": \"hero\",\n      \"copy\": {\n        \"eyebrow\": \"Search\",\n        \"title\": \"Every answer comes back with its source\",\n        \"body\": \"Search the documents you connect, from one API.\",\n        \"action\": \"Start building\",\n        \"action-href\": \"#start\"\n      }\n    },\n    {\n      \"type\": \"bento\",\n      \"copy\": {\n        \"title\": \"One place for everything you search\",\n        \"tag\": \"Features\"\n      },\n      \"items\": [\n        {\n          \"title\": \"Search every file\",\n          \"body\": \"Ask in plain words.\",\n          \"size\": \"large\"\n        },\n        {\n          \"title\": \"Keep apps in step\",\n          \"body\": \"Files are read as they arrive.\"\n        },\n        {\n          \"title\": \"Answers you can check\",\n          \"body\": \"Every answer links to its source.\"\n        }\n      ]\n    },\n    {\n      \"type\": \"newsletter\",\n      \"copy\": {\n        \"title\": \"News once a month\",\n        \"sent\": \"You are on the list.\"\n      }\n    },\n    {\n      \"type\": \"cta\",\n      \"copy\": {\n        \"title\": \"Start building today\",\n        \"action\": \"Get started\",\n        \"action-href\": \"#start\"\n      }\n    },\n    {\n      \"type\": \"footer\",\n      \"copy\": {\n        \"legal\": \"© 2026 Acme, Inc.\"\n      },\n      \"items\": [\n        {\n          \"label\": \"Pricing\",\n          \"href\": \"#pricing\",\n          \"column\": \"Product\"\n        },\n        {\n          \"label\": \"Blog\",\n          \"href\": \"#blog\",\n          \"column\": \"Company\"\n        }\n      ]\n    }\n  ]\n}\n",

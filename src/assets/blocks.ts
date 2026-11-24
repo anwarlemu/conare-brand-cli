@@ -117,7 +117,7 @@ export function drawBlocks(ctx: Ctx, doc: DesignDoc, pictures: BlockPictures): D
 			const lines = setLines(ctx, opts.caps ? text.toUpperCase() : text, r.w, { breakLong: false });
 			ctx.letterSpacing = '0px';
 			/* A little room above and below, so tall glyphs stay inside the cells. */
-			return { lines, size, w: Math.max(0, ...lines.map((l) => l.w)), h: lines.length * size * leading + size * 0.16, role, asked: text };
+			return { lines, size, w: Math.max(0, ...lines.map((l) => l.w)), h: lines.length * size * leading + size * 0.3, role, asked: text };
 		};
 		const ok = (s: Set_) => s.w <= r.w + 0.5 && s.h <= r.h + 0.5 && s.lines.every((l) => l.w <= r.w + 0.5);
 		let size = Math.max(least, Math.min(from, r.h / leading));
@@ -138,11 +138,11 @@ export function drawBlocks(ctx: Ctx, doc: DesignDoc, pictures: BlockPictures): D
 		ctx.letterSpacing = `${(opts.tracking ?? 0) * s.size}px`;
 		ctx.textBaseline = 'alphabetic';
 		ctx.textAlign = 'left';
-		const lh = (s.h - s.size * 0.16) / Math.max(1, s.lines.length);
+		const lh = (s.h - s.size * 0.3) / Math.max(1, s.lines.length);
 		const m0 = ctx.measureText('Hg');
 		const asc = m0.fontBoundingBoxAscent || s.size * 0.9;
 		const desc = m0.fontBoundingBoxDescent || s.size * 0.22;
-		let y = (valign === 'middle' ? r.y + (r.h - s.h) / 2 : r.y) + s.size * 0.08;
+		let y = (valign === 'middle' ? r.y + (r.h - s.h) / 2 : r.y) + s.size * 0.15;
 		const ink: Rect[] = [];
 		const space = ctx.measureText(' ').width;
 		for (const [li, line] of s.lines.entries()) {
