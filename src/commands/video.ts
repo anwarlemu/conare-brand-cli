@@ -2,7 +2,8 @@ import { brand } from '../lib/brand.js';
 import { copyFlags, str, type Flags } from '../assets/flags.js';
 import { unknown } from '../assets/io.js';
 import { LAYOUTS } from '../assets/og.js';
-import { layoutVideoSizes, runLayoutVideo } from '../assets/layout-video.js';
+import { layoutVideoSizes, runLayoutVideo, runMotionVideo } from '../assets/layout-video.js';
+import { MOTIONS, type MotionKind } from '../assets/motion-extra.js';
 import { helpRow } from '../lib/help-row.js';
 import { renderVideo, writeVideos, type WrittenVideo } from '../video/render.js';
 import { refuseVideo, resolveVideo, videoCatalog, videoTemplate, VIDEO_CODEC, VIDEO_FPS, VIDEO_FRAMES, VIDEO_TEMPLATES } from '../video/spec.js';
@@ -34,7 +35,12 @@ export function videoHelp(): string {
 		`Layouts: ${LAYOUTS.filter((l) => l !== 'avatar').join(', ')}. Sizes: ${layoutVideoSizes().map((s) => `${s.id} ${s.width}x${s.height}`).join(', ')}.`,
 		'The label and lockup settle up 12px over the entrance step, the headline letters wait faint and red and settle to ink (40ms apart, lines 100ms apart),',
 		'the line and footer follow, a window arrives on the long ease-out, then the frame holds 1.5s. Every curve and duration is a motion token; nothing eases in.',
-		'--fps 12 to 60 (default 30). --format mp4 (default), webm or both. --headline, --body, --badge, --theme, --highlight, --partner, --credit, --note, --image, --seed and --sample as in image.',
+		helpRow(`${b} video logo-reveal --theme red`, 'The lockup settling in: an intro or outro sting', 54),
+		helpRow(`${b} video lower-third --name "Ada Acme" --role "Acme"`, 'A name and role on a transparent ground (WebM)', 54),
+		helpRow(`${b} video stat --headline "100M+ documents"`, 'The big number counting up to its value', 54),
+		helpRow(`${b} video walkthrough --image a.png,b.png,c.png --headline "..."`, 'Screenshots one after another in the window', 54),
+		'--loop fades a layout video to its ground at the end so it loops cleanly (gif always does).',
+		'--fps 12 to 60 (default 30). --format mp4 (default), webm, gif or a list. --headline, --body, --badge, --theme, --highlight, --partner, --credit, --note, --image, --seed and --sample as in image.',
 		'Only the copy you pass is drawn; copy that does not fit whole is an error naming what to shorten.',
 	].join('\n');
 }
@@ -64,6 +70,7 @@ export async function runVideo(cwd: string, args: string[], flags: Flags): Promi
 	if (firstIs && flagTemplate && first !== flagTemplate) throw new Error(`\`${first}\` and --template ${flagTemplate} disagree. Pass one.`);
 	const asked = flagTemplate ?? (firstIs ? first : undefined);
 	const rest = firstIs ? args.slice(1) : args;
+	if (first && (MOTIONS as readonly string[]).includes(first)) return runMotionVideo(cwd, first as MotionKind, args.slice(1), flags);
 	if (asked && (LAYOUTS as readonly string[]).includes(asked)) return runLayoutVideo(cwd, asked, rest, flags);
 	if (!asked && rest[0] && !/\s/.test(rest[0])) throw unknown('template', rest[0], [...VIDEO_TEMPLATES.map((t) => t.id), ...LAYOUTS.filter((l) => l !== 'avatar')]);
 	for (const f of ['highlight', 'partner', 'credit', 'note', 'page', 'badge-style', 'image', 'format', 'fps', 'at', 'still', 'seed', 'sample', 'width', 'height']) if (flags[f] !== undefined) throw new Error(`--${f} goes with a layout video (${LAYOUTS.filter((l) => l !== 'avatar').join(', ')}).`);

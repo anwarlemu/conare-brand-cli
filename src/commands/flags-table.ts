@@ -21,7 +21,7 @@ export const FLAGS: Record<string, string[]> = {
 	hook: [],
 	tokens: [],
 	image: ['headline', 'title', 'body', 'text', 'subtitle', 'badge', 'eyebrow', 'badge-style', 'note', 'page', 'by', 'author', 'image', 'template', 'size', 'width', 'height', 'ground', 'theme', 'out', 'format', 'scale', 'list', 'highlight', 'partner', 'credit', 'seed', 'sample', 'input'],
-	video: ['headline', 'title', 'body', 'text', 'subtitle', 'badge', 'eyebrow', 'badge-style', 'note', 'page', 'template', 'size', 'width', 'height', 'ground', 'out', 'list', 'theme', 'highlight', 'partner', 'credit', 'image', 'seed', 'sample', 'format', 'fps', 'at', 'still'],
+	video: ['loop', 'name', 'role', 'headline', 'title', 'body', 'text', 'subtitle', 'badge', 'eyebrow', 'badge-style', 'note', 'page', 'template', 'size', 'width', 'height', 'ground', 'out', 'list', 'theme', 'highlight', 'partner', 'credit', 'image', 'seed', 'sample', 'format', 'fps', 'at', 'still'],
 	brand: ['section', 'token'],
 	principles: ['surface'],
 	component: ['group', 'part', 'state', 'prop', 'source'],

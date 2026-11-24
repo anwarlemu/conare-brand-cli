@@ -7,6 +7,7 @@ import { customSize, imageDoc, LAYOUTS, sizeIds, sizeOf, type Layout, type Size 
 import { compose, motionLength, renderDesign, type Design, type Pic } from './og.js';
 import { readPicture } from './picture.js';
 import { renderVideo, still, VIDEO_FORMATS, type VideoFormat } from './video.js';
+import { renderMotion, type MotionKind } from './motion-extra.js';
 import { VIDEO_SIZES } from '../video/spec.js';
 
 // `video <layout>`: a share-image layout coming in the way the site moves (the label and lockup settle up, the
@@ -25,6 +26,35 @@ export function layoutVideoSizes() {
 	const video = VIDEO_SIZES.map((s) => ({ id: s.id as string, width: s.width, height: s.height }));
 	const image = sizeIds().filter((id) => id !== 'avatar' && !video.some((v) => v.id === id)).map((id) => ({ id, width: sizeOf(id)!.w, height: sizeOf(id)!.h }));
 	return [...video, ...image];
+}
+
+/** `video logo-reveal | lower-third | stat | walkthrough`: the motion pieces that are not one layout coming in. */
+export async function runMotionVideo(cwd: string, kind: MotionKind, args: string[], flags: Flags): Promise<{ json: unknown; text: string }> {
+	if (args.length) throw new Error(`Unexpected \`${args.join(' ')}\`.`);
+	const fps = num('fps', flags.fps, 12, 60, { integer: true }) ?? 30;
+	const fmt = (str(flags.format) ?? (kind === 'lower-third' ? 'webm' : 'mp4')).split(',').flatMap((f) => (f === 'both' ? ['mp4', 'webm'] : [f]));
+	const formats = fmt.map((f) => pick('format', f, [...VIDEO_FORMATS] as const) as VideoFormat);
+	const theme = str(flags.theme) ? pick('theme', str(flags.theme)!, Object.keys(imageDoc().themes)) : undefined;
+	const size = videoSizeOf(str(flags.size) ?? (kind === 'lower-third' ? 'landscape' : 'square'));
+	if (!size) throw unknown('size', String(flags.size), layoutVideoSizes().map((x) => x.id));
+	const copy = copyFlags(flags);
+	let design: Design | undefined;
+	let pictures: Pic[] = [];
+	if (kind === 'stat') design = compose({ template: 'funding', size, theme, headline: copy.headline, body: copy.body, badgeText: copy.badge, highlight: str(flags.highlight) });
+	if (kind === 'walkthrough') {
+		const list = (str(flags.image) ?? '').split(',').map((x) => x.trim()).filter(Boolean);
+		for (const f of list) pictures.push(picOf(await readPicture(cwd, f, 2000)));
+		design = compose({ template: 'feature', size, theme, headline: copy.headline, body: copy.body, badgeText: copy.badge });
+	}
+	const dir = resolve(cwd, str(flags.out) ?? 'imagery');
+	const files: OutFile[] = [];
+	for (const f of formats) {
+		const r = await renderMotion({ kind, size, theme, design, pictures, name: str(flags.name), role: str(flags.role), fps, format: f });
+		const path = join(dir, `${kind}-${size.id}${theme ? `-${theme}` : ''}.${f}`);
+		write(path, r.data);
+		files.push({ path: display(cwd, path), format: f, template: kind, size: size.id, width: r.w, height: r.h, fps, frames: r.frames, seconds: r.seconds });
+	}
+	return { json: { files }, text: files.map((f) => `${f.path}  ${f.width}x${f.height}  ${f.frames} frames at ${f.fps} fps (${f.seconds}s)`).join('\n') };
 }
 
 export async function runLayoutVideo(cwd: string, template: string, args: string[], flags: Flags): Promise<{ json: unknown; text: string }> {
@@ -74,7 +104,7 @@ export async function runLayoutVideo(cwd: string, template: string, args: string
 			continue;
 		}
 		for (const f of formats) {
-			const v = await renderVideo(d, pic, fps, f);
+			const v = await renderVideo(d, pic, fps, f, undefined, { loop: flags.loop === true || f === 'gif' });
 			write(`${stem}.${f}`, v.data);
 			files.push({ path: display(cwd, `${stem}.${f}`), format: f, template: layout, size: size.id, width: size.w, height: size.h, fps, frames: v.frames, seconds: v.seconds });
 		}
