@@ -83,6 +83,7 @@ const HELP = () => {
 		row('video hero --headline "..."', 'A layout coming in the way the site moves: MP4 or WebM (ffmpeg), --still for a PNG'),
 		more('the Motion JPEG clips: --template headline|statement|announcement|logo --size square,vertical,landscape'),
 		row('merch tee-back --variant black', 'Print files at real size with bleed and safe area (merch --list)'),
+		row('print business-card --name "..."', 'Documents: business cards, letterheads, report covers, one-pagers, case studies, badges, certificates'),
 		row('illustrate stacks', "The brand's illustration style as SVG and PNG (illustrate --list)"),
 		row('figma tokens|push|pull|check', 'Files and the ordered Figma MCP calls; the CLI never calls Figma'),
 		'',
@@ -139,7 +140,7 @@ async function main() {
 	const cwd = resolve(typeof flags.cwd === 'string' ? flags.cwd : process.cwd());
 	const json = flags.json === true;
 	const out = (value: unknown, text: string) => console.log(json ? JSON.stringify(value, null, 2) : text);
-	const ownHelp = new Set(['image', 'deck', 'illustrate', 'merch', 'figma', 'video', 'brand', 'principles', 'component', 'manifest', 'describe']);
+	const ownHelp = new Set(['image', 'print', 'deck', 'illustrate', 'merch', 'figma', 'video', 'brand', 'principles', 'component', 'manifest', 'describe']);
 	if (flags.help && command && !ownHelp.has(command)) {
 		console.log(HELP());
 		return;
@@ -264,6 +265,15 @@ async function main() {
 				return;
 			}
 			const r = await runIllustrate(cwd, args, flags);
+			out(r.json, r.text);
+			return;
+		}
+		case 'print': {
+			if (flags.help) {
+				console.log(merchHelp('document'));
+				return;
+			}
+			const r = await runMerch(cwd, args, flags, 'document');
 			out(r.json, r.text);
 			return;
 		}

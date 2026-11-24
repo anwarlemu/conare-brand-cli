@@ -19,10 +19,12 @@ export const PX_PER_IN = 300;
 type B = [number, number, number, number];
 type Layer = { fixed?: boolean; only?: 'one' } & (
 	| { type: 'logo'; part: 'primary' | 'mark'; box: B }
-	| { type: 'text'; slot: string; box: B; size: number; face: 'display' | 'mono' }
+	| { type: 'text'; slot: string; box: B; size: number; face: 'display' | 'mono' | 'text'; align?: 'left' | 'center' | 'right'; valign?: 'top' | 'middle'; muted?: boolean; caps?: boolean }
+	| { type: 'rule'; box: B }
+	| { type: 'repeat'; part: 'primary' | 'mark'; box: B; gap: number }
 	| { type: 'art'; subject: string; shape?: 'tall' | 'wide'; box: B; bleed?: boolean }
 );
-export type MerchItem = { id: string; name: string; size: [number, number]; bleed: number; safe: number; method: string; source: string; cut?: { radius: number }; flow?: 'top' | 'middle'; variants: string[]; layers: Layer[] };
+export type MerchItem = { id: string; name: string; kind?: 'merch' | 'document'; cuts?: { box: B; radius: number }[]; size: [number, number]; bleed: number; safe: number; method: string; source: string; cut?: { radius: number }; flow?: 'top' | 'middle'; variants: string[]; layers: Layer[] };
 type Variant = { theme?: string; one?: string; ground: boolean };
 type MerchDoc = { dpi: number; slots: Record<string, string>; sample: Record<string, string>; textFloor: number; variants: Record<string, Variant>; items: MerchItem[] };
 
@@ -36,7 +38,7 @@ export function merchCatalog() {
 		items: merchItems().map((i) => ({
 			id: i.id, name: i.name, trim: { width: i.size[0], height: i.size[1], unit: 'in' }, bleed: i.bleed, safe: i.safe, method: i.method, variants: i.variants,
 			pixels: { width: Math.round((i.size[0] + 2 * i.bleed) * PX_PER_IN), height: Math.round((i.size[1] + 2 * i.bleed) * PX_PER_IN), dpi: PX_PER_IN },
-			dieCut: Boolean(i.cut), slots: [...new Set(i.layers.flatMap((l) => (l.type === 'text' ? [l.slot] : [])))], lockups: [...new Set(i.layers.flatMap((l) => (l.type === 'logo' ? [l.part] : [])))], source: i.source,
+			dieCut: Boolean(i.cut || i.cuts?.length), kind: i.kind ?? 'merch', slots: [...new Set(i.layers.flatMap((l) => (l.type === 'text' ? [l.slot] : [])))], lockups: [...new Set(i.layers.flatMap((l) => (l.type === 'logo' ? [l.part] : [])))], source: i.source,
 		})),
 		variants: Object.entries(merchDoc().variants).map(([id, v]) => ({ id, ...v })),
 		drawsOnly: 'The words passed, the logo and the address. --sample fills a sample headline.',
@@ -47,34 +49,37 @@ export function merchCatalog() {
 export type MerchRequest = { variant?: string; slots?: Record<string, string>; guides?: boolean; sample?: boolean; seed?: number };
 
 function inks(v: Variant) {
-	if (v.one) return { ink: color(v.one), hi: color(v.one), bg: '' };
+	if (v.one) return { ink: color(v.one), hi: color(v.one), bg: '', muted: color(v.one), line: color(v.one) };
 	const t = imageDoc().themes[v.theme!]!;
 	const hiName = t.onAccent?.highlight === 'ink' ? t.ink : imageDoc().accent;
-	return { ink: color(t.ink), hi: color(hiName), bg: color(t.bg) };
+	return { ink: color(t.ink), hi: color(hiName), bg: color(t.bg), muted: color(t.muted), line: color(t.line.split('/')[0]!) };
 }
 
 type Rect = { x: number; y: number; w: number; h: number };
 type TextLayer = Extract<Layer, { type: 'text' }>;
-type SetText = { lines: string[]; size: number; lh: number; role: FaceRole; text: string };
+type SetText = { lines: string[]; size: number; lh: number; role: FaceRole; text: string; track: number };
 
 /* Words fitted to a box: wrapped at its width, shrunk until they fit its height, down to the smallest print that reads.
    A headline keeps its red stop. */
 function setText(ctx: Ctx, item: MerchItem, l: TextLayer, value: string, b: Rect): SetText {
 	const display = l.face === 'display';
-	const text = display ? emphasise(value) : value;
-	const role = roleFor(display ? 'display' : 'mono', plain(text), l.slot);
-	const lh = display ? 1.08 : 1.2;
+	/* Only a headline ends on the brand's red stop; a name or a number is set as it is. */
+	const stopped = display && (l.slot === 'headline' || l.slot === 'quote');
+	const text = stopped ? emphasise(value) : l.caps ? value.toUpperCase() : value;
+	const role = roleFor(display ? 'display' : l.face === 'text' ? 'text' : 'mono', plain(text), l.slot);
+	const lh = display ? 1.08 : l.face === 'text' ? 1.42 : 1.2;
+	const track = display ? -0.02 : l.face === 'text' ? 0 : 0.02;
 	const floor = Math.min(merchDoc().textFloor, l.size) * PX_PER_IN;
 	const at = (size: number, str: string) => {
 		ctx.font = font(role, 400, size);
-		ctx.letterSpacing = `${(display ? -0.02 : 0.02) * size}px`;
-		const lines = setLines(ctx, str, b.w, { breakLong: size <= floor, balance: true });
+		ctx.letterSpacing = `${track * size}px`;
+		const lines = setLines(ctx, str, b.w, { breakLong: size <= floor, balance: l.face !== 'text' });
 		ctx.letterSpacing = '0px';
 		return { lines: lines.map((x) => x.text), ok: lines.length * size * lh <= b.h + 0.5 && lines.every((x) => x.w <= b.w + 0.5) };
 	};
 	for (let size = l.size * PX_PER_IN; ; size = Math.max(floor, size * 0.96)) {
 		const t = at(size, text);
-		if (t.ok) return { lines: t.lines, size, lh, role, text };
+		if (t.ok) return { lines: t.lines, size, lh, role, text, track };
 		if (size <= floor) break;
 	}
 	const words = text.split(/\s+/);
@@ -85,17 +90,17 @@ function setText(ctx: Ctx, item: MerchItem, l: TextLayer, value: string, b: Rect
 function paintText(ctx: Ctx, l: TextLayer, t: SetText, b: Rect, ink: string, hi: string): Rect[] {
 	const display = l.face === 'display';
 	ctx.font = font(t.role, 400, t.size);
-	ctx.letterSpacing = `${(display ? -0.02 : 0.02) * t.size}px`;
+	ctx.letterSpacing = `${t.track * t.size}px`;
 	ctx.textAlign = 'left';
 	ctx.textBaseline = 'alphabetic';
-	const top = b.y + (b.h - t.lines.length * t.size * t.lh) / 2;
+	const top = l.valign === 'top' ? b.y : b.y + (b.h - t.lines.length * t.size * t.lh) / 2;
 	const ink_: Rect[] = [];
 	t.lines.forEach((line, i) => {
 		const m = ctx.measureText(line);
-		const x = b.x + (b.w - m.width) / 2;
+		const x = l.align === 'left' ? b.x : l.align === 'right' ? b.x + b.w - m.width : b.x + (b.w - m.width) / 2;
 		const y = top + t.size * t.lh * i + t.size * 0.86;
 		ink_.push({ x, y: y - m.actualBoundingBoxAscent, w: m.width, h: m.actualBoundingBoxAscent + m.actualBoundingBoxDescent });
-		const stop = display && i === t.lines.length - 1 && /(^|[^.])\.$/.test(line);
+		const stop = display && (l.slot === 'headline' || l.slot === 'quote') && i === t.lines.length - 1 && /(^|[^.])\.$/.test(line);
 		ctx.fillStyle = ink;
 		if (stop) {
 			const head = line.slice(0, -1);
@@ -187,6 +192,19 @@ export function drawItem(ctx: Ctx, item: MerchItem, req: MerchRequest = {}) {
 			ctx.restore();
 			report('art', 'art', b, l.bleed ? { bleeds: true } : {});
 			if (l.bleed) backs.push('art');
+		} else if (l.type === 'rule') {
+			ctx.fillStyle = v.one ? c.ink : c.line;
+			ctx.fillRect(b.x, b.y, b.w, Math.max(2, b.h));
+			report('rule', 'art', b);
+		} else if (l.type === 'repeat') {
+			/* The lockup along a strip (a lanyard), whole each time, centered in the strip. */
+			const ratio = lockupRatio(l.part);
+			const h = b.h * 0.6;
+			const step = h * ratio + l.gap * PX_PER_IN;
+			const n = Math.max(1, Math.floor((b.w + l.gap * PX_PER_IN) / step));
+			const x0 = b.x + (b.w - (n * step - l.gap * PX_PER_IN)) / 2;
+			for (let i = 0; i < n; i++) drawLockup(ctx, x0 + i * step, b.y + (b.h - h) / 2, h, c.ink, l.part);
+			report('logo', 'logo', { x: x0, y: b.y + (b.h - h) / 2, w: h * ratio, h }, { logo: { clear: 0, min: 0.2 * PX_PER_IN } });
 		} else if (l.type === 'logo') {
 			const ratio = lockupRatio(l.part);
 			const h = Math.min(b.h, b.w / ratio);
@@ -195,10 +213,11 @@ export function drawItem(ctx: Ctx, item: MerchItem, req: MerchRequest = {}) {
 			report('logo', 'logo', r, { logo: { clear: h * 0.2, min: 0.2 * PX_PER_IN } });
 		} else {
 			const t = set.get(l)!;
-			const ink = paintText(ctx, l, t, b, c.ink, c.hi);
+			const fill = l.muted && !v.one ? c.muted : c.ink;
+			const ink = paintText(ctx, l, t, b, fill, c.hi);
 			const x = Math.min(...ink.map((r) => r.x));
 			const y = Math.min(...ink.map((r) => r.y));
-			report(l.slot, 'text', { x, y, w: Math.max(...ink.map((r) => r.x + r.w)) - x, h: Math.max(...ink.map((r) => r.y + r.h)) - y }, { ink, text: { asked: slots[l.slot]!.replace(/\s+/g, ' ').trim(), drawn: bare(t.lines.join('')) === bare(plain(t.text)) ? slots[l.slot]!.replace(/\s+/g, ' ').trim() : t.lines.join(' '), ...(l.slot === 'url' && !req.slots?.url ? { own: true } : {}), size: t.size, color: c.ink, ground: [v.one ? (v.one === 'off-white' ? color('off-black') : color('off-white')) : ground] } });
+			report(l.slot, 'text', { x, y, w: Math.max(...ink.map((r) => r.x + r.w)) - x, h: Math.max(...ink.map((r) => r.y + r.h)) - y }, { ink, text: { asked: slots[l.slot]!.replace(/\s+/g, ' ').trim(), drawn: bare(t.lines.join('')) === bare(plain(t.text)) ? slots[l.slot]!.replace(/\s+/g, ' ').trim() : t.lines.join(' '), ...(l.slot === 'url' && !req.slots?.url ? { own: true } : {}), size: t.size, color: fill, ground: [v.one ? (v.one === 'off-white' ? color('off-black') : color('off-white')) : ground] } });
 		}
 	}
 	if (req.guides) {
@@ -215,12 +234,12 @@ export function drawItem(ctx: Ctx, item: MerchItem, req: MerchRequest = {}) {
 }
 
 function cutPath(item: MerchItem): string {
-	if (!item.cut) return '';
 	const o = item.bleed * PX_PER_IN;
-	const w = item.size[0] * PX_PER_IN;
-	const h = item.size[1] * PX_PER_IN;
-	const r = item.cut.radius * PX_PER_IN;
-	const d = `M${o + r} ${o}H${o + w - r}A${r} ${r} 0 0 1 ${o + w} ${o + r}V${o + h - r}A${r} ${r} 0 0 1 ${o + w - r} ${o + h}H${o + r}A${r} ${r} 0 0 1 ${o} ${o + h - r}V${o + r}A${r} ${r} 0 0 1 ${o + r} ${o}Z`;
+	const shapes: { x: number; y: number; w: number; h: number; r: number }[] = [];
+	if (item.cut) shapes.push({ x: o, y: o, w: item.size[0] * PX_PER_IN, h: item.size[1] * PX_PER_IN, r: item.cut.radius * PX_PER_IN });
+	for (const c of item.cuts ?? []) shapes.push({ x: c.box[0] * PX_PER_IN + o, y: c.box[1] * PX_PER_IN + o, w: c.box[2] * PX_PER_IN, h: c.box[3] * PX_PER_IN, r: c.radius * PX_PER_IN });
+	if (!shapes.length) return '';
+	const d = shapes.map(({ x, y, w, h, r }) => `M${x + r} ${y}H${x + w - r}A${r} ${r} 0 0 1 ${x + w} ${y + r}V${y + h - r}A${r} ${r} 0 0 1 ${x + w - r} ${y + h}H${x + r}A${r} ${r} 0 0 1 ${x} ${y + h - r}V${y + r}A${r} ${r} 0 0 1 ${x + r} ${y}Z`).join('');
 	// The die line is a spot color the cutter reads by name, not ink: magenta by convention, never printed.
 	return `<g id="CutContour"><path d="${d}" fill="none" stroke="#FF00FF" stroke-width="3"/></g>`;
 }

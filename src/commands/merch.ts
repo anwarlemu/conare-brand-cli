@@ -8,10 +8,14 @@ import { findItem, merchCatalog, merchItems, renderItem } from '../assets/merch.
 // `merch`: print files at real size with bleed and safe area, from the approved lockups, themes and illustration.
 
 
-export function merchHelp(): string {
+/** The words an item can take, by flag: every text slot of the print engine. */
+export const PRINT_SLOTS = ['headline', 'body', 'badge', 'name', 'role', 'email', 'phone', 'date', 'stat', 'quote', 'by', 'note', 'url'];
+
+export function merchHelp(kind: 'merch' | 'document' = 'merch'): string {
 	const b = brand().bin;
 	const row = (c: string, w: string) => helpRow(c, w, 46);
 	const cat = merchCatalog();
+	if (kind === 'document') return printHelp();
 	return [
 		'Merch print files at real size: SVG in inches (with the die line on stickers) and PNG at 300 dpi. No mockups.',
 		'',
@@ -21,7 +25,7 @@ export function merchHelp(): string {
 		row(`${b} merch all --out merch`, 'Every item in its first variant'),
 		row(`${b} merch --list`, 'Items, sizes, variants and sources'),
 		'',
-		...cat.items.map((i) => helpRow(i.id, `${i.trim.width}x${i.trim.height} in, bleed ${i.bleed} in, safe ${i.safe} in, ${i.method}. Variants: ${i.variants.join(', ')}.`, 14)),
+		...cat.items.filter((i) => i.kind !== 'document').map((i) => helpRow(i.id, `${i.trim.width}x${i.trim.height} in, bleed ${i.bleed} in, safe ${i.safe} in, ${i.method}. Variants: ${i.variants.join(', ')}.`, 14)),
 		'',
 		'--variant: red, paper and ink print the theme to the bleed; color is full-color art on a transparent ground; black, white and redline are one color.',
 		'--headline (--title) and --url are the words where an item has them; a headline is drawn only when you pass one (or --sample). --theme is the same as --variant.',
@@ -30,24 +34,50 @@ export function merchHelp(): string {
 	].join('\n');
 }
 
-export async function runMerch(cwd: string, args: string[], flags: Flags): Promise<{ json: unknown; text: string }> {
+function printHelp(): string {
+	const b = brand().bin;
+	const row = (c: string, w: string) => helpRow(c, w, 50);
+	const cat = merchCatalog();
+	return [
+		'Documents to print or send as PDF, at their paper size, with bleed and safe area: business cards, letterheads, report covers, one-pagers, case studies, event badges, name tags, certificates.',
+		'',
+		row(`${b} print business-card --name "Ada Acme" --role "Engineer" --email ada@acme.com`, 'A business card, PNG, SVG and PDF'),
+		row(`${b} print one-pager-a4 --headline "..." --body "..."`, 'An A4 one-pager'),
+		row(`${b} print case-study-letter --headline "..." --stat 40% --quote "..." --by "Acme"`, 'A case study'),
+		row(`${b} print --list`, 'Documents, sizes, variants and sources'),
+		'',
+		...cat.items.filter((i) => i.kind === 'document').map((i) => helpRow(i.id, `${i.trim.width}x${i.trim.height} in, bleed ${i.bleed} in. Words: ${i.slots.join(', ')}. Variants: ${i.variants.join(', ')}.`, 20)),
+		'',
+		`Words: ${PRINT_SLOTS.map((x) => `--${x}`).join(' ')} (only where a document has them; only what you pass is drawn). --format png, svg, pdf, a list or all (the default for print is all). --dpi 72 to 600.`,
+		'Use Acme or the person\'s own details; never another real person\'s name.',
+	].join('\n');
+}
+
+export async function runMerch(cwd: string, args: string[], flags: Flags, kind: 'merch' | 'document' = 'merch'): Promise<{ json: unknown; text: string }> {
+	const mine = (i: { kind?: string }) => (i.kind ?? 'merch') === kind;
 	if (flags.list === true || args[0] === 'list') {
-		const cat = merchCatalog();
+		const all = merchCatalog();
+		const cat = { ...all, items: all.items.filter(mine) };
 		return { json: cat, text: cat.items.map((i) => helpRow(i.id, `${i.name}: ${i.trim.width}x${i.trim.height} in + ${i.bleed} in bleed, safe ${i.safe} in, ${i.method}. Variants: ${i.variants.join(', ')}. ${i.source}`, 14)).concat(['', cat.note]).join('\n') };
 	}
 	for (const n of ['variant', 'theme', 'dpi', 'format', 'out']) if (flags[n] === true) throw new Error(`--${n} needs a value.`);
-	if (!args.length) throw new Error(`Name an item: ${brand().bin} merch tee-front (one of ${merchItems().map((i) => i.id).join(', ')}, or all).`);
-	const items = args.length === 1 && args[0] === 'all' ? merchItems() : args.map(findItem);
-	const formats = [...new Set((str(flags.format) ?? 'both').split(',').flatMap((f) => { const x = pick('format', f.trim(), ['both', 'png', 'svg', 'pdf', 'all'] as const); return x === 'both' ? ['png', 'svg'] : x === 'all' ? ['png', 'svg', 'pdf'] : [x]; }))];
+	const pool = merchItems().filter(mine);
+	if (!args.length) throw new Error(`Name an item: ${brand().bin} ${kind === 'document' ? 'print business-card' : 'merch tee-front'} (one of ${pool.map((i) => i.id).join(', ')}, or all).`);
+	const items = args.length === 1 && args[0] === 'all' ? pool : args.map((a) => {
+		const it = findItem(a);
+		if (!mine(it)) throw new Error(`${it.id} is ${kind === 'document' ? 'merch: use merch' : 'a document: use print'} ${it.id}.`);
+		return it;
+	});
+	const formats = [...new Set((str(flags.format) ?? (kind === 'document' ? 'all' : 'both')).split(',').flatMap((f) => { const x = pick('format', f.trim(), ['both', 'png', 'svg', 'pdf', 'all'] as const); return x === 'both' ? ['png', 'svg'] : x === 'all' ? ['png', 'svg', 'pdf'] : [x]; }))];
 	if (str(flags.variant) && str(flags.theme) && flags.variant !== flags.theme) throw new Error('--variant and --theme disagree. Pass one.');
 	const variant = str(flags.variant) ?? str(flags.theme);
 	const dpi = num('dpi', flags.dpi, 72, 600, { integer: true });
 	const slots: Record<string, string> = {};
-	const headline = oneOf(flags, ['headline', 'title']);
-	const url = oneOf(flags, ['url']);
-	if (headline !== undefined) slots.headline = headline;
-	if (url !== undefined) slots.url = url;
-	const out = str(flags.out) ?? 'merch';
+	for (const k of PRINT_SLOTS) {
+		const v = oneOf(flags, k === 'headline' ? ['headline', 'title'] : k === 'body' ? ['body', 'text'] : k === 'badge' ? ['badge', 'eyebrow'] : [k]);
+		if (v !== undefined) slots[k] = v;
+	}
+	const out = str(flags.out) ?? (kind === 'document' ? 'print' : 'merch');
 	const ext = /\.(png|svg|pdf)$/i.exec(out)?.[1]?.toLowerCase();
 	if (ext && items.length > 1) throw new Error('--out is a file, so name one item. For several, pass a directory.');
 	if (!ext && /\.(jpe?g|webp|gif|eps|ai)$/i.test(out)) throw new Error(`--out ${out}: merch writes png, svg or pdf.`);
