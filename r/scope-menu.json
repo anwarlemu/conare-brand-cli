@@ -1,0 +1,1114 @@
+{
+  "name": "scope-menu",
+  "title": "Scope menu",
+  "type": "registry:ui",
+  "group": "product",
+  "description": "Where a search looks: every namespace or one, each with its app's mark and size, a filter once the list is long, arrows and Escape. Its parts are the combobox (a list with a filter) and the select (a listbox on Menu's panel with a check on the pick).",
+  "use_for": "The search box's scope and anywhere a namespace is picked; Combobox for any long list to pick from, Select for a few options in a form.",
+  "never": [
+    "A native select in the console",
+    "Namespaces without their app's mark",
+    "A filter on a list of six or fewer"
+  ],
+  "source": "conare-web app/components/console/ScopeMenu.vue, app/components/console/namespaces/Mark.vue, app/assets/css/console2.css (.v2-scope, .v2-menu, .v2-menu-item, .v2-menu-count, .v2-input-icon, .v2-chev)",
+  "body": "`Combobox` is shadcn's combobox and `Select` its select; both take `options` (`value`, `label`, `hint`, `disabled`,\n`pinned`) and v-model. The panel portals to the body (or the open dialog the trigger sits in), flips to the side with\nroom and stays 8px inside the viewport. Opened from the keyboard it shows at once; Escape returns focus to the trigger.\n\nThe combobox's list scrolls under a fade (`fade-y`) at the edge with more past it.",
+  "requires": [
+    "popover"
+  ],
+  "dependencies": [
+    "lucide-vue-next@^0.479.0"
+  ],
+  "files": [
+    {
+      "path": "components/product/ScopeMenu.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed } from 'vue'\nimport { Check, ChevronDown, Database, Layers } from 'lucide-vue-next'\nimport Combobox, { type ComboOption } from '@/components/ui/Combobox.vue'\n\n// Where a search looks (ScopeMenu.vue): every namespace, or one. The button is the search bar's 28px chip\n// (.v2-scope: a hairline on the paper, ink under the pointer and while open), the namespace in mono once one is\n// picked, a 12px chevron that turns over as it opens. The 288px panel lists Every namespace over a hairline, then each\n// namespace with its mark (its app's logo, or `ownMark` for a namespace written by API or upload, Conare's own kind),\n// its name in mono and its size, the pick checked; a filter shows past six. `single`: a namespace must be chosen (a\n// place to put a file), so there is no Every namespace. On Combobox: arrows, typing, Enter and Escape.\nexport interface ScopeOption { name: string, documents: number, logo?: string | null }\nconst props = defineProps<{ options: ScopeOption[], single?: boolean, ownMark?: string }>()\nconst scope = defineModel<string>({ default: '' })\n\nconst compact = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 })\nconst total = computed(() => props.options.reduce((a, o) => a + o.documents, 0))\nconst list = computed<ComboOption[]>(() => [\n  ...(props.single ? [] : [{ value: '', label: 'Every namespace', hint: compact.format(total.value), pinned: true }]),\n  ...props.options.map(o => ({ value: o.name, label: o.name, hint: compact.format(o.documents) })),\n])\nconst logoOf = (name: string | number) => props.options.find(o => o.name === name)?.logo ?? null\nconst label = computed(() => scope.value || (props.single ? 'Choose a namespace' : 'every namespace'))\n</script>\n\n<template>\n  <Combobox data-ds=\"scope-menu\"\n    v-model=\"scope\"\n    :options=\"list\"\n    :label=\"single ? 'add to' : 'search in'\"\n    filter=\"auto\"\n    filter-label=\"Filter namespaces\"\n    width=\"288px\"\n    :disabled=\"!options.length\"\n    trigger-class=\"group inline-flex h-control-sm max-md:h-control-touch max-md:text-ui pointer-coarse:h-control-touch pointer-coarse:text-ui cursor-pointer items-center gap-1.5 border border-edge bg-surface-subtle px-2 text-meta text-fg transition-[border-color] duration-120 ease-standard hover:border-edge-focus aria-expanded:border-edge-focus aria-expanded:bg-surface active:enabled:bg-surface-subtle disabled:cursor-not-allowed disabled:text-fg-muted focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-edge-focus\"\n  >\n    <template #trigger>\n      <img v-if=\"logoOf(scope)\" :src=\"logoOf(scope)!\" alt=\"\" width=\"12\" height=\"12\" class=\"size-3 object-contain\">\n      <Database v-else :size=\"12\" :stroke-width=\"1.5\" class=\"text-fg-muted\" aria-hidden=\"true\" />\n      <span class=\"sr-only\">{{ single ? 'add to' : 'search in' }}</span>\n      <span class=\"max-w-45 truncate\" :class=\"scope && 'type-code-sm'\">{{ label }}</span>\n      <ChevronDown :size=\"12\" :stroke-width=\"1.5\" class=\"text-fg-muted transition-[rotate] duration-120 ease-out group-aria-expanded:rotate-180 group-aria-expanded:duration-180 motion-reduce:transition-none\" aria-hidden=\"true\" />\n    </template>\n    <template #option=\"{ option, selected }\">\n      <Database v-if=\"option.pinned\" :size=\"14\" :stroke-width=\"1.5\" class=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />\n      <img v-else-if=\"logoOf(option.value)\" :src=\"logoOf(option.value)!\" alt=\"\" width=\"14\" height=\"14\" class=\"size-3.5 shrink-0 object-contain\">\n      <img v-else-if=\"ownMark\" :src=\"ownMark\" alt=\"\" width=\"14\" height=\"14\" class=\"size-3.5 shrink-0 object-contain\">\n      <Layers v-else :size=\"14\" :stroke-width=\"1.5\" class=\"shrink-0 text-fg\" aria-hidden=\"true\" />\n      <span class=\"min-w-0 flex-1 truncate\" :class=\"!option.pinned && 'type-code-sm'\">{{ option.label }}</span>\n      <span class=\"min-w-10 text-right text-meta text-fg-muted tabular-nums\">{{ option.hint }}</span>\n      <Check :size=\"14\" :stroke-width=\"1.5\" class=\"shrink-0\" :class=\"!selected && 'invisible'\" aria-hidden=\"true\" />\n    </template>\n    <template #empty=\"{ query }\">No namespace matches \"{{ query }}\".</template>\n  </Combobox>\n</template>\n"
+    },
+    {
+      "path": "components/ui/Combobox.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed, nextTick, ref, useId, watch } from 'vue'\nimport { Check, ChevronsUpDown, Search } from 'lucide-vue-next'\nimport PopoverPanel from '@/components/ui/PopoverPanel.vue'\nimport { usePopover, type Align, type Side } from '@/composables/usePopover'\n\n// A list to pick one option from, with a filter over it (ScopeMenu.vue, generalized): Menu's square panel in a\n// hairline, 32px rows with the red square marker on the row the arrows or the pointer are on, the pick checked at the\n// end. The filter is the console's 28px field with its 12px glyph (.v2-input-icon); `filter: 'auto'` shows it past\n// six options, as the scope menu does, and `false` makes it a plain listbox (Select). `pinned` options stay above a\n// hairline and are never filtered (\"Every namespace\"). Arrows, Home and End move, Enter picks, typing filters (or,\n// with no filter, jumps to the option it starts), Escape closes and returns focus to the trigger. The panel portals,\n// flips and stays inside the viewport. Slots: `trigger` (the button's content), `option`, `empty`.\ndefineOptions({ inheritAttrs: false })\nexport interface ComboOption { value: string | number, label: string, hint?: string, disabled?: boolean, pinned?: boolean }\nconst props = withDefaults(defineProps<{\n  options: ComboOption[]\n  label: string\n  placeholder?: string\n  filter?: boolean | 'auto'\n  filterLabel?: string\n  width?: string\n  side?: Side\n  align?: Align\n  matchWidth?: boolean\n  triggerClass?: string\n  disabled?: boolean\n}>(), { placeholder: 'Choose', filter: true, filterLabel: 'Filter', side: 'bottom', align: 'start' })\nconst model = defineModel<string | number>({ default: '' })\nconst emit = defineEmits<{ select: [option: ComboOption] }>()\n\nconst pop = usePopover({ side: props.side, align: props.align, matchWidth: props.matchWidth, gap: 4 })\nconst id = `combobox-${useId()}`\nconst query = ref('')\nconst active = ref(0)\nconst input = ref<HTMLInputElement | null>(null)\nconst list = ref<HTMLElement | null>(null)\n\nconst filtering = computed(() => props.filter === 'auto' ? props.options.filter(o => !o.pinned).length > 6 : props.filter)\nconst selected = computed(() => props.options.find(o => o.value === model.value))\nconst pinned = computed(() => props.options.filter(o => o.pinned))\nconst rest = computed(() => {\n  const q = query.value.trim().toLowerCase()\n  const all = props.options.filter(o => !o.pinned)\n  return q ? all.filter(o => o.label.toLowerCase().includes(q)) : all\n})\nconst visible = computed(() => [...pinned.value, ...rest.value])\nconst optionId = (i: number) => `${id}-${i}`\n\nfunction enabled(i: number) { return !visible.value[i]?.disabled }\nfunction move(to: number, step = 1) {\n  const n = visible.value.length\n  if (!n) return\n  for (let k = 0; k < n; k++) {\n    const i = ((to + k * step) % n + n) % n\n    if (enabled(i)) {\n      active.value = i\n      void nextTick(() => document.getElementById(optionId(i))?.scrollIntoView({ block: 'nearest' }))\n      return\n    }\n  }\n}\nwatch(query, () => move(0))\n\nasync function open(keyboard: boolean) {\n  query.value = ''\n  await pop.show({ keyboard })\n  const at = visible.value.findIndex(o => o.value === model.value)\n  move(at >= 0 ? at : 0)\n  await nextTick()\n  ;(filtering.value ? input.value : list.value)?.focus({ preventScroll: true })\n}\nfunction pick(option: ComboOption | undefined, keyboard: boolean) {\n  if (!option || option.disabled) return\n  model.value = option.value\n  emit('select', option)\n  pop.hide(true, keyboard)\n}\nfunction onTrigger(event: MouseEvent) {\n  if (pop.open.value) pop.hide(false, event.detail === 0)\n  else void open(event.detail === 0)\n}\nfunction onTriggerKey(event: KeyboardEvent) {\n  if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && !pop.open.value) {\n    event.preventDefault()\n    void open(true)\n  }\n}\n// With no filter, typing jumps to the option that starts with what was typed in the last half second.\nlet typed = ''\nlet typedAt = 0\nfunction onKey(event: KeyboardEvent) {\n  const k = event.key\n  if (k === 'ArrowDown' || k === 'ArrowUp') {\n    event.preventDefault()\n    move(active.value + (k === 'ArrowDown' ? 1 : -1), k === 'ArrowDown' ? 1 : -1)\n  }\n  else if ((k === 'Home' || k === 'End') && !filtering.value) {\n    event.preventDefault()\n    move(k === 'Home' ? 0 : visible.value.length - 1, k === 'Home' ? 1 : -1)\n  }\n  else if (k === 'Enter' || (k === ' ' && !filtering.value)) {\n    event.preventDefault()\n    pick(visible.value[active.value], true)\n  }\n  else if (!filtering.value && k.length === 1 && !event.metaKey && !event.ctrlKey && !event.altKey) {\n    const now = Date.now()\n    typed = now - typedAt > 500 ? k.toLowerCase() : typed + k.toLowerCase()\n    typedAt = now\n    const i = visible.value.findIndex(o => !o.disabled && o.label.toLowerCase().startsWith(typed))\n    if (i >= 0) move(i)\n  }\n}\nconst activeId = computed(() => (pop.open.value && visible.value.length ? optionId(active.value) : undefined))\n</script>\n\n<template>\n  <button data-ds=\"combobox\"\n    v-bind=\"$attrs\"\n    :ref=\"(el) => { pop.anchor.value = el as HTMLElement | null }\"\n    type=\"button\"\n    :class=\"triggerClass ?? 'group inline-flex h-control-md w-full min-w-0 cursor-pointer items-center gap-2 border border-edge-strong bg-surface px-2.5 text-left text-ui text-fg outline-none transition-[border-color] duration-120 ease-standard focus-visible:border-edge-focus aria-expanded:border-edge-focus disabled:cursor-not-allowed disabled:text-fg-muted max-md:h-control-touch max-md:text-input pointer-coarse:h-control-touch'\"\n    aria-haspopup=\"listbox\"\n    :aria-expanded=\"pop.open.value\"\n    :aria-controls=\"pop.open.value ? `${id}-list` : undefined\"\n    :aria-label=\"label\"\n    :disabled=\"disabled\"\n    @click=\"onTrigger\"\n    @keydown=\"onTriggerKey\"\n  >\n    <slot name=\"trigger\" :selected=\"selected\" :open=\"pop.open.value\">\n      <span class=\"min-w-0 flex-1 truncate\" :class=\"!selected && 'text-fg-muted'\">{{ selected?.label ?? placeholder }}</span>\n      <ChevronsUpDown :size=\"12\" :stroke-width=\"1.5\" class=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />\n    </slot>\n  </button>\n  <PopoverPanel data-ds=\"combobox\" :pop=\"pop\" class=\"flex flex-col p-1\" :style=\"{ width }\">\n    <label v-if=\"filtering\" class=\"relative mb-1 block\">\n      <Search :size=\"12\" :stroke-width=\"1.5\" class=\"pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-fg-muted\" aria-hidden=\"true\" />\n      <input\n        ref=\"input\"\n        v-model=\"query\"\n        class=\"h-control-sm w-full border border-edge-strong bg-surface pr-2.5 pl-7 text-meta text-fg outline-none transition-[border-color] duration-120 ease-standard placeholder:text-fg-muted focus:border-edge-focus max-md:h-control-touch max-md:text-input\"\n        role=\"combobox\"\n        :aria-label=\"filterLabel\"\n        :placeholder=\"filterLabel\"\n        aria-autocomplete=\"list\"\n        aria-expanded=\"true\"\n        :aria-controls=\"`${id}-list`\"\n        :aria-activedescendant=\"activeId\"\n        autocomplete=\"off\"\n        spellcheck=\"false\"\n        @keydown=\"onKey\"\n      >\n    </label>\n    <div\n      :id=\"`${id}-list`\"\n      ref=\"list\"\n      role=\"listbox\"\n      :aria-label=\"label\"\n      :tabindex=\"filtering ? -1 : 0\"\n      :aria-activedescendant=\"filtering ? undefined : activeId\"\n      class=\"fade-y flex max-h-65 flex-col overflow-y-auto outline-none\"\n      @keydown=\"onKey\"\n    >\n      <template v-for=\"(o, i) in visible\" :key=\"`${o.pinned ? 'p' : 'o'}-${o.value}`\">\n        <div v-if=\"i === pinned.length && pinned.length && rest.length\" class=\"-mx-1 my-1 h-px shrink-0 bg-edge\" role=\"separator\" />\n        <div\n          :id=\"optionId(i)\"\n          role=\"option\"\n          class=\"ds-option\"\n          :aria-selected=\"o.value === model\"\n          :aria-disabled=\"o.disabled || undefined\"\n          :data-active=\"i === active || undefined\"\n          @pointermove=\"!o.disabled && (active = i)\"\n          @mousedown.prevent\n          @click=\"pick(o, false)\"\n        >\n          <slot name=\"option\" :option=\"o\" :selected=\"o.value === model\">\n            <span class=\"min-w-0 flex-1 truncate\">{{ o.label }}</span>\n            <span v-if=\"o.hint\" class=\"min-w-10 text-right text-meta text-fg-muted tabular-nums\">{{ o.hint }}</span>\n            <Check :size=\"14\" :stroke-width=\"1.5\" class=\"shrink-0\" :class=\"o.value !== model && 'invisible'\" aria-hidden=\"true\" />\n          </slot>\n        </div>\n      </template>\n      <p v-if=\"!rest.length && query\" class=\"px-3.5 py-2 type-meta text-fg-muted\"><slot name=\"empty\" :query=\"query\">Nothing matches \"{{ query }}\".</slot></p>\n    </div>\n  </PopoverPanel>\n</template>\n\n<style>\n/* A row of a listbox: Menu's row (console2.css .v2-menu-item). The highlight follows the arrows and the pointer alike,\n   as in the command palette, so hover itself draws nothing. */\n.ds-option { position: relative; display: flex; height: var(--ds-size-control-md); flex-shrink: 0; align-items: center; gap: var(--ds-space-md); padding: 0 10px 0 14px; color: var(--ds-color-fg); font-size: var(--ds-text-ui); cursor: pointer; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-option::before { position: absolute; top: 50%; left: 5px; width: 4px; height: 4px; margin-top: -2px; background: var(--ds-color-edge-accent); content: \"\"; opacity: 0; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-option[data-active] { background: var(--ds-color-surface-subtle); }\n.ds-option[data-active]::before { opacity: 1; }\n.ds-option[aria-disabled=\"true\"] { color: var(--ds-color-fg-muted); cursor: not-allowed; }\n@media (pointer: coarse), (max-width: 767px) { .ds-option { height: auto; min-height: 44px; } }\n</style>\n"
+    },
+    {
+      "path": "components/ui/Select.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ChevronDown } from 'lucide-vue-next'\nimport Combobox, { type ComboOption } from '@/components/ui/Combobox.vue'\n\n// Pick one of a few options in a form: the 32px field (a #C3C1BF hairline that turns ink on focus and while open)\n// with a 12px chevron that turns over as it opens, and a listbox on Menu's square panel at least as wide as the field,\n// the pick checked. No filter: typing jumps to the option it starts. Arrows, Home, End, Enter, Escape (Combobox).\n// Wire `id` and `aria-describedby` from Field's slot; they land on the button.\nwithDefaults(defineProps<{ options: ComboOption[], label: string, placeholder?: string, disabled?: boolean }>(), { placeholder: 'Choose' })\nconst model = defineModel<string | number>({ default: '' })\n</script>\n\n<template>\n  <Combobox data-ds=\"select\" v-model=\"model\" :options=\"options\" :label=\"label\" :placeholder=\"placeholder\" :filter=\"false\" match-width :disabled=\"disabled\">\n    <template #trigger=\"{ selected }\">\n      <span class=\"min-w-0 flex-1 truncate\" :class=\"!selected && 'text-fg-muted'\">{{ selected?.label ?? placeholder }}</span>\n      <ChevronDown :size=\"12\" :stroke-width=\"1.5\" class=\"shrink-0 text-fg-muted transition-[rotate] duration-120 ease-out group-aria-expanded:rotate-180 group-aria-expanded:duration-180 motion-reduce:transition-none\" aria-hidden=\"true\" />\n    </template>\n  </Combobox>\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "Every namespace or one",
+      "center": false,
+      "half": false,
+      "path": "examples/scope-menu/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport ScopeMenu from '@/components/product/ScopeMenu.vue'\n// Every namespace or one, each with its size; the filter appears past six. Namespaces written by API carry the brand\n// mark. Sample data.\nconst scope = ref('')\nconst options = [\n  { name: 'sec-filings', documents: 2184920 },\n  { name: 'contracts', documents: 412830 },\n  { name: 'slack', documents: 96410 },\n  { name: 'crm', documents: 52660 },\n  { name: 'engineering', documents: 31902 },\n  { name: 'support', documents: 18240 },\n  { name: 'wiki', documents: 7385 },\n]\n</script>\n\n<template>\n  <div class=\"flex h-100 items-start justify-center pt-4\">\n    <ScopeMenu v-model=\"scope\" :options=\"options\" own-mark=\"/conare-ds/logo/svg/mark.svg\" />\n  </div>\n</template>\n",
+      "requires": [
+        "popover"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    },
+    {
+      "name": "Select",
+      "label": "Select",
+      "center": false,
+      "half": true,
+      "path": "examples/scope-menu/Select.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport Field from '@/components/ui/Field.vue'\nimport Select from '@/components/ui/Select.vue'\n// A select in a form: the field opens a listbox at least as wide as itself, the pick checked.\nconst region = ref('us-east')\nconst regions = [\n  { value: 'us-east', label: 'US East (Virginia)' },\n  { value: 'us-west', label: 'US West (Oregon)' },\n  { value: 'eu-central', label: 'EU Central (Frankfurt)' },\n  { value: 'ap-south', label: 'Asia Pacific (Mumbai)', disabled: true },\n]\n</script>\n\n<template>\n  <div class=\"h-72 w-full max-w-72\">\n    <Field v-slot=\"{ id }\" label=\"Region\" hint=\"Where your namespaces are stored.\">\n      <Select :id=\"id\" v-model=\"region\" :options=\"regions\" label=\"region\" />\n    </Field>\n  </div>\n</template>\n",
+      "requires": [
+        "field",
+        "popover"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    },
+    {
+      "name": "Combobox",
+      "label": "Combobox",
+      "center": false,
+      "half": true,
+      "path": "examples/scope-menu/Combobox.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport Combobox from '@/components/ui/Combobox.vue'\nimport Field from '@/components/ui/Field.vue'\n// Any list with a filter: type to narrow it, arrows to move, Enter to pick.\nconst model = ref<string | number>('')\nconst models = ['conare-embed-1', 'conare-embed-1-small', 'conare-rerank-1', 'conare-rerank-1-fast', 'conare-parse-1', 'acme-custom-embed', 'acme-custom-rerank', 'acme-legal-embed'].map(m => ({ value: m, label: m }))\n</script>\n\n<template>\n  <div class=\"h-96 w-full max-w-72\">\n    <Field v-slot=\"{ id }\" label=\"Model\">\n      <Combobox :id=\"id\" v-model=\"model\" :options=\"models\" label=\"model\" placeholder=\"Choose a model\" filter-label=\"Filter models\" width=\"288px\" />\n    </Field>\n  </div>\n</template>\n",
+      "requires": [
+        "field",
+        "popover"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/product/ScopeMenu.tsx",
+          "content": "'use client'\nimport { Check, ChevronDown, Database, Layers } from 'lucide-react'\nimport { Combobox, type ComboOption } from '@/react/components/ui/Combobox'\n\n// Where a search looks (ScopeMenu.vue): every namespace, or one. The button is the search bar's 28px chip (.v2-scope:\n// a hairline on the paper, ink under the pointer and while open), the namespace in mono once one is picked, a 12px\n// chevron that turns over as it opens. The 288px panel lists Every namespace over a hairline, then each namespace with\n// its mark (its app's logo, or `ownMark` for a namespace written by API or upload), its name in mono and its size, the\n// pick checked; a filter shows past six. `single`: a namespace must be chosen, so there is no Every namespace. On\n// Combobox: arrows, typing, Enter and Escape. v-model is `value` with `onValueChange` (or `defaultValue`).\nexport interface ScopeOption { name: string, documents: number, logo?: string | null }\nexport interface ScopeMenuProps { options: ScopeOption[], single?: boolean, ownMark?: string, value?: string, defaultValue?: string, onValueChange?: (value: string) => void }\n\nconst compact = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 })\n\nexport function ScopeMenu({ options, single, ownMark, value, defaultValue = '', onValueChange }: ScopeMenuProps) {\n  const total = options.reduce((a, o) => a + o.documents, 0)\n  const list: ComboOption[] = [\n    ...(single ? [] : [{ value: '', label: 'Every namespace', hint: compact.format(total), pinned: true }]),\n    ...options.map(o => ({ value: o.name, label: o.name, hint: compact.format(o.documents) })),\n  ]\n  const logoOf = (name: string | number | undefined) => options.find(o => o.name === name)?.logo ?? null\n  return (\n    <Combobox\n      data-ds=\"scope-menu\"\n      value={value}\n      defaultValue={defaultValue}\n      onValueChange={v => onValueChange?.(String(v))}\n      options={list}\n      label={single ? 'add to' : 'search in'}\n      filter=\"auto\"\n      filterLabel=\"Filter namespaces\"\n      width=\"288px\"\n      disabled={!options.length}\n      triggerClass=\"group inline-flex h-control-sm max-md:h-control-touch max-md:text-ui pointer-coarse:h-control-touch pointer-coarse:text-ui cursor-pointer items-center gap-1.5 border border-edge bg-surface-subtle px-2 text-meta text-fg transition-[border-color] duration-120 ease-standard hover:border-edge-focus aria-expanded:border-edge-focus aria-expanded:bg-surface active:enabled:bg-surface-subtle disabled:cursor-not-allowed disabled:text-fg-muted focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-edge-focus\"\n      trigger={({ selected }) => {\n        const scope = selected?.value ?? ''\n        const logo = logoOf(scope)\n        const label = scope || (single ? 'Choose a namespace' : 'every namespace')\n        return (\n          <>\n            {logo ? <img src={logo} alt=\"\" width={12} height={12} className=\"size-3 object-contain\" /> : <Database size={12} strokeWidth={1.5} className=\"text-fg-muted\" aria-hidden=\"true\" />}\n            <span className=\"sr-only\">{single ? 'add to' : 'search in'}</span>\n            <span className={scope ? 'max-w-45 truncate type-code-sm' : 'max-w-45 truncate'}>{label}</span>\n            <ChevronDown size={12} strokeWidth={1.5} className=\"text-fg-muted transition-[rotate] duration-120 ease-out group-aria-expanded:rotate-180 group-aria-expanded:duration-180 motion-reduce:transition-none\" aria-hidden=\"true\" />\n          </>\n        )\n      }}\n      option={({ option, selected }) => {\n        const logo = logoOf(option.value)\n        return (\n          <>\n            {option.pinned\n              ? <Database size={14} strokeWidth={1.5} className=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />\n              : logo\n                ? <img src={logo} alt=\"\" width={14} height={14} className=\"size-3.5 shrink-0 object-contain\" />\n                : ownMark\n                  ? <img src={ownMark} alt=\"\" width={14} height={14} className=\"size-3.5 shrink-0 object-contain\" />\n                  : <Layers size={14} strokeWidth={1.5} className=\"shrink-0 text-fg\" aria-hidden=\"true\" />}\n            <span className={option.pinned ? 'min-w-0 flex-1 truncate' : 'min-w-0 flex-1 truncate type-code-sm'}>{option.label}</span>\n            <span className=\"min-w-10 text-right text-meta text-fg-muted tabular-nums\">{option.hint}</span>\n            <Check size={14} strokeWidth={1.5} className={selected ? 'shrink-0' : 'shrink-0 invisible'} aria-hidden=\"true\" />\n          </>\n        )\n      }}\n      empty={query => `No namespace matches \"${query}\".`}\n    />\n  )\n}\n\nexport default ScopeMenu\n"
+        },
+        {
+          "path": "react/components/ui/Combobox.tsx",
+          "content": "'use client'\nimport { Fragment, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react'\nimport { Check, ChevronsUpDown, Search } from 'lucide-react'\nimport { PopoverPanel } from '@/react/components/ui/PopoverPanel'\nimport { usePopover, type Align, type Side } from '@/react/hooks/usePopover'\nimport { useControllable } from '@/react/hooks/useControllable'\n\n// A list to pick one option from, with a filter over it (ScopeMenu, generalized): Menu's square panel in a hairline,\n// 32px rows with the red square marker on the row the arrows or the pointer are on, the pick checked at the end. The\n// filter is the console's 28px field with its 12px glyph (.v2-input-icon); `filter: 'auto'` shows it past six options,\n// as the scope menu does, and `false` makes it a plain listbox (Select). `pinned` options stay above a hairline and are\n// never filtered. Arrows, Home and End move, Enter picks, typing filters (or, with no filter, jumps to the option it\n// starts), Escape closes and returns focus to the trigger. The panel portals, flips and stays inside the viewport.\n// Vue's slots are render props: `trigger` ({ selected, open }), `option` ({ option, selected }), `empty` (query).\n// v-model is `value` with `onValueChange` (or `defaultValue`); `onSelect` gets the option. Other props (id,\n// aria-describedby) land on the trigger.\nexport interface ComboOption { value: string | number, label: string, hint?: string, disabled?: boolean, pinned?: boolean }\nexport interface ComboboxProps {\n  options: ComboOption[]\n  label: string\n  placeholder?: string\n  filter?: boolean | 'auto'\n  filterLabel?: string\n  width?: string\n  side?: Side\n  align?: Align\n  matchWidth?: boolean\n  triggerClass?: string\n  disabled?: boolean\n  value?: string | number\n  defaultValue?: string | number\n  onValueChange?: (value: string | number) => void\n  onSelect?: (option: ComboOption) => void\n  trigger?: (slot: { selected?: ComboOption, open: boolean }) => ReactNode\n  option?: (slot: { option: ComboOption, selected: boolean }) => ReactNode\n  empty?: (query: string) => ReactNode\n  id?: string\n  'aria-describedby'?: string\n  'data-ds'?: string\n}\n\nexport function Combobox(props: ComboboxProps) {\n  const { options, label, placeholder = 'Choose', filter = true, filterLabel = 'Filter', width, side = 'bottom', align = 'start', matchWidth, triggerClass, disabled, value, defaultValue = '', onValueChange, onSelect, trigger, option, empty, 'data-ds': ds = 'combobox', ...attrs } = props\n  const [model, setModel] = useControllable(value, defaultValue, onValueChange)\n  const pop = usePopover({ side, align, matchWidth, gap: 4 })\n  const id = `combobox-${useId()}`\n  const [query, setQuery] = useState('')\n  const [active, setActive] = useState(0)\n  const input = useRef<HTMLInputElement | null>(null)\n  const list = useRef<HTMLDivElement | null>(null)\n\n  const filtering = filter === 'auto' ? options.filter(o => !o.pinned).length > 6 : filter\n  const selected = options.find(o => o.value === model)\n  const pinned = options.filter(o => o.pinned)\n  const rest = useMemo(() => {\n    const q = query.trim().toLowerCase()\n    const all = options.filter(o => !o.pinned)\n    return q ? all.filter(o => o.label.toLowerCase().includes(q)) : all\n  }, [options, query])\n  const visible = [...pinned, ...rest]\n  const optionId = (i: number) => `${id}-${i}`\n\n  const enabled = (i: number) => !visible[i]?.disabled\n  function move(to: number, step = 1, among = visible) {\n    const n = among.length\n    if (!n) return\n    for (let k = 0; k < n; k++) {\n      const i = ((to + k * step) % n + n) % n\n      if (!among[i]?.disabled) {\n        setActive(i)\n        requestAnimationFrame(() => document.getElementById(optionId(i))?.scrollIntoView({ block: 'nearest' }))\n        return\n      }\n    }\n  }\n  const firstQuery = useRef(true)\n  useEffect(() => {\n    if (firstQuery.current) { firstQuery.current = false; return }\n    move(0)\n  }, [query]) // eslint-disable-line react-hooks/exhaustive-deps\n\n  async function open(keyboard: boolean) {\n    setQuery('')\n    await pop.show({ keyboard })\n    const all = [...pinned, ...options.filter(o => !o.pinned)]\n    const at = all.findIndex(o => o.value === model)\n    move(at >= 0 ? at : 0, 1, all)\n    ;(filtering ? input.current : list.current)?.focus({ preventScroll: true })\n  }\n  function pick(o: ComboOption | undefined, keyboard: boolean) {\n    if (!o || o.disabled) return\n    setModel(o.value)\n    onSelect?.(o)\n    pop.hide(true, keyboard)\n  }\n  function onTrigger(event: MouseEvent) {\n    if (pop.open) pop.hide(false, event.detail === 0)\n    else void open(event.detail === 0)\n  }\n  function onTriggerKey(event: KeyboardEvent) {\n    if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && !pop.open) {\n      event.preventDefault()\n      void open(true)\n    }\n  }\n  // With no filter, typing jumps to the option that starts with what was typed in the last half second.\n  const typed = useRef({ text: '', at: 0 })\n  function onKey(event: KeyboardEvent) {\n    const k = event.key\n    if (k === 'ArrowDown' || k === 'ArrowUp') {\n      event.preventDefault()\n      move(active + (k === 'ArrowDown' ? 1 : -1), k === 'ArrowDown' ? 1 : -1)\n    }\n    else if ((k === 'Home' || k === 'End') && !filtering) {\n      event.preventDefault()\n      move(k === 'Home' ? 0 : visible.length - 1, k === 'Home' ? 1 : -1)\n    }\n    else if (k === 'Enter' || (k === ' ' && !filtering)) {\n      event.preventDefault()\n      pick(visible[active], true)\n    }\n    else if (!filtering && k.length === 1 && !event.metaKey && !event.ctrlKey && !event.altKey) {\n      const now = Date.now()\n      typed.current.text = now - typed.current.at > 500 ? k.toLowerCase() : typed.current.text + k.toLowerCase()\n      typed.current.at = now\n      const i = visible.findIndex(o => !o.disabled && o.label.toLowerCase().startsWith(typed.current.text))\n      if (i >= 0) move(i)\n    }\n  }\n  const activeId = pop.open && visible.length ? optionId(active) : undefined\n\n  return (\n    <>\n      <style href=\"ds-combobox\" precedence=\"ds\">{css}</style>\n      <button\n        data-ds={ds}\n        {...attrs}\n        ref={(el) => { pop.anchor.current = el }}\n        type=\"button\"\n        className={triggerClass ?? 'group inline-flex h-control-md w-full min-w-0 cursor-pointer items-center gap-2 border border-edge-strong bg-surface px-2.5 text-left text-ui text-fg outline-none transition-[border-color] duration-120 ease-standard focus-visible:border-edge-focus aria-expanded:border-edge-focus disabled:cursor-not-allowed disabled:text-fg-muted max-md:h-control-touch max-md:text-input pointer-coarse:h-control-touch'}\n        aria-haspopup=\"listbox\"\n        aria-expanded={pop.open}\n        aria-controls={pop.open ? `${id}-list` : undefined}\n        aria-label={label}\n        disabled={disabled}\n        onClick={onTrigger}\n        onKeyDown={onTriggerKey}\n      >\n        {trigger\n          ? trigger({ selected, open: pop.open })\n          : (\n              <>\n                <span className={selected ? 'min-w-0 flex-1 truncate' : 'min-w-0 flex-1 truncate text-fg-muted'}>{selected?.label ?? placeholder}</span>\n                <ChevronsUpDown size={12} strokeWidth={1.5} className=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />\n              </>\n            )}\n      </button>\n      <PopoverPanel data-ds=\"combobox\" pop={pop} className=\"flex flex-col p-1\" style={{ width }}>\n        {filtering && (\n          <label className=\"relative mb-1 block\">\n            <Search size={12} strokeWidth={1.5} className=\"pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-fg-muted\" aria-hidden=\"true\" />\n            <input\n              ref={input}\n              value={query}\n              onChange={e => setQuery(e.target.value)}\n              className=\"h-control-sm w-full border border-edge-strong bg-surface pr-2.5 pl-7 text-meta text-fg outline-none transition-[border-color] duration-120 ease-standard placeholder:text-fg-muted focus:border-edge-focus max-md:h-control-touch max-md:text-input\"\n              role=\"combobox\"\n              aria-label={filterLabel}\n              placeholder={filterLabel}\n              aria-autocomplete=\"list\"\n              aria-expanded=\"true\"\n              aria-controls={`${id}-list`}\n              aria-activedescendant={activeId}\n              autoComplete=\"off\"\n              spellCheck={false}\n              onKeyDown={onKey}\n            />\n          </label>\n        )}\n        <div\n          id={`${id}-list`}\n          ref={list}\n          role=\"listbox\"\n          aria-label={label}\n          tabIndex={filtering ? -1 : 0}\n          aria-activedescendant={filtering ? undefined : activeId}\n          className=\"fade-y flex max-h-65 flex-col overflow-y-auto outline-none\"\n          onKeyDown={onKey}\n        >\n          {visible.map((o, i) => (\n            <Fragment key={`${o.pinned ? 'p' : 'o'}-${o.value}`}>\n              {i === pinned.length && pinned.length > 0 && rest.length > 0 && <div className=\"-mx-1 my-1 h-px shrink-0 bg-edge\" role=\"separator\" />}\n              <div\n                id={optionId(i)}\n                role=\"option\"\n                className=\"ds-option\"\n                aria-selected={o.value === model}\n                aria-disabled={o.disabled || undefined}\n                data-active={i === active || undefined}\n                onPointerMove={() => { if (!o.disabled) setActive(i) }}\n                onMouseDown={e => e.preventDefault()}\n                onClick={() => pick(o, false)}\n              >\n                {option\n                  ? option({ option: o, selected: o.value === model })\n                  : (\n                      <>\n                        <span className=\"min-w-0 flex-1 truncate\">{o.label}</span>\n                        {o.hint && <span className=\"min-w-10 text-right text-meta text-fg-muted tabular-nums\">{o.hint}</span>}\n                        <Check size={14} strokeWidth={1.5} className={o.value !== model ? 'shrink-0 invisible' : 'shrink-0'} aria-hidden=\"true\" />\n                      </>\n                    )}\n              </div>\n            </Fragment>\n          ))}\n          {!rest.length && query && <p className=\"px-3.5 py-2 type-meta text-fg-muted\">{empty ? empty(query) : `Nothing matches \"${query}\".`}</p>}\n        </div>\n      </PopoverPanel>\n    </>\n  )\n}\n\nexport default Combobox\n\nconst css = `\n/* A row of a listbox: Menu's row (console2.css .v2-menu-item). The highlight follows the arrows and the pointer alike,\n   as in the command palette, so hover itself draws nothing. */\n.ds-option { position: relative; display: flex; height: var(--ds-size-control-md); flex-shrink: 0; align-items: center; gap: var(--ds-space-md); padding: 0 10px 0 14px; color: var(--ds-color-fg); font-size: var(--ds-text-ui); cursor: pointer; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-option::before { position: absolute; top: 50%; left: 5px; width: 4px; height: 4px; margin-top: -2px; background: var(--ds-color-edge-accent); content: \"\"; opacity: 0; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-option[data-active] { background: var(--ds-color-surface-subtle); }\n.ds-option[data-active]::before { opacity: 1; }\n.ds-option[aria-disabled=\"true\"] { color: var(--ds-color-fg-muted); cursor: not-allowed; }\n@media (pointer: coarse), (max-width: 767px) { .ds-option { height: auto; min-height: 44px; } }\n`\n"
+        },
+        {
+          "path": "react/components/ui/Select.tsx",
+          "content": "'use client'\nimport { ChevronDown } from 'lucide-react'\nimport { Combobox, type ComboOption } from '@/react/components/ui/Combobox'\n\n// Pick one of a few options in a form: the 32px field (a #C3C1BF hairline that turns ink on focus and while open)\n// with a 12px chevron that turns over as it opens, and a listbox on Menu's square panel at least as wide as the field,\n// the pick checked. No filter: typing jumps to the option it starts. Arrows, Home, End, Enter, Escape (Combobox).\n// Wire `id` and `aria-describedby` from Field's render function; they land on the button. v-model is `value` with\n// `onValueChange` (or `defaultValue`).\nexport interface SelectProps {\n  options: ComboOption[]\n  label: string\n  placeholder?: string\n  disabled?: boolean\n  value?: string | number\n  defaultValue?: string | number\n  onValueChange?: (value: string | number) => void\n  id?: string\n  'aria-describedby'?: string\n}\n\nexport function Select({ options, label, placeholder = 'Choose', disabled, value, defaultValue = '', onValueChange, ...attrs }: SelectProps) {\n  return (\n    <Combobox\n      data-ds=\"select\"\n      {...attrs}\n      value={value}\n      defaultValue={defaultValue}\n      onValueChange={onValueChange}\n      options={options}\n      label={label}\n      placeholder={placeholder}\n      filter={false}\n      matchWidth\n      disabled={disabled}\n      trigger={({ selected }) => (\n        <>\n          <span className={selected ? 'min-w-0 flex-1 truncate' : 'min-w-0 flex-1 truncate text-fg-muted'}>{selected?.label ?? placeholder}</span>\n          <ChevronDown size={12} strokeWidth={1.5} className=\"shrink-0 text-fg-muted transition-[rotate] duration-120 ease-out group-aria-expanded:rotate-180 group-aria-expanded:duration-180 motion-reduce:transition-none\" aria-hidden=\"true\" />\n        </>\n      )}\n    />\n  )\n}\n\nexport default Select\n"
+        },
+        {
+          "path": "react/hooks/useControllable.ts",
+          "content": "'use client'\nimport { useCallback, useRef, useState } from 'react'\n\n// Vue's defineModel in React: a value that is controlled when the caller passes it (value + onValueChange, as Radix\n// does) and kept inside otherwise (defaultValue). setValue calls onChange either way.\nexport function useControllable<T>(value: T | undefined, defaultValue: T, onChange?: (value: T) => void) {\n\tconst [inner, setInner] = useState<T>(defaultValue)\n\tconst controlled = value !== undefined\n\tconst current = controlled ? value : inner\n\tconst ref = useRef(onChange)\n\tref.current = onChange\n\tconst set = useCallback((next: T) => {\n\t\tif (!controlled) setInner(next)\n\t\tref.current?.(next)\n\t}, [controlled])\n\treturn [current, set] as const\n}\n"
+        }
+      ],
+      "dependencies": [
+        "lucide-react@0.479.0"
+      ],
+      "registryDependencies": [
+        "popover"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "ScopeMenu",
+            "file": "react/components/product/ScopeMenu.tsx",
+            "props": [
+              {
+                "name": "options",
+                "type": "ScopeOption[]",
+                "required": true
+              },
+              {
+                "name": "single",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "ownMark",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "value",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "defaultValue",
+                "type": "string",
+                "required": false,
+                "default": "''"
+              },
+              {
+                "name": "onValueChange",
+                "type": "(value: string) => void",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "Combobox",
+            "file": "react/components/ui/Combobox.tsx",
+            "props": [
+              {
+                "name": "options",
+                "type": "ComboOption[]",
+                "required": true
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "placeholder",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "filter",
+                "type": "boolean | 'auto'",
+                "required": false
+              },
+              {
+                "name": "filterLabel",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "width",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "side",
+                "type": "Side",
+                "required": false
+              },
+              {
+                "name": "align",
+                "type": "Align",
+                "required": false
+              },
+              {
+                "name": "matchWidth",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "triggerClass",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "value",
+                "type": "string | number",
+                "required": false
+              },
+              {
+                "name": "defaultValue",
+                "type": "string | number",
+                "required": false
+              },
+              {
+                "name": "onValueChange",
+                "type": "(value: string | number) => void",
+                "required": false
+              },
+              {
+                "name": "onSelect",
+                "type": "(option: ComboOption) => void",
+                "required": false
+              },
+              {
+                "name": "trigger",
+                "type": "(slot: { selected?: ComboOption, open: boolean }) => ReactNode",
+                "required": false
+              },
+              {
+                "name": "option",
+                "type": "(slot: { option: ComboOption, selected: boolean }) => ReactNode",
+                "required": false
+              },
+              {
+                "name": "empty",
+                "type": "(query: string) => ReactNode",
+                "required": false
+              },
+              {
+                "name": "id",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "aria-describedby",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "data-ds",
+                "type": "string",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "Select",
+            "file": "react/components/ui/Select.tsx",
+            "props": [
+              {
+                "name": "options",
+                "type": "ComboOption[]",
+                "required": true
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "placeholder",
+                "type": "string",
+                "required": false,
+                "default": "'Choose'"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "value",
+                "type": "string | number",
+                "required": false
+              },
+              {
+                "name": "defaultValue",
+                "type": "string | number",
+                "required": false,
+                "default": "''"
+              },
+              {
+                "name": "onValueChange",
+                "type": "(value: string | number) => void",
+                "required": false
+              },
+              {
+                "name": "id",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "aria-describedby",
+                "type": "string",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Every namespace or one",
+          "center": false,
+          "half": false,
+          "path": "react/examples/scope-menu/Product.tsx",
+          "content": "import { ScopeMenu } from '@/react/components/product/ScopeMenu'\n// Every namespace or one, each with its size; the filter appears past six. Namespaces written by API carry the brand\n// mark. Sample data.\nconst options = [\n  { name: 'sec-filings', documents: 2184920 },\n  { name: 'contracts', documents: 412830 },\n  { name: 'slack', documents: 96410 },\n  { name: 'crm', documents: 52660 },\n  { name: 'engineering', documents: 31902 },\n  { name: 'support', documents: 18240 },\n  { name: 'wiki', documents: 7385 },\n]\n\nexport default function Product() {\n  return (\n    <div className=\"flex h-100 items-start justify-center pt-4\">\n      <ScopeMenu defaultValue=\"\" options={options} ownMark=\"/conare-ds/logo/svg/mark.svg\" />\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "popover"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        },
+        {
+          "name": "Select",
+          "label": "Select",
+          "center": false,
+          "half": true,
+          "path": "react/examples/scope-menu/Select.tsx",
+          "content": "import { Field } from '@/react/components/ui/Field'\nimport { Select } from '@/react/components/ui/Select'\n// A select in a form: the field opens a listbox at least as wide as itself, the pick checked.\nconst regions = [\n  { value: 'us-east', label: 'US East (Virginia)' },\n  { value: 'us-west', label: 'US West (Oregon)' },\n  { value: 'eu-central', label: 'EU Central (Frankfurt)' },\n  { value: 'ap-south', label: 'Asia Pacific (Mumbai)', disabled: true },\n]\n\nexport default function SelectExample() {\n  return (\n    <div className=\"h-72 w-full max-w-72\">\n      <Field label=\"Region\" hint=\"Where your namespaces are stored.\">\n        {({ id }) => <Select id={id} defaultValue=\"us-east\" options={regions} label=\"region\" />}\n      </Field>\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "field",
+            "popover"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        },
+        {
+          "name": "Combobox",
+          "label": "Combobox",
+          "center": false,
+          "half": true,
+          "path": "react/examples/scope-menu/Combobox.tsx",
+          "content": "import { Combobox } from '@/react/components/ui/Combobox'\nimport { Field } from '@/react/components/ui/Field'\n// Any list with a filter: type to narrow it, arrows to move, Enter to pick.\nconst models = ['conare-embed-1', 'conare-embed-1-small', 'conare-rerank-1', 'conare-rerank-1-fast', 'conare-parse-1', 'acme-custom-embed', 'acme-custom-rerank', 'acme-legal-embed'].map(m => ({ value: m, label: m }))\n\nexport default function ComboboxExample() {\n  return (\n    <div className=\"h-96 w-full max-w-72\">\n      <Field label=\"Model\">\n        {({ id }) => <Combobox id={id} defaultValue=\"\" options={models} label=\"model\" placeholder=\"Choose a model\" filterLabel=\"Filter models\" width=\"288px\" />}\n      </Field>\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "field",
+            "popover"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/product/scope-menu.ts",
+          "content": "import { html, nothing, type PropertyValues, type TemplateResult } from 'lit'\nimport { Check, ChevronDown, Database, Layers } from 'lucide'\nimport { define } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport { Combobox, type ComboOption } from '@/elements/components/ui/combobox'\nimport styles from 'virtual:tw'\n\n// ScopeMenu.vue as <conare-scope-menu>: where a search looks: every namespace, or one. The button is the search bar's\n// 28px chip (.v2-scope), the namespace in mono once one is picked, a 12px chevron that turns over as it opens. The\n// 288px panel lists Every namespace over a hairline, then each namespace with its mark (its app's logo, or `own-mark`\n// for a namespace written by API or upload), its name in mono and its size, the pick checked; a filter shows past six.\n// `single`: a namespace must be chosen, so there is no Every namespace. It extends <conare-combobox>: `namespaces` is\n// Vue's `options` ({ name, documents, logo }), and v-model is `value` with `input` and `change`.\nexport interface ScopeOption { name: string, documents: number, logo?: string | null }\nconst compact = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 })\n\n/**\n * @summary Where a search looks: every namespace, or one.\n * @fires input - The scope changed (read `value`).\n * @fires change - The scope changed (read `value`).\n */\nexport class ScopeMenu extends Combobox {\n\tstatic styles = [Combobox.styles, styles]\n\tstatic properties = { ...Combobox.properties, namespaces: { type: Array }, single: { type: Boolean }, ownMark: { attribute: 'own-mark' } }\n\n\t/** The namespaces: { name, documents, logo } (a JSON attribute or the property). */\n\tnamespaces: ScopeOption[] = []\n\t/** A namespace must be chosen: no Every namespace. */\n\tsingle = false\n\t/** The mark for a namespace with no app (written by API or upload). */\n\townMark?: string\n\n\tconstructor() {\n\t\tsuper()\n\t\tthis.filter = 'auto'\n\t\tthis.filterLabel = 'Filter namespaces'\n\t\tthis.width = '288px'\n\t}\n\tprotected willUpdate(changed: PropertyValues<this>) {\n\t\tsuper.willUpdate(changed)\n\t\tif (changed.has('namespaces') || changed.has('single')) {\n\t\t\tconst total = this.namespaces.reduce((a, o) => a + o.documents, 0)\n\t\t\tthis.options = [\n\t\t\t\t...(this.single ? [] : [{ value: '', label: 'Every namespace', hint: compact.format(total), pinned: true }]),\n\t\t\t\t...this.namespaces.map((o) => ({ value: o.name, label: o.name, hint: compact.format(o.documents) })),\n\t\t\t]\n\t\t\tthis.label = this.single ? 'add to' : 'search in'\n\t\t\tthis.disabled = !this.namespaces.length\n\t\t}\n\t}\n\tprivate logoOf(name: string | number) {\n\t\treturn this.namespaces.find((o) => o.name === name)?.logo ?? null\n\t}\n\tprotected triggerClasses() {\n\t\treturn 'group inline-flex h-control-sm max-md:h-control-touch max-md:text-ui pointer-coarse:h-control-touch pointer-coarse:text-ui cursor-pointer items-center gap-1.5 border border-edge bg-surface-subtle px-2 text-meta text-fg transition-[border-color] duration-120 ease-standard hover:border-edge-focus aria-expanded:border-edge-focus aria-expanded:bg-surface active:enabled:bg-surface-subtle disabled:cursor-not-allowed disabled:text-fg-muted focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-edge-focus'\n\t}\n\tprotected renderTrigger(): TemplateResult {\n\t\tconst scope = this.value\n\t\tconst logo = this.logoOf(scope)\n\t\tconst label = scope || (this.single ? 'Choose a namespace' : 'every namespace')\n\t\treturn html`${logo ? html`<img src=${logo} alt=\"\" width=\"12\" height=\"12\" class=\"size-3 object-contain\">` : icon(Database, 'database', { size: 12, strokeWidth: 1.5, class: 'text-fg-muted', attrs: { 'aria-hidden': 'true' } })}<span class=\"sr-only\">${this.single ? 'add to' : 'search in'}</span><span class=${scope ? 'max-w-45 truncate type-code-sm' : 'max-w-45 truncate'}>${label}</span>${icon(ChevronDown, 'chevron-down', { size: 12, strokeWidth: 1.5, class: 'text-fg-muted transition-[rotate] duration-120 ease-out group-aria-expanded:rotate-180 group-aria-expanded:duration-180 motion-reduce:transition-none', attrs: { 'aria-hidden': 'true' } })}`\n\t}\n\tprotected renderOption(o: ComboOption, selected: boolean): TemplateResult {\n\t\tconst logo = this.logoOf(o.value)\n\t\tconst mark = o.pinned\n\t\t\t? icon(Database, 'database', { size: 14, strokeWidth: 1.5, class: 'shrink-0 text-fg-muted', attrs: { 'aria-hidden': 'true' } })\n\t\t\t: logo\n\t\t\t\t? html`<img src=${logo} alt=\"\" width=\"14\" height=\"14\" class=\"size-3.5 shrink-0 object-contain\">`\n\t\t\t\t: this.ownMark\n\t\t\t\t\t? html`<img src=${this.ownMark} alt=\"\" width=\"14\" height=\"14\" class=\"size-3.5 shrink-0 object-contain\">`\n\t\t\t\t\t: icon(Layers, 'layers', { size: 14, strokeWidth: 1.5, class: 'shrink-0 text-fg', attrs: { 'aria-hidden': 'true' } })\n\t\treturn html`${mark}<span class=${o.pinned ? 'min-w-0 flex-1 truncate' : 'min-w-0 flex-1 truncate type-code-sm'}>${o.label}</span><span class=\"min-w-10 text-right text-meta text-fg-muted tabular-nums\">${o.hint ?? nothing}</span>${icon(Check, 'check', { size: 14, strokeWidth: 1.5, class: selected ? 'shrink-0' : 'shrink-0 invisible', attrs: { 'aria-hidden': 'true' } })}`\n\t}\n\tprotected renderEmpty(query: string) {\n\t\treturn `No namespace matches \"${query}\".`\n\t}\n}\n\ndefine('scope-menu', ScopeMenu)\n"
+        },
+        {
+          "path": "elements/components/ui/combobox.ts",
+          "content": "import { html, LitElement, nothing, type PropertyValues, type TemplateResult } from 'lit'\nimport { repeat } from 'lit/directives/repeat.js'\nimport { Check, ChevronsUpDown, Search } from 'lucide'\nimport { DsFormElement, define, uid } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport { PopoverController, popoverStyles, type Align, type Side } from '@/elements/lib/popover'\nimport styles from 'virtual:tw'\n\n// Combobox.vue as <conare-combobox>: a list to pick one option from, with a filter over it: Menu's square panel in a\n// hairline, 32px rows with the red square marker on the row the arrows or the pointer are on, the pick checked at the\n// end. `filter=\"auto\"` shows the filter past six options, `filter=\"false\"` makes it a plain listbox (<conare-select>).\n// `pinned` options stay above a hairline and are never filtered. Arrows, Home and End move, Enter picks, typing filters\n// (or, with no filter, jumps to the option it starts), Escape closes and returns focus to the trigger. The panel opens\n// in the top layer, flips and stays inside the viewport. v-model is `value` with `input` and `change`; `select` fires\n// with the option. Form-associated. Vue's `trigger` and `option` slots are methods a subclass overrides\n// (renderTrigger, renderOption), as <conare-select> and <conare-scope-menu> do.\nexport interface ComboOption { value: string | number, label: string, hint?: string, disabled?: boolean, pinned?: boolean }\n\n/**\n * @summary A list to pick one option from, with a filter over it.\n * @fires input - The pick changed (read `value`).\n * @fires change - The pick changed (read `value`).\n * @fires select - An option was picked (detail: the option).\n */\nexport class Combobox extends DsFormElement {\n\tstatic styles = [DsFormElement.styles, popoverStyles, styles]\n\tstatic shadowRootOptions = { ...LitElement.shadowRootOptions, delegatesFocus: true }\n\tstatic properties = {\n\t\tvalue: {},\n\t\toptions: { type: Array },\n\t\tlabel: {},\n\t\tplaceholder: {},\n\t\tfilter: { converter: (v: string | null) => (v === 'auto' ? 'auto' : v !== 'false') },\n\t\tfilterLabel: { attribute: 'filter-label' },\n\t\twidth: {},\n\t\tside: {},\n\t\talign: {},\n\t\tmatchWidth: { type: Boolean, attribute: 'match-width' },\n\t\tdisabled: { type: Boolean, reflect: true },\n\t\tname: {},\n\t\trequired: { type: Boolean },\n\t\tdescription: { attribute: 'aria-description' },\n\t\tquery: { state: true },\n\t\tactive: { state: true },\n\t}\n\n\tvalue: string | number = ''\n\t/** { value, label, hint, disabled, pinned } (a JSON attribute or the property). */\n\toptions: ComboOption[] = []\n\t/** The list's name for assistive tech, on the trigger. */\n\tlabel = ''\n\tplaceholder = 'Choose'\n\t/** true, false (a plain listbox) or \"auto\" (past six options). */\n\tfilter: boolean | 'auto' = true\n\tfilterLabel = 'Filter'\n\t/** The panel's width (it is at least the trigger's with match-width). */\n\twidth?: string\n\tside: Side = 'bottom'\n\talign: Align = 'start'\n\tmatchWidth = false\n\tdisabled = false\n\tname?: string\n\t/** An option must be picked for its form to send. */\n\trequired = false\n\t/** A hint or error for the trigger (a field sets it). */\n\tdescription?: string\n\tprotected query = ''\n\tprotected active = 0\n\tprotected uidBase = uid('combobox')\n\tprotected pop = new PopoverController(this, {\n\t\tanchor: () => this.renderRoot.querySelector<HTMLElement>('button[data-trigger]'),\n\t\tpanel: () => this.renderRoot.querySelector<HTMLElement>('.ds-pop'),\n\t\tgap: 4,\n\t})\n\n\t/** The trigger button's classes (Vue's triggerClass); a subclass returns its own. */\n\tprotected triggerClasses() {\n\t\treturn 'group inline-flex h-control-md w-full min-w-0 cursor-pointer items-center gap-2 border border-edge-strong bg-surface px-2.5 text-left text-ui text-fg outline-none transition-[border-color] duration-120 ease-standard focus-visible:border-edge-focus aria-expanded:border-edge-focus disabled:cursor-not-allowed disabled:text-fg-muted max-md:h-control-touch max-md:text-input pointer-coarse:h-control-touch'\n\t}\n\t/** The trigger's content (Vue's `trigger` slot). */\n\tprotected renderTrigger(selected: ComboOption | undefined, _open: boolean): TemplateResult {\n\t\treturn html`<span class=${selected ? 'min-w-0 flex-1 truncate' : 'min-w-0 flex-1 truncate text-fg-muted'}>${selected?.label ?? this.placeholder}</span>${icon(ChevronsUpDown, 'chevrons-up-down', { size: 12, strokeWidth: 1.5, class: 'shrink-0 text-fg-muted', attrs: { 'aria-hidden': 'true' } })}`\n\t}\n\t/** One row's content (Vue's `option` slot). */\n\tprotected renderOption(o: ComboOption, selected: boolean): TemplateResult {\n\t\treturn html`<span class=\"min-w-0 flex-1 truncate\">${o.label}</span>${o.hint ? html`<span class=\"min-w-10 text-right text-meta text-fg-muted tabular-nums\">${o.hint}</span>` : nothing}${icon(Check, 'check', { size: 14, strokeWidth: 1.5, class: selected ? 'shrink-0' : 'shrink-0 invisible', attrs: { 'aria-hidden': 'true' } })}`\n\t}\n\t/** What shows when nothing matches (Vue's `empty` slot). */\n\tprotected renderEmpty(query: string): TemplateResult | string {\n\t\treturn `Nothing matches \"${query}\".`\n\t}\n\t/** The data-ds of the trigger (a subclass's own name, as Vue's fallthrough attribute gives it). */\n\tprotected triggerName() {\n\t\treturn (this.constructor as typeof Combobox).dsName\n\t}\n\n\tprotected get filtering() {\n\t\treturn this.filter === 'auto' ? this.options.filter((o) => !o.pinned).length > 6 : this.filter\n\t}\n\tprotected get selected() {\n\t\treturn this.options.find((o) => o.value === this.value)\n\t}\n\tprivate get pinned() {\n\t\treturn this.options.filter((o) => o.pinned)\n\t}\n\tprivate get rest() {\n\t\tconst q = this.query.trim().toLowerCase()\n\t\tconst all = this.options.filter((o) => !o.pinned)\n\t\treturn q ? all.filter((o) => o.label.toLowerCase().includes(q)) : all\n\t}\n\tprivate get visible() {\n\t\treturn [...this.pinned, ...this.rest]\n\t}\n\tprivate optionId = (i: number) => `${this.uidBase}-${i}`\n\n\tprivate move(to: number, step = 1) {\n\t\tconst list = this.visible\n\t\tconst n = list.length\n\t\tif (!n) return\n\t\tfor (let k = 0; k < n; k++) {\n\t\t\tconst i = (((to + k * step) % n) + n) % n\n\t\t\tif (!list[i]?.disabled) {\n\t\t\t\tthis.active = i\n\t\t\t\tvoid this.updateComplete.then(() => this.renderRoot.querySelector(`#${this.optionId(i)}`)?.scrollIntoView({ block: 'nearest' }))\n\t\t\t\treturn\n\t\t\t}\n\t\t}\n\t}\n\n\tprivate async openList(keyboard: boolean) {\n\t\tthis.query = ''\n\t\tthis.pop.configure({ side: this.side, align: this.align, matchWidth: this.matchWidth })\n\t\tawait this.pop.show({ keyboard })\n\t\tconst at = this.visible.findIndex((o) => o.value === this.value)\n\t\tthis.move(at >= 0 ? at : 0)\n\t\tawait this.updateComplete\n\t\tthis.renderRoot.querySelector<HTMLElement>(this.filtering ? 'input[role=\"combobox\"]' : '[role=\"listbox\"]')?.focus({ preventScroll: true })\n\t}\n\tprivate pick(o: ComboOption | undefined, keyboard: boolean) {\n\t\tif (!o || o.disabled) return\n\t\tthis.commit(o.value)\n\t\tthis.emit('select', o)\n\t\tthis.pop.hide(true, keyboard)\n\t}\n\tprivate onTrigger = (event: MouseEvent) => {\n\t\tif (this.pop.open) this.pop.hide(false, event.detail === 0)\n\t\telse void this.openList(event.detail === 0)\n\t}\n\tprivate onTriggerKey = (event: KeyboardEvent) => {\n\t\tif ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && !this.pop.open) {\n\t\t\tevent.preventDefault()\n\t\t\tvoid this.openList(true)\n\t\t}\n\t}\n\t// With no filter, typing jumps to the option that starts with what was typed in the last half second.\n\tprivate typed = ''\n\tprivate typedAt = 0\n\tprivate onKey = (event: KeyboardEvent) => {\n\t\tconst k = event.key\n\t\tconst list = this.visible\n\t\tif (k === 'ArrowDown' || k === 'ArrowUp') {\n\t\t\tevent.preventDefault()\n\t\t\tthis.move(this.active + (k === 'ArrowDown' ? 1 : -1), k === 'ArrowDown' ? 1 : -1)\n\t\t} else if ((k === 'Home' || k === 'End') && !this.filtering) {\n\t\t\tevent.preventDefault()\n\t\t\tthis.move(k === 'Home' ? 0 : list.length - 1, k === 'Home' ? 1 : -1)\n\t\t} else if (k === 'Enter' || (k === ' ' && !this.filtering)) {\n\t\t\tevent.preventDefault()\n\t\t\tthis.pick(list[this.active], true)\n\t\t} else if (!this.filtering && k.length === 1 && !event.metaKey && !event.ctrlKey && !event.altKey) {\n\t\t\tconst now = Date.now()\n\t\t\tthis.typed = now - this.typedAt > 500 ? k.toLowerCase() : this.typed + k.toLowerCase()\n\t\t\tthis.typedAt = now\n\t\t\tconst i = list.findIndex((o) => !o.disabled && o.label.toLowerCase().startsWith(this.typed))\n\t\t\tif (i >= 0) this.move(i)\n\t\t}\n\t}\n\tprivate onQuery = (event: Event) => {\n\t\tthis.query = (event.target as HTMLInputElement).value\n\t\tthis.move(0)\n\t}\n\n\t// No native control: a required list with no pick is missing its value, as a required select is.\n\tsyncValidity() {\n\t\tthis.setMissing(this.required && (this.value === '' || this.value === null || this.value === undefined), 'select', this.renderRoot.querySelector<HTMLElement>('button[data-trigger]'))\n\t}\n\tprotected updated(changed: PropertyValues) {\n\t\tsuper.updated(changed)\n\t\tif (changed.has('value')) this.internals.setFormValue(String(this.value ?? ''))\n\t}\n\trender() {\n\t\tconst open = this.pop.open\n\t\tconst list = this.visible\n\t\tconst pinned = this.pinned\n\t\tconst rest = this.rest\n\t\tconst activeId = open && list.length ? this.optionId(this.active) : undefined\n\t\tconst listId = `${this.uidBase}-list`\n\t\tconst filtering = this.filtering\n\t\treturn html`<button data-ds=${this.triggerName()} data-trigger type=\"button\" class=${this.triggerClasses()} aria-haspopup=\"listbox\" aria-expanded=${String(open)} aria-controls=${open ? listId : nothing} aria-label=${this.label} aria-description=${this.description ?? nothing} ?disabled=${this.inactive} @click=${this.onTrigger} @keydown=${this.onTriggerKey}>${this.renderTrigger(this.selected, open)}</button>${this.pop.rendered\n\t\t\t? html`<div data-ds=\"combobox\" popover=\"manual\" class=\"ds-pop flex flex-col p-1\" data-side=${this.pop.pos.side} ?data-instant=${this.pop.instant} ?data-placed=${this.pop.pos.placed} style=${this.pop.style(this.width ? `width: ${this.width}` : '')} @focusout=${this.pop.onFocusOut}>\n\t\t\t\t${filtering\n\t\t\t\t\t? html`<label class=\"relative mb-1 block\">${icon(Search, 'search', { size: 12, strokeWidth: 1.5, class: 'pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-fg-muted', attrs: { 'aria-hidden': 'true' } })}<input .value=${this.query} class=\"h-control-sm w-full border border-edge-strong bg-surface pr-2.5 pl-7 text-meta text-fg outline-none transition-[border-color] duration-120 ease-standard placeholder:text-fg-muted focus:border-edge-focus max-md:h-control-touch max-md:text-input\" role=\"combobox\" aria-label=${this.filterLabel} placeholder=${this.filterLabel} aria-autocomplete=\"list\" aria-expanded=\"true\" aria-controls=${listId} aria-activedescendant=${activeId ?? nothing} autocomplete=\"off\" spellcheck=\"false\" @input=${this.onQuery} @keydown=${this.onKey}></label>`\n\t\t\t\t\t: nothing}\n\t\t\t\t<div id=${listId} role=\"listbox\" aria-label=${this.label} tabindex=${filtering ? '-1' : '0'} aria-activedescendant=${!filtering && activeId ? activeId : nothing} class=\"fade-y flex max-h-65 flex-col overflow-y-auto outline-none\" @keydown=${this.onKey}>\n\t\t\t\t\t${repeat(list, (o) => `${o.pinned ? 'p' : 'o'}-${o.value}`, (o, i) => html`${i === pinned.length && pinned.length && rest.length ? html`<div class=\"-mx-1 my-1 h-px shrink-0 bg-edge\" role=\"separator\"></div>` : nothing}<div id=${this.optionId(i)} role=\"option\" class=\"ds-option\" aria-selected=${String(o.value === this.value)} aria-disabled=${o.disabled ? 'true' : nothing} ?data-active=${i === this.active} @pointermove=${() => { if (!o.disabled) this.active = i }} @mousedown=${(e: Event) => e.preventDefault()} @click=${() => this.pick(o, false)}>${this.renderOption(o, o.value === this.value)}</div>`)}\n\t\t\t\t\t${!rest.length && this.query ? html`<p class=\"px-3.5 py-2 type-meta text-fg-muted\">${this.renderEmpty(this.query)}</p>` : nothing}\n\t\t\t\t</div>\n\t\t\t</div>`\n\t\t\t: nothing}`\n\t}\n}\n\ndefine('combobox', Combobox)\n"
+        },
+        {
+          "path": "elements/components/ui/combobox.css",
+          "content": "/* Combobox.vue's <style>, as it is. */\n/* A row of a listbox: Menu's row (console2.css .v2-menu-item). The highlight follows the arrows and the pointer alike,\n   as in the command palette, so hover itself draws nothing. */\n.ds-option { position: relative; display: flex; height: var(--ds-size-control-md); flex-shrink: 0; align-items: center; gap: var(--ds-space-md); padding: 0 10px 0 14px; color: var(--ds-color-fg); font-size: var(--ds-text-ui); cursor: pointer; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-option::before { position: absolute; top: 50%; left: 5px; width: 4px; height: 4px; margin-top: -2px; background: var(--ds-color-edge-accent); content: \"\"; opacity: 0; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-option[data-active] { background: var(--ds-color-surface-subtle); }\n.ds-option[data-active]::before { opacity: 1; }\n.ds-option[aria-disabled=\"true\"] { color: var(--ds-color-fg-muted); cursor: not-allowed; }\n@media (pointer: coarse), (max-width: 767px) { .ds-option { height: auto; min-height: 44px; } }\n"
+        },
+        {
+          "path": "elements/components/ui/select.ts",
+          "content": "import { html, type TemplateResult } from 'lit'\nimport { ChevronDown } from 'lucide'\nimport { define } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport { Combobox, type ComboOption } from '@/elements/components/ui/combobox'\nimport styles from 'virtual:tw'\n\n// Select.vue as <conare-select>: pick one of a few options in a form: the 32px field (a #C3C1BF hairline that turns ink\n// on focus and while open) with a 12px chevron that turns over as it opens, and a listbox on Menu's square panel at\n// least as wide as the field, the pick checked. No filter: typing jumps to the option it starts. Arrows, Home, End,\n// Enter, Escape (<conare-combobox>, which it extends). v-model is `value` with `input` and `change`. Form-associated.\n\n/**\n * @summary Pick one of a few options in a form.\n * @fires input - The pick changed (read `value`).\n * @fires change - The pick changed (read `value`).\n */\nexport class Select extends Combobox {\n\tstatic styles = [Combobox.styles, styles]\n\n\tconstructor() {\n\t\tsuper()\n\t\tthis.filter = false\n\t\tthis.matchWidth = true\n\t}\n\tprotected renderTrigger(selected: ComboOption | undefined): TemplateResult {\n\t\treturn html`<span class=${selected ? 'min-w-0 flex-1 truncate' : 'min-w-0 flex-1 truncate text-fg-muted'}>${selected?.label ?? this.placeholder}</span>${icon(ChevronDown, 'chevron-down', { size: 12, strokeWidth: 1.5, class: 'shrink-0 text-fg-muted transition-[rotate] duration-120 ease-out group-aria-expanded:rotate-180 group-aria-expanded:duration-180 motion-reduce:transition-none', attrs: { 'aria-hidden': 'true' } })}`\n\t}\n}\n\ndefine('select', Select)\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/scope-menu.js",
+        "elements/combobox.js",
+        "elements/select.js",
+        "elements/field.js"
+      ],
+      "tag": "conare-scope-menu",
+      "tags": [
+        "conare-scope-menu",
+        "conare-combobox",
+        "conare-select"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-scope-menu",
+            "name": "ScopeMenu",
+            "module": "elements/scope-menu.js",
+            "description": "Where a search looks: every namespace, or one.",
+            "attributes": [
+              {
+                "name": "namespaces",
+                "field": "namespaces",
+                "type": "ScopeOption[]",
+                "default": "[]",
+                "description": "The namespaces: { name, documents, logo } (a JSON attribute or the property)."
+              },
+              {
+                "name": "single",
+                "field": "single",
+                "type": "boolean",
+                "default": "false",
+                "description": "A namespace must be chosen: no Every namespace."
+              },
+              {
+                "name": "own-mark",
+                "field": "ownMark",
+                "type": "string | undefined",
+                "description": "The mark for a namespace with no app (written by API or upload)."
+              },
+              {
+                "name": "value",
+                "field": "value",
+                "type": "string | number",
+                "default": "''"
+              },
+              {
+                "name": "options",
+                "field": "options",
+                "type": "ComboOption[]",
+                "default": "[]",
+                "description": "{ value, label, hint, disabled, pinned } (a JSON attribute or the property)."
+              },
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string",
+                "default": "''",
+                "description": "The list's name for assistive tech, on the trigger."
+              },
+              {
+                "name": "placeholder",
+                "field": "placeholder",
+                "type": "string",
+                "default": "'Choose'"
+              },
+              {
+                "name": "filter",
+                "field": "filter",
+                "type": "boolean | \"auto\"",
+                "default": "true",
+                "description": "true, false (a plain listbox) or \"auto\" (past six options)."
+              },
+              {
+                "name": "filter-label",
+                "field": "filterLabel",
+                "type": "string",
+                "default": "'Filter'"
+              },
+              {
+                "name": "width",
+                "field": "width",
+                "type": "string | undefined",
+                "description": "The panel's width (it is at least the trigger's with match-width)."
+              },
+              {
+                "name": "side",
+                "field": "side",
+                "type": "Side",
+                "default": "'bottom'"
+              },
+              {
+                "name": "align",
+                "field": "align",
+                "type": "Align",
+                "default": "'start'"
+              },
+              {
+                "name": "match-width",
+                "field": "matchWidth",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "disabled",
+                "field": "disabled",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "name",
+                "field": "name",
+                "type": "string | undefined"
+              },
+              {
+                "name": "required",
+                "field": "required",
+                "type": "boolean",
+                "default": "false",
+                "description": "An option must be picked for its form to send."
+              },
+              {
+                "name": "aria-description",
+                "field": "description",
+                "type": "string | undefined",
+                "description": "A hint or error for the trigger (a field sets it)."
+              },
+              {
+                "name": "query",
+                "field": "query",
+                "type": "string",
+                "default": "''"
+              },
+              {
+                "name": "active",
+                "field": "active",
+                "type": "number",
+                "default": "0"
+              }
+            ],
+            "properties": [
+              {
+                "name": "namespaces",
+                "type": "ScopeOption[]",
+                "default": "[]",
+                "description": "The namespaces: { name, documents, logo } (a JSON attribute or the property).",
+                "attribute": "namespaces"
+              },
+              {
+                "name": "single",
+                "type": "boolean",
+                "default": "false",
+                "description": "A namespace must be chosen: no Every namespace.",
+                "attribute": "single"
+              },
+              {
+                "name": "ownMark",
+                "type": "string | undefined",
+                "description": "The mark for a namespace with no app (written by API or upload).",
+                "attribute": "own-mark"
+              },
+              {
+                "name": "filter",
+                "type": "boolean | \"auto\"",
+                "default": "'auto'",
+                "description": "true, false (a plain listbox) or \"auto\" (past six options).",
+                "attribute": "filter"
+              },
+              {
+                "name": "filterLabel",
+                "type": "string",
+                "default": "'Filter namespaces'",
+                "attribute": "filter-label"
+              },
+              {
+                "name": "width",
+                "type": "string | undefined",
+                "default": "'288px'",
+                "description": "The panel's width (it is at least the trigger's with match-width).",
+                "attribute": "width"
+              },
+              {
+                "name": "value",
+                "type": "string | number",
+                "default": "''",
+                "attribute": "value"
+              },
+              {
+                "name": "options",
+                "type": "ComboOption[]",
+                "default": "[]",
+                "description": "{ value, label, hint, disabled, pinned } (a JSON attribute or the property).",
+                "attribute": "options"
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "default": "''",
+                "description": "The list's name for assistive tech, on the trigger.",
+                "attribute": "label"
+              },
+              {
+                "name": "placeholder",
+                "type": "string",
+                "default": "'Choose'",
+                "attribute": "placeholder"
+              },
+              {
+                "name": "side",
+                "type": "Side",
+                "default": "'bottom'",
+                "attribute": "side"
+              },
+              {
+                "name": "align",
+                "type": "Align",
+                "default": "'start'",
+                "attribute": "align"
+              },
+              {
+                "name": "matchWidth",
+                "type": "boolean",
+                "default": "false",
+                "attribute": "match-width"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "attribute": "disabled"
+              },
+              {
+                "name": "name",
+                "type": "string | undefined",
+                "attribute": "name"
+              },
+              {
+                "name": "required",
+                "type": "boolean",
+                "default": "false",
+                "description": "An option must be picked for its form to send.",
+                "attribute": "required"
+              },
+              {
+                "name": "description",
+                "type": "string | undefined",
+                "description": "A hint or error for the trigger (a field sets it).",
+                "attribute": "aria-description"
+              }
+            ],
+            "events": [
+              {
+                "name": "input",
+                "description": "The scope changed (read `value`)."
+              },
+              {
+                "name": "change",
+                "description": "The scope changed (read `value`)."
+              },
+              {
+                "name": "select",
+                "description": "An option was picked (detail: the option)."
+              }
+            ],
+            "slots": [],
+            "methods": [
+              {
+                "name": "syncValidity"
+              }
+            ]
+          },
+          {
+            "tag": "conare-combobox",
+            "name": "Combobox",
+            "module": "elements/combobox.js",
+            "description": "A list to pick one option from, with a filter over it.",
+            "attributes": [
+              {
+                "name": "value",
+                "field": "value",
+                "type": "string | number",
+                "default": "''"
+              },
+              {
+                "name": "options",
+                "field": "options",
+                "type": "ComboOption[]",
+                "default": "[]",
+                "description": "{ value, label, hint, disabled, pinned } (a JSON attribute or the property)."
+              },
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string",
+                "default": "''",
+                "description": "The list's name for assistive tech, on the trigger."
+              },
+              {
+                "name": "placeholder",
+                "field": "placeholder",
+                "type": "string",
+                "default": "'Choose'"
+              },
+              {
+                "name": "filter",
+                "field": "filter",
+                "type": "boolean | \"auto\"",
+                "default": "true",
+                "description": "true, false (a plain listbox) or \"auto\" (past six options)."
+              },
+              {
+                "name": "filter-label",
+                "field": "filterLabel",
+                "type": "string",
+                "default": "'Filter'"
+              },
+              {
+                "name": "width",
+                "field": "width",
+                "type": "string | undefined",
+                "description": "The panel's width (it is at least the trigger's with match-width)."
+              },
+              {
+                "name": "side",
+                "field": "side",
+                "type": "Side",
+                "default": "'bottom'"
+              },
+              {
+                "name": "align",
+                "field": "align",
+                "type": "Align",
+                "default": "'start'"
+              },
+              {
+                "name": "match-width",
+                "field": "matchWidth",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "disabled",
+                "field": "disabled",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "name",
+                "field": "name",
+                "type": "string | undefined"
+              },
+              {
+                "name": "required",
+                "field": "required",
+                "type": "boolean",
+                "default": "false",
+                "description": "An option must be picked for its form to send."
+              },
+              {
+                "name": "aria-description",
+                "field": "description",
+                "type": "string | undefined",
+                "description": "A hint or error for the trigger (a field sets it)."
+              },
+              {
+                "name": "query",
+                "field": "query",
+                "type": "string",
+                "default": "''"
+              },
+              {
+                "name": "active",
+                "field": "active",
+                "type": "number",
+                "default": "0"
+              }
+            ],
+            "properties": [
+              {
+                "name": "value",
+                "type": "string | number",
+                "default": "''",
+                "attribute": "value"
+              },
+              {
+                "name": "options",
+                "type": "ComboOption[]",
+                "default": "[]",
+                "description": "{ value, label, hint, disabled, pinned } (a JSON attribute or the property).",
+                "attribute": "options"
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "default": "''",
+                "description": "The list's name for assistive tech, on the trigger.",
+                "attribute": "label"
+              },
+              {
+                "name": "placeholder",
+                "type": "string",
+                "default": "'Choose'",
+                "attribute": "placeholder"
+              },
+              {
+                "name": "filter",
+                "type": "boolean | \"auto\"",
+                "default": "true",
+                "description": "true, false (a plain listbox) or \"auto\" (past six options).",
+                "attribute": "filter"
+              },
+              {
+                "name": "filterLabel",
+                "type": "string",
+                "default": "'Filter'",
+                "attribute": "filter-label"
+              },
+              {
+                "name": "width",
+                "type": "string | undefined",
+                "description": "The panel's width (it is at least the trigger's with match-width).",
+                "attribute": "width"
+              },
+              {
+                "name": "side",
+                "type": "Side",
+                "default": "'bottom'",
+                "attribute": "side"
+              },
+              {
+                "name": "align",
+                "type": "Align",
+                "default": "'start'",
+                "attribute": "align"
+              },
+              {
+                "name": "matchWidth",
+                "type": "boolean",
+                "default": "false",
+                "attribute": "match-width"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "attribute": "disabled"
+              },
+              {
+                "name": "name",
+                "type": "string | undefined",
+                "attribute": "name"
+              },
+              {
+                "name": "required",
+                "type": "boolean",
+                "default": "false",
+                "description": "An option must be picked for its form to send.",
+                "attribute": "required"
+              },
+              {
+                "name": "description",
+                "type": "string | undefined",
+                "description": "A hint or error for the trigger (a field sets it).",
+                "attribute": "aria-description"
+              }
+            ],
+            "events": [
+              {
+                "name": "input",
+                "description": "The pick changed (read `value`)."
+              },
+              {
+                "name": "change",
+                "description": "The pick changed (read `value`)."
+              },
+              {
+                "name": "select",
+                "description": "An option was picked (detail: the option)."
+              }
+            ],
+            "slots": [],
+            "methods": [
+              {
+                "name": "syncValidity"
+              }
+            ]
+          },
+          {
+            "tag": "conare-select",
+            "name": "Select",
+            "module": "elements/select.js",
+            "description": "Pick one of a few options in a form.",
+            "attributes": [
+              {
+                "name": "value",
+                "field": "value",
+                "type": "string | number",
+                "default": "''"
+              },
+              {
+                "name": "options",
+                "field": "options",
+                "type": "ComboOption[]",
+                "default": "[]",
+                "description": "{ value, label, hint, disabled, pinned } (a JSON attribute or the property)."
+              },
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string",
+                "default": "''",
+                "description": "The list's name for assistive tech, on the trigger."
+              },
+              {
+                "name": "placeholder",
+                "field": "placeholder",
+                "type": "string",
+                "default": "'Choose'"
+              },
+              {
+                "name": "filter",
+                "field": "filter",
+                "type": "boolean | \"auto\"",
+                "default": "true",
+                "description": "true, false (a plain listbox) or \"auto\" (past six options)."
+              },
+              {
+                "name": "filter-label",
+                "field": "filterLabel",
+                "type": "string",
+                "default": "'Filter'"
+              },
+              {
+                "name": "width",
+                "field": "width",
+                "type": "string | undefined",
+                "description": "The panel's width (it is at least the trigger's with match-width)."
+              },
+              {
+                "name": "side",
+                "field": "side",
+                "type": "Side",
+                "default": "'bottom'"
+              },
+              {
+                "name": "align",
+                "field": "align",
+                "type": "Align",
+                "default": "'start'"
+              },
+              {
+                "name": "match-width",
+                "field": "matchWidth",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "disabled",
+                "field": "disabled",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "name",
+                "field": "name",
+                "type": "string | undefined"
+              },
+              {
+                "name": "required",
+                "field": "required",
+                "type": "boolean",
+                "default": "false",
+                "description": "An option must be picked for its form to send."
+              },
+              {
+                "name": "aria-description",
+                "field": "description",
+                "type": "string | undefined",
+                "description": "A hint or error for the trigger (a field sets it)."
+              },
+              {
+                "name": "query",
+                "field": "query",
+                "type": "string",
+                "default": "''"
+              },
+              {
+                "name": "active",
+                "field": "active",
+                "type": "number",
+                "default": "0"
+              }
+            ],
+            "properties": [
+              {
+                "name": "filter",
+                "type": "boolean | \"auto\"",
+                "default": "false",
+                "description": "true, false (a plain listbox) or \"auto\" (past six options).",
+                "attribute": "filter"
+              },
+              {
+                "name": "matchWidth",
+                "type": "boolean",
+                "default": "true",
+                "attribute": "match-width"
+              },
+              {
+                "name": "value",
+                "type": "string | number",
+                "default": "''",
+                "attribute": "value"
+              },
+              {
+                "name": "options",
+                "type": "ComboOption[]",
+                "default": "[]",
+                "description": "{ value, label, hint, disabled, pinned } (a JSON attribute or the property).",
+                "attribute": "options"
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "default": "''",
+                "description": "The list's name for assistive tech, on the trigger.",
+                "attribute": "label"
+              },
+              {
+                "name": "placeholder",
+                "type": "string",
+                "default": "'Choose'",
+                "attribute": "placeholder"
+              },
+              {
+                "name": "filterLabel",
+                "type": "string",
+                "default": "'Filter'",
+                "attribute": "filter-label"
+              },
+              {
+                "name": "width",
+                "type": "string | undefined",
+                "description": "The panel's width (it is at least the trigger's with match-width).",
+                "attribute": "width"
+              },
+              {
+                "name": "side",
+                "type": "Side",
+                "default": "'bottom'",
+                "attribute": "side"
+              },
+              {
+                "name": "align",
+                "type": "Align",
+                "default": "'start'",
+                "attribute": "align"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "attribute": "disabled"
+              },
+              {
+                "name": "name",
+                "type": "string | undefined",
+                "attribute": "name"
+              },
+              {
+                "name": "required",
+                "type": "boolean",
+                "default": "false",
+                "description": "An option must be picked for its form to send.",
+                "attribute": "required"
+              },
+              {
+                "name": "description",
+                "type": "string | undefined",
+                "description": "A hint or error for the trigger (a field sets it).",
+                "attribute": "aria-description"
+              }
+            ],
+            "events": [
+              {
+                "name": "input",
+                "description": "The pick changed (read `value`)."
+              },
+              {
+                "name": "change",
+                "description": "The pick changed (read `value`)."
+              },
+              {
+                "name": "select",
+                "description": "An option was picked (detail: the option)."
+              }
+            ],
+            "slots": [],
+            "methods": [
+              {
+                "name": "syncValidity"
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Every namespace or one",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/scope-menu/Product.html",
+          "content": "<!-- Every namespace or one, each with its size; the filter appears past six. Namespaces written by API carry the brand\n     mark. Sample data. -->\n<div class=\"flex h-100 items-start justify-center pt-4\">\n  <conare-scope-menu value=\"\" own-mark=\"/conare-ds/logo/svg/mark.svg\" namespaces='[\n    { \"name\": \"sec-filings\", \"documents\": 2184920 },\n    { \"name\": \"contracts\", \"documents\": 412830 },\n    { \"name\": \"slack\", \"documents\": 96410 },\n    { \"name\": \"crm\", \"documents\": 52660 },\n    { \"name\": \"engineering\", \"documents\": 31902 },\n    { \"name\": \"support\", \"documents\": 18240 },\n    { \"name\": \"wiki\", \"documents\": 7385 }\n  ]'></conare-scope-menu>\n</div>\n"
+        },
+        {
+          "name": "Select",
+          "label": "Select",
+          "center": false,
+          "half": true,
+          "path": "elements/examples/scope-menu/Select.html",
+          "content": "<!-- A select in a form: the field opens a listbox at least as wide as itself, the pick checked. -->\n<div class=\"h-72 w-full max-w-72\">\n  <conare-field label=\"Region\" hint=\"Where your namespaces are stored.\">\n    <conare-select value=\"us-east\" label=\"region\" options='[\n      { \"value\": \"us-east\", \"label\": \"US East (Virginia)\" },\n      { \"value\": \"us-west\", \"label\": \"US West (Oregon)\" },\n      { \"value\": \"eu-central\", \"label\": \"EU Central (Frankfurt)\" },\n      { \"value\": \"ap-south\", \"label\": \"Asia Pacific (Mumbai)\", \"disabled\": true }\n    ]'></conare-select>\n  </conare-field>\n</div>\n"
+        },
+        {
+          "name": "Combobox",
+          "label": "Combobox",
+          "center": false,
+          "half": true,
+          "path": "elements/examples/scope-menu/Combobox.html",
+          "content": "<!-- Any list with a filter: type to narrow it, arrows to move, Enter to pick. -->\n<div class=\"h-96 w-full max-w-72\">\n  <conare-field label=\"Model\">\n    <conare-combobox id=\"model\" value=\"\" label=\"model\" placeholder=\"Choose a model\" filter-label=\"Filter models\" width=\"288px\"></conare-combobox>\n  </conare-field>\n</div>\n<script type=\"module\">\n  await customElements.whenDefined('conare-combobox')\n  const models = ['conare-embed-1', 'conare-embed-1-small', 'conare-rerank-1', 'conare-rerank-1-fast', 'conare-parse-1', 'acme-custom-embed', 'acme-custom-rerank', 'acme-legal-embed']\n  document.getElementById('model').options = models.map((m) => ({ value: m, label: m }))\n</script>\n"
+        }
+      ]
+    }
+  }
+}

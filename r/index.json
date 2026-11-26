@@ -1,0 +1,4338 @@
+{
+  "name": "Conare",
+  "registryUrl": "https://conare-ds.agencidev.com",
+  "registryHost": "https://conare-ds-registry.vercel.app",
+  "elementPrefix": "conare",
+  "coverage": {
+    "total": 139,
+    "vue": 139,
+    "react": 139,
+    "elements": 139
+  },
+  "items": [
+    {
+      "name": "about-page",
+      "title": "About page",
+      "type": "registry:block",
+      "group": "site",
+      "description": "About the company: the head, the story in one narrow column, the numbers in the double rule, what the team holds to (feature grid) and the closing band, in the site's frame.",
+      "use_for": "A website's about page.",
+      "never": [
+        "Team photos or names on the page: keep it about the company",
+        "Numbers without what they count"
+      ],
+      "source": "No about page in conare-web; set from its pages: the head (pricing.vue), the text column (blog/[slug].vue with DocsBlocks), the price cards' large figures (pricing.vue), the bands (home/*.vue)",
+      "body": "Built on `site-page`: `header`, `footer` and `announcement` are its props, and the `logo` and `actions` slots go to the header (`sheet-actions` too, in web components). `story` takes docs-blocks' blocks (paragraphs, headings, lists).",
+      "requires": [
+        "button-link",
+        "call-to-action",
+        "docs-blocks",
+        "feature-grid",
+        "section-head",
+        "site-page"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/site/AboutPage.vue"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "accordion",
+      "title": "Accordion",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "Rows that open in place, in Conare's style: hairlines between them, a 12px chevron that turns as one opens, the answer opening over 260ms and closing in 180ms with its words settling down a beat after. One open at a time unless multiple.",
+      "use_for": "Details most readers skip: limits, retention, a setup checklist. The website's questions use FAQ.",
+      "never": [
+        "A whole page's content behind rows",
+        "A row that opens on hover",
+        "Nesting one accordion in another"
+      ],
+      "source": "conare-web app/assets/css/console2.css (.v2-collapse), app/assets/css/main.css (.c-details), app/components/home/Faq.vue (the phone accordion)",
+      "body": "",
+      "requires": [],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/ui/Accordion.vue",
+        "components/ui/AccordionItem.vue",
+        "composables/useAccordion.ts"
+      ],
+      "examples": [
+        "Product",
+        "Multiple"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "account-menu",
+      "title": "Account menu",
+      "type": "registry:ui",
+      "group": "product",
+      "description": "The sidebar's foot: a black square and the email; it opens upward with the credits left, sign-in and security, and Sign out in red.",
+      "use_for": "The signed-in person's own settings and signing out, in the Sidebar's foot slot.",
+      "never": [
+        "The person's name when the email says who it is",
+        "A round avatar: Conare's is square"
+      ],
+      "source": "conare-web app/components/console/AccountMenu.vue, app/assets/css/console2.css (.v2-trigger, .v2-menu, .v2-meter, .v2-menu-danger)",
+      "body": "Put it in `Sidebar`'s `foot` slot (48px). Listen for `open` to fetch the credits the first time it opens, and for\n`signOut` to end the session; set `signing-out` meanwhile.",
+      "requires": [
+        "menu"
+      ],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/product/AccountMenu.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "accuracy-page",
+      "title": "Accuracy page",
+      "type": "registry:block",
+      "group": "product",
+      "description": "Accuracy as it ships: Performance's second view, its bar with the two views and the test's actions (Add questions opening in place, Copy link, Run again as the one dark button), then the Test at work view.",
+      "use_for": "The console's Performance page, Accuracy tab: a team's own test, run now and then.",
+      "never": [
+        "A page of its own in the sidebar: it runs now and then, so it sits under Performance",
+        "A second dark button: Run again is the page's one"
+      ],
+      "source": "conare-web app/components/console/accuracy/Panel.vue, Add.vue, app/components/console/performance/Tabs.vue, app/pages/dashboard/performance.vue (the branch's accuracy page redirects there)",
+      "body": "`AccuracyPanel` takes the run (`view`), `version` (4, Test at work, by default), the link Copy link copies and the\nquestions agents ask most (`asked`); it emits `run`, `add`, `fix`, `search`, `remove` and `update:tab`. Put it in a\n`ConsolePage` titled Performance.",
+      "requires": [
+        "accuracy-views",
+        "button",
+        "tabs"
+      ],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/product/AccuracyPanel.vue",
+        "components/product/AccuracyAdd.vue",
+        "composables/useCopy.ts"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "accuracy-views",
+      "title": "Accuracy views",
+      "type": "registry:block",
+      "group": "product",
+      "description": "A team's own questions and whether search reached the right page, four ways: Test at work (tiles, the list and a window of a hundred squares; it ships), Verdict first, Two searches and Question sheet. Each question opens to what came back.",
+      "use_for": "Showing the result of an accuracy test on the team's own questions, run before a contract and after a change.",
+      "never": [
+        "Scores a reader has to decode (nDCG, MRR): count questions and name the page each reached",
+        "Hiding Conare's misses: losses stay in, each with its fix",
+        "Every question open at once on a long test"
+      ],
+      "source": "conare-web app/components/console/accuracy/AtWork.vue, Verdict.vue, Two.vue, Sheet.vue, Detail.vue, app/components/console/RowOpen.vue, Opens.vue, search/PagePreview.vue, app/assets/css/console2.css (.v2-test*, .v2-eval*, .v2-answer, .v2-rowopen, .v2-pg)",
+      "body": "Every view takes the run as `view` (`AccuracyView`, exported from `AccuracyDetail.vue`) and emits `fix`, `search` and\n`remove` with the question; the sheet also emits `add`. `AccuracyPanel` (accuracy-page) puts one under Performance's bar.\n\nThe scores count to their new value as a run lands (`count`). Test at work's list moves one block between rows\n(`glide-mark`'s `useGlideMark`), and its dark window sits on the grain and a sheet of cells (`cell-burst`).",
+      "requires": [
+        "button",
+        "cell-burst",
+        "count",
+        "glide-mark",
+        "loader",
+        "table",
+        "tabs"
+      ],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/product/AccuracyAtWork.vue",
+        "components/product/AccuracyVerdict.vue",
+        "components/product/AccuracyTwo.vue",
+        "components/product/AccuracySheet.vue",
+        "components/product/AccuracyDetail.vue",
+        "components/product/AccuracyThumb.vue",
+        "components/product/AccuracyOpens.vue"
+      ],
+      "examples": [
+        "TestAtWork",
+        "VerdictFirst",
+        "TwoSearches",
+        "QuestionSheet"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "add-data",
+      "title": "Add data",
+      "type": "registry:product",
+      "group": "product",
+      "description": "The ways data comes in, the fewest clicks first: a corpus sent by API with one prompt, an app connected with one click, or files that upload as they land. Nothing to name first.",
+      "use_for": "The namespaces page and Home.",
+      "never": [
+        "Offering a way the account cannot use",
+        "Asking for a name before anything comes in"
+      ],
+      "source": "conare-web app/components/console/namespaces/AddData.vue, NewData.vue (take 1, API first), SendApi.vue (take 3), byapi/Prompt.vue, app/assets/css/console2.css (.v2-newdata, .v2-apptiles, .v2-apptile)",
+      "body": "It emits what was picked: `copied` (the prompt), `connect(app)`, `files(list)`, `open(namespace)`. Connect, upload and\nwatch for the first write in your app, and pass back `connecting` (an app's type), `uploading` (a count), `waiting`\nand `landed`. Apps show their `logo` when given, otherwise a square tile with the initial.",
+      "requires": [
+        "button",
+        "code-pop",
+        "loader",
+        "source-row"
+      ],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/product/AddData.vue",
+        "composables/useCopy.ts"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "add-documents",
+      "title": "Add documents",
+      "type": "registry:product",
+      "group": "product",
+      "description": "Write first documents from the console: upload files or paste text. A PDF, Word, PowerPoint or Excel file becomes one document whose hits cite their page, slide or sheet.",
+      "use_for": "An empty namespace, and adding a few documents by hand.",
+      "never": [
+        "Large migrations: they go by API",
+        "Uploads with no namespace chosen"
+      ],
+      "source": "conare-web app/components/console/AddDocuments.vue",
+      "body": "It checks the namespace (`a-z`, `0-9`, `_`, `-`, up to 64) and the files' types, then emits `upload(namespace, files)`\nor `paste(namespace, { id, text })`. Write them with your own API, set `writing` while it runs, then `notice` (the form\nclears) or `error`. The branch wrote its labels in lowercase; here they are in sentence case.",
+      "requires": [
+        "button",
+        "field",
+        "tabs"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/product/AddDocuments.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "agent-prompt",
+      "title": "Agent prompt",
+      "type": "registry:product",
+      "group": "product",
+      "description": "Connect a coding agent over MCP: the agent at work on top, the prompt in a box that opens, then Copy prompt with the one-click installs and the API call beside it. The agent signs in with OAuth, so no key is shown.",
+      "use_for": "The agents page, whenever an agent is connected.",
+      "never": [
+        "Pasting an API key into the prompt",
+        "Two copy buttons as the page's main action"
+      ],
+      "source": "conare-web app/components/console/agents/Connect.vue, agents/ConnectViz.vue, agent/Split.vue (take 2), app/composables/useAgentPrompt.ts, app/assets/css/console2.css (.v2-agentwork, .v2-promptbox, .v2-split), docs-viz.css",
+      "body": "Build the prompt in your app (it names the MCP server and the namespaces connected) and pass it with the request\n`code`. `installs` are the one-click links the prompt can't do (Cursor's and VS Code's install links); without them the\nsplit has no arrow. `AgentWindow` plays the website's agent window once as it renders; `AgentSplit` works on its own.\nThe dark panel carries the grain and a seeded sheet of cells (`cell-burst`) under the agent's window.",
+      "requires": [
+        "button",
+        "cell-burst",
+        "code-pop",
+        "menu"
+      ],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/product/AgentPrompt.vue",
+        "components/product/AgentWindow.vue",
+        "components/product/AgentSplit.vue",
+        "composables/useCopy.ts",
+        "composables/useMenu.ts"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "alert-dialog",
+      "title": "Alert dialog",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "A question that must be answered first, on Dialog's window: the title, one line saying what happens, Cancel and the danger action. Focus starts on Cancel; the scrim does nothing; Escape cancels.",
+      "use_for": "Confirming what can't be undone and reaches past one row: deleting a namespace, an organization, every key.",
+      "never": [
+        "Confirming a row's delete or revoke: hold the danger button (HoldButton), as the console does",
+        "Routine actions, or more than one line of explanation",
+        "Two danger buttons, or a dark button beside the danger one"
+      ],
+      "source": "conare-web app/components/console/Modal.vue, app/assets/css/main.css (.c-modal), console2.css (.v2-btn-danger). New in Conare's style: shadcn's alert dialog.",
+      "body": "",
+      "requires": [
+        "button"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/ui/AlertDialog.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "alert",
+      "title": "Alert",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "A red box for what broke: one box per problem, set apart, with the problem in words and the button that fixes it.",
+      "use_for": "Something the person must act on now, such as a source that stopped syncing.",
+      "never": [
+        "Information that needs no action",
+        "Several problems in one box: one box each, however many there are"
+      ],
+      "source": "conare-web app/assets/css/console2.css (.v2-banner, .v2-banner-row, .v2-banner-mark)",
+      "body": "",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/Alert.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "announcement-bar",
+      "title": "Announcement bar",
+      "type": "registry:ui",
+      "group": "site",
+      "description": "One line above the header for news: the whole ribbon is the link, on the red wash, with a black capitals tag that turns red on hover and the call to action underlined in the same sentence.",
+      "use_for": "A launch or an event, for a few weeks at most.",
+      "never": [
+        "More than one line",
+        "Red fills"
+      ],
+      "source": "conare-web app/components/home/AnnouncementBar.vue",
+      "body": "",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/site/AnnouncementBar.vue"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "aspect-ratio",
+      "title": "Aspect ratio",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "A plain box that keeps its shape as it grows, so a picture or a window never reflows: the blog card's 5:4 picture, the hero's 2:1 frame.",
+      "use_for": "Pictures, the website's art panels and viz windows.",
+      "never": [
+        "Fixed heights for media that scales with the page",
+        "Text content that can outgrow the box"
+      ],
+      "source": "conare-web app/components/home/BlogCard.vue (aspect-[5/4]), app/design-system/examples/burst (aspect-[2/1])",
+      "body": "",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/AspectRatio.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "avatar",
+      "title": "Avatar",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "Who or what something belongs to, always square: the workspace switcher's 20px hairline tile with an initial, and the account's black square that stands in for a profile picture. A picture crops square and falls back to the initial.",
+      "use_for": "Organizations in the switcher, the account at the sidebar's foot, a member in a list.",
+      "never": [
+        "A round avatar: Conare has no round shapes",
+        "Colored backgrounds per person",
+        "A picture with no name for screen readers"
+      ],
+      "source": "conare-web app/assets/css/console2.css (.v2-tile), app/components/console/WorkspaceMenu.vue, AccountMenu.vue",
+      "body": "",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/Avatar.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "bento",
+      "title": "Bento",
+      "type": "registry:block",
+      "group": "site",
+      "description": "What a product does as cells of different sizes in the double rule: large, wide, tall or plain, each led by a red pixel pattern.",
+      "use_for": "A features band where one or two things lead and the rest support them.",
+      "never": [
+        "Pictures stretched to fill a cell",
+        "More than one large cell in a row"
+      ],
+      "source": "No bento in conare-web; set from its feature grid (home.css Products cells, the hero tabs' pixel patterns) with spans on the same hairline grid",
+      "body": "Each cell is `{ title, body, size? }`; `size` is `large` (two columns and two rows), `wide` (two columns) or `tall` (two rows). The grid packs densely, so order the cells by importance.",
+      "requires": [
+        "section-head"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/site/Bento.vue"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "blog-card",
+      "title": "Blog card",
+      "type": "registry:ui",
+      "group": "site",
+      "description": "A post as a card: in its own ruled box that takes the paper under the pointer, a picture of cells on the grained dark panel with the category in red, then the title, its line, and who it is from and the date in ruled tags. A window can play in the picture once the card is on screen.",
+      "use_for": "The blog's list and \"More posts\" under an article.",
+      "never": [
+        "Stock photos",
+        "Titles over two lines",
+        "A window that replays on hover: it plays once"
+      ],
+      "source": "conare-web app/components/home/BlogCard.vue, app/assets/css/home.css (.blog-card, .footer-grain)",
+      "body": "The `window` slot gets `active` once the card is on screen. The website puts a benchmark's leaderboard there: an\n`eval-viz` with `:limit=\"3\"`, stretched to the 520 by 380 box and scaled with the card.",
+      "requires": [
+        "cell-burst"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/site/BlogCard.vue",
+        "composables/useCellBurst.ts"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "blog-page",
+      "title": "Blog page",
+      "type": "registry:block",
+      "group": "site",
+      "description": "The blog: the head, the categories with a search beside them, the posts three across as blog cards, every card in a row one height, and the closing band. Nothing matching says so.",
+      "use_for": "A website's blog index.",
+      "never": [
+        "Pagination: the posts load in one list",
+        "A featured post larger than the rest"
+      ],
+      "source": "conare-web app/pages/blog/index.vue, app/components/home/BlogCard.vue",
+      "body": "Built on `site-page`: `header`, `footer` and `announcement` are its props, and the `logo` and `actions` slots go to the header (`sheet-actions` too, in web components). The category and the search filter the `posts` in place; a post is blog-card's props.",
+      "requires": [
+        "blog-card",
+        "button-link",
+        "call-to-action",
+        "field",
+        "section-head",
+        "site-page"
+      ],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/site/BlogPage.vue"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "blog-post-page",
+      "title": "Blog post page",
+      "type": "registry:block",
+      "group": "site",
+      "description": "A blog post: the trail and the title centred, a wide dark panel as the picture, who it is from and when, the text in one narrow column, a link on, then more posts from the category.",
+      "use_for": "A blog post.",
+      "never": [
+        "A sidebar beside the text: the column is the page",
+        "Comments"
+      ],
+      "source": "conare-web app/pages/blog/[slug].vue",
+      "body": "Built on `site-page`: `header`, `footer` and `announcement` are its props, and the `logo` and `actions` slots go to the header (`sheet-actions` too, in web components). `post.blocks` takes docs-blocks' blocks; `more` takes blog-card props.",
+      "requires": [
+        "blog-card",
+        "blog-page",
+        "button-link",
+        "cell-burst",
+        "docs-blocks",
+        "site-page"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/site/BlogPostPage.vue"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "burst",
+      "title": "Burst",
+      "type": "registry:ui",
+      "group": "visuals",
+      "description": "The hero frame's infinite cells on red: level rectangles near the frame's edge, each redrawn as it recedes to the center, the copies' edges making the hatch. Corners adds a halftone square to each face, kept clear of the hero's window.",
+      "use_for": "Behind the hero's window, on the red, with the room grid.",
+      "never": [
+        "On any color but the red frame",
+        "Over text",
+        "Rotated: the cells stay level"
+      ],
+      "source": "conare-web app/components/home/Burst.vue, app/utils/cells.ts (halftone)",
+      "body": "",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/visuals/Burst.vue",
+        "composables/useCellBurst.ts"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "button-group",
+      "title": "Button group",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "Buttons that belong together sharing a hairline: secondary buttons in a row, or the dark split button with its menu arrow.",
+      "use_for": "The agent prompt's Copy prompt with its other ways to connect; a pager's previous, page and next.",
+      "never": [
+        "Unrelated actions side by side (space them instead)",
+        "Two dark groups in one view"
+      ],
+      "source": "conare-web app/components/console/agent/Split.vue, app/assets/css/console2.css (.v2-split, .v2-split-arrow)",
+      "body": "New in Conare's grammar, from the split button. Each child overlaps the one before by 1px, and the hovered or focused one sits on top so its ink edge shows whole. Between two dark halves (PixelButton, or a dark trigger) it draws the split's 1px line at 24% of the light colour. The branch's split also runs the copy's red squares on into the arrow; this group keeps each half's own hover. `vertical` stacks them.",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/ButtonGroup.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "button-link",
+      "title": "Button link",
+      "type": "registry:ui",
+      "group": "site",
+      "description": "The website's button: a square link, 36px with a 13px label (28px and 12px small), whose hover is a fill of 6px squares coming in from the left; dark with the pixel arrow for the main call to action, outlined for the rest, red, and light and ghost on dark bands.",
+      "use_for": "Calls to action on the website: Book a demo, Read the docs, Contact us. A link, never a form button.",
+      "never": [
+        "Inside the console (use Button or PixelButton)",
+        "A change of size or weight on hover: the fill is the hover",
+        "Two red buttons in one band",
+        "An arrow that moves on hover: the pixel arrow stays still"
+      ],
+      "source": "conare-web app/components/home/ButtonLink.vue, app/assets/css/home.css (.btn-px, .btn-label, .btn-arrow, .btn-grain)",
+      "body": "`variant` is `red` (the default, the flat red block whose squares come in black), `secondary` (outlined, its border\nturning red as red squares come in), `light` (off-white on a dark band) or `ghost` (outlined on a dark band). `pixels`\nmakes the dark main call to action, black with red squares, and `arrow` adds the pixel arrow: lit squares on a 5 by 5\nof dim ones. On the website the arrow steps one grid to the right on hover; here it stays still, as icons never move on\nhover. Where the label changes colour over the fill (secondary and light), each column of squares carries its own\noff-white copy of the label, so the label turns as the squares land. `grain` lays the footer's grain under the label. `fill=\"black\"` brings the squares in black: the light button on a\nred band (the closing call to action) takes it.\n\nThe squares come in over 80ms each on a decelerating curve with a delay along the button (about half a second end to\nend) and leave over 120ms, a touch quicker. A press lights them at once. Reduced motion drops the delays, so the fill\nfades in as one.",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/site/ButtonLink.vue",
+        "composables/usePixelGrid.ts"
+      ],
+      "examples": [
+        "Site",
+        "Dark",
+        "Outlined",
+        "Small",
+        "Red",
+        "Light",
+        "Ghost"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "button",
+      "title": "Button",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "Every action in the console: secondary by default; dark for the one main action, the website's pixel button with red squares running in on hover; ghost for tools in rows; danger for what removes something, held to confirm; brand for the fix to a failure; and a square icon button.",
+      "use_for": "Any action in place: create, copy, save, revoke, open a menu. One dark button per view; the rest secondary or ghost. 28px tall with 12px labels, 40px on phones.",
+      "never": [
+        "Two dark buttons on one view",
+        "A faded button for \"not yet\": disabled is grey with a dark label",
+        "Red text on a secondary button instead of the danger variant",
+        "A size change on hover"
+      ],
+      "source": "conare-web app/assets/css/console2.css (.v2-btn, .v2-px, .v2-hold), app/components/console/PixelButton.vue, HoldButton.vue, composables/usePixelGrid.ts",
+      "body": "",
+      "requires": [],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/ui/Button.vue",
+        "components/ui/PixelButton.vue",
+        "components/ui/HoldButton.vue",
+        "composables/usePixelGrid.ts"
+      ],
+      "examples": [
+        "Product",
+        "Dark",
+        "Handoff",
+        "Secondary",
+        "Ghost",
+        "Icon",
+        "Danger",
+        "Brand",
+        "States"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "calendar",
+      "title": "Calendar",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "A month to pick a day from: square 32px day cells, the picked day in ink, Menu's red square marking today, 12px muted weekday heads and ghost arrow buttons. Arrows, Home, End and Page Up or Down move; Enter picks.",
+      "use_for": "Picking a day on the page: a report's start, a key's expiry. In a field, use DatePicker.",
+      "never": [
+        "Rounded day cells or a colored selection: the pick is ink",
+        "Animating the month change",
+        "Typing a known date: a text field is faster"
+      ],
+      "source": "conare-web app/assets/css/console2.css (.v2-menu-item's red marker, .v2-btn-ghost, the type scale). New in Conare's style: shadcn's calendar.",
+      "body": "",
+      "requires": [
+        "button"
+      ],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/ui/Calendar.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "call-to-action",
+      "title": "Call to action",
+      "type": "registry:ui",
+      "group": "site",
+      "description": "The band before the footer: the closing line and one action on the red, over a jumbled sheet of cells whose grid keeps redrawing itself, in a triple rule.",
+      "use_for": "The end of the home and the product pages.",
+      "never": [
+        "Two calls to action in one band",
+        "A second red band on the page"
+      ],
+      "source": "conare-web app/components/home/Cta.vue",
+      "body": "",
+      "requires": [
+        "cell-burst"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/site/CallToAction.vue"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "card",
+      "title": "Card",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "A bordered box for one subject: a head with its title and actions over a hairline, then the body. Square, no shadow. Framed adds the website's double rule; a door is a whole card that opens something.",
+      "use_for": "A chart, a list, a setting, a way in. The framed card for the one block a page leads with.",
+      "never": [
+        "A card inside a card",
+        "Shadows",
+        "A clickable div: an interactive card is one link or button (Door)"
+      ],
+      "source": "conare-web app/assets/css/console2.css (.v2-card, .v2-card-head, .v2-card-framed, .v2-door)",
+      "body": "",
+      "requires": [],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/ui/Card.vue",
+        "components/ui/Door.vue"
+      ],
+      "examples": [
+        "Product",
+        "PageOrder"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "careers-page",
+      "title": "Careers page",
+      "type": "registry:block",
+      "group": "site",
+      "description": "The open roles, a row each in the double rule (the name, the team and the place, the whole row a link), or a line when there are none, in the site's frame.",
+      "use_for": "The website's careers or jobs page.",
+      "never": [
+        "Photos of real people",
+        "Perks lists in place of the roles"
+      ],
+      "source": "No careers page in conare-web; set from its 404 cells (the double rule rows that take the paper) and the pages' heads",
+      "body": "Built on `site-page`: `header`, `footer` and `announcement` are its props, and the `logo` and `actions` slots go to the header (`sheet-actions` too, in web components). `roles` are `{ title, team?, place?, href }`; `empty` shows when there are none.",
+      "requires": [
+        "section-head",
+        "site-page"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/site/CareersPage.vue"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "carousel",
+      "title": "Carousel",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "Slides in a row, one or more in view: square, a hairline round the track and between slides, the arrows as ghost icon buttons with the place in tabular figures between them. Native scroll snap, so a swipe or a trackpad moves it as the arrows do. Never plays on its own.",
+      "use_for": "A few cards of one kind that don't fit side by side: ways in, posts, examples.",
+      "never": [
+        "Autoplay",
+        "Hiding the one thing a page needs inside a slide",
+        "Dots for navigation: the count says where you are"
+      ],
+      "source": "New in Conare's style (no Conare equivalent): Button ghost icon, the hairline and the console's tabular figures",
+      "body": "The track fades at an edge with another slide past it (`fade-x`); its hairline stays whole.",
+      "requires": [
+        "button"
+      ],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/ui/Carousel.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "cell-burst",
+      "title": "Cell burst",
+      "type": "registry:ui",
+      "group": "visuals",
+      "description": "Seeded square cells bursting from a point: a sheet of cells with some redrawn smaller and smaller down to a vanishing point, each a wedge of hairlines. Jumble scatters it, ledger makes it a spreadsheet's, strong holds up on the red, trace sets the grid redrawing itself. Grain is the texture it sits under.",
+      "use_for": "The website's illustrations of data being found and processed: the blog cards, How it works, the closing band, a work panel.",
+      "never": [
+        "Inside the console's pages",
+        "Running off screen: it draws as the panel nears the screen",
+        "Over text"
+      ],
+      "source": "conare-web app/components/home/CellBurst.vue, app/utils/cells.ts, app/composables/useNearView.ts, app/assets/css/home.css (.art-in, .cell-trace, .footer-grain)",
+      "body": "",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/visuals/CellBurst.vue",
+        "components/visuals/Grain.vue",
+        "composables/useCellBurst.ts"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "changelog-page",
+      "title": "Changelog page",
+      "type": "registry:block",
+      "group": "site",
+      "description": "What changed, newest first: the head, then each release under a hairline, its date and version on the left, held in view as its notes pass, the title and the notes beside it, and the closing band.",
+      "use_for": "A product's changelog.",
+      "never": [
+        "Marketing copy in a release: say what changed",
+        "Releases without a date"
+      ],
+      "source": "No changelog page in conare-web (its blog has a Changelog category); laid out as its policy pages (app/components/home/Legal.vue) with DocsBlocks for the notes",
+      "body": "Built on `site-page`: `header`, `footer` and `announcement` are its props, and the `logo` and `actions` slots go to the header (`sheet-actions` too, in web components). Each entry's `blocks` takes docs-blocks' blocks; its `id` is the anchor.",
+      "requires": [
+        "button-link",
+        "call-to-action",
+        "docs-blocks",
+        "section-head",
+        "site-page",
+        "tag"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/site/ChangelogPage.vue"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "chart",
+      "title": "Chart",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "How Conare draws a number: bars per day under a meter's total and the week's change, lines for series over time, bars for shares of a total, and one split bar for a whole in parts. A 1px grid, axes from 0, and pointing reads a value.",
+      "use_for": "Queries per day, search latency, documents written, what a bill is made of. Every series is labeled; the caption says what it counts.",
+      "never": [
+        "Colour alone to tell series apart: the third line is dashed and every series is in the legend",
+        "Bars that regrow on every hover: they rise once",
+        "Charts without a caption",
+        "An axis that starts above 0"
+      ],
+      "source": "conare-web app/components/console/BarChart.vue, LineChart.vue, usage/Multiples.vue, usage/Trend.vue, usage/TrendArrow.vue, app/assets/css/console2.css (.c-bar, .v2-chart-week, .v2-splitbar, .v2-segmark, .v2-priced, .v2-rowmark)",
+      "body": "",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/BarChart.vue",
+        "components/ui/LineChart.vue",
+        "components/ui/ChartTrend.vue",
+        "components/ui/TrendArrow.vue",
+        "components/ui/SplitBar.vue",
+        "composables/useChart.ts"
+      ],
+      "examples": [
+        "Usage",
+        "Product",
+        "Share",
+        "Split"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "checkbox",
+      "title": "Checkbox",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "A yes or no inside a form: a 16px square in the hairline that fills ink with a drawn check when on, a bar when partly on.",
+      "use_for": "Choices sent with a form: events to send, terms to accept, options of a key.",
+      "never": [
+        "A setting that takes effect at once (use Switch)",
+        "Round boxes",
+        "A red box at rest"
+      ],
+      "source": "New in Conare's style: the switch's focus and ink (console2.css .v2-switch), the field's #C3C1BF hairline (.v2-input)",
+      "body": "A native checkbox drawn square, so the keyboard, forms and screen readers work as usual. `v-model` is the state, `label` or the slot the text and `hint` a muted line under it; `indeterminate` shows the bar. The check draws in 160ms on the strong ease-out and goes in 120ms. The row is 28px (40px on phones) and wholly pressable. Focus is the switch's 2px red outline.",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/Checkbox.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "code-block",
+      "title": "Code block",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "Code to read and copy, in one dark window on the site and in the product: a pill for each request or language and Copy on one row, a rule, then the code. There is always at least one pill.",
+      "use_for": "Requests, commands and configuration the person copies into their own tools.",
+      "never": [
+        "Code shortened with a fade or a \"show more\": show what they copy in full",
+        "Prose set in mono",
+        "A window with no pill: name the code, such as cURL, CSS or JSON"
+      ],
+      "source": "conare-web app/components/console/CodeWindow.vue, CodeCopy.vue, app/assets/css/code-window.css",
+      "body": "A long line scrolls sideways under a fade (`fade-x`) at the edge with more past it.",
+      "requires": [],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/ui/CodeBlock.vue",
+        "components/ui/CodeCopy.vue",
+        "composables/useCopy.ts"
+      ],
+      "examples": [
+        "Product",
+        "Single"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "code-pop",
+      "title": "Code pop",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "Code that opens from a \"Show code\" button: the request behind a result. It opens in place: the code takes its own line under the row, in the dark code window, and pushes what follows.",
+      "use_for": "\"Show code\" beside a result: the request that produced it.",
+      "never": [
+        "Code the person must read to continue: show it on the page",
+        "Long files",
+        "A floating window over the results: it belongs to the row"
+      ],
+      "source": "conare-web app/components/console/CodePop.vue (version 2, Opens in place), app/components/console/CodeWindow.vue",
+      "body": "Put it in a wrapping flex row (`flex flex-wrap items-center`): the button takes the row's end and the code its own line\nunder it. `opened` starts it open; `tab` names the code's pill (cURL for a curl command by default).",
+      "requires": [
+        "code-block"
+      ],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/ui/CodePop.vue"
+      ],
+      "examples": [
+        "OpensInPlace",
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "collapsible",
+      "title": "Collapsible",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "A part that opens in place and pushes what follows: the row grows to its content over 260ms and closes in 180ms, the content fading up from a slight blur, the chevron turning. From the keyboard it opens at once.",
+      "use_for": "Folding away what most people skip: advanced settings, the request behind a result, a long prompt.",
+      "never": [
+        "The main content of a page",
+        "Several that should open one at a time: that is an accordion"
+      ],
+      "source": "conare-web app/assets/css/console2.css (.v2-collapse, .v2-prompt-text, .v2-chev), app/components/console/CodePop.vue (opens in place). New in Conare's style: shadcn's collapsible.",
+      "body": "",
+      "requires": [],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/ui/Collapsible.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "command-palette",
+      "title": "Command palette",
+      "type": "registry:ui",
+      "group": "product",
+      "description": "One box for everything, opened by ⌘K, / or the sidebar's search: documents as you type, namespaces, pages and actions. It opens and closes without animation; the input keeps focus and the arrows move the highlighted row.",
+      "use_for": "Jumping anywhere and finding any document from any page of the console.",
+      "never": [
+        "An open or close animation: it is used many times a day",
+        "Tab moving focus out of the box",
+        "Fetching inside it: the app passes documents for the query it hears"
+      ],
+      "source": "conare-web app/components/console/Command.vue, app/assets/css/console2.css (.v2-cmd, .v2-cmd-box, .v2-cmd-list, .v2-cmd-bar, .v2-cmd-foot, .v2-cmd[data-skin=\"1\"])",
+      "body": "Bind ⌘K and / in the app to `open = true`. Listen for `query` and pass back `documents` (and `searching` while they\nload). `select` gives `{ kind: 'search' | 'document' | 'namespace' | 'page' | 'action', ... }`; it closes on every pick\nbut the search row, which the app opens as a full search. `tone=\"light\"` draws it on the paper without the title bar.\n\nThe results scroll under a fade (`fade-y`) at the edge with more past it.",
+      "requires": [],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/product/CommandPalette.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "comparison-table",
+      "title": "Comparison table",
+      "type": "registry:block",
+      "group": "site",
+      "description": "What each plan includes, side by side: a row per thing, a column per plan, the red square for included and a hairline for not, in the double rule.",
+      "use_for": "Comparing plans or editions under a pricing table.",
+      "never": [
+        "Green ticks or red crosses",
+        "Colors that carry the meaning alone"
+      ],
+      "source": "No comparison table in conare-web; set from its pricing cards (pricing.vue: the rule, the plan names in Faculty Glyphic, the red square marker)",
+      "body": "`rows` are `{ feature, values }` with a value per plan: `true`, `false` or a few words. Included and not are said aloud (`included`, `excluded`). On phones it scrolls sideways and fades at its edges.",
+      "requires": [
+        "section-head"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/site/ComparisonTable.vue"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "contact-page",
+      "title": "Contact page",
+      "type": "registry:block",
+      "group": "site",
+      "description": "Contact: the head, the ways to reach the team on the left, the form on the right in the double rule with its one dark button. It calls nothing: it emits submit, and shows what happens next once the app says it is sent.",
+      "use_for": "A website's contact page.",
+      "never": [
+        "Calling the API from the component: it emits submit",
+        "More than four fields"
+      ],
+      "source": "No contact page in conare-web; set from its request-access page (app/pages/request-access.vue: the fields, the dark send button, what happens next) and the website's double rule",
+      "body": "Built on `site-page`: `header`, `footer` and `announcement` are its props, and the `logo` and `actions` slots go to the header (`sheet-actions` too, in web components). Wire `submit` (the answers: name, email, company, message) to your own endpoint, set `sending` while it runs and `sent` when it is done, or `error` with the server's words.",
+      "requires": [
+        "button",
+        "field",
+        "section-head",
+        "site-page",
+        "textarea"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/site/ContactPage.vue"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "context-menu",
+      "title": "Context menu",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "Menu's square panel and rows opened where the pointer right-clicks, or under the focused row with Shift+F10 or the menu key. Arrows, Home, End and Escape are handled; focus returns to what was clicked.",
+      "use_for": "Shortcuts for a row in a dense list (open, copy an ID, download, delete), alongside a visible way to do the same.",
+      "never": [
+        "The only way to an action: right-clicks are hidden; keep a Menu or a button in the row",
+        "Destructive actions that don't confirm: hold them where they are, or confirm with AlertDialog"
+      ],
+      "source": "conare-web app/assets/css/console2.css (.v2-menu, .v2-menu-item), app/composables/useMenu.ts. New in Conare's style: shadcn's context menu, on Menu's rows opened at the pointer.",
+      "body": "Put `data-context=\"<id>\"` on each row; `open` emits the id of the row that was clicked, so one menu serves the list.",
+      "requires": [
+        "popover"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/ui/ContextMenu.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "copy-button",
+      "title": "Copy button",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "The copy button beside a value: the label swaps from Copy to Copied in place, the width of the longer word, so nothing moves, and the check draws its stroke.",
+      "use_for": "Copying a secret or an endpoint next to it.",
+      "never": [
+        "Lowercase labels",
+        "A copy button whose width changes when it says Copied"
+      ],
+      "source": "conare-web app/components/console/Copy.vue (version 2, Copy to Copied)",
+      "body": "",
+      "requires": [],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/ui/CopyButton.vue",
+        "composables/useCopy.ts"
+      ],
+      "examples": [
+        "Key",
+        "Endpoint"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "copy-text",
+      "title": "Copy text",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "An identifier or an endpoint as typed, in mono, with a quiet button that copies it and shows a check.",
+      "use_for": "Key IDs, model names, namespace IDs and endpoints in a definition list or a table cell.",
+      "never": [
+        "Secrets after they were first shown",
+        "Sentences: copy text holds one value",
+        "A long value without room: it truncates, with the whole value in its title"
+      ],
+      "source": "conare-web app/components/console/CopyText.vue",
+      "body": "`value` is what is copied and shown, `label` names it for the button (\"copy key id\"). The button is the console's: a 20px round hover in the sunken grey, as the branch draws it, the one round shape in the console. Copying uses the library's `useCopy`, which falls back to the copy command where the Clipboard API is refused. For a labelled Copy button use CopyButton.",
+      "requires": [],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/ui/CopyText.vue",
+        "composables/useCopy.ts"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "count",
+      "title": "Count",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "The one counter: a number that counts to its new value when it changes, so a syncing source's documents visibly climb. Reduced motion shows the new value at once.",
+      "use_for": "Numbers that change while the person watches: documents, rows read, the amount of the row pointed at.",
+      "never": [
+        "Numbers that never change on the page",
+        "A count that rolls on every visit: use `once`"
+      ],
+      "source": "conare-web app/components/console/Count.vue, app/composables/useFirstVisit.ts",
+      "body": "It eases to each new `value` over 700ms. `rolls` counts up from zero as it lands; `once=\"key\"` does that only the first time the key shows in the tab's session. `format` reads it as an amount or a share (a function from the number to its text); plain counts get thousands separators. Figures are tabular, so the width holds.",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/Count.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "credit-history",
+      "title": "Credit history",
+      "type": "registry:product",
+      "group": "product",
+      "description": "Every time credits were added, newest first. A team can add credits for years, so it never opens all at once: the latest five, then five more at a time, each line landing on the rule.",
+      "use_for": "Billing: checking what came in and when.",
+      "never": [
+        "Every line open at once on a long history",
+        "A list that outgrows its window: past six lines it scrolls inside it"
+      ],
+      "source": "conare-web app/components/console/billing/Grants.vue (take 1, show more), GrantLines.vue, app/composables/useGrow.ts, app/assets/css/console2.css (.v2-ledger, .v2-grantlist, .v2-grantbar, .v2-more)",
+      "body": "Pass `grants` as `{ amount, reason, date }` (amount in the `currency`'s units, date as ISO); the order is by date,\nnewest first. `step` sets how many show at a time.",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/product/CreditHistory.vue"
+      ],
+      "examples": [
+        "ShowMore"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "data-table",
+      "title": "Data table",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "A table people narrow and order: filter chips over it (Label, or Label: pick, the menu's check on the choice), heads that sort, and five rows at a time with Show N more under them, each new row landing on the one above.",
+      "use_for": "Namespaces, sources, searches and logs long enough to filter.",
+      "never": [
+        "Paging a list read from the top: show more",
+        "Filters that hide that they are on: the button says the pick",
+        "Sorting a column of mixed kinds"
+      ],
+      "source": "conare-web app/components/console/search/FilterChip.vue, FilterMenu.vue, billing/Grants.vue (show more), app/assets/css/console2.css (.v2-scope, .v2-table, .v2-more, .v2-ledger li[data-new])",
+      "body": "",
+      "requires": [
+        "filter-chip",
+        "pagination",
+        "table"
+      ],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/ui/DataTable.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "date-picker",
+      "title": "Date picker",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "A date in a field: the 32px text field that opens a Calendar in Menu's square panel under it, flipping above when there is no room. Picking closes it and returns focus to the field; Escape closes it unchanged.",
+      "use_for": "A date in a form: an expiry, a report's range start.",
+      "never": [
+        "A native date input beside it: one way to pick",
+        "A red border at rest: only when invalid, with Field's message"
+      ],
+      "source": "conare-web app/assets/css/console2.css (.v2-input, .v2-menu). New in Conare's style: shadcn's date picker, Calendar in a Popover with a Field trigger.",
+      "body": "",
+      "requires": [
+        "calendar",
+        "popover"
+      ],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/ui/DatePicker.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "dialog",
+      "title": "Dialog",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "A native dialog: the title, a close button, the form. Focus stays inside; Escape and the scrim close it. Square, a hairline, no shadow; it rises 8px as it opens.",
+      "use_for": "A short form that belongs to the page behind it: invite members, a new organization.",
+      "never": [
+        "Confirming routine actions: hold the danger button for what removes",
+        "Long flows: give them a page"
+      ],
+      "source": "conare-web app/components/console/Modal.vue, app/assets/css/main.css (.c-modal)",
+      "body": "",
+      "requires": [],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/ui/Dialog.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "direction",
+      "title": "Direction",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "Sets the reading direction for what is inside it, left to right or right to left, and gives it to components through useDirection(). Logical utilities follow it; code stays left to right, as the code windows do.",
+      "use_for": "A page or a block in a right-to-left language.",
+      "never": [
+        "Flipping code, keys or IDs",
+        "Physical left and right utilities inside it: use start and end"
+      ],
+      "source": "New in Conare's style (no Conare equivalent): the dir attribute with code windows held ltr",
+      "body": "",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/Direction.vue",
+        "composables/useDirection.ts"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "docs-blocks",
+      "title": "Docs blocks",
+      "type": "registry:ui",
+      "group": "site",
+      "description": "A docs page's body block by block: paragraphs, headings, lists led by a red square, callouts (a warning on the wash), ruled tables under a paper head, the code window, an endpoint's fields with nested ones behind a toggle, and link cards in the double rule whose pixel pattern turns red.",
+      "use_for": "Docs pages and guides written as data (one block per paragraph, list, table or sample).",
+      "never": [
+        "Prose set in mono",
+        "A callout for every paragraph",
+        "Headings past two levels"
+      ],
+      "source": "conare-web app/components/docs/Blocks.vue, Inline.vue, Fields.vue, Table.vue, Code.vue, app/content/patterns.ts, app/assets/css/docs.css (example-only item docs-blocks)",
+      "body": "A wide table scrolls sideways under a fade (`fade-x`); its frame stays whole.",
+      "requires": [
+        "code-block"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/site/DocsBlocks.vue",
+        "components/site/DocsInline.vue",
+        "components/site/DocsFields.vue",
+        "components/site/DocsTable.vue"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "document-download",
+      "title": "Document download",
+      "type": "registry:product",
+      "group": "product",
+      "description": "A document downloads when it is pressed, and what was pressed says so: the row's mark or the button turns to a check for a moment, since the browser's own bar can sit out of sight.",
+      "use_for": "Any list or result that holds a document.",
+      "never": [
+        "Opening a document in a panel",
+        "A download with no answer on the control that started it"
+      ],
+      "source": "conare-web app/components/console/namespaces/DownloadMark.vue, app/components/console/DownloadButton.vue, app/composables/useDocumentDownload.ts, app/assets/css/console2.css (.v2-docdl, .v2-swap)",
+      "body": "`useDocumentDownload()` returns `download(id, get, name?)`: `get` returns the document as a Blob or text from your own\nAPI. The mark and the button read the shared state by `id`, so pressing one answers on both.",
+      "requires": [
+        "button",
+        "loader"
+      ],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/product/DownloadMark.vue",
+        "components/product/DownloadButton.vue",
+        "composables/useDocumentDownload.ts"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "drawer",
+      "title": "Drawer",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "A panel that slides in from an edge over the page dimmed to 16%: the console's sidebar on a phone (left, 300px at most), or a choice from the bottom edge. In over 240ms on the strong ease-out, out in 180ms; Escape closes it at once.",
+      "use_for": "The console's navigation on a phone, and short choices on a phone where a menu would be cramped.",
+      "never": [
+        "Wide screens for navigation: the sidebar stays open there",
+        "Long forms: give them a page"
+      ],
+      "source": "conare-web app/assets/css/console2.css (.v2-side and .v2-side-scrim under 768px, .v2-sheet-backdrop), app/layouts/console.vue (the menu button). New in Conare's style: shadcn's drawer.",
+      "body": "Drawer shares Sheet's behavior (`useSheet`): a native modal dialog, the exit played before it closes, focus back to\nthe trigger. The default slot gets `close`.\n\nThe body scrolls under a fade (`fade-y`) at the edge with more past it.",
+      "requires": [
+        "sheet"
+      ],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/ui/Drawer.vue"
+      ],
+      "examples": [
+        "Navigation",
+        "Bottom"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "empty-state",
+      "title": "Empty state",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "A dashed box for a list with nothing in it yet: one line on what is missing and the actions that fill it.",
+      "use_for": "A namespace, a source list or results that are empty.",
+      "never": [
+        "An empty state with no way forward",
+        "Illustrations"
+      ],
+      "source": "conare-web app/assets/css/console2.css (.v2-empty)",
+      "body": "",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/EmptyState.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "eval-card",
+      "title": "Eval card",
+      "type": "registry:ui",
+      "group": "site",
+      "description": "A benchmark as a card: its name, our score and rank, the top five as bars with ours in red (kept in when it ranks lower), and the way to its page. The paper comes in under the pointer.",
+      "use_for": "The evals page and a model's page.",
+      "never": [
+        "A score without its metric and rank",
+        "More than one red bar",
+        "Bars that don't start at 0"
+      ],
+      "source": "conare-web app/components/home/EvalCard.vue, app/content/evals.ts (topRows, rankLabel, formatScore), app/assets/css/home.css (.eval-card)",
+      "body": "",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/site/EvalCard.vue"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "eval-viz",
+      "title": "Eval window",
+      "type": "registry:ui",
+      "group": "visuals",
+      "description": "One benchmark as a window: what it measures, the model's score and rank, then the leaderboard's rows entering in turn and their bars growing, the model's own row in red, and the benchmark's disclosure under them. VizWindow is the frame every product window shares.",
+      "use_for": "Benchmarks and how it works on the website, while the band is on screen. `items`, `pick` and `runs` make it one window for several results that crossfades between them.",
+      "never": [
+        "Running while off screen: set `active` only while it is in view",
+        "Inside the console",
+        "Figures without their source"
+      ],
+      "source": "conare-web app/components/home/EvalViz.vue, app/content/evals.ts, app/assets/css/home.css (.viz-*, .step-body, .step-swap)",
+      "body": "",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/visuals/EvalViz.vue",
+        "components/visuals/VizWindow.vue"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "facts",
+      "title": "Facts",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "Short facts about one thing, each a small hairline box with its name and value, so a row of them wraps cleanly.",
+      "use_for": "What a namespace, a connection or a key is, at the top of its panel.",
+      "never": [
+        "Values that need a sentence",
+        "More than six in a row"
+      ],
+      "source": "conare-web app/assets/css/console2.css (.v2-fact)",
+      "body": "",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/Facts.vue",
+        "components/ui/Fact.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "faq",
+      "title": "FAQ",
+      "type": "registry:ui",
+      "group": "site",
+      "description": "Questions in the website's double-rule frame, one open at a time. Wide, the list and the answer beside it, the open question's ground gliding to the next and the pointer's lighter ground following it; on phones each answer opens under its question as a red plus turns to a minus.",
+      "use_for": "The questions a buyer asks before booking a demo.",
+      "never": [
+        "Answers that hide a price or a claim without its receipt",
+        "Answers that push the page: wide, every answer shares one cell"
+      ],
+      "source": "conare-web app/components/home/Faq.vue, app/assets/css/home.css (.faq-*)",
+      "body": "",
+      "requires": [
+        "tag"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/site/Faq.vue"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "feature-grid",
+      "title": "Feature grid",
+      "type": "registry:ui",
+      "group": "site",
+      "description": "What a product does, a card per feature in the website's double rule: a red pixel pattern, the name in Faculty Glyphic and its line. One across on phones, two from 640px, three from 1024px.",
+      "use_for": "The band on a home or product page that says what it does, three to six things.",
+      "never": [
+        "More than six features: say the six that matter",
+        "Icons from an icon set: the marks are the hero tabs' pixel patterns",
+        "A feature without its line"
+      ],
+      "source": "conare-web app/pages/pricing.vue (the Enterprise cards: off-white in the double rule, led by a pattern), app/components/home/Products.vue (the grid's double rule), app/content/patterns.ts",
+      "body": "The marks take the hero tabs' four pixel patterns in turn. An odd last card on two columns takes the whole row.",
+      "requires": [
+        "section-head"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/site/FeatureGrid.vue"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "features-page",
+      "title": "Features page",
+      "type": "registry:block",
+      "group": "site",
+      "description": "A product's page: the head with the one dark call to action, what it does (feature grid), what it connects to (logo strip), one customer's words and the closing band, in the site's frame.",
+      "use_for": "A page per product or feature set.",
+      "never": [
+        "More than one feature grid: one page, one product",
+        "A second dark call to action above the closing band"
+      ],
+      "source": "conare-web app/pages/reranker.vue and pricing.vue (a page's head and bands), app/components/home/Products.vue, Integrations.vue",
+      "body": "Built on `site-page`: `header`, `footer` and `announcement` are its props, and the `logo` and `actions` slots go to the header (`sheet-actions` too, in web components).",
+      "requires": [
+        "button-link",
+        "call-to-action",
+        "feature-grid",
+        "logo-strip",
+        "section-head",
+        "site-page",
+        "testimonial"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/site/FeaturesPage.vue"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "field",
+      "title": "Field",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "Text input: 32px, a hairline that goes ink on focus, an optional leading icon at the 28px filter size, and a red border with its message when invalid. Field puts the label over it and the hint or error under it.",
+      "use_for": "Names, filters, queries and JSON filters. Every field has a visible label or an aria-label.",
+      "never": [
+        "A placeholder in place of a label",
+        "A red border at rest",
+        "Inputs under 16px on phones (the field switches to 16px there)"
+      ],
+      "source": "conare-web app/assets/css/console2.css (.v2-input, .v2-input-icon), app/design-system/examples/field/Product.vue",
+      "body": "",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/Input.vue",
+        "components/ui/Field.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "filter-chip",
+      "title": "Filter chip",
+      "type": "registry:ui",
+      "group": "product",
+      "description": "One filter as a menu button under the search box: its name, or the name and the pick once chosen, opening a radio list with Any first.",
+      "use_for": "The search's filters: app, type, author. A few side by side.",
+      "never": [
+        "A long list without a filter (use the scope menu)",
+        "Several picks in one chip"
+      ],
+      "source": "conare-web app/components/console/search/FilterChip.vue, app/assets/css/console2.css (.v2-scope, .v2-chev), app/design-system/examples/filter-chip/Product.vue (example-only in the branch)",
+      "body": "`label` names the filter, `any` the first row (its value is `''`, or `0` for numeric options), `options` the rest. The chip is 28px on the paper with a hairline; it takes an ink edge and the white ground while something is chosen or the menu is open, and its chevron turns. The menu is Menu's panel with `menuitemradio` rows and a check on the pick; arrows, Home, End and Escape work as in every Menu.\n\nIts list scrolls under a fade (`fade-y`) at the edge with more past it.",
+      "requires": [
+        "menu"
+      ],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/product/FilterChip.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "filter-menu",
+      "title": "Filter menu",
+      "type": "registry:ui",
+      "group": "product",
+      "description": "Every filter in one menu from the search box's bar: app, type and date as radio groups, the button counting what is on. A second press clears a pick; the menu stays open for the next.",
+      "use_for": "Narrowing a search or a list by a few independent facets.",
+      "never": [
+        "Filters that apply only after a separate Apply button",
+        "Checkboxes inside a group that takes one value"
+      ],
+      "source": "conare-web app/components/console/search/FilterMenu.vue, app/utils/searchFilters.ts, app/assets/css/console2.css (.v2-scope, .v2-filter-count, .v2-menu)",
+      "body": "Pass `groups` (`key`, `label`, `options`) and a v-model object with one value per key (`''` or `0` for none). For one\nbutton per filter, each naming its pick, use `filter-chip` instead: the console ships one or the other, not both.\n\nIts list scrolls under a fade (`fade-y`) at the edge with more past it.",
+      "requires": [
+        "menu"
+      ],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/product/FilterMenu.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "fix-button",
+      "title": "Fix button",
+      "type": "registry:ui",
+      "group": "product",
+      "description": "The fix for a failure: the website's dark button that signs in, counts the changes as they come back and ends on a check, all in one cell.",
+      "use_for": "Reconnecting a source that stopped syncing, in its row or in Home's banner.",
+      "never": [
+        "Actions that are not a fix",
+        "Two on one view",
+        "Moving the row while it works: every state stays in its cell"
+      ],
+      "source": "conare-web app/components/console/namespaces/FixButton.vue, app/assets/css/console2.css (.v2-fixbtn, .v2-states), app/design-system/examples/button/Brand.vue",
+      "body": "`state` is `broken`, `signing`, `catching` or `done`; the app moves it along after `press`. `count` is the changes so far (it counts up with Count, and the last count stays). `app` names the source in the label and for screen readers. `tone=\"red\"` is the red version, its squares running black. The black wipes off in 420ms (`--ds-duration-wipe`), longer than the console's usual 320ms ceiling because it reports a rare, slow action.",
+      "requires": [
+        "count",
+        "loader"
+      ],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/product/FixButton.vue",
+        "composables/usePixelGrid.ts"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "form",
+      "title": "Form",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "Fields stacked with their labels, errors shown once a field is left or the form is sent, a failure from the server above the actions, and the main action last.",
+      "use_for": "Creating or changing a thing with several fields: a key, an invite, a namespace.",
+      "never": [
+        "Errors while the first value is still being typed",
+        "The browser's own error bubbles",
+        "A red border at rest"
+      ],
+      "source": "New in Conare's style, composed from Field, Input and Button (console2.css .v2-input, main.css .c-help-error)",
+      "body": "`useForm(initial, rules)` holds `values`, the `errors` to show now, `sending` and `failure`. Each rule returns a message or nothing. Call `touch(key)` when a field is left. `submit(send)` checks every rule, runs `send` only when all pass and turns a thrown Error into `failure`. `<Form>` lays the fields 16px apart, shows `failure` in the red wash, puts the `actions` slot at the end and, on a send with errors, moves focus to the first field marked invalid.",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/Form.vue",
+        "composables/useForm.ts"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "glide-mark",
+      "title": "Gliding block",
+      "type": "registry:ui",
+      "group": "visuals",
+      "description": "One block for a whole list: it glides to the row under the pointer in 200ms and rests on the picked one when the pointer leaves, so moving down a list is one movement.",
+      "use_for": "Lists read by moving down them, such as prices, suggestions and the docs' sidebar.",
+      "never": [
+        "A row of separate hover fills in the same list",
+        "Touch screens: it follows the pointer only"
+      ],
+      "source": "conare-web app/composables/useGlideMark.ts, app/assets/css/console2.css (.v2-rowmark, .v2-priced)",
+      "body": "`useGlideMark(list, rest)` measures the list's `[data-glide-row]` children: call `point(i)` on pointer enter and focus, `leave()` on pointer leave, and `settle()` after the pick changes. `rest` returns the row to rest on, or null to hide. Draw the block with `<GlideMark :mark :instant />` first in the list, and lift the rows above it (`relative z-1`).",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/visuals/GlideMark.vue",
+        "composables/useGlideMark.ts"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "hero",
+      "title": "Hero",
+      "type": "registry:ui",
+      "group": "site",
+      "description": "The home's first band: the eyebrow tag, the headline in Faculty Glyphic with its red stop and letter reveal, one line and one action settling up in turn, then the red frame (the room grid, the burst and the grain in a triple rule) with the window in front and the teams as stepped tabs on its top, taking turns on a timer.",
+      "use_for": "The top of the home page.",
+      "never": [
+        "More than one hero on a page",
+        "Red past about 10% of the first screen",
+        "A timer that runs off screen or for reduced motion"
+      ],
+      "source": "conare-web app/components/home/Hero.vue, UseCases.vue (the frame and the team tabs), app/assets/css/home.css (.settle, .hero-frame, .uc-shell, .uc-frame, .uc-px-tab, .uc-fill)",
+      "body": "The headline is `highlight-text`: its letters wait faint and red, then settle to ink once, as the band comes on\nscreen (a `title` slot replaces it with plain markup). Put a `button-link` in the `action` slot: the dark one with\n`grain`, `pixels` and `arrow`, as the website has it. The `window` slot takes what each team asks; the example draws it\non `VizWindow`, the website's product window, re-keying its body on each turn so its parts rise again.",
+      "requires": [
+        "burst",
+        "cell-burst",
+        "highlight-text",
+        "room-grid",
+        "tag"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/site/Hero.vue"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "highlight-text",
+      "title": "Highlight text",
+      "type": "registry:ui",
+      "group": "visuals",
+      "description": "The headline reveal: each letter starts faint and red, fades up, then settles to ink, spreading from the centre or the start; trailing characters stay red.",
+      "use_for": "The website hero and section titles; the console's greeting and search headline, once per session.",
+      "never": [
+        "On a screen opened many times a day, every time",
+        "Body text",
+        "More than one on a screen"
+      ],
+      "source": "conare-web app/components/home/HighlightText.vue, app/assets/css/home.css and console2.css (.hl, .hl-char, .hl-word)",
+      "body": "`as` picks the heading level, `text` the words and `accent` the trailing characters that stay red (the hero's full stop). Letters wait at 20% in red, fade up over 200ms, then settle to the heading's colour over 400ms; lines start 100ms apart and letters 40ms apart from the centre (from the start on left-aligned text). It plays once, when the heading comes on screen. The words are read once by screen readers. Without JavaScript and with reduced motion the text just shows. The two curves and the 400ms step are tokens of their own (`--ds-easing-reveal-fade`, `--ds-easing-reveal-ink`, `--ds-duration-reveal`).",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/visuals/HighlightText.vue"
+      ],
+      "examples": [
+        "Site",
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "home-numbers",
+      "title": "Home numbers",
+      "type": "registry:block",
+      "group": "product",
+      "description": "The key numbers on Explorer's first screen, each leading to its page: documents, queries this month, the typical search. Three takes: a strip along the foot, the double rule with this month's bars, or a line under the box with the documents in the title.",
+      "use_for": "The first screen of a search page, where the box leads and the numbers stay quiet.",
+      "never": [
+        "Numbers that don't lead anywhere",
+        "More than three: the box is the page"
+      ],
+      "source": "conare-web app/components/console/search/Numbers.vue, app/pages/dashboard/search.vue (homenums 1 to 3), app/assets/css/console2.css (.v2-homefoot, .v2-homecards, .v2-homebars, .v2-homeline)",
+      "body": "`take` picks the layout: `strip`, `rule` or `line`. The documents and this month's queries count up the first time\nthey show in a session (`count`). The examples set them under Explorer's title (`highlight-text`) and its\n`search-box`.",
+      "requires": [
+        "count"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/product/HomeNumbers.vue"
+      ],
+      "examples": [
+        "FootStrip",
+        "DoubleRule",
+        "InTheTitle"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "home-page",
+      "title": "Home page",
+      "type": "registry:block",
+      "group": "site",
+      "description": "The website's home: the hero with the one dark call to action and the window in the red frame, who connects (logo strip), what it does (feature grid), one customer's words, the questions and the closing red band, in the site's frame.",
+      "use_for": "The home page of a website.",
+      "never": [
+        "A second dark call to action above the closing band",
+        "Red past about 10% of the first screen"
+      ],
+      "source": "conare-web app/pages/index.vue (the order of the bands), app/components/home/*.vue",
+      "body": "Built on `site-page`: `header`, `footer` and `announcement` are its props, and the `logo` and `actions` slots go to the header (`sheet-actions` too, in web components). The `window` slot is the hero's window: draw it on `VizWindow`, as the hero's example does. Every band takes its own props (`hero`, `logos`, `features`, `testimonial`, `faq`, `cta`), so leave out what a page does not have by building your own page from the same items.",
+      "requires": [
+        "button-link",
+        "call-to-action",
+        "faq",
+        "feature-grid",
+        "hero",
+        "logo-strip",
+        "site-page",
+        "testimonial"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/site/HomePage.vue"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "hover-card",
+      "title": "Hover card",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "A preview of what a link points to, in Menu's square panel: it opens after the pointer rests 300ms (at once on keyboard focus), lets the pointer cross into it, and closes when the pointer leaves both.",
+      "use_for": "A namespace, a source or a document named in text, where a glance saves a click.",
+      "never": [
+        "The only way to reach what it shows: the link must work on its own",
+        "Actions someone has to take: use Popover or Menu",
+        "Touch: a tap follows the link"
+      ],
+      "source": "conare-web app/assets/css/console2.css (.v2-menu's panel), app/components/console/Copy.vue (the tooltip's 300ms wait). New in Conare's style: shadcn's hover card.",
+      "body": "",
+      "requires": [
+        "popover"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/ui/HoverCard.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "input-otp",
+      "title": "Input OTP",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "A one-time code in square 32px cells, Geist Mono digits, the cell being typed into edged in ink.",
+      "use_for": "Codes from a sign-in email or an authenticator app.",
+      "never": [
+        "Passwords or keys",
+        "Cells that move focus on their own: it is one field"
+      ],
+      "source": "New in Conare's style: the field's hairline and ink focus (console2.css .v2-input), Geist Mono for codes",
+      "body": "One real input sits over the cells, so typing, paste, delete and the phone's code suggestion (`autocomplete=\"one-time-code\"`) work as in any field. `length` sets the cells (6), `split` puts a gap after that many, `numeric` keeps digits only. It emits `complete` with the code once full. `invalid` edges every cell in red; say what is wrong under it. Cells are 40px on phones.",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/InputOtp.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "item",
+      "title": "Item",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "One row of a card's list: 12px, its title on the left and what it is on the right, a hairline between rows. A row that opens something is one link that fills to the card's edges with the paper under the pointer, its chevron darkening; a row can carry a tool at its end.",
+      "use_for": "What a namespace or a key is, settings that open their page, sources as getting started lists them.",
+      "never": [
+        "Buttons inside a row that is a link",
+        "An arrow that moves on hover",
+        "A row of rows: a table for many columns"
+      ],
+      "source": "conare-web app/assets/css/console2.css (.v2-rows, .v2-row, .v2-row-link), app/components/console/Source.vue (source-row)",
+      "body": "",
+      "requires": [],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/ui/Item.vue",
+        "components/ui/ItemGroup.vue"
+      ],
+      "examples": [
+        "Product",
+        "Sources"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "kbd",
+      "title": "Kbd",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "A key or a shortcut: 11px in the face around it, plain or in a hairline box, hidden on touch screens.",
+      "use_for": "The shortcut at the end of the sidebar's search and of a command; keys named in help text.",
+      "never": [
+        "Shortcuts on touch screens",
+        "Mono or capitals for key names"
+      ],
+      "source": "conare-web app/assets/css/console2.css (.v2-side-search kbd), app/components/home/PromptBar.vue (the boxed key)",
+      "body": "Plain by default, in the colour around it. `boxed` draws the prompt bar's 1px box at 24% of the text colour with 4px across. It hides where the pointer is coarse.",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/Kbd.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "label",
+      "title": "Label",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "Field's label on its own: 12px in the soft grey, with an optional muted note such as optional.",
+      "use_for": "A control that is not in a Field: a slider's name, a group of checkboxes, a custom input.",
+      "never": [
+        "A placeholder in place of a label",
+        "Capitals or bold"
+      ],
+      "source": "conare-web app/assets/css/console2.css (the console's form labels), registry Field",
+      "body": "`for` ties it to the control's id; `hint` adds the muted note after it. Field already draws this label; use Label where there is no Field.",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/Label.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "legal-page",
+      "title": "Legal page",
+      "type": "registry:block",
+      "group": "site",
+      "description": "A page of policy text: on the left in the double rule, the page's sections, held in view, the one being read on the paper with the red square; beside it the tag, the title, when it was last updated and the text.",
+      "use_for": "Terms, privacy, a disclosure policy.",
+      "never": [
+        "Policy text in capitals beyond what the law asks for",
+        "Sections without ids: the side links lead to them"
+      ],
+      "source": "conare-web app/components/home/Legal.vue, app/pages/terms.vue",
+      "body": "Built on `site-page`: `header`, `footer` and `announcement` are its props, and the `logo` and `actions` slots go to the header (`sheet-actions` too, in web components). Each section's `blocks` takes docs-blocks' blocks; `intro` comes before the first section.",
+      "requires": [
+        "button-link",
+        "call-to-action",
+        "docs-blocks",
+        "site-page",
+        "tag"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/site/LegalPage.vue"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "link",
+      "title": "Link",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "Text that goes somewhere: ink with a quiet underline 4px under it that turns ink on hover, and the quiet link under a list that shows more of it.",
+      "use_for": "Links inside sentences and short link rows; Show 5 more under a list.",
+      "never": [
+        "Red links",
+        "Links that look like buttons, or buttons that look like links",
+        "An underline that moves or thickens on hover"
+      ],
+      "source": "conare-web app/assets/css/console2.css (.v2-link, .v2-more), app/design-system/examples/link/Product.vue",
+      "body": "`href` makes it an anchor (or pass `as` a router link component). `more` is the quiet link under a list: 12px medium in the soft grey, ink on hover, a button unless it has an href, with a 40px place to land on phones.",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/Link.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "list-detail-page",
+      "title": "List and detail page",
+      "type": "registry:block",
+      "group": "product",
+      "description": "A list and the page of one thing in it: the list with a filter and the one dark button, each row opening its thing; the thing's page with its name in mono, a way back, its facts and what it holds in a flush card.",
+      "use_for": "Namespaces, sources, keys: any list whose rows open a page of their own.",
+      "never": [
+        "Opening a row in a dialog: it opens as its own page",
+        "More than one dark button in a view",
+        "Loading as an empty page: rows keep their layout while they load"
+      ],
+      "source": "conare-web app/pages/dashboard/namespaces/index.vue and [namespace].vue, app/components/console/namespaces/Table.vue",
+      "body": "`v-model:open` is the open row's `name`, empty for the list: route it to your own addresses if each thing has one.\n`noun` names the things (namespace by default) in the filter, the back button and the dark button.",
+      "requires": [
+        "button",
+        "card",
+        "facts",
+        "field",
+        "overview-page",
+        "table"
+      ],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/product/ListDetailPage.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "loader",
+      "title": "Loader",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "The website's dot matrix: a 3 by 3 of 2px squares that blink in a sweep while something works, beside the word for what is working.",
+      "use_for": "A search running, a source syncing, a page loading slowly. It appears only after 300ms.",
+      "never": [
+        "A blank screen while loading",
+        "An empty state before the answer has landed",
+        "Any other spinner",
+        "Loops that run off screen"
+      ],
+      "source": "conare-web app/components/console/Matrix.vue, app/assets/css/console2.css (.v2-matrix)",
+      "body": "",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/DotMatrix.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "login-page",
+      "title": "Login page",
+      "type": "registry:ui",
+      "group": "site",
+      "description": "The sign-in page as it ships: the mark over one line while the app forwards to sign-in, or, when sign-in comes back with an error, the reason and the ways on (book a demo, request access, sign in again).",
+      "use_for": "The app's /login route, in front of its own sign-in provider.",
+      "never": [
+        "A sign-in form of its own: the provider asks for the email",
+        "Forwarding from the component: the app forwards and passes the error",
+        "More than one dark action"
+      ],
+      "source": "conare-web app/pages/login.vue (example-only item), on the library's Button and PixelButton and the brand mark",
+      "body": "Pass `error` as one of the sign-in callback's codes (`expired`, `cancelled`, `unavailable`, `failed`, `private`) or as\nyour own words, and the links: `signInHref`, `demoHref` and, for `private`, `requestHref`. Without an error it says\n\"Taking you to sign in.\" while the app forwards. `full` fills the window; set it off to place the page in a container.\n\nThe shipped page still wears the older console primitives (Inter 600 capitals, 8px corners, the bright red); here it is\ndrawn in the console's grammar: the Faculty Glyphic title, square controls, the dark pixel button for the one main action.",
+      "requires": [
+        "button"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/site/LoginPage.vue"
+      ],
+      "examples": [
+        "Site",
+        "Forwarding"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "logo-strip",
+      "title": "Logo strip",
+      "type": "registry:ui",
+      "group": "site",
+      "description": "Who uses it or what it connects to: the band's head, then a 64px cell per name in the website's double rule, two, three and six across. Names are wordmarks set as text in the type's colour.",
+      "use_for": "The band under a hero: the companies on it, or the apps it connects.",
+      "never": [
+        "Another company's real logo without its permission",
+        "Logos in colour: they sit in the type's colour",
+        "A count that leaves a row half full: pass multiples of six"
+      ],
+      "source": "conare-web app/components/home/Integrations.vue (the cells in the double rule)",
+      "body": "`mark` puts a small square before a name, for a wordmark that has one.",
+      "requires": [
+        "section-head"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/site/LogoStrip.vue"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "marked-text",
+      "title": "Marked text",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "A passage with the query's words in medium weight and ink, so the reader sees why it matched.",
+      "use_for": "Search results and passages shown for a query.",
+      "never": [
+        "Red or highlighted fills for matches",
+        "Marking words in text that was not searched"
+      ],
+      "source": "conare-web app/components/console/Marked.vue, app/utils/marks.ts",
+      "body": "Words of four letters or more in `query` are marked wherever they appear in `text`, ignoring case. Set the passage in the soft grey so the marked words in ink stand out. Each word carries its place as `--w` for a reveal that plays it in reading order.",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/MarkedText.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "menu",
+      "title": "Menu",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "A button that opens a short list of choices or actions: a square panel in a hairline, rows with a red square marker, counts and a check. Arrows, Home, End, Escape and Tab are handled.",
+      "use_for": "Switching organization, account actions, picking a scope or a page.",
+      "never": [
+        "Writing your own outside-click or arrow handling",
+        "Two or three views of one thing (use Tabs)",
+        "Shadows: the border sets it apart"
+      ],
+      "source": "conare-web app/composables/useMenu.ts, app/components/console/WorkspaceMenu.vue, app/assets/css/console2.css (.v2-menu)",
+      "body": "",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/Menu.vue",
+        "components/ui/MenuItem.vue",
+        "components/ui/MenuLabel.vue",
+        "components/ui/MenuSeparator.vue",
+        "composables/useMenu.ts"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "menubar",
+      "title": "Menubar",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "Menu triggers in a row on the paper, each opening Menu's square panel of rows. Left and Right move along the row and carry an open menu with them; pointing at another trigger while one is open switches at once.",
+      "use_for": "A tool with several groups of commands on one surface, such as a document or a namespace editor.",
+      "never": [
+        "Site or console navigation: use the Sidebar or the site header",
+        "One menu alone: use Menu"
+      ],
+      "source": "conare-web app/assets/css/console2.css (.v2-menu, .v2-menu-item, the sidebar head's trigger fill). New in Conare's style: shadcn's menubar.",
+      "body": "",
+      "requires": [
+        "popover"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/ui/Menubar.vue",
+        "components/ui/MenubarMenu.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "meter",
+      "title": "Meter",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "Progress as a 4px bar with an ink fill (the largest share red), or as one 6px square per step: done in ink, the next in red, the rest an empty hairline. It covers shadcn's progress.",
+      "use_for": "Credits left, setup's steps, a share in a table, a job's progress.",
+      "never": [
+        "Percentages with no label",
+        "A meter for something the person cannot change",
+        "A rounded or striped bar"
+      ],
+      "source": "conare-web app/assets/css/console2.css (.v2-meter, .v2-setupmeter), app/components/console/SetupMeter.vue",
+      "body": "",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/Meter.vue",
+        "components/ui/StepMeter.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "native-select",
+      "title": "Native select",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "The browser's own select drawn as the console's field: square, the hairline that darkens on hover and turns to a 2px ink edge on focus, and its own 12px chevron.",
+      "use_for": "A pick from a short, fixed list inside a form: a role, an expiry, a namespace. The system picker opens on phones.",
+      "never": [
+        "A list that needs a filter or marks (use Menu or the scope menu)",
+        "Options that do something at once (use Menu)"
+      ],
+      "source": "conare-web app/assets/css/main.css (select.c-input, .c-input-sm), console2.css (.cv2 .c-input: square, 32px)",
+      "body": "Options go in the slot. `small` is the 28px, 12px size for rows of filters; `mono` sets the options in Geist Mono for namespaces and IDs; `invalid` turns the edge red. The chevron is Lucide's ChevronDown at 12px in the muted grey, in place of the branch's inline image, so its colour follows the theme. 40px and 16px on phones.",
+      "requires": [],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/ui/NativeSelect.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "newsletter",
+      "title": "Newsletter",
+      "type": "registry:block",
+      "group": "site",
+      "description": "A sign-up for news by email: the band's head, one email field and the one dark button in the double rule; the app sends it and says what follows.",
+      "use_for": "A newsletter or updates sign-up on a marketing page.",
+      "never": [
+        "A second button or a checkbox wall",
+        "Asking for more than the email"
+      ],
+      "source": "No newsletter in conare-web; set from its contact form (the field, the pixel button and the double rule) and the pages' heads",
+      "body": "`submit` carries the address (`onSubmit` in React). `sent` shows `sent-text` in place of the form; `error` shows the server's answer under it.",
+      "requires": [
+        "button",
+        "field",
+        "section-head"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/site/Newsletter.vue"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "not-found-page",
+      "title": "Not found page",
+      "type": "registry:block",
+      "group": "site",
+      "description": "The page for an address that leads nowhere: the code in the tag, one line on what happened, the one dark way home, then where people usually meant to go, in the site's frame.",
+      "use_for": "The website's 404 page, and its 500 page (code 500 with its own line).",
+      "never": [
+        "A joke in place of the way home",
+        "A page without the header and footer"
+      ],
+      "source": "No 404 page in conare-web; set from its pages' heads (pricing.vue), the dark button link and the double rule",
+      "body": "Built on `site-page`: `header`, `footer` and `announcement` are its props, and the `logo` and `actions` slots go to the header (`sheet-actions` too, in web components).",
+      "requires": [
+        "button-link",
+        "section-head",
+        "site-page"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/site/NotFoundPage.vue"
+      ],
+      "examples": [
+        "Site",
+        "ServerError"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "overview-band",
+      "title": "Overview band",
+      "type": "registry:ui",
+      "group": "product",
+      "description": "What Conare is doing for a team, in one band above the numbers: the pipeline's four steps with its numbers, three questions a buyer asks answered in a sentence each, or the dark live panel with the last searches landing.",
+      "use_for": "The top of Home or an overview, answering \"is it working?\".",
+      "never": [
+        "More than one band on a page",
+        "Red for anything but the step or answer that broke",
+        "A live log that keeps scrolling: the last six land once and hold"
+      ],
+      "source": "conare-web app/components/console/overview/Band.vue, app/assets/css/console2.css (.v2-pipeline, .v2-questionrow, .v2-liveband, .v2-livelog, .v2-logdot)",
+      "body": "",
+      "requires": [
+        "count"
+      ],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/product/OverviewBand.vue"
+      ],
+      "examples": [
+        "Pipeline",
+        "ThreeQuestions",
+        "Live"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "overview-page",
+      "title": "Overview page",
+      "type": "registry:block",
+      "group": "product",
+      "description": "Overview as it ships, a page composition: the setup line, the greeting and how many documents agents search beside the API key's window in the double rule, Queries beside Credits, the largest namespaces. The console's frame and page head come with it.",
+      "use_for": "The console's home for a team that is running. Start a console page from ConsoleFrame and ConsolePage.",
+      "never": [
+        "A search box on the overview: agents search, people check",
+        "More than one dark button: Create API key is the page's one",
+        "Loading as an empty page: rows keep their layout while they load"
+      ],
+      "source": "conare-web app/components/console/Home.vue (take 7, lead 5), app/components/console/platform/*.vue, app/layouts/console.vue, app/components/console/Page.vue, app/assets/css/platform.css, console2.css (.v2-home-lead, .v2-stats, .v2-meter, .v2-setupline)",
+      "body": "`ConsoleFrame` is the console's layout: the Sidebar (a drawer under 768px), the TopBar with the trail and the page\nunder it; `head` takes the workspace switcher and `foot` the account menu. `ConsolePage` is every other page's head:\nthe title (Faculty Glyphic, or mono for an identifier), its actions on the right, the body in 24px steps.\n\nThe greeting is `highlight-text` (its letters settle from faint red to ink, once); the documents line counts up the\nfirst time in a session (`count`); the key window is the website's product window (`VizWindow`, as `step-viz` and the\nother viz items use it) over the grain and a sheet of cells (`cell-burst`), playing again every 9 seconds while the\ntab shows. `OverviewQueries` draws its charts with `chart`: `BarChart` for queries per day, `LineChart` for the last\n24 hours' latency (`latency` is its series, p50 and p95).",
+      "requires": [
+        "button",
+        "cell-burst",
+        "chart",
+        "count",
+        "eval-viz",
+        "highlight-text",
+        "loader",
+        "sidebar",
+        "table",
+        "tabs",
+        "top-bar"
+      ],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/product/OverviewPage.vue",
+        "components/product/OverviewQueries.vue",
+        "components/product/ConsoleFrame.vue",
+        "components/product/ConsolePage.vue",
+        "composables/useChart.ts"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "pagination",
+      "title": "Pagination",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "Pages of a long list: two secondary icon buttons around the page count in tabular figures. Show more is the quiet line under a list that opens a few more at a time, the console's usual way.",
+      "use_for": "Show more under credits added, matches and history; pages only where a page is a place to come back to, such as an audit log.",
+      "never": [
+        "Numbered page links in the console",
+        "Pages for a list read from the top",
+        "Infinite scroll"
+      ],
+      "source": "conare-web app/assets/css/console2.css (.v2-more), app/components/console/billing/Grants.vue; pages are new, on Button",
+      "body": "",
+      "requires": [
+        "button"
+      ],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/ui/Pagination.vue",
+        "components/ui/ShowMore.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "parse-page",
+      "title": "Parse page",
+      "type": "registry:block",
+      "group": "product",
+      "description": "Parse as a page: files to try and your own (pressed or dropped), the reading beside the page, then what comes next: add it to a namespace, copy the Markdown, or open the API call in place.",
+      "use_for": "Trying Parse on a file, and showing a prospect what Conare reads that a plain PDF reader doesn't.",
+      "never": [
+        "Storing the file without asking: Parse stores nothing until it is added to a namespace",
+        "Claiming a person's own file was read when the reading is a sample"
+      ],
+      "source": "conare-web app/pages/dashboard/parse.vue, app/assets/css/console2.css (.v2-parsefiles, .v2-parsefile, .v2-parsenext)",
+      "body": "`ParsePage` takes the files to try (`samples`), the picked one (`v-model:chosen`), the `answer` and whether it is\n`reading`; it emits `file` for a file pressed or dropped and `add` with the namespace picked. `namespaces` (name and\nsize) fill the `scope-menu` that picks where the file goes; `curl` opens under API call (`code-pop`). Put it in a\n`ConsolePage` titled Parse.",
+      "requires": [
+        "button",
+        "code-pop",
+        "copy-button",
+        "loader",
+        "parse-views",
+        "scope-menu"
+      ],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/product/ParsePage.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "parse-views",
+      "title": "Parse views",
+      "type": "registry:block",
+      "group": "product",
+      "description": "A document as Conare read it, three ways: Page beside text (the page and the dark window of what was read, joined by pointing; it ships), Regions (every region numbered with its OCR confidence) and Plain or Conare (a plain reader's text and Conare's, one handle between).",
+      "use_for": "An opened document's reading, and Parse: showing what was read from a page, region by region.",
+      "never": [
+        "A real customer's document as the sample",
+        "Hiding low OCR confidence: under 80% is marked to check by hand"
+      ],
+      "source": "conare-web app/components/console/parse/Reading.vue, Sheet.vue, Read.vue, Output.vue, Regions.vue, Plain.vue, app/utils/parse.ts, app/assets/css/console2.css (.v2-parse*)",
+      "body": "`ParseReading` takes the reading (`answer`, a `ParseAnswer` from `useParse.ts`: the page's regions with their boxes,\nreading order and OCR confidence, its Markdown and what a plain reader gets) and `version` (1, 2 or 3). The page is\ndrawn from the regions, so the page and the text can't disagree; in an app, put the file's own page image under them.\n\nEach view scrolls under a fade (`fade-xy`, down and across) at the edge with more past it.",
+      "requires": [
+        "count",
+        "table"
+      ],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/product/ParseReading.vue",
+        "components/product/ParseSheet.vue",
+        "components/product/ParseRead.vue",
+        "components/product/ParseOutput.vue",
+        "components/product/ParseRegions.vue",
+        "components/product/ParsePlain.vue",
+        "composables/useParse.ts"
+      ],
+      "examples": [
+        "PageBesideText",
+        "Regions",
+        "PlainOrConare"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "popover",
+      "title": "Popover",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "Menu's square panel for any content: a few settings, a short form, a note. It grows 4px from its trigger over 200ms and leaves in 120ms, flips to the side with room and stays inside the viewport. Focus moves in; Escape, a press outside or tabbing away closes it.",
+      "use_for": "A few settings or a short form that belongs to one button, without leaving the page.",
+      "never": [
+        "A list of actions: use Menu",
+        "Content someone must read to go on: put it on the page",
+        "A shadow or a rounded corner: the hairline sets it apart"
+      ],
+      "source": "conare-web app/assets/css/console2.css (.v2-menu: the panel, its 4px drop and 160ms entrance), app/composables/useMenu.ts (Escape, outside press, focus return). New in Conare's style: shadcn's popover.",
+      "body": "`PopoverPanel` and `usePopover` are what every floating overlay here is drawn with (Tooltip, HoverCard, ContextMenu,\nMenubar, DatePicker, Select, Combobox): the panel is portalled to the body (or into the open dialog its trigger sits\nin), placed with `position: fixed` beside its anchor or at a point, flipped to the side with room and kept 8px inside\nthe viewport, and it follows its anchor on scroll and resize. Opened or closed from the keyboard it does not animate.",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/Popover.vue",
+        "components/ui/PopoverPanel.vue",
+        "composables/usePopover.ts"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "price-viz",
+      "title": "Price window",
+      "type": "registry:ui",
+      "group": "visuals",
+      "description": "Accuracy against price as a window: each provider a square point on a log price axis, the model's own in red with the corner nothing beats; pointing at a point or its row scopes it with a crosshair, brackets, axis readouts and its exact figures.",
+      "use_for": "Price and accuracy on the website, the product menu and an eval's page.",
+      "never": [
+        "Prices that differ from the pricing page",
+        "A linear price axis: prices span orders of magnitude"
+      ],
+      "source": "conare-web app/components/home/PriceViz.vue, app/content/evals.ts (priceAccuracy), app/assets/css/home.css (.price-*, .viz-*)",
+      "body": "",
+      "requires": [
+        "eval-viz"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/visuals/PriceViz.vue"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "pricing-page",
+      "title": "Pricing page",
+      "type": "registry:block",
+      "group": "site",
+      "description": "Pricing: the head with the one dark call to action, each group of prices (pricing table), Enterprise as the page's one red block with what its terms cover, the questions and the closing band.",
+      "use_for": "A website's pricing page.",
+      "never": [
+        "A second red block: Enterprise is the one",
+        "Prices hidden behind a contact form, except Enterprise"
+      ],
+      "source": "conare-web app/pages/pricing.vue, app/content/pricing.ts",
+      "body": "Built on `site-page`: `header`, `footer` and `announcement` are its props, and the `logo` and `actions` slots go to the header (`sheet-actions` too, in web components). Each of `groups` is one `pricing-table`; its `key` is the anchor. Leave out `enterprise` and the red block goes with it.",
+      "requires": [
+        "button-link",
+        "call-to-action",
+        "cell-burst",
+        "faq",
+        "pricing-table",
+        "room-grid",
+        "section-head",
+        "site-page"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/site/PricingPage.vue"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "pricing-table",
+      "title": "Pricing table",
+      "type": "registry:ui",
+      "group": "site",
+      "description": "One group of prices: its case on the left, its cards on the right in the double rule. Each card's price large in tabular figures with its unit, one line, and what it includes led by the red square.",
+      "use_for": "A pricing page, one table per group of prices.",
+      "never": [
+        "A plan marked as the popular one: the prices make the case",
+        "Prices without their unit",
+        "A button on every card: the page's head carries the one action"
+      ],
+      "source": "conare-web app/pages/pricing.vue (each group: its case, its cards in the double rule), app/content/pricing.ts",
+      "body": "Give each table its own `titleId` when a page has several. An odd last card takes the whole row.",
+      "requires": [
+        "section-head"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/site/PricingTable.vue"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "product-menu",
+      "title": "Product menu",
+      "type": "registry:ui",
+      "group": "site",
+      "description": "The header's Product dropdown: the products with their one line, a rule, then benchmarks and pricing, beside a window that shows the one pointed at. One highlight glides between items. It is the navigation menu.",
+      "use_for": "The site header's Product item (shadcn's navigation-menu).",
+      "never": [
+        "Links that are not products",
+        "Opening on hover on touch screens: there it opens on press"
+      ],
+      "source": "conare-web app/components/home/ProductMenu.vue, app/content/home.ts, app/assets/css/home.css (.menu-mark, .menu-mark-dot, .menu-text, .step-art, .footer-grain, .nav-link)",
+      "body": "ProductMenu renders an `<li>`: put it first in the header's list of links (SiteHeader does). Give each item its\nwindow through the `window` slot (`item`, `index`, `active`, `plays`, which changes each time a window should play\nagain): the website uses its product windows (`product-viz`, `eval-viz` and `price-viz`) over a `cell-burst`, as the\nexample does. Without the slot each item shows a small plain window with its name and line. The highlight is\n`glide-mark`'s `useGlideMark`.",
+      "requires": [
+        "cell-burst",
+        "glide-mark"
+      ],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/site/ProductMenu.vue"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "product-viz",
+      "title": "Product window",
+      "type": "registry:ui",
+      "group": "visuals",
+      "description": "A product as a small window: search's question and best passage, a source syncing, a file parsed to Markdown, an embedding's values as bars, results reranked into a new order.",
+      "use_for": "The website's product cards and the header's product menu, one window per product (`id`: search, sync, parse, embed, rerank).",
+      "never": [
+        "A window for a product that is not one of the five",
+        "Running while off screen: set `active` only while it is in view"
+      ],
+      "source": "conare-web app/components/home/ProductViz.vue, app/assets/css/home.css (.viz-*)",
+      "body": "",
+      "requires": [
+        "eval-viz"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/visuals/ProductViz.vue"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "prompt-bar",
+      "title": "Prompt bar",
+      "type": "registry:ui",
+      "group": "site",
+      "description": "A floating dark glass bar that asks the website: it types its phrases, raises its templates when focused, answers the questions it has answers for in a thread that grows upward, and comes into view once the page scrolls, or from the start when docked.",
+      "use_for": "The website's pages and the docs, at the bottom of the window.",
+      "never": [
+        "Two bars on a page",
+        "Questions it cannot answer without a link onward: every answer ends on its page",
+        "Inside the console"
+      ],
+      "source": "conare-web app/components/home/PromptBar.vue, app/assets/css/home.css (.prompt-dock, .prompt-glass, .prompt-template, .prompt-go, .prompt-thread, .prompt-word, .prompt-mic)",
+      "body": "Pass the `phrases` it types, the `templates` (each with a pixel or Lucide-style `icon`, and an `answer` and `more` link,\nor an `href` to open), the `href` its fallback links to, and the `words` it says. It sends nothing anywhere: it emits\n`ask` with each question and opens links in a new tab. `shortcuts` shows the key and focuses the bar with Cmd+K or\nCmd+I; `docked` shows it from the start; `voice` adds a mic that dictates with the browser's own speech recognition,\nonly where the browser has it.\n\nIt rises in over 280ms on the strong ease-out and leaves in 200ms; the templates settle up 40ms apart, the thread opens\non grid rows over 160ms and the answer's words fade up 22ms apart. The suggestion's arrow opens out beside its label\nwithout moving. Reduced motion keeps colour and opacity only, and the placeholder stops typing.\n\nThe thread scrolls under a fade (`fade-y`) at the edge with more past it.",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/site/PromptBar.vue"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "radio-group",
+      "title": "Radio group",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "One of a few, all in view: square 16px boxes with an ink square in the picked one, rows 28px with a label and an optional hint.",
+      "use_for": "Two to five options that each need a line: a reading mode, a region, a plan.",
+      "never": [
+        "Round radios",
+        "More than five options (use NativeSelect or Menu)",
+        "Views of one thing (use Tabs)"
+      ],
+      "source": "New in Conare's style: the field's hairline (console2.css .v2-input), the switch's ink and red focus (.v2-switch)",
+      "body": "Native radios drawn square, so arrows move the pick and the group is one Tab stop. `options` are `{ value, label, hint?, disabled? }`, `label` names the group, `inline` lays them in a row. The picked box takes an ink edge and its 8px square settles in from 0.6 in 120ms (reduced motion fades it). Focus is the switch's red outline.",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/RadioGroup.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "request-access-page",
+      "title": "Request access page",
+      "type": "registry:ui",
+      "group": "site",
+      "description": "The request-access page as it ships: the mark, the title and one line, then the part for where the person is: sign in first, try again, the form (work email, name, company, team size, what they want to build) or what happens next.",
+      "use_for": "Where sign-in sends someone it does not admit: no invite, outside the open sign-up domains.",
+      "never": [
+        "Calling the API from the component: it emits submit, retry and edit",
+        "Asking for an email the person did not sign in with",
+        "A personal address taken for a company without saying so"
+      ],
+      "source": "conare-web app/pages/request-access.vue (example-only item), on the library's Field, Input, Button and PixelButton and the brand mark",
+      "body": "`state` is the app's: `loading` (its line appears only after 300ms), `signed-out`, `failed`, `form` or `sent`. Pass the\nrequester's `email`, `personalEmail` and `name`, the `teamSizes` to choose from, `sending` and `error` while it posts,\nand the links. `submit` carries `{ name, company, teamSize, useCase }`; `retry` asks the app to load again and `edit`\nto reopen the form.\n\nThe shipped page wears the older console primitives (Inter 600 capitals, 8px corners, lowercase button labels, cards with\nno inset); here it is drawn in the console's grammar with sentence-case labels and the card's 16px inset. The team size\nis a NativeSelect and the use case a Textarea, each in a Field.",
+      "requires": [
+        "button",
+        "field",
+        "native-select",
+        "textarea"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/site/RequestAccessPage.vue"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "resizable",
+      "title": "Resizable",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "Two panes and the hairline between them, as the docs panel sits beside the page. The hairline turns ink under the pointer, while dragged and when focused; drag it or use the arrow keys.",
+      "use_for": "A page beside its docs, a list beside the item it opens, a page beside the text read from it.",
+      "never": [
+        "A thick grip or a dotted handle: the hairline is the handle",
+        "Panes that can close to nothing: set a minimum"
+      ],
+      "source": "New in Conare's style, from conare-web app/assets/css/console2.css (.v2-docs: the hairline edge beside the page)",
+      "body": "Each pane scrolls under a fade (`fade-xy`, down and across) at the edge with more past it.",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/Resizable.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "roll-text",
+      "title": "Roll text",
+      "type": "registry:ui",
+      "group": "visuals",
+      "description": "A label that rolls up to a copy of itself on hover or focus: the console's pace for its lists, the website's for its footer.",
+      "use_for": "Short links: the website footer, the console's source list and the docs panel's links.",
+      "never": [
+        "Long labels that wrap",
+        "Buttons whose label changes, such as Copy and Copied (use TextSwap)",
+        "Touch screens: it rolls only where a pointer can rest"
+      ],
+      "source": "conare-web app/components/home/RollText.vue, app/assets/css/console2.css and home.css (.roll, .roll-a, .roll-b, .roll-host)",
+      "body": "Put the class `ds-roll-host` on the link or button that holds it: hovering it (where a pointer can rest) or reaching it with Tab rolls the label in 160ms on the console's curve. `pace=\"console\"` moves the label 110% so no sliver shows; `pace=\"site\"` moves it one line, as the website's footer does. Reduced motion holds it still.",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/visuals/RollText.vue"
+      ],
+      "examples": [
+        "Product",
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "room-grid",
+      "title": "Room grid",
+      "type": "registry:ui",
+      "group": "visuals",
+      "description": "The hero frame as a room in one-point perspective: orthogonals to the back wall and rings closing up as they recede. A tile lights under the pointer, and a few light on their own, trading places while the frame is on screen.",
+      "use_for": "Behind the hero's window, with the burst.",
+      "never": [
+        "Anywhere but the hero",
+        "Tiles lighting for reduced motion: they hold still"
+      ],
+      "source": "conare-web app/components/home/RoomGrid.vue, app/assets/css/home.css (.room-tiles)",
+      "body": "",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/visuals/RoomGrid.vue"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "scope-menu",
+      "title": "Scope menu",
+      "type": "registry:ui",
+      "group": "product",
+      "description": "Where a search looks: every namespace or one, each with its app's mark and size, a filter once the list is long, arrows and Escape. Its parts are the combobox (a list with a filter) and the select (a listbox on Menu's panel with a check on the pick).",
+      "use_for": "The search box's scope and anywhere a namespace is picked; Combobox for any long list to pick from, Select for a few options in a form.",
+      "never": [
+        "A native select in the console",
+        "Namespaces without their app's mark",
+        "A filter on a list of six or fewer"
+      ],
+      "source": "conare-web app/components/console/ScopeMenu.vue, app/components/console/namespaces/Mark.vue, app/assets/css/console2.css (.v2-scope, .v2-menu, .v2-menu-item, .v2-menu-count, .v2-input-icon, .v2-chev)",
+      "body": "`Combobox` is shadcn's combobox and `Select` its select; both take `options` (`value`, `label`, `hint`, `disabled`,\n`pinned`) and v-model. The panel portals to the body (or the open dialog the trigger sits in), flips to the side with\nroom and stays 8px inside the viewport. Opened from the keyboard it shows at once; Escape returns focus to the trigger.\n\nThe combobox's list scrolls under a fade (`fade-y`) at the edge with more past it.",
+      "requires": [
+        "popover"
+      ],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/product/ScopeMenu.vue",
+        "components/ui/Combobox.vue",
+        "components/ui/Select.vue"
+      ],
+      "examples": [
+        "Product",
+        "Select",
+        "Combobox"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "scroll-area",
+      "title": "Scroll area",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "A region that scrolls on its own with the console's thin scrollbars: the thumb in neutral-600 on a clear track, neutral-400 on the dark window. Native scrolling, so wheel, touch and keyboard all work.",
+      "use_for": "A long list in a fixed box, a wide row that scrolls sideways, code in a dark window.",
+      "never": [
+        "Custom drawn scrollbars that break native scrolling",
+        "A scroll box a keyboard can't reach: give it a label",
+        "Hiding the scrollbar on content people need to find"
+      ],
+      "source": "conare-web app/assets/css/main.css (html scrollbar-color), app/assets/css/console2.css (.v2-agentwin-code)",
+      "body": "Its edges fade while there is more to scroll (`fade-y`, `fade-x` across, `fade-xy` both ways): nothing is cut off by a hard edge.",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/ScrollArea.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "search-box",
+      "title": "Search box",
+      "type": "registry:ui",
+      "group": "product",
+      "description": "The search box and the library's input group: the question, attached files, the plus for more data, the scope, the Enter cue and the red arrow.",
+      "use_for": "Asking a question of the data; any field with controls before and after it (the input group).",
+      "never": [
+        "A single-line input for questions",
+        "A second submit button",
+        "Red on the box itself: the arrow is the only red"
+      ],
+      "source": "conare-web app/design-system/examples/field/Search.vue, app/assets/css/console2.css (.v2-searchbox, .v2-searchbox-bar, .v2-attach, .v2-addbtn)",
+      "body": "`v-model` is the question; Enter searches and Shift+Enter breaks the line. `attached` lists files (`adding`, `added`, `failed`) that the app owns: the box emits `files` when they are picked or dropped, `paste` with pasted text, `remove` with a key, `connect` for Connect an app, and `submit` with the question. The add menu names `target`; turn it off with `:add-menu=\"false\"`. The `scope` slot takes where it looks: the console's `scope-menu`. `busy` shows the dot matrix in the arrow while the search runs.",
+      "requires": [
+        "button",
+        "loader",
+        "menu"
+      ],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/product/SearchBox.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "search-results",
+      "title": "Search results",
+      "type": "registry:ui",
+      "group": "product",
+      "description": "Best match in its card with the written answer or the passage, the pages around it and its source; then the other matches as quiet lines, each opening in place to its passage. The query's words are in medium weight, and each opened result can download its document.",
+      "use_for": "A person checking what Conare finds, from Home, the sidebar or a namespace.",
+      "never": [
+        "A results page that leaves for another page to read a passage: lines open in place",
+        "Colour alone for the query's words: they are medium weight in ink",
+        "Scores without two decimals"
+      ],
+      "source": "conare-web app/components/console/search/BestMatch.vue, Answer.vue, PagePreview.vue, app/components/console/Marked.vue, app/utils/marks.ts, app/assets/css/console2.css (.v2-rise, .v2-others, .v2-match, .v2-expand, .v2-pg, .v2-cite, [data-flash])",
+      "body": "The query's words are marked with `marked-text`. Pass `download` (a function taking the result) and the best match and\neach opened match end on the dark Download button from `document-download`, which says Downloaded once it has; hand it\n`useDocumentDownload()` with your API's bytes. The `actions` slot adds other buttons beside it.",
+      "requires": [
+        "document-download",
+        "loader",
+        "marked-text"
+      ],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/product/SearchResults.vue",
+        "components/product/AnswerText.vue",
+        "components/product/PagePreview.vue",
+        "composables/useSearchResults.ts"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "search-run",
+      "title": "Search run",
+      "type": "registry:ui",
+      "group": "product",
+      "description": "A search on the request's clock: Searching shimmers over the namespaces it reads while cells of the index flicker; then Found in, the namespaces with results keep a red square, each document found is a red square that names itself, and the footer gives the count, when it finished, the API's time and Show code.",
+      "use_for": "Home and the command palette, while a search runs and after, under the results.",
+      "never": [
+        "Fake delays: it follows the request",
+        "Running when nothing was asked",
+        "Red beyond the found squares and the count"
+      ],
+      "source": "conare-web app/components/console/SearchRun.vue, app/assets/css/console2.css (.v2-run, .v2-runchip, .v2-index, .v2-flick, .v2-hit, .v2-hitbtn, .v2-shimmer)",
+      "body": "Pass `code`, the request as your app sends it, and the footer ends on Show code (`code-pop`): the request opens under\nthe footer in the dark code window. Without it the footer stops at the API's time.",
+      "requires": [
+        "code-pop"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/product/SearchRun.vue",
+        "composables/useSearchResults.ts"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "searches-page",
+      "title": "Searches page",
+      "type": "registry:block",
+      "group": "product",
+      "description": "Searches as it ships, a page composition: every search an agent ran, newest first, with the page's one filter in its head. A row opens in place to what the agent read, its documents to download, and why a search went wrong with what to do about it.",
+      "use_for": "Checking what search handed an agent, and finding the searches to fix.",
+      "never": [
+        "A second filter: the outcome is the page's one",
+        "Opening a search in a panel: it opens under its row",
+        "Every row at once on a long log: twelve, then twelve more"
+      ],
+      "source": "conare-web app/pages/dashboard/searches.vue, app/components/console/searches/Log.vue, Simple.vue, Outcome.vue, Acts.vue, utils/searchLog.ts, app/assets/css/console2.css (.v2-table, .v2-rowgrow, .v2-logsimple, .v2-chev, .v2-more)",
+      "body": "`SearchesLog` is the table alone (rows with `question`, `agent`, `outcome`, `tookMs`, `when`, `passages`, and a `why`\nand `fix` when a search went wrong); `SearchesPage` puts it under the page head with the filter (`v-model:show`) and\nthe empty state. The branch's other two takes (Trace, the list beside one search; Most asked, questions counted once)\nare not ported.",
+      "requires": [
+        "button",
+        "document-download",
+        "empty-state",
+        "overview-page",
+        "table",
+        "tabs"
+      ],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/product/SearchesPage.vue",
+        "components/product/SearchesLog.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "section-head",
+      "title": "Section head",
+      "type": "registry:ui",
+      "group": "site",
+      "description": "How the website heads a page or a band: the red tag in the site's capitals, the line in Faculty Glyphic on 1.15 lines, one muted line and the one action under it. Centred, or started at the left beside its content.",
+      "use_for": "The head of a website page (as h1) or of a band (as h2) that has no head of its own.",
+      "never": [
+        "In the console: its pages use ConsolePage",
+        "Two actions in one head",
+        "A tag longer than a word or two"
+      ],
+      "source": "conare-web app/components/home/Tag.vue, app/pages/pricing.vue and blog/index.vue (the heads), Products.vue and Integrations.vue (the bands' heads)",
+      "body": "`as=\"h1\"` for the page's own head; bands default to h2. Put a `button-link` in the `action` slot: the dark one with\n`grain`, `pixels` and `arrow` for a page's one main call to action. `titleId` names the heading, so the band around it\ncan say `aria-labelledby`.",
+      "requires": [
+        "tag"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/site/SectionHead.vue"
+      ],
+      "examples": [
+        "Site",
+        "Start"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "separator",
+      "title": "Separator",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "The hairline as its own part: 1px in the edge colour, across or down. Inset is the menu's, running out to the panel's edges with 4px of air above and below.",
+      "use_for": "Between two parts of a card, between groups in a menu, between links in a row.",
+      "never": [
+        "A shadow or a thicker rule to separate",
+        "A rule where spacing already separates"
+      ],
+      "source": "conare-web app/assets/css/console2.css (.v2-menu-sep, .v2-rows)",
+      "body": "",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/Separator.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "settings-page",
+      "title": "Settings page",
+      "type": "registry:block",
+      "group": "product",
+      "description": "Settings as the console draws it: one title and its parts as line tabs, switching in place, each part the settings table. General: the company's name to edit in place, its ID and when it joined, then Sign out. Members: who is in, with Invite members. Sign-in: each way in with its switch.",
+      "use_for": "A console's settings. Start a console page from ConsoleFrame and ConsolePage.",
+      "never": [
+        "A form page per setting: edits open in their row",
+        "More than one dark button: Invite members on Members, Save while editing",
+        "Calling the API from the component: it emits rename, invite, remove, toggle and signOut"
+      ],
+      "source": "conare-web app/components/console/settings/SettingsFrame.vue (take 3: the parts as tabs), app/pages/dashboard/settings/index.vue, members.vue, sign-in.vue",
+      "body": "`v-model:part` is the open tab (`general`, `members`, `sign-in`). The page draws on ConsolePage (from overview-page)\nand Table's `settings` variant, whose last column of buttons is one width.",
+      "requires": [
+        "button",
+        "copy-text",
+        "field",
+        "overview-page",
+        "switch",
+        "table",
+        "tabs",
+        "tag"
+      ],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/product/SettingsPage.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "sheet",
+      "title": "Sheet",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "A panel at the right edge over a dimmed page, the console's docs panel: 420px, a hairline edge, the 48px bar with the title and a close button. It slides 16px in over 220ms and leaves in 160ms; Escape closes it at once and focus returns.",
+      "use_for": "Reading or editing something beside the page without leaving it: docs, a document's details, a source's settings.",
+      "never": [
+        "A short question or a confirmation: use Dialog or AlertDialog",
+        "Navigation on a phone: use Drawer",
+        "A shadow: the hairline edge and the scrim set it apart"
+      ],
+      "source": "conare-web app/assets/css/console2.css (.v2-docs, .v2-docs-bar, .v2-docs-body and their transitions; .v2-sheet-backdrop for the scrim). New in Conare's style: shadcn's sheet.",
+      "body": "`useSheet` is the slide-in behavior Sheet and Drawer share: a native modal dialog (focus stays inside, the page is\ninert), the exit played before the dialog closes, Escape at once, focus back to the trigger.\n\nThe body scrolls under a fade (`fade-y`) at the edge with more past it.",
+      "requires": [
+        "popover"
+      ],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/ui/Sheet.vue",
+        "composables/useSheet.ts"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "shimmer-text",
+      "title": "Shimmer text",
+      "type": "registry:ui",
+      "group": "visuals",
+      "description": "Words that say something is working: a lighter band runs across them for as long as the work does. Reduced motion shows them still.",
+      "use_for": "A search or a sync under way, in the few words that say so.",
+      "never": [
+        "Text that is already done",
+        "Whole sentences of body text",
+        "A shimmering block in place of a loading row (rows keep their layout)"
+      ],
+      "source": "conare-web app/assets/css/console2.css (.v2-shimmer)",
+      "body": "The band runs right to left every 1.4s in the muted grey's lighter step. Remove it when the work ends, and put the sentence in `role=\"status\"` so the change is read out. Pair it with the dot matrix (Loader) when the wait is long.",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/visuals/ShimmerText.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "sidebar",
+      "title": "Sidebar",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "The console's navigation: a label over each group, a row with its icon and count, a red edge on the page you are on, and a count that turns red when something failed.",
+      "use_for": "Moving between the console's pages. It stays open; on a phone the app shows it as a drawer over the page.",
+      "never": [
+        "Counts that never change",
+        "A second level of rows: a page's own sections go in Tabs"
+      ],
+      "source": "conare-web app/assets/css/console2.css (.v2-side, .v2-nav-label, .v2-nav-link, .v2-nav-status)",
+      "body": "The rows scroll under a fade (`fade-y`): an edge with more past it fades over 24px, so no row is ever cut off.",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/Sidebar.vue",
+        "components/ui/SidebarLabel.vue",
+        "components/ui/SidebarLink.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "site-footer",
+      "title": "Site footer",
+      "type": "registry:ui",
+      "group": "site",
+      "description": "The website's foot on the dark gray under the grain: the mark and the line with the legal row under them, the link columns (each label rolling up to a copy of itself under the pointer), and the wordmark cut off by the page edge. Pinned, it waits under the page and is uncovered as the page scrolls off it.",
+      "use_for": "Every page of the website.",
+      "never": [
+        "In the console",
+        "Links that need more than a word or two"
+      ],
+      "source": "conare-web app/components/home/Footer.vue, app/content/home.ts (footerColumns, wordmarkD)",
+      "body": "",
+      "requires": [
+        "cell-burst",
+        "roll-text"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/site/SiteFooter.vue"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "site-header",
+      "title": "Site header",
+      "type": "registry:ui",
+      "group": "site",
+      "description": "The website header: the logo, the Product menu and the links on the page's true center with a paper block gliding under them, the two buttons at the edge; below 768px a square button folds the links into a sheet.",
+      "use_for": "The top of every website page.",
+      "never": [
+        "A translucent bar: the red footer under the page would tint it",
+        "More than one dark button in it"
+      ],
+      "source": "conare-web app/components/home/Header.vue, app/composables/useNavMarks.ts, app/assets/css/home.css (.nav-mark, .nav-link, .menu-btn, .menu-grid, .mobile-menu)",
+      "body": "`actions` renders twice, in the bar and in the phone sheet (`place` says which). Mark where the reader is with a link's\n`current`, or `product-current` while the products are on screen.\n\nOn a phone, a menu taller than the screen scrolls under a fade (`fade-y`).",
+      "requires": [
+        "product-menu"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/site/SiteHeader.vue"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "site-page",
+      "title": "Site page",
+      "type": "registry:block",
+      "group": "site",
+      "description": "Every website page's frame: the announcement bar if there is one, the header, the page in main on its own ground, and the footer pinned under it, uncovered as the page scrolls off it.",
+      "use_for": "The frame of a website page. The page templates (home-page, pricing-page and the rest) are built on it.",
+      "never": [
+        "In the console: use ConsoleFrame",
+        "A page without the footer: it is how the site leads on",
+        "A second header inside main"
+      ],
+      "source": "conare-web app/pages/index.vue, pricing.vue and blog/index.vue (the .home frame: AnnouncementBar, Header, main over the pinned Footer)",
+      "body": "`header` takes SiteHeader's props (`items`, `more`, `links`, `homeHref`, `homeLabel`), `footer` SiteFooter's (`columns`,\n`tagline`, `legal`, `legalLinks`) and `announcement` AnnouncementBar's. The `logo` and `actions` slots go to the header;\n`actions` renders twice, in the bar and in the phone sheet (`place` says which; in web components put the buttons in\n`actions` and again in `sheet-actions`). The page goes in the default slot.",
+      "requires": [
+        "announcement-bar",
+        "product-menu",
+        "site-footer",
+        "site-header"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/site/SitePage.vue"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "skeleton",
+      "title": "Skeleton",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "Loading that is never empty: a held part is the real part drawn from a blank record, its layout and rules kept and its content hidden, so nothing moves when the answer lands. The rules come in after 300ms, so a fast answer never shows them.",
+      "use_for": "Table rows, cards and lists while their data loads. The dot matrix beside a word for work that takes longer.",
+      "never": [
+        "A shimmer block or gray bars",
+        "A layout that jumps when the data lands",
+        "Showing the rules before 300ms"
+      ],
+      "source": "conare-web app/assets/css/console2.css ([data-held], .v2-held-in), app/composables/useHeld.ts",
+      "body": "",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/Skeleton.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "slider",
+      "title": "Slider",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "A value on a range: the meter's 4px track with ink up to the value and a square 12px ink thumb.",
+      "use_for": "A number where the range matters more than the exact figure: passages per search, a minimum score.",
+      "never": [
+        "Exact values a person would rather type (use Input)",
+        "A round or growing thumb",
+        "Animating the thumb: it follows the hand"
+      ],
+      "source": "New in Conare's style: the meter's track (console2.css .v2-meter), the switch's square thumb and red focus (.v2-switch)",
+      "body": "A native range input, so arrows, Page Up and Down, Home and End work. `v-model` is the number; `min`, `max` and `step` as usual; `label` names it and `valueText` reads a formatted value. Show the value beside it in tabular figures. The row is 28px (40px on phones) and takes the pointer anywhere along it.",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/Slider.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "source-row",
+      "title": "Source row",
+      "type": "registry:product",
+      "group": "product",
+      "description": "A source as getting started lists it: its app's mark and name, linking to the source, then its sync's state as a tag, and with detail its last and next sync.",
+      "use_for": "Lists of sources: getting started, a namespace's sources, a sidebar note.",
+      "never": [
+        "A source without its app's mark",
+        "Red for anything but a failed sync"
+      ],
+      "source": "conare-web app/components/console/Source.vue, app/assets/css/console2.css (.c-badge under .cv2)",
+      "body": "`AppMark` draws an app's logo when you pass `logo`, otherwise a square tile with its initial; the library ships no\nthird-party logos. Word `synced` and `next` in the reader's terms (\"2 hours ago\").",
+      "requires": [
+        "tag"
+      ],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/product/SourceRow.vue",
+        "components/product/AppMark.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "stat",
+      "title": "Stat",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "A label over a number in a row of stats, split by hairlines. A stat that drives a chart is a button: it fills with the paper under the pointer, and the pinned one stays filled with a red edge on top.",
+      "use_for": "The few numbers a card is about: queries this month, today, latency.",
+      "never": [
+        "More than four in a row",
+        "A stat with no unit or period"
+      ],
+      "source": "conare-web app/assets/css/console2.css (.v2-stats, .v2-stat, .v2-stat-value)",
+      "body": "",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/Stats.vue",
+        "components/ui/Stat.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "step-viz",
+      "title": "Step window",
+      "type": "registry:ui",
+      "group": "visuals",
+      "description": "How it works' window: one search shown step by step as an agent window, from the ask to what changed, with a shimmering status, records as chips, the dot matrix and a ticking timer; picking a step crossfades what is in it.",
+      "use_for": "How it works and the docs' introduction (`step` 0 to 3; `runs` replays the picked one).",
+      "never": [
+        "Steps that do not happen in the product",
+        "Running while off screen: set `active` only while it is in view"
+      ],
+      "source": "conare-web app/components/home/StepViz.vue, app/assets/css/home.css (.viz-*, .step-body, .step-swap)",
+      "body": "",
+      "requires": [
+        "eval-viz"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/visuals/StepViz.vue"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "steps",
+      "title": "Steps",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "Steps that open one at a time: the one to do is the only open thing, a finished step folds to a line that says what came of it, and a step not reached is dimmed and locked.",
+      "use_for": "A short job done in order on one page, such as sending data by API or setting up single sign-on.",
+      "never": [
+        "Steps that could be done in any order",
+        "More than five"
+      ],
+      "source": "conare-web app/components/console/byapi/Step.vue, app/components/console/Opens.vue, app/composables/useMoveSteps.ts, app/assets/css/console2.css (.v2-movesteps, .v2-movestep, .v2-rowgrow)",
+      "body": "`useSteps()` keeps the state: `state(n)` for each Step, `reach(n)` when a step is done (it opens the next), `toggle(n)`\non a head's `open`, `reset()` to start again.",
+      "requires": [],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/ui/Steps.vue",
+        "components/ui/Step.vue",
+        "composables/useSteps.ts"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "subprocessor-table",
+      "title": "Subprocessor table",
+      "type": "registry:ui",
+      "group": "site",
+      "description": "The subprocessors as a policy page's ruled table in the double rule: who, what for, what data and where, each name linking to its data-processing terms in the red.",
+      "use_for": "The subprocessors page and the privacy policy's list.",
+      "never": [
+        "Vendors not on the signed list",
+        "How the product works (models, engines, which call goes where)"
+      ],
+      "source": "conare-web app/components/home/SubprocessorTable.vue, app/assets/css/home.css (.legal-table, .legal a)",
+      "body": "A wide table scrolls sideways under a fade (`fade-x`); its frame and outline stay whole.",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/site/SubprocessorTable.vue"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "suggestion-chips",
+      "title": "Suggestion chips",
+      "type": "registry:ui",
+      "group": "product",
+      "description": "Questions to start from under the search box, each ending on the namespace that answers it; a block glides to the one pointed at.",
+      "use_for": "Home, before anything is asked.",
+      "never": [
+        "Questions the data cannot answer",
+        "More than one row on a desktop"
+      ],
+      "source": "conare-web app/components/console/search/SuggestChips.vue (take 3, the gliding block), app/assets/css/console2.css (.v2-chip-tagged, .v2-chip-mark, .v2-sg-tag)",
+      "body": "`items` are `{ q, ns, logo? }`: the question, the namespace and the app's 10px mark. Picking one emits `ask` with it. The paper block glides on transform and size in 160ms on the console's curve, placed without a glide the first time the pointer arrives, and fades in 120ms when it leaves. The tag under it goes a shade darker. The branch's other two takes (the pixel fill and the roll) were not picked and are not ported.",
+      "requires": [],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/product/SuggestionChips.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "switch",
+      "title": "Switch",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "On or off with no words: a square thumb in a square track. The row beside it says what the state means. Black when on, grey while it can't be changed.",
+      "use_for": "A setting that is on or off, such as email sign-in.",
+      "never": [
+        "On and Off written beside it",
+        "A switch with no line saying what it does"
+      ],
+      "source": "conare-web app/components/console/Switch.vue, app/assets/css/console2.css (.v2-switch)",
+      "body": "",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/Switch.vue"
+      ],
+      "examples": [
+        "States"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "table",
+      "title": "Table",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "Rows of one kind of thing: a paper head in sentence case, 40px rows, numbers in tabular figures, IDs in mono, and a status column of tags. Settings and the audit log share one plainer table with buttons one width.",
+      "use_for": "Namespaces, sources, keys, members, the audit log.",
+      "never": [
+        "A table for one subject with a chart (use Card)",
+        "Capitals in heads",
+        "A scroll box a keyboard can't reach"
+      ],
+      "source": "conare-web app/assets/css/console2.css (.v2-table, .c-table), app/assets/css/main.css (.c-table)",
+      "body": "Framed, the rows scroll sideways under a fade (`fade-x`); the hairline frame stays whole.",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/Table.vue"
+      ],
+      "examples": [
+        "Product",
+        "Settings"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "tabs",
+      "title": "Tabs",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "A few views of one thing: line tabs for a page's sections (an ink underline and a red square on the current one) and the segmented control for a chart's view or range, its white block gliding to the pick.",
+      "use_for": "Documents and Settings on a namespace; Volume and Latency on a chart; 1h, 24h and 7d.",
+      "never": [
+        "Actions (use Button)",
+        "More than six views (use Menu)",
+        "Bold on the current tab: the underline marks it"
+      ],
+      "source": "conare-web app/assets/css/console2.css (.v2-tabline, .v2-tabs)",
+      "body": "",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/Tabs.vue",
+        "components/ui/LineTabs.vue"
+      ],
+      "examples": [
+        "Line",
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "tag",
+      "title": "Tag",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "A short label for a state or a kind. In the console: ready in a hairline, syncing in black with the dot matrix, failed in the red wash with its square, quiet notes in grey. On the website: 10px capitals on the red.",
+      "use_for": "A source's status, an organization's \"default\", an invite's \"invited\"; the website's section labels.",
+      "never": [
+        "Colour alone: the word carries the state",
+        "Capitals in the console",
+        "A tag as a button"
+      ],
+      "source": "conare-web app/components/console/Status.vue, app/components/home/Tag.vue, app/assets/css/console2.css (.c-badge)",
+      "body": "",
+      "requires": [
+        "loader"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/ui/Tag.vue",
+        "components/ui/StatusTag.vue",
+        "components/ui/SiteTag.vue"
+      ],
+      "examples": [
+        "Product",
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "testimonial",
+      "title": "Testimonial",
+      "type": "registry:ui",
+      "group": "site",
+      "description": "One customer's words in the website's double rule: the tag, the quote in Faculty Glyphic, centred and balanced, then who said it: the company's square initial, the role and the company.",
+      "use_for": "One quote on a home or product page, from a customer who agreed to it.",
+      "never": [
+        "An invented person: attribute a quote to a role at the company",
+        "A carousel of quotes",
+        "Stars or ratings"
+      ],
+      "source": "No equivalent in conare-web; set from the website's rules: the FAQ's double rule (Faq.vue), the section tag (Tag.vue), Faculty Glyphic for display text, the square avatar (AccountMenu.vue)",
+      "body": "",
+      "requires": [
+        "avatar",
+        "tag"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/site/Testimonial.vue"
+      ],
+      "examples": [
+        "Site"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "text-swap",
+      "title": "Text swap",
+      "type": "registry:ui",
+      "group": "visuals",
+      "description": "Two labels in one cell, so nothing around them moves: the first leaves up, the next arrives from below with a touch of blur, and a check draws its stroke.",
+      "use_for": "A button or a status that changes its words in place: Copy prompt to Copied, Connect to Connected.",
+      "never": [
+        "Labels of very different lengths: the cell takes the longer and the button would look loose",
+        "More than two states (use FixButton's stacked states)"
+      ],
+      "source": "conare-web app/assets/css/console2.css (.v2-swap), app/design-system/examples/text-swap/Product.vue (example-only in the branch)",
+      "body": "`on` picks the label: the `a` slot when false, `b` when true. The leaving label fades and blurs over 160ms while it moves 5px in 220ms on the strong ease-out; a Lucide check in `b` draws its stroke after 40ms. The hidden label is `aria-hidden`, so a screen reader reads the current one. Reduced motion keeps the cross-fade only.",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/visuals/TextSwap.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "textarea",
+      "title": "Textarea",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "Several lines of text: 13px on 20px lines, the hairline that darkens on hover and turns to a 2px ink edge on focus, red when invalid.",
+      "use_for": "Pasted text, a note, a description. Put it in a Field.",
+      "never": [
+        "A question to search (use the search box)",
+        "A red border at rest",
+        "Under 16px on phones"
+      ],
+      "source": "conare-web app/assets/css/main.css (textarea.c-input), console2.css (.cv2 .c-input: square), app/components/console/AddDocuments.vue",
+      "body": "`v-model` is the text, `rows` the height (4), `invalid` the red edge. Focus thickens the edge to 2px while the padding gives a pixel back, so the text does not move. It grows by hand downward only.",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/Textarea.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "toast",
+      "title": "Toast",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "A short note at the bottom right saying what just happened: black, for four seconds, three at most. Pointing at one holds them, and a hidden tab stops their time.",
+      "use_for": "Confirming something that left the screen: a deleted document.",
+      "never": [
+        "Errors that need an answer: keep them where they happened",
+        "What the page already shows"
+      ],
+      "source": "conare-web app/components/console/Toasts.vue, app/composables/useToast.ts, app/assets/css/console2.css (.v2-toast)",
+      "body": "",
+      "requires": [],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/ui/Toaster.vue",
+        "composables/useToast.ts"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "toggle-group",
+      "title": "Toggle group",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "Options that stay pressed on the segmented control's track, several at once or one that can be let go.",
+      "use_for": "Kinds of document a search returns; an ordering that can be turned off.",
+      "never": [
+        "Views of one thing (use Tabs)",
+        "Actions (use Button or ButtonGroup)"
+      ],
+      "source": "conare-web app/assets/css/console2.css (.v2-tabs with aria-pressed)",
+      "body": "Tabs' look with `aria-pressed` buttons in a labelled group. `multiple` makes the model an array of values; otherwise it is one value or null, and pressing the pressed one lets it go. With one at most, the white block glides to the pick in 180ms where the browser has anchor positioning. A new file beside Tabs, which stays as it is.",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/ToggleGroup.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "toggle",
+      "title": "Toggle",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "A pressable chip that stays on: a red square at its start and an ink edge while it is on.",
+      "use_for": "One option in a row of options or filters: exact words, include archived.",
+      "never": [
+        "A setting saved at once (use Switch)",
+        "A pick of one from several (use ToggleGroup or Tabs)"
+      ],
+      "source": "conare-web app/assets/css/console2.css (.v2-chip, .v2-chip-pick with aria-pressed)",
+      "body": "`v-model` is pressed or not (`aria-pressed`). On hover the 4px red square shows and the edge goes ink; while on, both stay. A press gives the paper fill. 40px on phones.",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/Toggle.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "tooltip",
+      "title": "Tooltip",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "An icon button's name in the inverse fill, 11px, under its trigger: 300ms wait under the pointer, at once on keyboard focus, 125ms in. Right after another tooltip it shows at once.",
+      "use_for": "Naming icon buttons in rows and toolbars.",
+      "never": [
+        "Anything someone needs to read or act on: put it on the page",
+        "A tooltip on a button that already has a label",
+        "Showing on touch: a tap presses the button"
+      ],
+      "source": "conare-web app/components/console/Copy.vue (version 1's tip, .v2-copy1-tip). New in Conare's style: shadcn's tooltip, on usePopover so it flips and stays inside the viewport.",
+      "body": "",
+      "requires": [
+        "popover"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/ui/Tooltip.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "top-bar",
+      "title": "Top bar",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "The 48px bar over every console page: breadcrumbs, each step back a link, the page itself in ink, a namespace in mono. Its crumbs are the breadcrumb.",
+      "use_for": "Saying where you are and the way back, over every console page.",
+      "never": [
+        "Repeating the page's title as a heading right under it",
+        "Actions that belong to the page: they go in the page's head"
+      ],
+      "source": "conare-web app/layouts/console.vue (the header), app/assets/css/console2.css (.v2-bar, .v2-crumb, .v2-mono)",
+      "body": "`Breadcrumb` is shadcn's breadcrumb: pass `items` (`label`, `href`, `mono`), the last is the page. Give `as` your router\nlink (`NuxtLink`) to navigate without a reload.",
+      "requires": [],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/ui/TopBar.vue",
+        "components/ui/Breadcrumb.vue"
+      ],
+      "examples": [
+        "Product",
+        "Breadcrumb"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "typography",
+      "title": "Typography",
+      "type": "registry:ui",
+      "group": "ui",
+      "description": "The console's type as one reference: a 20px Faculty Glyphic page title, Geist at 13px for everything else, 12px meta, 11px captions, Geist Mono for keys and IDs, a link with a quiet underline and a query's words in medium weight.",
+      "use_for": "Any text in the console. Prefer the type-* utilities in markup; Text is the same set as a component.",
+      "never": [
+        "Bold (600 and up) weights",
+        "Capitals in the console",
+        "Text lighter than the meta gray",
+        "A marked word with a fill: weight only"
+      ],
+      "source": "conare-web app/assets/css/main.css (@theme), app/assets/css/console2.css (.v2-title, .v2-meta, .v2-mono, .v2-link), app/components/console/Marked.vue",
+      "body": "In the web component, the variant's colour and type hold over the page's own styles, so `<conare-text>` looks right\nin an app that only adds components. To give one a different colour, size or line height, set `--type-color`,\n`--type-size` or `--type-leading` on it (for example\n`class=\"[--type-color:var(--ds-color-fg-soft)]\"`); a colour class such as `text-fg-soft` does not reach it. These\ndon't pass down, so a marked word inside keeps its own look.",
+      "requires": [],
+      "dependencies": [],
+      "files": [
+        "components/ui/Text.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "work-panel",
+      "title": "Card and dark panel",
+      "type": "registry:ui",
+      "group": "product",
+      "description": "A card beside the dark panel in the website's double rule: the title with its red full stop, one line and the one action; on the panel the grain, a sheet of cells and one small window that plays once.",
+      "use_for": "A page whose job is one action with a visible result: Getting started, Agents, Send by API.",
+      "never": [
+        "Two dark panels on one page",
+        "A window that replays on hover: it plays once",
+        "More than one dark button in the card"
+      ],
+      "source": "conare-web app/components/console/SetupStep.vue, app/components/console/platform/Setup.vue, app/assets/css/console2.css (.v2-agentwork, .v2-agent-title, .v2-agent-rise, .v2-win), app/assets/css/docs-viz.css",
+      "body": "Put one window in the `window` slot: one of the website's product windows (`step-viz`, `eval-viz`, `product-viz`,\n`price-viz`) as Getting started does, or `WorkWindow`, the console's own small dark window (a bar with its title and a\ntag, the body, a foot line whose square turns red when the work is done), for work the app runs itself.",
+      "requires": [
+        "cell-burst"
+      ],
+      "dependencies": [],
+      "files": [
+        "components/product/WorkPanel.vue",
+        "components/product/WorkWindow.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "workspace-switcher",
+      "title": "Workspace switcher",
+      "type": "registry:ui",
+      "group": "product",
+      "description": "The sidebar head's organization switcher: the brand mark, the organization over its customer and role, and a menu of every organization grouped by customer, the current one checked, then New organization, settings and members.",
+      "use_for": "Sidebar's head slot, wherever a person reaches more than one organization.",
+      "never": [
+        "Switching without saying which organization is opening",
+        "A round avatar: organizations are square tiles"
+      ],
+      "source": "conare-web app/components/console/WorkspaceMenu.vue, app/assets/css/console2.css (.v2-trigger, .v2-ws-name, .v2-ws-meta, .v2-tile, .v2-menu-tag)",
+      "body": "v-model is the current organization's id; set `switching` to the id while the app opens it (the row reads \"opening\"\nand the others wait), and `error` if that fails. Put the brand mark in the `mark` slot.",
+      "requires": [
+        "menu"
+      ],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/product/WorkspaceSwitcher.vue"
+      ],
+      "examples": [
+        "Product"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    },
+    {
+      "name": "written-answer",
+      "title": "Written answer",
+      "type": "registry:ui",
+      "group": "product",
+      "description": "The written answer above the passages, on the paper with a red edge: the words at 16px citing their sources as small ink squares. Answer first shows it by itself; on request is one button, since it costs a second query; beside the page sets the cited page next to the words.",
+      "use_for": "A search that asks for an answer with citations, above Search results.",
+      "never": [
+        "An answer without its sources",
+        "Holding the passages until the answer is written: they land first",
+        "A spinner: the dot matrix and Writing an answer"
+      ],
+      "source": "conare-web app/components/console/search/Written.vue, app/assets/css/console2.css (.v2-written, .v2-written-text, .v2-cite, .v2-written-page)",
+      "body": "",
+      "requires": [
+        "button",
+        "loader",
+        "search-results"
+      ],
+      "dependencies": [
+        "lucide-vue-next@^0.479.0"
+      ],
+      "files": [
+        "components/product/WrittenAnswer.vue",
+        "composables/useSearchResults.ts"
+      ],
+      "examples": [
+        "AnswerFirst",
+        "OnRequest",
+        "BesideThePage"
+      ],
+      "flavors": [
+        "vue",
+        "react",
+        "elements"
+      ]
+    }
+  ]
+}

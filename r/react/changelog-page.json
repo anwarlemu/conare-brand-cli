@@ -1,0 +1,23 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "changelog-page",
+  "type": "registry:block",
+  "title": "Changelog page",
+  "description": "What changed, newest first: the head, then each release under a hairline, its date and version on the left, held in view as its notes pass, the title and the notes beside it, and the closing band.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://conare-ds-registry.vercel.app/r/react/button-link.json",
+    "https://conare-ds-registry.vercel.app/r/react/call-to-action.json",
+    "https://conare-ds-registry.vercel.app/r/react/docs-blocks.json",
+    "https://conare-ds-registry.vercel.app/r/react/section-head.json",
+    "https://conare-ds-registry.vercel.app/r/react/site-page.json",
+    "https://conare-ds-registry.vercel.app/r/react/tag.json"
+  ],
+  "files": [
+    {
+      "path": "components/site/ChangelogPage.tsx",
+      "type": "registry:ui",
+      "content": "import { ButtonLink } from '@/components/site/ButtonLink'\nimport { CallToAction } from '@/components/site/CallToAction'\nimport { DocsBlocks, type DocsBlock } from '@/components/site/DocsBlocks'\nimport { SectionHead } from '@/components/site/SectionHead'\nimport { SitePage, type SiteAction, type SiteFrameProps } from '@/components/site/SitePage'\nimport { Tag } from '@/components/ui/Tag'\n\n// What changed, newest first: the head, then each release under a hairline, laid out as a policy page (Legal.vue): its\n// date and version tag on the left, held in view from 1024px while its notes pass, the title and the notes\n// (docs-blocks) in a 720px column beside it. Then the closing band.\nexport type ChangelogEntry = { id: string, date: string, version?: string, title: string, blocks: DocsBlock[] }\nexport interface ChangelogPageProps extends SiteFrameProps {\n  head: { tag?: string, title: string, body?: string }\n  entries: ChangelogEntry[]\n  cta: { title: string, action: SiteAction }\n}\n\nexport function ChangelogPage({ header, footer, announcement, logo, actions, head, entries, cta }: ChangelogPageProps) {\n  return (\n    <SitePage data-ds=\"changelog-page\" header={header} footer={footer} announcement={announcement} logo={logo} actions={actions}>\n      <section aria-labelledby=\"changelog-page-title\" className=\"mx-auto max-w-[1440px] px-4 pt-14 pb-32 sm:px-6 lg:px-10 lg:pt-20 lg:pb-40\">\n        <SectionHead as=\"h1\" titleId=\"changelog-page-title\" tag={head.tag} title={head.title} body={head.body} />\n        <ol className=\"mx-auto mt-16 flex max-w-[1008px] flex-col gap-16\">\n          {entries.map(e => (\n            <li key={e.id} id={e.id} className=\"grid scroll-mt-24 grid-cols-[minmax(0,1fr)] gap-6 border-t border-edge pt-10 lg:grid-cols-[224px_minmax(0,720px)] lg:gap-16\">\n              <div className=\"flex items-center gap-3 self-start lg:sticky lg:top-28 lg:flex-col lg:items-start\">\n                <time className=\"type-ui text-fg-muted\">{e.date}</time>\n                {e.version && <Tag>{e.version}</Tag>}\n              </div>\n              <div className=\"min-w-0\">\n                <h2 className=\"font-heading text-heading-2 font-normal tracking-tight text-fg\">{e.title}</h2>\n                <div className=\"mt-6\"><DocsBlocks blocks={e.blocks} /></div>\n              </div>\n            </li>\n          ))}\n        </ol>\n      </section>\n      <CallToAction title={cta.title}>\n        <ButtonLink href={cta.action.href} variant=\"light\" fill=\"black\">{cta.action.label}</ButtonLink>\n      </CallToAction>\n    </SitePage>\n  )\n}\n\nexport default ChangelogPage\n"
+    }
+  ]
+}

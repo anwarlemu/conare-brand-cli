@@ -1,0 +1,310 @@
+{
+  "name": "document-download",
+  "title": "Document download",
+  "type": "registry:product",
+  "group": "product",
+  "description": "A document downloads when it is pressed, and what was pressed says so: the row's mark or the button turns to a check for a moment, since the browser's own bar can sit out of sight.",
+  "use_for": "Any list or result that holds a document.",
+  "never": [
+    "Opening a document in a panel",
+    "A download with no answer on the control that started it"
+  ],
+  "source": "conare-web app/components/console/namespaces/DownloadMark.vue, app/components/console/DownloadButton.vue, app/composables/useDocumentDownload.ts, app/assets/css/console2.css (.v2-docdl, .v2-swap)",
+  "body": "`useDocumentDownload()` returns `download(id, get, name?)`: `get` returns the document as a Blob or text from your own\nAPI. The mark and the button read the shared state by `id`, so pressing one answers on both.",
+  "requires": [
+    "button",
+    "loader"
+  ],
+  "dependencies": [
+    "lucide-vue-next@^0.479.0"
+  ],
+  "files": [
+    {
+      "path": "components/product/DownloadMark.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed } from 'vue'\nimport { Check, Download, X } from 'lucide-vue-next'\nimport DotMatrix from '@/components/ui/DotMatrix.vue'\nimport { useDownloadState, type DownloadState } from '@/composables/useDocumentDownload'\n\n// A document's download at the end of its row (the console's namespaces/DownloadMark.vue, .v2-docdl): a 14px mark,\n// muted at rest and ink under the pointer, with a 30px target. Pressed, it says what happened: the dot matrix while\n// it works (only after 150ms, so a quick file shows no flash of it), then a check, or a red cross if it failed. The\n// marks cross-fade and settle from 0.8 scale. `state` overrides the shared state from useDocumentDownload().\nconst props = defineProps<{ id: string, state?: DownloadState }>()\ndefineEmits<{ press: [] }>()\nconst shared = useDownloadState()\nconst now = computed(() => props.state ?? shared.value[props.id])\n</script>\n\n<template>\n  <button data-ds=\"download-mark\" type=\"button\" class=\"ds-docdl\" :data-state=\"now\" :aria-label=\"`download ${id}`\" @click.stop=\"$emit('press')\">\n    <Download data-for=\"idle\" :size=\"14\" :stroke-width=\"1.5\" />\n    <span data-for=\"busy\" class=\"inline-grid place-items-center\"><DotMatrix /></span>\n    <Check data-for=\"done\" :size=\"14\" :stroke-width=\"2\" />\n    <X data-for=\"failed\" :size=\"14\" :stroke-width=\"2\" />\n  </button>\n  <span data-ds=\"download-mark\" class=\"sr-only\" aria-live=\"polite\">{{ now === 'done' ? `${id} downloaded` : now === 'failed' ? `${id} failed to download` : '' }}</span>\n</template>\n\n<style>\n.ds-docdl { position: relative; display: inline-grid; width: 14px; height: 14px; flex-shrink: 0; place-items: center; vertical-align: middle; color: var(--ds-color-fg-muted); cursor: pointer; transition: color var(--ds-duration-micro) var(--ds-easing-standard), transform var(--ds-duration-glide) var(--ds-easing-out); }\n.ds-docdl::after { position: absolute; inset: -8px; content: \"\"; }\n@media (hover: hover) and (pointer: fine) { .ds-docdl:hover { color: var(--ds-color-fg); } }\n.ds-docdl:active { transform: scale(0.92); }\n.ds-docdl:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: 4px; }\n.ds-docdl > * { grid-area: 1 / 1; opacity: 0; scale: 0.8; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard), scale var(--ds-duration-glide) var(--ds-easing-out); }\n.ds-docdl:not([data-state]) > [data-for=\"idle\"], .ds-docdl[data-state=\"done\"] > [data-for=\"done\"], .ds-docdl[data-state=\"failed\"] > [data-for=\"failed\"] { opacity: 1; scale: 1; }\n.ds-docdl[data-state=\"busy\"] > [data-for=\"busy\"] { opacity: 1; scale: 1; transition-delay: 150ms; }\n.ds-docdl[data-state=\"done\"] { color: var(--ds-color-fg); }\n.ds-docdl[data-state=\"failed\"] { color: var(--ds-color-fg-danger); }\n@media (prefers-reduced-motion: reduce) { .ds-docdl, .ds-docdl > * { scale: 1; transform: none; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); } }\n</style>\n"
+    },
+    {
+      "path": "components/product/DownloadButton.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed } from 'vue'\nimport { Check } from 'lucide-vue-next'\nimport PixelButton from '@/components/ui/PixelButton.vue'\nimport { useDownloadState } from '@/composables/useDocumentDownload'\n\n// The dark button for a document, under an opened document or a result (the console's DownloadButton.vue): red\n// pixels come in on hover, and it says Downloaded once it has, since the browser's own bar can sit out of sight. The\n// words cross in one cell (.v2-swap): Download leaves up, Downloaded comes up with its check drawing, so the width\n// holds. Its state is the document's in useDocumentDownload(), unless `done` says.\n// `done` left out stays undefined (Vue would cast a missing boolean to false), so the shared state decides.\nconst props = withDefaults(defineProps<{ id: string, label?: string, done?: boolean }>(), { done: undefined })\ndefineEmits<{ press: [] }>()\nconst shared = useDownloadState()\nconst isDone = computed(() => props.done ?? shared.value[props.id] === 'done')\n</script>\n\n<template>\n  <PixelButton data-ds=\"download-button\" :done=\"isDone\" @click=\"$emit('press')\">\n    <span class=\"ds-dlswap\" :data-on=\"isDone || undefined\">\n      <span class=\"ds-dlswap-a\">{{ label ?? 'Download' }}</span>\n      <span class=\"ds-dlswap-b\" aria-hidden=\"true\"><Check :size=\"12\" :stroke-width=\"2\" />Downloaded</span>\n    </span>\n    <span class=\"sr-only\" aria-live=\"polite\">{{ isDone ? 'downloaded' : '' }}</span>\n  </PixelButton>\n</template>\n\n<style>\n.ds-dlswap { display: grid; }\n.ds-dlswap > span { display: inline-flex; grid-area: 1 / 1; align-items: center; justify-content: center; gap: var(--ds-space-sm); transition: opacity var(--ds-duration-glide) ease, filter var(--ds-duration-glide) ease, transform var(--ds-duration-settle) var(--ds-easing-out); }\n.ds-dlswap-b { opacity: 0; filter: blur(2px); transform: translateY(5px) scale(0.96); }\n.ds-dlswap[data-on] .ds-dlswap-a { opacity: 0; filter: blur(2px); transform: translateY(-5px) scale(0.96); }\n.ds-dlswap[data-on] .ds-dlswap-b { opacity: 1; filter: none; transform: none; }\n.ds-dlswap-b svg path { stroke-dasharray: 24; stroke-dashoffset: 24; transition: stroke-dashoffset var(--ds-duration-micro) ease; }\n.ds-dlswap[data-on] .ds-dlswap-b svg path { stroke-dashoffset: 0; transition: stroke-dashoffset var(--ds-duration-enter) var(--ds-easing-out) 40ms; }\n@media (prefers-reduced-motion: reduce) {\n  .ds-dlswap > span { filter: none; transform: none; transition: opacity var(--ds-duration-micro) ease; }\n  .ds-dlswap-b svg path { stroke-dashoffset: 0; transition: none; }\n}\n</style>\n"
+    },
+    {
+      "path": "composables/useDocumentDownload.ts",
+      "content": "import { ref } from 'vue'\n\n/**\n * A document opens by downloading, never in a panel (the console's useDocumentDownload.ts). The browser's own download\n * bar can sit out of sight, so what was pressed says what happened: each document's state (busy, done, failed) is\n * shared, read by DownloadMark and DownloadButton, and clears 1.8s after. The app hands over the bytes: `get` returns\n * a Blob or text (fetch it from your own API); nothing here calls one.\n */\nexport type DownloadState = 'busy' | 'done' | 'failed'\nconst states = ref<Record<string, DownloadState>>({})\n\n/** Every document's download state, by id. */\nexport const useDownloadState = () => states\n\nfunction mark(id: string, next?: DownloadState) {\n  const all = { ...states.value }\n  if (next) all[id] = next\n  else delete all[id]\n  states.value = all\n}\n\n/** download(id, get, name?) saves what `get` returns as `name` (the id, as text, by default). */\nexport function useDocumentDownload() {\n  return async function download(id: string, get: () => Promise<Blob | string> | Blob | string, name?: string) {\n    if (states.value[id] === 'busy') return\n    mark(id, 'busy')\n    try {\n      const body = await get()\n      const blob = typeof body === 'string' ? new Blob([body], { type: 'text/plain' }) : body\n      const url = URL.createObjectURL(blob)\n      const a = document.createElement('a')\n      a.href = url\n      a.download = name ?? `${id}.txt`\n      a.click()\n      URL.revokeObjectURL(url)\n      mark(id, 'done')\n    }\n    catch {\n      mark(id, 'failed')\n    }\n    // ds-latency: the check stays a moment after the download, which has already happened.\n    setTimeout(() => mark(id), 1800)\n  }\n}\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "In a row and as a button",
+      "center": false,
+      "half": false,
+      "path": "examples/document-download/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport DownloadButton from '@/components/product/DownloadButton.vue'\nimport DownloadMark from '@/components/product/DownloadMark.vue'\nimport { useDocumentDownload } from '@/composables/useDocumentDownload'\n// The two places a document downloads: the mark at the end of its row in a namespace, and the button under an opened\n// document or a result. Sample text stands in for your API's bytes.\nconst download = useDocumentDownload()\nconst save = () => download('handbook-security', () => new Promise<string>(done => setTimeout(() => done('Acme security handbook.\\n\\nEvery laptop uses full-disk encryption.'), 400)), 'handbook-security.txt')\n</script>\n\n<template>\n  <div class=\"flex flex-col gap-3\">\n    <p class=\"type-meta text-fg-muted\">In a row</p>\n    <div class=\"flex h-row max-w-120 items-center gap-3 border-y border-edge px-3\">\n      <span class=\"min-w-0 flex-1 truncate type-code-sm\">handbook-security</span>\n      <span class=\"type-meta text-fg-muted tabular-nums\">12 KB</span>\n      <DownloadMark id=\"handbook-security\" @press=\"save\" />\n    </div>\n    <p class=\"type-meta text-fg-muted\">As a button</p>\n    <div class=\"flex items-center\"><DownloadButton id=\"handbook-security\" @press=\"save\" /></div>\n  </div>\n</template>\n",
+      "requires": [
+        "button",
+        "loader"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/product/DownloadMark.tsx",
+          "content": "'use client'\nimport { Check, Download, X } from 'lucide-react'\nimport { DotMatrix } from '@/react/components/ui/DotMatrix'\nimport { useDownloadState, type DownloadState } from '@/react/hooks/useDocumentDownload'\n\n// A document's download at the end of its row (the console's namespaces/DownloadMark.vue, .v2-docdl): a 14px mark,\n// muted at rest and ink under the pointer, with a 30px target. Pressed, it says what happened: the dot matrix while\n// it works (only after 150ms, so a quick file shows no flash of it), then a check, or a red cross if it failed. The\n// marks cross-fade and settle from 0.8 scale. `state` overrides the shared state from useDocumentDownload().\nexport interface DownloadMarkProps {\n  id: string\n  state?: DownloadState\n  onPress?: () => void\n}\n\nexport function DownloadMark({ id, state, onPress }: DownloadMarkProps) {\n  const shared = useDownloadState()\n  const now = state ?? shared[id]\n  return (\n    <>\n      <style href=\"ds-download-mark\" precedence=\"ds\">{css}</style>\n      <button data-ds=\"download-mark\" type=\"button\" className=\"ds-docdl\" data-state={now} aria-label={`download ${id}`} onClick={(e) => { e.stopPropagation(); onPress?.() }}>\n        <Download data-for=\"idle\" size={14} strokeWidth={1.5} />\n        <span data-for=\"busy\" className=\"inline-grid place-items-center\"><DotMatrix /></span>\n        <Check data-for=\"done\" size={14} strokeWidth={2} />\n        <X data-for=\"failed\" size={14} strokeWidth={2} />\n      </button>\n      <span data-ds=\"download-mark\" className=\"sr-only\" aria-live=\"polite\">{now === 'done' ? `${id} downloaded` : now === 'failed' ? `${id} failed to download` : ''}</span>\n    </>\n  )\n}\n\nexport default DownloadMark\n\nconst css = `\n.ds-docdl { position: relative; display: inline-grid; width: 14px; height: 14px; flex-shrink: 0; place-items: center; vertical-align: middle; color: var(--ds-color-fg-muted); cursor: pointer; transition: color var(--ds-duration-micro) var(--ds-easing-standard), transform var(--ds-duration-glide) var(--ds-easing-out); }\n.ds-docdl::after { position: absolute; inset: -8px; content: \"\"; }\n@media (hover: hover) and (pointer: fine) { .ds-docdl:hover { color: var(--ds-color-fg); } }\n.ds-docdl:active { transform: scale(0.92); }\n.ds-docdl:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: 4px; }\n.ds-docdl > * { grid-area: 1 / 1; opacity: 0; scale: 0.8; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard), scale var(--ds-duration-glide) var(--ds-easing-out); }\n.ds-docdl:not([data-state]) > [data-for=\"idle\"], .ds-docdl[data-state=\"done\"] > [data-for=\"done\"], .ds-docdl[data-state=\"failed\"] > [data-for=\"failed\"] { opacity: 1; scale: 1; }\n.ds-docdl[data-state=\"busy\"] > [data-for=\"busy\"] { opacity: 1; scale: 1; transition-delay: 150ms; }\n.ds-docdl[data-state=\"done\"] { color: var(--ds-color-fg); }\n.ds-docdl[data-state=\"failed\"] { color: var(--ds-color-fg-danger); }\n@media (prefers-reduced-motion: reduce) { .ds-docdl, .ds-docdl > * { scale: 1; transform: none; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); } }\n`\n"
+        },
+        {
+          "path": "react/components/product/DownloadButton.tsx",
+          "content": "'use client'\nimport { Check } from 'lucide-react'\nimport { PixelButton } from '@/react/components/ui/PixelButton'\nimport { useDownloadState } from '@/react/hooks/useDocumentDownload'\n\n// The dark button for a document, under an opened document or a result (the console's DownloadButton.vue): red\n// pixels come in on hover, and it says Downloaded once it has, since the browser's own bar can sit out of sight. The\n// words cross in one cell (.v2-swap): Download leaves up, Downloaded comes up with its check drawing, so the width\n// holds. Its state is the document's in useDocumentDownload(), unless `done` says.\nexport interface DownloadButtonProps {\n  id: string\n  label?: string\n  done?: boolean\n  onPress?: () => void\n}\n\nexport function DownloadButton({ id, label, done, onPress }: DownloadButtonProps) {\n  const shared = useDownloadState()\n  const isDone = done ?? shared[id] === 'done'\n  return (\n    <>\n      <style href=\"ds-download-button\" precedence=\"ds\">{css}</style>\n      <PixelButton data-ds=\"download-button\" done={isDone} onClick={() => onPress?.()}>\n        <span className=\"ds-dlswap\" data-on={isDone || undefined}>\n          <span className=\"ds-dlswap-a\">{label ?? 'Download'}</span>\n          <span className=\"ds-dlswap-b\" aria-hidden=\"true\"><Check size={12} strokeWidth={2} />Downloaded</span>\n        </span>\n        <span className=\"sr-only\" aria-live=\"polite\">{isDone ? 'downloaded' : ''}</span>\n      </PixelButton>\n    </>\n  )\n}\n\nexport default DownloadButton\n\nconst css = `\n.ds-dlswap { display: grid; }\n.ds-dlswap > span { display: inline-flex; grid-area: 1 / 1; align-items: center; justify-content: center; gap: var(--ds-space-sm); transition: opacity var(--ds-duration-glide) ease, filter var(--ds-duration-glide) ease, transform var(--ds-duration-settle) var(--ds-easing-out); }\n.ds-dlswap-b { opacity: 0; filter: blur(2px); transform: translateY(5px) scale(0.96); }\n.ds-dlswap[data-on] .ds-dlswap-a { opacity: 0; filter: blur(2px); transform: translateY(-5px) scale(0.96); }\n.ds-dlswap[data-on] .ds-dlswap-b { opacity: 1; filter: none; transform: none; }\n.ds-dlswap-b svg path { stroke-dasharray: 24; stroke-dashoffset: 24; transition: stroke-dashoffset var(--ds-duration-micro) ease; }\n.ds-dlswap[data-on] .ds-dlswap-b svg path { stroke-dashoffset: 0; transition: stroke-dashoffset var(--ds-duration-enter) var(--ds-easing-out) 40ms; }\n@media (prefers-reduced-motion: reduce) {\n  .ds-dlswap > span { filter: none; transform: none; transition: opacity var(--ds-duration-micro) ease; }\n  .ds-dlswap-b svg path { stroke-dashoffset: 0; transition: none; }\n}\n`\n"
+        },
+        {
+          "path": "react/hooks/useDocumentDownload.ts",
+          "content": "'use client'\nimport { useSyncExternalStore } from 'react'\n\n/**\n * A document opens by downloading, never in a panel (the console's useDocumentDownload.ts). The browser's own download\n * bar can sit out of sight, so what was pressed says what happened: each document's state (busy, done, failed) is\n * shared, read by DownloadMark and DownloadButton, and clears 1.8s after. The app hands over the bytes: `get` returns\n * a Blob or text (fetch it from your own API); nothing here calls one.\n */\nexport type DownloadState = 'busy' | 'done' | 'failed'\nlet states: Record<string, DownloadState> = {}\nconst listeners = new Set<() => void>()\nconst subscribe = (listener: () => void) => {\n  listeners.add(listener)\n  return () => { listeners.delete(listener) }\n}\nconst get = () => states\n\nfunction mark(id: string, next?: DownloadState) {\n  const all = { ...states }\n  if (next) all[id] = next\n  else delete all[id]\n  states = all\n  listeners.forEach(l => l())\n}\n\n/** Every document's download state, by id. */\nexport const useDownloadState = () => useSyncExternalStore(subscribe, get, get)\n\n/** download(id, get, name?) saves what `get` returns as `name` (the id, as text, by default). Works outside components too. */\nexport async function download(id: string, read: () => Promise<Blob | string> | Blob | string, name?: string) {\n  if (states[id] === 'busy') return\n  mark(id, 'busy')\n  try {\n    const body = await read()\n    const blob = typeof body === 'string' ? new Blob([body], { type: 'text/plain' }) : body\n    const url = URL.createObjectURL(blob)\n    const a = document.createElement('a')\n    a.href = url\n    a.download = name ?? `${id}.txt`\n    a.click()\n    URL.revokeObjectURL(url)\n    mark(id, 'done')\n  }\n  catch {\n    mark(id, 'failed')\n  }\n  // ds-latency: the check stays a moment after the download, which has already happened.\n  setTimeout(() => mark(id), 1800)\n}\n\nexport function useDocumentDownload() {\n  return download\n}\n"
+        }
+      ],
+      "dependencies": [
+        "lucide-react@0.479.0"
+      ],
+      "registryDependencies": [
+        "button",
+        "loader"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "DownloadMark",
+            "file": "react/components/product/DownloadMark.tsx",
+            "props": [
+              {
+                "name": "id",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "state",
+                "type": "DownloadState",
+                "required": false
+              },
+              {
+                "name": "onPress",
+                "type": "() => void",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "DownloadButton",
+            "file": "react/components/product/DownloadButton.tsx",
+            "props": [
+              {
+                "name": "id",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "done",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "onPress",
+                "type": "() => void",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In a row and as a button",
+          "center": false,
+          "half": false,
+          "path": "react/examples/document-download/Product.tsx",
+          "content": "'use client'\nimport { DownloadButton } from '@/react/components/product/DownloadButton'\nimport { DownloadMark } from '@/react/components/product/DownloadMark'\nimport { useDocumentDownload } from '@/react/hooks/useDocumentDownload'\n// The two places a document downloads: the mark at the end of its row in a namespace, and the button under an opened\n// document or a result. Sample text stands in for your API's bytes.\n\nexport default function Product() {\n  const download = useDocumentDownload()\n  const save = () => download('handbook-security', () => new Promise<string>(done => setTimeout(() => done('Acme security handbook.\\n\\nEvery laptop uses full-disk encryption.'), 400)), 'handbook-security.txt')\n  return (\n    <div className=\"flex flex-col gap-3\">\n      <p className=\"type-meta text-fg-muted\">In a row</p>\n      <div className=\"flex h-row max-w-120 items-center gap-3 border-y border-edge px-3\">\n        <span className=\"min-w-0 flex-1 truncate type-code-sm\">handbook-security</span>\n        <span className=\"type-meta text-fg-muted tabular-nums\">12 KB</span>\n        <DownloadMark id=\"handbook-security\" onPress={save} />\n      </div>\n      <p className=\"type-meta text-fg-muted\">As a button</p>\n      <div className=\"flex items-center\"><DownloadButton id=\"handbook-security\" onPress={save} /></div>\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "button",
+            "loader"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/product/download-mark.ts",
+          "content": "import { html } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { Check, Download, X } from 'lucide'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport { DownloadStateController, download, type DownloadState } from '@/elements/controllers/document-download'\nimport '@/elements/components/ui/dot-matrix'\nimport styles from 'virtual:tw'\n\n// DownloadMark.vue as <conare-download-mark>: a document's download at the end of its row (the console's\n// namespaces/DownloadMark.vue, .v2-docdl): a 14px mark, muted at rest and ink under the pointer, with a 30px target.\n// Pressed, it says what happened: the dot matrix while it works (only after 150ms, so a quick file shows no flash of\n// it), then a check, or a red cross if it failed. The marks cross-fade and settle from 0.8 scale. `state` overrides\n// the shared state (controllers/document-download.ts). `download(get, name?)` downloads this document (the module's\n// download(id, ...), for a page script with no imports).\n\n/**\n * @summary A document's download mark at the end of its row.\n * @fires press - It was pressed (call download(get, name) from here).\n */\nexport class DownloadMark extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\t// `id` is HTML's own attribute; the document's id is `doc` (the attribute doc-id).\n\tstatic properties = { doc: { attribute: 'doc-id' }, state: {} }\n\n\t/** The document's id (Vue's `id`). */\n\tdoc = ''\n\t/** Overrides the shared state: busy, done or failed. */\n\tstate?: DownloadState\n\tprivate shared = new DownloadStateController(this)\n\n\t/** Downloads this document: saves what `get` returns as `name`. */\n\tdownload(get: () => Promise<Blob | string> | Blob | string, name?: string) {\n\t\treturn download(this.doc, get, name)\n\t}\n\n\trender() {\n\t\tconst now = this.state ?? this.shared.state(this.doc)\n\t\tconst dots = tag('dot-matrix')\n\t\treturn html`<button data-ds=\"download-mark\" type=\"button\" class=\"ds-docdl\" data-state=${ifDefined(now)} aria-label=${`download ${this.doc}`} @click=${(e: Event) => { e.stopPropagation(); this.emit('press') }}>\n\t\t\t${icon(Download, 'download', { size: 14, strokeWidth: 1.5, attrs: { 'data-for': 'idle' } })}\n\t\t\t<span data-for=\"busy\" class=\"inline-grid place-items-center\">${staticHtml`<${dots}></${dots}>`}</span>\n\t\t\t${icon(Check, 'check', { size: 14, strokeWidth: 2, attrs: { 'data-for': 'done' } })}\n\t\t\t${icon(X, 'x', { size: 14, strokeWidth: 2, attrs: { 'data-for': 'failed' } })}\n\t\t</button><span data-ds=\"download-mark\" class=\"sr-only\" aria-live=\"polite\">${now === 'done' ? `${this.doc} downloaded` : now === 'failed' ? `${this.doc} failed to download` : ''}</span>`\n\t}\n}\n\ndefine('download-mark', DownloadMark)\n"
+        },
+        {
+          "path": "elements/components/product/download-mark.css",
+          "content": ".ds-docdl { position: relative; display: inline-grid; width: 14px; height: 14px; flex-shrink: 0; place-items: center; vertical-align: middle; color: var(--ds-color-fg-muted); cursor: pointer; transition: color var(--ds-duration-micro) var(--ds-easing-standard), transform var(--ds-duration-glide) var(--ds-easing-out); }\n.ds-docdl::after { position: absolute; inset: -8px; content: \"\"; }\n@media (hover: hover) and (pointer: fine) { .ds-docdl:hover { color: var(--ds-color-fg); } }\n.ds-docdl:active { transform: scale(0.92); }\n.ds-docdl:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: 4px; }\n.ds-docdl > * { grid-area: 1 / 1; opacity: 0; scale: 0.8; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard), scale var(--ds-duration-glide) var(--ds-easing-out); }\n.ds-docdl:not([data-state]) > [data-for=\"idle\"], .ds-docdl[data-state=\"done\"] > [data-for=\"done\"], .ds-docdl[data-state=\"failed\"] > [data-for=\"failed\"] { opacity: 1; scale: 1; }\n.ds-docdl[data-state=\"busy\"] > [data-for=\"busy\"] { opacity: 1; scale: 1; transition-delay: 150ms; }\n.ds-docdl[data-state=\"done\"] { color: var(--ds-color-fg); }\n.ds-docdl[data-state=\"failed\"] { color: var(--ds-color-fg-danger); }\n@media (prefers-reduced-motion: reduce) { .ds-docdl, .ds-docdl > * { scale: 1; transform: none; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); } }\n"
+        },
+        {
+          "path": "elements/components/product/download-button.ts",
+          "content": "import { html } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { Check } from 'lucide'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport { DownloadStateController, download } from '@/elements/controllers/document-download'\nimport '@/elements/components/ui/pixel-button'\nimport styles from 'virtual:tw'\n\n// DownloadButton.vue as <conare-download-button>: the dark button for a document, under an opened document or a result\n// (the console's DownloadButton.vue): red pixels come in on hover, and it says Downloaded once it has, since the\n// browser's own bar can sit out of sight. The words cross in one cell (.v2-swap): Download leaves up, Downloaded comes\n// up with its check drawing, so the width holds. Its state is the document's (controllers/document-download.ts), unless\n// `done` says. `download(get, name?)` downloads this document, for a page script with no imports.\n\n/** No attribute: the shared state decides; done or done=\"true\": done; done=\"false\": not done. */\nconst tristate = { fromAttribute: (v: string | null) => (v === null ? undefined : v !== 'false') }\n\n/**\n * @summary The dark button for a document, saying Downloaded once it has.\n * @fires press - It was pressed (call download(get, name) from here).\n */\nexport class DownloadButton extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { doc: { attribute: 'doc-id' }, label: {}, done: { converter: tristate } }\n\n\t/** The document's id (Vue's `id`; `id` is HTML's own attribute). */\n\tdoc = ''\n\t/** The word at rest (Download). */\n\tlabel?: string\n\t/** Overrides the shared state; left out, the shared state decides. */\n\tdone?: boolean\n\tprivate shared = new DownloadStateController(this)\n\n\t/** Downloads this document: saves what `get` returns as `name`. */\n\tdownload(get: () => Promise<Blob | string> | Blob | string, name?: string) {\n\t\treturn download(this.doc, get, name)\n\t}\n\n\t// Vue's fallthrough data-ds=\"download-button\" lands on PixelButton's root, which here sits in the pixel button's own\n\t// shadow root: it is named there once rendered (Lit leaves an attribute it wrote once alone afterwards).\n\tprotected async firstUpdated(changed: Map<PropertyKey, unknown>) {\n\t\tsuper.firstUpdated(changed)\n\t\tconst pixel = this.renderRoot.firstElementChild as (HTMLElement & { updateComplete?: Promise<unknown> }) | null\n\t\tif (!pixel) return\n\t\tawait customElements.whenDefined(pixel.localName)\n\t\tawait pixel.updateComplete\n\t\tpixel.shadowRoot?.querySelector('[data-ds=\"pixel-button\"]')?.setAttribute('data-ds', 'download-button')\n\t}\n\n\trender() {\n\t\tconst isDone = this.done ?? this.shared.state(this.doc) === 'done'\n\t\tconst pixel = tag('pixel-button')\n\t\treturn staticHtml`<${pixel} ?done=${isDone} @click=${() => this.emit('press')}><span class=\"ds-dlswap\" data-on=${ifDefined(isDone ? 'true' : undefined)}><span class=\"ds-dlswap-a\">${this.label ?? 'Download'}</span><span class=\"ds-dlswap-b\" aria-hidden=\"true\">${icon(Check, 'check', { size: 12, strokeWidth: 2 })}Downloaded</span></span>${html`<span class=\"sr-only\" aria-live=\"polite\">${isDone ? 'downloaded' : ''}</span>`}</${pixel}>`\n\t}\n}\n\ndefine('download-button', DownloadButton)\n"
+        },
+        {
+          "path": "elements/components/product/download-button.css",
+          "content": ".ds-dlswap { display: grid; }\n.ds-dlswap > span { display: inline-flex; grid-area: 1 / 1; align-items: center; justify-content: center; gap: var(--ds-space-sm); transition: opacity var(--ds-duration-glide) ease, filter var(--ds-duration-glide) ease, transform var(--ds-duration-settle) var(--ds-easing-out); }\n.ds-dlswap-b { opacity: 0; filter: blur(2px); transform: translateY(5px) scale(0.96); }\n.ds-dlswap[data-on] .ds-dlswap-a { opacity: 0; filter: blur(2px); transform: translateY(-5px) scale(0.96); }\n.ds-dlswap[data-on] .ds-dlswap-b { opacity: 1; filter: none; transform: none; }\n.ds-dlswap-b svg path { stroke-dasharray: 24; stroke-dashoffset: 24; transition: stroke-dashoffset var(--ds-duration-micro) ease; }\n.ds-dlswap[data-on] .ds-dlswap-b svg path { stroke-dashoffset: 0; transition: stroke-dashoffset var(--ds-duration-enter) var(--ds-easing-out) 40ms; }\n@media (prefers-reduced-motion: reduce) {\n  .ds-dlswap > span { filter: none; transform: none; transition: opacity var(--ds-duration-micro) ease; }\n  .ds-dlswap-b svg path { stroke-dashoffset: 0; transition: none; }\n}\n"
+        },
+        {
+          "path": "elements/controllers/document-download.ts",
+          "content": "import type { ReactiveController, ReactiveControllerHost } from 'lit'\n\n/**\n * useDocumentDownload as a store and a Lit controller: a document opens by downloading, never in a panel (the\n * console's useDocumentDownload.ts). The browser's own download bar can sit out of sight, so what was pressed says what\n * happened: each document's state (busy, done, failed) is shared, read by <conare-download-mark> and\n * <conare-download-button> (DownloadStateController), and clears 1.8s after. The app hands over the bytes: `get`\n * returns a Blob or text (fetch it from your own API); nothing here calls one.\n *\n * Each element module bundles its own copy of this file, so the states live on one object per page (a global symbol),\n * and every copy reads and writes the same one.\n */\nexport type DownloadState = 'busy' | 'done' | 'failed'\ntype Store = { states: Record<string, DownloadState>, listeners: Set<() => void> }\nconst KEY = Symbol.for('ds.document-download')\nconst store: Store = ((globalThis as unknown as Record<symbol, Store>)[KEY] ??= { states: {}, listeners: new Set() })\n\nfunction mark(id: string, next?: DownloadState) {\n\tconst all = { ...store.states }\n\tif (next) all[id] = next\n\telse delete all[id]\n\tstore.states = all\n\tstore.listeners.forEach((l) => l())\n}\n\n/** Every document's download state, by id. */\nexport const downloadStates = () => store.states\n\n/** download(id, get, name?) saves what `get` returns as `name` (the id, as text, by default). */\nexport async function download(id: string, read: () => Promise<Blob | string> | Blob | string, name?: string) {\n\tif (store.states[id] === 'busy') return\n\tmark(id, 'busy')\n\ttry {\n\t\tconst body = await read()\n\t\tconst blob = typeof body === 'string' ? new Blob([body], { type: 'text/plain' }) : body\n\t\tconst url = URL.createObjectURL(blob)\n\t\tconst a = document.createElement('a')\n\t\ta.href = url\n\t\ta.download = name ?? `${id}.txt`\n\t\ta.click()\n\t\tURL.revokeObjectURL(url)\n\t\tmark(id, 'done')\n\t} catch {\n\t\tmark(id, 'failed')\n\t}\n\t// ds-latency: the check stays a moment after the download, which has already happened.\n\tsetTimeout(() => mark(id), 1800)\n}\n\n/** Re-renders its element when any document's state changes; `state(id)` reads one. */\nexport class DownloadStateController implements ReactiveController {\n\tprivate off?: () => void\n\tconstructor(private host: ReactiveControllerHost) {\n\t\thost.addController(this)\n\t}\n\thostConnected() {\n\t\tconst listener = () => this.host.requestUpdate()\n\t\tstore.listeners.add(listener)\n\t\tthis.off = () => store.listeners.delete(listener)\n\t}\n\thostDisconnected() {\n\t\tthis.off?.()\n\t}\n\tstate(id: string): DownloadState | undefined {\n\t\treturn store.states[id]\n\t}\n}\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/download-mark.js",
+        "elements/download-button.js",
+        "elements/dot-matrix.js",
+        "elements/pixel-button.js"
+      ],
+      "tag": "conare-download-mark",
+      "tags": [
+        "conare-download-mark",
+        "conare-download-button"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "button",
+        "loader"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-download-mark",
+            "name": "DownloadMark",
+            "module": "elements/download-mark.js",
+            "description": "A document's download mark at the end of its row.",
+            "attributes": [
+              {
+                "name": "doc-id",
+                "field": "doc",
+                "type": "string",
+                "default": "''",
+                "description": "The document's id (Vue's `id`)."
+              },
+              {
+                "name": "state",
+                "field": "state",
+                "type": "DownloadState | undefined",
+                "description": "Overrides the shared state: busy, done or failed."
+              }
+            ],
+            "properties": [
+              {
+                "name": "doc",
+                "type": "string",
+                "default": "''",
+                "description": "The document's id (Vue's `id`).",
+                "attribute": "doc-id"
+              },
+              {
+                "name": "state",
+                "type": "DownloadState | undefined",
+                "description": "Overrides the shared state: busy, done or failed.",
+                "attribute": "state"
+              }
+            ],
+            "events": [
+              {
+                "name": "press",
+                "description": "It was pressed (call download(get, name) from here)."
+              }
+            ],
+            "slots": [],
+            "methods": [
+              {
+                "name": "download",
+                "description": "Downloads this document: saves what `get` returns as `name`."
+              }
+            ]
+          },
+          {
+            "tag": "conare-download-button",
+            "name": "DownloadButton",
+            "module": "elements/download-button.js",
+            "description": "The dark button for a document, saying Downloaded once it has.",
+            "attributes": [
+              {
+                "name": "doc-id",
+                "field": "doc",
+                "type": "string",
+                "default": "''",
+                "description": "The document's id (Vue's `id`; `id` is HTML's own attribute)."
+              },
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string | undefined",
+                "description": "The word at rest (Download)."
+              },
+              {
+                "name": "done",
+                "field": "done",
+                "type": "boolean | undefined",
+                "description": "Overrides the shared state; left out, the shared state decides."
+              }
+            ],
+            "properties": [
+              {
+                "name": "doc",
+                "type": "string",
+                "default": "''",
+                "description": "The document's id (Vue's `id`; `id` is HTML's own attribute).",
+                "attribute": "doc-id"
+              },
+              {
+                "name": "label",
+                "type": "string | undefined",
+                "description": "The word at rest (Download).",
+                "attribute": "label"
+              },
+              {
+                "name": "done",
+                "type": "boolean | undefined",
+                "description": "Overrides the shared state; left out, the shared state decides.",
+                "attribute": "done"
+              }
+            ],
+            "events": [
+              {
+                "name": "press",
+                "description": "It was pressed (call download(get, name) from here)."
+              }
+            ],
+            "slots": [],
+            "methods": [
+              {
+                "name": "download",
+                "description": "Downloads this document: saves what `get` returns as `name`."
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In a row and as a button",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/document-download/Product.html",
+          "content": "<!-- The two places a document downloads: the mark at the end of its row in a namespace, and the button under an opened\n     document or a result. Sample text stands in for your API's bytes. -->\n<div class=\"flex flex-col gap-3\">\n  <p class=\"type-meta text-fg-muted\">In a row</p>\n  <div class=\"flex h-row max-w-120 items-center gap-3 border-y border-edge px-3\">\n    <span class=\"min-w-0 flex-1 truncate type-code-sm\">handbook-security</span>\n    <span class=\"type-meta text-fg-muted tabular-nums\">12 KB</span>\n    <conare-download-mark doc-id=\"handbook-security\"></conare-download-mark>\n  </div>\n  <p class=\"type-meta text-fg-muted\">As a button</p>\n  <div class=\"flex items-center\"><conare-download-button doc-id=\"handbook-security\"></conare-download-button></div>\n</div>\n<script type=\"module\">\n  // Both read the document's one shared state; either starts the download.\n  const get = () => new Promise((done) => setTimeout(() => done('Acme security handbook.\\n\\nEvery laptop uses full-disk encryption.'), 400))\n  for (const el of document.querySelectorAll('conare-download-mark, conare-download-button')) {\n    el.addEventListener('press', () => el.download(get, 'handbook-security.txt'))\n  }\n</script>\n"
+        }
+      ]
+    }
+  }
+}

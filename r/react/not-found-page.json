@@ -1,0 +1,20 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "not-found-page",
+  "type": "registry:block",
+  "title": "Not found page",
+  "description": "The page for an address that leads nowhere: the code in the tag, one line on what happened, the one dark way home, then where people usually meant to go, in the site's frame.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://conare-ds-registry.vercel.app/r/react/button-link.json",
+    "https://conare-ds-registry.vercel.app/r/react/section-head.json",
+    "https://conare-ds-registry.vercel.app/r/react/site-page.json"
+  ],
+  "files": [
+    {
+      "path": "components/site/NotFoundPage.tsx",
+      "type": "registry:ui",
+      "content": "import { ButtonLink } from '@/components/site/ButtonLink'\nimport { SectionHead } from '@/components/site/SectionHead'\nimport { SitePage, type SiteAction, type SiteFrameProps } from '@/components/site/SitePage'\n\n// The page for an address that leads nowhere: the tag with the code, one line on what happened, the one dark way home,\n// then where people usually meant to go, as cells in the double rule that take the paper under the pointer. In the\n// site's frame, so the header and the footer still lead on.\nexport interface NotFoundPageProps extends SiteFrameProps {\n  code?: string\n  title?: string\n  body?: string\n  home: SiteAction\n  links?: SiteAction[]\n}\n\nexport function NotFoundPage({ header, footer, announcement, logo, actions, code = '404', title = 'This page is not here.', body = 'It moved, or the address has a typo. Start again from the home page.', home, links = [] }: NotFoundPageProps) {\n  return (\n    <>\n      <style href=\"ds-not-found-page\" precedence=\"ds\">{css}</style>\n      <SitePage data-ds=\"not-found-page\" header={header} footer={footer} announcement={announcement} logo={logo} actions={actions}>\n        <section aria-labelledby=\"not-found-title\" className=\"mx-auto max-w-[1440px] px-4 pt-24 pb-32 sm:px-6 lg:px-10 lg:pt-32 lg:pb-40\">\n          <SectionHead as=\"h1\" titleId=\"not-found-title\" tag={code} title={title} body={body} action={<ButtonLink href={home.href} grain pixels arrow>{home.label}</ButtonLink>} />\n          {!!links.length && (\n            <ul aria-label=\"Pages people look for\" className=\"mx-auto mt-16 grid max-w-[880px] grid-cols-2 gap-px border border-edge bg-edge outline outline-offset-4 outline-edge sm:grid-cols-4\">\n              {links.map(l => (\n                <li key={l.href} className=\"flex bg-surface\">\n                  <a href={l.href} className=\"ds-lost-link flex h-16 w-full items-center justify-center px-3 text-body text-fg\">{l.label}</a>\n                </li>\n              ))}\n            </ul>\n          )}\n        </section>\n      </SitePage>\n    </>\n  )\n}\n\nexport default NotFoundPage\n\nconst css = `\n.ds-lost-link { transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-lost-link:hover { background-color: var(--ds-color-surface-subtle); } }\n.ds-lost-link:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }\n`\n"
+    }
+  ]
+}

@@ -1,0 +1,178 @@
+{
+  "name": "separator",
+  "title": "Separator",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "The hairline as its own part: 1px in the edge colour, across or down. Inset is the menu's, running out to the panel's edges with 4px of air above and below.",
+  "use_for": "Between two parts of a card, between groups in a menu, between links in a row.",
+  "never": [
+    "A shadow or a thicker rule to separate",
+    "A rule where spacing already separates"
+  ],
+  "source": "conare-web app/assets/css/console2.css (.v2-menu-sep, .v2-rows)",
+  "body": "",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Separator.vue",
+      "content": "<script setup lang=\"ts\">\n// The hairline (console2.css .v2-menu-sep, .v2-rows) as its own part: 1px in the edge colour, across or down.\n// `inset` is the menu's: 4px of air above and below, running out to the panel's edges through its 4px padding.\n// Decorative by default; pass `semantic` when it separates content a screen reader should hear as split.\nwithDefaults(defineProps<{ orientation?: 'horizontal' | 'vertical', inset?: boolean, semantic?: boolean }>(), { orientation: 'horizontal' })\n</script>\n\n<template>\n  <div data-ds=\"separator\"\n    :role=\"semantic ? 'separator' : 'none'\"\n    :aria-orientation=\"semantic ? orientation : undefined\"\n    class=\"shrink-0 bg-edge\"\n    :class=\"[orientation === 'vertical' ? 'w-px self-stretch' : 'h-px w-full', inset && (orientation === 'vertical' ? '-my-1 mx-1' : '-mx-1 my-1 w-auto')]\"\n  />\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "In the product",
+      "center": false,
+      "half": false,
+      "path": "examples/separator/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport Separator from '@/components/ui/Separator.vue'\n// The hairline across a card between two parts, down a row of links, and inset in a menu's panel.\n</script>\n\n<template>\n  <div class=\"grid gap-6 md:grid-cols-3\">\n    <div class=\"border border-edge bg-surface p-4\">\n      <p class=\"type-ui-strong\">Namespace</p>\n      <p class=\"type-meta text-fg-muted\">contracts, 412,830 documents</p>\n      <Separator class=\"my-3\" />\n      <p class=\"type-meta text-fg-muted\">Synced 2 min ago</p>\n    </div>\n    <div class=\"flex h-7 items-center gap-3 self-start type-ui\">\n      <a href=\"#\" class=\"hover:text-fg-soft\">Billing</a><Separator orientation=\"vertical\" /><a href=\"#\" class=\"hover:text-fg-soft\">Docs</a><Separator orientation=\"vertical\" /><a href=\"#\" class=\"hover:text-fg-soft\">Status</a>\n    </div>\n    <div class=\"w-52 self-start border border-edge bg-surface p-1 type-ui\">\n      <p class=\"flex h-8 items-center px-2\">Settings</p>\n      <p class=\"flex h-8 items-center px-2\">Members</p>\n      <Separator inset />\n      <p class=\"flex h-8 items-center px-2 text-fg-danger\">Sign out</p>\n    </div>\n  </div>\n</template>\n",
+      "requires": [],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Separator.tsx",
+          "content": "import { cn } from '@/react/lib/cn'\n\n// The hairline (console2.css .v2-menu-sep, .v2-rows) as its own part: 1px in the edge colour, across or down.\n// `inset` is the menu's: 4px of air above and below, running out to the panel's edges through its 4px padding.\n// Decorative by default; pass `semantic` when it separates content a screen reader should hear as split.\nexport interface SeparatorProps { orientation?: 'horizontal' | 'vertical', inset?: boolean, semantic?: boolean, className?: string }\n\nexport function Separator({ orientation = 'horizontal', inset, semantic, className }: SeparatorProps) {\n  return (\n    <div\n      data-ds=\"separator\"\n      role={semantic ? 'separator' : 'none'}\n      aria-orientation={semantic ? orientation : undefined}\n      className={cn('shrink-0 bg-edge', [orientation === 'vertical' ? 'w-px self-stretch' : 'h-px w-full', inset && (orientation === 'vertical' ? '-my-1 mx-1' : '-mx-1 my-1 w-auto')], className)}\n    />\n  )\n}\n\nexport default Separator\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "Separator",
+            "file": "react/components/ui/Separator.tsx",
+            "props": [
+              {
+                "name": "orientation",
+                "type": "'horizontal' | 'vertical'",
+                "required": false,
+                "default": "'horizontal'"
+              },
+              {
+                "name": "inset",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "semantic",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "react/examples/separator/Product.tsx",
+          "content": "import { Separator } from '@/react/components/ui/Separator'\n// The hairline across a card between two parts, down a row of links, and inset in a menu's panel.\n\nexport default function Product() {\n  return (\n    <div className=\"grid gap-6 md:grid-cols-3\">\n      <div className=\"border border-edge bg-surface p-4\">\n        <p className=\"type-ui-strong\">Namespace</p>\n        <p className=\"type-meta text-fg-muted\">contracts, 412,830 documents</p>\n        <Separator className=\"my-3\" />\n        <p className=\"type-meta text-fg-muted\">Synced 2 min ago</p>\n      </div>\n      <div className=\"flex h-7 items-center gap-3 self-start type-ui\">\n        <a href=\"#\" className=\"hover:text-fg-soft\">Billing</a><Separator orientation=\"vertical\" /><a href=\"#\" className=\"hover:text-fg-soft\">Docs</a><Separator orientation=\"vertical\" /><a href=\"#\" className=\"hover:text-fg-soft\">Status</a>\n      </div>\n      <div className=\"w-52 self-start border border-edge bg-surface p-1 type-ui\">\n        <p className=\"flex h-8 items-center px-2\">Settings</p>\n        <p className=\"flex h-8 items-center px-2\">Members</p>\n        <Separator inset />\n        <p className=\"flex h-8 items-center px-2 text-fg-danger\">Sign out</p>\n      </div>\n    </div>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/separator.ts",
+          "content": "import { type PropertyValues } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// Separator.vue as <conare-separator>: the hairline (console2.css .v2-menu-sep, .v2-rows) as its own part: 1px in the\n// edge colour, across or down. `inset` is the menu's: 4px of air above and below, running out to the panel's edges\n// through its 4px padding. Decorative by default; pass `semantic` when it separates content a screen reader should hear\n// as split. The host is the hairline (Vue's root div), so a class on the element (my-3) lands on it.\n\n/** @summary The hairline, across or down. */\nexport class Separator extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { orientation: { reflect: true }, inset: { type: Boolean, reflect: true }, semantic: { type: Boolean } }\n\n\torientation: 'horizontal' | 'vertical' = 'horizontal'\n\tinset = false\n\tsemantic = false\n\n\tprotected updated(changed: PropertyValues) {\n\t\tsuper.updated(changed)\n\t\tthis.setAttribute('role', this.semantic ? 'separator' : 'none')\n\t\tif (this.semantic) this.setAttribute('aria-orientation', this.orientation)\n\t\telse this.removeAttribute('aria-orientation')\n\t}\n\n\trender() {\n\t\treturn null\n\t}\n}\n\ndefine('separator', Separator)\n"
+        },
+        {
+          "path": "elements/components/ui/separator.css",
+          "content": "/* Separator.vue's classes on the host (the Vue root div): across by default, down with orientation=\"vertical\", and the\n   menu's inset. A class on the element wins over these, as a class on <Separator> does. */\n:host { @apply block shrink-0 bg-edge h-px w-full; }\n:host([orientation=\"vertical\"]) { @apply h-auto w-px self-stretch; }\n:host([inset]:not([orientation=\"vertical\"])) { margin: 4px -4px !important; }\n:host([inset][orientation=\"vertical\"]) { margin: -4px 4px !important; }\n/* The inset's margins are !important: the page's preflight (margin: 0) wins over a plain :host rule. Vue's w-auto\n   loses to its w-full in the stylesheet's order, so the rule keeps the full width, as Vue renders it. */\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/separator.js"
+      ],
+      "tag": "conare-separator",
+      "tags": [
+        "conare-separator"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-separator",
+            "name": "Separator",
+            "module": "elements/separator.js",
+            "description": "The hairline, across or down.",
+            "attributes": [
+              {
+                "name": "orientation",
+                "field": "orientation",
+                "type": "\"horizontal\" | \"vertical\"",
+                "default": "'horizontal'"
+              },
+              {
+                "name": "inset",
+                "field": "inset",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "semantic",
+                "field": "semantic",
+                "type": "boolean",
+                "default": "false"
+              }
+            ],
+            "properties": [
+              {
+                "name": "orientation",
+                "type": "\"horizontal\" | \"vertical\"",
+                "default": "'horizontal'",
+                "attribute": "orientation"
+              },
+              {
+                "name": "inset",
+                "type": "boolean",
+                "default": "false",
+                "attribute": "inset"
+              },
+              {
+                "name": "semantic",
+                "type": "boolean",
+                "default": "false",
+                "attribute": "semantic"
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/separator/Product.html",
+          "content": "<!-- The hairline across a card between two parts, down a row of links, and inset in a menu's panel. -->\n<div class=\"grid gap-6 md:grid-cols-3\">\n  <div class=\"border border-edge bg-surface p-4\">\n    <p class=\"type-ui-strong\">Namespace</p>\n    <p class=\"type-meta text-fg-muted\">contracts, 412,830 documents</p>\n    <conare-separator class=\"my-3\"></conare-separator>\n    <p class=\"type-meta text-fg-muted\">Synced 2 min ago</p>\n  </div>\n  <div class=\"flex h-7 items-center gap-3 self-start type-ui\">\n    <a href=\"#\" class=\"hover:text-fg-soft\">Billing</a><conare-separator orientation=\"vertical\"></conare-separator><a href=\"#\" class=\"hover:text-fg-soft\">Docs</a><conare-separator orientation=\"vertical\"></conare-separator><a href=\"#\" class=\"hover:text-fg-soft\">Status</a>\n  </div>\n  <div class=\"w-52 self-start border border-edge bg-surface p-1 type-ui\">\n    <p class=\"flex h-8 items-center px-2\">Settings</p>\n    <p class=\"flex h-8 items-center px-2\">Members</p>\n    <conare-separator inset></conare-separator>\n    <p class=\"flex h-8 items-center px-2 text-fg-danger\">Sign out</p>\n  </div>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,199 @@
+{
+  "name": "filter-menu",
+  "title": "Filter menu",
+  "type": "registry:ui",
+  "group": "product",
+  "description": "Every filter in one menu from the search box's bar: app, type and date as radio groups, the button counting what is on. A second press clears a pick; the menu stays open for the next.",
+  "use_for": "Narrowing a search or a list by a few independent facets.",
+  "never": [
+    "Filters that apply only after a separate Apply button",
+    "Checkboxes inside a group that takes one value"
+  ],
+  "source": "conare-web app/components/console/search/FilterMenu.vue, app/utils/searchFilters.ts, app/assets/css/console2.css (.v2-scope, .v2-filter-count, .v2-menu)",
+  "body": "Pass `groups` (`key`, `label`, `options`) and a v-model object with one value per key (`''` or `0` for none). For one\nbutton per filter, each naming its pick, use `filter-chip` instead: the console ships one or the other, not both.\n\nIts list scrolls under a fade (`fade-y`) at the edge with more past it.",
+  "requires": [
+    "menu"
+  ],
+  "dependencies": [
+    "lucide-vue-next@^0.479.0"
+  ],
+  "files": [
+    {
+      "path": "components/product/FilterMenu.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed } from 'vue'\nimport { Check, ListFilter } from 'lucide-vue-next'\nimport Menu from '@/components/ui/Menu.vue'\nimport MenuItem from '@/components/ui/MenuItem.vue'\nimport MenuLabel from '@/components/ui/MenuLabel.vue'\nimport MenuSeparator from '@/components/ui/MenuSeparator.vue'\n\n// Every filter in one menu from the search box's bar (search/FilterMenu.vue): the scope chip's button (.v2-scope)\n// reading Filters, with a count on ink (.v2-filter-count) once any is on, and a 240px menu of radio groups, each\n// under its label. A second press on what is chosen clears it; the menu stays open for the next pick. v-model maps\n// each group's key to its value ('' or 0 for none).\nexport interface FilterGroup { key: string, label: string, options: Array<{ value: string | number, label: string }> }\nconst props = defineProps<{ groups: FilterGroup[] }>()\nconst model = defineModel<Record<string, string | number>>({ required: true })\nconst count = computed(() => props.groups.filter(g => model.value[g.key]).length)\nfunction pick(key: string, value: string | number) {\n  model.value = { ...model.value, [key]: model.value[key] === value ? (typeof value === 'number' ? 0 : '') : value }\n}\n</script>\n\n<template>\n  <Menu data-ds=\"filter-menu\"\n    label=\"filters\"\n    width=\"240px\"\n    trigger-class=\"inline-flex h-control-sm cursor-pointer items-center gap-1.5 border border-edge bg-surface-subtle px-2 text-meta text-fg transition-[border-color] duration-120 ease-standard hover:border-edge-focus aria-expanded:border-edge-focus aria-expanded:bg-surface active:bg-surface-subtle focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-edge-focus\"\n  >\n    <template #trigger>\n      <ListFilter :size=\"12\" :stroke-width=\"1.5\" class=\"text-fg-muted\" aria-hidden=\"true\" />\n      Filters<span v-if=\"count\" class=\"inline-flex h-4 min-w-4 items-center justify-center bg-surface-inverse px-1 text-caption leading-4 text-fg-inverse tabular-nums\">{{ count }}</span>\n    </template>\n    <div class=\"fade-y flex max-h-88 flex-col overflow-y-auto\">\n      <template v-for=\"(g, i) in groups\" :key=\"g.key\">\n        <MenuSeparator v-if=\"i\" />\n        <MenuLabel>{{ g.label }}</MenuLabel>\n        <div role=\"group\" :aria-label=\"g.label\" class=\"flex flex-col\">\n          <MenuItem v-for=\"o in g.options\" :key=\"o.value\" role=\"menuitemradio\" :aria-checked=\"model[g.key] === o.value\" keep-open @select=\"pick(g.key, o.value)\">\n            <span class=\"min-w-0 flex-1 truncate text-left\">{{ o.label }}</span>\n            <Check :size=\"14\" :stroke-width=\"1.5\" class=\"shrink-0\" :class=\"model[g.key] !== o.value && 'invisible'\" aria-hidden=\"true\" />\n          </MenuItem>\n        </div>\n      </template>\n    </div>\n  </Menu>\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "Search filters",
+      "center": false,
+      "half": false,
+      "path": "examples/filter-menu/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { onMounted, ref } from 'vue'\nimport FilterMenu, { type FilterGroup } from '@/components/product/FilterMenu.vue'\n// The menu, opened as the frame loads; pick a filter and the button counts it. Sample apps and types.\nconst groups: FilterGroup[] = [\n  { key: 'app', label: 'App', options: ['Slack', 'Notion', 'Gmail', 'HubSpot'].map(a => ({ value: a, label: a })) },\n  { key: 'type', label: 'Type', options: ['PDF', 'Word', 'Email', 'Message', 'Page', 'Code', 'Issue', 'Record', 'Transcript'].map(t => ({ value: t, label: t })) },\n  { key: 'days', label: 'Date', options: [{ value: 7, label: 'Past week' }, { value: 30, label: 'Past month' }, { value: 365, label: 'Past year' }] },\n]\nconst filters = ref<Record<string, string | number>>({ app: '', type: '', days: 0 })\nconst root = ref<HTMLElement | null>(null)\nonMounted(() => setTimeout(() => root.value?.querySelector<HTMLButtonElement>('button')?.click(), 300))\n</script>\n\n<template>\n  <div ref=\"root\" class=\"flex h-110 items-start gap-3\">\n    <FilterMenu v-model=\"filters\" :groups=\"groups\" />\n  </div>\n</template>\n",
+      "requires": [
+        "menu"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/product/FilterMenu.tsx",
+          "content": "'use client'\nimport { Fragment } from 'react'\nimport { Check, ListFilter } from 'lucide-react'\nimport { Menu } from '@/react/components/ui/Menu'\nimport { MenuItem } from '@/react/components/ui/MenuItem'\nimport { MenuLabel } from '@/react/components/ui/MenuLabel'\nimport { MenuSeparator } from '@/react/components/ui/MenuSeparator'\nimport { useControllable } from '@/react/hooks/useControllable'\nimport { cn } from '@/react/lib/cn'\n\n// Every filter in one menu from the search box's bar (search/FilterMenu.vue): the scope chip's button (.v2-scope)\n// reading Filters, with a count on ink (.v2-filter-count) once any is on, and a 240px menu of radio groups, each\n// under its label. A second press on what is chosen clears it; the menu stays open for the next pick. Vue's v-model is\n// `value` with `onValueChange` (or `defaultValue` alone): each group's key to its value ('' or 0 for none).\nexport interface FilterGroup { key: string, label: string, options: Array<{ value: string | number, label: string }> }\nexport type FilterValues = Record<string, string | number>\nexport interface FilterMenuProps { groups: FilterGroup[], value?: FilterValues, defaultValue?: FilterValues, onValueChange?: (value: FilterValues) => void }\n\nexport function FilterMenu({ groups, value, defaultValue = {}, onValueChange }: FilterMenuProps) {\n  const [model, setModel] = useControllable<FilterValues>(value, defaultValue, onValueChange)\n  const count = groups.filter(g => model[g.key]).length\n  function pick(key: string, v: string | number) {\n    setModel({ ...model, [key]: model[key] === v ? (typeof v === 'number' ? 0 : '') : v })\n  }\n\n  return (\n    <Menu\n      data-ds=\"filter-menu\"\n      label=\"filters\"\n      width=\"240px\"\n      triggerClass=\"inline-flex h-control-sm cursor-pointer items-center gap-1.5 border border-edge bg-surface-subtle px-2 text-meta text-fg transition-[border-color] duration-120 ease-standard hover:border-edge-focus aria-expanded:border-edge-focus aria-expanded:bg-surface active:bg-surface-subtle focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-edge-focus\"\n      trigger={(\n        <>\n          <ListFilter size={12} strokeWidth={1.5} className=\"text-fg-muted\" aria-hidden=\"true\" />\n          Filters{count > 0 && <span className=\"inline-flex h-4 min-w-4 items-center justify-center bg-surface-inverse px-1 text-caption leading-4 text-fg-inverse tabular-nums\">{count}</span>}\n        </>\n      )}\n    >\n      <div className=\"fade-y flex max-h-88 flex-col overflow-y-auto\">\n        {groups.map((g, i) => (\n          <Fragment key={g.key}>\n            {i > 0 && <MenuSeparator />}\n            <MenuLabel>{g.label}</MenuLabel>\n            <div role=\"group\" aria-label={g.label} className=\"flex flex-col\">\n              {g.options.map(o => (\n                <MenuItem key={o.value} role=\"menuitemradio\" aria-checked={model[g.key] === o.value} keepOpen onSelect={() => pick(g.key, o.value)}>\n                  <span className=\"min-w-0 flex-1 truncate text-left\">{o.label}</span>\n                  <Check size={14} strokeWidth={1.5} className={cn('shrink-0', model[g.key] !== o.value && 'invisible')} aria-hidden=\"true\" />\n                </MenuItem>\n              ))}\n            </div>\n          </Fragment>\n        ))}\n      </div>\n    </Menu>\n  )\n}\n\nexport default FilterMenu\n"
+        },
+        {
+          "path": "react/hooks/useControllable.ts",
+          "content": "'use client'\nimport { useCallback, useRef, useState } from 'react'\n\n// Vue's defineModel in React: a value that is controlled when the caller passes it (value + onValueChange, as Radix\n// does) and kept inside otherwise (defaultValue). setValue calls onChange either way.\nexport function useControllable<T>(value: T | undefined, defaultValue: T, onChange?: (value: T) => void) {\n\tconst [inner, setInner] = useState<T>(defaultValue)\n\tconst controlled = value !== undefined\n\tconst current = controlled ? value : inner\n\tconst ref = useRef(onChange)\n\tref.current = onChange\n\tconst set = useCallback((next: T) => {\n\t\tif (!controlled) setInner(next)\n\t\tref.current?.(next)\n\t}, [controlled])\n\treturn [current, set] as const\n}\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [
+        "lucide-react@0.479.0"
+      ],
+      "registryDependencies": [
+        "menu"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "FilterMenu",
+            "file": "react/components/product/FilterMenu.tsx",
+            "props": [
+              {
+                "name": "groups",
+                "type": "FilterGroup[]",
+                "required": true
+              },
+              {
+                "name": "value",
+                "type": "FilterValues",
+                "required": false
+              },
+              {
+                "name": "defaultValue",
+                "type": "FilterValues",
+                "required": false,
+                "default": "{}"
+              },
+              {
+                "name": "onValueChange",
+                "type": "(value: FilterValues) => void",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Search filters",
+          "center": false,
+          "half": false,
+          "path": "react/examples/filter-menu/Product.tsx",
+          "content": "'use client'\nimport { useEffect, useRef, useState } from 'react'\nimport { FilterMenu, type FilterGroup, type FilterValues } from '@/react/components/product/FilterMenu'\n// The menu, opened as the frame loads; pick a filter and the button counts it. Sample apps and types.\nconst groups: FilterGroup[] = [\n  { key: 'app', label: 'App', options: ['Slack', 'Notion', 'Gmail', 'HubSpot'].map(a => ({ value: a, label: a })) },\n  { key: 'type', label: 'Type', options: ['PDF', 'Word', 'Email', 'Message', 'Page', 'Code', 'Issue', 'Record', 'Transcript'].map(t => ({ value: t, label: t })) },\n  { key: 'days', label: 'Date', options: [{ value: 7, label: 'Past week' }, { value: 30, label: 'Past month' }, { value: 365, label: 'Past year' }] },\n]\n\nexport default function Product() {\n  const [filters, setFilters] = useState<FilterValues>({ app: '', type: '', days: 0 })\n  const root = useRef<HTMLDivElement | null>(null)\n  useEffect(() => {\n    const timer = setTimeout(() => root.current?.querySelector<HTMLButtonElement>('button')?.click(), 300)\n    return () => clearTimeout(timer)\n  }, [])\n  return (\n    <div ref={root} className=\"flex h-110 items-start gap-3\">\n      <FilterMenu value={filters} onValueChange={setFilters} groups={groups} />\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "menu"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/product/filter-menu.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { Check, ListFilter } from 'lucide'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport '@/elements/components/ui/menu'\nimport '@/elements/components/ui/menu-item'\nimport '@/elements/components/ui/menu-label'\nimport '@/elements/components/ui/menu-separator'\nimport styles from 'virtual:tw'\n\n// FilterMenu.vue as <conare-filter-menu>: every filter in one menu from the search box's bar (search/FilterMenu.vue):\n// the scope chip's button (.v2-scope) reading Filters, with a count on ink (.v2-filter-count) once any is on, and a\n// 240px menu of radio groups, each under its label. A second press on what is chosen clears it; the menu stays open\n// for the next pick. v-model is `value` (each group's key to its value, '' or 0 for none; a JSON attribute or the\n// property) with `input` and `change` events; `groups` is a JSON attribute or the property.\nexport interface FilterGroup { key: string, label: string, options: Array<{ value: string | number, label: string }> }\nexport type FilterValues = Record<string, string | number>\n\n/**\n * @summary Every filter in one menu, counted on its button.\n * @fires input - A filter changed (read `value`).\n * @fires change - A filter changed (read `value`).\n */\nexport class FilterMenu extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { groups: { type: Array }, value: { type: Object } }\n\n\tgroups: FilterGroup[] = []\n\t/** Each group's key to its value. */\n\tvalue: FilterValues = {}\n\n\tprivate pick(key: string, v: string | number) {\n\t\tthis.commit({ ...this.value, [key]: this.value[key] === v ? (typeof v === 'number' ? 0 : '') : v })\n\t}\n\n\trender() {\n\t\tconst menu = tag('menu')\n\t\tconst item = tag('menu-item')\n\t\tconst label = tag('menu-label')\n\t\tconst sep = tag('menu-separator')\n\t\tconst count = this.groups.filter((g) => this.value[g.key]).length\n\t\treturn html`${staticHtml`<${menu} data-ds=\"filter-menu\" label=\"filters\" width=\"240px\">\n\t\t\t<button slot=\"trigger\" type=\"button\" class=\"inline-flex h-control-sm cursor-pointer items-center gap-1.5 border border-edge bg-surface-subtle px-2 text-meta text-fg transition-[border-color] duration-120 ease-standard hover:border-edge-focus aria-expanded:border-edge-focus aria-expanded:bg-surface active:bg-surface-subtle focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-edge-focus\">\n\t\t\t\t${icon(ListFilter, 'list-filter', { size: 12, strokeWidth: 1.5, class: 'text-fg-muted', attrs: { 'aria-hidden': 'true' } })}\n\t\t\t\t${'Filters'}${count ? html`<span class=\"inline-flex h-4 min-w-4 items-center justify-center bg-surface-inverse px-1 text-caption leading-4 text-fg-inverse tabular-nums\">${count}</span>` : nothing}\n\t\t\t</button>\n\t\t\t<div class=\"fade-y flex max-h-88 flex-col overflow-y-auto\">\n\t\t\t\t${this.groups.map((g, i) => staticHtml`${i ? staticHtml`<${sep}></${sep}>` : nothing}\n\t\t\t\t<${label}>${g.label}</${label}>\n\t\t\t\t<div role=\"group\" aria-label=${g.label} class=\"flex flex-col\">\n\t\t\t\t\t${g.options.map((o) => staticHtml`<${item} role=\"menuitemradio\" aria-checked=${String(this.value[g.key] === o.value)} keep-open @select=${() => this.pick(g.key, o.value)}>\n\t\t\t\t\t\t<span class=\"min-w-0 flex-1 truncate text-left\">${o.label}</span>\n\t\t\t\t\t\t${icon(Check, 'check', { size: 14, strokeWidth: 1.5, class: this.value[g.key] !== o.value ? 'shrink-0 invisible' : 'shrink-0', attrs: { 'aria-hidden': 'true' } })}\n\t\t\t\t\t</${item}>`)}\n\t\t\t\t</div>`)}\n\t\t\t</div>\n\t\t</${menu}>`}`\n\t}\n}\n\ndefine('filter-menu', FilterMenu)\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/filter-menu.js",
+        "elements/menu.js",
+        "elements/menu-item.js",
+        "elements/menu-label.js",
+        "elements/menu-separator.js"
+      ],
+      "tag": "conare-filter-menu",
+      "tags": [
+        "conare-filter-menu"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "menu"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-filter-menu",
+            "name": "FilterMenu",
+            "module": "elements/filter-menu.js",
+            "description": "Every filter in one menu, counted on its button.",
+            "attributes": [
+              {
+                "name": "groups",
+                "field": "groups",
+                "type": "FilterGroup[]",
+                "default": "[]"
+              },
+              {
+                "name": "value",
+                "field": "value",
+                "type": "FilterValues",
+                "default": "{}",
+                "description": "Each group's key to its value."
+              }
+            ],
+            "properties": [
+              {
+                "name": "groups",
+                "type": "FilterGroup[]",
+                "default": "[]",
+                "attribute": "groups"
+              },
+              {
+                "name": "value",
+                "type": "FilterValues",
+                "default": "{}",
+                "description": "Each group's key to its value.",
+                "attribute": "value"
+              }
+            ],
+            "events": [
+              {
+                "name": "input",
+                "description": "A filter changed (read `value`)."
+              },
+              {
+                "name": "change",
+                "description": "A filter changed (read `value`)."
+              }
+            ],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Search filters",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/filter-menu/Product.html",
+          "content": "<!-- The menu, opened as the frame loads; pick a filter and the button counts it. Sample apps and types. -->\n<div class=\"flex h-110 items-start gap-3\">\n  <conare-filter-menu id=\"filters\" value='{ \"app\": \"\", \"type\": \"\", \"days\": 0 }' groups='[{ \"key\": \"app\", \"label\": \"App\", \"options\": [{ \"value\": \"Slack\", \"label\": \"Slack\" }, { \"value\": \"Notion\", \"label\": \"Notion\" }, { \"value\": \"Gmail\", \"label\": \"Gmail\" }, { \"value\": \"HubSpot\", \"label\": \"HubSpot\" }] }, { \"key\": \"type\", \"label\": \"Type\", \"options\": [{ \"value\": \"PDF\", \"label\": \"PDF\" }, { \"value\": \"Word\", \"label\": \"Word\" }, { \"value\": \"Email\", \"label\": \"Email\" }, { \"value\": \"Message\", \"label\": \"Message\" }, { \"value\": \"Page\", \"label\": \"Page\" }, { \"value\": \"Code\", \"label\": \"Code\" }, { \"value\": \"Issue\", \"label\": \"Issue\" }, { \"value\": \"Record\", \"label\": \"Record\" }, { \"value\": \"Transcript\", \"label\": \"Transcript\" }] }, { \"key\": \"days\", \"label\": \"Date\", \"options\": [{ \"value\": 7, \"label\": \"Past week\" }, { \"value\": 30, \"label\": \"Past month\" }, { \"value\": 365, \"label\": \"Past year\" }] }]'></conare-filter-menu>\n</div>\n<script type=\"module\">\n  await customElements.whenDefined('conare-filter-menu')\n  const filters = document.getElementById('filters')\n  await filters.updateComplete\n  setTimeout(() => filters.shadowRoot.querySelector('button').click(), 300)\n</script>\n"
+        }
+      ]
+    }
+  }
+}

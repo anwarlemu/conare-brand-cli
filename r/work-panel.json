@@ -1,0 +1,367 @@
+{
+  "name": "work-panel",
+  "title": "Card and dark panel",
+  "type": "registry:ui",
+  "group": "product",
+  "description": "A card beside the dark panel in the website's double rule: the title with its red full stop, one line and the one action; on the panel the grain, a sheet of cells and one small window that plays once.",
+  "use_for": "A page whose job is one action with a visible result: Getting started, Agents, Send by API.",
+  "never": [
+    "Two dark panels on one page",
+    "A window that replays on hover: it plays once",
+    "More than one dark button in the card"
+  ],
+  "source": "conare-web app/components/console/SetupStep.vue, app/components/console/platform/Setup.vue, app/assets/css/console2.css (.v2-agentwork, .v2-agent-title, .v2-agent-rise, .v2-win), app/assets/css/docs-viz.css",
+  "body": "Put one window in the `window` slot: one of the website's product windows (`step-viz`, `eval-viz`, `product-viz`,\n`price-viz`) as Getting started does, or `WorkWindow`, the console's own small dark window (a bar with its title and a\ntag, the body, a foot line whose square turns red when the work is done), for work the app runs itself.",
+  "requires": [
+    "cell-burst"
+  ],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/product/WorkPanel.vue",
+      "content": "<script setup lang=\"ts\">\nimport CellBurst from '@/components/visuals/CellBurst.vue'\nimport Grain from '@/components/visuals/Grain.vue'\n\n// A page whose job is one action with a visible result (SetupStep.vue, console2.css .v2-agentwork): the step's card\n// beside the dark panel in the website's double rule, side by side from 640px of room. The card has the title in\n// Faculty Glyphic with a red full stop, one line, and its action at the foot (default slot: one large PixelButton,\n// secondary buttons beside it). The panel is the grain and a sheet of cells (`seed`) with one window on it (`window`\n// slot), which plays once. Title, line and action rise in once, a blur clearing. `tall` keeps the panel at 372px, as\n// Getting started's steps do, so moving between steps moves nothing.\nwithDefaults(defineProps<{ title: string, line?: string, seed?: number, tall?: boolean, label?: string }>(), { seed: 5 })\n</script>\n\n<template>\n  <div data-ds=\"work-panel\" class=\"ds-work\">\n    <section class=\"ds-work-grid\" :aria-label=\"label\">\n      <div class=\"ds-work-card\">\n        <h2 class=\"ds-work-title ds-work-rise\">{{ title }}<span class=\"text-fg-accent-display\">.</span></h2>\n        <p v-if=\"line\" class=\"ds-work-line ds-work-rise\" style=\"--i: 1\">{{ line }}</p>\n        <div v-if=\"$slots.default\" class=\"ds-work-act ds-work-rise\" style=\"--i: 2\"><slot /></div>\n      </div>\n      <div aria-hidden=\"true\" class=\"ds-work-panel\" :data-tall=\"tall || undefined\">\n        <Grain />\n        <div class=\"pointer-events-none absolute inset-0 opacity-70\"><CellBurst :seed=\"seed\" /></div>\n        <div class=\"relative flex w-full items-center justify-center px-4 py-6\"><slot name=\"window\" /></div>\n      </div>\n    </section>\n  </div>\n</template>\n\n<style>\n.ds-work { container-type: inline-size; }\n.ds-work-grid { position: relative; display: grid; gap: 1px; margin: calc(var(--ds-space-xs) + var(--ds-border-hairline)); border: var(--ds-border-hairline) solid var(--ds-color-edge); outline: var(--ds-border-hairline) solid var(--ds-color-edge); outline-offset: 4px; background: var(--ds-color-edge); }\n@container (min-width: 640px) { .ds-work-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); } }\n.ds-work-card { display: flex; flex-direction: column; align-items: flex-start; gap: var(--ds-space-md); padding: 20px; background: var(--ds-color-surface); }\n.ds-work-title { font-family: var(--ds-font-heading); font-size: var(--ds-text-heading-2); font-weight: var(--ds-font-weight-regular); line-height: var(--ds-text-heading-2-leading); letter-spacing: var(--ds-tracking-tight); text-wrap: balance; }\n.ds-work-line { max-width: 56ch; color: var(--ds-color-fg-muted); font-size: var(--ds-text-ui); line-height: var(--ds-text-ui-leading); text-wrap: pretty; }\n.ds-work-act { display: flex; width: 100%; flex-wrap: wrap; align-items: center; gap: var(--ds-space-md); margin-top: auto; padding-top: var(--ds-space-xl); }\n.ds-work-act > button:not(.ds-px), .ds-work-act > a:not(.ds-px) { height: var(--ds-size-control-lg); padding: 0 12px; font-size: var(--ds-text-ui); }\n.ds-work-panel { position: relative; display: flex; min-height: 240px; align-items: center; overflow: hidden; background: var(--ds-color-neutral-200); color: var(--ds-color-neutral-300); }\n@container (min-width: 640px) { .ds-work-panel[data-tall] { min-height: 372px; } }\n/* Once, as the step opens: up 12px, a 3px blur clearing (.v2-agent-rise). */\n.ds-work-rise { animation: ds-work-rise var(--ds-duration-step-rise) var(--ds-easing-out) both; animation-delay: calc(var(--i, 0) * 40ms); }\n@keyframes ds-work-rise { from { opacity: 0; filter: blur(3px); transform: translateY(12px); } }\n@media (pointer: coarse), (max-width: 767px) { .ds-work-act > :is(button, a) { height: var(--ds-size-control-touch); } }\n@media (prefers-reduced-motion: reduce) { .ds-work-rise { animation-name: ds-work-fade; } }\n@keyframes ds-work-fade { from { opacity: 0; } }\n</style>\n"
+    },
+    {
+      "path": "components/product/WorkWindow.vue",
+      "content": "<script setup lang=\"ts\">\n// The small dark window a work panel shows (console2.css .v2-win): a 44px bar with its title and a tag (a time, a\n// count), the body, and a foot line whose square turns red when the work is done (`done`). Code colours, Geist.\ndefineProps<{ title: string, tag?: string, foot?: string, done?: boolean }>()\n</script>\n\n<template>\n  <div data-ds=\"work-window\" class=\"ds-win w-full max-w-120\">\n    <div class=\"ds-win-bar\"><span class=\"min-w-0 flex-1 truncate\">{{ title }}</span><span v-if=\"tag\" class=\"ds-win-tag\">{{ tag }}</span></div>\n    <slot />\n    <p v-if=\"foot\" class=\"ds-win-foot\" :data-on=\"done || undefined\"><span class=\"ds-win-dot\" aria-hidden=\"true\" />{{ foot }}</p>\n  </div>\n</template>\n\n<style>\n.ds-win { border: var(--ds-border-hairline) solid var(--ds-color-neutral-300); background: var(--ds-color-code); color: var(--ds-color-code-fg); font-family: var(--ds-font-text); }\n.ds-win-bar { display: flex; height: 44px; align-items: center; gap: var(--ds-space-md); padding: 0 var(--ds-space-xl); font-size: var(--ds-text-ui); line-height: 16px; }\n.ds-win-tag { flex-shrink: 0; padding: var(--ds-space-2xs) var(--ds-space-sm); background: var(--ds-color-neutral-200); color: var(--ds-color-code-fg); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); font-variant-numeric: tabular-nums; }\n.ds-win-foot { display: flex; align-items: center; gap: var(--ds-space-md); margin: 0; padding: var(--ds-space-lg) var(--ds-space-xl); border-top: var(--ds-border-hairline) solid var(--ds-color-neutral-300); color: var(--ds-color-code-muted); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-win-foot[data-on] { color: var(--ds-color-code-fg); }\n.ds-win-dot { width: 6px; height: 6px; flex-shrink: 0; border: var(--ds-border-hairline) solid var(--ds-color-code-muted); transition: background-color var(--ds-duration-micro) var(--ds-easing-standard), border-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-win-foot[data-on] .ds-win-dot { border-color: var(--ds-color-surface-accent); background: var(--ds-color-surface-accent); }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "In the product",
+      "center": false,
+      "half": false,
+      "path": "examples/work-panel/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport PixelButton from '@/components/ui/PixelButton.vue'\nimport WorkPanel from '@/components/product/WorkPanel.vue'\nimport StepViz from '@/components/visuals/StepViz.vue'\n// A card with its one action, and the dark panel with a window beside it: How it works' search step (step-viz), which\n// plays once as it renders.\nconst RUNS = [0, 0, 0, 0]\n</script>\n\n<template>\n  <WorkPanel title=\"Run a search\" line=\"Ask your data a question. Conare finds the passages that answer it.\" label=\"an example\" tall>\n    <PixelButton large>Run a search</PixelButton>\n    <template #window>\n      <StepViz :step=\"2\" :runs=\"RUNS\" active />\n    </template>\n  </WorkPanel>\n</template>\n",
+      "requires": [
+        "button",
+        "cell-burst",
+        "step-viz"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/product/WorkPanel.tsx",
+          "content": "import type { CSSProperties, ReactNode } from 'react'\nimport { CellBurst } from '@/react/components/visuals/CellBurst'\nimport { Grain } from '@/react/components/visuals/Grain'\n\n// A page whose job is one action with a visible result (SetupStep.vue, console2.css .v2-agentwork): the step's card\n// beside the dark panel in the website's double rule, side by side from 640px of room. The card has the title in\n// Faculty Glyphic with a red full stop, one line, and its action at the foot (children: one large PixelButton,\n// secondary buttons beside it). The panel is the grain and a sheet of cells (`seed`) with one window on it (`window`), which plays once. Title, line and action rise in once, a blur clearing. `tall` keeps the panel at 372px, as\n// Getting started's steps do, so moving between steps moves nothing.\nexport interface WorkPanelProps {\n  title: string\n  line?: string\n  seed?: number\n  tall?: boolean\n  label?: string\n  /** The one window on the panel (Vue's `window` slot). */\n  window?: ReactNode\n  children?: ReactNode\n}\n\nexport function WorkPanel({ title, line, seed = 5, tall, label, window: win, children }: WorkPanelProps) {\n  return (\n    <>\n      <style href=\"ds-work-panel\" precedence=\"ds\">{css}</style>\n      <div data-ds=\"work-panel\" className=\"ds-work\">\n        <section className=\"ds-work-grid\" aria-label={label}>\n          <div className=\"ds-work-card\">\n            <h2 className=\"ds-work-title ds-work-rise\">{title}<span className=\"text-fg-accent-display\">.</span></h2>\n            {line && <p className=\"ds-work-line ds-work-rise\" style={{ '--i': 1 } as CSSProperties}>{line}</p>}\n            {children && <div className=\"ds-work-act ds-work-rise\" style={{ '--i': 2 } as CSSProperties}>{children}</div>}\n          </div>\n          <div aria-hidden=\"true\" className=\"ds-work-panel\" data-tall={tall || undefined}>\n            <Grain />\n            <div className=\"pointer-events-none absolute inset-0 opacity-70\"><CellBurst seed={seed} /></div>\n            <div className=\"relative flex w-full items-center justify-center px-4 py-6\">{win}</div>\n          </div>\n        </section>\n      </div>\n    </>\n  )\n}\n\nexport default WorkPanel\n\nconst css = `\n.ds-work { container-type: inline-size; }\n.ds-work-grid { position: relative; display: grid; gap: 1px; margin: calc(var(--ds-space-xs) + var(--ds-border-hairline)); border: var(--ds-border-hairline) solid var(--ds-color-edge); outline: var(--ds-border-hairline) solid var(--ds-color-edge); outline-offset: 4px; background: var(--ds-color-edge); }\n@container (min-width: 640px) { .ds-work-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); } }\n.ds-work-card { display: flex; flex-direction: column; align-items: flex-start; gap: var(--ds-space-md); padding: 20px; background: var(--ds-color-surface); }\n.ds-work-title { font-family: var(--ds-font-heading); font-size: var(--ds-text-heading-2); font-weight: var(--ds-font-weight-regular); line-height: var(--ds-text-heading-2-leading); letter-spacing: var(--ds-tracking-tight); text-wrap: balance; }\n.ds-work-line { max-width: 56ch; color: var(--ds-color-fg-muted); font-size: var(--ds-text-ui); line-height: var(--ds-text-ui-leading); text-wrap: pretty; }\n.ds-work-act { display: flex; width: 100%; flex-wrap: wrap; align-items: center; gap: var(--ds-space-md); margin-top: auto; padding-top: var(--ds-space-xl); }\n.ds-work-act > button:not(.ds-px), .ds-work-act > a:not(.ds-px) { height: var(--ds-size-control-lg); padding: 0 12px; font-size: var(--ds-text-ui); }\n.ds-work-panel { position: relative; display: flex; min-height: 240px; align-items: center; overflow: hidden; background: var(--ds-color-neutral-200); color: var(--ds-color-neutral-300); }\n@container (min-width: 640px) { .ds-work-panel[data-tall] { min-height: 372px; } }\n/* Once, as the step opens: up 12px, a 3px blur clearing (.v2-agent-rise). */\n.ds-work-rise { animation: ds-work-rise var(--ds-duration-step-rise) var(--ds-easing-out) both; animation-delay: calc(var(--i, 0) * 40ms); }\n@keyframes ds-work-rise { from { opacity: 0; filter: blur(3px); transform: translateY(12px); } }\n@media (pointer: coarse), (max-width: 767px) { .ds-work-act > :is(button, a) { height: var(--ds-size-control-touch); } }\n@media (prefers-reduced-motion: reduce) { .ds-work-rise { animation-name: ds-work-fade; } }\n@keyframes ds-work-fade { from { opacity: 0; } }\n`\n"
+        },
+        {
+          "path": "react/components/product/WorkWindow.tsx",
+          "content": "import type { ReactNode } from 'react'\n\n// The small dark window a work panel shows (console2.css .v2-win): a 44px bar with its title and a tag (a time, a\n// count), the body, and a foot line whose square turns red when the work is done (`done`). Code colours, Geist.\nexport interface WorkWindowProps {\n  title: string\n  tag?: string\n  foot?: string\n  done?: boolean\n  children?: ReactNode\n}\n\nexport function WorkWindow({ title, tag, foot, done, children }: WorkWindowProps) {\n  return (\n    <>\n      <style href=\"ds-work-window\" precedence=\"ds\">{css}</style>\n      <div data-ds=\"work-window\" className=\"ds-win w-full max-w-120\">\n        <div className=\"ds-win-bar\"><span className=\"min-w-0 flex-1 truncate\">{title}</span>{tag && <span className=\"ds-win-tag\">{tag}</span>}</div>\n        {children}\n        {foot && <p className=\"ds-win-foot\" data-on={done || undefined}><span className=\"ds-win-dot\" aria-hidden=\"true\" />{foot}</p>}\n      </div>\n    </>\n  )\n}\n\nexport default WorkWindow\n\nconst css = `\n.ds-win { border: var(--ds-border-hairline) solid var(--ds-color-neutral-300); background: var(--ds-color-code); color: var(--ds-color-code-fg); font-family: var(--ds-font-text); }\n.ds-win-bar { display: flex; height: 44px; align-items: center; gap: var(--ds-space-md); padding: 0 var(--ds-space-xl); font-size: var(--ds-text-ui); line-height: 16px; }\n.ds-win-tag { flex-shrink: 0; padding: var(--ds-space-2xs) var(--ds-space-sm); background: var(--ds-color-neutral-200); color: var(--ds-color-code-fg); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); font-variant-numeric: tabular-nums; }\n.ds-win-foot { display: flex; align-items: center; gap: var(--ds-space-md); margin: 0; padding: var(--ds-space-lg) var(--ds-space-xl); border-top: var(--ds-border-hairline) solid var(--ds-color-neutral-300); color: var(--ds-color-code-muted); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-win-foot[data-on] { color: var(--ds-color-code-fg); }\n.ds-win-dot { width: 6px; height: 6px; flex-shrink: 0; border: var(--ds-border-hairline) solid var(--ds-color-code-muted); transition: background-color var(--ds-duration-micro) var(--ds-easing-standard), border-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-win-foot[data-on] .ds-win-dot { border-color: var(--ds-color-surface-accent); background: var(--ds-color-surface-accent); }\n`\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "cell-burst"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "WorkPanel",
+            "file": "react/components/product/WorkPanel.tsx",
+            "props": [
+              {
+                "name": "title",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "line",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "seed",
+                "type": "number",
+                "required": false,
+                "default": "5"
+              },
+              {
+                "name": "tall",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "window",
+                "type": "ReactNode",
+                "required": false,
+                "description": "The one window on the panel (Vue's `window` slot)."
+              },
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "WorkWindow",
+            "file": "react/components/product/WorkWindow.tsx",
+            "props": [
+              {
+                "name": "title",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "tag",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "foot",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "done",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "react/examples/work-panel/Product.tsx",
+          "content": "import { PixelButton } from '@/react/components/ui/PixelButton'\nimport { WorkPanel } from '@/react/components/product/WorkPanel'\nimport { StepViz } from '@/react/components/visuals/StepViz'\n// A card with its one action, and the dark panel with a window beside it: How it works' search step (step-viz), which\n// plays once as it renders.\nconst RUNS = [0, 0, 0, 0]\n\nexport default function Product() {\n  return (\n    <WorkPanel title=\"Run a search\" line=\"Ask your data a question. Conare finds the passages that answer it.\" label=\"an example\" tall window={<StepViz step={2} runs={RUNS} active />}>\n      <PixelButton large>Run a search</PixelButton>\n    </WorkPanel>\n  )\n}\n",
+          "registryDependencies": [
+            "button",
+            "cell-burst",
+            "step-viz"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/product/work-panel.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport '@/elements/components/visuals/grain'\nimport '@/elements/components/visuals/cell-burst'\nimport styles from 'virtual:tw'\n\n// WorkPanel.vue as <conare-work-panel>: a page whose job is one action with a visible result (SetupStep.vue, console2.css .v2-agentwork): the step's card\n// beside the dark panel in the website's double rule, side by side from 640px of room. The card has the title in\n// Faculty Glyphic with a red full stop, one line, and its action at the foot (default slot: one large PixelButton,\n// secondary buttons beside it). The panel is the grain and a sheet of cells (`seed`) with one window on it (`window`\n// slot), which plays once. Title, line and action rise in once, a blur clearing. `tall` keeps the panel at 372px, as\n// Getting started's steps do, so moving between steps moves nothing.\n// `heading` is Vue's `title` (HTML's tooltip attribute is `title`). The action's buttons are slotted, so the rule that\n// sizes Vue's plain buttons reaches them as ::slotted.\n\n/**\n * @summary One action with a visible result: the step's card beside the dark panel.\n * @slot - The action: one large pixel button, secondary buttons beside it.\n * @slot window - The one window on the panel.\n */\nexport class WorkPanel extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { heading: {}, line: {}, seed: { type: Number }, tall: { type: Boolean }, label: {} }\n\n\t/** The step's title (Vue's `title`). */\n\theading = ''\n\t/** Its one line. */\n\tline?: string\n\t/** Which cells the panel lights. */\n\tseed = 5\n\t/** Keeps the panel at 372px. */\n\ttall = false\n\t/** The section's name for assistive tech. */\n\tlabel?: string\n\n\trender() {\n\t\treturn html`<div data-ds=\"work-panel\" class=\"ds-work\"><section class=\"ds-work-grid\" aria-label=${this.label ?? nothing}><div class=\"ds-work-card\"><h2 class=\"ds-work-title ds-work-rise\">${this.heading}<span class=\"text-fg-accent-display\">.</span></h2>${this.line ? html`<p class=\"ds-work-line ds-work-rise\" style=\"--i: 1\">${this.line}</p>` : nothing}${this.hasSlot() ? html`<div class=\"ds-work-act ds-work-rise\" style=\"--i: 2\"><slot></slot></div>` : nothing}</div><div aria-hidden=\"true\" class=\"ds-work-panel\" ?data-tall=${this.tall}>${staticHtml`<${tag('grain')}></${tag('grain')}>`}<div class=\"pointer-events-none absolute inset-0 opacity-70\">${staticHtml`<${tag('cell-burst')} seed=${this.seed}></${tag('cell-burst')}>`}</div><div class=\"relative flex w-full items-center justify-center px-4 py-6\"><slot name=\"window\"></slot></div></div></section></div>`\n\t}\n}\n\ndefine('work-panel', WorkPanel)\n"
+        },
+        {
+          "path": "elements/components/product/work-panel.css",
+          "content": "/* WorkPanel.vue's <style>, with its rules for the action's buttons as ::slotted (they are the page's). */\n.ds-work { container-type: inline-size; }\n.ds-work-grid { position: relative; display: grid; gap: 1px; margin: calc(var(--ds-space-xs) + var(--ds-border-hairline)); border: var(--ds-border-hairline) solid var(--ds-color-edge); outline: var(--ds-border-hairline) solid var(--ds-color-edge); outline-offset: 4px; background: var(--ds-color-edge); }\n@container (min-width: 640px) { .ds-work-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); } }\n.ds-work-card { display: flex; flex-direction: column; align-items: flex-start; gap: var(--ds-space-md); padding: 20px; background: var(--ds-color-surface); }\n.ds-work-title { font-family: var(--ds-font-heading); font-size: var(--ds-text-heading-2); font-weight: var(--ds-font-weight-regular); line-height: var(--ds-text-heading-2-leading); letter-spacing: var(--ds-tracking-tight); text-wrap: balance; }\n.ds-work-line { max-width: 56ch; color: var(--ds-color-fg-muted); font-size: var(--ds-text-ui); line-height: var(--ds-text-ui-leading); text-wrap: pretty; }\n.ds-work-act { display: flex; width: 100%; flex-wrap: wrap; align-items: center; gap: var(--ds-space-md); margin-top: auto; padding-top: var(--ds-space-xl); }\n.ds-work-act ::slotted(:is(button, a):not(.ds-px)) { height: var(--ds-size-control-lg); padding: 0 12px; font-size: var(--ds-text-ui); }\n.ds-work-panel { position: relative; display: flex; min-height: 240px; align-items: center; overflow: hidden; background: var(--ds-color-neutral-200); color: var(--ds-color-neutral-300); }\n@container (min-width: 640px) { .ds-work-panel[data-tall] { min-height: 372px; } }\n/* Once, as the step opens: up 12px, a 3px blur clearing (.v2-agent-rise). */\n.ds-work-rise { animation: ds-work-rise var(--ds-duration-step-rise) var(--ds-easing-out) both; animation-delay: calc(var(--i, 0) * 40ms); }\n@keyframes ds-work-rise { from { opacity: 0; filter: blur(3px); transform: translateY(12px); } }\n@media (pointer: coarse), (max-width: 767px) { .ds-work-act ::slotted(:is(button, a)) { height: var(--ds-size-control-touch); } }\n@media (prefers-reduced-motion: reduce) { .ds-work-rise { animation-name: ds-work-fade; } }\n@keyframes ds-work-fade { from { opacity: 0; } }\n"
+        },
+        {
+          "path": "elements/components/product/work-window.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// WorkWindow.vue as <conare-work-window>: the small dark window a work panel shows (console2.css .v2-win): a 44px bar with its title and a tag (a time, a\n// count), the body, and a foot line whose square turns red when the work is done (`done`). Code colours, Geist.\n// `heading` is Vue's `title`.\n\n/**\n * @summary The small dark window a work panel shows.\n * @slot - The body.\n */\nexport class WorkWindow extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { heading: {}, tag: {}, foot: {}, done: { type: Boolean } }\n\n\t/** The bar's title (Vue's `title`). */\n\theading = ''\n\t/** A time or a count in the bar. */\n\ttag?: string\n\t/** The foot line. */\n\tfoot?: string\n\t/** The foot's square turns red. */\n\tdone = false\n\n\trender() {\n\t\treturn html`<div data-ds=\"work-window\" class=\"ds-win w-full max-w-120\"><div class=\"ds-win-bar\"><span class=\"min-w-0 flex-1 truncate\">${this.heading}</span>${this.tag ? html`<span class=\"ds-win-tag\">${this.tag}</span>` : nothing}</div><slot></slot>${this.foot ? html`<p class=\"ds-win-foot\" ?data-on=${this.done}><span class=\"ds-win-dot\" aria-hidden=\"true\"></span>${this.foot}</p>` : nothing}</div>`\n\t}\n}\n\ndefine('work-window', WorkWindow)\n"
+        },
+        {
+          "path": "elements/components/product/work-window.css",
+          "content": "/* WorkWindow.vue's <style>, as it is. */\n.ds-win { border: var(--ds-border-hairline) solid var(--ds-color-neutral-300); background: var(--ds-color-code); color: var(--ds-color-code-fg); font-family: var(--ds-font-text); }\n.ds-win-bar { display: flex; height: 44px; align-items: center; gap: var(--ds-space-md); padding: 0 var(--ds-space-xl); font-size: var(--ds-text-ui); line-height: 16px; }\n.ds-win-tag { flex-shrink: 0; padding: var(--ds-space-2xs) var(--ds-space-sm); background: var(--ds-color-neutral-200); color: var(--ds-color-code-fg); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); font-variant-numeric: tabular-nums; }\n.ds-win-foot { display: flex; align-items: center; gap: var(--ds-space-md); margin: 0; padding: var(--ds-space-lg) var(--ds-space-xl); border-top: var(--ds-border-hairline) solid var(--ds-color-neutral-300); color: var(--ds-color-code-muted); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-win-foot[data-on] { color: var(--ds-color-code-fg); }\n.ds-win-dot { width: 6px; height: 6px; flex-shrink: 0; border: var(--ds-border-hairline) solid var(--ds-color-code-muted); transition: background-color var(--ds-duration-micro) var(--ds-easing-standard), border-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-win-foot[data-on] .ds-win-dot { border-color: var(--ds-color-surface-accent); background: var(--ds-color-surface-accent); }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/work-panel.js",
+        "elements/work-window.js",
+        "elements/grain.js",
+        "elements/cell-burst.js",
+        "elements/pixel-button.js",
+        "elements/step-viz.js"
+      ],
+      "tag": "conare-work-panel",
+      "tags": [
+        "conare-work-panel",
+        "conare-work-window"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "cell-burst"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-work-panel",
+            "name": "WorkPanel",
+            "module": "elements/work-panel.js",
+            "description": "One action with a visible result: the step's card beside the dark panel.",
+            "attributes": [
+              {
+                "name": "heading",
+                "field": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The step's title (Vue's `title`)."
+              },
+              {
+                "name": "line",
+                "field": "line",
+                "type": "string | undefined",
+                "description": "Its one line."
+              },
+              {
+                "name": "seed",
+                "field": "seed",
+                "type": "number",
+                "default": "5",
+                "description": "Which cells the panel lights."
+              },
+              {
+                "name": "tall",
+                "field": "tall",
+                "type": "boolean",
+                "default": "false",
+                "description": "Keeps the panel at 372px."
+              },
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string | undefined",
+                "description": "The section's name for assistive tech."
+              }
+            ],
+            "properties": [
+              {
+                "name": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The step's title (Vue's `title`).",
+                "attribute": "heading"
+              },
+              {
+                "name": "line",
+                "type": "string | undefined",
+                "description": "Its one line.",
+                "attribute": "line"
+              },
+              {
+                "name": "seed",
+                "type": "number",
+                "default": "5",
+                "description": "Which cells the panel lights.",
+                "attribute": "seed"
+              },
+              {
+                "name": "tall",
+                "type": "boolean",
+                "default": "false",
+                "description": "Keeps the panel at 372px.",
+                "attribute": "tall"
+              },
+              {
+                "name": "label",
+                "type": "string | undefined",
+                "description": "The section's name for assistive tech.",
+                "attribute": "label"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "The action: one large pixel button, secondary buttons beside it."
+              },
+              {
+                "name": "window",
+                "description": "The one window on the panel."
+              }
+            ],
+            "methods": []
+          },
+          {
+            "tag": "conare-work-window",
+            "name": "WorkWindow",
+            "module": "elements/work-window.js",
+            "description": "The small dark window a work panel shows.",
+            "attributes": [
+              {
+                "name": "heading",
+                "field": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The bar's title (Vue's `title`)."
+              },
+              {
+                "name": "tag",
+                "field": "tag",
+                "type": "string | undefined",
+                "description": "A time or a count in the bar."
+              },
+              {
+                "name": "foot",
+                "field": "foot",
+                "type": "string | undefined",
+                "description": "The foot line."
+              },
+              {
+                "name": "done",
+                "field": "done",
+                "type": "boolean",
+                "default": "false",
+                "description": "The foot's square turns red."
+              }
+            ],
+            "properties": [
+              {
+                "name": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The bar's title (Vue's `title`).",
+                "attribute": "heading"
+              },
+              {
+                "name": "tag",
+                "type": "string | undefined",
+                "description": "A time or a count in the bar.",
+                "attribute": "tag"
+              },
+              {
+                "name": "foot",
+                "type": "string | undefined",
+                "description": "The foot line.",
+                "attribute": "foot"
+              },
+              {
+                "name": "done",
+                "type": "boolean",
+                "default": "false",
+                "description": "The foot's square turns red.",
+                "attribute": "done"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "The body."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/work-panel/Product.html",
+          "content": "<!-- A card with its one action, and the dark panel with a window beside it: How it works' search step (step-viz),\n     which plays once as it renders. -->\n<conare-work-panel heading=\"Run a search\" line=\"Ask your data a question. Conare finds the passages that answer it.\" label=\"an example\" tall>\n  <conare-pixel-button large>Run a search</conare-pixel-button>\n  <conare-step-viz slot=\"window\" step=\"2\" runs=\"[0, 0, 0, 0]\" active></conare-step-viz>\n</conare-work-panel>\n"
+        }
+      ]
+    }
+  }
+}

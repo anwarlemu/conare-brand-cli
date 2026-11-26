@@ -1,0 +1,164 @@
+{
+  "name": "label",
+  "title": "Label",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "Field's label on its own: 12px in the soft grey, with an optional muted note such as optional.",
+  "use_for": "A control that is not in a Field: a slider's name, a group of checkboxes, a custom input.",
+  "never": [
+    "A placeholder in place of a label",
+    "Capitals or bold"
+  ],
+  "source": "conare-web app/assets/css/console2.css (the console's form labels), registry Field",
+  "body": "`for` ties it to the control's id; `hint` adds the muted note after it. Field already draws this label; use Label where there is no Field.",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Label.vue",
+      "content": "<script setup lang=\"ts\">\n// Field's label on its own (console2.css forms): 12px in the soft grey, over or beside the control it names, never in\n// place of one. `for` ties it to the control's id; `hint` adds a muted note after it, such as \"optional\".\ndefineProps<{ for?: string, hint?: string }>()\n</script>\n\n<template>\n  <label data-ds=\"label\" :for=\"$props.for\" class=\"inline-flex items-baseline gap-1.5 type-meta text-fg-soft\"><slot /><span v-if=\"hint\" class=\"text-fg-muted\">{{ hint }}</span></label>\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "In the product",
+      "center": true,
+      "half": false,
+      "path": "examples/label/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport Input from '@/components/ui/Input.vue'\nimport Label from '@/components/ui/Label.vue'\n// A label over its field, and one with a note: the label names the field, the note says it can be left empty.\n</script>\n\n<template>\n  <div class=\"flex w-90 max-w-full flex-col gap-4\">\n    <div class=\"flex flex-col gap-1.5\"><Label for=\"label-name\">Name</Label><Input id=\"label-name\" placeholder=\"production-agent\" /></div>\n    <div class=\"flex flex-col gap-1.5\"><Label for=\"label-desc\" hint=\"optional\">Description</Label><Input id=\"label-desc\" placeholder=\"What it is for\" /></div>\n  </div>\n</template>\n",
+      "requires": [
+        "field"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Label.tsx",
+          "content": "import type { LabelHTMLAttributes, ReactNode } from 'react'\nimport { cn } from '@/react/lib/cn'\n\n// Field's label on its own (console2.css forms): 12px in the soft grey, over or beside the control it names, never in\n// place of one. `htmlFor` ties it to the control's id (Vue's `for`); `hint` adds a muted note after it, such as\n// \"optional\".\nexport interface LabelProps extends LabelHTMLAttributes<HTMLLabelElement> {\n  hint?: string\n  children?: ReactNode\n}\n\nexport function Label({ hint, className, children, ...rest }: LabelProps) {\n  return <label data-ds=\"label\" {...rest} className={cn('inline-flex items-baseline gap-1.5 type-meta text-fg-soft', className)}>{children}{hint && <span className=\"text-fg-muted\">{hint}</span>}</label>\n}\n\nexport default Label\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "Label",
+            "file": "react/components/ui/Label.tsx",
+            "props": [
+              {
+                "name": "hint",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              }
+            ],
+            "extends": [
+              "LabelHTMLAttributes<HTMLLabelElement>"
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": true,
+          "half": false,
+          "path": "react/examples/label/Product.tsx",
+          "content": "import { Input } from '@/react/components/ui/Input'\nimport { Label } from '@/react/components/ui/Label'\n// A label over its field, and one with a note: the label names the field, the note says it can be left empty.\n\nexport default function Product() {\n  return (\n    <div className=\"flex w-90 max-w-full flex-col gap-4\">\n      <div className=\"flex flex-col gap-1.5\"><Label htmlFor=\"label-name\">Name</Label><Input id=\"label-name\" placeholder=\"production-agent\" /></div>\n      <div className=\"flex flex-col gap-1.5\"><Label htmlFor=\"label-desc\" hint=\"optional\">Description</Label><Input id=\"label-desc\" placeholder=\"What it is for\" /></div>\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "field"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/label.ts",
+          "content": "import { html, nothing, type PropertyValues } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// Label.vue as <conare-label>: Field's label on its own (console2.css forms): 12px in the soft grey, over or beside the\n// control it names, never in place of one; `hint` adds a muted note after it, such as \"optional\". A <label for> in a\n// shadow root cannot reach a control outside it, so `for` names the control's id in the same document (or shadow root)\n// and the element does what the label would: it gives that control its text as aria-label (an element such as\n// <conare-input> passes it to its inner field) and a press on it focuses and presses the control.\n\n/**\n * @summary A label for one control.\n * @slot - The label's text.\n */\nexport class Label extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { htmlFor: { attribute: 'for' }, hint: {} }\n\n\t/** The id of the control it names (the `for` attribute). */\n\thtmlFor?: string\n\t/** A muted note after it, such as \"optional\". */\n\thint?: string\n\n\tprivate target() {\n\t\tif (!this.htmlFor) return null\n\t\tconst root = this.getRootNode() as Document | ShadowRoot\n\t\treturn root.getElementById?.(this.htmlFor) ?? null\n\t}\n\tprivate name() {\n\t\treturn [this.textContent?.replace(/\\s+/g, ' ').trim(), this.hint].filter(Boolean).join(' ')\n\t}\n\tprotected updated(changed: PropertyValues) {\n\t\tsuper.updated(changed)\n\t\tthis.target()?.setAttribute('aria-label', this.name())\n\t}\n\tconnectedCallback() {\n\t\tsuper.connectedCallback()\n\t\t// The control may come after the label in the page: name it once the page around is in place.\n\t\tqueueMicrotask(() => this.requestUpdate())\n\t}\n\tprivate onClick() {\n\t\tconst t = this.target()\n\t\tif (!t) return\n\t\tt.focus()\n\t\tt.click()\n\t}\n\n\trender() {\n\t\treturn html`<label data-ds=\"label\" class=\"inline-flex items-baseline gap-1.5 type-meta text-fg-soft\" @click=${this.onClick}><slot @slotchange=${() => this.requestUpdate()}></slot>${this.hint ? html`<span class=\"text-fg-muted\">${this.hint}</span>` : nothing}</label>`\n\t}\n}\n\ndefine('label', Label)\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/label.js",
+        "elements/input.js"
+      ],
+      "tag": "conare-label",
+      "tags": [
+        "conare-label"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-label",
+            "name": "Label",
+            "module": "elements/label.js",
+            "description": "A label for one control.",
+            "attributes": [
+              {
+                "name": "for",
+                "field": "htmlFor",
+                "type": "string | undefined",
+                "description": "The id of the control it names (the `for` attribute)."
+              },
+              {
+                "name": "hint",
+                "field": "hint",
+                "type": "string | undefined",
+                "description": "A muted note after it, such as \"optional\"."
+              }
+            ],
+            "properties": [
+              {
+                "name": "htmlFor",
+                "type": "string | undefined",
+                "description": "The id of the control it names (the `for` attribute).",
+                "attribute": "for"
+              },
+              {
+                "name": "hint",
+                "type": "string | undefined",
+                "description": "A muted note after it, such as \"optional\".",
+                "attribute": "hint"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "The label's text."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": true,
+          "half": false,
+          "path": "elements/examples/label/Product.html",
+          "content": "<!-- A label over its field, and one with a note: the label names the field, the note says it can be left empty. -->\n<div class=\"flex w-90 max-w-full flex-col gap-4\">\n  <div class=\"flex flex-col gap-1.5\"><conare-label for=\"label-name\">Name</conare-label><conare-input id=\"label-name\" placeholder=\"production-agent\"></conare-input></div>\n  <div class=\"flex flex-col gap-1.5\"><conare-label for=\"label-desc\" hint=\"optional\">Description</conare-label><conare-input id=\"label-desc\" placeholder=\"What it is for\"></conare-input></div>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

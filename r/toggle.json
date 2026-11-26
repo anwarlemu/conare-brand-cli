@@ -1,0 +1,186 @@
+{
+  "name": "toggle",
+  "title": "Toggle",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "A pressable chip that stays on: a red square at its start and an ink edge while it is on.",
+  "use_for": "One option in a row of options or filters: exact words, include archived.",
+  "never": [
+    "A setting saved at once (use Switch)",
+    "A pick of one from several (use ToggleGroup or Tabs)"
+  ],
+  "source": "conare-web app/assets/css/console2.css (.v2-chip, .v2-chip-pick with aria-pressed)",
+  "body": "`v-model` is pressed or not (`aria-pressed`). On hover the 4px red square shows and the edge goes ink; while on, both stay. A press gives the paper fill. 40px on phones.",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Toggle.vue",
+      "content": "<script setup lang=\"ts\">\n// A pressable chip that stays on (console2.css .v2-chip.v2-chip-pick with aria-pressed): 28px, a hairline, 12px, and a\n// 4px red square at its start that shows on hover and stays while it is on, when the edge also turns ink. A press\n// gives the paper fill. For one setting that is on or off in a row of filters or options; a few that exclude each other\n// are a ToggleGroup. 40px on phones.\nconst pressed = defineModel<boolean>({ default: false })\ndefineProps<{ disabled?: boolean }>()\n</script>\n\n<template>\n  <button data-ds=\"toggle\" type=\"button\" class=\"ds-toggle\" :aria-pressed=\"pressed\" :disabled=\"disabled\" @click=\"pressed = !pressed\"><slot /></button>\n</template>\n\n<style>\n.ds-toggle { position: relative; display: inline-flex; height: var(--ds-size-control-sm); align-items: center; gap: var(--ds-space-sm); padding: 0 10px 0 16px; border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface); color: var(--ds-color-fg); font-size: var(--ds-text-meta); white-space: nowrap; cursor: pointer; transition: border-color var(--ds-duration-micro) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard), color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-toggle::before { position: absolute; top: 50%; left: 6px; width: 4px; height: 4px; margin-top: -2px; background: var(--ds-color-edge-accent); content: \"\"; opacity: 0; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-toggle[aria-pressed=\"true\"] { border-color: var(--ds-color-edge-focus); }\n.ds-toggle[aria-pressed=\"true\"]::before { opacity: 1; }\n@media (hover: hover) and (pointer: fine) {\n  .ds-toggle:hover:not(:disabled) { border-color: var(--ds-color-action-secondary-edge-hover); }\n  .ds-toggle:hover:not(:disabled)::before { opacity: 1; }\n}\n.ds-toggle:active:not(:disabled) { background: var(--ds-color-surface-subtle); }\n.ds-toggle:disabled { color: var(--ds-color-fg-muted); cursor: not-allowed; }\n.ds-toggle svg { flex-shrink: 0; }\n@media (pointer: coarse), (max-width: 767px) { .ds-toggle { height: auto; min-height: var(--ds-size-control-touch); padding-block: 6px; font-size: var(--ds-text-ui); } }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "In the product",
+      "center": true,
+      "half": false,
+      "path": "examples/toggle/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport Toggle from '@/components/ui/Toggle.vue'\n// Options that stay on, as the spend cap's chips do: a red square at the start and an ink edge while on.\nconst exact = ref(true)\nconst archived = ref(false)\nconst mine = ref(false)\n</script>\n\n<template>\n  <div class=\"flex flex-wrap items-center gap-2\" role=\"group\" aria-label=\"search options\">\n    <Toggle v-model=\"exact\">Exact words</Toggle>\n    <Toggle v-model=\"archived\">Include archived</Toggle>\n    <Toggle v-model=\"mine\">Only mine</Toggle>\n    <Toggle disabled>Shared drives</Toggle>\n  </div>\n</template>\n",
+      "requires": [],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Toggle.tsx",
+          "content": "'use client'\nimport type { ReactNode } from 'react'\nimport { useControllable } from '@/react/hooks/useControllable'\n\n// A pressable chip that stays on (console2.css .v2-chip.v2-chip-pick with aria-pressed): 28px, a hairline, 12px, and a\n// 4px red square at its start that shows on hover and stays while it is on, when the edge also turns ink. A press\n// gives the paper fill. For one setting that is on or off in a row of filters or options; a few that exclude each other\n// are a ToggleGroup. 40px on phones. Vue's v-model is `pressed` with `onPressedChange` (or `defaultPressed` alone).\nexport interface ToggleProps {\n  disabled?: boolean\n  pressed?: boolean\n  defaultPressed?: boolean\n  onPressedChange?: (pressed: boolean) => void\n  className?: string\n  children?: ReactNode\n}\n\nexport function Toggle({ disabled, pressed, defaultPressed = false, onPressedChange, className, children }: ToggleProps) {\n  const [on, setOn] = useControllable(pressed, defaultPressed, onPressedChange)\n  return (\n    <>\n      <style href=\"ds-toggle\" precedence=\"ds\">{css}</style>\n      <button data-ds=\"toggle\" type=\"button\" className={className ? `ds-toggle ${className}` : 'ds-toggle'} aria-pressed={on} disabled={disabled} onClick={() => setOn(!on)}>{children}</button>\n    </>\n  )\n}\n\nexport default Toggle\n\nconst css = `\n.ds-toggle { position: relative; display: inline-flex; height: var(--ds-size-control-sm); align-items: center; gap: var(--ds-space-sm); padding: 0 10px 0 16px; border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface); color: var(--ds-color-fg); font-size: var(--ds-text-meta); white-space: nowrap; cursor: pointer; transition: border-color var(--ds-duration-micro) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard), color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-toggle::before { position: absolute; top: 50%; left: 6px; width: 4px; height: 4px; margin-top: -2px; background: var(--ds-color-edge-accent); content: \"\"; opacity: 0; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-toggle[aria-pressed=\"true\"] { border-color: var(--ds-color-edge-focus); }\n.ds-toggle[aria-pressed=\"true\"]::before { opacity: 1; }\n@media (hover: hover) and (pointer: fine) {\n  .ds-toggle:hover:not(:disabled) { border-color: var(--ds-color-action-secondary-edge-hover); }\n  .ds-toggle:hover:not(:disabled)::before { opacity: 1; }\n}\n.ds-toggle:active:not(:disabled) { background: var(--ds-color-surface-subtle); }\n.ds-toggle:disabled { color: var(--ds-color-fg-muted); cursor: not-allowed; }\n.ds-toggle svg { flex-shrink: 0; }\n@media (pointer: coarse), (max-width: 767px) { .ds-toggle { height: auto; min-height: var(--ds-size-control-touch); padding-block: 6px; font-size: var(--ds-text-ui); } }\n`\n"
+        },
+        {
+          "path": "react/hooks/useControllable.ts",
+          "content": "'use client'\nimport { useCallback, useRef, useState } from 'react'\n\n// Vue's defineModel in React: a value that is controlled when the caller passes it (value + onValueChange, as Radix\n// does) and kept inside otherwise (defaultValue). setValue calls onChange either way.\nexport function useControllable<T>(value: T | undefined, defaultValue: T, onChange?: (value: T) => void) {\n\tconst [inner, setInner] = useState<T>(defaultValue)\n\tconst controlled = value !== undefined\n\tconst current = controlled ? value : inner\n\tconst ref = useRef(onChange)\n\tref.current = onChange\n\tconst set = useCallback((next: T) => {\n\t\tif (!controlled) setInner(next)\n\t\tref.current?.(next)\n\t}, [controlled])\n\treturn [current, set] as const\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "Toggle",
+            "file": "react/components/ui/Toggle.tsx",
+            "props": [
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "pressed",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "defaultPressed",
+                "type": "boolean",
+                "required": false,
+                "default": "false"
+              },
+              {
+                "name": "onPressedChange",
+                "type": "(pressed: boolean) => void",
+                "required": false
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": true,
+          "half": false,
+          "path": "react/examples/toggle/Product.tsx",
+          "content": "'use client'\nimport { useState } from 'react'\nimport { Toggle } from '@/react/components/ui/Toggle'\n// Options that stay on, as the spend cap's chips do: a red square at the start and an ink edge while on.\n\nexport default function Product() {\n  const [exact, setExact] = useState(true)\n  const [archived, setArchived] = useState(false)\n  const [mine, setMine] = useState(false)\n  return (\n    <div className=\"flex flex-wrap items-center gap-2\" role=\"group\" aria-label=\"search options\">\n      <Toggle pressed={exact} onPressedChange={setExact}>Exact words</Toggle>\n      <Toggle pressed={archived} onPressedChange={setArchived}>Include archived</Toggle>\n      <Toggle pressed={mine} onPressedChange={setMine}>Only mine</Toggle>\n      <Toggle disabled>Shared drives</Toggle>\n    </div>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/toggle.ts",
+          "content": "import { html } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// Toggle.vue as <conare-toggle>: a pressable chip that stays on (console2.css .v2-chip.v2-chip-pick with aria-pressed):\n// 28px, a hairline, 12px, and a 4px red square at its start that shows on hover and stays while it is on, when the edge\n// also turns ink. A press gives the paper fill. For one setting that is on or off in a row of filters or options; a few\n// that exclude each other are a <conare-toggle-group>. 40px on phones. Vue's v-model is `pressed` (an attribute) with\n// `pressed-change`.\n\n/**\n * @summary A pressable chip that stays on.\n * @slot - The label, with a Lucide icon before it if any.\n * @fires pressed-change - It was pressed; detail.value is the new state.\n */\nexport class Toggle extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { pressed: { type: Boolean, reflect: true }, disabled: { type: Boolean, reflect: true } }\n\n\tpressed = false\n\tdisabled = false\n\n\trender() {\n\t\treturn html`<button data-ds=\"toggle\" type=\"button\" class=\"ds-toggle\" aria-pressed=${String(this.pressed)} ?disabled=${this.disabled} @click=${() => this.commit(!this.pressed, 'pressed')}><slot></slot></button>`\n\t}\n}\n\ndefine('toggle', Toggle)\n"
+        },
+        {
+          "path": "elements/components/ui/toggle.css",
+          "content": "/* Toggle.vue's <style>, with slotted icons as the Vue file's own svg. */\n.ds-toggle { position: relative; display: inline-flex; height: var(--ds-size-control-sm); align-items: center; gap: var(--ds-space-sm); padding: 0 10px 0 16px; border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface); color: var(--ds-color-fg); font-size: var(--ds-text-meta); white-space: nowrap; cursor: pointer; transition: border-color var(--ds-duration-micro) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard), color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-toggle::before { position: absolute; top: 50%; left: 6px; width: 4px; height: 4px; margin-top: -2px; background: var(--ds-color-edge-accent); content: \"\"; opacity: 0; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-toggle[aria-pressed=\"true\"] { border-color: var(--ds-color-edge-focus); }\n.ds-toggle[aria-pressed=\"true\"]::before { opacity: 1; }\n@media (hover: hover) and (pointer: fine) {\n  .ds-toggle:hover:not(:disabled) { border-color: var(--ds-color-action-secondary-edge-hover); }\n  .ds-toggle:hover:not(:disabled)::before { opacity: 1; }\n}\n.ds-toggle:active:not(:disabled) { background: var(--ds-color-surface-subtle); }\n.ds-toggle:disabled { color: var(--ds-color-fg-muted); cursor: not-allowed; }\n.ds-toggle svg, ::slotted(svg) { flex-shrink: 0; }\n@media (pointer: coarse), (max-width: 767px) { .ds-toggle { height: auto; min-height: var(--ds-size-control-touch); padding-block: 6px; font-size: var(--ds-text-ui); } }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/toggle.js"
+      ],
+      "tag": "conare-toggle",
+      "tags": [
+        "conare-toggle"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-toggle",
+            "name": "Toggle",
+            "module": "elements/toggle.js",
+            "description": "A pressable chip that stays on.",
+            "attributes": [
+              {
+                "name": "pressed",
+                "field": "pressed",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "disabled",
+                "field": "disabled",
+                "type": "boolean",
+                "default": "false"
+              }
+            ],
+            "properties": [
+              {
+                "name": "pressed",
+                "type": "boolean",
+                "default": "false",
+                "attribute": "pressed"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "attribute": "disabled"
+              }
+            ],
+            "events": [
+              {
+                "name": "pressed-change",
+                "description": "It was pressed; detail.value is the new state."
+              }
+            ],
+            "slots": [
+              {
+                "name": "",
+                "description": "The label, with a Lucide icon before it if any."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": true,
+          "half": false,
+          "path": "elements/examples/toggle/Product.html",
+          "content": "<!-- Options that stay on, as the spend cap's chips do: a red square at the start and an ink edge while on. -->\n<div class=\"flex flex-wrap items-center gap-2\" role=\"group\" aria-label=\"search options\">\n  <conare-toggle pressed>Exact words</conare-toggle>\n  <conare-toggle>Include archived</conare-toggle>\n  <conare-toggle>Only mine</conare-toggle>\n  <conare-toggle disabled>Shared drives</conare-toggle>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

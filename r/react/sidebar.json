@@ -1,0 +1,31 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "sidebar",
+  "type": "registry:ui",
+  "title": "Sidebar",
+  "description": "The console's navigation: a label over each group, a row with its icon and count, a red edge on the page you are on, and a count that turns red when something failed.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Sidebar.tsx",
+      "type": "registry:ui",
+      "content": "import type { HTMLAttributes, ReactNode } from 'react'\nimport { cn } from '@/lib/cn'\n\n// The console's navigation (console2.css .v2-side): 216px of paper with a hairline at its edge. Put a SidebarLabel\n// over each group and a SidebarLink per page; `head` holds the workspace switcher (48px, over a hairline) and `foot`\n// the account menu. It stays open on wide screens; on a phone the app shows it as a drawer over the page. Other\n// attributes (an id, data-*) land on the <nav>, as Vue's fall through.\nexport interface SidebarProps extends Omit<HTMLAttributes<HTMLElement>, 'children'> { label?: string, head?: ReactNode, foot?: ReactNode, className?: string, children?: ReactNode }\n\nexport function Sidebar({ label, head, foot, className, children, ...rest }: SidebarProps) {\n  return (\n    <nav data-ds=\"sidebar\" className={cn('flex w-sidebar flex-col border-r border-edge bg-surface-subtle', className)} aria-label={label ?? 'main'} {...rest}>\n      {head && <div className=\"h-bar shrink-0 border-b border-edge\">{head}</div>}\n      <div className=\"fade-y flex min-h-0 flex-1 flex-col overflow-y-auto pb-4\">{children}</div>\n      {foot && <div className=\"shrink-0 border-t border-edge\">{foot}</div>}\n    </nav>\n  )\n}\n\nexport default Sidebar\n"
+    },
+    {
+      "path": "components/ui/SidebarLabel.tsx",
+      "type": "registry:ui",
+      "content": "import type { ReactNode } from 'react'\n\n// A group's name in the Sidebar (console2.css .v2-nav-label): 12px muted, 16px over it.\nexport function SidebarLabel({ children }: { children?: ReactNode }) {\n  return <p data-ds=\"sidebar-label\" className=\"px-3 pt-4 pb-1 text-meta text-fg-muted\">{children}</p>\n}\n\nexport default SidebarLabel\n"
+    },
+    {
+      "path": "components/ui/SidebarLink.tsx",
+      "type": "registry:ui",
+      "content": "import type { AnchorHTMLAttributes, ComponentType, ElementType } from 'react'\nimport { cn } from '@/lib/cn'\n\n// One page in the Sidebar (console2.css .v2-nav-link): a 28px row (44px on phones) with its 14px icon, the label and\n// a count or health at the end. The page you are on sits on white in a hairline, in medium, with a 2px red edge at the\n// sidebar's side. `alert` turns the count red when something failed. `as` renders a router link component instead of\n// an anchor. Other props (onClick) land on the link.\nexport interface SidebarLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {\n  href?: string\n  active?: boolean\n  icon?: ComponentType<{ size?: number, strokeWidth?: number, 'aria-hidden'?: boolean | 'true' }>\n  status?: string\n  alert?: boolean\n  as?: ElementType\n}\n\nexport function SidebarLink({ href, active, icon: Icon, status, alert, as: Link = 'a', className, children, ...rest }: SidebarLinkProps) {\n  return (\n    <>\n      <style href=\"ds-sidebar-link\" precedence=\"ds\">{css}</style>\n      <Link data-ds=\"sidebar-link\" href={href} className={cn('ds-navlink', className)} data-active={active || undefined} aria-current={active ? 'page' : undefined} {...rest}>\n        {Icon && <Icon size={14} strokeWidth={1.5} aria-hidden=\"true\" />}\n        <span className=\"min-w-0 flex-1 truncate\">{children}</span>\n        {status && <span className={cn('text-meta tabular-nums', alert ? 'text-home-red-press' : 'text-fg-muted')}>{status}</span>}\n      </Link>\n    </>\n  )\n}\n\nexport default SidebarLink\n\nconst css = `\n.ds-navlink { position: relative; display: flex; height: var(--ds-size-control-sm); flex-shrink: 0; align-items: center; gap: var(--ds-space-md); margin: 0 8px; padding: 0 8px; color: var(--ds-color-fg-soft); font-size: var(--ds-text-ui); transition: background-color var(--ds-duration-micro) var(--ds-easing-standard), color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-navlink svg { flex-shrink: 0; color: var(--ds-color-fg-muted); }\n@media (hover: hover) and (pointer: fine) { .ds-navlink:hover { background: color-mix(in srgb, var(--ds-color-edge) 50%, transparent); color: var(--ds-color-fg); } }\n.ds-navlink[data-active] { background: var(--ds-color-surface); color: var(--ds-color-fg); font-weight: var(--ds-font-weight-medium); outline: var(--ds-border-hairline) solid var(--ds-color-edge); outline-offset: -1px; }\n.ds-navlink[data-active]::before { position: absolute; top: 6px; bottom: 6px; left: -8px; width: 2px; background: var(--ds-color-edge-accent); content: \"\"; }\n.ds-navlink[data-active] svg { color: var(--ds-color-fg); }\n.ds-navlink:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }\n@media (pointer: coarse), (max-width: 767px) { .ds-navlink { height: 44px; font-size: var(--ds-text-body); } }\n`\n"
+    },
+    {
+      "path": "lib/cn.ts",
+      "type": "registry:lib",
+      "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+    }
+  ]
+}

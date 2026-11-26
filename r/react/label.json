@@ -1,0 +1,21 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "label",
+  "type": "registry:ui",
+  "title": "Label",
+  "description": "Field's label on its own: 12px in the soft grey, with an optional muted note such as optional.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Label.tsx",
+      "type": "registry:ui",
+      "content": "import type { LabelHTMLAttributes, ReactNode } from 'react'\nimport { cn } from '@/lib/cn'\n\n// Field's label on its own (console2.css forms): 12px in the soft grey, over or beside the control it names, never in\n// place of one. `htmlFor` ties it to the control's id (Vue's `for`); `hint` adds a muted note after it, such as\n// \"optional\".\nexport interface LabelProps extends LabelHTMLAttributes<HTMLLabelElement> {\n  hint?: string\n  children?: ReactNode\n}\n\nexport function Label({ hint, className, children, ...rest }: LabelProps) {\n  return <label data-ds=\"label\" {...rest} className={cn('inline-flex items-baseline gap-1.5 type-meta text-fg-soft', className)}>{children}{hint && <span className=\"text-fg-muted\">{hint}</span>}</label>\n}\n\nexport default Label\n"
+    },
+    {
+      "path": "lib/cn.ts",
+      "type": "registry:lib",
+      "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+    }
+  ]
+}

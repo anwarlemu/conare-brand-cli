@@ -1,0 +1,404 @@
+{
+  "name": "home-numbers",
+  "title": "Home numbers",
+  "type": "registry:block",
+  "group": "product",
+  "description": "The key numbers on Explorer's first screen, each leading to its page: documents, queries this month, the typical search. Three takes: a strip along the foot, the double rule with this month's bars, or a line under the box with the documents in the title.",
+  "use_for": "The first screen of a search page, where the box leads and the numbers stay quiet.",
+  "never": [
+    "Numbers that don't lead anywhere",
+    "More than three: the box is the page"
+  ],
+  "source": "conare-web app/components/console/search/Numbers.vue, app/pages/dashboard/search.vue (homenums 1 to 3), app/assets/css/console2.css (.v2-homefoot, .v2-homecards, .v2-homebars, .v2-homeline)",
+  "body": "`take` picks the layout: `strip`, `rule` or `line`. The documents and this month's queries count up the first time\nthey show in a session (`count`). The examples set them under Explorer's title (`highlight-text`) and its\n`search-box`.",
+  "requires": [
+    "count"
+  ],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/product/HomeNumbers.vue",
+      "content": "<script setup lang=\"ts\">\nimport Count from '@/components/ui/Count.vue'\n\n// The numbers on Explorer's first screen (search/Numbers.vue): the documents, the queries this month and the typical\n// search, each leading to its page. Three takes: `strip`, a strip fixed along the board's foot (from the sidebar's\n// edge; the full width on a phone); `rule`, three cells in the website's double rule with this month's queries as\n// bars that rise once, today's in red; `line`, a quiet line under the box, for when the title carries the documents.\n// The documents and this month's queries count up the first time they show in a session (count). Links are anchors\n// with `hrefs`; `navigate` lets a router take them.\nexport type HomeNumbersTake = 'strip' | 'rule' | 'line'\nexport type HomeNumbersTarget = 'documents' | 'queries' | 'performance'\nconst props = withDefaults(defineProps<{\n  take: HomeNumbersTake\n  documents: number\n  namespaces: number\n  queries: number\n  typical: number\n  slowest: number\n  days?: number[]\n  hrefs?: Partial<Record<HomeNumbersTarget, string>>\n  /** The bars rise as they land (the first visit of a session). */\n  plays?: boolean\n}>(), { days: () => [], hrefs: () => ({}), plays: true })\nconst emit = defineEmits<{ navigate: [target: HomeNumbersTarget, event: MouseEvent] }>()\nconst num = (n: number) => n.toLocaleString('en-US')\nconst peak = () => Math.max(1, ...props.days)\nconst href = (t: HomeNumbersTarget) => props.hrefs[t] ?? '#'\n</script>\n\n<template>\n  <nav data-ds=\"home-numbers\" v-if=\"take === 'strip'\" class=\"ds-homefoot\" aria-label=\"key numbers\">\n    <a :href=\"href('documents')\" @click=\"emit('navigate', 'documents', $event)\"><span class=\"ds-homefoot-num\"><Count :value=\"documents\" once=\"home-documents\" /></span> documents</a>\n    <a :href=\"href('queries')\" @click=\"emit('navigate', 'queries', $event)\"><span class=\"ds-homefoot-num\"><Count :value=\"queries\" once=\"home-queries\" /></span> queries this month</a>\n    <a :href=\"href('performance')\" @click=\"emit('navigate', 'performance', $event)\"><span class=\"ds-homefoot-num\">{{ typical }} ms</span> typical search</a>\n  </nav>\n\n  <section data-ds=\"home-numbers\" v-else-if=\"take === 'rule'\" class=\"ds-homecards mx-auto w-full max-w-160\" aria-label=\"key numbers\">\n    <a :href=\"href('documents')\" @click=\"emit('navigate', 'documents', $event)\">\n      <span class=\"type-meta text-fg-muted\">Documents</span>\n      <span class=\"ds-homecards-num\"><Count :value=\"documents\" once=\"home-documents\" /></span>\n      <span class=\"type-meta text-fg-muted\">In {{ namespaces }} namespaces</span>\n    </a>\n    <a :href=\"href('queries')\" @click=\"emit('navigate', 'queries', $event)\">\n      <span class=\"type-meta text-fg-muted\">Queries this month</span>\n      <span class=\"ds-homecards-num\"><Count :value=\"queries\" once=\"home-queries\" /></span>\n      <span class=\"ds-homebars\" :data-plays=\"plays || undefined\" aria-hidden=\"true\"><span v-for=\"(d, i) in days\" :key=\"i\" :style=\"{ height: `${Math.max(8, (d / peak()) * 100)}%`, '--i': i }\" /></span>\n    </a>\n    <a :href=\"href('performance')\" @click=\"emit('navigate', 'performance', $event)\">\n      <span class=\"type-meta text-fg-muted\">Typical search</span>\n      <span class=\"ds-homecards-num\">{{ typical }} ms</span>\n      <span class=\"type-meta text-fg-muted\">{{ slowest }} ms for the slowest 5%</span>\n    </a>\n  </section>\n\n  <p data-ds=\"home-numbers\" v-else class=\"ds-homeline\">\n    <a :href=\"href('queries')\" @click=\"emit('navigate', 'queries', $event)\">{{ num(queries) }} queries this month</a>\n    <span aria-hidden=\"true\">·</span>\n    <a :href=\"href('performance')\" @click=\"emit('navigate', 'performance', $event)\">{{ typical }} ms typical search</a>\n  </p>\n</template>\n\n<style>\n.ds-homefoot { position: fixed; right: 0; bottom: 0; left: 0; z-index: 1; display: flex; justify-content: space-between; gap: var(--ds-space-md); padding: 12px 16px; border-top: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface); color: var(--ds-color-fg-muted); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); white-space: nowrap; }\n@media (min-width: 768px) { .ds-homefoot { left: var(--ds-layout-sidebar); justify-content: center; gap: 32px; } }\n.ds-homefoot a, .ds-homeline a { transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-homefoot-num { color: var(--ds-color-fg); font-size: var(--ds-text-ui); font-variant-numeric: tabular-nums; }\n@media (hover: hover) and (pointer: fine) { .ds-homefoot a:hover, .ds-homeline a:hover { color: var(--ds-color-fg); } }\n@media (max-width: 767px) {\n  .ds-homefoot a { display: inline-flex; min-height: 40px; flex-wrap: wrap; align-items: baseline; align-content: center; gap: 0 4px; white-space: normal; }\n  .ds-homeline a { display: inline-flex; min-height: 40px; align-items: center; }\n}\n.ds-homecards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 16px; border: var(--ds-border-hairline) solid var(--ds-color-edge); outline: var(--ds-border-hairline) solid var(--ds-color-edge); outline-offset: 4px; }\n.ds-homecards > a { display: flex; min-width: 0; flex-direction: column; gap: var(--ds-space-xs); padding: 12px; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-homecards > a + a { border-left: var(--ds-border-hairline) solid var(--ds-color-edge); }\n.ds-homecards > a:active { background: color-mix(in srgb, var(--ds-color-fg) 8%, var(--ds-color-surface-subtle)); }\n@media (hover: hover) and (pointer: fine) { .ds-homecards > a:hover { background: var(--ds-color-surface-subtle); } }\n.ds-homecards > a:focus-visible, .ds-homefoot a:focus-visible, .ds-homeline a:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }\n.ds-homecards .type-meta { text-wrap: balance; }\n.ds-homecards-num { font-family: var(--ds-font-heading); font-size: var(--ds-text-heading-2); line-height: var(--ds-text-heading-2-leading); font-variant-numeric: tabular-nums; }\n.ds-homebars { display: flex; height: 16px; align-items: flex-end; gap: 1px; }\n.ds-homebars > span { min-width: 0; flex: 1; background: var(--ds-color-fg); transform-origin: bottom; }\n.ds-homebars > span:last-child { background: var(--ds-color-surface-accent); }\n@media (max-width: 767px) {\n  .ds-homecards { grid-template-columns: minmax(0, 1fr); }\n  .ds-homecards > a + a { border-top: var(--ds-border-hairline) solid var(--ds-color-edge); border-left: 0; }\n}\n.ds-homeline { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 8px; margin: 0; color: var(--ds-color-fg-muted); font-size: var(--ds-text-ui); line-height: var(--ds-text-ui-leading); }\n@media (prefers-reduced-motion: no-preference) {\n  .ds-homebars[data-plays] > span { animation: ds-homebar-rise var(--ds-duration-entrance) var(--ds-easing-out) both; animation-delay: calc(var(--i) * 12ms); }\n}\n@keyframes ds-homebar-rise { from { transform: scaleY(0.05); } }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "FootStrip",
+      "label": "Foot strip",
+      "center": false,
+      "half": false,
+      "path": "examples/home-numbers/FootStrip.vue",
+      "content": "<script setup lang=\"ts\">\nimport { Compass, House, Layers, Network } from 'lucide-vue-next'\nimport ConsoleFrame from '@/components/product/ConsoleFrame.vue'\nimport HomeNumbers from '@/components/product/HomeNumbers.vue'\nimport SearchBox from '@/components/product/SearchBox.vue'\nimport HighlightText from '@/components/visuals/HighlightText.vue'\n// Explorer's first screen with its numbers, take 1: a strip along the board's foot, fixed to the bottom of the window beside the sidebar.\nconst groups = [{ label: 'Platform', links: [{ label: 'Overview', icon: House }, { label: 'Explorer', icon: Compass, active: true }, { label: 'Namespaces', icon: Layers, status: '6' }, { label: 'Sources', icon: Network }] }]\nconst days = Array.from({ length: 30 }, (_, i) => 3200 + ((i * 37) % 13) * 260 + (i % 7 > 4 ? -1800 : 0) + i * 30)\n</script>\n\n<template>\n  <ConsoleFrame :groups=\"groups\" :crumbs=\"[{ label: 'Overview', href: '#' }, { label: 'Explorer' }]\">\n    <div class=\"mx-auto flex min-h-[calc(100vh-48px)] w-full max-w-page flex-col justify-center gap-6 px-4 pt-8 pb-28 md:px-8\">\n      <HighlightText as=\"h1\" text=\"Explore your data\" accent=\".\" class=\"text-center type-heading-1 md:type-hero\" />\n      <SearchBox />\n      <HomeNumbers take=\"strip\" :documents=\"2786122\" :namespaces=\"6\" :queries=\"148920\" :typical=\"182\" :slowest=\"296\" :days=\"days\" @navigate=\"(_, e) => e.preventDefault()\" />\n    </div>\n  </ConsoleFrame>\n</template>\n",
+      "requires": [
+        "count",
+        "highlight-text",
+        "overview-page",
+        "search-box"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    },
+    {
+      "name": "DoubleRule",
+      "label": "Double rule",
+      "center": false,
+      "half": false,
+      "path": "examples/home-numbers/DoubleRule.vue",
+      "content": "<script setup lang=\"ts\">\nimport { Compass, House, Layers, Network } from 'lucide-vue-next'\nimport ConsoleFrame from '@/components/product/ConsoleFrame.vue'\nimport HomeNumbers from '@/components/product/HomeNumbers.vue'\nimport SearchBox from '@/components/product/SearchBox.vue'\nimport HighlightText from '@/components/visuals/HighlightText.vue'\n// Explorer's first screen with its numbers, take 2: the website's double rule under the box, this month's queries as bars, today's in red.\nconst groups = [{ label: 'Platform', links: [{ label: 'Overview', icon: House }, { label: 'Explorer', icon: Compass, active: true }, { label: 'Namespaces', icon: Layers, status: '6' }, { label: 'Sources', icon: Network }] }]\nconst days = Array.from({ length: 30 }, (_, i) => 3200 + ((i * 37) % 13) * 260 + (i % 7 > 4 ? -1800 : 0) + i * 30)\n</script>\n\n<template>\n  <ConsoleFrame :groups=\"groups\" :crumbs=\"[{ label: 'Overview', href: '#' }, { label: 'Explorer' }]\">\n    <div class=\"mx-auto flex min-h-[calc(100vh-48px)] w-full max-w-page flex-col justify-center gap-6 px-4 pt-8 pb-28 md:px-8\">\n      <HighlightText as=\"h1\" text=\"Explore your data\" accent=\".\" class=\"text-center type-heading-1 md:type-hero\" />\n      <SearchBox />\n      <HomeNumbers take=\"rule\" :documents=\"2786122\" :namespaces=\"6\" :queries=\"148920\" :typical=\"182\" :slowest=\"296\" :days=\"days\" @navigate=\"(_, e) => e.preventDefault()\" />\n    </div>\n  </ConsoleFrame>\n</template>\n",
+      "requires": [
+        "count",
+        "highlight-text",
+        "overview-page",
+        "search-box"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    },
+    {
+      "name": "InTheTitle",
+      "label": "In the title",
+      "center": false,
+      "half": false,
+      "path": "examples/home-numbers/InTheTitle.vue",
+      "content": "<script setup lang=\"ts\">\nimport { Compass, House, Layers, Network } from 'lucide-vue-next'\nimport ConsoleFrame from '@/components/product/ConsoleFrame.vue'\nimport HomeNumbers from '@/components/product/HomeNumbers.vue'\nimport SearchBox from '@/components/product/SearchBox.vue'\nimport HighlightText from '@/components/visuals/HighlightText.vue'\n// Explorer's first screen with its numbers, take 3: the documents in the title, and the rest on a quiet line under the box.\nconst groups = [{ label: 'Platform', links: [{ label: 'Overview', icon: House }, { label: 'Explorer', icon: Compass, active: true }, { label: 'Namespaces', icon: Layers, status: '6' }, { label: 'Sources', icon: Network }] }]\nconst days = Array.from({ length: 30 }, (_, i) => 3200 + ((i * 37) % 13) * 260 + (i % 7 > 4 ? -1800 : 0) + i * 30)\n</script>\n\n<template>\n  <ConsoleFrame :groups=\"groups\" :crumbs=\"[{ label: 'Overview', href: '#' }, { label: 'Explorer' }]\">\n    <div class=\"mx-auto flex min-h-[calc(100vh-48px)] w-full max-w-page flex-col justify-center gap-6 px-4 pt-8 pb-28 md:px-8\">\n      <HighlightText as=\"h1\" text=\"Explore 2,786,122 documents\" accent=\".\" class=\"text-center type-heading-1 md:type-hero\" />\n      <SearchBox />\n      <HomeNumbers take=\"line\" :documents=\"2786122\" :namespaces=\"6\" :queries=\"148920\" :typical=\"182\" :slowest=\"296\" :days=\"days\" @navigate=\"(_, e) => e.preventDefault()\" />\n    </div>\n  </ConsoleFrame>\n</template>\n",
+      "requires": [
+        "count",
+        "highlight-text",
+        "overview-page",
+        "search-box"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/product/HomeNumbers.tsx",
+          "content": "import type { CSSProperties, MouseEvent } from 'react'\nimport { Count } from '@/react/components/ui/Count'\n\n// The numbers on Explorer's first screen (search/Numbers.vue): the documents, the queries this month and the typical\n// search, each leading to its page. Three takes: `strip`, a strip fixed along the board's foot (from the sidebar's\n// edge; the full width on a phone); `rule`, three cells in the website's double rule with this month's queries as\n// bars that rise once, today's in red; `line`, a quiet line under the box, for when the title carries the documents.\n// The documents and this month's queries count up the first time they show in a session (count). Links are anchors\n// with `hrefs`; `onNavigate` lets a router take them.\nexport type HomeNumbersTake = 'strip' | 'rule' | 'line'\nexport type HomeNumbersTarget = 'documents' | 'queries' | 'performance'\nexport interface HomeNumbersProps {\n  take: HomeNumbersTake\n  documents: number\n  namespaces: number\n  queries: number\n  typical: number\n  slowest: number\n  days?: number[]\n  hrefs?: Partial<Record<HomeNumbersTarget, string>>\n  /** The bars rise as they land (the first visit of a session). */\n  plays?: boolean\n  onNavigate?: (target: HomeNumbersTarget, event: MouseEvent) => void\n}\n\nconst num = (n: number) => n.toLocaleString('en-US')\n\nexport function HomeNumbers({ take, documents, namespaces, queries, typical, slowest, days = [], hrefs = {}, plays = true, onNavigate }: HomeNumbersProps) {\n  const peak = Math.max(1, ...days)\n  const href = (t: HomeNumbersTarget) => hrefs[t] ?? '#'\n  const go = (t: HomeNumbersTarget) => (e: MouseEvent) => onNavigate?.(t, e)\n  return (\n    <>\n      <style href=\"ds-home-numbers\" precedence=\"ds\">{css}</style>\n      {take === 'strip'\n        ? (\n            <nav data-ds=\"home-numbers\" className=\"ds-homefoot\" aria-label=\"key numbers\">\n              <a href={href('documents')} onClick={go('documents')}><span className=\"ds-homefoot-num\"><Count value={documents} once=\"home-documents\" /></span> documents</a>\n              <a href={href('queries')} onClick={go('queries')}><span className=\"ds-homefoot-num\"><Count value={queries} once=\"home-queries\" /></span> queries this month</a>\n              <a href={href('performance')} onClick={go('performance')}><span className=\"ds-homefoot-num\">{`${typical} ms`}</span> typical search</a>\n            </nav>\n          )\n        : take === 'rule'\n          ? (\n              <section data-ds=\"home-numbers\" className=\"ds-homecards mx-auto w-full max-w-160\" aria-label=\"key numbers\">\n                <a href={href('documents')} onClick={go('documents')}>\n                  <span className=\"type-meta text-fg-muted\">Documents</span>\n                  <span className=\"ds-homecards-num\"><Count value={documents} once=\"home-documents\" /></span>\n                  <span className=\"type-meta text-fg-muted\">{`In ${namespaces} namespaces`}</span>\n                </a>\n                <a href={href('queries')} onClick={go('queries')}>\n                  <span className=\"type-meta text-fg-muted\">Queries this month</span>\n                  <span className=\"ds-homecards-num\"><Count value={queries} once=\"home-queries\" /></span>\n                  <span className=\"ds-homebars\" data-plays={plays || undefined} aria-hidden=\"true\">{days.map((d, i) => <span key={i} style={{ height: `${Math.max(8, (d / peak) * 100)}%`, '--i': i } as CSSProperties} />)}</span>\n                </a>\n                <a href={href('performance')} onClick={go('performance')}>\n                  <span className=\"type-meta text-fg-muted\">Typical search</span>\n                  <span className=\"ds-homecards-num\">{`${typical} ms`}</span>\n                  <span className=\"type-meta text-fg-muted\">{`${slowest} ms for the slowest 5%`}</span>\n                </a>\n              </section>\n            )\n          : (\n              <p data-ds=\"home-numbers\" className=\"ds-homeline\">\n                <a href={href('queries')} onClick={go('queries')}>{`${num(queries)} queries this month`}</a>\n                <span aria-hidden=\"true\">·</span>\n                <a href={href('performance')} onClick={go('performance')}>{`${typical} ms typical search`}</a>\n              </p>\n            )}\n    </>\n  )\n}\n\nexport default HomeNumbers\n\nconst css = `\n.ds-homefoot { position: fixed; right: 0; bottom: 0; left: 0; z-index: 1; display: flex; justify-content: space-between; gap: var(--ds-space-md); padding: 12px 16px; border-top: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface); color: var(--ds-color-fg-muted); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); white-space: nowrap; }\n@media (min-width: 768px) { .ds-homefoot { left: var(--ds-layout-sidebar); justify-content: center; gap: 32px; } }\n.ds-homefoot a, .ds-homeline a { transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-homefoot-num { color: var(--ds-color-fg); font-size: var(--ds-text-ui); font-variant-numeric: tabular-nums; }\n@media (hover: hover) and (pointer: fine) { .ds-homefoot a:hover, .ds-homeline a:hover { color: var(--ds-color-fg); } }\n@media (max-width: 767px) {\n  .ds-homefoot a { display: inline-flex; min-height: 40px; flex-wrap: wrap; align-items: baseline; align-content: center; gap: 0 4px; white-space: normal; }\n  .ds-homeline a { display: inline-flex; min-height: 40px; align-items: center; }\n}\n.ds-homecards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 16px; border: var(--ds-border-hairline) solid var(--ds-color-edge); outline: var(--ds-border-hairline) solid var(--ds-color-edge); outline-offset: 4px; }\n.ds-homecards > a { display: flex; min-width: 0; flex-direction: column; gap: var(--ds-space-xs); padding: 12px; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-homecards > a + a { border-left: var(--ds-border-hairline) solid var(--ds-color-edge); }\n.ds-homecards > a:active { background: color-mix(in srgb, var(--ds-color-fg) 8%, var(--ds-color-surface-subtle)); }\n@media (hover: hover) and (pointer: fine) { .ds-homecards > a:hover { background: var(--ds-color-surface-subtle); } }\n.ds-homecards > a:focus-visible, .ds-homefoot a:focus-visible, .ds-homeline a:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }\n.ds-homecards .type-meta { text-wrap: balance; }\n.ds-homecards-num { font-family: var(--ds-font-heading); font-size: var(--ds-text-heading-2); line-height: var(--ds-text-heading-2-leading); font-variant-numeric: tabular-nums; }\n.ds-homebars { display: flex; height: 16px; align-items: flex-end; gap: 1px; }\n.ds-homebars > span { min-width: 0; flex: 1; background: var(--ds-color-fg); transform-origin: bottom; }\n.ds-homebars > span:last-child { background: var(--ds-color-surface-accent); }\n@media (max-width: 767px) {\n  .ds-homecards { grid-template-columns: minmax(0, 1fr); }\n  .ds-homecards > a + a { border-top: var(--ds-border-hairline) solid var(--ds-color-edge); border-left: 0; }\n}\n.ds-homeline { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 8px; margin: 0; color: var(--ds-color-fg-muted); font-size: var(--ds-text-ui); line-height: var(--ds-text-ui-leading); }\n@media (prefers-reduced-motion: no-preference) {\n  .ds-homebars[data-plays] > span { animation: ds-homebar-rise var(--ds-duration-entrance) var(--ds-easing-out) both; animation-delay: calc(var(--i) * 12ms); }\n}\n@keyframes ds-homebar-rise { from { transform: scaleY(0.05); } }\n`\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "count"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "HomeNumbers",
+            "file": "react/components/product/HomeNumbers.tsx",
+            "props": [
+              {
+                "name": "take",
+                "type": "HomeNumbersTake",
+                "required": true
+              },
+              {
+                "name": "documents",
+                "type": "number",
+                "required": true
+              },
+              {
+                "name": "namespaces",
+                "type": "number",
+                "required": true
+              },
+              {
+                "name": "queries",
+                "type": "number",
+                "required": true
+              },
+              {
+                "name": "typical",
+                "type": "number",
+                "required": true
+              },
+              {
+                "name": "slowest",
+                "type": "number",
+                "required": true
+              },
+              {
+                "name": "days",
+                "type": "number[]",
+                "required": false,
+                "default": "[]"
+              },
+              {
+                "name": "hrefs",
+                "type": "Partial<Record<HomeNumbersTarget, string>>",
+                "required": false,
+                "default": "{}"
+              },
+              {
+                "name": "plays",
+                "type": "boolean",
+                "required": false,
+                "default": "true",
+                "description": "The bars rise as they land (the first visit of a session)."
+              },
+              {
+                "name": "onNavigate",
+                "type": "(target: HomeNumbersTarget, event: MouseEvent) => void",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "FootStrip",
+          "label": "Foot strip",
+          "center": false,
+          "half": false,
+          "path": "react/examples/home-numbers/FootStrip.tsx",
+          "content": "import { Compass, House, Layers, Network } from 'lucide-react'\nimport { ConsoleFrame } from '@/react/components/product/ConsoleFrame'\nimport { HomeNumbers } from '@/react/components/product/HomeNumbers'\nimport { SearchBox } from '@/react/components/product/SearchBox'\nimport { HighlightText } from '@/react/components/visuals/HighlightText'\n// Explorer's first screen with its numbers, take 1: a strip along the board's foot, fixed to the bottom of the window beside the sidebar.\nconst groups = [{ label: 'Platform', links: [{ label: 'Overview', icon: House }, { label: 'Explorer', icon: Compass, active: true }, { label: 'Namespaces', icon: Layers, status: '6' }, { label: 'Sources', icon: Network }] }]\nconst days = Array.from({ length: 30 }, (_, i) => 3200 + ((i * 37) % 13) * 260 + (i % 7 > 4 ? -1800 : 0) + i * 30)\n\nexport default function FootStrip() {\n  return (\n    <ConsoleFrame groups={groups} crumbs={[{ label: 'Overview', href: '#' }, { label: 'Explorer' }]}>\n      <div className=\"mx-auto flex min-h-[calc(100vh-48px)] w-full max-w-page flex-col justify-center gap-6 px-4 pt-8 pb-28 md:px-8\">\n        <HighlightText as=\"h1\" text=\"Explore your data\" accent=\".\" className=\"text-center type-heading-1 md:type-hero\" />\n        <SearchBox />\n        <HomeNumbers take=\"strip\" documents={2786122} namespaces={6} queries={148920} typical={182} slowest={296} days={days} onNavigate={(_, e) => e.preventDefault()} />\n      </div>\n    </ConsoleFrame>\n  )\n}\n",
+          "registryDependencies": [
+            "count",
+            "highlight-text",
+            "overview-page",
+            "search-box"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        },
+        {
+          "name": "DoubleRule",
+          "label": "Double rule",
+          "center": false,
+          "half": false,
+          "path": "react/examples/home-numbers/DoubleRule.tsx",
+          "content": "import { Compass, House, Layers, Network } from 'lucide-react'\nimport { ConsoleFrame } from '@/react/components/product/ConsoleFrame'\nimport { HomeNumbers } from '@/react/components/product/HomeNumbers'\nimport { SearchBox } from '@/react/components/product/SearchBox'\nimport { HighlightText } from '@/react/components/visuals/HighlightText'\n// Explorer's first screen with its numbers, take 2: the website's double rule under the box, this month's queries as bars, today's in red.\nconst groups = [{ label: 'Platform', links: [{ label: 'Overview', icon: House }, { label: 'Explorer', icon: Compass, active: true }, { label: 'Namespaces', icon: Layers, status: '6' }, { label: 'Sources', icon: Network }] }]\nconst days = Array.from({ length: 30 }, (_, i) => 3200 + ((i * 37) % 13) * 260 + (i % 7 > 4 ? -1800 : 0) + i * 30)\n\nexport default function DoubleRule() {\n  return (\n    <ConsoleFrame groups={groups} crumbs={[{ label: 'Overview', href: '#' }, { label: 'Explorer' }]}>\n      <div className=\"mx-auto flex min-h-[calc(100vh-48px)] w-full max-w-page flex-col justify-center gap-6 px-4 pt-8 pb-28 md:px-8\">\n        <HighlightText as=\"h1\" text=\"Explore your data\" accent=\".\" className=\"text-center type-heading-1 md:type-hero\" />\n        <SearchBox />\n        <HomeNumbers take=\"rule\" documents={2786122} namespaces={6} queries={148920} typical={182} slowest={296} days={days} onNavigate={(_, e) => e.preventDefault()} />\n      </div>\n    </ConsoleFrame>\n  )\n}\n",
+          "registryDependencies": [
+            "count",
+            "highlight-text",
+            "overview-page",
+            "search-box"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        },
+        {
+          "name": "InTheTitle",
+          "label": "In the title",
+          "center": false,
+          "half": false,
+          "path": "react/examples/home-numbers/InTheTitle.tsx",
+          "content": "import { Compass, House, Layers, Network } from 'lucide-react'\nimport { ConsoleFrame } from '@/react/components/product/ConsoleFrame'\nimport { HomeNumbers } from '@/react/components/product/HomeNumbers'\nimport { SearchBox } from '@/react/components/product/SearchBox'\nimport { HighlightText } from '@/react/components/visuals/HighlightText'\n// Explorer's first screen with its numbers, take 3: the documents in the title, and the rest on a quiet line under the box.\nconst groups = [{ label: 'Platform', links: [{ label: 'Overview', icon: House }, { label: 'Explorer', icon: Compass, active: true }, { label: 'Namespaces', icon: Layers, status: '6' }, { label: 'Sources', icon: Network }] }]\nconst days = Array.from({ length: 30 }, (_, i) => 3200 + ((i * 37) % 13) * 260 + (i % 7 > 4 ? -1800 : 0) + i * 30)\n\nexport default function InTheTitle() {\n  return (\n    <ConsoleFrame groups={groups} crumbs={[{ label: 'Overview', href: '#' }, { label: 'Explorer' }]}>\n      <div className=\"mx-auto flex min-h-[calc(100vh-48px)] w-full max-w-page flex-col justify-center gap-6 px-4 pt-8 pb-28 md:px-8\">\n        <HighlightText as=\"h1\" text=\"Explore 2,786,122 documents\" accent=\".\" className=\"text-center type-heading-1 md:type-hero\" />\n        <SearchBox />\n        <HomeNumbers take=\"line\" documents={2786122} namespaces={6} queries={148920} typical={182} slowest={296} days={days} onNavigate={(_, e) => e.preventDefault()} />\n      </div>\n    </ConsoleFrame>\n  )\n}\n",
+          "registryDependencies": [
+            "count",
+            "highlight-text",
+            "overview-page",
+            "search-box"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/product/home-numbers.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport '@/elements/components/ui/count'\nimport styles from 'virtual:tw'\n\n// HomeNumbers.vue as <conare-home-numbers>: the numbers on Explorer's first screen (search/Numbers.vue): the documents, the queries this month and the typical\n// search, each leading to its page. Three takes: `strip`, a strip fixed along the board's foot (from the sidebar's\n// edge; the full width on a phone); `rule`, three cells in the website's double rule with this month's queries as\n// bars that rise once, today's in red; `line`, a quiet line under the box, for when the title carries the documents.\n// The documents and this month's queries count up the first time they show in a session (count). Links are anchors\n// with `hrefs`; `navigate` ({{ target, event }}) lets a router take them.\n// `days` and `hrefs` are JSON attributes or properties.\nexport type HomeNumbersTake = 'strip' | 'rule' | 'line'\nexport type HomeNumbersTarget = 'documents' | 'queries' | 'performance'\nconst num = (n: number) => n.toLocaleString('en-US')\n\n/**\n * @summary The numbers on Explorer's first screen, each leading to its page.\n * @fires navigate - A number was pressed ({ target, event }; prevent the event's default to route it yourself).\n */\nexport class HomeNumbers extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { take: {}, documents: { type: Number }, namespaces: { type: Number }, queries: { type: Number }, typical: { type: Number }, slowest: { type: Number }, days: { type: Array }, hrefs: { type: Object }, plays: { type: Boolean } }\n\n\t/** strip, rule or line. */\n\ttake: HomeNumbersTake = 'strip'\n\tdocuments = 0\n\tnamespaces = 0\n\tqueries = 0\n\t/** The typical search, in ms. */\n\ttypical = 0\n\t/** The slowest 5%, in ms. */\n\tslowest = 0\n\t/** This month's queries per day. */\n\tdays: number[] = []\n\threfs: Partial<Record<HomeNumbersTarget, string>> = {}\n\t/** The bars rise as they land (the first visit of a session). */\n\tplays = true\n\n\tprivate href(t: HomeNumbersTarget) {\n\t\treturn this.hrefs[t] ?? '#'\n\t}\n\tprivate go(t: HomeNumbersTarget) {\n\t\treturn (event: MouseEvent) => this.emit('navigate', { target: t, event })\n\t}\n\tprivate count(value: number, once: string) {\n\t\treturn staticHtml`<${tag('count')} .value=${value} once=${once}></${tag('count')}>`\n\t}\n\n\trender() {\n\t\tconst { take, typical } = this\n\t\tif (take === 'strip') return html`<nav data-ds=\"home-numbers\" class=\"ds-homefoot\" aria-label=\"key numbers\"><a href=${this.href('documents')} @click=${this.go('documents')}><span class=\"ds-homefoot-num\">${this.count(this.documents, 'home-documents')}</span> documents</a><a href=${this.href('queries')} @click=${this.go('queries')}><span class=\"ds-homefoot-num\">${this.count(this.queries, 'home-queries')}</span> queries this month</a><a href=${this.href('performance')} @click=${this.go('performance')}><span class=\"ds-homefoot-num\">${`${typical} ms`}</span> typical search</a></nav>`\n\t\tif (take === 'rule') {\n\t\t\tconst peak = Math.max(1, ...this.days)\n\t\t\treturn html`<section data-ds=\"home-numbers\" class=\"ds-homecards mx-auto w-full max-w-160\" aria-label=\"key numbers\"><a href=${this.href('documents')} @click=${this.go('documents')}><span class=\"type-meta text-fg-muted\">Documents</span><span class=\"ds-homecards-num\">${this.count(this.documents, 'home-documents')}</span><span class=\"type-meta text-fg-muted\">${`In ${this.namespaces} namespaces`}</span></a><a href=${this.href('queries')} @click=${this.go('queries')}><span class=\"type-meta text-fg-muted\">Queries this month</span><span class=\"ds-homecards-num\">${this.count(this.queries, 'home-queries')}</span><span class=\"ds-homebars\" ?data-plays=${this.plays} aria-hidden=\"true\">${this.days.map((d, i) => html`<span style=${`height: ${Math.max(8, (d / peak) * 100)}%; --i: ${i}`}></span>`)}</span></a><a href=${this.href('performance')} @click=${this.go('performance')}><span class=\"type-meta text-fg-muted\">Typical search</span><span class=\"ds-homecards-num\">${`${typical} ms`}</span><span class=\"type-meta text-fg-muted\">${`${this.slowest} ms for the slowest 5%`}</span></a></section>`\n\t\t}\n\t\treturn html`<p data-ds=\"home-numbers\" class=\"ds-homeline\"><a href=${this.href('queries')} @click=${this.go('queries')}>${`${num(this.queries)} queries this month`}</a><span aria-hidden=\"true\">·</span><a href=${this.href('performance')} @click=${this.go('performance')}>${`${typical} ms typical search`}</a></p>${nothing}`\n\t}\n}\n\ndefine('home-numbers', HomeNumbers)\n"
+        },
+        {
+          "path": "elements/components/product/home-numbers.css",
+          "content": "/* HomeNumbers.vue's <style>, as it is. */\n.ds-homefoot { position: fixed; right: 0; bottom: 0; left: 0; z-index: 1; display: flex; justify-content: space-between; gap: var(--ds-space-md); padding: 12px 16px; border-top: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface); color: var(--ds-color-fg-muted); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); white-space: nowrap; }\n@media (min-width: 768px) { .ds-homefoot { left: var(--ds-layout-sidebar); justify-content: center; gap: 32px; } }\n.ds-homefoot a, .ds-homeline a { transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-homefoot-num { color: var(--ds-color-fg); font-size: var(--ds-text-ui); font-variant-numeric: tabular-nums; }\n@media (hover: hover) and (pointer: fine) { .ds-homefoot a:hover, .ds-homeline a:hover { color: var(--ds-color-fg); } }\n@media (max-width: 767px) {\n  .ds-homefoot a { display: inline-flex; min-height: 40px; flex-wrap: wrap; align-items: baseline; align-content: center; gap: 0 4px; white-space: normal; }\n  .ds-homeline a { display: inline-flex; min-height: 40px; align-items: center; }\n}\n.ds-homecards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 16px; border: var(--ds-border-hairline) solid var(--ds-color-edge); outline: var(--ds-border-hairline) solid var(--ds-color-edge); outline-offset: 4px; }\n.ds-homecards > a { display: flex; min-width: 0; flex-direction: column; gap: var(--ds-space-xs); padding: 12px; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-homecards > a + a { border-left: var(--ds-border-hairline) solid var(--ds-color-edge); }\n.ds-homecards > a:active { background: color-mix(in srgb, var(--ds-color-fg) 8%, var(--ds-color-surface-subtle)); }\n@media (hover: hover) and (pointer: fine) { .ds-homecards > a:hover { background: var(--ds-color-surface-subtle); } }\n.ds-homecards > a:focus-visible, .ds-homefoot a:focus-visible, .ds-homeline a:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }\n.ds-homecards .type-meta { text-wrap: balance; }\n.ds-homecards-num { font-family: var(--ds-font-heading); font-size: var(--ds-text-heading-2); line-height: var(--ds-text-heading-2-leading); font-variant-numeric: tabular-nums; }\n.ds-homebars { display: flex; height: 16px; align-items: flex-end; gap: 1px; }\n.ds-homebars > span { min-width: 0; flex: 1; background: var(--ds-color-fg); transform-origin: bottom; }\n.ds-homebars > span:last-child { background: var(--ds-color-surface-accent); }\n@media (max-width: 767px) {\n  .ds-homecards { grid-template-columns: minmax(0, 1fr); }\n  .ds-homecards > a + a { border-top: var(--ds-border-hairline) solid var(--ds-color-edge); border-left: 0; }\n}\n.ds-homeline { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 8px; margin: 0; color: var(--ds-color-fg-muted); font-size: var(--ds-text-ui); line-height: var(--ds-text-ui-leading); }\n@media (prefers-reduced-motion: no-preference) {\n  .ds-homebars[data-plays] > span { animation: ds-homebar-rise var(--ds-duration-entrance) var(--ds-easing-out) both; animation-delay: calc(var(--i) * 12ms); }\n}\n@keyframes ds-homebar-rise { from { transform: scaleY(0.05); } }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/home-numbers.js",
+        "elements/count.js",
+        "elements/console-frame.js",
+        "elements/sidebar-label.js",
+        "elements/sidebar-link.js",
+        "elements/highlight-text.js",
+        "elements/search-box.js"
+      ],
+      "tag": "conare-home-numbers",
+      "tags": [
+        "conare-home-numbers"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "count"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-home-numbers",
+            "name": "HomeNumbers",
+            "module": "elements/home-numbers.js",
+            "description": "The numbers on Explorer's first screen, each leading to its page.",
+            "attributes": [
+              {
+                "name": "take",
+                "field": "take",
+                "type": "HomeNumbersTake",
+                "default": "'strip'",
+                "description": "strip, rule or line."
+              },
+              {
+                "name": "documents",
+                "field": "documents",
+                "type": "number",
+                "default": "0"
+              },
+              {
+                "name": "namespaces",
+                "field": "namespaces",
+                "type": "number",
+                "default": "0"
+              },
+              {
+                "name": "queries",
+                "field": "queries",
+                "type": "number",
+                "default": "0"
+              },
+              {
+                "name": "typical",
+                "field": "typical",
+                "type": "number",
+                "default": "0",
+                "description": "The typical search, in ms."
+              },
+              {
+                "name": "slowest",
+                "field": "slowest",
+                "type": "number",
+                "default": "0",
+                "description": "The slowest 5%, in ms."
+              },
+              {
+                "name": "days",
+                "field": "days",
+                "type": "number[]",
+                "default": "[]",
+                "description": "This month's queries per day."
+              },
+              {
+                "name": "hrefs",
+                "field": "hrefs",
+                "type": "Partial<Record<HomeNumbersTarget, string>>",
+                "default": "{}"
+              },
+              {
+                "name": "plays",
+                "field": "plays",
+                "type": "boolean",
+                "default": "true",
+                "description": "The bars rise as they land (the first visit of a session)."
+              }
+            ],
+            "properties": [
+              {
+                "name": "take",
+                "type": "HomeNumbersTake",
+                "default": "'strip'",
+                "description": "strip, rule or line.",
+                "attribute": "take"
+              },
+              {
+                "name": "documents",
+                "type": "number",
+                "default": "0",
+                "attribute": "documents"
+              },
+              {
+                "name": "namespaces",
+                "type": "number",
+                "default": "0",
+                "attribute": "namespaces"
+              },
+              {
+                "name": "queries",
+                "type": "number",
+                "default": "0",
+                "attribute": "queries"
+              },
+              {
+                "name": "typical",
+                "type": "number",
+                "default": "0",
+                "description": "The typical search, in ms.",
+                "attribute": "typical"
+              },
+              {
+                "name": "slowest",
+                "type": "number",
+                "default": "0",
+                "description": "The slowest 5%, in ms.",
+                "attribute": "slowest"
+              },
+              {
+                "name": "days",
+                "type": "number[]",
+                "default": "[]",
+                "description": "This month's queries per day.",
+                "attribute": "days"
+              },
+              {
+                "name": "hrefs",
+                "type": "Partial<Record<HomeNumbersTarget, string>>",
+                "default": "{}",
+                "attribute": "hrefs"
+              },
+              {
+                "name": "plays",
+                "type": "boolean",
+                "default": "true",
+                "description": "The bars rise as they land (the first visit of a session).",
+                "attribute": "plays"
+              }
+            ],
+            "events": [
+              {
+                "name": "navigate",
+                "description": "A number was pressed ({ target, event }; prevent the event's default to route it yourself)."
+              }
+            ],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "FootStrip",
+          "label": "Foot strip",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/home-numbers/FootStrip.html",
+          "content": "<!-- Explorer's first screen with its numbers, take 1: a strip along the board's foot, fixed to the bottom of the window beside the sidebar. -->\n<conare-console-frame crumbs='[{ \"label\": \"Overview\", \"href\": \"#\" }, { \"label\": \"Explorer\" }]'>\n  <conare-sidebar-label slot=\"nav\">Platform</conare-sidebar-label>\n  <conare-sidebar-link slot=\"nav\" href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-house\" aria-hidden=\"true\" slot=\"icon\"><path d=\"M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8\"></path><path d=\"M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z\"></path></svg>Overview</conare-sidebar-link>\n  <conare-sidebar-link slot=\"nav\" href=\"#\" active><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-compass\" aria-hidden=\"true\" slot=\"icon\"><path d=\"m16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z\"></path><circle cx=\"12\" cy=\"12\" r=\"10\"></circle></svg>Explorer</conare-sidebar-link>\n  <conare-sidebar-link slot=\"nav\" href=\"#\" status=\"6\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-layers\" aria-hidden=\"true\" slot=\"icon\"><path d=\"M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z\"></path><path d=\"M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12\"></path><path d=\"M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17\"></path></svg>Namespaces</conare-sidebar-link>\n  <conare-sidebar-link slot=\"nav\" href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-network\" aria-hidden=\"true\" slot=\"icon\"><rect x=\"16\" y=\"16\" width=\"6\" height=\"6\" rx=\"1\"></rect><rect x=\"2\" y=\"16\" width=\"6\" height=\"6\" rx=\"1\"></rect><rect x=\"9\" y=\"2\" width=\"6\" height=\"6\" rx=\"1\"></rect><path d=\"M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3\"></path><path d=\"M12 12V8\"></path></svg>Sources</conare-sidebar-link>\n  <div class=\"mx-auto flex min-h-[calc(100vh-48px)] w-full max-w-page flex-col justify-center gap-6 px-4 pt-8 pb-28 md:px-8\">\n    <conare-highlight-text as=\"h1\" text=\"Explore your data\" accent=\".\" class=\"text-center type-heading-1 md:type-hero\"></conare-highlight-text>\n    <conare-search-box></conare-search-box>\n    <conare-home-numbers id=\"numbers\" take=\"strip\" documents=\"2786122\" namespaces=\"6\" queries=\"148920\" typical=\"182\" slowest=\"296\" days=\"[3200, 6090, 5600, 5110, 4620, 2330, 1840, 6530, 6040, 5550, 5060, 4570, 2280, 1790, 6480, 5990, 5500, 5010, 4520, 2230, 5120, 6430, 5940, 5450, 4960, 4470, 2180, 5070, 6380, 5890]\"></conare-home-numbers>\n  </div>\n</conare-console-frame>\n<script type=\"module\">\n  document.getElementById('numbers').addEventListener('navigate', (e) => e.detail.event.preventDefault())\n</script>\n"
+        },
+        {
+          "name": "DoubleRule",
+          "label": "Double rule",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/home-numbers/DoubleRule.html",
+          "content": "<!-- Explorer's first screen with its numbers, take 2: the website's double rule under the box, this month's queries as bars, today's in red. -->\n<conare-console-frame crumbs='[{ \"label\": \"Overview\", \"href\": \"#\" }, { \"label\": \"Explorer\" }]'>\n  <conare-sidebar-label slot=\"nav\">Platform</conare-sidebar-label>\n  <conare-sidebar-link slot=\"nav\" href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-house\" aria-hidden=\"true\" slot=\"icon\"><path d=\"M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8\"></path><path d=\"M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z\"></path></svg>Overview</conare-sidebar-link>\n  <conare-sidebar-link slot=\"nav\" href=\"#\" active><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-compass\" aria-hidden=\"true\" slot=\"icon\"><path d=\"m16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z\"></path><circle cx=\"12\" cy=\"12\" r=\"10\"></circle></svg>Explorer</conare-sidebar-link>\n  <conare-sidebar-link slot=\"nav\" href=\"#\" status=\"6\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-layers\" aria-hidden=\"true\" slot=\"icon\"><path d=\"M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z\"></path><path d=\"M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12\"></path><path d=\"M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17\"></path></svg>Namespaces</conare-sidebar-link>\n  <conare-sidebar-link slot=\"nav\" href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-network\" aria-hidden=\"true\" slot=\"icon\"><rect x=\"16\" y=\"16\" width=\"6\" height=\"6\" rx=\"1\"></rect><rect x=\"2\" y=\"16\" width=\"6\" height=\"6\" rx=\"1\"></rect><rect x=\"9\" y=\"2\" width=\"6\" height=\"6\" rx=\"1\"></rect><path d=\"M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3\"></path><path d=\"M12 12V8\"></path></svg>Sources</conare-sidebar-link>\n  <div class=\"mx-auto flex min-h-[calc(100vh-48px)] w-full max-w-page flex-col justify-center gap-6 px-4 pt-8 pb-28 md:px-8\">\n    <conare-highlight-text as=\"h1\" text=\"Explore your data\" accent=\".\" class=\"text-center type-heading-1 md:type-hero\"></conare-highlight-text>\n    <conare-search-box></conare-search-box>\n    <conare-home-numbers id=\"numbers\" take=\"rule\" documents=\"2786122\" namespaces=\"6\" queries=\"148920\" typical=\"182\" slowest=\"296\" days=\"[3200, 6090, 5600, 5110, 4620, 2330, 1840, 6530, 6040, 5550, 5060, 4570, 2280, 1790, 6480, 5990, 5500, 5010, 4520, 2230, 5120, 6430, 5940, 5450, 4960, 4470, 2180, 5070, 6380, 5890]\"></conare-home-numbers>\n  </div>\n</conare-console-frame>\n<script type=\"module\">\n  document.getElementById('numbers').addEventListener('navigate', (e) => e.detail.event.preventDefault())\n</script>\n"
+        },
+        {
+          "name": "InTheTitle",
+          "label": "In the title",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/home-numbers/InTheTitle.html",
+          "content": "<!-- Explorer's first screen with its numbers, take 3: the documents in the title, and the rest on a quiet line under the box. -->\n<conare-console-frame crumbs='[{ \"label\": \"Overview\", \"href\": \"#\" }, { \"label\": \"Explorer\" }]'>\n  <conare-sidebar-label slot=\"nav\">Platform</conare-sidebar-label>\n  <conare-sidebar-link slot=\"nav\" href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-house\" aria-hidden=\"true\" slot=\"icon\"><path d=\"M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8\"></path><path d=\"M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z\"></path></svg>Overview</conare-sidebar-link>\n  <conare-sidebar-link slot=\"nav\" href=\"#\" active><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-compass\" aria-hidden=\"true\" slot=\"icon\"><path d=\"m16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z\"></path><circle cx=\"12\" cy=\"12\" r=\"10\"></circle></svg>Explorer</conare-sidebar-link>\n  <conare-sidebar-link slot=\"nav\" href=\"#\" status=\"6\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-layers\" aria-hidden=\"true\" slot=\"icon\"><path d=\"M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z\"></path><path d=\"M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12\"></path><path d=\"M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17\"></path></svg>Namespaces</conare-sidebar-link>\n  <conare-sidebar-link slot=\"nav\" href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-network\" aria-hidden=\"true\" slot=\"icon\"><rect x=\"16\" y=\"16\" width=\"6\" height=\"6\" rx=\"1\"></rect><rect x=\"2\" y=\"16\" width=\"6\" height=\"6\" rx=\"1\"></rect><rect x=\"9\" y=\"2\" width=\"6\" height=\"6\" rx=\"1\"></rect><path d=\"M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3\"></path><path d=\"M12 12V8\"></path></svg>Sources</conare-sidebar-link>\n  <div class=\"mx-auto flex min-h-[calc(100vh-48px)] w-full max-w-page flex-col justify-center gap-6 px-4 pt-8 pb-28 md:px-8\">\n    <conare-highlight-text as=\"h1\" text=\"Explore 2,786,122 documents\" accent=\".\" class=\"text-center type-heading-1 md:type-hero\"></conare-highlight-text>\n    <conare-search-box></conare-search-box>\n    <conare-home-numbers id=\"numbers\" take=\"line\" documents=\"2786122\" namespaces=\"6\" queries=\"148920\" typical=\"182\" slowest=\"296\" days=\"[3200, 6090, 5600, 5110, 4620, 2330, 1840, 6530, 6040, 5550, 5060, 4570, 2280, 1790, 6480, 5990, 5500, 5010, 4520, 2230, 5120, 6430, 5940, 5450, 4960, 4470, 2180, 5070, 6380, 5890]\"></conare-home-numbers>\n  </div>\n</conare-console-frame>\n<script type=\"module\">\n  document.getElementById('numbers').addEventListener('navigate', (e) => e.detail.event.preventDefault())\n</script>\n"
+        }
+      ]
+    }
+  }
+}

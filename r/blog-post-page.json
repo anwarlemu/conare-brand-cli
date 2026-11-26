@@ -1,0 +1,309 @@
+{
+  "name": "blog-post-page",
+  "title": "Blog post page",
+  "type": "registry:block",
+  "group": "site",
+  "description": "A blog post: the trail and the title centred, a wide dark panel as the picture, who it is from and when, the text in one narrow column, a link on, then more posts from the category.",
+  "use_for": "A blog post.",
+  "never": [
+    "A sidebar beside the text: the column is the page",
+    "Comments"
+  ],
+  "source": "conare-web app/pages/blog/[slug].vue",
+  "body": "Built on `site-page`: `header`, `footer` and `announcement` are its props, and the `logo` and `actions` slots go to the header (`sheet-actions` too, in web components). `post.blocks` takes docs-blocks' blocks; `more` takes blog-card props.",
+  "requires": [
+    "blog-card",
+    "blog-page",
+    "button-link",
+    "cell-burst",
+    "docs-blocks",
+    "site-page"
+  ],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/site/BlogPostPage.vue",
+      "content": "<script setup lang=\"ts\">\nimport BlogCard from '@/components/site/BlogCard.vue'\nimport ButtonLink from '@/components/site/ButtonLink.vue'\nimport DocsBlocks, { type DocsBlock } from '@/components/site/DocsBlocks.vue'\nimport SitePage, { type SiteAction, type SiteAnnouncement, type SiteFooterData, type SiteHeaderData } from '@/components/site/SitePage.vue'\nimport CellBurst from '@/components/visuals/CellBurst.vue'\nimport Grain from '@/components/visuals/Grain.vue'\nimport type { BlogPost } from '@/components/site/BlogPage.vue'\n\n// A blog post (pages/blog/[slug].vue): the trail and the title centred, a wide dark panel as the picture (the grain\n// and a jumbled sheet of cells in the double rule), who it is from and when, the text in one narrow column\n// (docs-blocks), a quiet link on, then more posts from the category (blog-card) under a hairline.\ndefineProps<{\n  header: SiteHeaderData, footer: SiteFooterData, announcement?: SiteAnnouncement\n  post: { title: string, category: string, author?: string, date?: string, blocks: DocsBlock[], seed?: number }\n  blogHref: string\n  link?: SiteAction\n  more?: BlogPost[]\n}>()\n</script>\n\n<template>\n  <SitePage data-ds=\"blog-post-page\" :header=\"header\" :footer=\"footer\" :announcement=\"announcement\">\n      <template #logo><slot name=\"logo\" /></template>\n      <template #actions=\"{ place }\"><slot name=\"actions\" :place=\"place\" /></template>\n    <article class=\"mx-auto max-w-[1440px] px-4 pt-14 pb-24 sm:px-6 lg:px-10 lg:pt-20\">\n      <header class=\"flex flex-col items-center text-center\">\n        <p class=\"flex items-center gap-2 type-ui text-fg-faint\">\n          <a :href=\"blogHref\" class=\"ds-post-trail\">Blog</a>\n          <span aria-hidden=\"true\">/</span>\n          <span>{{ post.category }}</span>\n        </p>\n        <h1 class=\"ds-post-title mt-4 max-w-[760px] font-heading text-docs-heading font-normal tracking-tight text-fg sm:text-hero\">{{ post.title }}</h1>\n      </header>\n      <div aria-hidden=\"true\" class=\"relative mx-auto mt-12 aspect-[4/3] max-w-[960px] overflow-hidden border border-edge bg-ds-neutral-200 text-ds-neutral-300 outline outline-offset-4 outline-edge sm:aspect-[2/1]\">\n        <Grain />\n        <span class=\"pointer-events-none absolute inset-0 opacity-70\"><CellBurst :seed=\"post.seed ?? 31 + post.title.length * 17\" jumble /></span>\n      </div>\n      <p v-if=\"post.author || post.date\" class=\"mt-10 text-center type-ui text-fg-faint\">{{ [post.author, post.date].filter(Boolean).join(' · ') }}</p>\n      <div class=\"mx-auto mt-10 max-w-[640px]\">\n        <DocsBlocks :blocks=\"post.blocks\" />\n        <div v-if=\"link\" class=\"mt-12 flex justify-start\"><ButtonLink :href=\"link.href\" variant=\"secondary\" size=\"sm\">{{ link.label }}</ButtonLink></div>\n      </div>\n    </article>\n    <section v-if=\"more?.length\" aria-labelledby=\"blog-more-title\" class=\"mx-auto max-w-[1440px] px-4 pb-32 sm:px-6 lg:px-10 lg:pb-40\">\n      <div class=\"flex items-end justify-between gap-6 border-t border-edge pt-10\">\n        <h2 id=\"blog-more-title\" class=\"font-heading text-heading-2 font-normal tracking-tight text-fg\">More {{ post.category.toLowerCase() }}</h2>\n        <a :href=\"blogHref\" class=\"ds-post-trail text-body text-fg-faint\">All posts</a>\n      </div>\n      <ul class=\"mt-8 grid grid-cols-[minmax(0,1fr)] gap-6 md:grid-cols-2 lg:grid-cols-3\">\n        <li v-for=\"p in more\" :key=\"p.href\" class=\"flex\"><BlogCard v-bind=\"p\" /></li>\n      </ul>\n    </section>\n  </SitePage>\n</template>\n\n<style>\n.ds-post-title { line-height: 1.15; text-wrap: balance; }\n.ds-post-trail { transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-post-trail:hover { color: var(--ds-color-fg); } }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "A post, on sample data",
+      "center": false,
+      "half": false,
+      "path": "examples/blog-post-page/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport BlogPostPage from '@/components/site/BlogPostPage.vue'\nimport Button from '@/components/ui/Button.vue'\nimport PixelButton from '@/components/ui/PixelButton.vue'\nimport type { DocsBlock } from '@/components/site/DocsBlocks.vue'\n// A post on sample data, with more from its category under it.\nconst header = {\n  \"items\": [\n    {\n      \"label\": \"Search\",\n      \"desc\": \"Find the answer in any file.\",\n      \"href\": \"#search\"\n    },\n    {\n      \"label\": \"Sync\",\n      \"desc\": \"Keep your apps in step.\",\n      \"href\": \"#sync\"\n    },\n    {\n      \"label\": \"Parse\",\n      \"desc\": \"Read every row and cell.\",\n      \"href\": \"#parse\"\n    }\n  ],\n  \"links\": [\n    {\n      \"label\": \"Pricing\",\n      \"href\": \"#pricing\"\n    },\n    {\n      \"label\": \"Blog\",\n      \"href\": \"#blog\"\n    },\n    {\n      \"label\": \"Docs\",\n      \"href\": \"#docs\"\n    }\n  ],\n  \"homeLabel\": \"Acme home\"\n}\nconst footer = {\n  \"columns\": [\n    {\n      \"title\": \"Product\",\n      \"links\": [\n        {\n          \"label\": \"Search\",\n          \"href\": \"#search\"\n        },\n        {\n          \"label\": \"Sync\",\n          \"href\": \"#sync\"\n        },\n        {\n          \"label\": \"Parse\",\n          \"href\": \"#parse\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Company\",\n      \"links\": [\n        {\n          \"label\": \"About\",\n          \"href\": \"#about\"\n        },\n        {\n          \"label\": \"Blog\",\n          \"href\": \"#blog\"\n        },\n        {\n          \"label\": \"Changelog\",\n          \"href\": \"#changelog\"\n        },\n        {\n          \"label\": \"Contact\",\n          \"href\": \"#contact\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Resources\",\n      \"links\": [\n        {\n          \"label\": \"Docs\",\n          \"href\": \"#docs\"\n        },\n        {\n          \"label\": \"Pricing\",\n          \"href\": \"#pricing\"\n        },\n        {\n          \"label\": \"Status\",\n          \"href\": \"#status\"\n        }\n      ]\n    }\n  ],\n  \"tagline\": \"Search any data you bring. Get the right answer.\",\n  \"legal\": \"© 2026 Acme, Inc.\",\n  \"legalLinks\": [\n    {\n      \"label\": \"Privacy\",\n      \"href\": \"#privacy\"\n    },\n    {\n      \"label\": \"Terms\",\n      \"href\": \"#terms\"\n    }\n  ],\n  \"name\": \"Acme\"\n}\nconst post: { title: string, category: string, author: string, date: string, blocks: DocsBlock[] } = {\n  \"title\": \"Search that says where it looked\",\n  \"category\": \"Product\",\n  \"author\": \"Acme team\",\n  \"date\": \"Nov 12, 2026\",\n  \"blocks\": [\n    {\n      \"kind\": \"p\",\n      \"text\": \"Search now returns the passages behind every answer, each with its document, its score and the namespace it came from.\"\n    },\n    {\n      \"kind\": \"h2\",\n      \"id\": \"why\",\n      \"text\": \"Why it matters\"\n    },\n    {\n      \"kind\": \"p\",\n      \"text\": \"An answer you can't check is an answer you can't ship. With the passages beside it, a reviewer sees what the agent read in one look.\"\n    },\n    {\n      \"kind\": \"list\",\n      \"items\": [\n        \"Every passage links to its document.\",\n        \"Scores are on the same scale across namespaces.\",\n        \"Nothing changes in the API: the passages come back in `sources`.\"\n      ]\n    },\n    {\n      \"kind\": \"callout\",\n      \"tone\": \"note\",\n      \"text\": \"Older keys get the passages too. There is nothing to turn on.\"\n    }\n  ]\n}\nconst link = {\n  \"label\": \"Read the docs\",\n  \"href\": \"#docs\"\n}\nconst more = [\n  {\n    \"href\": \"#post-4\",\n    \"title\": \"Reading tables cell by cell\",\n    \"dek\": \"Why a parser that keeps rows together answers more questions.\",\n    \"category\": \"Product\",\n    \"author\": \"Acme team\",\n    \"date\": \"Oct 20, 2026\"\n  },\n  {\n    \"href\": \"#post-1\",\n    \"title\": \"Search that says where it looked\",\n    \"dek\": \"Every answer now carries the passages it read, with their scores.\",\n    \"category\": \"Product\",\n    \"author\": \"Acme team\",\n    \"date\": \"Nov 12, 2026\"\n  }\n]\n</script>\n\n<template>\n  <div class=\"-m-8\">\n    <BlogPostPage\n      :header=\"header\"\n      :footer=\"footer\"\n      :post=\"post\"\n      blog-href=\"#blog\"\n      :link=\"link\"\n      :more=\"more\"\n    >\n      <template #logo><span class=\"font-heading text-heading-3 text-fg\">Acme</span></template>\n      <template #actions><Button href=\"#contact\">Contact us</Button><PixelButton href=\"#sign-in\">Sign in</PixelButton></template>\n    </BlogPostPage>\n  </div>\n</template>\n",
+      "requires": [
+        "blog-card",
+        "blog-page",
+        "button",
+        "button-link",
+        "cell-burst",
+        "docs-blocks",
+        "site-page"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/site/BlogPostPage.tsx",
+          "content": "import { BlogCard } from '@/react/components/site/BlogCard'\nimport { ButtonLink } from '@/react/components/site/ButtonLink'\nimport { DocsBlocks, type DocsBlock } from '@/react/components/site/DocsBlocks'\nimport { SitePage, type SiteAction, type SiteFrameProps } from '@/react/components/site/SitePage'\nimport { CellBurst } from '@/react/components/visuals/CellBurst'\nimport { Grain } from '@/react/components/visuals/Grain'\nimport type { BlogPost } from '@/react/components/site/BlogPage'\n\n// A blog post (pages/blog/[slug].vue): the trail and the title centred, a wide dark panel as the picture (the grain\n// and a jumbled sheet of cells in the double rule), who it is from and when, the text in one narrow column\n// (docs-blocks), a quiet link on, then more posts from the category (blog-card) under a hairline.\nexport interface BlogPostPageProps extends SiteFrameProps {\n  post: { title: string, category: string, author?: string, date?: string, blocks: DocsBlock[], seed?: number }\n  blogHref: string\n  link?: SiteAction\n  more?: BlogPost[]\n}\n\nexport function BlogPostPage({ header, footer, announcement, logo, actions, post, blogHref, link, more }: BlogPostPageProps) {\n  return (\n    <>\n      <style href=\"ds-blog-post-page\" precedence=\"ds\">{css}</style>\n      <SitePage data-ds=\"blog-post-page\" header={header} footer={footer} announcement={announcement} logo={logo} actions={actions}>\n        <article className=\"mx-auto max-w-[1440px] px-4 pt-14 pb-24 sm:px-6 lg:px-10 lg:pt-20\">\n          <header className=\"flex flex-col items-center text-center\">\n            <p className=\"flex items-center gap-2 type-ui text-fg-faint\">\n              <a href={blogHref} className=\"ds-post-trail\">Blog</a>\n              <span aria-hidden=\"true\">/</span>\n              <span>{post.category}</span>\n            </p>\n            <h1 className=\"ds-post-title mt-4 max-w-[760px] font-heading text-docs-heading font-normal tracking-tight text-fg sm:text-hero\">{post.title}</h1>\n          </header>\n          <div aria-hidden=\"true\" className=\"relative mx-auto mt-12 aspect-[4/3] max-w-[960px] overflow-hidden border border-edge bg-ds-neutral-200 text-ds-neutral-300 outline outline-offset-4 outline-edge sm:aspect-[2/1]\">\n            <Grain />\n            <span className=\"pointer-events-none absolute inset-0 opacity-70\"><CellBurst seed={post.seed ?? 31 + post.title.length * 17} jumble /></span>\n          </div>\n          {(post.author || post.date) && <p className=\"mt-10 text-center type-ui text-fg-faint\">{[post.author, post.date].filter(Boolean).join(' · ')}</p>}\n          <div className=\"mx-auto mt-10 max-w-[640px]\">\n            <DocsBlocks blocks={post.blocks} />\n            {link && <div className=\"mt-12 flex justify-start\"><ButtonLink href={link.href} variant=\"secondary\" size=\"sm\">{link.label}</ButtonLink></div>}\n          </div>\n        </article>\n        {!!more?.length && (\n          <section aria-labelledby=\"blog-more-title\" className=\"mx-auto max-w-[1440px] px-4 pb-32 sm:px-6 lg:px-10 lg:pb-40\">\n            <div className=\"flex items-end justify-between gap-6 border-t border-edge pt-10\">\n              <h2 id=\"blog-more-title\" className=\"font-heading text-heading-2 font-normal tracking-tight text-fg\">{`More ${post.category.toLowerCase()}`}</h2>\n              <a href={blogHref} className=\"ds-post-trail text-body text-fg-faint\">All posts</a>\n            </div>\n            <ul className=\"mt-8 grid grid-cols-[minmax(0,1fr)] gap-6 md:grid-cols-2 lg:grid-cols-3\">\n              {more.map(p => <li key={p.href} className=\"flex\"><BlogCard {...p} /></li>)}\n            </ul>\n          </section>\n        )}\n      </SitePage>\n    </>\n  )\n}\n\nexport default BlogPostPage\n\nconst css = `\n.ds-post-title { line-height: 1.15; text-wrap: balance; }\n.ds-post-trail { transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-post-trail:hover { color: var(--ds-color-fg); } }\n`\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "blog-card",
+        "blog-page",
+        "button-link",
+        "cell-burst",
+        "docs-blocks",
+        "site-page"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "BlogPostPage",
+            "file": "react/components/site/BlogPostPage.tsx",
+            "props": [
+              {
+                "name": "post",
+                "type": "{ title: string, category: string, author?: string, date?: string, blocks: DocsBlock[], seed?: number }",
+                "required": true
+              },
+              {
+                "name": "blogHref",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "link",
+                "type": "SiteAction",
+                "required": false
+              },
+              {
+                "name": "more",
+                "type": "BlogPost[]",
+                "required": false
+              }
+            ],
+            "extends": [
+              "SiteFrameProps"
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "A post, on sample data",
+          "center": false,
+          "half": false,
+          "path": "react/examples/blog-post-page/Site.tsx",
+          "content": "import { BlogPostPage } from '@/react/components/site/BlogPostPage'\nimport { Button } from '@/react/components/ui/Button'\nimport { PixelButton } from '@/react/components/ui/PixelButton'\nimport type { DocsBlock } from '@/react/components/site/DocsBlocks'\n// A post on sample data, with more from its category under it.\nconst header = {\n  \"items\": [\n    {\n      \"label\": \"Search\",\n      \"desc\": \"Find the answer in any file.\",\n      \"href\": \"#search\"\n    },\n    {\n      \"label\": \"Sync\",\n      \"desc\": \"Keep your apps in step.\",\n      \"href\": \"#sync\"\n    },\n    {\n      \"label\": \"Parse\",\n      \"desc\": \"Read every row and cell.\",\n      \"href\": \"#parse\"\n    }\n  ],\n  \"links\": [\n    {\n      \"label\": \"Pricing\",\n      \"href\": \"#pricing\"\n    },\n    {\n      \"label\": \"Blog\",\n      \"href\": \"#blog\"\n    },\n    {\n      \"label\": \"Docs\",\n      \"href\": \"#docs\"\n    }\n  ],\n  \"homeLabel\": \"Acme home\"\n}\nconst footer = {\n  \"columns\": [\n    {\n      \"title\": \"Product\",\n      \"links\": [\n        {\n          \"label\": \"Search\",\n          \"href\": \"#search\"\n        },\n        {\n          \"label\": \"Sync\",\n          \"href\": \"#sync\"\n        },\n        {\n          \"label\": \"Parse\",\n          \"href\": \"#parse\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Company\",\n      \"links\": [\n        {\n          \"label\": \"About\",\n          \"href\": \"#about\"\n        },\n        {\n          \"label\": \"Blog\",\n          \"href\": \"#blog\"\n        },\n        {\n          \"label\": \"Changelog\",\n          \"href\": \"#changelog\"\n        },\n        {\n          \"label\": \"Contact\",\n          \"href\": \"#contact\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Resources\",\n      \"links\": [\n        {\n          \"label\": \"Docs\",\n          \"href\": \"#docs\"\n        },\n        {\n          \"label\": \"Pricing\",\n          \"href\": \"#pricing\"\n        },\n        {\n          \"label\": \"Status\",\n          \"href\": \"#status\"\n        }\n      ]\n    }\n  ],\n  \"tagline\": \"Search any data you bring. Get the right answer.\",\n  \"legal\": \"© 2026 Acme, Inc.\",\n  \"legalLinks\": [\n    {\n      \"label\": \"Privacy\",\n      \"href\": \"#privacy\"\n    },\n    {\n      \"label\": \"Terms\",\n      \"href\": \"#terms\"\n    }\n  ],\n  \"name\": \"Acme\"\n}\nconst post: { title: string, category: string, author: string, date: string, blocks: DocsBlock[] } = {\n  \"title\": \"Search that says where it looked\",\n  \"category\": \"Product\",\n  \"author\": \"Acme team\",\n  \"date\": \"Nov 12, 2026\",\n  \"blocks\": [\n    {\n      \"kind\": \"p\",\n      \"text\": \"Search now returns the passages behind every answer, each with its document, its score and the namespace it came from.\"\n    },\n    {\n      \"kind\": \"h2\",\n      \"id\": \"why\",\n      \"text\": \"Why it matters\"\n    },\n    {\n      \"kind\": \"p\",\n      \"text\": \"An answer you can't check is an answer you can't ship. With the passages beside it, a reviewer sees what the agent read in one look.\"\n    },\n    {\n      \"kind\": \"list\",\n      \"items\": [\n        \"Every passage links to its document.\",\n        \"Scores are on the same scale across namespaces.\",\n        \"Nothing changes in the API: the passages come back in `sources`.\"\n      ]\n    },\n    {\n      \"kind\": \"callout\",\n      \"tone\": \"note\",\n      \"text\": \"Older keys get the passages too. There is nothing to turn on.\"\n    }\n  ]\n}\nconst link = {\n  \"label\": \"Read the docs\",\n  \"href\": \"#docs\"\n}\nconst more = [\n  {\n    \"href\": \"#post-4\",\n    \"title\": \"Reading tables cell by cell\",\n    \"dek\": \"Why a parser that keeps rows together answers more questions.\",\n    \"category\": \"Product\",\n    \"author\": \"Acme team\",\n    \"date\": \"Oct 20, 2026\"\n  },\n  {\n    \"href\": \"#post-1\",\n    \"title\": \"Search that says where it looked\",\n    \"dek\": \"Every answer now carries the passages it read, with their scores.\",\n    \"category\": \"Product\",\n    \"author\": \"Acme team\",\n    \"date\": \"Nov 12, 2026\"\n  }\n]\nexport default function Site() {\n  return (\n    <div className=\"-m-8\">\n      <BlogPostPage\n        header={header}\n        footer={footer}\n        post={post}\n        blogHref=\"#blog\"\n        link={link}\n        more={more}\n        logo={<span className=\"font-heading text-heading-3 text-fg\">Acme</span>}\n        actions={() => (<><Button href=\"#contact\">Contact us</Button><PixelButton href=\"#sign-in\">Sign in</PixelButton></>)}\n      />\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "blog-card",
+            "blog-page",
+            "button",
+            "button-link",
+            "cell-burst",
+            "docs-blocks",
+            "site-page"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/site/blog-post-page.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { define, tag } from '@/elements/lib/element'\nimport { SiteFrameElement, type SiteAction } from '@/elements/components/site/site-page'\nimport type { BlogPost } from '@/elements/components/site/blog-page'\nimport type { DocsBlock } from '@/elements/components/site/docs-blocks'\nimport '@/elements/components/site/blog-card'\nimport '@/elements/components/site/button-link'\nimport '@/elements/components/site/docs-blocks'\nimport '@/elements/components/visuals/cell-burst'\nimport '@/elements/components/visuals/grain'\nimport styles from 'virtual:tw'\n\n// BlogPostPage.vue as <conare-blog-post-page>: a blog post (pages/blog/[slug].vue): the trail and the title centred, a\n// wide dark panel as the picture (the grain and a jumbled sheet of cells in the double rule), who it is from and when,\n// the text in one narrow column (docs-blocks), a quiet link on, then more posts from the category (blog-card) under a\n// hairline. In the site's frame (site-page).\n\n/**\n * @summary A blog post: the title, the picture, the text in one column and more posts.\n * @slot logo - The logo in the header's home link.\n * @slot actions - The header's buttons.\n * @slot sheet-actions - The same buttons again, for the header's sheet on phones.\n */\nexport class BlogPostPage extends SiteFrameElement {\n\tstatic styles = [SiteFrameElement.styles, styles]\n\tstatic properties = { post: { type: Object }, blogHref: { attribute: 'blog-href' }, link: { type: Object }, more: { type: Array } }\n\n\tpost: { title: string, category: string, author?: string, date?: string, blocks: DocsBlock[], seed?: number } = { title: '', category: '', blocks: [] }\n\tblogHref = ''\n\tlink?: SiteAction\n\tmore: BlogPost[] = []\n\n\trender() {\n\t\tconst [card, button, blocks, burst, grain] = [tag('blog-card'), tag('button-link'), tag('docs-blocks'), tag('cell-burst'), tag('grain')]\n\t\tconst p = this.post\n\t\tconst by = [p.author, p.date].filter(Boolean).join(' · ')\n\t\treturn this.frame('blog-post-page', staticHtml`<article class=\"mx-auto max-w-[1440px] px-4 pt-14 pb-24 sm:px-6 lg:px-10 lg:pt-20\"><header class=\"flex flex-col items-center text-center\"><p class=\"flex items-center gap-2 type-ui text-fg-faint\"><a href=${this.blogHref} class=\"ds-post-trail\">Blog</a><span aria-hidden=\"true\">/</span><span>${p.category}</span></p><h1 class=\"ds-post-title mt-4 max-w-[760px] font-heading text-docs-heading font-normal tracking-tight text-fg sm:text-hero\">${p.title}</h1></header><div aria-hidden=\"true\" class=\"relative mx-auto mt-12 aspect-[4/3] max-w-[960px] overflow-hidden border border-edge bg-ds-neutral-200 text-ds-neutral-300 outline outline-offset-4 outline-edge sm:aspect-[2/1]\"><${grain}></${grain}><span class=\"pointer-events-none absolute inset-0 opacity-70\"><${burst} seed=${p.seed ?? 31 + p.title.length * 17} jumble></${burst}></span></div>${by ? html`<p class=\"mt-10 text-center type-ui text-fg-faint\">${by}</p>` : nothing}<div class=\"mx-auto mt-10 max-w-[640px]\"><${blocks} .blocks=${p.blocks}></${blocks}>${this.link ? staticHtml`<div class=\"mt-12 flex justify-start\"><${button} href=${this.link.href} variant=\"secondary\" size=\"sm\">${this.link.label}</${button}></div>` : nothing}</div></article>${this.more.length ? html`<section aria-labelledby=\"blog-more-title\" class=\"mx-auto max-w-[1440px] px-4 pb-32 sm:px-6 lg:px-10 lg:pb-40\"><div class=\"flex items-end justify-between gap-6 border-t border-edge pt-10\"><h2 id=\"blog-more-title\" class=\"font-heading text-heading-2 font-normal tracking-tight text-fg\">${`More ${p.category.toLowerCase()}`}</h2><a href=${this.blogHref} class=\"ds-post-trail text-body text-fg-faint\">All posts</a></div><ul class=\"mt-8 grid grid-cols-[minmax(0,1fr)] gap-6 md:grid-cols-2 lg:grid-cols-3\">${this.more.map((m) => html`<li class=\"flex\">${staticHtml`<${card} href=${m.href} .heading=${m.title} .dek=${m.dek} category=${m.category} .author=${m.author} .date=${m.date}></${card}>`}</li>`)}</ul></section>` : nothing}`)\n\t}\n}\n\ndefine('blog-post-page', BlogPostPage)\n"
+        },
+        {
+          "path": "elements/components/site/blog-post-page.css",
+          "content": "/* BlogPostPage.vue's <style>, as it is. */\n.ds-post-title { line-height: 1.15; text-wrap: balance; }\n.ds-post-trail { transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-post-trail:hover { color: var(--ds-color-fg); } }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/blog-post-page.js",
+        "elements/site-page.js",
+        "elements/blog-page.js",
+        "elements/docs-blocks.js",
+        "elements/blog-card.js",
+        "elements/button-link.js",
+        "elements/cell-burst.js",
+        "elements/grain.js",
+        "elements/site-footer.js",
+        "elements/site-header.js",
+        "elements/product-menu.js",
+        "elements/announcement-bar.js",
+        "elements/call-to-action.js",
+        "elements/section-head.js",
+        "elements/input.js",
+        "elements/code-block.js",
+        "elements/docs-fields.js",
+        "elements/docs-inline.js",
+        "elements/docs-table.js",
+        "elements/roll-text.js",
+        "elements/site-tag.js",
+        "elements/code-copy.js",
+        "elements/button.js",
+        "elements/pixel-button.js"
+      ],
+      "tag": "conare-blog-post-page",
+      "tags": [
+        "conare-blog-post-page"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "announcement-bar",
+        "blog-card",
+        "blog-page",
+        "button-link",
+        "call-to-action",
+        "cell-burst",
+        "code-block",
+        "docs-blocks",
+        "field",
+        "product-menu",
+        "roll-text",
+        "section-head",
+        "site-footer",
+        "site-header",
+        "site-page",
+        "tag"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-blog-post-page",
+            "name": "BlogPostPage",
+            "module": "elements/blog-post-page.js",
+            "description": "A blog post: the title, the picture, the text in one column and more posts.",
+            "attributes": [
+              {
+                "name": "post",
+                "field": "post",
+                "type": "{ title: string; category: string; author?: string; date?: string; blocks: DocsBlock[]; seed?: number; }",
+                "default": "{ title: '', category: '', blocks: [] }"
+              },
+              {
+                "name": "blog-href",
+                "field": "blogHref",
+                "type": "string",
+                "default": "''"
+              },
+              {
+                "name": "link",
+                "field": "link",
+                "type": "SiteAction | undefined"
+              },
+              {
+                "name": "more",
+                "field": "more",
+                "type": "BlogPost[]",
+                "default": "[]"
+              },
+              {
+                "name": "header",
+                "field": "header",
+                "type": "SiteHeaderData",
+                "default": "{ items: [], links: [] }",
+                "description": "The header: items, more, links, productCurrent, homeHref, homeLabel."
+              },
+              {
+                "name": "footer",
+                "field": "footer",
+                "type": "SiteFooterData",
+                "default": "{ columns: [] }",
+                "description": "The footer: columns, tagline, legal, legalLinks, name."
+              },
+              {
+                "name": "announcement",
+                "field": "announcement",
+                "type": "SiteAnnouncement | undefined",
+                "description": "The bar above the header: tag, text, cta, href."
+              }
+            ],
+            "properties": [
+              {
+                "name": "post",
+                "type": "{ title: string; category: string; author?: string; date?: string; blocks: DocsBlock[]; seed?: number; }",
+                "default": "{ title: '', category: '', blocks: [] }",
+                "attribute": "post"
+              },
+              {
+                "name": "blogHref",
+                "type": "string",
+                "default": "''",
+                "attribute": "blog-href"
+              },
+              {
+                "name": "link",
+                "type": "SiteAction | undefined",
+                "attribute": "link"
+              },
+              {
+                "name": "more",
+                "type": "BlogPost[]",
+                "default": "[]",
+                "attribute": "more"
+              },
+              {
+                "name": "header",
+                "type": "SiteHeaderData",
+                "default": "{ items: [], links: [] }",
+                "description": "The header: items, more, links, productCurrent, homeHref, homeLabel.",
+                "attribute": "header"
+              },
+              {
+                "name": "footer",
+                "type": "SiteFooterData",
+                "default": "{ columns: [] }",
+                "description": "The footer: columns, tagline, legal, legalLinks, name.",
+                "attribute": "footer"
+              },
+              {
+                "name": "announcement",
+                "type": "SiteAnnouncement | undefined",
+                "description": "The bar above the header: tag, text, cta, href.",
+                "attribute": "announcement"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "logo",
+                "description": "The logo in the header's home link."
+              },
+              {
+                "name": "actions",
+                "description": "The header's buttons."
+              },
+              {
+                "name": "sheet-actions",
+                "description": "The same buttons again, for the header's sheet on phones."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "A post, on sample data",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/blog-post-page/Site.html",
+          "content": "<!-- A post on sample data, with more from its category under it. -->\n<div class=\"-m-8\">\n  <conare-blog-post-page\n    header='{\"items\": [{\"label\": \"Search\", \"desc\": \"Find the answer in any file.\", \"href\": \"#search\"}, {\"label\": \"Sync\", \"desc\": \"Keep your apps in step.\", \"href\": \"#sync\"}, {\"label\": \"Parse\", \"desc\": \"Read every row and cell.\", \"href\": \"#parse\"}], \"links\": [{\"label\": \"Pricing\", \"href\": \"#pricing\"}, {\"label\": \"Blog\", \"href\": \"#blog\"}, {\"label\": \"Docs\", \"href\": \"#docs\"}], \"homeLabel\": \"Acme home\"}'\n    footer='{\"columns\": [{\"title\": \"Product\", \"links\": [{\"label\": \"Search\", \"href\": \"#search\"}, {\"label\": \"Sync\", \"href\": \"#sync\"}, {\"label\": \"Parse\", \"href\": \"#parse\"}]}, {\"title\": \"Company\", \"links\": [{\"label\": \"About\", \"href\": \"#about\"}, {\"label\": \"Blog\", \"href\": \"#blog\"}, {\"label\": \"Changelog\", \"href\": \"#changelog\"}, {\"label\": \"Contact\", \"href\": \"#contact\"}]}, {\"title\": \"Resources\", \"links\": [{\"label\": \"Docs\", \"href\": \"#docs\"}, {\"label\": \"Pricing\", \"href\": \"#pricing\"}, {\"label\": \"Status\", \"href\": \"#status\"}]}], \"tagline\": \"Search any data you bring. Get the right answer.\", \"legal\": \"© 2026 Acme, Inc.\", \"legalLinks\": [{\"label\": \"Privacy\", \"href\": \"#privacy\"}, {\"label\": \"Terms\", \"href\": \"#terms\"}], \"name\": \"Acme\"}'\n    post='{\"title\": \"Search that says where it looked\", \"category\": \"Product\", \"author\": \"Acme team\", \"date\": \"Nov 12, 2026\", \"blocks\": [{\"kind\": \"p\", \"text\": \"Search now returns the passages behind every answer, each with its document, its score and the namespace it came from.\"}, {\"kind\": \"h2\", \"id\": \"why\", \"text\": \"Why it matters\"}, {\"kind\": \"p\", \"text\": \"An answer you can&#39;t check is an answer you can&#39;t ship. With the passages beside it, a reviewer sees what the agent read in one look.\"}, {\"kind\": \"list\", \"items\": [\"Every passage links to its document.\", \"Scores are on the same scale across namespaces.\", \"Nothing changes in the API: the passages come back in `sources`.\"]}, {\"kind\": \"callout\", \"tone\": \"note\", \"text\": \"Older keys get the passages too. There is nothing to turn on.\"}]}'\n    blog-href=\"#blog\"\n    link='{\"label\": \"Read the docs\", \"href\": \"#docs\"}'\n    more='[{\"href\": \"#post-4\", \"title\": \"Reading tables cell by cell\", \"dek\": \"Why a parser that keeps rows together answers more questions.\", \"category\": \"Product\", \"author\": \"Acme team\", \"date\": \"Oct 20, 2026\"}, {\"href\": \"#post-1\", \"title\": \"Search that says where it looked\", \"dek\": \"Every answer now carries the passages it read, with their scores.\", \"category\": \"Product\", \"author\": \"Acme team\", \"date\": \"Nov 12, 2026\"}]'\n  >\n    <span slot=\"logo\" class=\"font-heading text-heading-3 text-fg\">Acme</span>\n    <conare-button slot=\"actions\" href=\"#contact\">Contact us</conare-button>\n    <conare-pixel-button slot=\"actions\" href=\"#sign-in\">Sign in</conare-pixel-button>\n    <conare-button slot=\"sheet-actions\" href=\"#contact\">Contact us</conare-button>\n    <conare-pixel-button slot=\"sheet-actions\" href=\"#sign-in\">Sign in</conare-pixel-button>\n  </conare-blog-post-page>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,425 @@
+{
+  "name": "field",
+  "title": "Field",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "Text input: 32px, a hairline that goes ink on focus, an optional leading icon at the 28px filter size, and a red border with its message when invalid. Field puts the label over it and the hint or error under it.",
+  "use_for": "Names, filters, queries and JSON filters. Every field has a visible label or an aria-label.",
+  "never": [
+    "A placeholder in place of a label",
+    "A red border at rest",
+    "Inputs under 16px on phones (the field switches to 16px there)"
+  ],
+  "source": "conare-web app/assets/css/console2.css (.v2-input, .v2-input-icon), app/design-system/examples/field/Product.vue",
+  "body": "",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Input.vue",
+      "content": "<script setup lang=\"ts\">\nimport type { Component } from 'vue'\n\n// A text field (console2.css .v2-input): 32px, a #C3C1BF hairline that turns ink on focus, 13px text and a muted\n// placeholder. `icon` puts a 12px Lucide glyph at the start and makes it the 28px filter size. aria-invalid turns the\n// border red; Field shows the message. 40px and 16px on phones, so iOS does not zoom.\ndefineOptions({ inheritAttrs: false })\nconst model = defineModel<string>()\ndefineProps<{ icon?: Component, invalid?: boolean }>()\n</script>\n\n<template>\n  <span data-ds=\"input\" v-if=\"icon\" class=\"relative block w-full\">\n    <component :is=\"icon\" :size=\"12\" :stroke-width=\"1.5\" class=\"pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-fg-muted\" aria-hidden=\"true\" />\n    <input\n      v-model=\"model\"\n      v-bind=\"$attrs\"\n      :aria-invalid=\"invalid || undefined\"\n      class=\"h-control-sm w-full border border-edge-strong bg-surface pr-2.5 pl-7 text-meta leading-5 text-fg outline-none transition-[border-color] duration-120 ease-standard placeholder:text-fg-muted focus:border-edge-focus aria-invalid:border-action-danger disabled:cursor-not-allowed disabled:text-fg-muted max-md:h-control-touch max-md:text-input pointer-coarse:h-control-touch pointer-coarse:text-input\"\n    >\n  </span>\n  <input data-ds=\"input\"\n    v-else\n    v-model=\"model\"\n    v-bind=\"$attrs\"\n    :aria-invalid=\"invalid || undefined\"\n    class=\"h-control-md w-full border border-edge-strong bg-surface px-2.5 text-ui text-fg outline-none transition-[border-color] duration-120 ease-standard placeholder:text-fg-muted focus:border-edge-focus aria-invalid:border-action-danger disabled:cursor-not-allowed disabled:text-fg-muted max-md:h-control-touch max-md:text-input pointer-coarse:h-control-touch pointer-coarse:text-input\"\n  >\n</template>\n"
+    },
+    {
+      "path": "components/ui/Field.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed, useId } from 'vue'\n\n// A label over one control, with a hint or an error under it (the console's forms): the label 12px soft, the hint\n// 12px muted, the error in the danger red. The slot receives the ids to wire: <Input :id=\"id\" :aria-describedby=\"hintId\" />.\nconst props = defineProps<{ label: string, hint?: string, error?: string, id?: string }>()\nconst auto = useId()\nconst id = computed(() => props.id ?? `field-${auto}`)\nconst hintId = computed(() => (props.hint || props.error ? `${id.value}-hint` : undefined))\n</script>\n\n<template>\n  <div data-ds=\"field\" class=\"flex flex-col gap-1.5\">\n    <label :for=\"id\" class=\"type-meta text-fg-soft\">{{ label }}</label>\n    <slot :id=\"id\" :hint-id=\"hintId\" :invalid=\"!!error\" />\n    <p v-if=\"error || hint\" :id=\"hintId\" class=\"type-meta\" :class=\"error ? 'text-fg-danger' : 'text-fg-muted'\" :role=\"error ? 'alert' : undefined\">{{ error || hint }}</p>\n  </div>\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "Labels, icons and hints",
+      "center": false,
+      "half": false,
+      "path": "examples/field/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed, ref } from 'vue'\nimport { Search } from 'lucide-vue-next'\nimport Field from '@/components/ui/Field.vue'\nimport Input from '@/components/ui/Input.vue'\n// A field with its label, one with a leading icon, and one that checks what is typed: focus turns the hairline ink,\n// and an invalid value turns it red with its message.\nconst filter = ref('{ \"team\": ')\nconst invalid = computed(() => { try { JSON.parse(filter.value); return false } catch { return true } })\n</script>\n\n<template>\n  <div class=\"grid items-start gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8\">\n    <p class=\"type-meta leading-7 text-fg-muted\">With a label</p>\n    <Field v-slot=\"{ id }\" label=\"Name\" class=\"max-w-90\">\n      <Input :id=\"id\" placeholder=\"production-agent\" />\n    </Field>\n    <p class=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">With an icon</p>\n    <div class=\"max-w-90\"><Input :icon=\"Search\" placeholder=\"Filter namespaces\" aria-label=\"filter namespaces\" /></div>\n    <p class=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">With a hint</p>\n    <Field v-slot=\"{ id, hintId }\" label=\"Filter\" :hint=\"invalid ? undefined : 'Matches documents whose metadata has these values.'\" :error=\"invalid ? 'Filter must be valid JSON.' : undefined\" class=\"max-w-90\">\n      <Input :id=\"id\" v-model=\"filter\" class=\"type-code-sm\" :invalid=\"invalid\" :aria-describedby=\"hintId\" />\n    </Field>\n  </div>\n</template>\n",
+      "requires": [],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Input.tsx",
+          "content": "import type { ComponentType, InputHTMLAttributes, Ref } from 'react'\nimport { cn } from '@/react/lib/cn'\n\n// A text field (console2.css .v2-input): 32px, a #C3C1BF hairline that turns ink on focus, 13px text and a muted\n// placeholder. `icon` puts a 12px Lucide glyph at the start and makes it the 28px filter size. `invalid` turns the\n// border red; Field shows the message. 40px and 16px on phones, so iOS does not zoom. Every other prop lands on the\n// <input> (value and onChange as React's own), as Vue's attributes do.\nexport interface InputProps extends InputHTMLAttributes<HTMLInputElement> {\n  icon?: ComponentType<{ size?: number, strokeWidth?: number, className?: string, 'aria-hidden'?: boolean | 'true' }>\n  invalid?: boolean\n  ref?: Ref<HTMLInputElement>\n}\n\nexport function Input({ icon: Icon, invalid, className, ...rest }: InputProps) {\n  if (Icon) {\n    return (\n      <span data-ds=\"input\" className=\"relative block w-full\">\n        <Icon size={12} strokeWidth={1.5} className=\"pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-fg-muted\" aria-hidden=\"true\" />\n        <input\n          {...rest}\n          aria-invalid={invalid || undefined}\n          className={cn('h-control-sm w-full border border-edge-strong bg-surface pr-2.5 pl-7 text-meta leading-5 text-fg outline-none transition-[border-color] duration-120 ease-standard placeholder:text-fg-muted focus:border-edge-focus aria-invalid:border-action-danger disabled:cursor-not-allowed disabled:text-fg-muted max-md:h-control-touch max-md:text-input pointer-coarse:h-control-touch pointer-coarse:text-input', className)}\n        />\n      </span>\n    )\n  }\n  return (\n    <input\n      data-ds=\"input\"\n      {...rest}\n      aria-invalid={invalid || undefined}\n      className={cn('h-control-md w-full border border-edge-strong bg-surface px-2.5 text-ui text-fg outline-none transition-[border-color] duration-120 ease-standard placeholder:text-fg-muted focus:border-edge-focus aria-invalid:border-action-danger disabled:cursor-not-allowed disabled:text-fg-muted max-md:h-control-touch max-md:text-input pointer-coarse:h-control-touch pointer-coarse:text-input', className)}\n    />\n  )\n}\n\nexport default Input\n"
+        },
+        {
+          "path": "react/components/ui/Field.tsx",
+          "content": "import { useId, type HTMLAttributes, type ReactNode } from 'react'\nimport { cn } from '@/react/lib/cn'\n\n// A label over one control, with a hint or an error under it (the console's forms): the label 12px soft, the hint\n// 12px muted, the error in the danger red. Vue's scoped slot is a render function: children receives the ids to wire,\n// <Field label=\"Name\">{({ id, hintId }) => <Input id={id} aria-describedby={hintId} />}</Field>; plain children work too.\nexport interface FieldSlot { id: string, hintId?: string, invalid: boolean }\nexport interface FieldProps extends Omit<HTMLAttributes<HTMLDivElement>, 'children'> {\n  label: string\n  hint?: string\n  error?: string\n  id?: string\n  children?: ReactNode | ((slot: FieldSlot) => ReactNode)\n}\n\nexport function Field({ label, hint, error, id: given, className, children, ...rest }: FieldProps) {\n  const auto = useId()\n  const id = given ?? `field-${auto}`\n  const hintId = hint || error ? `${id}-hint` : undefined\n  return (\n    <div data-ds=\"field\" className={cn('flex flex-col gap-1.5', className)} {...rest}>\n      <label htmlFor={id} className=\"type-meta text-fg-soft\">{label}</label>\n      {typeof children === 'function' ? children({ id, hintId, invalid: !!error }) : children}\n      {(error || hint) && <p id={hintId} className={cn('type-meta', error ? 'text-fg-danger' : 'text-fg-muted')} role={error ? 'alert' : undefined}>{error || hint}</p>}\n    </div>\n  )\n}\n\nexport default Field\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "Input",
+            "file": "react/components/ui/Input.tsx",
+            "props": [
+              {
+                "name": "icon",
+                "type": "ComponentType<{ size?: number, strokeWidth?: number, className?: string, 'aria-hidden'?: boolean | 'true' }>",
+                "required": false
+              },
+              {
+                "name": "invalid",
+                "type": "boolean",
+                "required": false
+              }
+            ],
+            "extends": [
+              "InputHTMLAttributes<HTMLInputElement>"
+            ]
+          },
+          {
+            "name": "Field",
+            "file": "react/components/ui/Field.tsx",
+            "props": [
+              {
+                "name": "label",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "hint",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "error",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "id",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "children",
+                "type": "ReactNode | ((slot: FieldSlot) => ReactNode)",
+                "required": false
+              }
+            ],
+            "extends": [
+              "Omit<HTMLAttributes<HTMLDivElement>, 'children'>"
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Labels, icons and hints",
+          "center": false,
+          "half": false,
+          "path": "react/examples/field/Product.tsx",
+          "content": "'use client'\nimport { useState } from 'react'\nimport { Search } from 'lucide-react'\nimport { Field } from '@/react/components/ui/Field'\nimport { Input } from '@/react/components/ui/Input'\n// A field with its label, one with a leading icon, and one that checks what is typed: focus turns the hairline ink,\n// and an invalid value turns it red with its message.\n\nexport default function Product() {\n  const [filter, setFilter] = useState('{ \"team\": ')\n  const invalid = (() => { try { JSON.parse(filter); return false } catch { return true } })()\n  return (\n    <div className=\"grid items-start gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8\">\n      <p className=\"type-meta leading-7 text-fg-muted\">With a label</p>\n      <Field label=\"Name\" className=\"max-w-90\">\n        {({ id }) => <Input id={id} placeholder=\"production-agent\" />}\n      </Field>\n      <p className=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">With an icon</p>\n      <div className=\"max-w-90\"><Input icon={Search} placeholder=\"Filter namespaces\" aria-label=\"filter namespaces\" /></div>\n      <p className=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">With a hint</p>\n      <Field label=\"Filter\" hint={invalid ? undefined : 'Matches documents whose metadata has these values.'} error={invalid ? 'Filter must be valid JSON.' : undefined} className=\"max-w-90\">\n        {({ id, hintId }) => <Input id={id} value={filter} onChange={e => setFilter(e.target.value)} className=\"type-code-sm\" invalid={invalid} aria-describedby={hintId} />}\n      </Field>\n    </div>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/input.ts",
+          "content": "import { html, LitElement, type PropertyValues } from 'lit'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { live } from 'lit/directives/live.js'\nimport { DsFormElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// Input.vue as <conare-input>: a text field (console2.css .v2-input): 32px, a #C3C1BF hairline that turns ink on focus,\n// 13px text and a muted placeholder. An svg in the `icon` slot (a 12px Lucide glyph) puts it at the start and makes it\n// the 28px filter size. `invalid` turns the border red; <conare-field> shows the message. 40px and 16px on phones.\n// It is form-associated (its `name` and `value` go with its form, a <label for> names it) and v-model is `value` with\n// the native `input` and `change` events. aria-label and aria-description pass to the inner <input>.\n\n/**\n * @summary A text field.\n * @slot icon - A 12px Lucide icon at the start (the filter size).\n * @fires input - On every keystroke (read `value`).\n * @fires change - When the value is committed.\n */\nexport class Input extends DsFormElement {\n\tstatic styles = [DsFormElement.styles, styles]\n\tstatic shadowRootOptions = { ...LitElement.shadowRootOptions, delegatesFocus: true }\n\t/** A field: a dialog starts in the first one. */\n\tstatic dsField = true\n\tstatic properties = {\n\t\tvalue: {},\n\t\ttype: {},\n\t\tname: {},\n\t\tplaceholder: {},\n\t\tautocomplete: {},\n\t\tdisabled: { type: Boolean, reflect: true },\n\t\treadonly: { type: Boolean },\n\t\trequired: { type: Boolean },\n\t\tmaxlength: { type: Number },\n\t\tminlength: { type: Number },\n\t\tpattern: {},\n\t\tinputmode: {},\n\t\tinvalid: { type: Boolean, reflect: true },\n\t\tlabel: { attribute: 'aria-label' },\n\t\tdescription: { attribute: 'aria-description' },\n\t}\n\n\tvalue = ''\n\ttype = 'text'\n\tname?: string\n\tplaceholder?: string\n\tautocomplete?: string\n\tdisabled = false\n\treadonly = false\n\trequired = false\n\t/** Passed to the inner input, as Vue's attribute fallthrough does. */\n\tmaxlength?: number\n\tminlength?: number\n\tpattern?: string\n\tinputmode?: string\n\t/** A red border (with the message under it in a field). */\n\tinvalid = false\n\t/** The name for assistive tech, passed to the inner input. */\n\tlabel?: string\n\t/** The hint or error, passed to the inner input (a field sets it). */\n\tdescription?: string\n\n\tprotected updated(changed: PropertyValues) {\n\t\tsuper.updated(changed)\n\t\tif (changed.has('value')) this.internals.setFormValue(this.value)\n\t}\n\tprotected validityControl() {\n\t\treturn this.renderRoot.querySelector<HTMLInputElement>('input')\n\t}\n\tformResetCallback() {\n\t\tthis.value = this.getAttribute('value') ?? ''\n\t}\n\tprivate onInput(event: Event) {\n\t\tthis.value = (event.target as HTMLInputElement).value\n\t}\n\t// Enter submits its form, as Enter in a native field does (the inner <input> is not the form's own).\n\tprivate onKeyDown(event: KeyboardEvent) {\n\t\tif (event.key === 'Enter' && !event.isComposing && this.form) {\n\t\t\tevent.preventDefault()\n\t\t\tthis.form.requestSubmit()\n\t\t}\n\t}\n\tprivate onChange() {\n\t\tthis.dispatchEvent(new Event('change', { bubbles: true, composed: true }))\n\t}\n\n\trender() {\n\t\tconst icon = this.hasSlot('icon')\n\t\tconst input = (classes: string, ds?: string) => html`<input data-ds=${ifDefined(ds)} .value=${live(this.value)} type=${this.type} name=${ifDefined(this.name)} placeholder=${ifDefined(this.placeholder)} autocomplete=${ifDefined(this.autocomplete as never)} ?disabled=${this.inactive} ?readonly=${this.readonly} ?required=${this.required} maxlength=${ifDefined(this.maxlength)} minlength=${ifDefined(this.minlength)} pattern=${ifDefined(this.pattern)} inputmode=${ifDefined(this.inputmode as never)} aria-invalid=${ifDefined(this.invalid ? 'true' : undefined)} aria-label=${ifDefined(this.label)} aria-description=${ifDefined(this.description)} class=${classes} @input=${this.onInput} @change=${this.onChange} @keydown=${this.onKeyDown}>`\n\t\tif (icon) {\n\t\t\treturn html`<span data-ds=\"input\" class=\"relative block w-full\"><span class=\"pointer-events-none absolute top-1/2 left-2.5 flex -translate-y-1/2 text-fg-muted\" aria-hidden=\"true\"><slot name=\"icon\"></slot></span>${input('h-control-sm w-full border border-edge-strong bg-surface pr-2.5 pl-7 text-meta leading-5 text-fg outline-none transition-[border-color] duration-120 ease-standard placeholder:text-fg-muted focus:border-edge-focus aria-invalid:border-action-danger disabled:cursor-not-allowed disabled:text-fg-muted max-md:h-control-touch max-md:text-input pointer-coarse:h-control-touch pointer-coarse:text-input')}</span>`\n\t\t}\n\t\treturn input('h-control-md w-full border border-edge-strong bg-surface px-2.5 text-ui text-fg outline-none transition-[border-color] duration-120 ease-standard placeholder:text-fg-muted focus:border-edge-focus aria-invalid:border-action-danger disabled:cursor-not-allowed disabled:text-fg-muted max-md:h-control-touch max-md:text-input pointer-coarse:h-control-touch pointer-coarse:text-input', 'input')\n\t}\n}\n\ndefine('input', Input)\n"
+        },
+        {
+          "path": "elements/components/ui/field.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// Field.vue as <conare-field>: a label over one control, with a hint or an error under it (the console's forms): the\n// label 12px soft, the hint 12px muted, the error in the danger red. Vue's scoped slot hands the control its ids; here\n// the field wires the control it holds: the label names it (aria-label) and clicking the label focuses it, the hint\n// or error describes it (aria-description), and an error sets its `invalid`.\n\n/**\n * @summary A label over one control, with a hint or an error under it.\n * @slot - The control: <conare-input>, <conare-select>, or any input.\n */\nexport class Field extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { label: {}, hint: {}, error: {} }\n\n\tlabel = ''\n\thint?: string\n\terror?: string\n\n\tprivate control() {\n\t\treturn [...this.children].find((c) => !c.hasAttribute('slot')) as (HTMLElement & { invalid?: boolean }) | undefined\n\t}\n\tprotected updated() {\n\t\tconst c = this.control()\n\t\tif (!c) return\n\t\tc.setAttribute('aria-label', this.label)\n\t\tconst text = this.error || this.hint\n\t\tif (text) c.setAttribute('aria-description', text)\n\t\telse c.removeAttribute('aria-description')\n\t\tif ('invalid' in c) c.invalid = !!this.error\n\t}\n\n\trender() {\n\t\tconst text = this.error || this.hint\n\t\treturn html`<label class=\"type-meta text-fg-soft\" @click=${() => this.control()?.focus()}>${this.label}</label>\n\t\t\t<slot @slotchange=${() => this.updated()}></slot>\n\t\t\t${text ? html`<p class=${`type-meta ${this.error ? 'text-fg-danger' : 'text-fg-muted'}`} role=${ifDefined(this.error ? 'alert' : undefined)}>${text}</p>` : nothing}`\n\t}\n}\n\ndefine('field', Field)\n"
+        },
+        {
+          "path": "elements/components/ui/field.css",
+          "content": "/* The host is the field's box (Field.vue's root div), so a class on <conare-field> (a width, a margin) lands on it as a\n   class on <Field> does. */\n:host { @apply flex flex-col gap-1.5; }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/input.js",
+        "elements/field.js"
+      ],
+      "tag": "conare-field",
+      "tags": [
+        "conare-input",
+        "conare-field"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-input",
+            "name": "Input",
+            "module": "elements/input.js",
+            "description": "A text field.",
+            "attributes": [
+              {
+                "name": "value",
+                "field": "value",
+                "type": "string",
+                "default": "''"
+              },
+              {
+                "name": "type",
+                "field": "type",
+                "type": "string",
+                "default": "'text'"
+              },
+              {
+                "name": "name",
+                "field": "name",
+                "type": "string | undefined"
+              },
+              {
+                "name": "placeholder",
+                "field": "placeholder",
+                "type": "string | undefined"
+              },
+              {
+                "name": "autocomplete",
+                "field": "autocomplete",
+                "type": "string | undefined"
+              },
+              {
+                "name": "disabled",
+                "field": "disabled",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "readonly",
+                "field": "readonly",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "required",
+                "field": "required",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "maxlength",
+                "field": "maxlength",
+                "type": "number | undefined",
+                "description": "Passed to the inner input, as Vue's attribute fallthrough does."
+              },
+              {
+                "name": "minlength",
+                "field": "minlength",
+                "type": "number | undefined"
+              },
+              {
+                "name": "pattern",
+                "field": "pattern",
+                "type": "string | undefined"
+              },
+              {
+                "name": "inputmode",
+                "field": "inputmode",
+                "type": "string | undefined"
+              },
+              {
+                "name": "invalid",
+                "field": "invalid",
+                "type": "boolean",
+                "default": "false",
+                "description": "A red border (with the message under it in a field)."
+              },
+              {
+                "name": "aria-label",
+                "field": "label",
+                "type": "string | undefined",
+                "description": "The name for assistive tech, passed to the inner input."
+              },
+              {
+                "name": "aria-description",
+                "field": "description",
+                "type": "string | undefined",
+                "description": "The hint or error, passed to the inner input (a field sets it)."
+              }
+            ],
+            "properties": [
+              {
+                "name": "value",
+                "type": "string",
+                "default": "''",
+                "attribute": "value"
+              },
+              {
+                "name": "type",
+                "type": "string",
+                "default": "'text'",
+                "attribute": "type"
+              },
+              {
+                "name": "name",
+                "type": "string | undefined",
+                "attribute": "name"
+              },
+              {
+                "name": "placeholder",
+                "type": "string | undefined",
+                "attribute": "placeholder"
+              },
+              {
+                "name": "autocomplete",
+                "type": "string | undefined",
+                "attribute": "autocomplete"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "attribute": "disabled"
+              },
+              {
+                "name": "readonly",
+                "type": "boolean",
+                "default": "false",
+                "attribute": "readonly"
+              },
+              {
+                "name": "required",
+                "type": "boolean",
+                "default": "false",
+                "attribute": "required"
+              },
+              {
+                "name": "maxlength",
+                "type": "number | undefined",
+                "description": "Passed to the inner input, as Vue's attribute fallthrough does.",
+                "attribute": "maxlength"
+              },
+              {
+                "name": "minlength",
+                "type": "number | undefined",
+                "attribute": "minlength"
+              },
+              {
+                "name": "pattern",
+                "type": "string | undefined",
+                "attribute": "pattern"
+              },
+              {
+                "name": "inputmode",
+                "type": "string | undefined",
+                "attribute": "inputmode"
+              },
+              {
+                "name": "invalid",
+                "type": "boolean",
+                "default": "false",
+                "description": "A red border (with the message under it in a field).",
+                "attribute": "invalid"
+              },
+              {
+                "name": "label",
+                "type": "string | undefined",
+                "description": "The name for assistive tech, passed to the inner input.",
+                "attribute": "aria-label"
+              },
+              {
+                "name": "description",
+                "type": "string | undefined",
+                "description": "The hint or error, passed to the inner input (a field sets it).",
+                "attribute": "aria-description"
+              }
+            ],
+            "events": [
+              {
+                "name": "change",
+                "description": "When the value is committed."
+              },
+              {
+                "name": "input",
+                "description": "On every keystroke (read `value`)."
+              }
+            ],
+            "slots": [
+              {
+                "name": "icon",
+                "description": "A 12px Lucide icon at the start (the filter size)."
+              }
+            ],
+            "methods": [
+              {
+                "name": "formResetCallback"
+              }
+            ]
+          },
+          {
+            "tag": "conare-field",
+            "name": "Field",
+            "module": "elements/field.js",
+            "description": "A label over one control, with a hint or an error under it.",
+            "attributes": [
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string",
+                "default": "''"
+              },
+              {
+                "name": "hint",
+                "field": "hint",
+                "type": "string | undefined"
+              },
+              {
+                "name": "error",
+                "field": "error",
+                "type": "string | undefined"
+              }
+            ],
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "''",
+                "attribute": "label"
+              },
+              {
+                "name": "hint",
+                "type": "string | undefined",
+                "attribute": "hint"
+              },
+              {
+                "name": "error",
+                "type": "string | undefined",
+                "attribute": "error"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "The control: <conare-input>, <conare-select>, or any input."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Labels, icons and hints",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/field/Product.html",
+          "content": "<!-- A field with its label, one with a leading icon, and one that checks what is typed: focus turns the hairline ink,\n     and an invalid value turns it red with its message. -->\n<div class=\"grid items-start gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8\">\n  <p class=\"type-meta leading-7 text-fg-muted\">With a label</p>\n  <conare-field label=\"Name\" class=\"max-w-90\">\n    <conare-input placeholder=\"production-agent\"></conare-input>\n  </conare-field>\n  <p class=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">With an icon</p>\n  <div class=\"max-w-90\"><conare-input placeholder=\"Filter namespaces\" aria-label=\"filter namespaces\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-search\" slot=\"icon\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"8\"></circle><path d=\"m21 21-4.3-4.3\"></path></svg></conare-input></div>\n  <p class=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">With a hint</p>\n  <conare-field label=\"Filter\" id=\"filter-field\" class=\"max-w-90\">\n    <conare-input value='{ \"team\": ' class=\"type-code-sm\"></conare-input>\n  </conare-field>\n</div>\n<script type=\"module\">\n  await customElements.whenDefined('conare-input')\n  const field = document.getElementById('filter-field')\n  const input = field.querySelector('conare-input')\n  const check = () => {\n    let invalid = false\n    try { JSON.parse(input.value) } catch { invalid = true }\n    field.error = invalid ? 'Filter must be valid JSON.' : undefined\n    field.hint = invalid ? undefined : 'Matches documents whose metadata has these values.'\n  }\n  input.addEventListener('input', check)\n  check()\n</script>\n"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,216 @@
+{
+  "name": "toggle-group",
+  "title": "Toggle group",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "Options that stay pressed on the segmented control's track, several at once or one that can be let go.",
+  "use_for": "Kinds of document a search returns; an ordering that can be turned off.",
+  "never": [
+    "Views of one thing (use Tabs)",
+    "Actions (use Button or ButtonGroup)"
+  ],
+  "source": "conare-web app/assets/css/console2.css (.v2-tabs with aria-pressed)",
+  "body": "Tabs' look with `aria-pressed` buttons in a labelled group. `multiple` makes the model an array of values; otherwise it is one value or null, and pressing the pressed one lets it go. With one at most, the white block glides to the pick in 180ms where the browser has anchor positioning. A new file beside Tabs, which stays as it is.",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/ToggleGroup.vue",
+      "content": "<script setup lang=\"ts\" generic=\"T extends string\">\nimport { computed } from 'vue'\n\n// Buttons that stay pressed, on the segmented control's track (console2.css .v2-tabs with aria-pressed): a paper track in\n// a hairline, each pressed one a white block with its own hairline. `multiple` lets several stay on (the model is an\n// array); otherwise one at most, pressing it again lets it go, and where the browser has anchor positioning the white\n// block glides to the pick in 180ms. For views of one thing use Tabs; this is for options that are on or off.\nconst props = defineProps<{ options: readonly T[] | { value: T, label: string, disabled?: boolean }[], label: string, multiple?: boolean }>()\nconst model = defineModel<T | T[] | null>({ required: true })\nconst norm = (o: T | { value: T, label: string, disabled?: boolean }) => (typeof o === 'string' ? { value: o, label: o, disabled: false } : { disabled: false, ...o })\nconst items = computed(() => props.options.map(norm))\nconst on = (v: T) => (Array.isArray(model.value) ? model.value.includes(v) : model.value === v)\nfunction press(v: T) {\n  if (props.multiple) {\n    const list = Array.isArray(model.value) ? model.value : []\n    model.value = list.includes(v) ? list.filter(x => x !== v) : [...list, v]\n  }\n  else model.value = model.value === v ? null : v\n}\n</script>\n\n<template>\n  <div data-ds=\"toggle-group\" class=\"ds-toggles\" role=\"group\" :aria-label=\"label\" :data-multiple=\"multiple || undefined\">\n    <button v-for=\"o in items\" :key=\"o.value\" type=\"button\" :aria-pressed=\"on(o.value)\" :disabled=\"o.disabled\" @click=\"press(o.value)\">{{ o.label }}</button>\n  </div>\n</template>\n\n<style>\n.ds-toggles { display: inline-flex; padding: var(--ds-space-2xs); border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface-subtle); }\n.ds-toggles > button { height: var(--ds-size-control-xs); padding: 0 8px; color: var(--ds-color-fg-muted); font-size: var(--ds-text-meta); cursor: pointer; transition: color var(--ds-duration-glide) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard), transform var(--ds-duration-glide) var(--ds-easing-out); }\n.ds-toggles > button:active:not(:disabled) { transform: scale(0.97); }\n@media (hover: hover) and (pointer: fine) { .ds-toggles > button:hover { color: var(--ds-color-fg); } }\n.ds-toggles > button:disabled { color: var(--ds-color-fg-faint); cursor: not-allowed; }\n.ds-toggles > button[aria-pressed=\"true\"] { position: relative; z-index: 1; background: var(--ds-color-surface); color: var(--ds-color-fg); outline: var(--ds-border-hairline) solid var(--ds-color-edge); }\n.ds-toggles > button[aria-pressed=\"true\"]:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); }\n/* Two pressed side by side keep a gap between their blocks. */\n.ds-toggles[data-multiple] { gap: var(--ds-space-2xs); }\n@supports (anchor-scope: all) {\n  .ds-toggles:not([data-multiple]) { position: relative; anchor-scope: --ds-toggle-thumb; }\n  .ds-toggles:not([data-multiple])::before { position: absolute; top: anchor(top); right: anchor(right); bottom: anchor(bottom); left: anchor(left); background: var(--ds-color-surface); content: \"\"; outline: var(--ds-border-hairline) solid var(--ds-color-edge); position-anchor: --ds-toggle-thumb; }\n  .ds-toggles:not([data-multiple]):is(:hover, :focus-within)::before { transition: top var(--ds-duration-slide) var(--ds-easing-out), right var(--ds-duration-slide) var(--ds-easing-out), bottom var(--ds-duration-slide) var(--ds-easing-out), left var(--ds-duration-slide) var(--ds-easing-out); }\n  .ds-toggles:not([data-multiple]):not(:has(> [aria-pressed=\"true\"]))::before { content: none; }\n  .ds-toggles:not([data-multiple]) > button { position: relative; z-index: 1; }\n  .ds-toggles:not([data-multiple]) > button[aria-pressed=\"true\"] { anchor-name: --ds-toggle-thumb; background: none; outline: 0; }\n  .ds-toggles:not([data-multiple]) > button[aria-pressed=\"true\"]:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); }\n}\n@media (pointer: coarse), (max-width: 767px) {\n  .ds-toggles > button { position: relative; height: 34px; padding-inline: 12px; font-size: var(--ds-text-ui); }\n  .ds-toggles > button::after { position: absolute; inset: -3px 0; content: \"\"; }\n}\n@media (prefers-reduced-motion: reduce) {\n  .ds-toggles:is(:hover, :focus-within)::before { transition: none; }\n  .ds-toggles > button:active:not(:disabled) { transform: none; }\n}\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "In the product",
+      "center": false,
+      "half": false,
+      "path": "examples/toggle-group/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport ToggleGroup from '@/components/ui/ToggleGroup.vue'\n// Kinds of document a search may return, several at once; and a single pick that can be let go.\nconst kinds = ref<string[] | string | null>(['Pages', 'Files'])\nconst weight = ref<string[] | string | null>('Recent first')\n</script>\n\n<template>\n  <div class=\"grid items-start gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8\">\n    <p class=\"type-meta leading-7 text-fg-muted\">Several</p>\n    <div><ToggleGroup v-model=\"kinds\" multiple label=\"kinds of document\" :options=\"['Messages', 'Pages', 'Emails', 'Files']\" /></div>\n    <p class=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">One or none</p>\n    <div><ToggleGroup v-model=\"weight\" label=\"ordering\" :options=\"['Recent first', 'Most cited']\" /></div>\n  </div>\n</template>\n",
+      "requires": [],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/ToggleGroup.tsx",
+          "content": "'use client'\nimport { useControllable } from '@/react/hooks/useControllable'\n\n// Buttons that stay pressed, on the segmented control's track (console2.css .v2-tabs with aria-pressed): a paper track in\n// a hairline, each pressed one a white block with its own hairline. `multiple` lets several stay on (the value is an\n// array); otherwise one at most, pressing it again lets it go, and where the browser has anchor positioning the white\n// block glides to the pick in 180ms. For views of one thing use Tabs; this is for options that are on or off. Vue's\n// v-model is `value` with `onValueChange` (or `defaultValue` alone).\nexport type ToggleGroupOption<T extends string> = T | { value: T, label: string, disabled?: boolean }\nexport interface ToggleGroupProps<T extends string> {\n  options: readonly ToggleGroupOption<T>[]\n  label: string\n  multiple?: boolean\n  value?: T | T[] | null\n  defaultValue?: T | T[] | null\n  onValueChange?: (value: T | T[] | null) => void\n  className?: string\n}\n\nconst norm = <T extends string>(o: ToggleGroupOption<T>) => (typeof o === 'string' ? { value: o, label: o, disabled: false } : { disabled: false, ...o })\n\nexport function ToggleGroup<T extends string>({ options, label, multiple, value, defaultValue = null, onValueChange, className }: ToggleGroupProps<T>) {\n  const [model, setModel] = useControllable<T | T[] | null>(value, defaultValue, onValueChange)\n  const on = (v: T) => (Array.isArray(model) ? model.includes(v) : model === v)\n  function press(v: T) {\n    if (multiple) {\n      const list = Array.isArray(model) ? model : []\n      setModel(list.includes(v) ? list.filter(x => x !== v) : [...list, v])\n    }\n    else setModel(model === v ? null : v)\n  }\n  return (\n    <>\n      <style href=\"ds-toggle-group\" precedence=\"ds\">{css}</style>\n      <div data-ds=\"toggle-group\" className={className ? `ds-toggles ${className}` : 'ds-toggles'} role=\"group\" aria-label={label} data-multiple={multiple || undefined}>\n        {options.map(norm).map(o => (\n          <button key={o.value} type=\"button\" aria-pressed={on(o.value)} disabled={o.disabled} onClick={() => press(o.value)}>{o.label}</button>\n        ))}\n      </div>\n    </>\n  )\n}\n\nexport default ToggleGroup\n\nconst css = `\n.ds-toggles { display: inline-flex; padding: var(--ds-space-2xs); border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface-subtle); }\n.ds-toggles > button { height: var(--ds-size-control-xs); padding: 0 8px; color: var(--ds-color-fg-muted); font-size: var(--ds-text-meta); cursor: pointer; transition: color var(--ds-duration-glide) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard), transform var(--ds-duration-glide) var(--ds-easing-out); }\n.ds-toggles > button:active:not(:disabled) { transform: scale(0.97); }\n@media (hover: hover) and (pointer: fine) { .ds-toggles > button:hover { color: var(--ds-color-fg); } }\n.ds-toggles > button:disabled { color: var(--ds-color-fg-faint); cursor: not-allowed; }\n.ds-toggles > button[aria-pressed=\"true\"] { position: relative; z-index: 1; background: var(--ds-color-surface); color: var(--ds-color-fg); outline: var(--ds-border-hairline) solid var(--ds-color-edge); }\n.ds-toggles > button[aria-pressed=\"true\"]:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); }\n/* Two pressed side by side keep a gap between their blocks. */\n.ds-toggles[data-multiple] { gap: var(--ds-space-2xs); }\n@supports (anchor-scope: all) {\n  .ds-toggles:not([data-multiple]) { position: relative; anchor-scope: --ds-toggle-thumb; }\n  .ds-toggles:not([data-multiple])::before { position: absolute; top: anchor(top); right: anchor(right); bottom: anchor(bottom); left: anchor(left); background: var(--ds-color-surface); content: \"\"; outline: var(--ds-border-hairline) solid var(--ds-color-edge); position-anchor: --ds-toggle-thumb; }\n  .ds-toggles:not([data-multiple]):is(:hover, :focus-within)::before { transition: top var(--ds-duration-slide) var(--ds-easing-out), right var(--ds-duration-slide) var(--ds-easing-out), bottom var(--ds-duration-slide) var(--ds-easing-out), left var(--ds-duration-slide) var(--ds-easing-out); }\n  .ds-toggles:not([data-multiple]):not(:has(> [aria-pressed=\"true\"]))::before { content: none; }\n  .ds-toggles:not([data-multiple]) > button { position: relative; z-index: 1; }\n  .ds-toggles:not([data-multiple]) > button[aria-pressed=\"true\"] { anchor-name: --ds-toggle-thumb; background: none; outline: 0; }\n  .ds-toggles:not([data-multiple]) > button[aria-pressed=\"true\"]:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); }\n}\n@media (pointer: coarse), (max-width: 767px) {\n  .ds-toggles > button { position: relative; height: 34px; padding-inline: 12px; font-size: var(--ds-text-ui); }\n  .ds-toggles > button::after { position: absolute; inset: -3px 0; content: \"\"; }\n}\n@media (prefers-reduced-motion: reduce) {\n  .ds-toggles:is(:hover, :focus-within)::before { transition: none; }\n  .ds-toggles > button:active:not(:disabled) { transform: none; }\n}\n`\n"
+        },
+        {
+          "path": "react/hooks/useControllable.ts",
+          "content": "'use client'\nimport { useCallback, useRef, useState } from 'react'\n\n// Vue's defineModel in React: a value that is controlled when the caller passes it (value + onValueChange, as Radix\n// does) and kept inside otherwise (defaultValue). setValue calls onChange either way.\nexport function useControllable<T>(value: T | undefined, defaultValue: T, onChange?: (value: T) => void) {\n\tconst [inner, setInner] = useState<T>(defaultValue)\n\tconst controlled = value !== undefined\n\tconst current = controlled ? value : inner\n\tconst ref = useRef(onChange)\n\tref.current = onChange\n\tconst set = useCallback((next: T) => {\n\t\tif (!controlled) setInner(next)\n\t\tref.current?.(next)\n\t}, [controlled])\n\treturn [current, set] as const\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "ToggleGroup",
+            "file": "react/components/ui/ToggleGroup.tsx",
+            "props": [
+              {
+                "name": "options",
+                "type": "readonly ToggleGroupOption<T>[]",
+                "required": true
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "multiple",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "value",
+                "type": "T | T[] | null",
+                "required": false
+              },
+              {
+                "name": "defaultValue",
+                "type": "T | T[] | null",
+                "required": false,
+                "default": "null"
+              },
+              {
+                "name": "onValueChange",
+                "type": "(value: T | T[] | null) => void",
+                "required": false
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "react/examples/toggle-group/Product.tsx",
+          "content": "'use client'\nimport { useState } from 'react'\nimport { ToggleGroup } from '@/react/components/ui/ToggleGroup'\n// Kinds of document a search may return, several at once; and a single pick that can be let go.\n\nexport default function Product() {\n  const [kinds, setKinds] = useState<string[] | string | null>(['Pages', 'Files'])\n  const [weight, setWeight] = useState<string[] | string | null>('Recent first')\n  return (\n    <div className=\"grid items-start gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8\">\n      <p className=\"type-meta leading-7 text-fg-muted\">Several</p>\n      <div><ToggleGroup value={kinds} onValueChange={setKinds} multiple label=\"kinds of document\" options={['Messages', 'Pages', 'Emails', 'Files']} /></div>\n      <p className=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">One or none</p>\n      <div><ToggleGroup value={weight} onValueChange={setWeight} label=\"ordering\" options={['Recent first', 'Most cited']} /></div>\n    </div>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/toggle-group.ts",
+          "content": "import { html } from 'lit'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// ToggleGroup.vue as <conare-toggle-group>: buttons that stay pressed, on the segmented control's track (console2.css\n// .v2-tabs with aria-pressed): a paper track in a hairline, each pressed one a white block with its own hairline.\n// `multiple` lets several stay on (the value is an array); otherwise one at most, pressing it again lets it go, and\n// where the browser has anchor positioning the white block glides to the pick in 180ms. For views of one thing use\n// Tabs; this is for options that are on or off. `options` is a JSON attribute or a property; v-model is `value` (a\n// string, a JSON array with `multiple`, or null) with `input` and `change`.\n\nexport type ToggleGroupOption = string | { value: string, label: string, disabled?: boolean }\nexport type ToggleGroupValue = string | string[] | null\n\nconst norm = (o: ToggleGroupOption) => (typeof o === 'string' ? { value: o, label: o, disabled: false } : { disabled: false, ...o })\n// value=\"Recent first\" or value='[\"Pages\",\"Files\"]'.\nconst fromAttribute = (v: string | null): ToggleGroupValue => (v === null ? null : v.trim().startsWith('[') ? JSON.parse(v) as string[] : v)\n\n/**\n * @summary Buttons that stay pressed, on a track.\n * @fires input - A button was pressed (read `value`).\n * @fires change - A button was pressed (read `value`).\n */\nexport class ToggleGroup extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { options: { type: Array }, label: {}, multiple: { type: Boolean }, value: { converter: { fromAttribute } } }\n\n\toptions: ToggleGroupOption[] = []\n\t/** The group's name for assistive tech. */\n\tlabel = ''\n\tmultiple = false\n\tvalue: ToggleGroupValue = null\n\n\tprivate on(v: string) {\n\t\treturn Array.isArray(this.value) ? this.value.includes(v) : this.value === v\n\t}\n\tprivate press(v: string) {\n\t\tif (this.multiple) {\n\t\t\tconst list = Array.isArray(this.value) ? this.value : []\n\t\t\tthis.commit(list.includes(v) ? list.filter((x) => x !== v) : [...list, v])\n\t\t} else this.commit(this.value === v ? null : v)\n\t}\n\n\trender() {\n\t\treturn html`<div data-ds=\"toggle-group\" class=\"ds-toggles\" role=\"group\" aria-label=${this.label} data-multiple=${ifDefined(this.multiple ? 'true' : undefined)}>${this.options.map(norm).map((o) => html`<button type=\"button\" aria-pressed=${String(this.on(o.value))} ?disabled=${o.disabled} @click=${() => this.press(o.value)}>${o.label}</button>`)}</div>`\n\t}\n}\n\ndefine('toggle-group', ToggleGroup)\n"
+        },
+        {
+          "path": "elements/components/ui/toggle-group.css",
+          "content": "/* ToggleGroup.vue's <style>, as it is. */\n.ds-toggles { display: inline-flex; padding: var(--ds-space-2xs); border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface-subtle); }\n.ds-toggles > button { height: var(--ds-size-control-xs); padding: 0 8px; color: var(--ds-color-fg-muted); font-size: var(--ds-text-meta); cursor: pointer; transition: color var(--ds-duration-glide) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard), transform var(--ds-duration-glide) var(--ds-easing-out); }\n.ds-toggles > button:active:not(:disabled) { transform: scale(0.97); }\n@media (hover: hover) and (pointer: fine) { .ds-toggles > button:hover { color: var(--ds-color-fg); } }\n.ds-toggles > button:disabled { color: var(--ds-color-fg-faint); cursor: not-allowed; }\n.ds-toggles > button[aria-pressed=\"true\"] { position: relative; z-index: 1; background: var(--ds-color-surface); color: var(--ds-color-fg); outline: var(--ds-border-hairline) solid var(--ds-color-edge); }\n.ds-toggles > button[aria-pressed=\"true\"]:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); }\n/* Two pressed side by side keep a gap between their blocks. */\n.ds-toggles[data-multiple] { gap: var(--ds-space-2xs); }\n@supports (anchor-scope: all) {\n  .ds-toggles:not([data-multiple]) { position: relative; anchor-scope: --ds-toggle-thumb; }\n  .ds-toggles:not([data-multiple])::before { position: absolute; top: anchor(top); right: anchor(right); bottom: anchor(bottom); left: anchor(left); background: var(--ds-color-surface); content: \"\"; outline: var(--ds-border-hairline) solid var(--ds-color-edge); position-anchor: --ds-toggle-thumb; }\n  .ds-toggles:not([data-multiple]):is(:hover, :focus-within)::before { transition: top var(--ds-duration-slide) var(--ds-easing-out), right var(--ds-duration-slide) var(--ds-easing-out), bottom var(--ds-duration-slide) var(--ds-easing-out), left var(--ds-duration-slide) var(--ds-easing-out); }\n  .ds-toggles:not([data-multiple]):not(:has(> [aria-pressed=\"true\"]))::before { content: none; }\n  .ds-toggles:not([data-multiple]) > button { position: relative; z-index: 1; }\n  .ds-toggles:not([data-multiple]) > button[aria-pressed=\"true\"] { anchor-name: --ds-toggle-thumb; background: none; outline: 0; }\n  .ds-toggles:not([data-multiple]) > button[aria-pressed=\"true\"]:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); }\n}\n@media (pointer: coarse), (max-width: 767px) {\n  .ds-toggles > button { position: relative; height: 34px; padding-inline: 12px; font-size: var(--ds-text-ui); }\n  .ds-toggles > button::after { position: absolute; inset: -3px 0; content: \"\"; }\n}\n@media (prefers-reduced-motion: reduce) {\n  .ds-toggles:is(:hover, :focus-within)::before { transition: none; }\n  .ds-toggles > button:active:not(:disabled) { transform: none; }\n}\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/toggle-group.js"
+      ],
+      "tag": "conare-toggle-group",
+      "tags": [
+        "conare-toggle-group"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-toggle-group",
+            "name": "ToggleGroup",
+            "module": "elements/toggle-group.js",
+            "description": "Buttons that stay pressed, on a track.",
+            "attributes": [
+              {
+                "name": "options",
+                "field": "options",
+                "type": "ToggleGroupOption[]",
+                "default": "[]"
+              },
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string",
+                "default": "''",
+                "description": "The group's name for assistive tech."
+              },
+              {
+                "name": "multiple",
+                "field": "multiple",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "value",
+                "field": "value",
+                "type": "ToggleGroupValue",
+                "default": "null"
+              }
+            ],
+            "properties": [
+              {
+                "name": "options",
+                "type": "ToggleGroupOption[]",
+                "default": "[]",
+                "attribute": "options"
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "default": "''",
+                "description": "The group's name for assistive tech.",
+                "attribute": "label"
+              },
+              {
+                "name": "multiple",
+                "type": "boolean",
+                "default": "false",
+                "attribute": "multiple"
+              },
+              {
+                "name": "value",
+                "type": "ToggleGroupValue",
+                "default": "null",
+                "attribute": "value"
+              }
+            ],
+            "events": [
+              {
+                "name": "input",
+                "description": "A button was pressed (read `value`)."
+              },
+              {
+                "name": "change",
+                "description": "A button was pressed (read `value`)."
+              }
+            ],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/toggle-group/Product.html",
+          "content": "<!-- Kinds of document a search may return, several at once; and a single pick that can be let go. -->\n<div class=\"grid items-start gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8\">\n  <p class=\"type-meta leading-7 text-fg-muted\">Several</p>\n  <div><conare-toggle-group value='[\"Pages\", \"Files\"]' multiple label=\"kinds of document\" options='[\"Messages\", \"Pages\", \"Emails\", \"Files\"]'></conare-toggle-group></div>\n  <p class=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">One or none</p>\n  <div><conare-toggle-group value=\"Recent first\" label=\"ordering\" options='[\"Recent first\", \"Most cited\"]'></conare-toggle-group></div>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

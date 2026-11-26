@@ -1,0 +1,789 @@
+{
+  "name": "chart",
+  "title": "Chart",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "How Conare draws a number: bars per day under a meter's total and the week's change, lines for series over time, bars for shares of a total, and one split bar for a whole in parts. A 1px grid, axes from 0, and pointing reads a value.",
+  "use_for": "Queries per day, search latency, documents written, what a bill is made of. Every series is labeled; the caption says what it counts.",
+  "never": [
+    "Colour alone to tell series apart: the third line is dashed and every series is in the legend",
+    "Bars that regrow on every hover: they rise once",
+    "Charts without a caption",
+    "An axis that starts above 0"
+  ],
+  "source": "conare-web app/components/console/BarChart.vue, LineChart.vue, usage/Multiples.vue, usage/Trend.vue, usage/TrendArrow.vue, app/assets/css/console2.css (.c-bar, .v2-chart-week, .v2-splitbar, .v2-segmark, .v2-priced, .v2-rowmark)",
+  "body": "",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/BarChart.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed, ref } from 'vue'\nimport { type DayPoint, compactNumber, formatDay, formatNumber, niceTicks } from '@/composables/useChart'\n\n// A red bar per day (BarChart.vue). The axis starts at 0 and ends on a round number in four steps; grid lines are 1px\n// hairlines. A day with any activity keeps a visible bar. Pointing at a bar names its day and value in the caption and\n// quiets the others. The bars rise from the axis once, staggered over the same 120ms for 7 days or 90.\n// `focus`: bars lit from outside, the rest quiet, as under the pointer; `note`: what the caption says meanwhile.\n// `week`: the change over the last seven days, set over those bars. `held`: on its way, the axis alone at its height.\n// `bare` drops the caption's label, for a chart under a stat that already names it.\nconst props = withDefaults(defineProps<{ points: DayPoint[], label: string, height?: number, focus?: number[], note?: string, week?: string, held?: boolean, bare?: boolean }>(), { height: 160 })\n\nconst ticks = computed(() => niceTicks(props.points.map(p => p.value)))\nconst top = computed(() => ticks.value[ticks.value.length - 1]!)\n\n// Four dates under the bars: the first, the last and two between.\nconst marks = computed(() => {\n  const n = props.points.length\n  if (!n) return []\n  const at = [...new Set([0, Math.round((n - 1) / 3), Math.round((2 * (n - 1)) / 3), n - 1])]\n  return at.map(i => ({ left: `${((i + 0.5) / n) * 100}%`, text: formatDay(props.points[i]!.day) }))\n})\n\nconst hover = ref<number | null>(null)\nconst shown = computed(() => (hover.value === null ? null : props.points[hover.value] ?? null))\nconst peak = computed(() => formatNumber(Math.max(0, ...props.points.map(p => p.value))))\n</script>\n\n<template>\n  <figure data-ds=\"bar-chart\" class=\"ds-barchart flex flex-col gap-3\" :data-bare=\"bare || undefined\">\n    <figcaption class=\"ds-barchart-cap flex h-5 items-baseline justify-between gap-4\">\n      <span class=\"ds-chart-caption\">{{ label }}</span>\n      <span v-if=\"shown\" class=\"ds-chart-meta\">{{ formatDay(shown.day, true) }} <span class=\"font-medium text-fg\">{{ formatNumber(shown.value) }}</span></span>\n      <span v-else-if=\"note\" class=\"ds-chart-meta\">{{ note }}</span>\n    </figcaption>\n    <div v-if=\"held\" class=\"grid grid-cols-[40px_minmax(0,1fr)] gap-x-2\" aria-hidden=\"true\">\n      <div />\n      <div class=\"relative\" :style=\"{ height: `${height}px` }\"><div class=\"absolute inset-x-0 bottom-0 border-t border-edge\" /></div>\n      <div />\n      <div class=\"mt-2 h-4\" />\n    </div>\n    <p v-else-if=\"!points.length\" class=\"flex items-center justify-center type-ui text-fg-muted\" :style=\"{ height: `${height}px` }\">No activity yet.</p>\n    <div v-else class=\"grid grid-cols-[40px_minmax(0,1fr)] gap-x-2\">\n      <div class=\"relative\" :style=\"{ height: `${height}px` }\" aria-hidden=\"true\">\n        <span v-for=\"t in ticks\" :key=\"t\" class=\"ds-chart-meta absolute right-0 -translate-y-1/2\" :style=\"{ top: `${(1 - t / top) * 100}%` }\">{{ compactNumber(t) }}</span>\n      </div>\n      <div\n        class=\"relative\"\n        :style=\"{ height: `${height}px` }\"\n        role=\"img\"\n        :aria-label=\"`${label}: ${points.length} days, peak ${peak}${week ? `, ${week} this week` : ''}`\"\n        @pointerleave=\"hover = null\"\n      >\n        <div v-for=\"t in ticks\" :key=\"t\" class=\"pointer-events-none absolute inset-x-0 border-t border-data-grid\" :style=\"{ top: `${(1 - t / top) * 100}%` }\" />\n        <p v-if=\"week && !shown\" class=\"ds-chart-week\" :style=\"{ width: `${(Math.min(7, points.length) / points.length) * 100}%` }\"><span class=\"font-medium tabular-nums\">{{ week }}</span><span class=\"text-fg-muted\">this week</span></p>\n        <div class=\"absolute inset-0 flex items-end\">\n          <div v-for=\"(p, i) in points\" :key=\"p.day\" class=\"flex h-full flex-1 items-end\" @pointerenter=\"hover = i\">\n            <div\n              class=\"ds-bar mx-auto w-[70%]\"\n              :class=\"hover === i || (hover === null && (!focus || focus.includes(i))) ? 'bg-data-highlight' : 'bg-ds-neutral-600'\"\n              :style=\"{ height: p.value > 0 ? `max(2px, ${(p.value / top) * 100}%)` : '0', '--i': (i * 30) / points.length }\"\n            />\n          </div>\n        </div>\n      </div>\n      <div />\n      <div class=\"relative mt-2 h-4\" aria-hidden=\"true\">\n        <span\n          v-for=\"(m, i) in marks\"\n          :key=\"m.text\"\n          class=\"ds-chart-meta absolute whitespace-nowrap\"\n          :class=\"i === 0 ? 'left-0' : i === marks.length - 1 ? 'right-0' : '-translate-x-1/2'\"\n          :style=\"i === 0 || i === marks.length - 1 ? {} : { left: m.left }\"\n        >{{ m.text }}</span>\n      </div>\n    </div>\n  </figure>\n</template>\n\n<style>\n/* The charts' caption: 12px medium, muted (written in sentence case); meta and axis labels 12px muted in tabular figures. */\n.ds-chart-caption { color: var(--ds-color-fg-muted); font-size: var(--ds-text-meta); font-weight: var(--ds-font-weight-medium); line-height: var(--ds-text-meta-leading); }\n.ds-chart-meta { color: var(--ds-color-fg-muted); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); font-variant-numeric: tabular-nums; }\n/* A bar rises from the axis once (console2.css .c-bar), then only its colour changes. */\n.ds-bar { transform-origin: bottom; animation: ds-bar-in var(--ds-duration-rise) var(--ds-easing-out) both; animation-delay: calc(var(--i, 0) * 4ms); transition: background-color var(--ds-duration-glide) var(--ds-easing-standard); }\n@keyframes ds-bar-in { from { transform: scaleY(0.02); } }\n/* The week's change, over the last seven bars on a red rule. */\n.ds-chart-week { position: absolute; right: 0; bottom: 100%; display: flex; justify-content: flex-end; gap: var(--ds-space-xs); margin-bottom: var(--ds-space-xs); padding-bottom: calc(var(--ds-space-xs) - 1px); border-bottom: var(--ds-border-hairline) solid var(--ds-color-edge-accent); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); white-space: nowrap; }\n/* Under a stat that names it (the usage cards), the value read out sits over the chart's top right. */\n.ds-barchart[data-bare] { position: relative; }\n.ds-barchart[data-bare] > .ds-barchart-cap { position: absolute; top: -24px; right: 0; z-index: 1; height: auto; }\n.ds-barchart[data-bare] .ds-chart-caption { display: none; }\n.ds-barchart[data-bare] .ds-barchart-cap .ds-chart-meta { padding: 0 var(--ds-space-xs); background: var(--ds-color-surface); }\n@media (prefers-reduced-motion: reduce) { .ds-bar { animation: none; } }\n</style>\n"
+    },
+    {
+      "path": "components/ui/LineChart.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed, ref } from 'vue'\n\n// Lines over time (LineChart.vue): one axis from 0, 2px lines in the brand's series order (red, neutral-400,\n// neutral-600 dashed, so colour is never the only difference), the first series shading the area under it, a legend\n// when there is more than one, and a crosshair with the values under the pointer. `smooth = k` draws each point as the\n// mean of the points within k / 2 steps of it in time, for series too sparse to read point by point. In a card by\n// default; `bare` drops the card, for a chart already inside one.\nexport type LineSeries = { label: string, points: Array<{ t: number, v: number }> }\nconst props = defineProps<{ title: string, series: LineSeries[], format: (value: number) => string, smooth?: number, height?: number, bare?: boolean }>()\n\nconst W = 600\nconst H = 160\nconst COLORS = ['var(--ds-color-data-1)', 'var(--ds-color-data-2)', 'var(--ds-color-data-3)']\nconst DASH = ['', '', '5 4']\n\nconst step = computed(() => {\n  const t = [...new Set(props.series.flatMap(s => s.points.map(p => p.t)))].sort((a, b) => a - b)\n  return Math.min(...t.slice(1).map((v, i) => v - t[i]!))\n})\nfunction rolling(points: Array<{ t: number, v: number }>, k: number) {\n  const reach = Math.floor(k / 2) * step.value\n  if (!(reach > 0) || !Number.isFinite(reach)) return points\n  return points.map((p) => {\n    const near = points.filter(q => Math.abs(q.t - p.t) <= reach)\n    return { t: p.t, v: near.reduce((n, q) => n + q.v, 0) / near.length }\n  })\n}\nconst lines = computed(() => props.series.slice(0, 3).filter(s => s.points.length).map(s => ({ ...s, points: rolling(s.points, props.smooth ?? 1) })))\nconst times = computed(() => [...new Set(lines.value.flatMap(s => s.points.map(p => p.t)))].sort((a, b) => a - b))\nconst span = computed(() => ({ from: times.value[0] ?? 0, to: times.value[times.value.length - 1] ?? 1 }))\nconst max = computed(() => {\n  const top = Math.max(0, ...lines.value.flatMap(s => s.points.map(p => p.v)))\n  if (top <= 0) return 1\n  const unit = 10 ** Math.floor(Math.log10(top))\n  return Math.ceil(top / unit) * unit\n})\nconst x = (t: number) => (span.value.to === span.value.from ? W / 2 : ((t - span.value.from) / (span.value.to - span.value.from)) * W)\nconst y = (v: number) => H - (v / max.value) * H\n\nconst paths = computed(() => lines.value.map((s, i) => ({\n  label: s.label,\n  color: COLORS[i]!,\n  dash: DASH[i]!,\n  d: s.points.map((p, j) => `${j ? 'L' : 'M'}${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`).join(''),\n  last: s.points[s.points.length - 1]!,\n  area: i ? '' : `M${x(s.points[0]!.t).toFixed(1)},${H}${s.points.map(p => `L${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`).join('')}L${x(s.points[s.points.length - 1]!.t).toFixed(1)},${H}Z`,\n})))\n\nconst hover = ref<number | null>(null)\nfunction move(event: PointerEvent) {\n  const box = (event.currentTarget as HTMLElement).getBoundingClientRect()\n  const t = span.value.from + ((event.clientX - box.left) / box.width) * (span.value.to - span.value.from)\n  let best: number | null = null\n  for (const c of times.value) if (best === null || Math.abs(c - t) < Math.abs(best - t)) best = c\n  hover.value = best\n}\n// Local time; with the day too over a range longer than 12 hours.\nfunction clock(t: number) {\n  const long = span.value.to - span.value.from > 12 * 3_600_000\n  return new Date(t).toLocaleString('en-US', { ...(long ? { month: 'short', day: 'numeric' } : {}), hour: 'numeric', minute: '2-digit', hour12: false })\n}\nconst hovered = computed(() => {\n  const t = hover.value\n  if (t === null) return null\n  return {\n    left: `${(x(t) / W) * 100}%`,\n    right: x(t) > W * 0.6,\n    time: clock(t),\n    values: lines.value.map((s, i) => ({ label: s.label, color: COLORS[i]!, value: s.points.find(p => p.t === t)?.v })),\n  }\n})\n</script>\n\n<template>\n  <figure data-ds=\"line-chart\" :class=\"!bare && 'border border-edge bg-surface p-4'\">\n    <figcaption class=\"mb-3 flex min-h-5 flex-wrap items-baseline justify-between gap-x-4 gap-y-1\">\n      <span class=\"type-meta font-medium text-fg-muted\">{{ title }}</span>\n      <span v-if=\"lines.length > 1\" class=\"flex flex-wrap gap-3 type-meta text-fg-muted\">\n        <span v-for=\"p in paths\" :key=\"p.label\" class=\"inline-flex items-center gap-1\">\n          <svg width=\"16\" height=\"4\" aria-hidden=\"true\"><line x1=\"0\" y1=\"2\" x2=\"16\" y2=\"2\" :stroke=\"p.color\" stroke-width=\"2\" :stroke-dasharray=\"p.dash\" /></svg>\n          {{ p.label }}\n        </span>\n      </span>\n    </figcaption>\n    <p v-if=\"!lines.length\" class=\"type-ui text-fg-muted\">No data in this range.</p>\n    <div v-else class=\"flex gap-2\">\n      <div class=\"relative h-40 w-14 shrink-0\" aria-hidden=\"true\">\n        <span v-for=\"(v, i) in [max, max / 2, 0]\" :key=\"i\" class=\"type-meta text-fg-muted tabular-nums absolute right-0 -translate-y-1/2 whitespace-nowrap\" :style=\"{ top: `${i * 50}%` }\">{{ i === 2 ? '0' : format(v) }}</span>\n      </div>\n      <div class=\"min-w-0 flex-1\">\n        <div\n          class=\"relative h-40 touch-none\"\n          :style=\"height ? { height: `${height}px` } : undefined\"\n          role=\"img\"\n          :aria-label=\"`${title}: ${paths.map(p => `${p.label} last ${format(p.last.v)}`).join(', ')}`\"\n          @pointermove=\"move\"\n          @pointerleave=\"hover = null\"\n        >\n          <svg class=\"absolute inset-0 h-full w-full overflow-visible\" :viewBox=\"`0 0 ${W} ${H}`\" preserveAspectRatio=\"none\">\n            <line v-for=\"g in [0, H / 2, H]\" :key=\"g\" x1=\"0\" :y1=\"g\" :x2=\"W\" :y2=\"g\" stroke=\"var(--ds-color-data-grid)\" stroke-width=\"1\" vector-effect=\"non-scaling-stroke\" />\n            <path v-for=\"p in paths.filter(q => q.area)\" :key=\"`${p.label}-area`\" :d=\"p.area\" :fill=\"p.color\" fill-opacity=\"0.06\" />\n            <path v-for=\"p in paths\" :key=\"p.label\" :d=\"p.d\" fill=\"none\" :stroke=\"p.color\" stroke-width=\"2\" :stroke-dasharray=\"p.dash\" stroke-linejoin=\"round\" stroke-linecap=\"round\" vector-effect=\"non-scaling-stroke\" />\n          </svg>\n          <template v-if=\"hovered\">\n            <div class=\"pointer-events-none absolute inset-y-0 w-px bg-ds-neutral-500\" :style=\"{ left: hovered.left }\" />\n            <div\n              class=\"pointer-events-none absolute top-0 z-10 border border-edge bg-surface px-3 py-2 type-meta\"\n              :style=\"hovered.right ? { right: `calc(100% - ${hovered.left} + 8px)` } : { left: `calc(${hovered.left} + 8px)` }\"\n            >\n              <p class=\"mb-1 text-fg-muted tabular-nums\">{{ hovered.time }}</p>\n              <p v-for=\"v in hovered.values\" :key=\"v.label\" class=\"flex items-center gap-2 whitespace-nowrap tabular-nums\">\n                <span class=\"inline-block h-0.5 w-3\" :style=\"{ background: v.color }\" />\n                <span v-if=\"lines.length > 1\" class=\"text-fg-muted\">{{ v.label }}</span>\n                <span class=\"font-medium\">{{ v.value === undefined ? '–' : format(v.value) }}</span>\n              </p>\n            </div>\n          </template>\n        </div>\n        <div class=\"type-meta text-fg-muted tabular-nums mt-2 flex justify-between\">\n          <span>{{ clock(span.from) }}</span>\n          <span>{{ clock(span.to) }}</span>\n        </div>\n      </div>\n    </div>\n  </figure>\n</template>\n"
+    },
+    {
+      "path": "components/ui/ChartTrend.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed } from 'vue'\nimport TrendArrow from '@/components/ui/TrendArrow.vue'\n\n// The week's change on a usage card (usage/Trend.vue, take 1, the one picked): a second stat on the card's right, This\n// week over the percent with the pixel triangle, red up and ink down. `change` is a share (0.12 is 12%).\nconst props = withDefaults(defineProps<{ change: number, label?: string }>(), { label: 'This week' })\nconst down = computed(() => props.change < 0)\nconst percent = computed(() => `${Math.abs(Math.round(props.change * 100))}%`)\n</script>\n\n<template>\n  <div data-ds=\"chart-trend\" class=\"shrink-0 text-right\" title=\"The last 7 days against the 7 before\">\n    <p class=\"type-meta text-fg-muted\">{{ label }}</p>\n    <p class=\"flex items-center justify-end gap-1.5 text-heading-4 font-medium tabular-nums\"><TrendArrow :down=\"down\" bare /><span class=\"sr-only\">{{ down ? 'down' : 'up' }}</span>{{ percent }}</p>\n  </div>\n</template>\n"
+    },
+    {
+      "path": "components/ui/TrendArrow.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed } from 'vue'\n\n// The way a number moved, in the website button's pixel arrow (usage/TrendArrow.vue): lit squares on a grid of dim\n// ones, red going up, ink going down (turned over). `bare` is a solid pixel triangle with no grid, for beside a stat.\n// It holds still: the branch's step on card hover is left out, since icons never move on hover.\nconst props = defineProps<{ down?: boolean, bare?: boolean }>()\nconst CELL = 3\nconst SIZE = 5\nconst ROWS = computed(() => (props.bare ? 3 : SIZE))\nconst INK = computed(() => (props.bare ? CELL : 2))\nconst WIDE = computed(() => SIZE * CELL - (props.bare ? 0 : 1))\nconst TALL = computed(() => ROWS.value * CELL - (props.bare ? 0 : 1))\nconst GRID = Array.from({ length: SIZE * SIZE }, (_, k) => [k % SIZE, Math.floor(k / SIZE)] as const)\n// [column, row] of the lit squares, pointing up.\nconst ARROW: Array<[number, number]> = [[2, 0], [1, 1], [2, 1], [3, 1], [0, 2], [2, 2], [4, 2], [2, 3], [2, 4]]\nconst TRIANGLE: Array<[number, number]> = [[2, 0], [1, 1], [2, 1], [3, 1], [0, 2], [1, 2], [2, 2], [3, 2], [4, 2]]\nconst lit = computed(() => (props.bare ? TRIANGLE : ARROW))\n</script>\n\n<template>\n  <svg data-ds=\"trend-arrow\" class=\"shrink-0 overflow-hidden\" :class=\"down && 'rotate-180'\" :width=\"WIDE\" :height=\"TALL\" :viewBox=\"`0 0 ${WIDE} ${TALL}`\" aria-hidden=\"true\">\n    <g v-if=\"!bare\" class=\"fill-ds-neutral-700\"><rect v-for=\"[x, y] in GRID\" :key=\"`${x}-${y}`\" :x=\"x * CELL\" :y=\"y * CELL\" width=\"2\" height=\"2\" /></g>\n    <g :class=\"down ? 'fill-fg' : 'fill-edge-accent'\"><rect v-for=\"[x, y] in lit\" :key=\"`${x}-${y}`\" :x=\"x * CELL\" :y=\"y * CELL\" :width=\"INK\" :height=\"INK\" /></g>\n  </svg>\n</template>\n"
+    },
+    {
+      "path": "components/ui/SplitBar.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed, nextTick, onMounted, ref, watch } from 'vue'\n\n// A whole in parts, as Billing's prices draw it (the chart's Split example): one bar, the parts in the order given\n// (largest first), the picked part in ink with a red mark gliding over it; under it the parts as rows in a card, one\n// paper block gliding to the row under the pointer or focus, and a red square on the picked row. Pointing at a row\n// picks it (v-model). `detail` is a quiet middle column, hidden on phones; `display` is the value as written.\nexport type SplitPart = { name: string, value: number, display?: string, detail?: string }\nconst props = defineProps<{ parts: SplitPart[], label?: string }>()\nconst at = defineModel<number>({ default: 0 })\n\nconst total = computed(() => props.parts.reduce((a, p) => a + p.value, 0) || 1)\n// The parts share what the bar's 2px gaps leave, so those come out of the percent.\nconst center = computed(() => {\n  const n = props.parts.length\n  const i = Math.min(at.value, n - 1)\n  const middle = (props.parts.slice(0, i).reduce((a, p) => a + p.value, 0) + (props.parts[i]?.value ?? 0) / 2) / total.value\n  return `calc(${middle * 100}% + ${i * 2 - middle * 2 * (n - 1)}px)`\n})\n\n// The gliding block: placed at once the first time, then it glides on transform.\nconst list = ref<HTMLElement | null>(null)\nconst mark = ref<{ y: number, h: number } | null>(null)\nconst instant = ref(true)\nfunction place(i: number) {\n  const row = list.value?.querySelectorAll<HTMLElement>('[data-glide-row]')[i]\n  if (!row) return\n  instant.value = !mark.value\n  mark.value = { y: row.offsetTop, h: row.offsetHeight }\n}\nfunction pick(i: number) {\n  at.value = i\n  place(i)\n}\nonMounted(() => nextTick(() => place(at.value)))\nwatch(at, i => place(i))\n</script>\n\n<template>\n  <div data-ds=\"split-bar\" class=\"flex flex-col gap-4\">\n    <div class=\"ds-segmark-track\" aria-hidden=\"true\"><span class=\"ds-segmark\" :style=\"{ transform: `translateX(${center})` }\"><i /></span></div>\n    <div class=\"ds-splitbar\" aria-hidden=\"true\">\n      <span v-for=\"(p, i) in parts\" :key=\"p.name\" :data-on=\"at === i || undefined\" :style=\"{ flexGrow: p.value / total }\" />\n    </div>\n    <ul ref=\"list\" class=\"relative border border-edge bg-surface\" :aria-label=\"label\">\n      <span v-if=\"mark\" class=\"ds-rowmark\" :data-instant=\"instant || undefined\" :style=\"{ transform: `translateY(${mark.y}px)`, height: `${mark.h}px` }\" aria-hidden=\"true\" />\n      <li v-for=\"(p, i) in parts\" :key=\"p.name\" data-glide-row class=\"border-edge [&+&]:border-t\">\n        <button type=\"button\" class=\"ds-priced\" :data-on=\"at === i || undefined\" :aria-pressed=\"at === i\" @pointerenter=\"pick(i)\" @focus=\"pick(i)\" @click=\"pick(i)\">\n          <span class=\"min-w-0 flex-1 truncate text-left\">{{ p.name }}</span>\n          <span v-if=\"p.detail\" class=\"hidden text-fg-muted tabular-nums sm:inline\">{{ p.detail }}</span>\n          <span class=\"w-24 text-right tabular-nums\">{{ p.display ?? p.value.toLocaleString('en-US') }}</span>\n        </button>\n      </li>\n    </ul>\n  </div>\n</template>\n\n<style>\n/* console2.css .v2-splitbar, .v2-segmark, .v2-rowmark and .v2-priced, as Billing's prices set them (data-pm=\"6\"). */\n.ds-splitbar { display: flex; height: 12px; gap: var(--ds-space-2xs); margin-top: var(--ds-space-xs); }\n.ds-splitbar > span { flex-basis: 0; background: var(--ds-color-neutral-600); transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-splitbar > span[data-on] { background: var(--ds-color-surface-inverse); }\n.ds-segmark-track { position: relative; height: 8px; margin-bottom: -12px; overflow: clip; }\n.ds-segmark { position: absolute; inset: 0; transition: transform var(--ds-duration-settle) var(--ds-easing-out); }\n.ds-segmark i { position: absolute; top: 0; left: -3px; width: 6px; height: 6px; background: var(--ds-color-edge-accent); }\n.ds-rowmark { position: absolute; top: 0; right: 0; left: 0; z-index: 0; background: var(--ds-color-surface-subtle); pointer-events: none; transition: transform var(--ds-duration-enter) var(--ds-easing-out), height var(--ds-duration-enter) var(--ds-easing-out); }\n.ds-rowmark[data-instant] { transition: none; }\n.ds-priced { position: relative; z-index: 1; display: flex; width: 100%; min-height: var(--ds-size-row); align-items: center; gap: var(--ds-space-xl); padding: 0 16px 0 20px; font-size: var(--ds-text-ui); cursor: pointer; }\n.ds-priced::before { position: absolute; top: 50%; left: 8px; width: 4px; height: 4px; margin-top: -2px; background: var(--ds-color-edge-accent); content: \"\"; opacity: 0; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-priced[data-on]::before { opacity: 1; }\n.ds-priced:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: -2px; }\n@media (prefers-reduced-motion: reduce) { .ds-splitbar > span, .ds-segmark, .ds-rowmark { transition: none; } }\n</style>\n"
+    },
+    {
+      "path": "composables/useChart.ts",
+      "content": "// What the charts share (usageMetrics.ts, BarChart.vue): numbers in en-US, an axis that ends on a round number in four\n// steps, and the week's change.\n\nexport type DayPoint = { day: string, value: number }\nexport type ChartMetric = { key: string, label: string, points: DayPoint[] }\n\nconst whole = new Intl.NumberFormat('en-US')\nconst compact = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 })\n\n/** 186402 -> \"186,402\". */\nexport const formatNumber = (n: number) => whole.format(n)\n/** 186402 -> \"186.4K\", for axis labels. */\nexport const compactNumber = (n: number) => compact.format(n)\n\n/** The axis: a step of 1, 2, 2.5 or 5 times a power of ten that covers the largest value in four. Starts at 0. */\nexport function niceTicks(values: number[]) {\n  const max = Math.max(0, ...values)\n  if (max === 0) return [0, 1]\n  const raw = max / 4\n  const power = 10 ** Math.floor(Math.log10(raw))\n  const step = ([1, 2, 2.5, 5, 10].find(m => m * power >= raw) ?? 10) * power\n  return Array.from({ length: Math.ceil(max / step) + 1 }, (_, i) => i * step)\n}\n\n/** \"Oct 2\", or \"Oct 2, 2026\" with the year, from an ISO day. */\nexport const formatDay = (value: string, year = false) => new Date(`${value}T00:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', ...(year ? { year: 'numeric' } : {}), timeZone: 'UTC' })\n\n/** The sum of a metric's points over its range. */\nexport const totalOf = (points: DayPoint[]) => points.reduce((a, p) => a + p.value, 0)\n\n/** The last seven days against the seven before, as a share; null without both. */\nexport function weekChange(points: DayPoint[]): number | null {\n  if (points.length < 14) return null\n  const before = totalOf(points.slice(-14, -7))\n  return before ? (totalOf(points.slice(-7)) - before) / before : null\n}\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Usage",
+      "label": "Bars per day",
+      "center": false,
+      "half": false,
+      "path": "examples/chart/Usage.vue",
+      "content": "<script setup lang=\"ts\">\nimport BarChart from '@/components/ui/BarChart.vue'\nimport ChartTrend from '@/components/ui/ChartTrend.vue'\nimport { type DayPoint, formatNumber, totalOf, weekChange } from '@/composables/useChart'\n// The usage page's cards: a meter's total for the month, the week's change and its bars per day, with the grid and\n// the dates. Point at a bar to read it.\nconst days = Array.from({ length: 30 }, (_, i) => `2026-10-${String(i + 2).padStart(2, '0')}`)\nconst series = (peak: number, step: number): DayPoint[] => days.map((day, i) => ({ day, value: Math.round(peak * (0.16 + (((i * step) % 23) / 23) ** 2 * 0.84)) }))\nconst metrics = [\n  { key: 'queries', label: 'Queries', points: series(15000, 7) },\n  { key: 'documents', label: 'Documents written', points: series(13000, 11) },\n]\n</script>\n\n<template>\n  <ul class=\"grid gap-4 md:grid-cols-2\">\n    <li v-for=\"m in metrics\" :key=\"m.key\" class=\"flex flex-col gap-8 border border-edge bg-surface p-4\">\n      <div class=\"flex items-start justify-between gap-3\">\n        <div>\n          <p class=\"type-meta text-fg-muted\">{{ m.label }}</p>\n          <p class=\"text-heading-4 font-medium tabular-nums\">{{ formatNumber(totalOf(m.points)) }}</p>\n        </div>\n        <ChartTrend v-if=\"weekChange(m.points) !== null\" :change=\"weekChange(m.points)!\" />\n      </div>\n      <BarChart :points=\"m.points\" :label=\"`${m.label} per day`\" :height=\"120\" bare />\n    </li>\n  </ul>\n</template>\n",
+      "requires": [],
+      "packages": []
+    },
+    {
+      "name": "Product",
+      "label": "Lines over time",
+      "center": false,
+      "half": false,
+      "path": "examples/chart/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport LineChart from '@/components/ui/LineChart.vue'\n// Search latency, p50 and p95, as smoothed lines over a day.\nconst hour = (i: number) => Date.UTC(2026, 9, 29, i)\nconst latency = [\n  { label: 'p50', points: Array.from({ length: 24 }, (_, i) => ({ t: hour(i), v: 230 + ((i * 13) % 7) * 3 })) },\n  { label: 'p95', points: Array.from({ length: 24 }, (_, i) => ({ t: hour(i), v: 400 + ((i * 17) % 9) * 6 })) },\n]\nconst ms = (v: number) => `${Math.round(v)} ms`\n</script>\n\n<template>\n  <LineChart title=\"Search latency, last 24 hours\" :series=\"latency\" :format=\"ms\" :smooth=\"3\" bare />\n</template>\n",
+      "requires": [],
+      "packages": []
+    },
+    {
+      "name": "Share",
+      "label": "Shares of a total",
+      "center": false,
+      "half": false,
+      "path": "examples/chart/Share.vue",
+      "content": "<script setup lang=\"ts\">\nimport Meter from '@/components/ui/Meter.vue'\nimport Table from '@/components/ui/Table.vue'\nimport { formatNumber } from '@/composables/useChart'\n// What drives a total: each row's share as a bar, the largest red. Point at a row, or focus it, and its percent rolls\n// up to what it cost.\nconst lines = [\n  { name: 'sec-filings', queries: 50908, share: 21, cost: '$26.59' },\n  { name: 'contracts', queries: 33658, share: 14, cost: '$17.58' },\n  { name: 'slack', queries: 18317, share: 7, cost: '$9.57' },\n  { name: 'crm', queries: 14127, share: 6, cost: '$7.38' },\n]\n</script>\n\n<template>\n  <Table framed label=\"share of credits used\">\n    <thead><tr><th class=\"sm:w-40\">Namespace</th><th><span class=\"sr-only\">Share bar</span></th><th class=\"w-24 text-right\">Queries</th><th class=\"w-32 text-right\">% of credits used</th></tr></thead>\n    <tbody>\n      <tr v-for=\"(l, i) in lines\" :key=\"l.name\" class=\"share-row\" tabindex=\"0\">\n        <td class=\"type-code-sm\">{{ l.name }}</td>\n        <td><Meter :value=\"l.share * 3\" :tone=\"i ? 'default' : 'top'\" decorative /></td>\n        <td class=\"text-right tabular-nums\">{{ formatNumber(l.queries) }}</td>\n        <td class=\"text-right font-medium tabular-nums\">\n          <span class=\"share-roll\"><span class=\"share-a\">{{ l.share }}%</span><span class=\"share-b\">{{ l.cost }}</span></span>\n        </td>\n      </tr>\n    </tbody>\n  </Table>\n</template>\n\n<style>\n/* The percent rolls up to the cost under the pointer or focus, both in one cell, so nothing moves. */\n.share-roll { position: relative; display: block; overflow: hidden; line-height: 1.4; }\n.share-a, .share-b { display: block; transition: transform var(--ds-duration-glide) var(--ds-easing-standard); }\n.share-b { position: absolute; inset-inline: 0; top: 0; transform: translateY(110%); }\n.share-row:focus-visible .share-a { transform: translateY(-110%); }\n.share-row:focus-visible .share-b { transform: none; }\n@media (hover: hover) and (pointer: fine) {\n  .share-row:hover .share-a { transform: translateY(-110%); }\n  .share-row:hover .share-b { transform: none; }\n}\n@media (prefers-reduced-motion: reduce) { .share-a, .share-b { transition: none; } }\n</style>\n",
+      "requires": [
+        "meter",
+        "table"
+      ],
+      "packages": []
+    },
+    {
+      "name": "Split",
+      "label": "A whole in parts",
+      "center": false,
+      "half": false,
+      "path": "examples/chart/Split.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport SplitBar from '@/components/ui/SplitBar.vue'\n// A whole in parts, as Billing's prices draw it: one bar, the largest part first, a red mark over the part the row\n// pointed at names, and one block gliding down the rows.\nconst usd = (cents: number) => (cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })\nconst parts = [\n  { name: 'Queries', detail: '$1.00 per 1,000 queries', value: 18431 },\n  { name: 'Documents', detail: '$1.00 per 1,000 pages', value: 4821 },\n  { name: 'Indexing', detail: '$0.05 per 1M tokens', value: 1928 },\n  { name: 'Storage', detail: '$0.33 per GB a month', value: 268 },\n].map(p => ({ ...p, display: usd(p.value) }))\nconst at = ref(0)\n</script>\n\n<template>\n  <SplitBar v-model=\"at\" :parts=\"parts\" label=\"This month's bill by part\" />\n</template>\n",
+      "requires": [],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/BarChart.tsx",
+          "content": "'use client'\nimport { useState, type CSSProperties } from 'react'\nimport { type DayPoint, compactNumber, formatDay, formatNumber, niceTicks } from '@/react/hooks/useChart'\nimport { cn } from '@/react/lib/cn'\n\n// A red bar per day (BarChart.vue). The axis starts at 0 and ends on a round number in four steps; grid lines are 1px\n// hairlines. A day with any activity keeps a visible bar. Pointing at a bar names its day and value in the caption and\n// quiets the others. The bars rise from the axis once, staggered over the same 120ms for 7 days or 90.\n// `focus`: bars lit from outside, the rest quiet, as under the pointer; `note`: what the caption says meanwhile.\n// `week`: the change over the last seven days, set over those bars. `held`: on its way, the axis alone at its height.\n// `bare` drops the caption's label, for a chart under a stat that already names it.\nexport interface BarChartProps {\n  points: DayPoint[]\n  label: string\n  height?: number\n  focus?: number[]\n  note?: string\n  week?: string\n  held?: boolean\n  bare?: boolean\n}\n\nexport function BarChart({ points, label, height = 160, focus, note, week, held, bare }: BarChartProps) {\n  const ticks = niceTicks(points.map(p => p.value))\n  const top = ticks[ticks.length - 1]!\n  // Four dates under the bars: the first, the last and two between.\n  const n = points.length\n  const marks = n ? [...new Set([0, Math.round((n - 1) / 3), Math.round((2 * (n - 1)) / 3), n - 1])].map(i => ({ left: `${((i + 0.5) / n) * 100}%`, text: formatDay(points[i]!.day) })) : []\n  const [hover, setHover] = useState<number | null>(null)\n  const shown = hover === null ? null : points[hover] ?? null\n  const peak = formatNumber(Math.max(0, ...points.map(p => p.value)))\n  return (\n    <figure data-ds=\"bar-chart\" className=\"ds-barchart flex flex-col gap-3\" data-bare={bare || undefined}>\n      <style href=\"ds-bar-chart\" precedence=\"ds\">{css}</style>\n      <figcaption className=\"ds-barchart-cap flex h-5 items-baseline justify-between gap-4\">\n        <span className=\"ds-chart-caption\">{label}</span>\n        {shown\n          ? <span className=\"ds-chart-meta\">{`${formatDay(shown.day, true)} `}<span className=\"font-medium text-fg\">{formatNumber(shown.value)}</span></span>\n          : note ? <span className=\"ds-chart-meta\">{note}</span> : null}\n      </figcaption>\n      {held\n        ? (\n            <div className=\"grid grid-cols-[40px_minmax(0,1fr)] gap-x-2\" aria-hidden=\"true\">\n              <div />\n              <div className=\"relative\" style={{ height: `${height}px` }}><div className=\"absolute inset-x-0 bottom-0 border-t border-edge\" /></div>\n              <div />\n              <div className=\"mt-2 h-4\" />\n            </div>\n          )\n        : !points.length\n            ? <p className=\"flex items-center justify-center type-ui text-fg-muted\" style={{ height: `${height}px` }}>No activity yet.</p>\n            : (\n                <div className=\"grid grid-cols-[40px_minmax(0,1fr)] gap-x-2\">\n                  <div className=\"relative\" style={{ height: `${height}px` }} aria-hidden=\"true\">\n                    {ticks.map(t => <span key={t} className=\"ds-chart-meta absolute right-0 -translate-y-1/2\" style={{ top: `${(1 - t / top) * 100}%` }}>{compactNumber(t)}</span>)}\n                  </div>\n                  <div\n                    className=\"relative\"\n                    style={{ height: `${height}px` }}\n                    role=\"img\"\n                    aria-label={`${label}: ${points.length} days, peak ${peak}${week ? `, ${week} this week` : ''}`}\n                    onPointerLeave={() => setHover(null)}\n                  >\n                    {ticks.map(t => <div key={t} className=\"pointer-events-none absolute inset-x-0 border-t border-data-grid\" style={{ top: `${(1 - t / top) * 100}%` }} />)}\n                    {week && !shown && <p className=\"ds-chart-week\" style={{ width: `${(Math.min(7, points.length) / points.length) * 100}%` }}><span className=\"font-medium tabular-nums\">{week}</span><span className=\"text-fg-muted\">this week</span></p>}\n                    <div className=\"absolute inset-0 flex items-end\">\n                      {points.map((p, i) => (\n                        <div key={p.day} className=\"flex h-full flex-1 items-end\" onPointerEnter={() => setHover(i)}>\n                          <div\n                            className={cn('ds-bar mx-auto w-[70%]', hover === i || (hover === null && (!focus || focus.includes(i))) ? 'bg-data-highlight' : 'bg-ds-neutral-600')}\n                            style={{ height: p.value > 0 ? `max(2px, ${(p.value / top) * 100}%)` : '0', '--i': (i * 30) / points.length } as CSSProperties}\n                          />\n                        </div>\n                      ))}\n                    </div>\n                  </div>\n                  <div />\n                  <div className=\"relative mt-2 h-4\" aria-hidden=\"true\">\n                    {marks.map((m, i) => (\n                      <span\n                        key={m.text}\n                        className={cn('ds-chart-meta absolute whitespace-nowrap', i === 0 ? 'left-0' : i === marks.length - 1 ? 'right-0' : '-translate-x-1/2')}\n                        style={i === 0 || i === marks.length - 1 ? {} : { left: m.left }}\n                      >{m.text}</span>\n                    ))}\n                  </div>\n                </div>\n              )}\n    </figure>\n  )\n}\n\nexport default BarChart\n\nconst css = `\n/* The charts' caption: 12px medium, muted (written in sentence case); meta and axis labels 12px muted in tabular figures. */\n.ds-chart-caption { color: var(--ds-color-fg-muted); font-size: var(--ds-text-meta); font-weight: var(--ds-font-weight-medium); line-height: var(--ds-text-meta-leading); }\n.ds-chart-meta { color: var(--ds-color-fg-muted); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); font-variant-numeric: tabular-nums; }\n/* A bar rises from the axis once (console2.css .c-bar), then only its colour changes. */\n.ds-bar { transform-origin: bottom; animation: ds-bar-in var(--ds-duration-rise) var(--ds-easing-out) both; animation-delay: calc(var(--i, 0) * 4ms); transition: background-color var(--ds-duration-glide) var(--ds-easing-standard); }\n@keyframes ds-bar-in { from { transform: scaleY(0.02); } }\n/* The week's change, over the last seven bars on a red rule. */\n.ds-chart-week { position: absolute; right: 0; bottom: 100%; display: flex; justify-content: flex-end; gap: var(--ds-space-xs); margin-bottom: var(--ds-space-xs); padding-bottom: calc(var(--ds-space-xs) - 1px); border-bottom: var(--ds-border-hairline) solid var(--ds-color-edge-accent); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); white-space: nowrap; }\n/* Under a stat that names it (the usage cards), the value read out sits over the chart's top right. */\n.ds-barchart[data-bare] { position: relative; }\n.ds-barchart[data-bare] > .ds-barchart-cap { position: absolute; top: -24px; right: 0; z-index: 1; height: auto; }\n.ds-barchart[data-bare] .ds-chart-caption { display: none; }\n.ds-barchart[data-bare] .ds-barchart-cap .ds-chart-meta { padding: 0 var(--ds-space-xs); background: var(--ds-color-surface); }\n@media (prefers-reduced-motion: reduce) { .ds-bar { animation: none; } }\n`\n"
+        },
+        {
+          "path": "react/components/ui/LineChart.tsx",
+          "content": "'use client'\nimport { useState, type PointerEvent } from 'react'\nimport { cn } from '@/react/lib/cn'\n\n// Lines over time (LineChart.vue): one axis from 0, 2px lines in the brand's series order (red, neutral-400,\n// neutral-600 dashed, so colour is never the only difference), the first series shading the area under it, a legend\n// when there is more than one, and a crosshair with the values under the pointer. `smooth = k` draws each point as the\n// mean of the points within k / 2 steps of it in time, for series too sparse to read point by point. In a card by\n// default; `bare` drops the card, for a chart already inside one.\nexport type LineSeries = { label: string, points: Array<{ t: number, v: number }> }\n\nexport interface LineChartProps {\n  title: string\n  series: LineSeries[]\n  format: (value: number) => string\n  smooth?: number\n  height?: number\n  bare?: boolean\n}\n\nconst W = 600\nconst H = 160\nconst COLORS = ['var(--ds-color-data-1)', 'var(--ds-color-data-2)', 'var(--ds-color-data-3)']\nconst DASH = ['', '', '5 4']\n\nexport function LineChart({ title, series, format, smooth, height, bare }: LineChartProps) {\n  const all = [...new Set(series.flatMap(s => s.points.map(p => p.t)))].sort((a, b) => a - b)\n  const step = Math.min(...all.slice(1).map((v, i) => v - all[i]!))\n  function rolling(points: Array<{ t: number, v: number }>, k: number) {\n    const reach = Math.floor(k / 2) * step\n    if (!(reach > 0) || !Number.isFinite(reach)) return points\n    return points.map((p) => {\n      const near = points.filter(q => Math.abs(q.t - p.t) <= reach)\n      return { t: p.t, v: near.reduce((n, q) => n + q.v, 0) / near.length }\n    })\n  }\n  const lines = series.slice(0, 3).filter(s => s.points.length).map(s => ({ ...s, points: rolling(s.points, smooth ?? 1) }))\n  const times = [...new Set(lines.flatMap(s => s.points.map(p => p.t)))].sort((a, b) => a - b)\n  const span = { from: times[0] ?? 0, to: times[times.length - 1] ?? 1 }\n  const top = Math.max(0, ...lines.flatMap(s => s.points.map(p => p.v)))\n  const max = top <= 0 ? 1 : Math.ceil(top / 10 ** Math.floor(Math.log10(top))) * 10 ** Math.floor(Math.log10(top))\n  const x = (t: number) => (span.to === span.from ? W / 2 : ((t - span.from) / (span.to - span.from)) * W)\n  const y = (v: number) => H - (v / max) * H\n\n  const paths = lines.map((s, i) => ({\n    label: s.label,\n    color: COLORS[i]!,\n    dash: DASH[i]!,\n    d: s.points.map((p, j) => `${j ? 'L' : 'M'}${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`).join(''),\n    last: s.points[s.points.length - 1]!,\n    area: i ? '' : `M${x(s.points[0]!.t).toFixed(1)},${H}${s.points.map(p => `L${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`).join('')}L${x(s.points[s.points.length - 1]!.t).toFixed(1)},${H}Z`,\n  }))\n\n  const [hover, setHover] = useState<number | null>(null)\n  function move(event: PointerEvent<HTMLDivElement>) {\n    const box = event.currentTarget.getBoundingClientRect()\n    const t = span.from + ((event.clientX - box.left) / box.width) * (span.to - span.from)\n    let best: number | null = null\n    for (const c of times) if (best === null || Math.abs(c - t) < Math.abs(best - t)) best = c\n    setHover(best)\n  }\n  // Local time; with the day too over a range longer than 12 hours.\n  function clock(t: number) {\n    const long = span.to - span.from > 12 * 3_600_000\n    return new Date(t).toLocaleString('en-US', { ...(long ? { month: 'short', day: 'numeric' } : {}), hour: 'numeric', minute: '2-digit', hour12: false })\n  }\n  const hovered = hover === null\n    ? null\n    : {\n        left: `${(x(hover) / W) * 100}%`,\n        right: x(hover) > W * 0.6,\n        time: clock(hover),\n        values: lines.map((s, i) => ({ label: s.label, color: COLORS[i]!, value: s.points.find(p => p.t === hover)?.v })),\n      }\n\n  return (\n    <figure data-ds=\"line-chart\" className={cn(!bare && 'border border-edge bg-surface p-4')}>\n      <figcaption className=\"mb-3 flex min-h-5 flex-wrap items-baseline justify-between gap-x-4 gap-y-1\">\n        <span className=\"type-meta font-medium text-fg-muted\">{title}</span>\n        {lines.length > 1 && (\n          <span className=\"flex flex-wrap gap-3 type-meta text-fg-muted\">\n            {paths.map(p => (\n              <span key={p.label} className=\"inline-flex items-center gap-1\">\n                <svg width=\"16\" height=\"4\" aria-hidden=\"true\"><line x1=\"0\" y1=\"2\" x2=\"16\" y2=\"2\" stroke={p.color} strokeWidth=\"2\" strokeDasharray={p.dash} /></svg>\n                {p.label}\n              </span>\n            ))}\n          </span>\n        )}\n      </figcaption>\n      {!lines.length\n        ? <p className=\"type-ui text-fg-muted\">No data in this range.</p>\n        : (\n            <div className=\"flex gap-2\">\n              <div className=\"relative h-40 w-14 shrink-0\" aria-hidden=\"true\">\n                {[max, max / 2, 0].map((v, i) => <span key={i} className=\"type-meta text-fg-muted tabular-nums absolute right-0 -translate-y-1/2 whitespace-nowrap\" style={{ top: `${i * 50}%` }}>{i === 2 ? '0' : format(v)}</span>)}\n              </div>\n              <div className=\"min-w-0 flex-1\">\n                <div\n                  className=\"relative h-40 touch-none\"\n                  style={height ? { height: `${height}px` } : undefined}\n                  role=\"img\"\n                  aria-label={`${title}: ${paths.map(p => `${p.label} last ${format(p.last.v)}`).join(', ')}`}\n                  onPointerMove={move}\n                  onPointerLeave={() => setHover(null)}\n                >\n                  <svg className=\"absolute inset-0 h-full w-full overflow-visible\" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio=\"none\">\n                    {[0, H / 2, H].map(g => <line key={g} x1=\"0\" y1={g} x2={W} y2={g} stroke=\"var(--ds-color-data-grid)\" strokeWidth=\"1\" vectorEffect=\"non-scaling-stroke\" />)}\n                    {paths.filter(q => q.area).map(p => <path key={`${p.label}-area`} d={p.area} fill={p.color} fillOpacity=\"0.06\" />)}\n                    {paths.map(p => <path key={p.label} d={p.d} fill=\"none\" stroke={p.color} strokeWidth=\"2\" strokeDasharray={p.dash} strokeLinejoin=\"round\" strokeLinecap=\"round\" vectorEffect=\"non-scaling-stroke\" />)}\n                  </svg>\n                  {hovered && (\n                    <>\n                      <div className=\"pointer-events-none absolute inset-y-0 w-px bg-ds-neutral-500\" style={{ left: hovered.left }} />\n                      <div\n                        className=\"pointer-events-none absolute top-0 z-10 border border-edge bg-surface px-3 py-2 type-meta\"\n                        style={hovered.right ? { right: `calc(100% - ${hovered.left} + 8px)` } : { left: `calc(${hovered.left} + 8px)` }}\n                      >\n                        <p className=\"mb-1 text-fg-muted tabular-nums\">{hovered.time}</p>\n                        {hovered.values.map(v => (\n                          <p key={v.label} className=\"flex items-center gap-2 whitespace-nowrap tabular-nums\">\n                            <span className=\"inline-block h-0.5 w-3\" style={{ background: v.color }} />\n                            {lines.length > 1 && <span className=\"text-fg-muted\">{v.label}</span>}\n                            <span className=\"font-medium\">{v.value === undefined ? '–' : format(v.value)}</span>\n                          </p>\n                        ))}\n                      </div>\n                    </>\n                  )}\n                </div>\n                <div className=\"type-meta text-fg-muted tabular-nums mt-2 flex justify-between\">\n                  <span>{clock(span.from)}</span>\n                  <span>{clock(span.to)}</span>\n                </div>\n              </div>\n            </div>\n          )}\n    </figure>\n  )\n}\n\nexport default LineChart\n"
+        },
+        {
+          "path": "react/components/ui/ChartTrend.tsx",
+          "content": "import { TrendArrow } from '@/react/components/ui/TrendArrow'\n\n// The week's change on a usage card (usage/Trend.vue, take 1, the one picked): a second stat on the card's right, This\n// week over the percent with the pixel triangle, red up and ink down. `change` is a share (0.12 is 12%).\nexport interface ChartTrendProps { change: number, label?: string }\n\nexport function ChartTrend({ change, label = 'This week' }: ChartTrendProps) {\n  const down = change < 0\n  const percent = `${Math.abs(Math.round(change * 100))}%`\n  return (\n    <div data-ds=\"chart-trend\" className=\"shrink-0 text-right\" title=\"The last 7 days against the 7 before\">\n      <p className=\"type-meta text-fg-muted\">{label}</p>\n      <p className=\"flex items-center justify-end gap-1.5 text-heading-4 font-medium tabular-nums\"><TrendArrow down={down} bare /><span className=\"sr-only\">{down ? 'down' : 'up'}</span>{percent}</p>\n    </div>\n  )\n}\n\nexport default ChartTrend\n"
+        },
+        {
+          "path": "react/components/ui/TrendArrow.tsx",
+          "content": "import { cn } from '@/react/lib/cn'\n\n// The way a number moved, in the website button's pixel arrow (usage/TrendArrow.vue): lit squares on a grid of dim\n// ones, red going up, ink going down (turned over). `bare` is a solid pixel triangle with no grid, for beside a stat.\n// It holds still: the branch's step on card hover is left out, since icons never move on hover.\nexport interface TrendArrowProps { down?: boolean, bare?: boolean }\n\nconst CELL = 3\nconst SIZE = 5\nconst GRID = Array.from({ length: SIZE * SIZE }, (_, k) => [k % SIZE, Math.floor(k / SIZE)] as const)\n// [column, row] of the lit squares, pointing up.\nconst ARROW: Array<[number, number]> = [[2, 0], [1, 1], [2, 1], [3, 1], [0, 2], [2, 2], [4, 2], [2, 3], [2, 4]]\nconst TRIANGLE: Array<[number, number]> = [[2, 0], [1, 1], [2, 1], [3, 1], [0, 2], [1, 2], [2, 2], [3, 2], [4, 2]]\n\nexport function TrendArrow({ down, bare }: TrendArrowProps) {\n  const rows = bare ? 3 : SIZE\n  const ink = bare ? CELL : 2\n  const wide = SIZE * CELL - (bare ? 0 : 1)\n  const tall = rows * CELL - (bare ? 0 : 1)\n  const lit = bare ? TRIANGLE : ARROW\n  return (\n    <svg data-ds=\"trend-arrow\" className={cn('shrink-0 overflow-hidden', down && 'rotate-180')} width={wide} height={tall} viewBox={`0 0 ${wide} ${tall}`} aria-hidden=\"true\">\n      {!bare && <g className=\"fill-ds-neutral-700\">{GRID.map(([x, y]) => <rect key={`${x}-${y}`} x={x * CELL} y={y * CELL} width=\"2\" height=\"2\" />)}</g>}\n      <g className={down ? 'fill-fg' : 'fill-edge-accent'}>{lit.map(([x, y]) => <rect key={`${x}-${y}`} x={x * CELL} y={y * CELL} width={ink} height={ink} />)}</g>\n    </svg>\n  )\n}\n\nexport default TrendArrow\n"
+        },
+        {
+          "path": "react/components/ui/SplitBar.tsx",
+          "content": "'use client'\nimport { useLayoutEffect, useRef, useState } from 'react'\nimport { useControllable } from '@/react/hooks/useControllable'\n\n// A whole in parts, as Billing's prices draw it (the chart's Split example): one bar, the parts in the order given\n// (largest first), the picked part in ink with a red mark gliding over it; under it the parts as rows in a card, one\n// paper block gliding to the row under the pointer or focus, and a red square on the picked row. Pointing at a row\n// picks it (`value` / `defaultValue` / `onValueChange`, Vue's v-model). `detail` is a quiet middle column, hidden on\n// phones; `display` is the value as written.\nexport type SplitPart = { name: string, value: number, display?: string, detail?: string }\n\nexport interface SplitBarProps {\n  parts: SplitPart[]\n  label?: string\n  value?: number\n  defaultValue?: number\n  onValueChange?: (value: number) => void\n}\n\nexport function SplitBar({ parts, label, value, defaultValue = 0, onValueChange }: SplitBarProps) {\n  const [at, setAt] = useControllable(value, defaultValue, onValueChange)\n  const total = parts.reduce((a, p) => a + p.value, 0) || 1\n  // The parts share what the bar's 2px gaps leave, so those come out of the percent.\n  const n = parts.length\n  const i = Math.min(at, n - 1)\n  const middle = (parts.slice(0, i).reduce((a, p) => a + p.value, 0) + (parts[i]?.value ?? 0) / 2) / total\n  const center = `calc(${middle * 100}% + ${i * 2 - middle * 2 * (n - 1)}px)`\n\n  // The gliding block: placed at once the first time, then it glides on transform.\n  const list = useRef<HTMLUListElement | null>(null)\n  const [mark, setMark] = useState<{ y: number, h: number } | null>(null)\n  const [instant, setInstant] = useState(true)\n  const had = useRef(false)\n  function place(k: number) {\n    const row = list.current?.querySelectorAll<HTMLElement>('[data-glide-row]')[k]\n    if (!row) return\n    setInstant(!had.current)\n    had.current = true\n    setMark({ y: row.offsetTop, h: row.offsetHeight })\n  }\n  function pick(k: number) {\n    setAt(k)\n    place(k)\n  }\n  useLayoutEffect(() => place(at), [at]) // eslint-disable-line react-hooks/exhaustive-deps\n\n  return (\n    <div data-ds=\"split-bar\" className=\"flex flex-col gap-4\">\n      <style href=\"ds-split-bar\" precedence=\"ds\">{css}</style>\n      <div className=\"ds-segmark-track\" aria-hidden=\"true\"><span className=\"ds-segmark\" style={{ transform: `translateX(${center})` }}><i /></span></div>\n      <div className=\"ds-splitbar\" aria-hidden=\"true\">\n        {parts.map((p, k) => <span key={p.name} data-on={at === k || undefined} style={{ flexGrow: p.value / total }} />)}\n      </div>\n      <ul ref={list} className=\"relative border border-edge bg-surface\" aria-label={label}>\n        {mark && <span className=\"ds-rowmark\" data-instant={instant || undefined} style={{ transform: `translateY(${mark.y}px)`, height: `${mark.h}px` }} aria-hidden=\"true\" />}\n        {parts.map((p, k) => (\n          <li key={p.name} data-glide-row=\"\" className=\"border-edge [&+&]:border-t\">\n            <button type=\"button\" className=\"ds-priced\" data-on={at === k || undefined} aria-pressed={at === k} onPointerEnter={() => pick(k)} onFocus={() => pick(k)} onClick={() => pick(k)}>\n              <span className=\"min-w-0 flex-1 truncate text-left\">{p.name}</span>\n              {p.detail && <span className=\"hidden text-fg-muted tabular-nums sm:inline\">{p.detail}</span>}\n              <span className=\"w-24 text-right tabular-nums\">{p.display ?? p.value.toLocaleString('en-US')}</span>\n            </button>\n          </li>\n        ))}\n      </ul>\n    </div>\n  )\n}\n\nexport default SplitBar\n\nconst css = `\n/* console2.css .v2-splitbar, .v2-segmark, .v2-rowmark and .v2-priced, as Billing's prices set them (data-pm=\"6\"). */\n.ds-splitbar { display: flex; height: 12px; gap: var(--ds-space-2xs); margin-top: var(--ds-space-xs); }\n.ds-splitbar > span { flex-basis: 0; background: var(--ds-color-neutral-600); transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-splitbar > span[data-on] { background: var(--ds-color-surface-inverse); }\n.ds-segmark-track { position: relative; height: 8px; margin-bottom: -12px; overflow: clip; }\n.ds-segmark { position: absolute; inset: 0; transition: transform var(--ds-duration-settle) var(--ds-easing-out); }\n.ds-segmark i { position: absolute; top: 0; left: -3px; width: 6px; height: 6px; background: var(--ds-color-edge-accent); }\n.ds-rowmark { position: absolute; top: 0; right: 0; left: 0; z-index: 0; background: var(--ds-color-surface-subtle); pointer-events: none; transition: transform var(--ds-duration-enter) var(--ds-easing-out), height var(--ds-duration-enter) var(--ds-easing-out); }\n.ds-rowmark[data-instant] { transition: none; }\n.ds-priced { position: relative; z-index: 1; display: flex; width: 100%; min-height: var(--ds-size-row); align-items: center; gap: var(--ds-space-xl); padding: 0 16px 0 20px; font-size: var(--ds-text-ui); cursor: pointer; }\n.ds-priced::before { position: absolute; top: 50%; left: 8px; width: 4px; height: 4px; margin-top: -2px; background: var(--ds-color-edge-accent); content: \"\"; opacity: 0; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-priced[data-on]::before { opacity: 1; }\n.ds-priced:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: -2px; }\n@media (prefers-reduced-motion: reduce) { .ds-splitbar > span, .ds-segmark, .ds-rowmark { transition: none; } }\n`\n"
+        },
+        {
+          "path": "react/hooks/useChart.ts",
+          "content": "// What the charts share (usageMetrics.ts, BarChart.vue): numbers in en-US, an axis that ends on a round number in four\n// steps, and the week's change.\n\nexport type DayPoint = { day: string, value: number }\nexport type ChartMetric = { key: string, label: string, points: DayPoint[] }\n\nconst whole = new Intl.NumberFormat('en-US')\nconst compact = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 })\n\n/** 186402 -> \"186,402\". */\nexport const formatNumber = (n: number) => whole.format(n)\n/** 186402 -> \"186.4K\", for axis labels. */\nexport const compactNumber = (n: number) => compact.format(n)\n\n/** The axis: a step of 1, 2, 2.5 or 5 times a power of ten that covers the largest value in four. Starts at 0. */\nexport function niceTicks(values: number[]) {\n  const max = Math.max(0, ...values)\n  if (max === 0) return [0, 1]\n  const raw = max / 4\n  const power = 10 ** Math.floor(Math.log10(raw))\n  const step = ([1, 2, 2.5, 5, 10].find(m => m * power >= raw) ?? 10) * power\n  return Array.from({ length: Math.ceil(max / step) + 1 }, (_, i) => i * step)\n}\n\n/** \"Oct 2\", or \"Oct 2, 2026\" with the year, from an ISO day. */\nexport const formatDay = (value: string, year = false) => new Date(`${value}T00:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', ...(year ? { year: 'numeric' } : {}), timeZone: 'UTC' })\n\n/** The sum of a metric's points over its range. */\nexport const totalOf = (points: DayPoint[]) => points.reduce((a, p) => a + p.value, 0)\n\n/** The last seven days against the seven before, as a share; null without both. */\nexport function weekChange(points: DayPoint[]): number | null {\n  if (points.length < 14) return null\n  const before = totalOf(points.slice(-14, -7))\n  return before ? (totalOf(points.slice(-7)) - before) / before : null\n}\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        },
+        {
+          "path": "react/hooks/useControllable.ts",
+          "content": "'use client'\nimport { useCallback, useRef, useState } from 'react'\n\n// Vue's defineModel in React: a value that is controlled when the caller passes it (value + onValueChange, as Radix\n// does) and kept inside otherwise (defaultValue). setValue calls onChange either way.\nexport function useControllable<T>(value: T | undefined, defaultValue: T, onChange?: (value: T) => void) {\n\tconst [inner, setInner] = useState<T>(defaultValue)\n\tconst controlled = value !== undefined\n\tconst current = controlled ? value : inner\n\tconst ref = useRef(onChange)\n\tref.current = onChange\n\tconst set = useCallback((next: T) => {\n\t\tif (!controlled) setInner(next)\n\t\tref.current?.(next)\n\t}, [controlled])\n\treturn [current, set] as const\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "BarChart",
+            "file": "react/components/ui/BarChart.tsx",
+            "props": [
+              {
+                "name": "points",
+                "type": "DayPoint[]",
+                "required": true
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "height",
+                "type": "number",
+                "required": false,
+                "default": "160"
+              },
+              {
+                "name": "focus",
+                "type": "number[]",
+                "required": false
+              },
+              {
+                "name": "note",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "week",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "held",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "bare",
+                "type": "boolean",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "LineChart",
+            "file": "react/components/ui/LineChart.tsx",
+            "props": [
+              {
+                "name": "title",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "series",
+                "type": "LineSeries[]",
+                "required": true
+              },
+              {
+                "name": "format",
+                "type": "(value: number) => string",
+                "required": true
+              },
+              {
+                "name": "smooth",
+                "type": "number",
+                "required": false
+              },
+              {
+                "name": "height",
+                "type": "number",
+                "required": false
+              },
+              {
+                "name": "bare",
+                "type": "boolean",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "ChartTrend",
+            "file": "react/components/ui/ChartTrend.tsx",
+            "props": [
+              {
+                "name": "change",
+                "type": "number",
+                "required": true
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "required": false,
+                "default": "'This week'"
+              }
+            ]
+          },
+          {
+            "name": "TrendArrow",
+            "file": "react/components/ui/TrendArrow.tsx",
+            "props": [
+              {
+                "name": "down",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "bare",
+                "type": "boolean",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "SplitBar",
+            "file": "react/components/ui/SplitBar.tsx",
+            "props": [
+              {
+                "name": "parts",
+                "type": "SplitPart[]",
+                "required": true
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "value",
+                "type": "number",
+                "required": false
+              },
+              {
+                "name": "defaultValue",
+                "type": "number",
+                "required": false,
+                "default": "0"
+              },
+              {
+                "name": "onValueChange",
+                "type": "(value: number) => void",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Usage",
+          "label": "Bars per day",
+          "center": false,
+          "half": false,
+          "path": "react/examples/chart/Usage.tsx",
+          "content": "import { BarChart } from '@/react/components/ui/BarChart'\nimport { ChartTrend } from '@/react/components/ui/ChartTrend'\nimport { type DayPoint, formatNumber, totalOf, weekChange } from '@/react/hooks/useChart'\n// The usage page's cards: a meter's total for the month, the week's change and its bars per day, with the grid and\n// the dates. Point at a bar to read it.\nconst days = Array.from({ length: 30 }, (_, i) => `2026-10-${String(i + 2).padStart(2, '0')}`)\nconst series = (peak: number, step: number): DayPoint[] => days.map((day, i) => ({ day, value: Math.round(peak * (0.16 + (((i * step) % 23) / 23) ** 2 * 0.84)) }))\nconst metrics = [\n  { key: 'queries', label: 'Queries', points: series(15000, 7) },\n  { key: 'documents', label: 'Documents written', points: series(13000, 11) },\n]\n\nexport default function Usage() {\n  return (\n    <ul className=\"grid gap-4 md:grid-cols-2\">\n      {metrics.map(m => (\n        <li key={m.key} className=\"flex flex-col gap-8 border border-edge bg-surface p-4\">\n          <div className=\"flex items-start justify-between gap-3\">\n            <div>\n              <p className=\"type-meta text-fg-muted\">{m.label}</p>\n              <p className=\"text-heading-4 font-medium tabular-nums\">{formatNumber(totalOf(m.points))}</p>\n            </div>\n            {weekChange(m.points) !== null && <ChartTrend change={weekChange(m.points)!} />}\n          </div>\n          <BarChart points={m.points} label={`${m.label} per day`} height={120} bare />\n        </li>\n      ))}\n    </ul>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        },
+        {
+          "name": "Product",
+          "label": "Lines over time",
+          "center": false,
+          "half": false,
+          "path": "react/examples/chart/Product.tsx",
+          "content": "import { LineChart } from '@/react/components/ui/LineChart'\n// Search latency, p50 and p95, as smoothed lines over a day.\nconst hour = (i: number) => Date.UTC(2026, 9, 29, i)\nconst latency = [\n  { label: 'p50', points: Array.from({ length: 24 }, (_, i) => ({ t: hour(i), v: 230 + ((i * 13) % 7) * 3 })) },\n  { label: 'p95', points: Array.from({ length: 24 }, (_, i) => ({ t: hour(i), v: 400 + ((i * 17) % 9) * 6 })) },\n]\nconst ms = (v: number) => `${Math.round(v)} ms`\n\nexport default function Product() {\n  return <LineChart title=\"Search latency, last 24 hours\" series={latency} format={ms} smooth={3} bare />\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        },
+        {
+          "name": "Share",
+          "label": "Shares of a total",
+          "center": false,
+          "half": false,
+          "path": "react/examples/chart/Share.tsx",
+          "content": "import { Meter } from '@/react/components/ui/Meter'\nimport { Table } from '@/react/components/ui/Table'\nimport { formatNumber } from '@/react/hooks/useChart'\n// What drives a total: each row's share as a bar, the largest red. Point at a row, or focus it, and its percent rolls\n// up to what it cost.\nconst lines = [\n  { name: 'sec-filings', queries: 50908, share: 21, cost: '$26.59' },\n  { name: 'contracts', queries: 33658, share: 14, cost: '$17.58' },\n  { name: 'slack', queries: 18317, share: 7, cost: '$9.57' },\n  { name: 'crm', queries: 14127, share: 6, cost: '$7.38' },\n]\n\nexport default function Share() {\n  return (\n    <>\n      <style href=\"ds-example-share\" precedence=\"ds\">{css}</style>\n      <Table framed label=\"share of credits used\">\n        <thead><tr><th className=\"sm:w-40\">Namespace</th><th><span className=\"sr-only\">Share bar</span></th><th className=\"w-24 text-right\">Queries</th><th className=\"w-32 text-right\">% of credits used</th></tr></thead>\n        <tbody>\n          {lines.map((l, i) => (\n            <tr key={l.name} className=\"share-row\" tabIndex={0}>\n              <td className=\"type-code-sm\">{l.name}</td>\n              <td><Meter value={l.share * 3} tone={i ? 'default' : 'top'} decorative /></td>\n              <td className=\"text-right tabular-nums\">{formatNumber(l.queries)}</td>\n              <td className=\"text-right font-medium tabular-nums\">\n                <span className=\"share-roll\"><span className=\"share-a\">{`${l.share}%`}</span><span className=\"share-b\">{l.cost}</span></span>\n              </td>\n            </tr>\n          ))}\n        </tbody>\n      </Table>\n    </>\n  )\n}\n\nconst css = `\n/* The percent rolls up to the cost under the pointer or focus, both in one cell, so nothing moves. */\n.share-roll { position: relative; display: block; overflow: hidden; line-height: 1.4; }\n.share-a, .share-b { display: block; transition: transform var(--ds-duration-glide) var(--ds-easing-standard); }\n.share-b { position: absolute; inset-inline: 0; top: 0; transform: translateY(110%); }\n.share-row:focus-visible .share-a { transform: translateY(-110%); }\n.share-row:focus-visible .share-b { transform: none; }\n@media (hover: hover) and (pointer: fine) {\n  .share-row:hover .share-a { transform: translateY(-110%); }\n  .share-row:hover .share-b { transform: none; }\n}\n@media (prefers-reduced-motion: reduce) { .share-a, .share-b { transition: none; } }\n`\n",
+          "registryDependencies": [
+            "meter",
+            "table"
+          ],
+          "dependencies": []
+        },
+        {
+          "name": "Split",
+          "label": "A whole in parts",
+          "center": false,
+          "half": false,
+          "path": "react/examples/chart/Split.tsx",
+          "content": "'use client'\nimport { useState } from 'react'\nimport { SplitBar } from '@/react/components/ui/SplitBar'\n// A whole in parts, as Billing's prices draw it: one bar, the largest part first, a red mark over the part the row\n// pointed at names, and one block gliding down the rows.\nconst usd = (cents: number) => (cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })\nconst parts = [\n  { name: 'Queries', detail: '$1.00 per 1,000 queries', value: 18431 },\n  { name: 'Documents', detail: '$1.00 per 1,000 pages', value: 4821 },\n  { name: 'Indexing', detail: '$0.05 per 1M tokens', value: 1928 },\n  { name: 'Storage', detail: '$0.33 per GB a month', value: 268 },\n].map(p => ({ ...p, display: usd(p.value) }))\n\nexport default function Split() {\n  const [at, setAt] = useState(0)\n  return <SplitBar value={at} onValueChange={setAt} parts={parts} label=\"This month's bill by part\" />\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/bar-chart.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { repeat } from 'lit/directives/repeat.js'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { DsElement, define } from '@/elements/lib/element'\nimport { type DayPoint, compactNumber, formatDay, formatNumber, niceTicks } from '@/elements/controllers/chart'\nimport styles from 'virtual:tw'\n\n// BarChart.vue as <conare-bar-chart>: a red bar per day. The axis starts at 0 and ends on a round number in four\n// steps; grid lines are 1px hairlines. A day with any activity keeps a visible bar. Pointing at a bar names its day and\n// value in the caption and quiets the others. The bars rise from the axis once, staggered over the same 120ms for 7\n// days or 90. `focus`: bars lit from outside, the rest quiet, as under the pointer; `note`: what the caption says\n// meanwhile. `week`: the change over the last seven days, set over those bars. `held`: on its way, the axis alone at\n// its height. `bare` drops the caption's label, for a chart under a stat that already names it.\n\n/** @summary A red bar per day, with its axis, grid and dates. */\nexport class BarChart extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { points: { type: Array }, label: {}, height: { type: Number }, lit: { type: Array, attribute: 'focus' }, note: {}, week: {}, held: { type: Boolean }, bare: { type: Boolean }, hover: { state: true } }\n\n\t/** [{ day (ISO), value }]. */\n\tpoints: DayPoint[] = []\n\t/** The caption. */\n\tlabel = ''\n\t/** The bars' height in px. */\n\theight = 160\n\t/** Indexes lit from outside, the rest quiet (Vue's `focus`, the attribute focus; `focus` is HTMLElement's own method). */\n\tlit?: number[]\n\t/** What the caption says while nothing is pointed at. */\n\tnote?: string\n\t/** The last seven days' change, over those bars. */\n\tweek?: string\n\t/** On its way: the axis alone at its height. */\n\theld = false\n\t/** No caption label, under a stat that names it. */\n\tbare = false\n\tprivate hover: number | null = null\n\n\trender() {\n\t\tconst points = this.points ?? []\n\t\tconst ticks = niceTicks(points.map((p) => p.value))\n\t\tconst top = ticks[ticks.length - 1]!\n\t\tconst n = points.length\n\t\t// Four dates under the bars: the first, the last and two between.\n\t\tconst marks = n ? [...new Set([0, Math.round((n - 1) / 3), Math.round((2 * (n - 1)) / 3), n - 1])].map((i) => ({ left: `${((i + 0.5) / n) * 100}%`, text: formatDay(points[i]!.day) })) : []\n\t\tconst shown = this.hover === null ? null : points[this.hover] ?? null\n\t\tconst peak = formatNumber(Math.max(0, ...points.map((p) => p.value)))\n\t\tconst h = `height: ${this.height}px`\n\t\tlet body\n\t\tif (this.held) {\n\t\t\tbody = html`<div class=\"grid grid-cols-[40px_minmax(0,1fr)] gap-x-2\" aria-hidden=\"true\"><div></div><div class=\"relative\" style=${h}><div class=\"absolute inset-x-0 bottom-0 border-t border-edge\"></div></div><div></div><div class=\"mt-2 h-4\"></div></div>`\n\t\t} else if (!n) {\n\t\t\tbody = html`<p class=\"flex items-center justify-center type-ui text-fg-muted\" style=${h}>No activity yet.</p>`\n\t\t} else {\n\t\t\tbody = html`<div class=\"grid grid-cols-[40px_minmax(0,1fr)] gap-x-2\">\n\t\t\t\t<div class=\"relative\" style=${h} aria-hidden=\"true\">${ticks.map((t) => html`<span class=\"ds-chart-meta absolute right-0 -translate-y-1/2\" style=${`top: ${(1 - t / top) * 100}%`}>${compactNumber(t)}</span>`)}</div>\n\t\t\t\t<div class=\"relative\" style=${h} role=\"img\" aria-label=${`${this.label}: ${n} days, peak ${peak}${this.week ? `, ${this.week} this week` : ''}`} @pointerleave=${() => { this.hover = null }}>\n\t\t\t\t\t${ticks.map((t) => html`<div class=\"pointer-events-none absolute inset-x-0 border-t border-data-grid\" style=${`top: ${(1 - t / top) * 100}%`}></div>`)}\n\t\t\t\t\t${this.week && !shown ? html`<p class=\"ds-chart-week\" style=${`width: ${(Math.min(7, n) / n) * 100}%`}><span class=\"font-medium tabular-nums\">${this.week}</span><span class=\"text-fg-muted\">this week</span></p>` : nothing}\n\t\t\t\t\t<div class=\"absolute inset-0 flex items-end\">${repeat(points, (p) => p.day, (p, i) => html`<div class=\"flex h-full flex-1 items-end\" @pointerenter=${() => { this.hover = i }}><div class=${['ds-bar mx-auto w-[70%]', this.hover === i || (this.hover === null && (!this.lit || this.lit.includes(i))) ? 'bg-data-highlight' : 'bg-ds-neutral-600'].join(' ')} style=${`height: ${p.value > 0 ? `max(2px, ${(p.value / top) * 100}%)` : '0'}; --i: ${(i * 30) / n}`}></div></div>`)}</div>\n\t\t\t\t</div>\n\t\t\t\t<div></div>\n\t\t\t\t<div class=\"relative mt-2 h-4\" aria-hidden=\"true\">${marks.map((m, i) => html`<span class=${['ds-chart-meta absolute whitespace-nowrap', i === 0 ? 'left-0' : i === marks.length - 1 ? 'right-0' : '-translate-x-1/2'].join(' ')} style=${ifDefined(i === 0 || i === marks.length - 1 ? undefined : `left: ${m.left}`)}>${m.text}</span>`)}</div>\n\t\t\t</div>`\n\t\t}\n\t\treturn html`<figure data-ds=\"bar-chart\" class=\"ds-barchart flex flex-col gap-3\" data-bare=${ifDefined(this.bare ? 'true' : undefined)}>\n\t\t\t<figcaption class=\"ds-barchart-cap flex h-5 items-baseline justify-between gap-4\">\n\t\t\t\t<span class=\"ds-chart-caption\">${this.label}</span>\n\t\t\t\t${shown ? html`<span class=\"ds-chart-meta\">${`${formatDay(shown.day, true)} `}<span class=\"font-medium text-fg\">${formatNumber(shown.value)}</span></span>` : this.note ? html`<span class=\"ds-chart-meta\">${this.note}</span>` : nothing}\n\t\t\t</figcaption>\n\t\t\t${body}\n\t\t</figure>`\n\t}\n}\n\ndefine('bar-chart', BarChart)\n"
+        },
+        {
+          "path": "elements/components/ui/bar-chart.css",
+          "content": "/* The charts' caption: 12px medium, muted (written in sentence case); meta and axis labels 12px muted in tabular figures. */\n.ds-chart-caption { color: var(--ds-color-fg-muted); font-size: var(--ds-text-meta); font-weight: var(--ds-font-weight-medium); line-height: var(--ds-text-meta-leading); }\n.ds-chart-meta { color: var(--ds-color-fg-muted); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); font-variant-numeric: tabular-nums; }\n/* A bar rises from the axis once (console2.css .c-bar), then only its colour changes. */\n.ds-bar { transform-origin: bottom; animation: ds-bar-in var(--ds-duration-rise) var(--ds-easing-out) both; animation-delay: calc(var(--i, 0) * 4ms); transition: background-color var(--ds-duration-glide) var(--ds-easing-standard); }\n@keyframes ds-bar-in { from { transform: scaleY(0.02); } }\n/* The week's change, over the last seven bars on a red rule. */\n.ds-chart-week { position: absolute; right: 0; bottom: 100%; display: flex; justify-content: flex-end; gap: var(--ds-space-xs); margin-bottom: var(--ds-space-xs); padding-bottom: calc(var(--ds-space-xs) - 1px); border-bottom: var(--ds-border-hairline) solid var(--ds-color-edge-accent); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); white-space: nowrap; }\n/* Under a stat that names it (the usage cards), the value read out sits over the chart's top right. */\n.ds-barchart[data-bare] { position: relative; }\n.ds-barchart[data-bare] > .ds-barchart-cap { position: absolute; top: -24px; right: 0; z-index: 1; height: auto; }\n.ds-barchart[data-bare] .ds-chart-caption { display: none; }\n.ds-barchart[data-bare] .ds-barchart-cap .ds-chart-meta { padding: 0 var(--ds-space-xs); background: var(--ds-color-surface); }\n@media (prefers-reduced-motion: reduce) { .ds-bar { animation: none; } }\n"
+        },
+        {
+          "path": "elements/components/ui/line-chart.ts",
+          "content": "import { html, nothing, svg } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// LineChart.vue as <conare-line-chart>: lines over time: one axis from 0, 2px lines in the brand's series order (red,\n// neutral-400, neutral-600 dashed, so colour is never the only difference), the first series shading the area under\n// it, a legend when there is more than one, and a crosshair with the values under the pointer. `smooth = k` draws each\n// point as the mean of the points within k / 2 steps of it in time, for series too sparse to read point by point. In a\n// card by default; `bare` drops the card, for a chart already inside one. Vue's `title` is `heading`; `format` is a\n// property (a function).\nexport type LineSeries = { label: string, points: Array<{ t: number, v: number }> }\n\nconst W = 600\nconst H = 160\nconst COLORS = ['var(--ds-color-data-1)', 'var(--ds-color-data-2)', 'var(--ds-color-data-3)']\nconst DASH = ['', '', '5 4']\n\n/** @summary Lines over time, with a legend and a crosshair. */\nexport class LineChart extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { heading: {}, series: { type: Array }, format: { attribute: false }, smooth: { type: Number }, height: { type: Number }, bare: { type: Boolean }, hover: { state: true } }\n\n\t/** The caption (Vue's `title`; `title` is HTML's tooltip attribute). */\n\theading = ''\n\t/** [{ label, points: [{ t (ms), v }] }], three at most. */\n\tseries: LineSeries[] = []\n\t/** A value as written (a property: a function). */\n\tformat: (value: number) => string = (v) => String(v)\n\t/** Points averaged over k steps. */\n\tsmooth?: number\n\t/** The plot's height in px. */\n\theight?: number\n\t/** No card, inside one already. */\n\tbare = false\n\tprivate hover: number | null = null\n\n\trender() {\n\t\tconst series = this.series ?? []\n\t\tconst format = this.format\n\t\tconst all = [...new Set(series.flatMap((s) => s.points.map((p) => p.t)))].sort((a, b) => a - b)\n\t\tconst step = Math.min(...all.slice(1).map((v, i) => v - all[i]!))\n\t\tconst rolling = (points: Array<{ t: number, v: number }>, k: number) => {\n\t\t\tconst reach = Math.floor(k / 2) * step\n\t\t\tif (!(reach > 0) || !Number.isFinite(reach)) return points\n\t\t\treturn points.map((p) => {\n\t\t\t\tconst near = points.filter((q) => Math.abs(q.t - p.t) <= reach)\n\t\t\t\treturn { t: p.t, v: near.reduce((n, q) => n + q.v, 0) / near.length }\n\t\t\t})\n\t\t}\n\t\tconst lines = series.slice(0, 3).filter((s) => s.points.length).map((s) => ({ ...s, points: rolling(s.points, this.smooth ?? 1) }))\n\t\tconst times = [...new Set(lines.flatMap((s) => s.points.map((p) => p.t)))].sort((a, b) => a - b)\n\t\tconst span = { from: times[0] ?? 0, to: times[times.length - 1] ?? 1 }\n\t\tconst top = Math.max(0, ...lines.flatMap((s) => s.points.map((p) => p.v)))\n\t\tconst unit = top > 0 ? 10 ** Math.floor(Math.log10(top)) : 1\n\t\tconst max = top <= 0 ? 1 : Math.ceil(top / unit) * unit\n\t\tconst x = (t: number) => (span.to === span.from ? W / 2 : ((t - span.from) / (span.to - span.from)) * W)\n\t\tconst y = (v: number) => H - (v / max) * H\n\t\tconst paths = lines.map((s, i) => ({\n\t\t\tlabel: s.label,\n\t\t\tcolor: COLORS[i]!,\n\t\t\tdash: DASH[i]!,\n\t\t\td: s.points.map((p, j) => `${j ? 'L' : 'M'}${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`).join(''),\n\t\t\tlast: s.points[s.points.length - 1]!,\n\t\t\tarea: i ? '' : `M${x(s.points[0]!.t).toFixed(1)},${H}${s.points.map((p) => `L${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`).join('')}L${x(s.points[s.points.length - 1]!.t).toFixed(1)},${H}Z`,\n\t\t}))\n\t\t// Local time; with the day too over a range longer than 12 hours.\n\t\tconst clock = (t: number) => new Date(t).toLocaleString('en-US', { ...(span.to - span.from > 12 * 3_600_000 ? { month: 'short', day: 'numeric' } : {}), hour: 'numeric', minute: '2-digit', hour12: false })\n\t\tconst move = (event: PointerEvent) => {\n\t\t\tconst box = (event.currentTarget as HTMLElement).getBoundingClientRect()\n\t\t\tconst t = span.from + ((event.clientX - box.left) / box.width) * (span.to - span.from)\n\t\t\tlet best: number | null = null\n\t\t\tfor (const c of times) if (best === null || Math.abs(c - t) < Math.abs(best - t)) best = c\n\t\t\tthis.hover = best\n\t\t}\n\t\tconst hv = this.hover\n\t\tconst hovered = hv === null ? null : { left: `${(x(hv) / W) * 100}%`, right: x(hv) > W * 0.6, time: clock(hv), values: lines.map((s, i) => ({ label: s.label, color: COLORS[i]!, value: s.points.find((p) => p.t === hv)?.v })) }\n\n\t\treturn html`<figure data-ds=\"line-chart\" class=${this.bare ? '' : 'border border-edge bg-surface p-4'}>\n\t\t\t<figcaption class=\"mb-3 flex min-h-5 flex-wrap items-baseline justify-between gap-x-4 gap-y-1\">\n\t\t\t\t<span class=\"type-meta font-medium text-fg-muted\">${this.heading}</span>\n\t\t\t\t${lines.length > 1 ? html`<span class=\"flex flex-wrap gap-3 type-meta text-fg-muted\">${paths.map((p) => html`<span class=\"inline-flex items-center gap-1\"><svg width=\"16\" height=\"4\" aria-hidden=\"true\"><line x1=\"0\" y1=\"2\" x2=\"16\" y2=\"2\" stroke=${p.color} stroke-width=\"2\" stroke-dasharray=${p.dash}></line></svg>${p.label}</span>`)}</span>` : nothing}\n\t\t\t</figcaption>\n\t\t\t${!lines.length\n\t\t\t\t? html`<p class=\"type-ui text-fg-muted\">No data in this range.</p>`\n\t\t\t\t: html`<div class=\"flex gap-2\">\n\t\t\t\t\t\t<div class=\"relative h-40 w-14 shrink-0\" aria-hidden=\"true\">${[max, max / 2, 0].map((v, i) => html`<span class=\"type-meta text-fg-muted tabular-nums absolute right-0 -translate-y-1/2 whitespace-nowrap\" style=${`top: ${i * 50}%`}>${i === 2 ? '0' : format(v)}</span>`)}</div>\n\t\t\t\t\t\t<div class=\"min-w-0 flex-1\">\n\t\t\t\t\t\t\t<div class=\"relative h-40 touch-none\" style=${this.height ? `height: ${this.height}px` : ''} role=\"img\" aria-label=${`${this.heading}: ${paths.map((p) => `${p.label} last ${format(p.last.v)}`).join(', ')}`} @pointermove=${move} @pointerleave=${() => { this.hover = null }}>\n\t\t\t\t\t\t\t\t<svg class=\"absolute inset-0 h-full w-full overflow-visible\" viewBox=${`0 0 ${W} ${H}`} preserveAspectRatio=\"none\">\n\t\t\t\t\t\t\t\t\t${[0, H / 2, H].map((g) => svg`<line x1=\"0\" y1=${g} x2=${W} y2=${g} stroke=\"var(--ds-color-data-grid)\" stroke-width=\"1\" vector-effect=\"non-scaling-stroke\"></line>`)}\n\t\t\t\t\t\t\t\t\t${paths.filter((q) => q.area).map((p) => svg`<path d=${p.area} fill=${p.color} fill-opacity=\"0.06\"></path>`)}\n\t\t\t\t\t\t\t\t\t${paths.map((p) => svg`<path d=${p.d} fill=\"none\" stroke=${p.color} stroke-width=\"2\" stroke-dasharray=${p.dash} stroke-linejoin=\"round\" stroke-linecap=\"round\" vector-effect=\"non-scaling-stroke\"></path>`)}\n\t\t\t\t\t\t\t\t</svg>\n\t\t\t\t\t\t\t\t${hovered\n\t\t\t\t\t\t\t\t\t? html`<div class=\"pointer-events-none absolute inset-y-0 w-px bg-ds-neutral-500\" style=${`left: ${hovered.left}`}></div><div class=\"pointer-events-none absolute top-0 z-10 border border-edge bg-surface px-3 py-2 type-meta\" style=${hovered.right ? `right: calc(100% - ${hovered.left} + 8px)` : `left: calc(${hovered.left} + 8px)`}><p class=\"mb-1 text-fg-muted tabular-nums\">${hovered.time}</p>${hovered.values.map((v) => html`<p class=\"flex items-center gap-2 whitespace-nowrap tabular-nums\"><span class=\"inline-block h-0.5 w-3\" style=${`background: ${v.color}`}></span>${lines.length > 1 ? html`<span class=\"text-fg-muted\">${v.label}</span>` : nothing}<span class=\"font-medium\">${v.value === undefined ? '–' : format(v.value)}</span></p>`)}</div>`\n\t\t\t\t\t\t\t\t\t: nothing}\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t<div class=\"type-meta text-fg-muted tabular-nums mt-2 flex justify-between\"><span>${clock(span.from)}</span><span>${clock(span.to)}</span></div>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>`}\n\t\t</figure>`\n\t}\n}\n\ndefine('line-chart', LineChart)\n"
+        },
+        {
+          "path": "elements/components/ui/chart-trend.ts",
+          "content": "import { html } from 'lit/static-html.js'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport '@/elements/components/ui/trend-arrow'\nimport styles from 'virtual:tw'\n\n// ChartTrend.vue as <conare-chart-trend>: the week's change on a usage card (usage/Trend.vue, take 1, the one picked):\n// a second stat on the card's right, This week over the percent with the pixel triangle, red up and ink down. `change`\n// is a share (0.12 is 12%).\n\n/** @summary The week's change: This week over the percent with a pixel triangle. */\nexport class ChartTrend extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { change: { type: Number }, label: {} }\n\n\t/** A share: 0.12 is 12%. */\n\tchange = 0\n\tlabel = 'This week'\n\n\trender() {\n\t\tconst down = this.change < 0\n\t\tconst arrow = tag('trend-arrow')\n\t\treturn html`<div data-ds=\"chart-trend\" class=\"shrink-0 text-right\" title=\"The last 7 days against the 7 before\">\n\t\t\t<p class=\"type-meta text-fg-muted\">${this.label}</p>\n\t\t\t<p class=\"flex items-center justify-end gap-1.5 text-heading-4 font-medium tabular-nums\"><${arrow} ?down=${down} bare></${arrow}><span class=\"sr-only\">${down ? 'down' : 'up'}</span>${`${Math.abs(Math.round(this.change * 100))}%`}</p>\n\t\t</div>`\n\t}\n}\n\ndefine('chart-trend', ChartTrend)\n"
+        },
+        {
+          "path": "elements/components/ui/trend-arrow.ts",
+          "content": "import { html, nothing, svg } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// TrendArrow.vue as <conare-trend-arrow>: the way a number moved, in the website button's pixel arrow\n// (usage/TrendArrow.vue): lit squares on a grid of dim ones, red going up, ink going down (turned over). `bare` is a\n// solid pixel triangle with no grid, for beside a stat. It holds still: icons never move on hover.\n\nconst CELL = 3\nconst SIZE = 5\nconst GRID = Array.from({ length: SIZE * SIZE }, (_, k) => [k % SIZE, Math.floor(k / SIZE)] as const)\n// [column, row] of the lit squares, pointing up.\nconst ARROW: Array<[number, number]> = [[2, 0], [1, 1], [2, 1], [3, 1], [0, 2], [2, 2], [4, 2], [2, 3], [2, 4]]\nconst TRIANGLE: Array<[number, number]> = [[2, 0], [1, 1], [2, 1], [3, 1], [0, 2], [1, 2], [2, 2], [3, 2], [4, 2]]\n\n/** @summary A pixel arrow: red going up, ink going down. */\nexport class TrendArrow extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { down: { type: Boolean }, bare: { type: Boolean } }\n\n\t/** Going down: ink, turned over. */\n\tdown = false\n\t/** A solid triangle with no grid, beside a stat. */\n\tbare = false\n\n\trender() {\n\t\tconst bare = this.bare\n\t\tconst rows = bare ? 3 : SIZE\n\t\tconst ink = bare ? CELL : 2\n\t\tconst wide = SIZE * CELL - (bare ? 0 : 1)\n\t\tconst tall = rows * CELL - (bare ? 0 : 1)\n\t\tconst lit = bare ? TRIANGLE : ARROW\n\t\treturn html`<svg data-ds=\"trend-arrow\" class=${['shrink-0 overflow-hidden', this.down ? 'rotate-180' : ''].join(' ')} width=${wide} height=${tall} viewBox=${`0 0 ${wide} ${tall}`} aria-hidden=\"true\">\n\t\t\t${bare ? nothing : svg`<g class=\"fill-ds-neutral-700\">${GRID.map(([x, y]) => svg`<rect x=${x * CELL} y=${y * CELL} width=\"2\" height=\"2\"></rect>`)}</g>`}\n\t\t\t<g class=${this.down ? 'fill-fg' : 'fill-edge-accent'}>${lit.map(([x, y]) => svg`<rect x=${x * CELL} y=${y * CELL} width=${ink} height=${ink}></rect>`)}</g>\n\t\t</svg>`\n\t}\n}\n\ndefine('trend-arrow', TrendArrow)\n"
+        },
+        {
+          "path": "elements/components/ui/split-bar.ts",
+          "content": "import { html, nothing, type PropertyValues } from 'lit'\nimport { repeat } from 'lit/directives/repeat.js'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// SplitBar.vue as <conare-split-bar>: a whole in parts, as Billing's prices draw it (the chart's Split example): one\n// bar, the parts in the order given (largest first), the picked part in ink with a red mark gliding over it; under it\n// the parts as rows in a card, one paper block gliding to the row under the pointer or focus, and a red square on the\n// picked row. Pointing at a row picks it (v-model is `value` with `input` and `change`). `detail` is a quiet middle\n// column, hidden on phones; `display` is the value as written.\nexport type SplitPart = { name: string, value: number, display?: string, detail?: string }\n\n/**\n * @summary A whole in parts: one bar over a card of rows, the picked part marked.\n * @fires input - The picked part changed (read `value`, its index).\n * @fires change - The picked part changed.\n */\nexport class SplitBar extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { parts: { type: Array }, label: {}, value: { type: Number }, mark: { state: true }, instant: { state: true } }\n\n\t/** [{ name, value, display?, detail? }], largest first. */\n\tparts: SplitPart[] = []\n\t/** The rows' name. */\n\tlabel?: string\n\t/** The picked part's index. */\n\tvalue = 0\n\tprivate mark: { y: number, h: number } | null = null\n\tprivate instant = true\n\n\t// The gliding block: placed at once the first time, then it glides on transform.\n\tprivate place(i: number) {\n\t\tconst row = this.renderRoot.querySelectorAll<HTMLElement>('[data-glide-row]')[i]\n\t\tif (!row) return\n\t\tthis.instant = !this.mark\n\t\tthis.mark = { y: row.offsetTop, h: row.offsetHeight }\n\t}\n\tprivate pick(i: number) {\n\t\tif (this.value !== i) this.commit(i)\n\t\tthis.place(i)\n\t}\n\tprotected updated(changed: PropertyValues) {\n\t\tsuper.updated(changed)\n\t\tif (changed.has('value') || changed.has('parts')) this.place(this.value)\n\t}\n\n\trender() {\n\t\tconst parts = this.parts ?? []\n\t\tconst total = parts.reduce((a, p) => a + p.value, 0) || 1\n\t\t// The parts share what the bar's 2px gaps leave, so those come out of the percent.\n\t\tconst n = parts.length\n\t\tconst i = Math.min(this.value, n - 1)\n\t\tconst middle = (parts.slice(0, i).reduce((a, p) => a + p.value, 0) + (parts[i]?.value ?? 0) / 2) / total\n\t\tconst center = `calc(${middle * 100}% + ${i * 2 - middle * 2 * (n - 1)}px)`\n\t\tconst on = (k: number) => ifDefined(this.value === k ? 'true' : undefined)\n\t\treturn html`<div data-ds=\"split-bar\" class=\"flex flex-col gap-4\">\n\t\t\t<div class=\"ds-segmark-track\" aria-hidden=\"true\"><span class=\"ds-segmark\" style=${`transform: translateX(${center})`}><i></i></span></div>\n\t\t\t<div class=\"ds-splitbar\" aria-hidden=\"true\">${repeat(parts, (p) => p.name, (p, k) => html`<span data-on=${on(k)} style=${`flex-grow: ${p.value / total}`}></span>`)}</div>\n\t\t\t<ul class=\"relative border border-edge bg-surface\" aria-label=${ifDefined(this.label)}>\n\t\t\t\t${this.mark ? html`<span class=\"ds-rowmark\" data-instant=${ifDefined(this.instant ? 'true' : undefined)} style=${`transform: translateY(${this.mark.y}px); height: ${this.mark.h}px`} aria-hidden=\"true\"></span>` : nothing}\n\t\t\t\t${repeat(parts, (p) => p.name, (p, k) => html`<li data-glide-row class=\"border-edge [&+&]:border-t\"><button type=\"button\" class=\"ds-priced\" data-on=${on(k)} aria-pressed=${String(this.value === k)} @pointerenter=${() => this.pick(k)} @focus=${() => this.pick(k)} @click=${() => this.pick(k)}><span class=\"min-w-0 flex-1 truncate text-left\">${p.name}</span>${p.detail ? html`<span class=\"hidden text-fg-muted tabular-nums sm:inline\">${p.detail}</span>` : nothing}<span class=\"w-24 text-right tabular-nums\">${p.display ?? p.value.toLocaleString('en-US')}</span></button></li>`)}\n\t\t\t</ul>\n\t\t</div>`\n\t}\n}\n\ndefine('split-bar', SplitBar)\n"
+        },
+        {
+          "path": "elements/components/ui/split-bar.css",
+          "content": "/* console2.css .v2-splitbar, .v2-segmark, .v2-rowmark and .v2-priced, as Billing's prices set them (data-pm=\"6\"). */\n.ds-splitbar { display: flex; height: 12px; gap: var(--ds-space-2xs); margin-top: var(--ds-space-xs); }\n.ds-splitbar > span { flex-basis: 0; background: var(--ds-color-neutral-600); transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-splitbar > span[data-on] { background: var(--ds-color-surface-inverse); }\n.ds-segmark-track { position: relative; height: 8px; margin-bottom: -12px; overflow: clip; }\n.ds-segmark { position: absolute; inset: 0; transition: transform var(--ds-duration-settle) var(--ds-easing-out); }\n.ds-segmark i { position: absolute; top: 0; left: -3px; width: 6px; height: 6px; background: var(--ds-color-edge-accent); }\n.ds-rowmark { position: absolute; top: 0; right: 0; left: 0; z-index: 0; background: var(--ds-color-surface-subtle); pointer-events: none; transition: transform var(--ds-duration-enter) var(--ds-easing-out), height var(--ds-duration-enter) var(--ds-easing-out); }\n.ds-rowmark[data-instant] { transition: none; }\n.ds-priced { position: relative; z-index: 1; display: flex; width: 100%; min-height: var(--ds-size-row); align-items: center; gap: var(--ds-space-xl); padding: 0 16px 0 20px; font-size: var(--ds-text-ui); cursor: pointer; }\n.ds-priced::before { position: absolute; top: 50%; left: 8px; width: 4px; height: 4px; margin-top: -2px; background: var(--ds-color-edge-accent); content: \"\"; opacity: 0; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-priced[data-on]::before { opacity: 1; }\n.ds-priced:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: -2px; }\n@media (prefers-reduced-motion: reduce) { .ds-splitbar > span, .ds-segmark, .ds-rowmark { transition: none; } }\n"
+        },
+        {
+          "path": "elements/controllers/chart.ts",
+          "content": "// What the charts share (usageMetrics.ts, BarChart.vue): numbers in en-US, an axis that ends on a round number in four\n// steps, and the week's change.\n// They are plain functions (Vue's useChart.ts as it is), bundled into each chart element that uses them.\n\nexport type DayPoint = { day: string, value: number }\nexport type ChartMetric = { key: string, label: string, points: DayPoint[] }\n\nconst whole = new Intl.NumberFormat('en-US')\nconst compact = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 })\n\n/** 186402 -> \"186,402\". */\nexport const formatNumber = (n: number) => whole.format(n)\n/** 186402 -> \"186.4K\", for axis labels. */\nexport const compactNumber = (n: number) => compact.format(n)\n\n/** The axis: a step of 1, 2, 2.5 or 5 times a power of ten that covers the largest value in four. Starts at 0. */\nexport function niceTicks(values: number[]) {\n\tconst max = Math.max(0, ...values)\n\tif (max === 0) return [0, 1]\n\tconst raw = max / 4\n\tconst power = 10 ** Math.floor(Math.log10(raw))\n\tconst step = ([1, 2, 2.5, 5, 10].find(m => m * power >= raw) ?? 10) * power\n\treturn Array.from({ length: Math.ceil(max / step) + 1 }, (_, i) => i * step)\n}\n\n/** \"Oct 2\", or \"Oct 2, 2026\" with the year, from an ISO day. */\nexport const formatDay = (value: string, year = false) => new Date(`${value}T00:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', ...(year ? { year: 'numeric' } : {}), timeZone: 'UTC' })\n\n/** The sum of a metric's points over its range. */\nexport const totalOf = (points: DayPoint[]) => points.reduce((a, p) => a + p.value, 0)\n\n/** The last seven days against the seven before, as a share; null without both. */\nexport function weekChange(points: DayPoint[]): number | null {\n\tif (points.length < 14) return null\n\tconst before = totalOf(points.slice(-14, -7))\n\treturn before ? (totalOf(points.slice(-7)) - before) / before : null\n}\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/bar-chart.js",
+        "elements/line-chart.js",
+        "elements/chart-trend.js",
+        "elements/trend-arrow.js",
+        "elements/split-bar.js",
+        "elements/table.js",
+        "elements/meter.js"
+      ],
+      "tag": "conare-bar-chart",
+      "tags": [
+        "conare-bar-chart",
+        "conare-line-chart",
+        "conare-chart-trend",
+        "conare-trend-arrow",
+        "conare-split-bar"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-bar-chart",
+            "name": "BarChart",
+            "module": "elements/bar-chart.js",
+            "description": "A red bar per day, with its axis, grid and dates.",
+            "attributes": [
+              {
+                "name": "points",
+                "field": "points",
+                "type": "DayPoint[]",
+                "default": "[]",
+                "description": "[{ day (ISO), value }]."
+              },
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string",
+                "default": "''",
+                "description": "The caption."
+              },
+              {
+                "name": "height",
+                "field": "height",
+                "type": "number",
+                "default": "160",
+                "description": "The bars' height in px."
+              },
+              {
+                "name": "focus",
+                "field": "lit",
+                "type": "number[] | undefined",
+                "description": "Indexes lit from outside, the rest quiet (Vue's `focus`, the attribute focus; `focus` is HTMLElement's own method)."
+              },
+              {
+                "name": "note",
+                "field": "note",
+                "type": "string | undefined",
+                "description": "What the caption says while nothing is pointed at."
+              },
+              {
+                "name": "week",
+                "field": "week",
+                "type": "string | undefined",
+                "description": "The last seven days' change, over those bars."
+              },
+              {
+                "name": "held",
+                "field": "held",
+                "type": "boolean",
+                "default": "false",
+                "description": "On its way: the axis alone at its height."
+              },
+              {
+                "name": "bare",
+                "field": "bare",
+                "type": "boolean",
+                "default": "false",
+                "description": "No caption label, under a stat that names it."
+              },
+              {
+                "name": "hover",
+                "field": "hover",
+                "type": "number | null",
+                "default": "null"
+              }
+            ],
+            "properties": [
+              {
+                "name": "points",
+                "type": "DayPoint[]",
+                "default": "[]",
+                "description": "[{ day (ISO), value }].",
+                "attribute": "points"
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "default": "''",
+                "description": "The caption.",
+                "attribute": "label"
+              },
+              {
+                "name": "height",
+                "type": "number",
+                "default": "160",
+                "description": "The bars' height in px.",
+                "attribute": "height"
+              },
+              {
+                "name": "lit",
+                "type": "number[] | undefined",
+                "description": "Indexes lit from outside, the rest quiet (Vue's `focus`, the attribute focus; `focus` is HTMLElement's own method).",
+                "attribute": "focus"
+              },
+              {
+                "name": "note",
+                "type": "string | undefined",
+                "description": "What the caption says while nothing is pointed at.",
+                "attribute": "note"
+              },
+              {
+                "name": "week",
+                "type": "string | undefined",
+                "description": "The last seven days' change, over those bars.",
+                "attribute": "week"
+              },
+              {
+                "name": "held",
+                "type": "boolean",
+                "default": "false",
+                "description": "On its way: the axis alone at its height.",
+                "attribute": "held"
+              },
+              {
+                "name": "bare",
+                "type": "boolean",
+                "default": "false",
+                "description": "No caption label, under a stat that names it.",
+                "attribute": "bare"
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          },
+          {
+            "tag": "conare-line-chart",
+            "name": "LineChart",
+            "module": "elements/line-chart.js",
+            "description": "Lines over time, with a legend and a crosshair.",
+            "attributes": [
+              {
+                "name": "heading",
+                "field": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The caption (Vue's `title`; `title` is HTML's tooltip attribute)."
+              },
+              {
+                "name": "series",
+                "field": "series",
+                "type": "LineSeries[]",
+                "default": "[]",
+                "description": "[{ label, points: [{ t (ms), v }] }], three at most."
+              },
+              {
+                "name": "smooth",
+                "field": "smooth",
+                "type": "number | undefined",
+                "description": "Points averaged over k steps."
+              },
+              {
+                "name": "height",
+                "field": "height",
+                "type": "number | undefined",
+                "description": "The plot's height in px."
+              },
+              {
+                "name": "bare",
+                "field": "bare",
+                "type": "boolean",
+                "default": "false",
+                "description": "No card, inside one already."
+              },
+              {
+                "name": "hover",
+                "field": "hover",
+                "type": "number | null",
+                "default": "null"
+              }
+            ],
+            "properties": [
+              {
+                "name": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The caption (Vue's `title`; `title` is HTML's tooltip attribute).",
+                "attribute": "heading"
+              },
+              {
+                "name": "series",
+                "type": "LineSeries[]",
+                "default": "[]",
+                "description": "[{ label, points: [{ t (ms), v }] }], three at most.",
+                "attribute": "series"
+              },
+              {
+                "name": "format",
+                "type": "(value: number) => string",
+                "description": "A value as written (a property: a function)."
+              },
+              {
+                "name": "smooth",
+                "type": "number | undefined",
+                "description": "Points averaged over k steps.",
+                "attribute": "smooth"
+              },
+              {
+                "name": "height",
+                "type": "number | undefined",
+                "description": "The plot's height in px.",
+                "attribute": "height"
+              },
+              {
+                "name": "bare",
+                "type": "boolean",
+                "default": "false",
+                "description": "No card, inside one already.",
+                "attribute": "bare"
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          },
+          {
+            "tag": "conare-chart-trend",
+            "name": "ChartTrend",
+            "module": "elements/chart-trend.js",
+            "description": "The week's change: This week over the percent with a pixel triangle.",
+            "attributes": [
+              {
+                "name": "change",
+                "field": "change",
+                "type": "number",
+                "default": "0",
+                "description": "A share: 0.12 is 12%."
+              },
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string",
+                "default": "'This week'"
+              }
+            ],
+            "properties": [
+              {
+                "name": "change",
+                "type": "number",
+                "default": "0",
+                "description": "A share: 0.12 is 12%.",
+                "attribute": "change"
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "default": "'This week'",
+                "attribute": "label"
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          },
+          {
+            "tag": "conare-trend-arrow",
+            "name": "TrendArrow",
+            "module": "elements/trend-arrow.js",
+            "description": "A pixel arrow: red going up, ink going down.",
+            "attributes": [
+              {
+                "name": "down",
+                "field": "down",
+                "type": "boolean",
+                "default": "false",
+                "description": "Going down: ink, turned over."
+              },
+              {
+                "name": "bare",
+                "field": "bare",
+                "type": "boolean",
+                "default": "false",
+                "description": "A solid triangle with no grid, beside a stat."
+              }
+            ],
+            "properties": [
+              {
+                "name": "down",
+                "type": "boolean",
+                "default": "false",
+                "description": "Going down: ink, turned over.",
+                "attribute": "down"
+              },
+              {
+                "name": "bare",
+                "type": "boolean",
+                "default": "false",
+                "description": "A solid triangle with no grid, beside a stat.",
+                "attribute": "bare"
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          },
+          {
+            "tag": "conare-split-bar",
+            "name": "SplitBar",
+            "module": "elements/split-bar.js",
+            "description": "A whole in parts: one bar over a card of rows, the picked part marked.",
+            "attributes": [
+              {
+                "name": "parts",
+                "field": "parts",
+                "type": "SplitPart[]",
+                "default": "[]",
+                "description": "[{ name, value, display?, detail? }], largest first."
+              },
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string | undefined",
+                "description": "The rows' name."
+              },
+              {
+                "name": "value",
+                "field": "value",
+                "type": "number",
+                "default": "0",
+                "description": "The picked part's index."
+              },
+              {
+                "name": "mark",
+                "field": "mark",
+                "type": "{ y: number, h: number } | null",
+                "default": "null"
+              },
+              {
+                "name": "instant",
+                "field": "instant",
+                "type": "boolean",
+                "default": "true"
+              }
+            ],
+            "properties": [
+              {
+                "name": "parts",
+                "type": "SplitPart[]",
+                "default": "[]",
+                "description": "[{ name, value, display?, detail? }], largest first.",
+                "attribute": "parts"
+              },
+              {
+                "name": "label",
+                "type": "string | undefined",
+                "description": "The rows' name.",
+                "attribute": "label"
+              },
+              {
+                "name": "value",
+                "type": "number",
+                "default": "0",
+                "description": "The picked part's index.",
+                "attribute": "value"
+              }
+            ],
+            "events": [
+              {
+                "name": "input",
+                "description": "The picked part changed (read `value`, its index)."
+              },
+              {
+                "name": "change",
+                "description": "The picked part changed."
+              }
+            ],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Usage",
+          "label": "Bars per day",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/chart/Usage.html",
+          "content": "<!-- The usage page's cards: a meter's total for the month, the week's change and its bars per day, with the grid and\n     the dates. Point at a bar to read it. -->\n<ul class=\"grid gap-4 md:grid-cols-2\" id=\"cards\"></ul>\n<script type=\"module\">\n  // useChart's helpers, as the card needs them: the total, in en-US, and the week's change.\n  const days = Array.from({ length: 30 }, (_, i) => `2026-10-${String(i + 2).padStart(2, '0')}`)\n  const series = (peak, step) => days.map((day, i) => ({ day, value: Math.round(peak * (0.16 + (((i * step) % 23) / 23) ** 2 * 0.84)) }))\n  const totalOf = (points) => points.reduce((a, p) => a + p.value, 0)\n  const weekChange = (points) => {\n    if (points.length < 14) return null\n    const before = totalOf(points.slice(-14, -7))\n    return before ? (totalOf(points.slice(-7)) - before) / before : null\n  }\n  const metrics = [\n    { label: 'Queries', points: series(15000, 7) },\n    { label: 'Documents written', points: series(13000, 11) },\n  ]\n  document.getElementById('cards').innerHTML = metrics.map((m) => `<li class=\"flex flex-col gap-8 border border-edge bg-surface p-4\">\n    <div class=\"flex items-start justify-between gap-3\">\n      <div>\n        <p class=\"type-meta text-fg-muted\">${m.label}</p>\n        <p class=\"text-heading-4 font-medium tabular-nums\">${new Intl.NumberFormat('en-US').format(totalOf(m.points))}</p>\n      </div>\n      ${weekChange(m.points) !== null ? `<conare-chart-trend change=\"${weekChange(m.points)}\"></conare-chart-trend>` : ''}\n    </div>\n    <conare-bar-chart label=\"${m.label} per day\" height=\"120\" bare></conare-bar-chart>\n  </li>`).join('')\n  document.querySelectorAll('conare-bar-chart').forEach((chart, i) => { chart.points = metrics[i].points })\n</script>\n"
+        },
+        {
+          "name": "Product",
+          "label": "Lines over time",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/chart/Product.html",
+          "content": "<!-- Search latency, p50 and p95, as smoothed lines over a day. -->\n<conare-line-chart heading=\"Search latency, last 24 hours\" smooth=\"3\" bare></conare-line-chart>\n<script type=\"module\">\n  const hour = (i) => Date.UTC(2026, 9, 29, i)\n  const chart = document.querySelector('conare-line-chart')\n  chart.format = (v) => `${Math.round(v)} ms`\n  chart.series = [\n    { label: 'p50', points: Array.from({ length: 24 }, (_, i) => ({ t: hour(i), v: 230 + ((i * 13) % 7) * 3 })) },\n    { label: 'p95', points: Array.from({ length: 24 }, (_, i) => ({ t: hour(i), v: 400 + ((i * 17) % 9) * 6 })) },\n  ]\n</script>\n"
+        },
+        {
+          "name": "Share",
+          "label": "Shares of a total",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/chart/Share.html",
+          "content": "<!-- What drives a total: each row's share as a bar, the largest red. Point at a row, or focus it, and its percent rolls\n     up to what it cost. -->\n<style>\n/* The percent rolls up to the cost under the pointer or focus, both in one cell, so nothing moves. */\n.share-roll { position: relative; display: block; overflow: hidden; line-height: 1.4; }\n.share-a, .share-b { display: block; transition: transform var(--ds-duration-glide) var(--ds-easing-standard); }\n.share-b { position: absolute; inset-inline: 0; top: 0; transform: translateY(110%); }\n.share-row:focus-visible .share-a { transform: translateY(-110%); }\n.share-row:focus-visible .share-b { transform: none; }\n@media (hover: hover) and (pointer: fine) {\n  .share-row:hover .share-a { transform: translateY(-110%); }\n  .share-row:hover .share-b { transform: none; }\n}\n@media (prefers-reduced-motion: reduce) { .share-a, .share-b { transition: none; } }\n</style>\n<conare-table framed label=\"share of credits used\">\n  <table>\n    <thead><tr><th class=\"sm:w-40\">Namespace</th><th><span class=\"sr-only\">Share bar</span></th><th class=\"w-24 text-right\">Queries</th><th class=\"w-32 text-right\">% of credits used</th></tr></thead>\n    <tbody>\n      <tr class=\"share-row\" tabindex=\"0\"><td class=\"type-code-sm\">sec-filings</td><td><conare-meter value=\"63\" tone=\"top\" decorative></conare-meter></td><td class=\"text-right tabular-nums\">50,908</td><td class=\"text-right font-medium tabular-nums\"><span class=\"share-roll\"><span class=\"share-a\">21%</span><span class=\"share-b\">$26.59</span></span></td></tr>\n      <tr class=\"share-row\" tabindex=\"0\"><td class=\"type-code-sm\">contracts</td><td><conare-meter value=\"42\" tone=\"default\" decorative></conare-meter></td><td class=\"text-right tabular-nums\">33,658</td><td class=\"text-right font-medium tabular-nums\"><span class=\"share-roll\"><span class=\"share-a\">14%</span><span class=\"share-b\">$17.58</span></span></td></tr>\n      <tr class=\"share-row\" tabindex=\"0\"><td class=\"type-code-sm\">slack</td><td><conare-meter value=\"21\" tone=\"default\" decorative></conare-meter></td><td class=\"text-right tabular-nums\">18,317</td><td class=\"text-right font-medium tabular-nums\"><span class=\"share-roll\"><span class=\"share-a\">7%</span><span class=\"share-b\">$9.57</span></span></td></tr>\n      <tr class=\"share-row\" tabindex=\"0\"><td class=\"type-code-sm\">crm</td><td><conare-meter value=\"18\" tone=\"default\" decorative></conare-meter></td><td class=\"text-right tabular-nums\">14,127</td><td class=\"text-right font-medium tabular-nums\"><span class=\"share-roll\"><span class=\"share-a\">6%</span><span class=\"share-b\">$7.38</span></span></td></tr>\n    </tbody>\n  </table>\n</conare-table>\n"
+        },
+        {
+          "name": "Split",
+          "label": "A whole in parts",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/chart/Split.html",
+          "content": "<!-- A whole in parts, as Billing's prices draw it: one bar, the largest part first, a red mark over the part the row\n     pointed at names, and one block gliding down the rows. -->\n<conare-split-bar value=\"0\" label=\"This month's bill by part\"></conare-split-bar>\n<script type=\"module\">\n  const usd = (cents) => (cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })\n  document.querySelector('conare-split-bar').parts = [\n    { name: 'Queries', detail: '$1.00 per 1,000 queries', value: 18431 },\n    { name: 'Documents', detail: '$1.00 per 1,000 pages', value: 4821 },\n    { name: 'Indexing', detail: '$0.05 per 1M tokens', value: 1928 },\n    { name: 'Storage', detail: '$0.33 per GB a month', value: 268 },\n  ].map((p) => ({ ...p, display: usd(p.value) }))\n</script>\n"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,331 @@
+{
+  "name": "code-block",
+  "title": "Code block",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "Code to read and copy, in one dark window on the site and in the product: a pill for each request or language and Copy on one row, a rule, then the code. There is always at least one pill.",
+  "use_for": "Requests, commands and configuration the person copies into their own tools.",
+  "never": [
+    "Code shortened with a fade or a \"show more\": show what they copy in full",
+    "Prose set in mono",
+    "A window with no pill: name the code, such as cURL, CSS or JSON"
+  ],
+  "source": "conare-web app/components/console/CodeWindow.vue, CodeCopy.vue, app/assets/css/code-window.css",
+  "body": "A long line scrolls sideways under a fade (`fade-x`) at the edge with more past it.",
+  "requires": [],
+  "dependencies": [
+    "lucide-vue-next@^0.479.0"
+  ],
+  "files": [
+    {
+      "path": "components/ui/CodeBlock.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed, ref } from 'vue'\nimport CodeCopy from '@/components/ui/CodeCopy.vue'\n\n// Code to read and copy (the console's CodeWindow.vue), one dark window on the site and in the product: a pill for\n// each request or language and Copy on one row, a rule, then the code in 12px Geist Mono. There is always a pill: one\n// names the code (`label`, else cURL for a curl command, else Shell), several pick it (`samples`). Copy takes all of\n// it. Code reads left to right in every language.\nconst props = defineProps<{ code?: string, label?: string, samples?: { label: string, code: string }[] }>()\nconst emit = defineEmits<{ copied: [] }>()\nconst picked = ref(0)\nconst tabs = computed(() => props.samples?.map(s => s.label) ?? [props.label ?? (props.code?.startsWith('curl') ? 'cURL' : 'Shell')])\nconst shown = computed(() => props.samples?.[picked.value]?.code ?? props.code ?? '')\n</script>\n\n<template>\n  <div data-ds=\"code-block\" class=\"bg-code text-code-fg\" dir=\"ltr\">\n    <div class=\"flex min-h-11 flex-wrap items-center justify-between gap-2 border-b border-[color-mix(in_srgb,var(--ds-color-off-white)_24%,transparent)] p-2\">\n      <div v-if=\"tabs.length > 1\" class=\"flex min-w-0 flex-wrap gap-0.5\" role=\"tablist\" :aria-label=\"label ?? 'code'\">\n        <button\n          v-for=\"(t, i) in tabs\"\n          :key=\"t\"\n          type=\"button\"\n          role=\"tab\"\n          :aria-selected=\"picked === i\"\n          class=\"inline-flex h-control-sm cursor-pointer items-center px-2.5 text-meta leading-5 font-medium text-code-muted transition-[color,background-color] duration-120 ease-standard hover:text-code-fg focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-surface-accent aria-selected:bg-code-raised aria-selected:text-code-fg\"\n          @click=\"picked = i\"\n        >\n          {{ t }}\n        </button>\n      </div>\n      <div v-else class=\"flex min-w-0\"><span class=\"inline-flex h-control-sm min-w-0 items-center bg-code-raised px-2.5 text-meta leading-5 font-medium text-code-fg [overflow-wrap:anywhere]\">{{ tabs[0] }}</span></div>\n      <CodeCopy :text=\"shown\" @copied=\"emit('copied')\" />\n    </div>\n    <pre\n      tabindex=\"0\"\n      :aria-label=\"`${tabs[samples ? picked : 0] ?? 'code'}, code`\"\n      class=\"fade-x m-0 overflow-x-auto px-4 py-3 type-code-sm leading-5 whitespace-pre focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-surface-accent\"\n    >{{ shown }}</pre>\n  </div>\n</template>\n"
+    },
+    {
+      "path": "components/ui/CodeCopy.vue",
+      "content": "<script setup lang=\"ts\">\nimport { Check, Copy } from 'lucide-vue-next'\nimport { useCopy } from '@/composables/useCopy'\n\n// The code window's Copy (the console's CodeCopy.vue): on the dark bar, the icon and the word swap in one cell, so\n// nothing moves. Used by CodeBlock; `light` is its form on the paper install line.\ndefineProps<{ text: string, light?: boolean }>()\nconst emit = defineEmits<{ copied: [] }>()\nconst { copied, copy } = useCopy()\nasync function run(text: string) {\n  if (await copy(text)) emit('copied')\n}\n</script>\n\n<template>\n  <button data-ds=\"code-copy\" type=\"button\" class=\"ds-codecopy\" :data-light=\"light || undefined\" @click=\"run(text)\">\n    <span class=\"ds-codecopy-icon\" aria-hidden=\"true\"><Copy :data-on=\"!copied || undefined\" :size=\"12\" :stroke-width=\"1.5\" /><Check :data-on=\"copied || undefined\" :size=\"12\" :stroke-width=\"2\" /></span>\n    <span class=\"ds-codecopy-word\"><span :data-on=\"!copied || undefined\" :aria-hidden=\"copied\">Copy</span><span :data-on=\"copied || undefined\" :aria-hidden=\"!copied\">Copied</span></span>\n    <span class=\"sr-only\" aria-live=\"polite\">{{ copied ? 'copied' : '' }}</span>\n  </button>\n</template>\n\n<style>\n.ds-codecopy { display: inline-flex; height: var(--ds-size-control-sm); flex-shrink: 0; align-items: center; gap: var(--ds-space-sm); padding: 0 10px; border: var(--ds-border-hairline) solid var(--ds-color-code-edge); background: var(--ds-color-code); color: var(--ds-color-code-fg); font-size: var(--ds-text-meta); font-weight: var(--ds-font-weight-medium); line-height: 20px; cursor: pointer; transition: border-color var(--ds-duration-micro) ease; }\n.ds-codecopy:active { background: var(--ds-color-code-raised); }\n@media (hover: hover) and (pointer: fine) { .ds-codecopy:hover { border-color: var(--ds-color-off-white); } }\n.ds-codecopy:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-surface-accent); outline-offset: -2px; }\n.ds-codecopy[data-light] { border-color: var(--ds-color-edge-strong); background: var(--ds-color-surface); color: var(--ds-color-fg); }\n.ds-codecopy[data-light]:active { background: var(--ds-color-surface-subtle); }\n@media (hover: hover) and (pointer: fine) { .ds-codecopy[data-light]:hover { border-color: var(--ds-color-action-secondary-edge-hover); } }\n.ds-codecopy-icon, .ds-codecopy-word { display: inline-grid; }\n.ds-codecopy-icon > *, .ds-codecopy-word > * { grid-area: 1 / 1; transition: opacity var(--ds-duration-swap) ease-in-out, filter var(--ds-duration-swap) ease-in-out, transform var(--ds-duration-swap) ease-in-out; }\n.ds-codecopy-icon > :not([data-on]) { opacity: 0; filter: blur(4px); transform: scale(0.25); }\n.ds-codecopy-word > :not([data-on]) { opacity: 0; filter: blur(2px); }\n.ds-codecopy-word > :first-child:not([data-on]) { transform: translateY(-4px); }\n.ds-codecopy-word > :last-child:not([data-on]) { transform: translateY(4px); }\n@media (prefers-reduced-motion: reduce) {\n  .ds-codecopy-icon > *, .ds-codecopy-word > * { filter: none; transform: none; transition: opacity var(--ds-duration-micro) ease; }\n}\n</style>\n"
+    },
+    {
+      "path": "composables/useCopy.ts",
+      "content": "import { ref } from 'vue'\n\n/**\n * A copy button's state: copy(text) writes the clipboard, and copied is true for 1.5s after. Where the Clipboard API is\n * refused (a browser or a frame that denies it), the older copy command still works inside the click. Only if both are\n * refused does it answer false, and the text stays selectable.\n */\nexport function useCopy(ms = 1500) {\n  const copied = ref(false)\n  let timer: ReturnType<typeof setTimeout> | undefined\n  async function copy(text: string): Promise<boolean> {\n    try {\n      await navigator.clipboard.writeText(text)\n    }\n    catch {\n      if (!copyByCommand(text)) return false\n    }\n    copied.value = true\n    clearTimeout(timer)\n    // ds-latency: the Copied label stays 1.5s after the copy, which has already happened.\n    timer = setTimeout(() => { copied.value = false }, ms)\n    return true\n  }\n  return { copied, copy }\n}\n\n// The older way: select the text in an unseen field, run the copy command, hand focus back.\nfunction copyByCommand(text: string) {\n  const back = document.activeElement as HTMLElement | null\n  const field = document.createElement('textarea')\n  field.value = text\n  field.setAttribute('readonly', '')\n  field.style.position = 'fixed'\n  field.style.opacity = '0'\n  document.body.appendChild(field)\n  field.select()\n  let ok = false\n  try { ok = document.execCommand('copy') }\n  catch { ok = false }\n  field.remove()\n  back?.focus()\n  return ok\n}\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "A pill per language",
+      "center": false,
+      "half": false,
+      "path": "examples/code-block/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport CodeBlock from '@/components/ui/CodeBlock.vue'\n// The same window as on the site, a pill per language.\nconst samples = [\n  { label: 'cURL', code: `curl https://api.conare.ai/v1/search \\\\\n  -H \"Authorization: Bearer $CONARE_API_KEY\" \\\\\n  -d '{ \"namespace\": \"contracts\", \"query\": \"notice period\" }'` },\n  { label: 'Python', code: `from conare import Conare\n\nclient = Conare()\nhits = client.search(namespace=\"contracts\", query=\"notice period\")` },\n  { label: 'TypeScript', code: `import Conare from \"conare\"\n\nconst client = new Conare()\nconst hits = await client.search({ namespace: \"contracts\", query: \"notice period\" })` },\n]\n</script>\n\n<template>\n  <CodeBlock :samples=\"samples\" label=\"search request\" />\n</template>\n",
+      "requires": [],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    },
+    {
+      "name": "Single",
+      "label": "One command",
+      "center": false,
+      "half": false,
+      "path": "examples/code-block/Single.vue",
+      "content": "<script setup lang=\"ts\">\nimport CodeBlock from '@/components/ui/CodeBlock.vue'\n// One command: the pill names it.\n</script>\n\n<template>\n  <CodeBlock code=\"npx conare-ds add code-block\" label=\"Shell\" />\n</template>\n",
+      "requires": [],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/CodeBlock.tsx",
+          "content": "'use client'\nimport { useState } from 'react'\nimport { CodeCopy } from '@/react/components/ui/CodeCopy'\nimport { cn } from '@/react/lib/cn'\n\n// Code to read and copy (the console's CodeWindow.vue), one dark window on the site and in the product: a pill for\n// each request or language and Copy on one row, a rule, then the code in 12px Geist Mono. There is always a pill: one\n// names the code (`label`, else cURL for a curl command, else Shell), several pick it (`samples`). Copy takes all of\n// it. Code reads left to right in every language.\nexport interface CodeBlockProps {\n  code?: string\n  label?: string\n  samples?: { label: string, code: string }[]\n  onCopied?: () => void\n  className?: string\n}\n\nexport function CodeBlock({ code, label, samples, onCopied, className }: CodeBlockProps) {\n  const [picked, setPicked] = useState(0)\n  const tabs = samples?.map(s => s.label) ?? [label ?? (code?.startsWith('curl') ? 'cURL' : 'Shell')]\n  const shown = samples?.[picked]?.code ?? code ?? ''\n  return (\n    <div data-ds=\"code-block\" className={cn('bg-code text-code-fg', className)} dir=\"ltr\">\n      <div className=\"flex min-h-11 flex-wrap items-center justify-between gap-2 border-b border-[color-mix(in_srgb,var(--ds-color-off-white)_24%,transparent)] p-2\">\n        {tabs.length > 1\n          ? (\n              <div className=\"flex min-w-0 flex-wrap gap-0.5\" role=\"tablist\" aria-label={label ?? 'code'}>\n                {tabs.map((t, i) => (\n                  <button\n                    key={t}\n                    type=\"button\"\n                    role=\"tab\"\n                    aria-selected={picked === i}\n                    className=\"inline-flex h-control-sm cursor-pointer items-center px-2.5 text-meta leading-5 font-medium text-code-muted transition-[color,background-color] duration-120 ease-standard hover:text-code-fg focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-surface-accent aria-selected:bg-code-raised aria-selected:text-code-fg\"\n                    onClick={() => setPicked(i)}\n                  >\n                    {t}\n                  </button>\n                ))}\n              </div>\n            )\n          : <div className=\"flex min-w-0\"><span className=\"inline-flex h-control-sm min-w-0 items-center bg-code-raised px-2.5 text-meta leading-5 font-medium text-code-fg [overflow-wrap:anywhere]\">{tabs[0]}</span></div>}\n        <CodeCopy text={shown} onCopied={onCopied} />\n      </div>\n      <pre\n        tabIndex={0}\n        aria-label={`${tabs[samples ? picked : 0] ?? 'code'}, code`}\n        className=\"fade-x m-0 overflow-x-auto px-4 py-3 type-code-sm leading-5 whitespace-pre focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-surface-accent\"\n      >{shown}</pre>\n    </div>\n  )\n}\n\nexport default CodeBlock\n"
+        },
+        {
+          "path": "react/components/ui/CodeCopy.tsx",
+          "content": "'use client'\nimport { Check, Copy } from 'lucide-react'\nimport { useCopy } from '@/react/hooks/useCopy'\n\n// The code window's Copy (the console's CodeCopy.vue): on the dark bar, the icon and the word swap in one cell, so\n// nothing moves. Used by CodeBlock; `light` is its form on the paper install line.\nexport interface CodeCopyProps {\n  text: string\n  light?: boolean\n  onCopied?: () => void\n}\n\nexport function CodeCopy({ text, light, onCopied }: CodeCopyProps) {\n  const { copied, copy } = useCopy()\n  async function run(t: string) {\n    if (await copy(t)) onCopied?.()\n  }\n  return (\n    <>\n      <style href=\"ds-code-copy\" precedence=\"ds\">{css}</style>\n      <button data-ds=\"code-copy\" type=\"button\" className=\"ds-codecopy\" data-light={light || undefined} onClick={() => run(text)}>\n        <span className=\"ds-codecopy-icon\" aria-hidden=\"true\"><Copy data-on={!copied || undefined} size={12} strokeWidth={1.5} /><Check data-on={copied || undefined} size={12} strokeWidth={2} /></span>\n        <span className=\"ds-codecopy-word\"><span data-on={!copied || undefined} aria-hidden={copied}>Copy</span><span data-on={copied || undefined} aria-hidden={!copied}>Copied</span></span>\n        <span className=\"sr-only\" aria-live=\"polite\">{copied ? 'copied' : ''}</span>\n      </button>\n    </>\n  )\n}\n\nexport default CodeCopy\n\nconst css = `\n.ds-codecopy { display: inline-flex; height: var(--ds-size-control-sm); flex-shrink: 0; align-items: center; gap: var(--ds-space-sm); padding: 0 10px; border: var(--ds-border-hairline) solid var(--ds-color-code-edge); background: var(--ds-color-code); color: var(--ds-color-code-fg); font-size: var(--ds-text-meta); font-weight: var(--ds-font-weight-medium); line-height: 20px; cursor: pointer; transition: border-color var(--ds-duration-micro) ease; }\n.ds-codecopy:active { background: var(--ds-color-code-raised); }\n@media (hover: hover) and (pointer: fine) { .ds-codecopy:hover { border-color: var(--ds-color-off-white); } }\n.ds-codecopy:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-surface-accent); outline-offset: -2px; }\n.ds-codecopy[data-light] { border-color: var(--ds-color-edge-strong); background: var(--ds-color-surface); color: var(--ds-color-fg); }\n.ds-codecopy[data-light]:active { background: var(--ds-color-surface-subtle); }\n@media (hover: hover) and (pointer: fine) { .ds-codecopy[data-light]:hover { border-color: var(--ds-color-action-secondary-edge-hover); } }\n.ds-codecopy-icon, .ds-codecopy-word { display: inline-grid; }\n.ds-codecopy-icon > *, .ds-codecopy-word > * { grid-area: 1 / 1; transition: opacity var(--ds-duration-swap) ease-in-out, filter var(--ds-duration-swap) ease-in-out, transform var(--ds-duration-swap) ease-in-out; }\n.ds-codecopy-icon > :not([data-on]) { opacity: 0; filter: blur(4px); transform: scale(0.25); }\n.ds-codecopy-word > :not([data-on]) { opacity: 0; filter: blur(2px); }\n.ds-codecopy-word > :first-child:not([data-on]) { transform: translateY(-4px); }\n.ds-codecopy-word > :last-child:not([data-on]) { transform: translateY(4px); }\n@media (prefers-reduced-motion: reduce) {\n  .ds-codecopy-icon > *, .ds-codecopy-word > * { filter: none; transform: none; transition: opacity var(--ds-duration-micro) ease; }\n}\n`\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        },
+        {
+          "path": "react/hooks/useCopy.ts",
+          "content": "'use client'\nimport { useCallback, useEffect, useRef, useState } from 'react'\n\n/**\n * A copy button's state: copy(text) writes the clipboard, and copied is true for 1.5s after. Where the Clipboard API is\n * refused (a browser or a frame that denies it), the older copy command still works inside the click. Only if both are\n * refused does it answer false, and the text stays selectable.\n */\nexport function useCopy(ms = 1500) {\n  const [copied, setCopied] = useState(false)\n  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)\n  useEffect(() => () => clearTimeout(timer.current), [])\n  const copy = useCallback(async (text: string): Promise<boolean> => {\n    try {\n      await navigator.clipboard.writeText(text)\n    }\n    catch {\n      if (!copyByCommand(text)) return false\n    }\n    setCopied(true)\n    clearTimeout(timer.current)\n    // ds-latency: the Copied label stays 1.5s after the copy, which has already happened.\n    timer.current = setTimeout(() => setCopied(false), ms)\n    return true\n  }, [ms])\n  return { copied, copy }\n}\n\n// The older way: select the text in an unseen field, run the copy command, hand focus back.\nfunction copyByCommand(text: string) {\n  const back = document.activeElement as HTMLElement | null\n  const field = document.createElement('textarea')\n  field.value = text\n  field.setAttribute('readonly', '')\n  field.style.position = 'fixed'\n  field.style.opacity = '0'\n  document.body.appendChild(field)\n  field.select()\n  let ok = false\n  try { ok = document.execCommand('copy') }\n  catch { ok = false }\n  field.remove()\n  back?.focus()\n  return ok\n}\n"
+        }
+      ],
+      "dependencies": [
+        "lucide-react@0.479.0"
+      ],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "CodeBlock",
+            "file": "react/components/ui/CodeBlock.tsx",
+            "props": [
+              {
+                "name": "code",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "samples",
+                "type": "{ label: string, code: string }[]",
+                "required": false
+              },
+              {
+                "name": "onCopied",
+                "type": "() => void",
+                "required": false
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "CodeCopy",
+            "file": "react/components/ui/CodeCopy.tsx",
+            "props": [
+              {
+                "name": "text",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "light",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "onCopied",
+                "type": "() => void",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "A pill per language",
+          "center": false,
+          "half": false,
+          "path": "react/examples/code-block/Product.tsx",
+          "content": "import { CodeBlock } from '@/react/components/ui/CodeBlock'\n// The same window as on the site, a pill per language.\nconst samples = [\n  { label: 'cURL', code: `curl https://api.conare.ai/v1/search \\\\\n  -H \"Authorization: Bearer $CONARE_API_KEY\" \\\\\n  -d '{ \"namespace\": \"contracts\", \"query\": \"notice period\" }'` },\n  { label: 'Python', code: `from conare import Conare\n\nclient = Conare()\nhits = client.search(namespace=\"contracts\", query=\"notice period\")` },\n  { label: 'TypeScript', code: `import Conare from \"conare\"\n\nconst client = new Conare()\nconst hits = await client.search({ namespace: \"contracts\", query: \"notice period\" })` },\n]\n\nexport default function Product() {\n  return <CodeBlock samples={samples} label=\"search request\" />\n}\n",
+          "registryDependencies": [],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        },
+        {
+          "name": "Single",
+          "label": "One command",
+          "center": false,
+          "half": false,
+          "path": "react/examples/code-block/Single.tsx",
+          "content": "import { CodeBlock } from '@/react/components/ui/CodeBlock'\n// One command: the pill names it.\n\nexport default function Single() {\n  return <CodeBlock code=\"npx conare-ds add code-block\" label=\"Shell\" />\n}\n",
+          "registryDependencies": [],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/code-block.ts",
+          "content": "import { html } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport '@/elements/components/ui/code-copy'\nimport styles from 'virtual:tw'\n\n// CodeBlock.vue as <conare-code-block>: code to read and copy (the console's CodeWindow.vue), one dark window on the\n// site and in the product: a pill for each request or language and Copy on one row, a rule, then the code in 12px Geist\n// Mono. There is always a pill: one names the code (`label`, else cURL for a curl command, else Shell), several pick it\n// (`samples`). Copy takes all of it. Code reads left to right in every language. The host is the window (code-block.css),\n// so a class on <conare-code-block> (a margin, as CodePop and DocsBlocks give it) lands on it as on Vue's root.\n\n/**\n * @summary A dark code window: a pill per language, Copy, then the code.\n * @fires copied - The code is on the clipboard.\n */\nexport class CodeBlock extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { code: {}, label: {}, samples: { type: Array }, picked: { state: true } }\n\n\t/** One piece of code. */\n\tcode?: string\n\t/** The pill's name for `code`, or the tab list's name for `samples`. */\n\tlabel?: string\n\t/** [{ label, code }]: a pill for each. */\n\tsamples?: { label: string, code: string }[]\n\tprivate picked = 0\n\n\tconnectedCallback() {\n\t\tsuper.connectedCallback()\n\t\t// Code reads left to right in every language.\n\t\tif (!this.hasAttribute('dir')) this.setAttribute('dir', 'ltr')\n\t}\n\n\trender() {\n\t\tconst tabs = this.samples?.map((s) => s.label) ?? [this.label ?? (this.code?.startsWith('curl') ? 'cURL' : 'Shell')]\n\t\tconst shown = this.samples?.[this.picked]?.code ?? this.code ?? ''\n\t\tconst copy = tag('code-copy')\n\t\treturn html`<div class=\"flex min-h-11 flex-wrap items-center justify-between gap-2 border-b border-[color-mix(in_srgb,var(--ds-color-off-white)_24%,transparent)] p-2\">\n\t\t\t\t${tabs.length > 1\n\t\t\t\t\t? html`<div class=\"flex min-w-0 flex-wrap gap-0.5\" role=\"tablist\" aria-label=${this.label ?? 'code'}>${tabs.map((t, i) => html`<button\n\t\t\t\t\t\t\ttype=\"button\"\n\t\t\t\t\t\t\trole=\"tab\"\n\t\t\t\t\t\t\taria-selected=${String(this.picked === i)}\n\t\t\t\t\t\t\tclass=\"inline-flex h-control-sm cursor-pointer items-center px-2.5 text-meta leading-5 font-medium text-code-muted transition-[color,background-color] duration-120 ease-standard hover:text-code-fg focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-surface-accent aria-selected:bg-code-raised aria-selected:text-code-fg\"\n\t\t\t\t\t\t\t@click=${() => { this.picked = i }}\n\t\t\t\t\t\t>${t}</button>`)}</div>`\n\t\t\t\t\t: html`<div class=\"flex min-w-0\"><span class=\"inline-flex h-control-sm min-w-0 items-center bg-code-raised px-2.5 text-meta leading-5 font-medium text-code-fg [overflow-wrap:anywhere]\">${tabs[0]}</span></div>`}\n\t\t\t\t${staticHtml`<${copy} .text=${shown}></${copy}>`}\n\t\t\t</div>\n\t\t\t<pre tabindex=\"0\" aria-label=${`${tabs[this.samples ? this.picked : 0] ?? 'code'}, code`} class=\"fade-x m-0 overflow-x-auto px-4 py-3 type-code-sm leading-5 whitespace-pre focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-surface-accent\">${shown}</pre>`\n\t}\n}\n\ndefine('code-block', CodeBlock)\n"
+        },
+        {
+          "path": "elements/components/ui/code-block.css",
+          "content": "/* The host is the window (CodeBlock.vue's root div), so a class on <conare-code-block> lands on it as a class on\n   <CodeBlock> does. */\n:host { @apply block bg-code text-code-fg; }\n"
+        },
+        {
+          "path": "elements/components/ui/code-copy.ts",
+          "content": "import { html, type PropertyValues } from 'lit'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { Check, Copy } from 'lucide'\nimport { DsElement, define } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport { CopyController } from '@/elements/controllers/copy'\nimport styles from 'virtual:tw'\n\n// CodeCopy.vue as <conare-code-copy>: the code window's Copy (the console's CodeCopy.vue): on the dark bar, the icon and\n// the word swap in one cell, so nothing moves. Used by <conare-code-block>; `light` is its form on the paper install line.\n\n/**\n * @summary The code window's Copy: the icon and the word swap in one cell.\n * @fires copied - The text is on the clipboard.\n */\nexport class CodeCopy extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { text: {}, light: { type: Boolean } }\n\n\t/** What it copies. */\n\ttext = ''\n\t/** Its form on the paper install line. */\n\tlight = false\n\tprivate copier = new CopyController(this)\n\n\tprivate async run() {\n\t\tif (await this.copier.copy(this.text)) this.emit('copied')\n\t}\n\n\t// The glyphs' data-on is set on the nodes Lit keeps (their markup never changes), so the swap's transition runs.\n\tprotected updated(changed: PropertyValues) {\n\t\tsuper.updated(changed)\n\t\tconst copied = this.copier.copied\n\t\tconst [a, b] = this.renderRoot.querySelectorAll('.ds-codecopy-icon > svg')\n\t\ta?.toggleAttribute('data-on', !copied)\n\t\tb?.toggleAttribute('data-on', copied)\n\t}\n\n\trender() {\n\t\tconst copied = this.copier.copied\n\t\tconst on = (v: boolean) => ifDefined(v ? 'true' : undefined)\n\t\treturn html`<button data-ds=\"code-copy\" type=\"button\" class=\"ds-codecopy\" data-light=${on(this.light)} @click=${() => this.run()}>\n\t\t\t<span class=\"ds-codecopy-icon\" aria-hidden=\"true\">${icon(Copy, 'copy', { size: 12, strokeWidth: 1.5 })}${icon(Check, 'check', { size: 12, strokeWidth: 2 })}</span>\n\t\t\t<span class=\"ds-codecopy-word\"><span data-on=${on(!copied)} aria-hidden=${String(copied)}>Copy</span><span data-on=${on(copied)} aria-hidden=${String(!copied)}>Copied</span></span>\n\t\t\t<span class=\"sr-only\" aria-live=\"polite\">${copied ? 'copied' : ''}</span>\n\t\t</button>`\n\t}\n}\n\ndefine('code-copy', CodeCopy)\n"
+        },
+        {
+          "path": "elements/components/ui/code-copy.css",
+          "content": ".ds-codecopy { display: inline-flex; height: var(--ds-size-control-sm); flex-shrink: 0; align-items: center; gap: var(--ds-space-sm); padding: 0 10px; border: var(--ds-border-hairline) solid var(--ds-color-code-edge); background: var(--ds-color-code); color: var(--ds-color-code-fg); font-size: var(--ds-text-meta); font-weight: var(--ds-font-weight-medium); line-height: 20px; cursor: pointer; transition: border-color var(--ds-duration-micro) ease; }\n.ds-codecopy:active { background: var(--ds-color-code-raised); }\n@media (hover: hover) and (pointer: fine) { .ds-codecopy:hover { border-color: var(--ds-color-off-white); } }\n.ds-codecopy:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-surface-accent); outline-offset: -2px; }\n.ds-codecopy[data-light] { border-color: var(--ds-color-edge-strong); background: var(--ds-color-surface); color: var(--ds-color-fg); }\n.ds-codecopy[data-light]:active { background: var(--ds-color-surface-subtle); }\n@media (hover: hover) and (pointer: fine) { .ds-codecopy[data-light]:hover { border-color: var(--ds-color-action-secondary-edge-hover); } }\n.ds-codecopy-icon, .ds-codecopy-word { display: inline-grid; }\n.ds-codecopy-icon > *, .ds-codecopy-word > * { grid-area: 1 / 1; transition: opacity var(--ds-duration-swap) ease-in-out, filter var(--ds-duration-swap) ease-in-out, transform var(--ds-duration-swap) ease-in-out; }\n.ds-codecopy-icon > :not([data-on]) { opacity: 0; filter: blur(4px); transform: scale(0.25); }\n.ds-codecopy-word > :not([data-on]) { opacity: 0; filter: blur(2px); }\n.ds-codecopy-word > :first-child:not([data-on]) { transform: translateY(-4px); }\n.ds-codecopy-word > :last-child:not([data-on]) { transform: translateY(4px); }\n@media (prefers-reduced-motion: reduce) {\n  .ds-codecopy-icon > *, .ds-codecopy-word > * { filter: none; transform: none; transition: opacity var(--ds-duration-micro) ease; }\n}\n"
+        },
+        {
+          "path": "elements/controllers/copy.ts",
+          "content": "import type { ReactiveController, ReactiveControllerHost } from 'lit'\n\n/**\n * useCopy as a Lit controller: copy(text) writes the clipboard, and `copied` is true for 1.5s after. Where the Clipboard\n * API is refused, the older copy command still works inside the click. Only if both are refused does it answer false.\n */\nexport class CopyController implements ReactiveController {\n\tcopied = false\n\tprivate timer?: ReturnType<typeof setTimeout>\n\tconstructor(private host: ReactiveControllerHost, private ms = 1500) {\n\t\thost.addController(this)\n\t}\n\thostDisconnected() {\n\t\tclearTimeout(this.timer)\n\t}\n\tasync copy(text: string): Promise<boolean> {\n\t\ttry {\n\t\t\tawait navigator.clipboard.writeText(text)\n\t\t} catch {\n\t\t\tif (!copyByCommand(text)) return false\n\t\t}\n\t\tthis.copied = true\n\t\tthis.host.requestUpdate()\n\t\tclearTimeout(this.timer)\n\t\t// ds-latency: the Copied label stays 1.5s after the copy, which has already happened.\n\t\tthis.timer = setTimeout(() => {\n\t\t\tthis.copied = false\n\t\t\tthis.host.requestUpdate()\n\t\t}, this.ms)\n\t\treturn true\n\t}\n}\n\n/** copy(text) without an element, for example scripts: the clipboard, or the copy command where it is refused. */\nexport async function copyText(text: string) {\n\ttry {\n\t\tawait navigator.clipboard.writeText(text)\n\t\treturn true\n\t} catch {\n\t\treturn copyByCommand(text)\n\t}\n}\n\nfunction copyByCommand(text: string) {\n\t// The focused element inside shadow roots, not the host, so focus goes back to the button that copied.\n\tlet back = document.activeElement as HTMLElement | null\n\twhile (back?.shadowRoot?.activeElement) back = back.shadowRoot.activeElement as HTMLElement\n\tconst field = document.createElement('textarea')\n\tfield.value = text\n\tfield.setAttribute('readonly', '')\n\tfield.style.position = 'fixed'\n\tfield.style.opacity = '0'\n\tdocument.body.appendChild(field)\n\tfield.select()\n\tlet ok = false\n\ttry {\n\t\tok = document.execCommand('copy')\n\t} catch {\n\t\tok = false\n\t}\n\tfield.remove()\n\tback?.focus()\n\treturn ok\n}\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/code-block.js",
+        "elements/code-copy.js"
+      ],
+      "tag": "conare-code-block",
+      "tags": [
+        "conare-code-block",
+        "conare-code-copy"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-code-block",
+            "name": "CodeBlock",
+            "module": "elements/code-block.js",
+            "description": "A dark code window: a pill per language, Copy, then the code.",
+            "attributes": [
+              {
+                "name": "code",
+                "field": "code",
+                "type": "string | undefined",
+                "description": "One piece of code."
+              },
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string | undefined",
+                "description": "The pill's name for `code`, or the tab list's name for `samples`."
+              },
+              {
+                "name": "samples",
+                "field": "samples",
+                "type": "{ label: string; code: string; }[] | undefined",
+                "description": "[{ label, code }]: a pill for each."
+              },
+              {
+                "name": "picked",
+                "field": "picked",
+                "type": "number",
+                "default": "0"
+              }
+            ],
+            "properties": [
+              {
+                "name": "code",
+                "type": "string | undefined",
+                "description": "One piece of code.",
+                "attribute": "code"
+              },
+              {
+                "name": "label",
+                "type": "string | undefined",
+                "description": "The pill's name for `code`, or the tab list's name for `samples`.",
+                "attribute": "label"
+              },
+              {
+                "name": "samples",
+                "type": "{ label: string; code: string; }[] | undefined",
+                "description": "[{ label, code }]: a pill for each.",
+                "attribute": "samples"
+              }
+            ],
+            "events": [
+              {
+                "name": "copied",
+                "description": "The code is on the clipboard."
+              }
+            ],
+            "slots": [],
+            "methods": []
+          },
+          {
+            "tag": "conare-code-copy",
+            "name": "CodeCopy",
+            "module": "elements/code-copy.js",
+            "description": "The code window's Copy: the icon and the word swap in one cell.",
+            "attributes": [
+              {
+                "name": "text",
+                "field": "text",
+                "type": "string",
+                "default": "''",
+                "description": "What it copies."
+              },
+              {
+                "name": "light",
+                "field": "light",
+                "type": "boolean",
+                "default": "false",
+                "description": "Its form on the paper install line."
+              }
+            ],
+            "properties": [
+              {
+                "name": "text",
+                "type": "string",
+                "default": "''",
+                "description": "What it copies.",
+                "attribute": "text"
+              },
+              {
+                "name": "light",
+                "type": "boolean",
+                "default": "false",
+                "description": "Its form on the paper install line.",
+                "attribute": "light"
+              }
+            ],
+            "events": [
+              {
+                "name": "copied",
+                "description": "The text is on the clipboard."
+              }
+            ],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "A pill per language",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/code-block/Product.html",
+          "content": "<!-- The same window as on the site, a pill per language. -->\n<conare-code-block id=\"search-request\" label=\"search request\"></conare-code-block>\n<script type=\"module\">\n  // Code keeps its line breaks, so the samples are set as a property.\n  document.getElementById('search-request').samples = [\n    { label: 'cURL', code: `curl https://api.conare.ai/v1/search \\\\\n  -H \"Authorization: Bearer $CONARE_API_KEY\" \\\\\n  -d '{ \"namespace\": \"contracts\", \"query\": \"notice period\" }'` },\n    { label: 'Python', code: `from conare import Conare\n\nclient = Conare()\nhits = client.search(namespace=\"contracts\", query=\"notice period\")` },\n    { label: 'TypeScript', code: `import Conare from \"conare\"\n\nconst client = new Conare()\nconst hits = await client.search({ namespace: \"contracts\", query: \"notice period\" })` },\n  ]\n</script>\n"
+        },
+        {
+          "name": "Single",
+          "label": "One command",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/code-block/Single.html",
+          "content": "<!-- One command: the pill names it. -->\n<conare-code-block code=\"npx conare-ds add code-block\" label=\"Shell\"></conare-code-block>\n"
+        }
+      ]
+    }
+  }
+}

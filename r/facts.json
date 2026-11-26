@@ -1,0 +1,244 @@
+{
+  "name": "facts",
+  "title": "Facts",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "Short facts about one thing, each a small hairline box with its name and value, so a row of them wraps cleanly.",
+  "use_for": "What a namespace, a connection or a key is, at the top of its panel.",
+  "never": [
+    "Values that need a sentence",
+    "More than six in a row"
+  ],
+  "source": "conare-web app/assets/css/console2.css (.v2-fact)",
+  "body": "",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Facts.vue",
+      "content": "<script setup lang=\"ts\">\n// Short facts about one thing (console2.css .v2-fact): each a small hairline box with its name, muted, and its value,\n// so a row of them wraps cleanly. Pass `facts`, or write Fact in the slot. `mono` sets a value in Geist Mono (a domain,\n// an ID). Six at most; a value that needs a sentence is not a fact.\nimport Fact from '@/components/ui/Fact.vue'\n\nexport type FactItem = { name: string, value: string, mono?: boolean }\ndefineProps<{ facts?: FactItem[] }>()\n</script>\n\n<template>\n  <dl data-ds=\"facts\" class=\"flex flex-wrap gap-2\">\n    <slot><Fact v-for=\"f in facts\" :key=\"f.name\" :name=\"f.name\" :value=\"f.value\" :mono=\"f.mono\" /></slot>\n  </dl>\n</template>\n"
+    },
+    {
+      "path": "components/ui/Fact.vue",
+      "content": "<script setup lang=\"ts\">\n// One fact: a 24px hairline box, 12px, the name muted and the value in ink. Inside Facts (a <dl>).\ndefineProps<{ name: string, value?: string, mono?: boolean }>()\n</script>\n\n<template>\n  <div data-ds=\"fact\" class=\"flex min-w-0 items-center gap-1.5 border border-edge bg-surface px-2 py-1 type-meta\">\n    <dt class=\"text-fg-muted\">{{ name }}</dt>\n    <dd class=\"min-w-0\" :class=\"mono && 'font-code'\"><slot>{{ value }}</slot></dd>\n  </div>\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "In the product",
+      "center": true,
+      "half": false,
+      "path": "examples/facts/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport Facts from '@/components/ui/Facts.vue'\n// Short facts about a sign-in connection, each its own small box, so a row of them wraps cleanly.\nconst facts = [\n  { name: 'Provider', value: 'Okta' },\n  { name: 'Protocol', value: 'SAML' },\n  { name: 'Domain', value: 'acme.com', mono: true },\n  { name: 'Last sign-in', value: '2 h ago' },\n]\n</script>\n\n<template>\n  <Facts :facts=\"facts\" class=\"justify-center\" />\n</template>\n",
+      "requires": [],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Facts.tsx",
+          "content": "import type { HTMLAttributes } from 'react'\nimport { Fact } from '@/react/components/ui/Fact'\nimport { cn } from '@/react/lib/cn'\n\n// Short facts about one thing (console2.css .v2-fact): each a small hairline box with its name, muted, and its value,\n// so a row of them wraps cleanly. Pass `facts`, or write Fact as children. `mono` sets a value in Geist Mono (a domain,\n// an ID). Six at most; a value that needs a sentence is not a fact.\nexport type FactItem = { name: string, value: string, mono?: boolean }\n\nexport interface FactsProps extends HTMLAttributes<HTMLDListElement> {\n  facts?: FactItem[]\n}\n\nexport function Facts({ facts, className, children, ...rest }: FactsProps) {\n  return (\n    <dl data-ds=\"facts\" className={cn('flex flex-wrap gap-2', className)} {...rest}>\n      {children ?? facts?.map(f => <Fact key={f.name} name={f.name} value={f.value} mono={f.mono} />)}\n    </dl>\n  )\n}\n\nexport default Facts\n"
+        },
+        {
+          "path": "react/components/ui/Fact.tsx",
+          "content": "import type { HTMLAttributes } from 'react'\nimport { cn } from '@/react/lib/cn'\n\n// One fact: a 24px hairline box, 12px, the name muted and the value in ink. Inside Facts (a <dl>).\nexport interface FactProps extends HTMLAttributes<HTMLDivElement> {\n  name: string\n  value?: string\n  mono?: boolean\n}\n\nexport function Fact({ name, value, mono, className, children, ...rest }: FactProps) {\n  return (\n    <div data-ds=\"fact\" className={cn('flex min-w-0 items-center gap-1.5 border border-edge bg-surface px-2 py-1 type-meta', className)} {...rest}>\n      <dt className=\"text-fg-muted\">{name}</dt>\n      <dd className={cn('min-w-0', mono && 'font-code')}>{children ?? value}</dd>\n    </div>\n  )\n}\n\nexport default Fact\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "Facts",
+            "file": "react/components/ui/Facts.tsx",
+            "props": [
+              {
+                "name": "facts",
+                "type": "FactItem[]",
+                "required": false
+              }
+            ],
+            "extends": [
+              "HTMLAttributes<HTMLDListElement>"
+            ]
+          },
+          {
+            "name": "Fact",
+            "file": "react/components/ui/Fact.tsx",
+            "props": [
+              {
+                "name": "name",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "value",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "mono",
+                "type": "boolean",
+                "required": false
+              }
+            ],
+            "extends": [
+              "HTMLAttributes<HTMLDivElement>"
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": true,
+          "half": false,
+          "path": "react/examples/facts/Product.tsx",
+          "content": "import { Facts } from '@/react/components/ui/Facts'\n// Short facts about a sign-in connection, each its own small box, so a row of them wraps cleanly.\nconst facts = [\n  { name: 'Provider', value: 'Okta' },\n  { name: 'Protocol', value: 'SAML' },\n  { name: 'Domain', value: 'acme.com', mono: true },\n  { name: 'Last sign-in', value: '2 h ago' },\n]\n\nexport default function Product() {\n  return <Facts facts={facts} className=\"justify-center\" />\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/facts.ts",
+          "content": "import { html } from 'lit'\nimport { repeat } from 'lit/directives/repeat.js'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport '@/elements/components/ui/fact'\nimport styles from 'virtual:tw'\n\n// Facts.vue as <conare-facts>: short facts about one thing (console2.css .v2-fact): each a small hairline box with its\n// name, muted, and its value, so a row of them wraps cleanly. Pass `facts`, or write <conare-fact> inside. `mono` sets a\n// value in Geist Mono (a domain, an ID). Six at most; a value that needs a sentence is not a fact.\nexport type FactItem = { name: string, value: string, mono?: boolean }\n\n/**\n * @summary Short facts about one thing, each a small hairline box.\n * @slot - <conare-fact> elements, in place of `facts`.\n */\nexport class Facts extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { facts: { type: Array } }\n\n\t/** The facts: [{ name, value, mono? }]. */\n\tfacts: FactItem[] = []\n\n\trender() {\n\t\tconst fact = tag('fact')\n\t\treturn html`<dl class=\"contents\"><slot>${repeat(this.facts ?? [], (f) => f.name, (f) => staticHtml`<${fact} name=${f.name} value=${f.value} ?mono=${!!f.mono}></${fact}>`)}</slot></dl>`\n\t}\n}\n\ndefine('facts', Facts)\n"
+        },
+        {
+          "path": "elements/components/ui/facts.css",
+          "content": "/* The host is the facts' box (Facts.vue's <dl>), so a class on <conare-facts> (justify-center) lands on it as a class on\n   <Facts> does; the <dl> inside keeps the list's meaning and lays out nothing. */\n:host { @apply flex flex-wrap gap-2; }\n"
+        },
+        {
+          "path": "elements/components/ui/fact.ts",
+          "content": "import { html } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// Fact.vue as <conare-fact>: one fact, a 24px hairline box, 12px, the name muted and the value in ink. Inside\n// <conare-facts>.\n\n/**\n * @summary One fact: its name, muted, and its value.\n * @slot - The value, in place of `value`.\n */\nexport class Fact extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { name: {}, value: {}, mono: { type: Boolean } }\n\n\t/** The fact's name. */\n\tname = ''\n\t/** Its value. */\n\tvalue?: string\n\t/** The value in Geist Mono (a domain, an ID). */\n\tmono = false\n\n\trender() {\n\t\treturn html`<div data-ds=\"fact\" class=\"flex min-w-0 items-center gap-1.5 border border-edge bg-surface px-2 py-1 type-meta\">\n\t\t\t<dt class=\"text-fg-muted\">${this.name}</dt>\n\t\t\t<dd class=${['min-w-0', this.mono ? 'font-code' : ''].join(' ')}><slot>${this.value}</slot></dd>\n\t\t</div>`\n\t}\n}\n\ndefine('fact', Fact)\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/facts.js",
+        "elements/fact.js"
+      ],
+      "tag": "conare-facts",
+      "tags": [
+        "conare-facts",
+        "conare-fact"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-facts",
+            "name": "Facts",
+            "module": "elements/facts.js",
+            "description": "Short facts about one thing, each a small hairline box.",
+            "attributes": [
+              {
+                "name": "facts",
+                "field": "facts",
+                "type": "FactItem[]",
+                "default": "[]",
+                "description": "The facts: [{ name, value, mono? }]."
+              }
+            ],
+            "properties": [
+              {
+                "name": "facts",
+                "type": "FactItem[]",
+                "default": "[]",
+                "description": "The facts: [{ name, value, mono? }].",
+                "attribute": "facts"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "<conare-fact> elements, in place of `facts`."
+              }
+            ],
+            "methods": []
+          },
+          {
+            "tag": "conare-fact",
+            "name": "Fact",
+            "module": "elements/fact.js",
+            "description": "One fact: its name, muted, and its value.",
+            "attributes": [
+              {
+                "name": "name",
+                "field": "name",
+                "type": "string",
+                "default": "''",
+                "description": "The fact's name."
+              },
+              {
+                "name": "value",
+                "field": "value",
+                "type": "string | undefined",
+                "description": "Its value."
+              },
+              {
+                "name": "mono",
+                "field": "mono",
+                "type": "boolean",
+                "default": "false",
+                "description": "The value in Geist Mono (a domain, an ID)."
+              }
+            ],
+            "properties": [
+              {
+                "name": "name",
+                "type": "string",
+                "default": "''",
+                "description": "The fact's name.",
+                "attribute": "name"
+              },
+              {
+                "name": "value",
+                "type": "string | undefined",
+                "description": "Its value.",
+                "attribute": "value"
+              },
+              {
+                "name": "mono",
+                "type": "boolean",
+                "default": "false",
+                "description": "The value in Geist Mono (a domain, an ID).",
+                "attribute": "mono"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "The value, in place of `value`."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": true,
+          "half": false,
+          "path": "elements/examples/facts/Product.html",
+          "content": "<!-- Short facts about a sign-in connection, each its own small box, so a row of them wraps cleanly. -->\n<conare-facts class=\"justify-center\" facts='[{ \"name\": \"Provider\", \"value\": \"Okta\" }, { \"name\": \"Protocol\", \"value\": \"SAML\" }, { \"name\": \"Domain\", \"value\": \"acme.com\", \"mono\": true }, { \"name\": \"Last sign-in\", \"value\": \"2 h ago\" }]'></conare-facts>\n"
+        }
+      ]
+    }
+  }
+}

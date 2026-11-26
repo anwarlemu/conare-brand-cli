@@ -1,0 +1,126 @@
+{
+  "name": "shimmer-text",
+  "title": "Shimmer text",
+  "type": "registry:ui",
+  "group": "visuals",
+  "description": "Words that say something is working: a lighter band runs across them for as long as the work does. Reduced motion shows them still.",
+  "use_for": "A search or a sync under way, in the few words that say so.",
+  "never": [
+    "Text that is already done",
+    "Whole sentences of body text",
+    "A shimmering block in place of a loading row (rows keep their layout)"
+  ],
+  "source": "conare-web app/assets/css/console2.css (.v2-shimmer)",
+  "body": "The band runs right to left every 1.4s in the muted grey's lighter step. Remove it when the work ends, and put the sentence in `role=\"status\"` so the change is read out. Pair it with the dot matrix (Loader) when the wait is long.",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/visuals/ShimmerText.vue",
+      "content": "<script setup lang=\"ts\">\n// A few words that say something is working (console2.css .v2-shimmer): a lighter band runs across the muted text,\n// right to left every 1.4s, for as long as the work does. Take it away when the work is done. Reduced motion shows the\n// words still, in the muted grey. Wrap the sentence in role=\"status\" so the change is read out.\n</script>\n\n<template>\n  <span data-ds=\"shimmer-text\" class=\"ds-shimmer\"><slot /></span>\n</template>\n\n<style>\n.ds-shimmer { background: linear-gradient(90deg, var(--ds-color-neutral-400) 30%, var(--ds-color-neutral-700) 50%, var(--ds-color-neutral-400) 70%) 0 0 / 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: ds-shimmer 1400ms linear infinite; }\n@keyframes ds-shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }\n@media (prefers-reduced-motion: reduce) { .ds-shimmer { animation: none; background: none; color: var(--ds-color-fg-muted); } }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "In the product",
+      "center": true,
+      "half": true,
+      "path": "examples/shimmer-text/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport ShimmerText from '@/components/visuals/ShimmerText.vue'\n// Words that say something is working: the light runs across them for as long as the work does.\n</script>\n\n<template>\n  <p class=\"type-ui\" role=\"status\"><ShimmerText>Searching 2,811,549 documents</ShimmerText></p>\n</template>\n",
+      "requires": [],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/visuals/ShimmerText.tsx",
+          "content": "import type { ReactNode } from 'react'\n\n// A few words that say something is working (console2.css .v2-shimmer): a lighter band runs across the muted text,\n// right to left every 1.4s, for as long as the work does. Take it away when the work is done. Reduced motion shows the\n// words still, in the muted grey. Wrap the sentence in role=\"status\" so the change is read out.\nexport interface ShimmerTextProps {\n  children?: ReactNode\n}\n\nexport function ShimmerText({ children }: ShimmerTextProps) {\n  return (\n    <>\n      <style href=\"ds-shimmer-text\" precedence=\"ds\">{css}</style>\n      <span data-ds=\"shimmer-text\" className=\"ds-shimmer\">{children}</span>\n    </>\n  )\n}\n\nexport default ShimmerText\n\nconst css = `\n.ds-shimmer { background: linear-gradient(90deg, var(--ds-color-neutral-400) 30%, var(--ds-color-neutral-700) 50%, var(--ds-color-neutral-400) 70%) 0 0 / 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: ds-shimmer 1400ms linear infinite; }\n@keyframes ds-shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }\n@media (prefers-reduced-motion: reduce) { .ds-shimmer { animation: none; background: none; color: var(--ds-color-fg-muted); } }\n`\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "ShimmerText",
+            "file": "react/components/visuals/ShimmerText.tsx",
+            "props": [
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": true,
+          "half": true,
+          "path": "react/examples/shimmer-text/Product.tsx",
+          "content": "import { ShimmerText } from '@/react/components/visuals/ShimmerText'\n// Words that say something is working: the light runs across them for as long as the work does.\n\nexport default function Product() {\n  return (\n    <p className=\"type-ui\" role=\"status\"><ShimmerText>Searching 2,811,549 documents</ShimmerText></p>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/visuals/shimmer-text.ts",
+          "content": "import { html } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// ShimmerText.vue as <conare-shimmer-text>: a few words that say something is working (console2.css .v2-shimmer): a\n// lighter band runs across the muted text, right to left every 1.4s, for as long as the work does. Take it away when\n// the work is done. Reduced motion shows the words still, in the muted grey. Wrap the sentence in role=\"status\" so the\n// change is read out.\n\n/**\n * @summary Words that shimmer while something works.\n * @slot - The words.\n */\nexport class ShimmerText extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\n\trender() {\n\t\treturn html`<span data-ds=\"shimmer-text\" class=\"ds-shimmer\"><slot></slot></span>`\n\t}\n}\n\ndefine('shimmer-text', ShimmerText)\n"
+        },
+        {
+          "path": "elements/components/visuals/shimmer-text.css",
+          "content": "/* ShimmerText.vue's <style>, as it is. */\n.ds-shimmer { background: linear-gradient(90deg, var(--ds-color-neutral-400) 30%, var(--ds-color-neutral-700) 50%, var(--ds-color-neutral-400) 70%) 0 0 / 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: ds-shimmer 1400ms linear infinite; }\n@keyframes ds-shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }\n@media (prefers-reduced-motion: reduce) { .ds-shimmer { animation: none; background: none; color: var(--ds-color-fg-muted); } }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/shimmer-text.js"
+      ],
+      "tag": "conare-shimmer-text",
+      "tags": [
+        "conare-shimmer-text"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-shimmer-text",
+            "name": "ShimmerText",
+            "module": "elements/shimmer-text.js",
+            "description": "Words that shimmer while something works.",
+            "attributes": [],
+            "properties": [],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "The words."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": true,
+          "half": true,
+          "path": "elements/examples/shimmer-text/Product.html",
+          "content": "<!-- Words that say something is working: the light runs across them for as long as the work does. -->\n<p class=\"type-ui\" role=\"status\"><conare-shimmer-text>Searching 2,811,549 documents</conare-shimmer-text></p>\n"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,766 @@
+{
+  "name": "overview-page",
+  "title": "Overview page",
+  "type": "registry:block",
+  "group": "product",
+  "description": "Overview as it ships, a page composition: the setup line, the greeting and how many documents agents search beside the API key's window in the double rule, Queries beside Credits, the largest namespaces. The console's frame and page head come with it.",
+  "use_for": "The console's home for a team that is running. Start a console page from ConsoleFrame and ConsolePage.",
+  "never": [
+    "A search box on the overview: agents search, people check",
+    "More than one dark button: Create API key is the page's one",
+    "Loading as an empty page: rows keep their layout while they load"
+  ],
+  "source": "conare-web app/components/console/Home.vue (take 7, lead 5), app/components/console/platform/*.vue, app/layouts/console.vue, app/components/console/Page.vue, app/assets/css/platform.css, console2.css (.v2-home-lead, .v2-stats, .v2-meter, .v2-setupline)",
+  "body": "`ConsoleFrame` is the console's layout: the Sidebar (a drawer under 768px), the TopBar with the trail and the page\nunder it; `head` takes the workspace switcher and `foot` the account menu. `ConsolePage` is every other page's head:\nthe title (Faculty Glyphic, or mono for an identifier), its actions on the right, the body in 24px steps.\n\nThe greeting is `highlight-text` (its letters settle from faint red to ink, once); the documents line counts up the\nfirst time in a session (`count`); the key window is the website's product window (`VizWindow`, as `step-viz` and the\nother viz items use it) over the grain and a sheet of cells (`cell-burst`), playing again every 9 seconds while the\ntab shows. `OverviewQueries` draws its charts with `chart`: `BarChart` for queries per day, `LineChart` for the last\n24 hours' latency (`latency` is its series, p50 and p95).",
+  "requires": [
+    "button",
+    "cell-burst",
+    "chart",
+    "count",
+    "eval-viz",
+    "highlight-text",
+    "loader",
+    "sidebar",
+    "table",
+    "tabs",
+    "top-bar"
+  ],
+  "dependencies": [
+    "lucide-vue-next@^0.479.0"
+  ],
+  "files": [
+    {
+      "path": "components/product/OverviewPage.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed, onBeforeUnmount, onMounted, ref } from 'vue'\nimport { ArrowRight, ChevronDown } from 'lucide-vue-next'\nimport Button from '@/components/ui/Button.vue'\nimport DotMatrix from '@/components/ui/DotMatrix.vue'\nimport PixelButton from '@/components/ui/PixelButton.vue'\nimport Count from '@/components/ui/Count.vue'\nimport Table from '@/components/ui/Table.vue'\nimport CellBurst from '@/components/visuals/CellBurst.vue'\nimport Grain from '@/components/visuals/Grain.vue'\nimport HighlightText from '@/components/visuals/HighlightText.vue'\nimport VizWindow from '@/components/visuals/VizWindow.vue'\nimport OverviewQueries, { type QueryDay } from '@/components/product/OverviewQueries.vue'\nimport type { LineSeries } from '@/components/ui/LineChart.vue'\n\n// Overview as it ships (Home.vue, take 7 with lead 5): what a team running Conare checks, with no search box. The line\n// under the top bar while setup is unfinished; the greeting and how many documents agents search, with Create API key\n// and Read the docs, beside the API key's window on the dark panel, the two in the website's double rule; Queries\n// beside Credits; the five largest namespaces. Every value comes in through props; the buttons and rows emit.\n// The greeting has the website's letter reveal (highlight-text); the documents count up the first time in a session\n// (count); the key window is built on the website's product window (VizWindow) over the grain and a sheet of cells,\n// and plays again every 9s while the tab shows (never for reduced motion).\nexport interface OverviewNamespace { name: string, documents: number, health: 'ready' | 'syncing' | 'error' | 'api', synced?: string, lastUsed?: string }\nexport interface OverviewSpender { name: string, cost: number, share: number }\nconst props = defineProps<{\n  greeting: string\n  documents: number\n  setup?: { done: number, total: number }\n  queries: { thisMonth: number, p50: number, p95: number, days: QueryDay[], latency: LineSeries[] }\n  credits: { left: number, total: number, spenders: OverviewSpender[] }\n  namespaces: OverviewNamespace[]\n}>()\nconst emit = defineEmits<{ finishSetup: [], createKey: [], readDocs: [], billing: [], viewAll: [], openNamespace: [name: string] }>()\nconst num = (n: number) => n.toLocaleString('en-US')\nconst usd = (n: number) => n.toLocaleString('en-US', { style: 'currency', currency: 'USD' })\nconst share = computed(() => (props.credits.total ? Math.max(0, Math.min(1, props.credits.left / props.credits.total)) : 0))\nconst pct = (p: number) => (p > 0 && p < 0.01 ? '<1%' : `${Math.round(p * 100)}%`)\nconst top = computed(() => [...props.namespaces].sort((a, b) => b.documents - a.documents).slice(0, 5))\nconst keyRun = ref(0)\nlet keyLoop: ReturnType<typeof setInterval> | undefined\nonMounted(() => {\n  keyLoop = setInterval(() => {\n    if (!document.hidden && !matchMedia('(prefers-reduced-motion: reduce)').matches) keyRun.value++\n  }, 9000)\n})\nonBeforeUnmount(() => clearInterval(keyLoop))\nconst MATRIX = Array.from({ length: 9 }, (_, i) => ({ '--k': i + 1 }))\n</script>\n\n<template>\n  <div data-ds=\"overview-page\">\n    <section v-if=\"setup && setup.done < setup.total\" class=\"flex min-h-10 items-center gap-2.5 border-b border-edge bg-surface-subtle py-1.5 pr-3 pl-4 text-meta md:min-h-12\" aria-label=\"what needs doing\">\n      <span class=\"size-1.5 shrink-0 bg-edge-accent\" aria-hidden=\"true\" />\n      <p class=\"min-w-0 flex-1\">You haven't finished setting up Conare: {{ setup.done }} of {{ setup.total }} steps done.</p>\n      <PixelButton class=\"shrink-0\" @click=\"emit('finishSetup')\">Finish setup <ArrowRight :size=\"12\" :stroke-width=\"1.5\" aria-hidden=\"true\" /></PixelButton>\n    </section>\n    <div class=\"mx-auto flex w-full max-w-page-wide flex-col gap-6 px-4 pt-8 pb-16 md:px-8 md:pt-10 md:pb-20\">\n      <section class=\"ds-ovlead\" aria-label=\"your platform\">\n        <div class=\"flex min-w-0 flex-col items-start gap-2 bg-surface p-5\">\n          <HighlightText as=\"h1\" :text=\"greeting\" accent=\".\" class=\"type-heading-2\" />\n          <p class=\"max-w-[56ch] text-ui text-fg-muted\">Help your agents search through <Count :value=\"documents\" once=\"overview-documents\" /> documents.</p>\n          <div class=\"mt-auto flex w-full flex-row items-center gap-2 pt-6\">\n            <PixelButton @click=\"emit('createKey')\">Create API key</PixelButton>\n            <Button @click=\"emit('readDocs')\">Read the docs</Button>\n          </div>\n        </div>\n        <div class=\"relative flex min-h-84 items-center justify-center overflow-hidden bg-code-raised text-ds-neutral-300\" aria-hidden=\"true\">\n          <Grain />\n          <div class=\"pointer-events-none absolute inset-0 opacity-70\"><CellBurst :seed=\"17\" /></div>\n          <div class=\"relative flex w-full items-center justify-center px-4 py-6\">\n            <VizWindow active class=\"max-w-100\">\n              <template #title>\n                <span class=\"text-ui leading-4\">Your code</span>\n                <span class=\"bg-ds-neutral-200 px-1.5 py-0.5 text-caption text-ds-neutral-500\">API</span>\n              </template>\n              <div :key=\"keyRun\" class=\"flex flex-col gap-3 px-4 pt-1 pb-4\">\n                <p class=\"ds-viz-in ml-10 bg-ds-neutral-200 px-3 py-2.5 text-ui\" style=\"--d: 120\"><span class=\"block type-code-sm text-ds-neutral-500\">POST /query</span>How do refunds work?</p>\n                <p class=\"ds-viz-in flex items-center justify-end gap-1.5 text-meta text-ds-neutral-500\" style=\"--d: 320\"><span class=\"text-ds-neutral-600\">API key</span> added to headers</p>\n                <div class=\"ds-viz-in ds-viz-progress\" style=\"--d: 500\">\n                  <span class=\"grid size-2.5 shrink-0 place-items-center\">\n                    <span class=\"ds-viz-swap-a ds-viz-matrix [grid-area:1/1]\" style=\"--d: 960\"><i v-for=\"k in 9\" :key=\"k\" :style=\"MATRIX[k - 1]\" /></span>\n                    <span class=\"ds-viz-swap-b ds-viz-dot bg-home-red [grid-area:1/1]\" style=\"--d: 960\" />\n                  </span>\n                  <span class=\"grid flex-1\">\n                    <span class=\"ds-viz-swap-a [grid-area:1/1]\" style=\"--d: 960\">Calling the API</span>\n                    <span class=\"ds-viz-swap-b [grid-area:1/1] text-ds-neutral-500\" style=\"--d: 960\">200 OK</span>\n                  </span>\n                  <span class=\"ds-viz-swap-b shrink-0 text-ds-neutral-500 tabular-nums\" style=\"--d: 960\">62 ms</span>\n                </div>\n                <p class=\"ds-viz-in text-ui leading-6\" style=\"--d: 1080\">Refunds are available for 30 days.</p>\n                <p class=\"ds-viz-in flex items-center gap-2 text-meta text-ds-neutral-500\" style=\"--d: 1240\">Source <span class=\"ds-viz-chip text-off-white\"><span class=\"ds-viz-dot bg-home-red\" />Refunds</span></p>\n              </div>\n            </VizWindow>\n          </div>\n        </div>\n      </section>\n\n      <div class=\"grid gap-4 lg:grid-cols-[minmax(0,1fr)_288px]\">\n        <OverviewQueries v-bind=\"queries\" />\n        <section class=\"flex min-w-0 flex-col border border-edge bg-surface\" aria-labelledby=\"credits-title\">\n          <div class=\"flex items-center justify-between gap-3 border-b border-edge px-4 py-3\">\n            <h2 id=\"credits-title\" class=\"type-ui-strong\">Credits</h2>\n            <a href=\"#\" class=\"ds-ovlink type-meta text-fg-muted\" @click.prevent=\"emit('billing')\">Billing</a>\n          </div>\n          <div class=\"flex flex-1 flex-col gap-3 p-4\">\n            <p><span class=\"text-heading-4 font-medium tabular-nums\">{{ usd(credits.left) }}</span> <span class=\"type-meta text-fg-muted\">left of {{ usd(credits.total) }}</span></p>\n            <div class=\"h-1 bg-edge\" role=\"meter\" :aria-valuenow=\"Math.round(share * 100)\" aria-valuemin=\"0\" aria-valuemax=\"100\" aria-label=\"credits left\"><span class=\"block h-full bg-surface-inverse\" :style=\"{ width: `${share * 100}%` }\" /></div>\n            <ul class=\"mt-auto divide-y divide-edge\">\n              <li v-for=\"s in credits.spenders\" :key=\"s.name\" class=\"flex items-center justify-between gap-3 py-2 text-meta\">\n                <span class=\"min-w-0 truncate type-code-sm\">{{ s.name }}</span>\n                <span class=\"flex shrink-0 items-baseline\"><span class=\"w-16 text-right tabular-nums\">{{ usd(s.cost) }}</span><span class=\"w-10 text-right text-fg-muted tabular-nums\">{{ pct(s.share) }}</span></span>\n              </li>\n            </ul>\n          </div>\n        </section>\n      </div>\n\n      <section class=\"flex min-w-0 flex-col gap-2\" aria-labelledby=\"data-title\">\n        <div class=\"flex items-center justify-between gap-4\">\n          <h2 id=\"data-title\" class=\"type-ui-strong\">Namespaces</h2>\n          <Button variant=\"ghost\" @click=\"emit('viewAll')\">View all <ArrowRight :size=\"12\" :stroke-width=\"1.5\" aria-hidden=\"true\" /></Button>\n        </div>\n        <Table framed label=\"namespaces\">\n          <thead><tr><th>Name</th><th class=\"hidden md:table-cell\">Health</th><th>Documents</th><th class=\"hidden md:table-cell\">Last used</th><th class=\"w-8\"><span class=\"sr-only\">Open</span></th></tr></thead>\n          <tbody>\n            <tr v-for=\"ns in top\" :key=\"ns.name\" class=\"is-link\" @click=\"emit('openNamespace', ns.name)\">\n              <td class=\"whitespace-nowrap\"><button type=\"button\" class=\"type-code-sm text-left\" @click.stop=\"emit('openNamespace', ns.name)\">{{ ns.name }}</button></td>\n              <td class=\"hidden whitespace-nowrap md:table-cell\">\n                <span v-if=\"ns.health === 'error'\" class=\"inline-flex items-center gap-1.5 bg-status-failed px-1.5 text-meta leading-5 text-status-failed-fg\"><span class=\"size-1 bg-edge-accent\" />needs attention</span>\n                <span v-else-if=\"ns.health === 'syncing'\" class=\"inline-flex items-center gap-1.5 bg-status-working px-1.5 text-meta leading-5 text-status-working-fg\"><DotMatrix tone=\"inverse\" />syncing</span>\n                <span v-else-if=\"ns.health === 'ready'\" class=\"text-fg-muted\">Synced {{ ns.synced }}</span>\n                <span v-else class=\"text-fg-muted\">By API</span>\n              </td>\n              <td class=\"tabular-nums\">{{ num(ns.documents) }}</td>\n              <td class=\"hidden whitespace-nowrap md:table-cell\" :class=\"!ns.lastUsed && 'text-fg-muted'\">{{ ns.lastUsed ?? 'never' }}</td>\n              <td class=\"text-right\"><ChevronDown :size=\"12\" :stroke-width=\"1.5\" class=\"inline text-fg-muted\" aria-hidden=\"true\" /></td>\n            </tr>\n          </tbody>\n        </Table>\n      </section>\n    </div>\n  </div>\n</template>\n\n<style>\n/* The lead in the website's double rule: a hairline, a second 4px outside it. */\n/* ds-override: 5px holds the outer rule (4px offset plus its 1px) inside the page, as platform.css does. */\n.ds-ovlead { display: grid; margin: 5px; border: var(--ds-border-hairline) solid var(--ds-color-edge); outline: var(--ds-border-hairline) solid var(--ds-color-edge); outline-offset: 4px; }\n@media (min-width: 900px) { .ds-ovlead { grid-template-columns: 312px minmax(0, 1fr); } }\n@media (min-width: 1180px) { .ds-ovlead { grid-template-columns: 360px minmax(0, 1fr); } }\n.ds-ovlink { transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-ovlink:hover { color: var(--ds-color-fg); } }\n@media (max-width: 639px) { .ds-ovlead :is(button, a) { min-height: 40px; } }\n</style>\n"
+    },
+    {
+      "path": "components/product/OverviewQueries.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed, ref } from 'vue'\nimport BarChart from '@/components/ui/BarChart.vue'\nimport LineChart, { type LineSeries } from '@/components/ui/LineChart.vue'\nimport Tabs from '@/components/ui/Tabs.vue'\nimport { formatNumber } from '@/composables/useChart'\n\n// Overview's Queries card (platform/Queries.vue): volume or latency, three numbers over the chart (the chart item:\n// BarChart for queries per day, LineChart for the last 24 hours' latency). Pointing at a number shows its part (this\n// month's bars, today's bar, or the latency); a press pins it, with a 2px red edge. Nothing navigates: the chart changes\n// in place, crossing over in 200ms. `latency` is the chart's series (p50, p95), each point a time and milliseconds.\nexport interface QueryDay { day: string, value: number }\nconst props = defineProps<{ thisMonth: number, p50: number, p95: number, days: QueryDay[], latency: LineSeries[] }>()\ntype Stat = '' | 'month' | 'today' | 'latency'\nconst chart = ref<'volume' | 'latency'>('volume')\nconst pinned = ref<Stat>('')\nconst hot = ref<Stat>('')\nconst active = computed(() => hot.value || pinned.value)\nconst view = computed(() => (active.value === 'latency' ? 'latency' : active.value ? 'volume' : chart.value))\nfunction pin(stat: Exclude<Stat, ''>) {\n  pinned.value = pinned.value === stat ? '' : stat\n  chart.value = stat === 'latency' ? 'latency' : 'volume'\n}\nconst tab = computed({ get: () => view.value, set: (v: 'volume' | 'latency') => { chart.value = v; pinned.value = '' } })\nconst today = computed(() => props.days.at(-1)?.value ?? 0)\nconst month = computed(() => props.days.at(-1)?.day.slice(0, 7) ?? '')\nconst focus = computed(() => {\n  if (active.value === 'today') return props.days.length ? [props.days.length - 1] : []\n  if (active.value === 'month') return props.days.flatMap((d, i) => (d.day.startsWith(month.value) ? [i] : []))\n  return undefined\n})\nconst note = computed(() => {\n  if (active.value === 'today') return `Today ${formatNumber(today.value)}`\n  if (active.value === 'month') return `${new Date(`${month.value}-01T00:00:00Z`).toLocaleString('en-US', { month: 'long', timeZone: 'UTC' })} so far`\n  return undefined\n})\nconst ms = (v: number) => `${Math.round(v)} ms`\n</script>\n\n<template>\n  <section data-ds=\"overview-queries\" class=\"min-w-0 border border-edge bg-surface\" aria-labelledby=\"queries-title\">\n    <div class=\"flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-edge px-4 py-3\">\n      <h2 id=\"queries-title\" class=\"type-ui-strong\">Queries</h2>\n      <Tabs v-model=\"tab\" :options=\"[{ value: 'volume', label: 'Volume' }, { value: 'latency', label: 'Latency' }]\" label=\"chart\" />\n    </div>\n    <div class=\"flex flex-col gap-4 p-4\">\n      <div class=\"grid grid-cols-2 border-t border-l border-edge sm:grid-cols-3\">\n        <button v-for=\"s in ([['month', 'This month', formatNumber(thisMonth)], ['today', 'Today', formatNumber(today)], ['latency', 'Search p50, 24 h', `${p50} ms`]] as const)\" :key=\"s[0]\" type=\"button\" class=\"ds-ovstat\" :aria-pressed=\"pinned === s[0]\" :data-on=\"active === s[0] || undefined\" @click=\"pin(s[0])\" @pointerenter=\"hot = s[0]\" @pointerleave=\"hot = ''\">\n          <span class=\"block type-meta text-fg-muted\">{{ s[1] }}</span>\n          <span class=\"block text-heading-4 font-medium tabular-nums\">{{ s[2] }}<span v-if=\"s[0] === 'latency'\" class=\"ml-2 type-meta text-fg-muted\">p95 {{ p95 }} ms</span></span>\n        </button>\n      </div>\n      <Transition name=\"ds-ovchart\" mode=\"out-in\">\n        <div :key=\"view\">\n          <BarChart v-if=\"view === 'volume' && days.some(d => d.value > 0)\" :points=\"days\" label=\"Queries per day\" :height=\"192\" :focus=\"focus\" :note=\"note\" />\n          <p v-else-if=\"view === 'volume'\" class=\"py-8 text-center type-meta text-fg-muted\">No queries yet.</p>\n          <LineChart v-else-if=\"latency.some(l => l.points.length)\" title=\"Search latency, last 24 hours\" :series=\"latency\" :format=\"ms\" :smooth=\"3\" :height=\"192\" bare />\n          <p v-else class=\"py-8 text-center type-meta text-fg-muted\">No searches in the last 24 hours.</p>\n        </div>\n      </Transition>\n    </div>\n  </section>\n</template>\n\n<style>\n.ds-ovstat { position: relative; width: 100%; padding: 8px 12px; border-right: var(--ds-border-hairline) solid var(--ds-color-edge); border-bottom: var(--ds-border-hairline) solid var(--ds-color-edge); text-align: left; cursor: pointer; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-ovstat[data-on] { background: var(--ds-color-surface-subtle); }\n@media (hover: hover) and (pointer: fine) { .ds-ovstat:hover { background: var(--ds-color-surface-subtle); } }\n.ds-ovstat[aria-pressed=\"true\"]::before { position: absolute; top: -1px; right: -1px; left: -1px; height: 2px; background: var(--ds-color-edge-accent); content: \"\"; }\n.ds-ovstat:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }\n.ds-ovchart-enter-active { transition: opacity var(--ds-duration-enter) var(--ds-easing-out), transform var(--ds-duration-drawer) var(--ds-easing-out); }\n.ds-ovchart-leave-active { transition: opacity var(--ds-duration-exit) var(--ds-easing-standard), transform var(--ds-duration-exit) var(--ds-easing-standard); }\n.ds-ovchart-enter-from { opacity: 0; transform: translateY(6px); }\n.ds-ovchart-leave-to { opacity: 0; transform: translateY(-4px); }\n@media (prefers-reduced-motion: reduce) {\n  .ds-ovchart-enter-from, .ds-ovchart-leave-to { transform: none; }\n}\n</style>\n"
+    },
+    {
+      "path": "components/product/ConsoleFrame.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref, type Component } from 'vue'\nimport { Menu as MenuIcon, X } from 'lucide-vue-next'\nimport Breadcrumb, { type Crumb } from '@/components/ui/Breadcrumb.vue'\nimport Sidebar from '@/components/ui/Sidebar.vue'\nimport SidebarLabel from '@/components/ui/SidebarLabel.vue'\nimport SidebarLink from '@/components/ui/SidebarLink.vue'\nimport TopBar from '@/components/ui/TopBar.vue'\n\n// The console's layout (layouts/console.vue) for page compositions: the Sidebar at the left, sticky at the screen's\n// height, the TopBar with the trail over the page. Below 768px the sidebar is a drawer: the bar's menu button slides\n// it in over a dimmed page (240ms in, 180ms out, on the strong ease-out), a tap on the page or Escape closes it.\n// `head` takes the workspace switcher, `foot` the account menu, `bar` what sits at the bar's end.\nexport interface FrameLink { label: string, icon?: Component, href?: string, status?: string, alert?: boolean, active?: boolean }\nexport interface FrameGroup { label: string, links: FrameLink[] }\ndefineProps<{ groups: FrameGroup[], crumbs: Crumb[] }>()\nconst emit = defineEmits<{ navigate: [link: FrameLink] }>()\nconst open = ref(false)\nfunction go(link: FrameLink, event: MouseEvent) {\n  event.preventDefault()\n  open.value = false\n  emit('navigate', link)\n}\n</script>\n\n<template>\n  <div data-ds=\"console-frame\" class=\"flex min-h-screen bg-surface\" @keydown.escape=\"open = false\">\n    <Sidebar label=\"console\" class=\"ds-frame-side shrink-0\" :data-open=\"open || undefined\">\n      <template v-if=\"$slots.head\" #head><slot name=\"head\" /></template>\n      <template v-for=\"group in groups\" :key=\"group.label\">\n        <SidebarLabel>{{ group.label }}</SidebarLabel>\n        <SidebarLink v-for=\"link in group.links\" :key=\"link.label\" :href=\"link.href ?? '#'\" :icon=\"link.icon\" :status=\"link.status\" :alert=\"link.alert\" :active=\"link.active\" @click=\"go(link, $event)\">{{ link.label }}</SidebarLink>\n      </template>\n      <template v-if=\"$slots.foot\" #foot><slot name=\"foot\" /></template>\n    </Sidebar>\n    <div v-if=\"open\" class=\"fixed inset-0 z-20 bg-scrim-light md:hidden\" aria-hidden=\"true\" @click=\"open = false\" />\n    <div class=\"flex min-w-0 flex-1 flex-col\">\n      <TopBar>\n        <template #start>\n          <button type=\"button\" class=\"-ml-2 inline-flex size-control-touch shrink-0 cursor-pointer items-center justify-center border border-transparent text-fg-soft transition-[color,border-color] duration-120 ease-standard hover:border-edge hover:text-fg md:hidden\" :aria-expanded=\"open\" :aria-label=\"open ? 'close menu' : 'open menu'\" @click=\"open = !open\">\n            <X v-if=\"open\" :size=\"14\" :stroke-width=\"1.5\" />\n            <MenuIcon v-else :size=\"14\" :stroke-width=\"1.5\" />\n          </button>\n        </template>\n        <Breadcrumb :items=\"crumbs\" @navigate=\"(_, e) => e.preventDefault()\" />\n        <template #end><slot name=\"bar\" /></template>\n      </TopBar>\n      <main class=\"min-w-0 flex-1\"><slot /></main>\n    </div>\n  </div>\n</template>\n\n<style>\n@media (min-width: 768px) { .ds-frame-side { position: sticky; top: 0; height: 100vh; } }\n@media (max-width: 767px) {\n  .ds-frame-side { position: fixed; top: 0; bottom: 0; left: 0; z-index: 30; width: min(300px, 84vw); overscroll-behavior: contain; visibility: hidden; transform: translateX(-100%); transition: transform var(--ds-duration-slide) var(--ds-easing-out), visibility 0s linear var(--ds-duration-slide); }\n  .ds-frame-side[data-open] { visibility: visible; transform: none; transition: transform var(--ds-duration-drawer) var(--ds-easing-out); }\n}\n@media (prefers-reduced-motion: reduce) { .ds-frame-side, .ds-frame-side[data-open] { transition: none; } }\n</style>\n"
+    },
+    {
+      "path": "components/product/ConsolePage.vue",
+      "content": "<script setup lang=\"ts\">\n// The frame of every console page (Page.vue, .v2-page .v2-page-wide): 1120px at most, 32px down and 16px in on a\n// phone (40px and 32px from 768px), the title in Faculty Glyphic 20px (or Geist Mono when it is an identifier, shown\n// as typed), the page's actions on the right, then the body in 24px steps.\ndefineProps<{ title: string, mono?: boolean }>()\n</script>\n\n<template>\n  <div data-ds=\"console-page\" class=\"mx-auto w-full max-w-page-wide px-4 pt-8 pb-16 md:px-8 md:pt-10 md:pb-20\">\n    <header class=\"mb-6 flex min-h-8 flex-wrap items-center justify-between gap-x-6 gap-y-3\">\n      <div class=\"flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2\">\n        <h1 class=\"min-w-0\" :class=\"mono ? 'font-code text-heading-3 leading-8 font-medium [overflow-wrap:anywhere]' : 'type-heading-3'\">{{ title }}</h1>\n        <slot name=\"meta\" />\n      </div>\n      <div v-if=\"$slots.actions\" class=\"flex flex-wrap items-center gap-2\">\n        <slot name=\"actions\" />\n      </div>\n    </header>\n    <div class=\"flex flex-col gap-6\">\n      <slot />\n    </div>\n  </div>\n</template>\n"
+    },
+    {
+      "path": "composables/useChart.ts",
+      "content": "// What the charts share (usageMetrics.ts, BarChart.vue): numbers in en-US, an axis that ends on a round number in four\n// steps, and the week's change.\n\nexport type DayPoint = { day: string, value: number }\nexport type ChartMetric = { key: string, label: string, points: DayPoint[] }\n\nconst whole = new Intl.NumberFormat('en-US')\nconst compact = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 })\n\n/** 186402 -> \"186,402\". */\nexport const formatNumber = (n: number) => whole.format(n)\n/** 186402 -> \"186.4K\", for axis labels. */\nexport const compactNumber = (n: number) => compact.format(n)\n\n/** The axis: a step of 1, 2, 2.5 or 5 times a power of ten that covers the largest value in four. Starts at 0. */\nexport function niceTicks(values: number[]) {\n  const max = Math.max(0, ...values)\n  if (max === 0) return [0, 1]\n  const raw = max / 4\n  const power = 10 ** Math.floor(Math.log10(raw))\n  const step = ([1, 2, 2.5, 5, 10].find(m => m * power >= raw) ?? 10) * power\n  return Array.from({ length: Math.ceil(max / step) + 1 }, (_, i) => i * step)\n}\n\n/** \"Oct 2\", or \"Oct 2, 2026\" with the year, from an ISO day. */\nexport const formatDay = (value: string, year = false) => new Date(`${value}T00:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', ...(year ? { year: 'numeric' } : {}), timeZone: 'UTC' })\n\n/** The sum of a metric's points over its range. */\nexport const totalOf = (points: DayPoint[]) => points.reduce((a, p) => a + p.value, 0)\n\n/** The last seven days against the seven before, as a share; null without both. */\nexport function weekChange(points: DayPoint[]): number | null {\n  if (points.length < 14) return null\n  const before = totalOf(points.slice(-14, -7))\n  return before ? (totalOf(points.slice(-7)) - before) / before : null\n}\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "Overview, in the console's frame",
+      "center": false,
+      "half": false,
+      "path": "examples/overview-page/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { Activity, Atom, CreditCard, Gauge, House, KeyRound, Layers, Network, Settings, SquareTerminal } from 'lucide-vue-next'\nimport ConsoleFrame from '@/components/product/ConsoleFrame.vue'\nimport OverviewPage from '@/components/product/OverviewPage.vue'\n// Overview as it ships, in the console's frame, on sample data: setup still open, Queries for the last 90 days,\n// credits and the largest namespaces. Wire the events to your own routes.\nconst groups = [\n  { label: 'Platform', links: [{ label: 'Overview', icon: House, active: true }, { label: 'Namespaces', icon: Layers, status: '6' }, { label: 'Sources', icon: Network, status: '1 failed', alert: true }, { label: 'Agents', icon: SquareTerminal }, { label: 'Custom models', icon: Atom }] },\n  { label: 'Manage', links: [{ label: 'API keys', icon: KeyRound, status: '3' }, { label: 'Performance', icon: Gauge }, { label: 'Usage', icon: Activity }, { label: 'Billing', icon: CreditCard }, { label: 'Settings', icon: Settings }] },\n]\n// 90 days ending on Nov 4, a weekday rhythm with a slow climb.\nconst end = Date.UTC(2026, 10, 4)\nconst days = Array.from({ length: 90 }, (_, i) => {\n  const at = new Date(end - (89 - i) * 86400000)\n  const weekend = at.getUTCDay() === 0 || at.getUTCDay() === 6\n  return { day: at.toISOString().slice(0, 10), value: Math.round((weekend ? 1800 : 5200) + i * 42 + ((i * 37) % 11) * 140) }\n})\nconst thisMonth = days.filter(d => d.day.startsWith('2026-11')).reduce((a, d) => a + d.value, 0)\n// The last 24 hours, every 30 minutes: p50 and p95.\nconst half = (i: number) => end - (47 - i) * 1800000\nconst latency = [\n  { label: 'p50', points: Array.from({ length: 48 }, (_, i) => ({ t: half(i), v: 140 + ((i * 29) % 17) * 6 + (i % 12 === 5 ? 90 : 0) })) },\n  { label: 'p95', points: Array.from({ length: 48 }, (_, i) => ({ t: half(i), v: 260 + ((i * 31) % 13) * 8 + (i % 12 === 5 ? 120 : 0) })) },\n]\nconst namespaces = [\n  { name: 'contracts', documents: 412830, health: 'ready' as const, synced: '2 min ago', lastUsed: '2 min ago' },\n  { name: 'support', documents: 2184920, health: 'syncing' as const, lastUsed: '1 min ago' },\n  { name: 'wiki', documents: 96410, health: 'ready' as const, synced: '12 min ago', lastUsed: '1 h ago' },\n  { name: 'crm', documents: 52660, health: 'error' as const, lastUsed: 'yesterday' },\n  { name: 'engineering', documents: 31902, health: 'api' as const, lastUsed: '3 days ago' },\n  { name: 'research', documents: 7385, health: 'api' as const },\n]\n</script>\n\n<template>\n  <ConsoleFrame :groups=\"groups\" :crumbs=\"[{ label: 'Overview' }]\">\n    <OverviewPage\n      greeting=\"Good afternoon\"\n      :documents=\"2786122\"\n      :setup=\"{ done: 3, total: 4 }\"\n      :queries=\"{ thisMonth, p50: 182, p95: 296, days, latency }\"\n      :credits=\"{ left: 412.6, total: 500, spenders: [{ name: 'support', cost: 54.2, share: 0.62 }, { name: 'contracts', cost: 21.85, share: 0.25 }, { name: 'wiki', cost: 0.4, share: 0.004 }] }\"\n      :namespaces=\"namespaces\"\n    />\n  </ConsoleFrame>\n</template>\n",
+      "requires": [
+        "button",
+        "cell-burst",
+        "chart",
+        "count",
+        "eval-viz",
+        "highlight-text",
+        "loader",
+        "sidebar",
+        "table",
+        "tabs",
+        "top-bar"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/product/OverviewPage.tsx",
+          "content": "'use client'\nimport { useEffect, useState, type CSSProperties } from 'react'\nimport { ArrowRight, ChevronDown } from 'lucide-react'\nimport { Button } from '@/react/components/ui/Button'\nimport { DotMatrix } from '@/react/components/ui/DotMatrix'\nimport { PixelButton } from '@/react/components/ui/PixelButton'\nimport { Count } from '@/react/components/ui/Count'\nimport { Table } from '@/react/components/ui/Table'\nimport { CellBurst } from '@/react/components/visuals/CellBurst'\nimport { Grain } from '@/react/components/visuals/Grain'\nimport { HighlightText } from '@/react/components/visuals/HighlightText'\nimport { VizWindow } from '@/react/components/visuals/VizWindow'\nimport { OverviewQueries, type QueryDay } from '@/react/components/product/OverviewQueries'\nimport type { LineSeries } from '@/react/components/ui/LineChart'\n\n// Overview as it ships (Home.vue, take 7 with lead 5): what a team running Conare checks, with no search box. The line\n// under the top bar while setup is unfinished; the greeting and how many documents agents search, with Create API key\n// and Read the docs, beside the API key's window on the dark panel, the two in the website's double rule; Queries\n// beside Credits; the five largest namespaces. Every value comes in through props; the buttons and rows call their handlers.\n// The greeting has the website's letter reveal (highlight-text); the documents count up the first time in a session\n// (count); the key window is built on the website's product window (VizWindow) over the grain and a sheet of cells,\n// and plays again every 9s while the tab shows (never for reduced motion).\nexport interface OverviewNamespace { name: string, documents: number, health: 'ready' | 'syncing' | 'error' | 'api', synced?: string, lastUsed?: string }\nexport interface OverviewSpender { name: string, cost: number, share: number }\nexport interface OverviewPageProps {\n  greeting: string\n  documents: number\n  setup?: { done: number, total: number }\n  queries: { thisMonth: number, p50: number, p95: number, days: QueryDay[], latency: LineSeries[] }\n  credits: { left: number, total: number, spenders: OverviewSpender[] }\n  namespaces: OverviewNamespace[]\n  onFinishSetup?: () => void\n  onCreateKey?: () => void\n  onReadDocs?: () => void\n  onBilling?: () => void\n  onViewAll?: () => void\n  onOpenNamespace?: (name: string) => void\n}\n\nconst num = (n: number) => n.toLocaleString('en-US')\nconst usd = (n: number) => n.toLocaleString('en-US', { style: 'currency', currency: 'USD' })\nconst pct = (p: number) => (p > 0 && p < 0.01 ? '<1%' : `${Math.round(p * 100)}%`)\nconst MATRIX = Array.from({ length: 9 }, (_, i) => ({ '--k': i + 1 }) as CSSProperties)\nconst d = (n: number) => ({ '--d': n }) as CSSProperties\n\nexport function OverviewPage({ greeting, documents, setup, queries, credits, namespaces, onFinishSetup, onCreateKey, onReadDocs, onBilling, onViewAll, onOpenNamespace }: OverviewPageProps) {\n  const share = credits.total ? Math.max(0, Math.min(1, credits.left / credits.total)) : 0\n  const top = [...namespaces].sort((a, b) => b.documents - a.documents).slice(0, 5)\n  const [keyRun, setKeyRun] = useState(0)\n  useEffect(() => {\n    const keyLoop = setInterval(() => {\n      if (!document.hidden && !matchMedia('(prefers-reduced-motion: reduce)').matches) setKeyRun(r => r + 1)\n    }, 9000)\n    return () => clearInterval(keyLoop)\n  }, [])\n  return (\n    <>\n      <style href=\"ds-overview-page\" precedence=\"ds\">{css}</style>\n      <div data-ds=\"overview-page\">\n        {setup && setup.done < setup.total && (\n          <section className=\"flex min-h-10 items-center gap-2.5 border-b border-edge bg-surface-subtle py-1.5 pr-3 pl-4 text-meta md:min-h-12\" aria-label=\"what needs doing\">\n            <span className=\"size-1.5 shrink-0 bg-edge-accent\" aria-hidden=\"true\" />\n            <p className=\"min-w-0 flex-1\">{`You haven't finished setting up Conare: ${setup.done} of ${setup.total} steps done.`}</p>\n            <PixelButton className=\"shrink-0\" onClick={() => onFinishSetup?.()}>Finish setup <ArrowRight size={12} strokeWidth={1.5} aria-hidden=\"true\" /></PixelButton>\n          </section>\n        )}\n        <div className=\"mx-auto flex w-full max-w-page-wide flex-col gap-6 px-4 pt-8 pb-16 md:px-8 md:pt-10 md:pb-20\">\n          <section className=\"ds-ovlead\" aria-label=\"your platform\">\n            <div className=\"flex min-w-0 flex-col items-start gap-2 bg-surface p-5\">\n              <HighlightText as=\"h1\" text={greeting} accent=\".\" className=\"type-heading-2\" />\n              <p className=\"max-w-[56ch] text-ui text-fg-muted\">Help your agents search through <Count value={documents} once=\"overview-documents\" /> documents.</p>\n              <div className=\"mt-auto flex w-full flex-row items-center gap-2 pt-6\">\n                <PixelButton onClick={() => onCreateKey?.()}>Create API key</PixelButton>\n                <Button onClick={() => onReadDocs?.()}>Read the docs</Button>\n              </div>\n            </div>\n            <div className=\"relative flex min-h-84 items-center justify-center overflow-hidden bg-code-raised text-ds-neutral-300\" aria-hidden=\"true\">\n              <Grain />\n              <div className=\"pointer-events-none absolute inset-0 opacity-70\"><CellBurst seed={17} /></div>\n              <div className=\"relative flex w-full items-center justify-center px-4 py-6\">\n                <VizWindow\n                  active\n                  className=\"max-w-100\"\n                  title={(\n                    <>\n                      <span className=\"text-ui leading-4\">Your code</span>\n                      <span className=\"bg-ds-neutral-200 px-1.5 py-0.5 text-caption text-ds-neutral-500\">API</span>\n                    </>\n                  )}\n                >\n                  <div key={keyRun} className=\"flex flex-col gap-3 px-4 pt-1 pb-4\">\n                    <p className=\"ds-viz-in ml-10 bg-ds-neutral-200 px-3 py-2.5 text-ui\" style={d(120)}><span className=\"block type-code-sm text-ds-neutral-500\">POST /query</span>How do refunds work?</p>\n                    <p className=\"ds-viz-in flex items-center justify-end gap-1.5 text-meta text-ds-neutral-500\" style={d(320)}><span className=\"text-ds-neutral-600\">API key</span> added to headers</p>\n                    <div className=\"ds-viz-in ds-viz-progress\" style={d(500)}>\n                      <span className=\"grid size-2.5 shrink-0 place-items-center\">\n                        <span className=\"ds-viz-swap-a ds-viz-matrix [grid-area:1/1]\" style={d(960)}>{MATRIX.map((m, i) => <i key={i + 1} style={m} />)}</span>\n                        <span className=\"ds-viz-swap-b ds-viz-dot bg-home-red [grid-area:1/1]\" style={d(960)} />\n                      </span>\n                      <span className=\"grid flex-1\">\n                        <span className=\"ds-viz-swap-a [grid-area:1/1]\" style={d(960)}>Calling the API</span>\n                        <span className=\"ds-viz-swap-b [grid-area:1/1] text-ds-neutral-500\" style={d(960)}>200 OK</span>\n                      </span>\n                      <span className=\"ds-viz-swap-b shrink-0 text-ds-neutral-500 tabular-nums\" style={d(960)}>62 ms</span>\n                    </div>\n                    <p className=\"ds-viz-in text-ui leading-6\" style={d(1080)}>Refunds are available for 30 days.</p>\n                    <p className=\"ds-viz-in flex items-center gap-2 text-meta text-ds-neutral-500\" style={d(1240)}>Source <span className=\"ds-viz-chip text-off-white\"><span className=\"ds-viz-dot bg-home-red\" />Refunds</span></p>\n                  </div>\n                </VizWindow>\n              </div>\n            </div>\n          </section>\n\n          <div className=\"grid gap-4 lg:grid-cols-[minmax(0,1fr)_288px]\">\n            <OverviewQueries {...queries} />\n            <section className=\"flex min-w-0 flex-col border border-edge bg-surface\" aria-labelledby=\"credits-title\">\n              <div className=\"flex items-center justify-between gap-3 border-b border-edge px-4 py-3\">\n                <h2 id=\"credits-title\" className=\"type-ui-strong\">Credits</h2>\n                <a href=\"#\" className=\"ds-ovlink type-meta text-fg-muted\" onClick={(e) => { e.preventDefault(); onBilling?.() }}>Billing</a>\n              </div>\n              <div className=\"flex flex-1 flex-col gap-3 p-4\">\n                <p><span className=\"text-heading-4 font-medium tabular-nums\">{usd(credits.left)}</span> <span className=\"type-meta text-fg-muted\">{`left of ${usd(credits.total)}`}</span></p>\n                <div className=\"h-1 bg-edge\" role=\"meter\" aria-valuenow={Math.round(share * 100)} aria-valuemin={0} aria-valuemax={100} aria-label=\"credits left\"><span className=\"block h-full bg-surface-inverse\" style={{ width: `${share * 100}%` }} /></div>\n                <ul className=\"mt-auto divide-y divide-edge\">\n                  {credits.spenders.map(s => (\n                    <li key={s.name} className=\"flex items-center justify-between gap-3 py-2 text-meta\">\n                      <span className=\"min-w-0 truncate type-code-sm\">{s.name}</span>\n                      <span className=\"flex shrink-0 items-baseline\"><span className=\"w-16 text-right tabular-nums\">{usd(s.cost)}</span><span className=\"w-10 text-right text-fg-muted tabular-nums\">{pct(s.share)}</span></span>\n                    </li>\n                  ))}\n                </ul>\n              </div>\n            </section>\n          </div>\n\n          <section className=\"flex min-w-0 flex-col gap-2\" aria-labelledby=\"data-title\">\n            <div className=\"flex items-center justify-between gap-4\">\n              <h2 id=\"data-title\" className=\"type-ui-strong\">Namespaces</h2>\n              <Button variant=\"ghost\" onClick={() => onViewAll?.()}>View all <ArrowRight size={12} strokeWidth={1.5} aria-hidden=\"true\" /></Button>\n            </div>\n            <Table framed label=\"namespaces\">\n              <thead><tr><th>Name</th><th className=\"hidden md:table-cell\">Health</th><th>Documents</th><th className=\"hidden md:table-cell\">Last used</th><th className=\"w-8\"><span className=\"sr-only\">Open</span></th></tr></thead>\n              <tbody>\n                {top.map(ns => (\n                  <tr key={ns.name} className=\"is-link\" onClick={() => onOpenNamespace?.(ns.name)}>\n                    <td className=\"whitespace-nowrap\"><button type=\"button\" className=\"type-code-sm text-left\" onClick={(e) => { e.stopPropagation(); onOpenNamespace?.(ns.name) }}>{ns.name}</button></td>\n                    <td className=\"hidden whitespace-nowrap md:table-cell\">\n                      {ns.health === 'error'\n                        ? <span className=\"inline-flex items-center gap-1.5 bg-status-failed px-1.5 text-meta leading-5 text-status-failed-fg\"><span className=\"size-1 bg-edge-accent\" />needs attention</span>\n                        : ns.health === 'syncing'\n                          ? <span className=\"inline-flex items-center gap-1.5 bg-status-working px-1.5 text-meta leading-5 text-status-working-fg\"><DotMatrix tone=\"inverse\" />syncing</span>\n                          : ns.health === 'ready'\n                            ? <span className=\"text-fg-muted\">{`Synced ${ns.synced}`}</span>\n                            : <span className=\"text-fg-muted\">By API</span>}\n                    </td>\n                    <td className=\"tabular-nums\">{num(ns.documents)}</td>\n                    <td className={ns.lastUsed ? 'hidden whitespace-nowrap md:table-cell' : 'hidden whitespace-nowrap md:table-cell text-fg-muted'}>{ns.lastUsed ?? 'never'}</td>\n                    <td className=\"text-right\"><ChevronDown size={12} strokeWidth={1.5} className=\"inline text-fg-muted\" aria-hidden=\"true\" /></td>\n                  </tr>\n                ))}\n              </tbody>\n            </Table>\n          </section>\n        </div>\n      </div>\n    </>\n  )\n}\n\nexport default OverviewPage\n\nconst css = `\n/* The lead in the website's double rule: a hairline, a second 4px outside it. */\n/* ds-override: 5px holds the outer rule (4px offset plus its 1px) inside the page, as platform.css does. */\n.ds-ovlead { display: grid; margin: 5px; border: var(--ds-border-hairline) solid var(--ds-color-edge); outline: var(--ds-border-hairline) solid var(--ds-color-edge); outline-offset: 4px; }\n@media (min-width: 900px) { .ds-ovlead { grid-template-columns: 312px minmax(0, 1fr); } }\n@media (min-width: 1180px) { .ds-ovlead { grid-template-columns: 360px minmax(0, 1fr); } }\n.ds-ovlink { transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-ovlink:hover { color: var(--ds-color-fg); } }\n@media (max-width: 639px) { .ds-ovlead :is(button, a) { min-height: 40px; } }\n`\n"
+        },
+        {
+          "path": "react/components/product/OverviewQueries.tsx",
+          "content": "'use client'\nimport { useEffect, useLayoutEffect, useRef, useState } from 'react'\nimport { BarChart } from '@/react/components/ui/BarChart'\nimport { LineChart, type LineSeries } from '@/react/components/ui/LineChart'\nimport { Tabs } from '@/react/components/ui/Tabs'\nimport { formatNumber } from '@/react/hooks/useChart'\nimport { runTransition } from '@/react/lib/transition'\n\n// Overview's Queries card (platform/Queries.vue): volume or latency, three numbers over the chart (the chart item:\n// BarChart for queries per day, LineChart for the last 24 hours' latency). Pointing at a number shows its part (this\n// month's bars, today's bar, or the latency); a press pins it, with a 2px red edge. Nothing navigates: the chart changes\n// in place, crossing over in 200ms. `latency` is the chart's series (p50, p95), each point a time and milliseconds.\nexport interface QueryDay { day: string, value: number }\nexport interface OverviewQueriesProps { thisMonth: number, p50: number, p95: number, days: QueryDay[], latency: LineSeries[] }\ntype Stat = '' | 'month' | 'today' | 'latency'\ntype View = 'volume' | 'latency'\nconst ms = (v: number) => `${Math.round(v)} ms`\n\nexport function OverviewQueries({ thisMonth, p50, p95, days, latency }: OverviewQueriesProps) {\n  const [chart, setChart] = useState<View>('volume')\n  const [pinned, setPinned] = useState<Stat>('')\n  const [hot, setHot] = useState<Stat>('')\n  const active = hot || pinned\n  const view: View = active === 'latency' ? 'latency' : active ? 'volume' : chart\n  function pin(stat: Exclude<Stat, ''>) {\n    setPinned(pinned === stat ? '' : stat)\n    setChart(stat === 'latency' ? 'latency' : 'volume')\n  }\n  const setTab = (v: View) => { setChart(v); setPinned('') }\n  const today = days.at(-1)?.value ?? 0\n  const month = days.at(-1)?.day.slice(0, 7) ?? ''\n  const focus = active === 'today' ? (days.length ? [days.length - 1] : []) : active === 'month' ? days.flatMap((d, i) => (d.day.startsWith(month) ? [i] : [])) : undefined\n  const note = active === 'today' ? `Today ${formatNumber(today)}` : active === 'month' ? `${new Date(`${month}-01T00:00:00Z`).toLocaleString('en-US', { month: 'long', timeZone: 'UTC' })} so far` : undefined\n\n  // Vue's <Transition mode=\"out-in\"> keyed by the view: the chart shown leaves, then the next enters.\n  const [shown, setShown] = useState<View>(view)\n  const box = useRef<HTMLDivElement | null>(null)\n  const entering = useRef(false)\n  useEffect(() => {\n    if (view === shown) return\n    const node = box.current\n    if (!node) return setShown(view)\n    let done = false\n    void runTransition(node, 'ds-ovchart', 'leave').then(() => {\n      if (done) return\n      entering.current = true\n      setShown(view)\n    })\n    return () => { done = true }\n  }, [view, shown])\n  useLayoutEffect(() => {\n    if (!entering.current || !box.current) return\n    entering.current = false\n    void runTransition(box.current, 'ds-ovchart', 'enter')\n  }, [shown])\n\n  const stats = [['month', 'This month', formatNumber(thisMonth)], ['today', 'Today', formatNumber(today)], ['latency', 'Search p50, 24 h', `${p50} ms`]] as const\n  return (\n    <>\n      <style href=\"ds-overview-queries\" precedence=\"ds\">{css}</style>\n      <section data-ds=\"overview-queries\" className=\"min-w-0 border border-edge bg-surface\" aria-labelledby=\"queries-title\">\n        <div className=\"flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-edge px-4 py-3\">\n          <h2 id=\"queries-title\" className=\"type-ui-strong\">Queries</h2>\n          <Tabs value={view} onValueChange={setTab} options={[{ value: 'volume', label: 'Volume' }, { value: 'latency', label: 'Latency' }]} label=\"chart\" />\n        </div>\n        <div className=\"flex flex-col gap-4 p-4\">\n          <div className=\"grid grid-cols-2 border-t border-l border-edge sm:grid-cols-3\">\n            {stats.map(s => (\n              <button key={s[0]} type=\"button\" className=\"ds-ovstat\" aria-pressed={pinned === s[0]} data-on={active === s[0] || undefined} onClick={() => pin(s[0])} onPointerEnter={() => setHot(s[0])} onPointerLeave={() => setHot('')}>\n                <span className=\"block type-meta text-fg-muted\">{s[1]}</span>\n                <span className=\"block text-heading-4 font-medium tabular-nums\">{s[2]}{s[0] === 'latency' && <span className=\"ml-2 type-meta text-fg-muted\">{`p95 ${p95} ms`}</span>}</span>\n              </button>\n            ))}\n          </div>\n          <div key={shown} ref={box}>\n            {shown === 'volume' && days.some(d => d.value > 0)\n              ? <BarChart points={days} label=\"Queries per day\" height={192} focus={focus} note={note} />\n              : shown === 'volume'\n                ? <p className=\"py-8 text-center type-meta text-fg-muted\">No queries yet.</p>\n                : latency.some(l => l.points.length)\n                  ? <LineChart title=\"Search latency, last 24 hours\" series={latency} format={ms} smooth={3} height={192} bare />\n                  : <p className=\"py-8 text-center type-meta text-fg-muted\">No searches in the last 24 hours.</p>}\n          </div>\n        </div>\n      </section>\n    </>\n  )\n}\n\nexport default OverviewQueries\n\nconst css = `\n.ds-ovstat { position: relative; width: 100%; padding: 8px 12px; border-right: var(--ds-border-hairline) solid var(--ds-color-edge); border-bottom: var(--ds-border-hairline) solid var(--ds-color-edge); text-align: left; cursor: pointer; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-ovstat[data-on] { background: var(--ds-color-surface-subtle); }\n@media (hover: hover) and (pointer: fine) { .ds-ovstat:hover { background: var(--ds-color-surface-subtle); } }\n.ds-ovstat[aria-pressed=\"true\"]::before { position: absolute; top: -1px; right: -1px; left: -1px; height: 2px; background: var(--ds-color-edge-accent); content: \"\"; }\n.ds-ovstat:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }\n.ds-ovchart-enter-active { transition: opacity var(--ds-duration-enter) var(--ds-easing-out), transform var(--ds-duration-drawer) var(--ds-easing-out); }\n.ds-ovchart-leave-active { transition: opacity var(--ds-duration-exit) var(--ds-easing-standard), transform var(--ds-duration-exit) var(--ds-easing-standard); }\n.ds-ovchart-enter-from { opacity: 0; transform: translateY(6px); }\n.ds-ovchart-leave-to { opacity: 0; transform: translateY(-4px); }\n@media (prefers-reduced-motion: reduce) {\n  .ds-ovchart-enter-from, .ds-ovchart-leave-to { transform: none; }\n}\n`\n"
+        },
+        {
+          "path": "react/components/product/ConsoleFrame.tsx",
+          "content": "'use client'\nimport { useEffect, useRef, useState, type ComponentType, type MouseEvent, type ReactNode } from 'react'\nimport { Menu as MenuIcon, X } from 'lucide-react'\nimport { Breadcrumb, type Crumb } from '@/react/components/ui/Breadcrumb'\nimport { Sidebar } from '@/react/components/ui/Sidebar'\nimport { SidebarLabel } from '@/react/components/ui/SidebarLabel'\nimport { SidebarLink } from '@/react/components/ui/SidebarLink'\nimport { TopBar } from '@/react/components/ui/TopBar'\n\n// The console's layout (layouts/console.vue) for page compositions: the Sidebar at the left, sticky at the screen's\n// height, the TopBar with the trail over the page. Below 768px the sidebar is a drawer: the bar's menu button slides\n// it in over a dimmed page (240ms in, 180ms out, on the strong ease-out), a tap on the page or Escape closes it.\n// `head` takes the workspace switcher, `foot` the account menu, `bar` what sits at the bar's end.\nexport interface FrameLink { label: string, icon?: ComponentType<{ size?: number, strokeWidth?: number }>, href?: string, status?: string, alert?: boolean, active?: boolean }\nexport interface FrameGroup { label: string, links: FrameLink[] }\nexport interface ConsoleFrameProps {\n  groups: FrameGroup[]\n  crumbs: Crumb[]\n  onNavigate?: (link: FrameLink) => void\n  /** The workspace switcher (Vue's `head` slot). */\n  head?: ReactNode\n  /** The account menu (Vue's `foot` slot). */\n  foot?: ReactNode\n  /** What sits at the bar's end (Vue's `bar` slot). */\n  bar?: ReactNode\n  children?: ReactNode\n}\n\nexport function ConsoleFrame({ groups, crumbs, onNavigate, head, foot, bar, children }: ConsoleFrameProps) {\n  const [open, setOpen] = useState(false)\n  const root = useRef<HTMLDivElement | null>(null)\n  // Vue's data-open falls through to the Sidebar's root; Sidebar takes no extra attributes, so it is set here.\n  useEffect(() => {\n    root.current?.querySelector('[data-ds=\"sidebar\"]')?.toggleAttribute('data-open', open)\n  }, [open])\n  function go(link: FrameLink, event: MouseEvent) {\n    event.preventDefault()\n    setOpen(false)\n    onNavigate?.(link)\n  }\n  return (\n    <>\n      <style href=\"ds-console-frame\" precedence=\"ds\">{css}</style>\n      <div data-ds=\"console-frame\" ref={root} className=\"flex min-h-screen bg-surface\" onKeyDown={(e) => { if (e.key === 'Escape') setOpen(false) }}>\n        <Sidebar label=\"console\" className=\"ds-frame-side shrink-0\" head={head} foot={foot}>\n          {groups.map(group => [\n            <SidebarLabel key={`l-${group.label}`}>{group.label}</SidebarLabel>,\n            ...group.links.map(link => <SidebarLink key={`${group.label}-${link.label}`} href={link.href ?? '#'} icon={link.icon} status={link.status} alert={link.alert} active={link.active} onClick={e => go(link, e)}>{link.label}</SidebarLink>),\n          ])}\n        </Sidebar>\n        {open && <div className=\"fixed inset-0 z-20 bg-scrim-light md:hidden\" aria-hidden=\"true\" onClick={() => setOpen(false)} />}\n        <div className=\"flex min-w-0 flex-1 flex-col\">\n          <TopBar\n            start={(\n              <button type=\"button\" className=\"-ml-2 inline-flex size-control-touch shrink-0 cursor-pointer items-center justify-center border border-transparent text-fg-soft transition-[color,border-color] duration-120 ease-standard hover:border-edge hover:text-fg md:hidden\" aria-expanded={open} aria-label={open ? 'close menu' : 'open menu'} onClick={() => setOpen(o => !o)}>\n                {open ? <X size={14} strokeWidth={1.5} /> : <MenuIcon size={14} strokeWidth={1.5} />}\n              </button>\n            )}\n            end={bar}\n          >\n            <Breadcrumb items={crumbs} onNavigate={(_, e) => e.preventDefault()} />\n          </TopBar>\n          <main className=\"min-w-0 flex-1\">{children}</main>\n        </div>\n      </div>\n    </>\n  )\n}\n\nexport default ConsoleFrame\n\nconst css = `\n@media (min-width: 768px) { .ds-frame-side { position: sticky; top: 0; height: 100vh; } }\n@media (max-width: 767px) {\n  .ds-frame-side { position: fixed; top: 0; bottom: 0; left: 0; z-index: 30; width: min(300px, 84vw); overscroll-behavior: contain; visibility: hidden; transform: translateX(-100%); transition: transform var(--ds-duration-slide) var(--ds-easing-out), visibility 0s linear var(--ds-duration-slide); }\n  .ds-frame-side[data-open] { visibility: visible; transform: none; transition: transform var(--ds-duration-drawer) var(--ds-easing-out); }\n}\n@media (prefers-reduced-motion: reduce) { .ds-frame-side, .ds-frame-side[data-open] { transition: none; } }\n`\n"
+        },
+        {
+          "path": "react/components/product/ConsolePage.tsx",
+          "content": "import type { ReactNode } from 'react'\n\n// The frame of every console page (Page.vue, .v2-page .v2-page-wide): 1120px at most, 32px down and 16px in on a\n// phone (40px and 32px from 768px), the title in Faculty Glyphic 20px (or Geist Mono when it is an identifier, shown\n// as typed), the page's actions on the right, then the body in 24px steps.\nexport interface ConsolePageProps {\n  title: string\n  mono?: boolean\n  /** Beside the title (Vue's `meta` slot). */\n  meta?: ReactNode\n  /** The page's actions on the right (Vue's `actions` slot). */\n  actions?: ReactNode\n  children?: ReactNode\n  /** The root's data-ds (a page built on this one says its own, as Vue's fallthrough does). */\n  'data-ds'?: string\n}\n\nexport function ConsolePage({ title, mono, meta, actions, children, 'data-ds': ds = 'console-page' }: ConsolePageProps) {\n  return (\n    <div data-ds={ds} className=\"mx-auto w-full max-w-page-wide px-4 pt-8 pb-16 md:px-8 md:pt-10 md:pb-20\">\n      <header className=\"mb-6 flex min-h-8 flex-wrap items-center justify-between gap-x-6 gap-y-3\">\n        <div className=\"flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2\">\n          <h1 className={mono ? 'min-w-0 font-code text-heading-3 leading-8 font-medium [overflow-wrap:anywhere]' : 'min-w-0 type-heading-3'}>{title}</h1>\n          {meta}\n        </div>\n        {actions && (\n          <div className=\"flex flex-wrap items-center gap-2\">\n            {actions}\n          </div>\n        )}\n      </header>\n      <div className=\"flex flex-col gap-6\">\n        {children}\n      </div>\n    </div>\n  )\n}\n\nexport default ConsolePage\n"
+        },
+        {
+          "path": "react/hooks/useChart.ts",
+          "content": "// What the charts share (usageMetrics.ts, BarChart.vue): numbers in en-US, an axis that ends on a round number in four\n// steps, and the week's change.\n\nexport type DayPoint = { day: string, value: number }\nexport type ChartMetric = { key: string, label: string, points: DayPoint[] }\n\nconst whole = new Intl.NumberFormat('en-US')\nconst compact = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 })\n\n/** 186402 -> \"186,402\". */\nexport const formatNumber = (n: number) => whole.format(n)\n/** 186402 -> \"186.4K\", for axis labels. */\nexport const compactNumber = (n: number) => compact.format(n)\n\n/** The axis: a step of 1, 2, 2.5 or 5 times a power of ten that covers the largest value in four. Starts at 0. */\nexport function niceTicks(values: number[]) {\n  const max = Math.max(0, ...values)\n  if (max === 0) return [0, 1]\n  const raw = max / 4\n  const power = 10 ** Math.floor(Math.log10(raw))\n  const step = ([1, 2, 2.5, 5, 10].find(m => m * power >= raw) ?? 10) * power\n  return Array.from({ length: Math.ceil(max / step) + 1 }, (_, i) => i * step)\n}\n\n/** \"Oct 2\", or \"Oct 2, 2026\" with the year, from an ISO day. */\nexport const formatDay = (value: string, year = false) => new Date(`${value}T00:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', ...(year ? { year: 'numeric' } : {}), timeZone: 'UTC' })\n\n/** The sum of a metric's points over its range. */\nexport const totalOf = (points: DayPoint[]) => points.reduce((a, p) => a + p.value, 0)\n\n/** The last seven days against the seven before, as a share; null without both. */\nexport function weekChange(points: DayPoint[]): number | null {\n  if (points.length < 14) return null\n  const before = totalOf(points.slice(-14, -7))\n  return before ? (totalOf(points.slice(-7)) - before) / before : null\n}\n"
+        },
+        {
+          "path": "react/lib/transition.tsx",
+          "content": "'use client'\nimport { Children, cloneElement, isValidElement, useLayoutEffect, useRef, useState, type ReactElement, type ReactNode, type Ref } from 'react'\nimport { flushSync } from 'react-dom'\n\n// Vue's <Transition> and <TransitionGroup> for the React flavor, with the same class names, so a Vue item's CSS\n// (.ds-pop-enter-from, .ds-toast-leave-active, .ds-toast-move...) works unchanged:\n//\n//   <Transition show={open} name=\"ds-pop\">{<div ... />}</Transition>\n//   <TransitionGroup name=\"ds-toast\">{toasts.map((t) => <p key={t.id} ... />)}</TransitionGroup>\n//\n// Entering: <name>-enter-from and -enter-active, then a frame later -enter-to in place of -enter-from, until the\n// transition ends. Leaving: the same with -leave-*, and the element stays until it has, then goes in the same task its\n// classes come off (flushSync), so it never shows again for a frame. A group also moves the others with <name>-move\n// (FLIP), measured once the entering and leaving children have their classes, as Vue's are. `css={false}` skips the classes (Vue's :css=\"false\"); `duration` is Vue's explicit duration\n// in ms, a number or { enter, leave }. The child must take a ref (a DOM element) and className.\ntype Duration = number | { enter: number, leave: number }\ntype Phase = 'enter' | 'leave'\n\nconst ms = (d: Duration | undefined, phase: Phase) => (d === undefined ? undefined : typeof d === 'number' ? d : d[phase])\n\n/** Runs one Vue transition phase on an element and resolves when it has ended. */\nexport function runTransition(el: HTMLElement, name: string, phase: Phase, duration?: Duration): Promise<void> {\n  const from = `${name}-${phase}-from`\n  const active = `${name}-${phase}-active`\n  const to = `${name}-${phase}-to`\n  el.classList.add(from, active)\n  return new Promise((resolve) => {\n    let done = false\n    const finish = () => {\n      if (done) return\n      done = true\n      el.classList.remove(from, active, to)\n      el.removeEventListener('transitionend', onEnd)\n      el.removeEventListener('animationend', onEnd)\n      resolve()\n    }\n    const onEnd = (event: Event) => { if (event.target === el) finish() }\n    requestAnimationFrame(() => requestAnimationFrame(() => {\n      el.classList.remove(from)\n      el.classList.add(to)\n      const explicit = ms(duration, phase)\n      if (explicit !== undefined) return void setTimeout(finish, explicit)\n      // The longest transition or animation on it, as Vue reads it; none means done now.\n      const cs = getComputedStyle(el)\n      const longest = (durations: string, delays: string) => {\n        const d = durations.split(',').map(s => Number.parseFloat(s) * (s.trim().endsWith('ms') ? 1 : 1000))\n        const l = delays.split(',').map(s => Number.parseFloat(s) * (s.trim().endsWith('ms') ? 1 : 1000))\n        return Math.max(0, ...d.map((x, i) => x + (l[i % l.length] || 0)))\n      }\n      const total = Math.max(longest(cs.transitionDuration, cs.transitionDelay), longest(cs.animationDuration, cs.animationDelay))\n      if (!total) return finish()\n      el.addEventListener('transitionend', onEnd)\n      el.addEventListener('animationend', onEnd)\n      setTimeout(finish, total + 50)\n    }))\n  })\n}\n\nfunction mergeRefs<T>(...refs: Array<Ref<T> | undefined>) {\n  return (node: T) => {\n    for (const r of refs) {\n      if (typeof r === 'function') r(node)\n      else if (r) (r as { current: T }).current = node\n    }\n  }\n}\ntype Child = ReactElement<{ ref?: Ref<HTMLElement>, className?: string }>\n\nexport interface TransitionProps { show: boolean, name: string, css?: boolean, duration?: Duration, appear?: boolean, children: ReactNode }\n\n/** Vue's <Transition> around one element: it enters when `show` turns true and leaves before it unmounts. */\nexport function Transition({ show, name, css = true, duration, appear, children }: TransitionProps) {\n  // Whether the element is in the page: from the render where `show` turns true until its leave has ended.\n  const [present, setPresent] = useState(show)\n  const el = useRef<HTMLElement | null>(null)\n  const was = useRef<boolean | null>(null)\n  const last = useRef<ReactNode>(children)\n  if (show) last.current = children\n  if (show && !present) setPresent(true)\n  useLayoutEffect(() => {\n    const before = was.current\n    was.current = show\n    const node = el.current\n    if (before === show) return\n    if (show) {\n      if (node && css && (before !== null || appear)) void runTransition(node, name, 'enter', duration)\n    }\n    // Gone in the same task its leave classes come off, as Vue removes it, so no frame shows it whole again.\n    else if (node && css && before) void runTransition(node, name, 'leave', duration).then(() => { if (!was.current) flushSync(() => setPresent(false)) })\n    else setPresent(false)\n  }, [show]) // eslint-disable-line react-hooks/exhaustive-deps\n  const child = (show ? children : last.current) as Child\n  if (!(show || present) || !isValidElement(child)) return null\n  return cloneElement(child, { ref: mergeRefs(child.props.ref, (n: HTMLElement | null) => { el.current = n }) })\n}\n\nexport interface TransitionGroupProps { name: string, children: ReactNode }\n\n/** Vue's <TransitionGroup>: keyed children enter and leave as <Transition> does, and the rest move with <name>-move. */\nexport function TransitionGroup({ name, children }: TransitionGroupProps) {\n  const nodes = useRef(new Map<string, HTMLElement>())\n  const rects = useRef(new Map<string, DOMRect>())\n  const seen = useRef(new Set<string>())\n  const firstRender = useRef(true)\n  const current = Children.toArray(children).filter(isValidElement) as Child[]\n  const [leaving, setLeaving] = useState<Map<string, { child: Child, index: number }>>(new Map())\n  const prev = useRef<Child[]>([])\n\n  // Children that went away stay, leaving, where they were.\n  const keys = new Set(current.map(c => c.key!))\n  const gone = prev.current.filter(c => !keys.has(c.key!) && !leaving.has(c.key!))\n  if (gone.length) {\n    const next = new Map(leaving)\n    for (const c of gone) next.set(c.key!, { child: c, index: prev.current.indexOf(c) })\n    setLeaving(next)\n  }\n  prev.current = current\n  const list = [...current]\n  for (const [key, { child, index }] of leaving) if (!keys.has(key)) list.splice(Math.min(index, list.length), 0, child)\n\n  // Before the DOM changes: where every child is now (for the move).\n  for (const [key, node] of nodes.current) rects.current.set(key, node.getBoundingClientRect())\n\n  useLayoutEffect(() => {\n    // First every entering and leaving child takes its classes, so the measures for the move below see each as Vue does\n    // (an entering one at its enter-from, a leaving one out of the flow): measuring first would fix an entering child's\n    // style as it is, fully shown, and its transition would start from the end.\n    const entered = new Set<string>()\n    for (const c of list) {\n      const key = c.key!\n      const node = nodes.current.get(key)\n      if (!node) continue\n      if (leaving.has(key)) {\n        if (!node.classList.contains(`${name}-leave-active`)) {\n          // Gone in the same task its leave classes come off, so no frame shows it whole again.\n          void runTransition(node, name, 'leave').then(() => flushSync(() => setLeaving((m) => {\n            const n = new Map(m)\n            n.delete(key)\n            return n\n          })))\n        }\n        continue\n      }\n      if (!seen.current.has(key)) {\n        seen.current.add(key)\n        entered.add(key)\n        if (!firstRender.current) void runTransition(node, name, 'enter')\n      }\n    }\n    // Then the move: from where each stayed child was to where it is.\n    for (const c of list) {\n      const key = c.key!\n      const node = nodes.current.get(key)\n      if (!node || leaving.has(key) || entered.has(key)) continue\n      const before = rects.current.get(key)\n      if (!before) continue\n      const after = node.getBoundingClientRect()\n      if (before.left !== after.left || before.top !== after.top) {\n        node.style.transitionDuration = '0s'\n        node.style.transform = `translate(${before.left - after.left}px, ${before.top - after.top}px)`\n        void node.offsetWidth\n        node.classList.add(`${name}-move`)\n        node.style.transitionDuration = ''\n        node.style.transform = ''\n        const end = () => {\n          node.classList.remove(`${name}-move`)\n          node.removeEventListener('transitionend', end)\n        }\n        node.addEventListener('transitionend', end)\n      }\n    }\n    firstRender.current = false\n    for (const key of [...seen.current]) if (!list.some(c => c.key === key)) seen.current.delete(key)\n  })\n\n  return (\n    <>\n      {list.map(c => cloneElement(c, {\n        key: c.key,\n        ref: mergeRefs(c.props.ref, (n: HTMLElement | null) => {\n          if (n) nodes.current.set(c.key!, n)\n          else nodes.current.delete(c.key!)\n        }),\n      }))}\n    </>\n  )\n}\n"
+        }
+      ],
+      "dependencies": [
+        "lucide-react@0.479.0"
+      ],
+      "registryDependencies": [
+        "button",
+        "cell-burst",
+        "chart",
+        "count",
+        "eval-viz",
+        "highlight-text",
+        "loader",
+        "sidebar",
+        "table",
+        "tabs",
+        "top-bar"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "OverviewPage",
+            "file": "react/components/product/OverviewPage.tsx",
+            "props": [
+              {
+                "name": "greeting",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "documents",
+                "type": "number",
+                "required": true
+              },
+              {
+                "name": "setup",
+                "type": "{ done: number, total: number }",
+                "required": false
+              },
+              {
+                "name": "queries",
+                "type": "{ thisMonth: number, p50: number, p95: number, days: QueryDay[], latency: LineSeries[] }",
+                "required": true
+              },
+              {
+                "name": "credits",
+                "type": "{ left: number, total: number, spenders: OverviewSpender[] }",
+                "required": true
+              },
+              {
+                "name": "namespaces",
+                "type": "OverviewNamespace[]",
+                "required": true
+              },
+              {
+                "name": "onFinishSetup",
+                "type": "() => void",
+                "required": false
+              },
+              {
+                "name": "onCreateKey",
+                "type": "() => void",
+                "required": false
+              },
+              {
+                "name": "onReadDocs",
+                "type": "() => void",
+                "required": false
+              },
+              {
+                "name": "onBilling",
+                "type": "() => void",
+                "required": false
+              },
+              {
+                "name": "onViewAll",
+                "type": "() => void",
+                "required": false
+              },
+              {
+                "name": "onOpenNamespace",
+                "type": "(name: string) => void",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "OverviewQueries",
+            "file": "react/components/product/OverviewQueries.tsx",
+            "props": [
+              {
+                "name": "thisMonth",
+                "type": "number",
+                "required": true
+              },
+              {
+                "name": "p50",
+                "type": "number",
+                "required": true
+              },
+              {
+                "name": "p95",
+                "type": "number",
+                "required": true
+              },
+              {
+                "name": "days",
+                "type": "QueryDay[]",
+                "required": true
+              },
+              {
+                "name": "latency",
+                "type": "LineSeries[]",
+                "required": true
+              }
+            ]
+          },
+          {
+            "name": "ConsoleFrame",
+            "file": "react/components/product/ConsoleFrame.tsx",
+            "props": [
+              {
+                "name": "groups",
+                "type": "FrameGroup[]",
+                "required": true
+              },
+              {
+                "name": "crumbs",
+                "type": "Crumb[]",
+                "required": true
+              },
+              {
+                "name": "onNavigate",
+                "type": "(link: FrameLink) => void",
+                "required": false
+              },
+              {
+                "name": "head",
+                "type": "ReactNode",
+                "required": false,
+                "description": "The workspace switcher (Vue's `head` slot)."
+              },
+              {
+                "name": "foot",
+                "type": "ReactNode",
+                "required": false,
+                "description": "The account menu (Vue's `foot` slot)."
+              },
+              {
+                "name": "bar",
+                "type": "ReactNode",
+                "required": false,
+                "description": "What sits at the bar's end (Vue's `bar` slot)."
+              },
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "ConsolePage",
+            "file": "react/components/product/ConsolePage.tsx",
+            "props": [
+              {
+                "name": "title",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "mono",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "meta",
+                "type": "ReactNode",
+                "required": false,
+                "description": "Beside the title (Vue's `meta` slot)."
+              },
+              {
+                "name": "actions",
+                "type": "ReactNode",
+                "required": false,
+                "description": "The page's actions on the right (Vue's `actions` slot)."
+              },
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              },
+              {
+                "name": "data-ds",
+                "type": "string",
+                "required": false,
+                "description": "The root's data-ds (a page built on this one says its own, as Vue's fallthrough does)."
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Overview, in the console's frame",
+          "center": false,
+          "half": false,
+          "path": "react/examples/overview-page/Product.tsx",
+          "content": "import { Activity, Atom, CreditCard, Gauge, House, KeyRound, Layers, Network, Settings, SquareTerminal } from 'lucide-react'\nimport { ConsoleFrame } from '@/react/components/product/ConsoleFrame'\nimport { OverviewPage } from '@/react/components/product/OverviewPage'\n// Overview as it ships, in the console's frame, on sample data: setup still open, Queries for the last 90 days,\n// credits and the largest namespaces. Wire the events to your own routes.\nconst groups = [\n  { label: 'Platform', links: [{ label: 'Overview', icon: House, active: true }, { label: 'Namespaces', icon: Layers, status: '6' }, { label: 'Sources', icon: Network, status: '1 failed', alert: true }, { label: 'Agents', icon: SquareTerminal }, { label: 'Custom models', icon: Atom }] },\n  { label: 'Manage', links: [{ label: 'API keys', icon: KeyRound, status: '3' }, { label: 'Performance', icon: Gauge }, { label: 'Usage', icon: Activity }, { label: 'Billing', icon: CreditCard }, { label: 'Settings', icon: Settings }] },\n]\n// 90 days ending on Nov 4, a weekday rhythm with a slow climb.\nconst end = Date.UTC(2026, 10, 4)\nconst days = Array.from({ length: 90 }, (_, i) => {\n  const at = new Date(end - (89 - i) * 86400000)\n  const weekend = at.getUTCDay() === 0 || at.getUTCDay() === 6\n  return { day: at.toISOString().slice(0, 10), value: Math.round((weekend ? 1800 : 5200) + i * 42 + ((i * 37) % 11) * 140) }\n})\nconst thisMonth = days.filter(d => d.day.startsWith('2026-11')).reduce((a, d) => a + d.value, 0)\n// The last 24 hours, every 30 minutes: p50 and p95.\nconst half = (i: number) => end - (47 - i) * 1800000\nconst latency = [\n  { label: 'p50', points: Array.from({ length: 48 }, (_, i) => ({ t: half(i), v: 140 + ((i * 29) % 17) * 6 + (i % 12 === 5 ? 90 : 0) })) },\n  { label: 'p95', points: Array.from({ length: 48 }, (_, i) => ({ t: half(i), v: 260 + ((i * 31) % 13) * 8 + (i % 12 === 5 ? 120 : 0) })) },\n]\nconst namespaces = [\n  { name: 'contracts', documents: 412830, health: 'ready' as const, synced: '2 min ago', lastUsed: '2 min ago' },\n  { name: 'support', documents: 2184920, health: 'syncing' as const, lastUsed: '1 min ago' },\n  { name: 'wiki', documents: 96410, health: 'ready' as const, synced: '12 min ago', lastUsed: '1 h ago' },\n  { name: 'crm', documents: 52660, health: 'error' as const, lastUsed: 'yesterday' },\n  { name: 'engineering', documents: 31902, health: 'api' as const, lastUsed: '3 days ago' },\n  { name: 'research', documents: 7385, health: 'api' as const },\n]\n\nexport default function Product() {\n  return (\n    <ConsoleFrame groups={groups} crumbs={[{ label: 'Overview' }]}>\n      <OverviewPage\n        greeting=\"Good afternoon\"\n        documents={2786122}\n        setup={{ done: 3, total: 4 }}\n        queries={{ thisMonth, p50: 182, p95: 296, days, latency }}\n        credits={{ left: 412.6, total: 500, spenders: [{ name: 'support', cost: 54.2, share: 0.62 }, { name: 'contracts', cost: 21.85, share: 0.25 }, { name: 'wiki', cost: 0.4, share: 0.004 }] }}\n        namespaces={namespaces}\n      />\n    </ConsoleFrame>\n  )\n}\n",
+          "registryDependencies": [
+            "button",
+            "cell-burst",
+            "chart",
+            "count",
+            "eval-viz",
+            "highlight-text",
+            "loader",
+            "sidebar",
+            "table",
+            "tabs",
+            "top-bar"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/product/overview-page.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { repeat } from 'lit/directives/repeat.js'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport { ArrowRight, ChevronDown } from 'lucide'\nimport type { LineSeries } from '@/elements/components/ui/line-chart'\nimport type { QueryDay } from '@/elements/components/product/overview-queries'\nimport '@/elements/components/ui/button'\nimport '@/elements/components/ui/dot-matrix'\nimport '@/elements/components/ui/pixel-button'\nimport '@/elements/components/ui/count'\nimport '@/elements/components/ui/table'\nimport '@/elements/components/visuals/cell-burst'\nimport '@/elements/components/visuals/grain'\nimport '@/elements/components/visuals/highlight-text'\nimport '@/elements/components/visuals/viz-window'\nimport '@/elements/components/product/overview-queries'\nimport styles from 'virtual:tw'\n\n// OverviewPage.vue as <conare-overview-page>: Overview as it ships (Home.vue, take 7 with lead 5): what a team running Conare checks, with no search box. The line\n// under the top bar while setup is unfinished; the greeting and how many documents agents search, with Create API key\n// and Read the docs, beside the API key's window on the dark panel, the two in the website's double rule; Queries\n// beside Credits; the five largest namespaces. Every value comes in through props; the buttons and rows fire events.\n// The greeting has the website's letter reveal (highlight-text); the documents count up the first time in a session\n// (count); the key window is built on the website's product window (VizWindow) over the grain and a sheet of cells,\n// and plays again every 9s while the tab shows (never for reduced motion).\n// Events: finish-setup, create-key, read-docs, billing, view-all and open-namespace ({ name }). `setup`, `queries`,\n// `credits` and `namespaces` are JSON attributes or properties. The key window sits in a max-w-100 box (Vue's class on\n// the window, which cannot reach its shadow root).\nexport interface OverviewNamespace { name: string, documents: number, health: 'ready' | 'syncing' | 'error' | 'api', synced?: string, lastUsed?: string }\nexport interface OverviewSpender { name: string, cost: number, share: number }\nconst num = (n: number) => n.toLocaleString('en-US')\nconst usd = (n: number) => n.toLocaleString('en-US', { style: 'currency', currency: 'USD' })\nconst pct = (p: number) => (p > 0 && p < 0.01 ? '<1%' : `${Math.round(p * 100)}%`)\nconst arrow = () => icon(ArrowRight, 'arrow-right', { size: 12, strokeWidth: 1.5, attrs: { 'aria-hidden': 'true' } })\n\n/**\n * @summary Overview as it ships: setup, the lead with the key window, Queries, Credits and the largest namespaces.\n * @fires finish-setup - Finish setup was pressed.\n * @fires create-key - Create API key was pressed.\n * @fires read-docs - Read the docs was pressed.\n * @fires billing - Billing was pressed.\n * @fires view-all - View all was pressed.\n * @fires open-namespace - A namespace row was pressed ({ name }).\n */\nexport class OverviewPage extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { greeting: {}, documents: { type: Number }, setup: { type: Object }, queries: { type: Object }, credits: { type: Object }, namespaces: { type: Array }, keyRun: { state: true } }\n\n\tgreeting = ''\n\t/** How many documents agents search. */\n\tdocuments = 0\n\t/** Setup's steps, while unfinished. */\n\tsetup?: { done: number, total: number }\n\tqueries: { thisMonth: number, p50: number, p95: number, days: QueryDay[], latency: LineSeries[] } = { thisMonth: 0, p50: 0, p95: 0, days: [], latency: [] }\n\tcredits: { left: number, total: number, spenders: OverviewSpender[] } = { left: 0, total: 0, spenders: [] }\n\tnamespaces: OverviewNamespace[] = []\n\tprivate keyRun = 0\n\tprivate keyLoop: ReturnType<typeof setInterval> | undefined\n\n\tconnectedCallback() {\n\t\tsuper.connectedCallback()\n\t\tthis.keyLoop = setInterval(() => {\n\t\t\tif (!document.hidden && !matchMedia('(prefers-reduced-motion: reduce)').matches) this.keyRun++\n\t\t}, 9000)\n\t}\n\tdisconnectedCallback() {\n\t\tsuper.disconnectedCallback()\n\t\tclearInterval(this.keyLoop)\n\t}\n\n\tprivate renderKey() {\n\t\treturn html`<div class=\"flex flex-col gap-3 px-4 pt-1 pb-4\"><p class=\"ds-viz-in ml-10 bg-ds-neutral-200 px-3 py-2.5 text-ui\" style=\"--d: 120\"><span class=\"block type-code-sm text-ds-neutral-500\">POST /query</span>How do refunds work?</p><p class=\"ds-viz-in flex items-center justify-end gap-1.5 text-meta text-ds-neutral-500\" style=\"--d: 320\"><span class=\"text-ds-neutral-600\">API key</span> added to headers</p><div class=\"ds-viz-in ds-viz-progress\" style=\"--d: 500\"><span class=\"grid size-2.5 shrink-0 place-items-center\"><span class=\"ds-viz-swap-a ds-viz-matrix [grid-area:1/1]\" style=\"--d: 960\">${Array.from({ length: 9 }, (_, i) => html`<i style=\"--k: ${i + 1}\"></i>`)}</span><span class=\"ds-viz-swap-b ds-viz-dot bg-home-red [grid-area:1/1]\" style=\"--d: 960\"></span></span><span class=\"grid flex-1\"><span class=\"ds-viz-swap-a [grid-area:1/1]\" style=\"--d: 960\">Calling the API</span><span class=\"ds-viz-swap-b [grid-area:1/1] text-ds-neutral-500\" style=\"--d: 960\">200 OK</span></span><span class=\"ds-viz-swap-b shrink-0 text-ds-neutral-500 tabular-nums\" style=\"--d: 960\">62 ms</span></div><p class=\"ds-viz-in text-ui leading-6\" style=\"--d: 1080\">Refunds are available for 30 days.</p><p class=\"ds-viz-in flex items-center gap-2 text-meta text-ds-neutral-500\" style=\"--d: 1240\">Source <span class=\"ds-viz-chip text-off-white\"><span class=\"ds-viz-dot bg-home-red\"></span>Refunds</span></p></div>`\n\t}\n\n\trender() {\n\t\tconst { setup, credits, queries } = this\n\t\tconst share = credits.total ? Math.max(0, Math.min(1, credits.left / credits.total)) : 0\n\t\tconst top = [...this.namespaces].sort((a, b) => b.documents - a.documents).slice(0, 5)\n\t\treturn html`<div data-ds=\"overview-page\">${setup && setup.done < setup.total ? html`<section class=\"flex min-h-10 items-center gap-2.5 border-b border-edge bg-surface-subtle py-1.5 pr-3 pl-4 text-meta md:min-h-12\" aria-label=\"what needs doing\"><span class=\"size-1.5 shrink-0 bg-edge-accent\" aria-hidden=\"true\"></span><p class=\"min-w-0 flex-1\">${`You haven't finished setting up Conare: ${setup.done} of ${setup.total} steps done.`}</p>${staticHtml`<${tag('pixel-button')} class=\"shrink-0\" @click=${() => this.emit('finish-setup')}>Finish setup ${arrow()}</${tag('pixel-button')}>`}</section>` : nothing}<div class=\"mx-auto flex w-full max-w-page-wide flex-col gap-6 px-4 pt-8 pb-16 md:px-8 md:pt-10 md:pb-20\"><section class=\"ds-ovlead\" aria-label=\"your platform\"><div class=\"flex min-w-0 flex-col items-start gap-2 bg-surface p-5\">${staticHtml`<${tag('highlight-text')} as=\"h1\" text=${this.greeting} accent=\".\" class=\"type-heading-2\"></${tag('highlight-text')}>`}<p class=\"max-w-[56ch] text-ui text-fg-muted\">Help your agents search through ${staticHtml`<${tag('count')} .value=${this.documents} once=\"overview-documents\"></${tag('count')}>`} documents.</p><div class=\"mt-auto flex w-full flex-row items-center gap-2 pt-6\">${staticHtml`<${tag('pixel-button')} @click=${() => this.emit('create-key')}>Create API key</${tag('pixel-button')}><${tag('button')} @click=${() => this.emit('read-docs')}>Read the docs</${tag('button')}>`}</div></div><div class=\"relative flex min-h-84 items-center justify-center overflow-hidden bg-code-raised text-ds-neutral-300\" aria-hidden=\"true\">${staticHtml`<${tag('grain')}></${tag('grain')}>`}<div class=\"pointer-events-none absolute inset-0 opacity-70\">${staticHtml`<${tag('cell-burst')} seed=\"17\"></${tag('cell-burst')}>`}</div><div class=\"relative flex w-full items-center justify-center px-4 py-6\"><div class=\"flex w-full max-w-100\">${staticHtml`<${tag('viz-window')} active><span slot=\"title\" class=\"contents\"><span class=\"text-ui leading-4\">Your code</span><span class=\"bg-ds-neutral-200 px-1.5 py-0.5 text-caption text-ds-neutral-500\">API</span></span>${repeat([this.keyRun], (k) => k, () => this.renderKey())}</${tag('viz-window')}>`}</div></div></div></section><div class=\"grid gap-4 lg:grid-cols-[minmax(0,1fr)_288px]\">${staticHtml`<${tag('overview-queries')} .thisMonth=${queries.thisMonth} .p50=${queries.p50} .p95=${queries.p95} .days=${queries.days} .latency=${queries.latency}></${tag('overview-queries')}>`}<section class=\"flex min-w-0 flex-col border border-edge bg-surface\" aria-labelledby=\"credits-title\"><div class=\"flex items-center justify-between gap-3 border-b border-edge px-4 py-3\"><h2 id=\"credits-title\" class=\"type-ui-strong\">Credits</h2><a href=\"#\" class=\"ds-ovlink type-meta text-fg-muted\" @click=${(e: Event) => { e.preventDefault(); this.emit('billing') }}>Billing</a></div><div class=\"flex flex-1 flex-col gap-3 p-4\"><p><span class=\"text-heading-4 font-medium tabular-nums\">${usd(credits.left)}</span> <span class=\"type-meta text-fg-muted\">${`left of ${usd(credits.total)}`}</span></p><div class=\"h-1 bg-edge\" role=\"meter\" aria-valuenow=${Math.round(share * 100)} aria-valuemin=\"0\" aria-valuemax=\"100\" aria-label=\"credits left\"><span class=\"block h-full bg-surface-inverse\" style=${`width: ${share * 100}%`}></span></div><ul class=\"mt-auto divide-y divide-edge\">${credits.spenders.map((s) => html`<li class=\"flex items-center justify-between gap-3 py-2 text-meta\"><span class=\"min-w-0 truncate type-code-sm\">${s.name}</span><span class=\"flex shrink-0 items-baseline\"><span class=\"w-16 text-right tabular-nums\">${usd(s.cost)}</span><span class=\"w-10 text-right text-fg-muted tabular-nums\">${pct(s.share)}</span></span></li>`)}</ul></div></section></div><section class=\"flex min-w-0 flex-col gap-2\" aria-labelledby=\"data-title\"><div class=\"flex items-center justify-between gap-4\"><h2 id=\"data-title\" class=\"type-ui-strong\">Namespaces</h2>${staticHtml`<${tag('button')} variant=\"ghost\" @click=${() => this.emit('view-all')}>View all ${arrow()}</${tag('button')}>`}</div>${staticHtml`<${tag('table')} framed label=\"namespaces\"><table><thead><tr><th>Name</th><th class=\"hidden md:table-cell\">Health</th><th>Documents</th><th class=\"hidden md:table-cell\">Last used</th><th class=\"w-8\"><span class=\"sr-only\">Open</span></th></tr></thead><tbody>${top.map((ns) => html`<tr class=\"is-link\" @click=${() => this.emit('open-namespace', { name: ns.name })}><td class=\"whitespace-nowrap\"><button type=\"button\" class=\"type-code-sm text-left\" @click=${(e: Event) => { e.stopPropagation(); this.emit('open-namespace', { name: ns.name }) }}>${ns.name}</button></td><td class=\"hidden whitespace-nowrap md:table-cell\">${ns.health === 'error'\n\t\t\t? html`<span class=\"inline-flex items-center gap-1.5 bg-status-failed px-1.5 text-meta leading-5 text-status-failed-fg\"><span class=\"size-1 bg-edge-accent\"></span>needs attention</span>`\n\t\t\t: ns.health === 'syncing'\n\t\t\t\t? html`<span class=\"inline-flex items-center gap-1.5 bg-status-working px-1.5 text-meta leading-5 text-status-working-fg\">${staticHtml`<${tag('dot-matrix')} tone=\"inverse\"></${tag('dot-matrix')}>`}syncing</span>`\n\t\t\t\t: ns.health === 'ready'\n\t\t\t\t\t? html`<span class=\"text-fg-muted\">${`Synced ${ns.synced}`}</span>`\n\t\t\t\t\t: html`<span class=\"text-fg-muted\">By API</span>`}</td><td class=\"tabular-nums\">${num(ns.documents)}</td><td class=${ns.lastUsed ? 'hidden whitespace-nowrap md:table-cell' : 'hidden whitespace-nowrap md:table-cell text-fg-muted'}>${ns.lastUsed ?? 'never'}</td><td class=\"text-right\">${icon(ChevronDown, 'chevron-down', { size: 12, strokeWidth: 1.5, class: 'inline text-fg-muted', attrs: { 'aria-hidden': 'true' } })}</td></tr>`)}</tbody></table></${tag('table')}>`}</section></div></div>`\n\t}\n}\n\ndefine('overview-page', OverviewPage)\n"
+        },
+        {
+          "path": "elements/components/product/overview-page.css",
+          "content": "/* OverviewPage.vue's <style>, as it is. */\n/* The lead in the website's double rule: a hairline, a second 4px outside it. */\n/* ds-override: 5px holds the outer rule (4px offset plus its 1px) inside the page, as platform.css does. */\n.ds-ovlead { display: grid; margin: 5px; border: var(--ds-border-hairline) solid var(--ds-color-edge); outline: var(--ds-border-hairline) solid var(--ds-color-edge); outline-offset: 4px; }\n@media (min-width: 900px) { .ds-ovlead { grid-template-columns: 312px minmax(0, 1fr); } }\n@media (min-width: 1180px) { .ds-ovlead { grid-template-columns: 360px minmax(0, 1fr); } }\n.ds-ovlink { transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-ovlink:hover { color: var(--ds-color-fg); } }\n@media (max-width: 639px) { .ds-ovlead :is(button, a), .ds-ovlead ::part(control) { min-height: 40px; } }\n"
+        },
+        {
+          "path": "elements/components/product/overview-queries.ts",
+          "content": "import { html, type PropertyValues } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { repeat } from 'lit/directives/repeat.js'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport { enter, leave } from '@/elements/lib/transition'\nimport { formatNumber } from '@/elements/controllers/chart'\nimport type { LineSeries } from '@/elements/components/ui/line-chart'\nimport '@/elements/components/ui/bar-chart'\nimport '@/elements/components/ui/line-chart'\nimport '@/elements/components/ui/tabs'\nimport styles from 'virtual:tw'\n\n// OverviewQueries.vue as <conare-overview-queries>: Overview's Queries card (platform/Queries.vue): volume or latency, three numbers over the chart (the chart item:\n// BarChart for queries per day, LineChart for the last 24 hours' latency). Pointing at a number shows its part (this\n// month's bars, today's bar, or the latency); a press pins it, with a 2px red edge. Nothing navigates: the chart changes\n// in place, crossing over in 200ms. `latency` is the chart's series (p50, p95), each point a time and milliseconds.\nexport interface QueryDay { day: string, value: number }\ntype Stat = '' | 'month' | 'today' | 'latency'\ntype View = 'volume' | 'latency'\nconst ms = (v: number) => `${Math.round(v)} ms`\n\n/**\n * @summary Overview's Queries card: three numbers over the volume or latency chart.\n */\nexport class OverviewQueries extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { thisMonth: { type: Number, attribute: 'this-month' }, p50: { type: Number }, p95: { type: Number }, days: { type: Array }, latency: { type: Array }, chart: { state: true }, pinned: { state: true }, hot: { state: true }, shown: { state: true } }\n\n\tthisMonth = 0\n\tp50 = 0\n\tp95 = 0\n\tdays: QueryDay[] = []\n\t/** The latency chart's series (p50, p95): points of a time and milliseconds. */\n\tlatency: LineSeries[] = []\n\tprivate chart: View = 'volume'\n\tprivate pinned: Stat = ''\n\tprivate hot: Stat = ''\n\t// Vue's <Transition mode=\"out-in\"> keyed by the view: the chart shown leaves, then the next enters.\n\tprivate shown: View = 'volume'\n\tprivate swapping = false\n\n\tprivate get active(): Stat {\n\t\treturn this.hot || this.pinned\n\t}\n\tprivate get view(): View {\n\t\tconst a = this.active\n\t\treturn a === 'latency' ? 'latency' : a ? 'volume' : this.chart\n\t}\n\tprivate pin(stat: Exclude<Stat, ''>) {\n\t\tthis.pinned = this.pinned === stat ? '' : stat\n\t\tthis.chart = stat === 'latency' ? 'latency' : 'volume'\n\t}\n\n\tprotected updated(changed: PropertyValues) {\n\t\tsuper.updated(changed)\n\t\tif (this.view === this.shown || this.swapping) return\n\t\tconst box = this.renderRoot.querySelector<HTMLElement>('[data-chart]')\n\t\tif (!box) {\n\t\t\tthis.shown = this.view\n\t\t\treturn\n\t\t}\n\t\tthis.swapping = true\n\t\tvoid leave(box, 'ds-ovchart').then(async () => {\n\t\t\tthis.shown = this.view\n\t\t\tawait this.updateComplete\n\t\t\tthis.swapping = false\n\t\t\tconst next = this.renderRoot.querySelector<HTMLElement>('[data-chart]')\n\t\t\tif (next) void enter(next, 'ds-ovchart')\n\t\t\tthis.requestUpdate()\n\t\t})\n\t}\n\n\tprivate renderChart() {\n\t\tconst days = this.days\n\t\tconst a = this.active\n\t\tconst today = days.at(-1)?.value ?? 0\n\t\tconst month = days.at(-1)?.day.slice(0, 7) ?? ''\n\t\tconst focus = a === 'today' ? (days.length ? [days.length - 1] : []) : a === 'month' ? days.flatMap((d, i) => (d.day.startsWith(month) ? [i] : [])) : undefined\n\t\tconst note = a === 'today' ? `Today ${formatNumber(today)}` : a === 'month' ? `${new Date(`${month}-01T00:00:00Z`).toLocaleString('en-US', { month: 'long', timeZone: 'UTC' })} so far` : undefined\n\t\tif (this.shown === 'volume' && days.some((d) => d.value > 0)) return staticHtml`<${tag('bar-chart')} .points=${days} label=\"Queries per day\" height=\"192\" .lit=${focus} .note=${note}></${tag('bar-chart')}>`\n\t\tif (this.shown === 'volume') return html`<p class=\"py-8 text-center type-meta text-fg-muted\">No queries yet.</p>`\n\t\tif (this.latency.some((l) => l.points.length)) return staticHtml`<${tag('line-chart')} heading=\"Search latency, last 24 hours\" .series=${this.latency} .format=${ms} smooth=\"3\" height=\"192\" bare></${tag('line-chart')}>`\n\t\treturn html`<p class=\"py-8 text-center type-meta text-fg-muted\">No searches in the last 24 hours.</p>`\n\t}\n\n\trender() {\n\t\tconst today = this.days.at(-1)?.value ?? 0\n\t\tconst a = this.active\n\t\tconst stats = [['month', 'This month', formatNumber(this.thisMonth)], ['today', 'Today', formatNumber(today)], ['latency', 'Search p50, 24 h', `${this.p50} ms`]] as const\n\t\treturn html`<section data-ds=\"overview-queries\" class=\"min-w-0 border border-edge bg-surface\" aria-labelledby=\"queries-title\"><div class=\"flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-edge px-4 py-3\"><h2 id=\"queries-title\" class=\"type-ui-strong\">Queries</h2>${staticHtml`<${tag('tabs')} .value=${this.view} .options=${[{ value: 'volume', label: 'Volume' }, { value: 'latency', label: 'Latency' }]} label=\"chart\" @change=${(e: Event) => { this.chart = (e.currentTarget as HTMLElement & { value: View }).value; this.pinned = '' }}></${tag('tabs')}>`}</div><div class=\"flex flex-col gap-4 p-4\"><div class=\"grid grid-cols-2 border-t border-l border-edge sm:grid-cols-3\">${stats.map((s) => html`<button type=\"button\" class=\"ds-ovstat\" aria-pressed=${String(this.pinned === s[0])} ?data-on=${a === s[0]} @click=${() => this.pin(s[0])} @pointerenter=${() => { this.hot = s[0] }} @pointerleave=${() => { this.hot = '' }}><span class=\"block type-meta text-fg-muted\">${s[1]}</span><span class=\"block text-heading-4 font-medium tabular-nums\">${s[2]}${s[0] === 'latency' ? html`<span class=\"ml-2 type-meta text-fg-muted\">${`p95 ${this.p95} ms`}</span>` : ''}</span></button>`)}</div>${repeat([this.shown], (v) => v, () => html`<div data-chart>${this.renderChart()}</div>`)}</div></section>`\n\t}\n}\n\ndefine('overview-queries', OverviewQueries)\n"
+        },
+        {
+          "path": "elements/components/product/overview-queries.css",
+          "content": "/* OverviewQueries.vue's <style>, as it is. */\n.ds-ovstat { position: relative; width: 100%; padding: 8px 12px; border-right: var(--ds-border-hairline) solid var(--ds-color-edge); border-bottom: var(--ds-border-hairline) solid var(--ds-color-edge); text-align: left; cursor: pointer; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-ovstat[data-on] { background: var(--ds-color-surface-subtle); }\n@media (hover: hover) and (pointer: fine) { .ds-ovstat:hover { background: var(--ds-color-surface-subtle); } }\n.ds-ovstat[aria-pressed=\"true\"]::before { position: absolute; top: -1px; right: -1px; left: -1px; height: 2px; background: var(--ds-color-edge-accent); content: \"\"; }\n.ds-ovstat:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }\n.ds-ovchart-enter-active { transition: opacity var(--ds-duration-enter) var(--ds-easing-out), transform var(--ds-duration-drawer) var(--ds-easing-out); }\n.ds-ovchart-leave-active { transition: opacity var(--ds-duration-exit) var(--ds-easing-standard), transform var(--ds-duration-exit) var(--ds-easing-standard); }\n.ds-ovchart-enter-from { opacity: 0; transform: translateY(6px); }\n.ds-ovchart-leave-to { opacity: 0; transform: translateY(-4px); }\n@media (prefers-reduced-motion: reduce) {\n  .ds-ovchart-enter-from, .ds-ovchart-leave-to { transform: none; }\n}\n"
+        },
+        {
+          "path": "elements/components/product/console-frame.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { DsElement, define, tag, tagName } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport { Menu as MenuIcon, X } from 'lucide'\nimport type { Crumb } from '@/elements/components/ui/breadcrumb'\nimport '@/elements/components/ui/breadcrumb'\nimport '@/elements/components/ui/sidebar'\nimport '@/elements/components/ui/top-bar'\nimport styles from 'virtual:tw'\n\n// ConsoleFrame.vue as <conare-console-frame>: the console's layout (layouts/console.vue) for page compositions: the Sidebar at the left, sticky at the screen's\n// height, the TopBar with the trail over the page. Below 768px the sidebar is a drawer: the bar's menu button slides\n// it in over a dimmed page (240ms in, 180ms out, on the strong ease-out), a tap on the page or Escape closes it.\n// The `head` slot takes the workspace switcher, `foot` the account menu, `bar` what sits at the bar's end.\n// The sidebar's labels and links go in the `nav` slot (<conare-sidebar-label>, <conare-sidebar-link> with its icon):\n// Vue's `groups` carry icon components, which a page without a build has no way to pass. A link pressed closes the\n// drawer and fires `navigate` ({ link }) after its default is prevented. `crumbs` is a JSON attribute or a property.\n\n/**\n * @summary The console's layout: the sidebar, the top bar with the trail, and the page.\n * @slot - The page.\n * @slot nav - The sidebar's labels and links.\n * @slot head - The workspace switcher.\n * @slot foot - The account menu.\n * @slot bar - What sits at the bar's end.\n * @fires navigate - A sidebar link was pressed ({ link }).\n */\nexport class ConsoleFrame extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { crumbs: { type: Array }, open: { state: true } }\n\n\t/** The trail in the top bar. */\n\tcrumbs: Crumb[] = []\n\tprivate open = false\n\n\tprivate onClick = (event: MouseEvent) => {\n\t\tconst link = event.composedPath().find((n) => n instanceof Element && n.localName === tagName('sidebar-link'))\n\t\tif (!link) return\n\t\tevent.preventDefault()\n\t\tthis.open = false\n\t\tthis.emit('navigate', { link })\n\t}\n\n\trender() {\n\t\tconst open = this.open\n\t\treturn html`<div data-ds=\"console-frame\" class=\"flex min-h-screen bg-surface\" @keydown=${(e: KeyboardEvent) => { if (e.key === 'Escape') this.open = false }} @click=${this.onClick}>${staticHtml`<${tag('sidebar')} label=\"console\" class=\"ds-frame-side shrink-0\" ?data-open=${open}>${this.hasSlot('head') ? html`<slot name=\"head\" slot=\"head\"></slot>` : nothing}<slot name=\"nav\"></slot>${this.hasSlot('foot') ? html`<slot name=\"foot\" slot=\"foot\"></slot>` : nothing}</${tag('sidebar')}>`}${open ? html`<div class=\"fixed inset-0 z-20 bg-scrim-light md:hidden\" aria-hidden=\"true\" @click=${() => { this.open = false }}></div>` : nothing}<div class=\"flex min-w-0 flex-1 flex-col\">${staticHtml`<${tag('top-bar')}><button slot=\"start\" type=\"button\" class=\"-ml-2 inline-flex size-control-touch shrink-0 cursor-pointer items-center justify-center border border-transparent text-fg-soft transition-[color,border-color] duration-120 ease-standard hover:border-edge hover:text-fg md:hidden\" aria-expanded=${String(open)} aria-label=${open ? 'close menu' : 'open menu'} @click=${() => { this.open = !this.open }}>${open ? icon(X, 'x', { size: 14, strokeWidth: 1.5 }) : icon(MenuIcon, 'menu', { size: 14, strokeWidth: 1.5 })}</button><${tag('breadcrumb')} .items=${this.crumbs} @navigate=${(e: CustomEvent<{ event: Event }>) => e.detail.event.preventDefault()}></${tag('breadcrumb')}>${this.hasSlot('bar') ? html`<slot name=\"bar\" slot=\"end\"></slot>` : nothing}</${tag('top-bar')}>`}<main class=\"min-w-0 flex-1\"><slot></slot></main></div></div>`\n\t}\n}\n\ndefine('console-frame', ConsoleFrame)\n"
+        },
+        {
+          "path": "elements/components/product/console-frame.css",
+          "content": "/* ConsoleFrame.vue's <style>, as it is (the sidebar's host is the drawer). */\n@media (min-width: 768px) { .ds-frame-side { position: sticky; top: 0; height: 100vh; } }\n@media (max-width: 767px) {\n  .ds-frame-side { position: fixed; top: 0; bottom: 0; left: 0; z-index: 30; width: min(300px, 84vw); overscroll-behavior: contain; visibility: hidden; transform: translateX(-100%); transition: transform var(--ds-duration-slide) var(--ds-easing-out), visibility 0s linear var(--ds-duration-slide); }\n  .ds-frame-side[data-open] { visibility: visible; transform: none; transition: transform var(--ds-duration-drawer) var(--ds-easing-out); }\n}\n@media (prefers-reduced-motion: reduce) { .ds-frame-side, .ds-frame-side[data-open] { transition: none; } }\n"
+        },
+        {
+          "path": "elements/components/product/console-page.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// ConsolePage.vue as <conare-console-page>: the frame of every console page (Page.vue, .v2-page .v2-page-wide): 1120px at most, 32px down and 16px in on a\n// phone (40px and 32px from 768px), the title in Faculty Glyphic 20px (or Geist Mono when it is an identifier, shown\n// as typed), the page's actions on the right, then the body in 24px steps.\n// `heading` is Vue's `title`; `rootName` sets the root's data-ds, as a data-ds passed to the Vue component does.\n\n/**\n * @summary The frame of every console page: the title, its actions, then the body.\n * @slot - The body, in 24px steps.\n * @slot meta - Beside the title.\n * @slot actions - The page's actions on the right.\n */\nexport class ConsolePage extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { heading: {}, mono: { type: Boolean }, rootName: { attribute: false } }\n\n\t/** The page's title (Vue's `title`). */\n\theading = ''\n\t/** The title is an identifier: Geist Mono, as typed. */\n\tmono = false\n\t/** The root's data-ds, for a page built on this one (Vue's fallthrough data-ds). */\n\trootName = 'console-page'\n\n\trender() {\n\t\treturn html`<div data-ds=\"${this.rootName}\" class=\"mx-auto w-full max-w-page-wide px-4 pt-8 pb-16 md:px-8 md:pt-10 md:pb-20\"><header class=\"mb-6 flex min-h-8 flex-wrap items-center justify-between gap-x-6 gap-y-3\"><div class=\"flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2\"><h1 class=${this.mono ? 'min-w-0 font-code text-heading-3 leading-8 font-medium [overflow-wrap:anywhere]' : 'min-w-0 type-heading-3'}>${this.heading}</h1><slot name=\"meta\"></slot></div>${this.hasSlot('actions') ? html`<div class=\"flex flex-wrap items-center gap-2\"><slot name=\"actions\"></slot></div>` : nothing}</header><div class=\"flex flex-col gap-6\"><slot></slot></div></div>`\n\t}\n}\n\ndefine('console-page', ConsolePage)\n"
+        },
+        {
+          "path": "elements/controllers/chart.ts",
+          "content": "// What the charts share (usageMetrics.ts, BarChart.vue): numbers in en-US, an axis that ends on a round number in four\n// steps, and the week's change.\n// They are plain functions (Vue's useChart.ts as it is), bundled into each chart element that uses them.\n\nexport type DayPoint = { day: string, value: number }\nexport type ChartMetric = { key: string, label: string, points: DayPoint[] }\n\nconst whole = new Intl.NumberFormat('en-US')\nconst compact = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 })\n\n/** 186402 -> \"186,402\". */\nexport const formatNumber = (n: number) => whole.format(n)\n/** 186402 -> \"186.4K\", for axis labels. */\nexport const compactNumber = (n: number) => compact.format(n)\n\n/** The axis: a step of 1, 2, 2.5 or 5 times a power of ten that covers the largest value in four. Starts at 0. */\nexport function niceTicks(values: number[]) {\n\tconst max = Math.max(0, ...values)\n\tif (max === 0) return [0, 1]\n\tconst raw = max / 4\n\tconst power = 10 ** Math.floor(Math.log10(raw))\n\tconst step = ([1, 2, 2.5, 5, 10].find(m => m * power >= raw) ?? 10) * power\n\treturn Array.from({ length: Math.ceil(max / step) + 1 }, (_, i) => i * step)\n}\n\n/** \"Oct 2\", or \"Oct 2, 2026\" with the year, from an ISO day. */\nexport const formatDay = (value: string, year = false) => new Date(`${value}T00:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', ...(year ? { year: 'numeric' } : {}), timeZone: 'UTC' })\n\n/** The sum of a metric's points over its range. */\nexport const totalOf = (points: DayPoint[]) => points.reduce((a, p) => a + p.value, 0)\n\n/** The last seven days against the seven before, as a share; null without both. */\nexport function weekChange(points: DayPoint[]): number | null {\n\tif (points.length < 14) return null\n\tconst before = totalOf(points.slice(-14, -7))\n\treturn before ? (totalOf(points.slice(-7)) - before) / before : null\n}\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/overview-page.js",
+        "elements/overview-queries.js",
+        "elements/console-frame.js",
+        "elements/console-page.js",
+        "elements/line-chart.js",
+        "elements/button.js",
+        "elements/dot-matrix.js",
+        "elements/pixel-button.js",
+        "elements/count.js",
+        "elements/table.js",
+        "elements/cell-burst.js",
+        "elements/grain.js",
+        "elements/highlight-text.js",
+        "elements/viz-window.js",
+        "elements/bar-chart.js",
+        "elements/tabs.js",
+        "elements/breadcrumb.js",
+        "elements/sidebar.js",
+        "elements/top-bar.js",
+        "elements/sidebar-label.js",
+        "elements/sidebar-link.js"
+      ],
+      "tag": "conare-overview-page",
+      "tags": [
+        "conare-overview-page",
+        "conare-overview-queries",
+        "conare-console-frame",
+        "conare-console-page"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "button",
+        "cell-burst",
+        "chart",
+        "count",
+        "eval-viz",
+        "highlight-text",
+        "loader",
+        "sidebar",
+        "table",
+        "tabs",
+        "top-bar"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-overview-page",
+            "name": "OverviewPage",
+            "module": "elements/overview-page.js",
+            "description": "Overview as it ships: setup, the lead with the key window, Queries, Credits and the largest namespaces.",
+            "attributes": [
+              {
+                "name": "greeting",
+                "field": "greeting",
+                "type": "string",
+                "default": "''"
+              },
+              {
+                "name": "documents",
+                "field": "documents",
+                "type": "number",
+                "default": "0",
+                "description": "How many documents agents search."
+              },
+              {
+                "name": "setup",
+                "field": "setup",
+                "type": "{ done: number; total: number; } | undefined",
+                "description": "Setup's steps, while unfinished."
+              },
+              {
+                "name": "queries",
+                "field": "queries",
+                "type": "{ thisMonth: number; p50: number; p95: number; days: QueryDay[]; latency: LineSeries[]; }",
+                "default": "{ thisMonth: 0, p50: 0, p95: 0, days: [], latency: [] }"
+              },
+              {
+                "name": "credits",
+                "field": "credits",
+                "type": "{ left: number; total: number; spenders: OverviewSpender[]; }",
+                "default": "{ left: 0, total: 0, spenders: [] }"
+              },
+              {
+                "name": "namespaces",
+                "field": "namespaces",
+                "type": "OverviewNamespace[]",
+                "default": "[]"
+              },
+              {
+                "name": "keyRun",
+                "field": "keyRun",
+                "type": "number",
+                "default": "0"
+              }
+            ],
+            "properties": [
+              {
+                "name": "greeting",
+                "type": "string",
+                "default": "''",
+                "attribute": "greeting"
+              },
+              {
+                "name": "documents",
+                "type": "number",
+                "default": "0",
+                "description": "How many documents agents search.",
+                "attribute": "documents"
+              },
+              {
+                "name": "setup",
+                "type": "{ done: number; total: number; } | undefined",
+                "description": "Setup's steps, while unfinished.",
+                "attribute": "setup"
+              },
+              {
+                "name": "queries",
+                "type": "{ thisMonth: number; p50: number; p95: number; days: QueryDay[]; latency: LineSeries[]; }",
+                "default": "{ thisMonth: 0, p50: 0, p95: 0, days: [], latency: [] }",
+                "attribute": "queries"
+              },
+              {
+                "name": "credits",
+                "type": "{ left: number; total: number; spenders: OverviewSpender[]; }",
+                "default": "{ left: 0, total: 0, spenders: [] }",
+                "attribute": "credits"
+              },
+              {
+                "name": "namespaces",
+                "type": "OverviewNamespace[]",
+                "default": "[]",
+                "attribute": "namespaces"
+              }
+            ],
+            "events": [
+              {
+                "name": "finish-setup",
+                "description": "Finish setup was pressed."
+              },
+              {
+                "name": "create-key",
+                "description": "Create API key was pressed."
+              },
+              {
+                "name": "read-docs",
+                "description": "Read the docs was pressed."
+              },
+              {
+                "name": "billing",
+                "description": "Billing was pressed."
+              },
+              {
+                "name": "view-all",
+                "description": "View all was pressed."
+              },
+              {
+                "name": "open-namespace",
+                "description": "A namespace row was pressed ({ name })."
+              }
+            ],
+            "slots": [],
+            "methods": []
+          },
+          {
+            "tag": "conare-overview-queries",
+            "name": "OverviewQueries",
+            "module": "elements/overview-queries.js",
+            "description": "Overview's Queries card: three numbers over the volume or latency chart.",
+            "attributes": [
+              {
+                "name": "this-month",
+                "field": "thisMonth",
+                "type": "number",
+                "default": "0"
+              },
+              {
+                "name": "p50",
+                "field": "p50",
+                "type": "number",
+                "default": "0"
+              },
+              {
+                "name": "p95",
+                "field": "p95",
+                "type": "number",
+                "default": "0"
+              },
+              {
+                "name": "days",
+                "field": "days",
+                "type": "QueryDay[]",
+                "default": "[]"
+              },
+              {
+                "name": "latency",
+                "field": "latency",
+                "type": "LineSeries[]",
+                "default": "[]",
+                "description": "The latency chart's series (p50, p95): points of a time and milliseconds."
+              },
+              {
+                "name": "chart",
+                "field": "chart",
+                "type": "View",
+                "default": "'volume'"
+              },
+              {
+                "name": "pinned",
+                "field": "pinned",
+                "type": "Stat",
+                "default": "''"
+              },
+              {
+                "name": "hot",
+                "field": "hot",
+                "type": "Stat",
+                "default": "''"
+              },
+              {
+                "name": "shown",
+                "field": "shown",
+                "type": "View",
+                "default": "'volume'"
+              }
+            ],
+            "properties": [
+              {
+                "name": "thisMonth",
+                "type": "number",
+                "default": "0",
+                "attribute": "this-month"
+              },
+              {
+                "name": "p50",
+                "type": "number",
+                "default": "0",
+                "attribute": "p50"
+              },
+              {
+                "name": "p95",
+                "type": "number",
+                "default": "0",
+                "attribute": "p95"
+              },
+              {
+                "name": "days",
+                "type": "QueryDay[]",
+                "default": "[]",
+                "attribute": "days"
+              },
+              {
+                "name": "latency",
+                "type": "LineSeries[]",
+                "default": "[]",
+                "description": "The latency chart's series (p50, p95): points of a time and milliseconds.",
+                "attribute": "latency"
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          },
+          {
+            "tag": "conare-console-frame",
+            "name": "ConsoleFrame",
+            "module": "elements/console-frame.js",
+            "description": "The console's layout: the sidebar, the top bar with the trail, and the page.",
+            "attributes": [
+              {
+                "name": "crumbs",
+                "field": "crumbs",
+                "type": "Crumb[]",
+                "default": "[]",
+                "description": "The trail in the top bar."
+              },
+              {
+                "name": "open",
+                "field": "open",
+                "type": "boolean",
+                "default": "false"
+              }
+            ],
+            "properties": [
+              {
+                "name": "crumbs",
+                "type": "Crumb[]",
+                "default": "[]",
+                "description": "The trail in the top bar.",
+                "attribute": "crumbs"
+              }
+            ],
+            "events": [
+              {
+                "name": "navigate",
+                "description": "A sidebar link was pressed ({ link })."
+              }
+            ],
+            "slots": [
+              {
+                "name": "",
+                "description": "The page."
+              },
+              {
+                "name": "nav",
+                "description": "The sidebar's labels and links."
+              },
+              {
+                "name": "head",
+                "description": "The workspace switcher."
+              },
+              {
+                "name": "foot",
+                "description": "The account menu."
+              },
+              {
+                "name": "bar",
+                "description": "What sits at the bar's end."
+              }
+            ],
+            "methods": []
+          },
+          {
+            "tag": "conare-console-page",
+            "name": "ConsolePage",
+            "module": "elements/console-page.js",
+            "description": "The frame of every console page: the title, its actions, then the body.",
+            "attributes": [
+              {
+                "name": "heading",
+                "field": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The page's title (Vue's `title`)."
+              },
+              {
+                "name": "mono",
+                "field": "mono",
+                "type": "boolean",
+                "default": "false",
+                "description": "The title is an identifier: Geist Mono, as typed."
+              }
+            ],
+            "properties": [
+              {
+                "name": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The page's title (Vue's `title`).",
+                "attribute": "heading"
+              },
+              {
+                "name": "mono",
+                "type": "boolean",
+                "default": "false",
+                "description": "The title is an identifier: Geist Mono, as typed.",
+                "attribute": "mono"
+              },
+              {
+                "name": "rootName",
+                "type": "string",
+                "default": "'console-page'",
+                "description": "The root's data-ds, for a page built on this one (Vue's fallthrough data-ds)."
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "The body, in 24px steps."
+              },
+              {
+                "name": "meta",
+                "description": "Beside the title."
+              },
+              {
+                "name": "actions",
+                "description": "The page's actions on the right."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Overview, in the console's frame",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/overview-page/Product.html",
+          "content": "<!-- Overview as it ships, in the console's frame, on sample data: setup still open, Queries for the last 90 days,\n     credits and the largest namespaces. Listen for its events to wire your own routes. -->\n<conare-console-frame crumbs='[{ \"label\": \"Overview\" }]'>\n  <conare-sidebar-label slot=\"nav\">Platform</conare-sidebar-label>\n  <conare-sidebar-link slot=\"nav\" href=\"#\" active><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-house\" aria-hidden=\"true\" slot=\"icon\"><path d=\"M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8\"></path><path d=\"M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z\"></path></svg>Overview</conare-sidebar-link>\n  <conare-sidebar-link slot=\"nav\" href=\"#\" status=\"6\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-layers\" aria-hidden=\"true\" slot=\"icon\"><path d=\"M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z\"></path><path d=\"M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12\"></path><path d=\"M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17\"></path></svg>Namespaces</conare-sidebar-link>\n  <conare-sidebar-link slot=\"nav\" href=\"#\" status=\"1 failed\" alert><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-network\" aria-hidden=\"true\" slot=\"icon\"><rect x=\"16\" y=\"16\" width=\"6\" height=\"6\" rx=\"1\"></rect><rect x=\"2\" y=\"16\" width=\"6\" height=\"6\" rx=\"1\"></rect><rect x=\"9\" y=\"2\" width=\"6\" height=\"6\" rx=\"1\"></rect><path d=\"M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3\"></path><path d=\"M12 12V8\"></path></svg>Sources</conare-sidebar-link>\n  <conare-sidebar-link slot=\"nav\" href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-square-terminal\" aria-hidden=\"true\" slot=\"icon\"><path d=\"m7 11 2-2-2-2\"></path><path d=\"M11 13h4\"></path><rect width=\"18\" height=\"18\" x=\"3\" y=\"3\" rx=\"2\" ry=\"2\"></rect></svg>Agents</conare-sidebar-link>\n  <conare-sidebar-link slot=\"nav\" href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-atom\" aria-hidden=\"true\" slot=\"icon\"><circle cx=\"12\" cy=\"12\" r=\"1\"></circle><path d=\"M20.2 20.2c2.04-2.03.02-7.36-4.5-11.9-4.54-4.52-9.87-6.54-11.9-4.5-2.04 2.03-.02 7.36 4.5 11.9 4.54 4.52 9.87 6.54 11.9 4.5Z\"></path><path d=\"M15.7 15.7c4.52-4.54 6.54-9.87 4.5-11.9-2.03-2.04-7.36-.02-11.9 4.5-4.52 4.54-6.54 9.87-4.5 11.9 2.03 2.04 7.36.02 11.9-4.5Z\"></path></svg>Custom models</conare-sidebar-link>\n  <conare-sidebar-label slot=\"nav\">Manage</conare-sidebar-label>\n  <conare-sidebar-link slot=\"nav\" href=\"#\" status=\"3\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-key-round\" aria-hidden=\"true\" slot=\"icon\"><path d=\"M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z\"></path><circle cx=\"16.5\" cy=\"7.5\" r=\".5\" fill=\"currentColor\"></circle></svg>API keys</conare-sidebar-link>\n  <conare-sidebar-link slot=\"nav\" href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-gauge\" aria-hidden=\"true\" slot=\"icon\"><path d=\"m12 14 4-4\"></path><path d=\"M3.34 19a10 10 0 1 1 17.32 0\"></path></svg>Performance</conare-sidebar-link>\n  <conare-sidebar-link slot=\"nav\" href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-activity\" aria-hidden=\"true\" slot=\"icon\"><path d=\"M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2\"></path></svg>Usage</conare-sidebar-link>\n  <conare-sidebar-link slot=\"nav\" href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-credit-card\" aria-hidden=\"true\" slot=\"icon\"><rect width=\"20\" height=\"14\" x=\"2\" y=\"5\" rx=\"2\"></rect><line x1=\"2\" x2=\"22\" y1=\"10\" y2=\"10\"></line></svg>Billing</conare-sidebar-link>\n  <conare-sidebar-link slot=\"nav\" href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-settings\" aria-hidden=\"true\" slot=\"icon\"><path d=\"M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z\"></path><circle cx=\"12\" cy=\"12\" r=\"3\"></circle></svg>Settings</conare-sidebar-link>\n  <conare-overview-page id=\"overview\" greeting=\"Good afternoon\" documents=\"2786122\" setup='{ \"done\": 3, \"total\": 4 }'\n    credits='{ \"left\": 412.6, \"total\": 500, \"spenders\": [{ \"name\": \"support\", \"cost\": 54.2, \"share\": 0.62 }, { \"name\": \"contracts\", \"cost\": 21.85, \"share\": 0.25 }, { \"name\": \"wiki\", \"cost\": 0.4, \"share\": 0.004 }] }'\n    namespaces='[{ \"name\": \"contracts\", \"documents\": 412830, \"health\": \"ready\", \"synced\": \"2 min ago\", \"lastUsed\": \"2 min ago\" }, { \"name\": \"support\", \"documents\": 2184920, \"health\": \"syncing\", \"lastUsed\": \"1 min ago\" }, { \"name\": \"wiki\", \"documents\": 96410, \"health\": \"ready\", \"synced\": \"12 min ago\", \"lastUsed\": \"1 h ago\" }, { \"name\": \"crm\", \"documents\": 52660, \"health\": \"error\", \"lastUsed\": \"yesterday\" }, { \"name\": \"engineering\", \"documents\": 31902, \"health\": \"api\", \"lastUsed\": \"3 days ago\" }, { \"name\": \"research\", \"documents\": 7385, \"health\": \"api\" }]'></conare-overview-page>\n</conare-console-frame>\n<script type=\"module\">\n  // 90 days ending on Nov 4, a weekday rhythm with a slow climb.\n  const end = Date.UTC(2026, 10, 4)\n  const days = Array.from({ length: 90 }, (_, i) => {\n    const at = new Date(end - (89 - i) * 86400000)\n    const weekend = at.getUTCDay() === 0 || at.getUTCDay() === 6\n    return { day: at.toISOString().slice(0, 10), value: Math.round((weekend ? 1800 : 5200) + i * 42 + ((i * 37) % 11) * 140) }\n  })\n  const thisMonth = days.filter(d => d.day.startsWith('2026-11')).reduce((a, d) => a + d.value, 0)\n  // The last 24 hours, every 30 minutes: p50 and p95.\n  const half = (i) => end - (47 - i) * 1800000\n  const latency = [\n    { label: 'p50', points: Array.from({ length: 48 }, (_, i) => ({ t: half(i), v: 140 + ((i * 29) % 17) * 6 + (i % 12 === 5 ? 90 : 0) })) },\n    { label: 'p95', points: Array.from({ length: 48 }, (_, i) => ({ t: half(i), v: 260 + ((i * 31) % 13) * 8 + (i % 12 === 5 ? 120 : 0) })) },\n  ]\n  await customElements.whenDefined('conare-overview-page')\n  document.getElementById('overview').queries = { thisMonth, p50: 182, p95: 296, days, latency }\n</script>\n"
+        }
+      ]
+    }
+  }
+}

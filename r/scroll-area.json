@@ -1,0 +1,207 @@
+{
+  "name": "scroll-area",
+  "title": "Scroll area",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "A region that scrolls on its own with the console's thin scrollbars: the thumb in neutral-600 on a clear track, neutral-400 on the dark window. Native scrolling, so wheel, touch and keyboard all work.",
+  "use_for": "A long list in a fixed box, a wide row that scrolls sideways, code in a dark window.",
+  "never": [
+    "Custom drawn scrollbars that break native scrolling",
+    "A scroll box a keyboard can't reach: give it a label",
+    "Hiding the scrollbar on content people need to find"
+  ],
+  "source": "conare-web app/assets/css/main.css (html scrollbar-color), app/assets/css/console2.css (.v2-agentwin-code)",
+  "body": "Its edges fade while there is more to scroll (`fade-y`, `fade-x` across, `fade-xy` both ways): nothing is cut off by a hard edge.",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/ScrollArea.vue",
+      "content": "<script setup lang=\"ts\">\n// A region that scrolls on its own with the console's thin scrollbars (main.css html: scrollbar-width thin, the thumb\n// in neutral-600 on a clear track; on the dark window, neutral-400 as .v2-agentwin-code). Native scrolling, so wheel,\n// touch and keyboard all work; with a `label` it is a named region a keyboard can reach. `maxHeight` caps it; `axis`\n// picks the direction.\nwithDefaults(defineProps<{ label?: string, maxHeight?: string, axis?: 'y' | 'x' | 'both', tone?: 'default' | 'dark' }>(), { axis: 'y', tone: 'default' })\n</script>\n\n<template>\n  <div data-ds=\"scroll-area\"\n    class=\"ds-scroll overscroll-contain\"\n    :class=\"{ 'fade-y overflow-y-auto overflow-x-hidden': axis === 'y', 'fade-x overflow-x-auto overflow-y-hidden': axis === 'x', 'fade-xy overflow-auto': axis === 'both' }\"\n    :data-tone=\"tone\"\n    :style=\"maxHeight ? { maxHeight } : undefined\"\n    :role=\"label ? 'region' : undefined\"\n    :aria-label=\"label\"\n    :tabindex=\"label ? 0 : undefined\"\n  >\n    <slot />\n  </div>\n</template>\n\n<style>\n.ds-scroll { scrollbar-width: thin; scrollbar-color: var(--ds-color-neutral-600) transparent; }\n.ds-scroll[data-tone=\"dark\"] { scrollbar-color: var(--ds-color-neutral-400) transparent; }\n.ds-scroll:focus-visible { outline-offset: calc(var(--ds-border-focus) * -1); }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "A list and a row",
+      "center": false,
+      "half": false,
+      "path": "examples/scroll-area/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport ScrollArea from '@/components/ui/ScrollArea.vue'\n// A long list of documents in a short box, and a wide row of tags that scrolls sideways on its own.\nconst docs = Array.from({ length: 24 }, (_, i) => ({ id: `acme-contract-${String(i + 1).padStart(3, '0')}.pdf`, pages: 4 + ((i * 7) % 30) }))\nconst tags = ['contracts', 'support', 'crm', 'slack', 'drive', 'notion', 'gmail', 'billing', 'sales-calls', 'legal', 'hr', 'engineering']\n</script>\n\n<template>\n  <div class=\"flex flex-col gap-6\">\n    <ScrollArea label=\"documents\" max-height=\"240px\" class=\"w-full max-w-sm border border-edge\">\n      <ul>\n        <li v-for=\"d in docs\" :key=\"d.id\" class=\"flex h-10 items-center justify-between gap-4 border-b border-edge px-3 last:border-b-0\">\n          <span class=\"truncate type-code-sm\">{{ d.id }}</span>\n          <span class=\"type-meta text-fg-muted tabular-nums\">{{ d.pages }} pages</span>\n        </li>\n      </ul>\n    </ScrollArea>\n    <ScrollArea label=\"namespaces\" axis=\"x\" class=\"w-full max-w-sm border border-edge\">\n      <div class=\"flex w-max gap-2 p-3\">\n        <span v-for=\"t in tags\" :key=\"t\" class=\"border border-edge px-2 type-code-sm leading-6\">{{ t }}</span>\n      </div>\n    </ScrollArea>\n  </div>\n</template>\n",
+      "requires": [],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/ScrollArea.tsx",
+          "content": "import type { ReactNode } from 'react'\nimport { cn } from '@/react/lib/cn'\n\n// A region that scrolls on its own with the console's thin scrollbars (main.css html: scrollbar-width thin, the thumb\n// in neutral-600 on a clear track; on the dark window, neutral-400 as .v2-agentwin-code). Native scrolling, so wheel,\n// touch and keyboard all work; with a `label` it is a named region a keyboard can reach. `maxHeight` caps it; `axis`\n// picks the direction.\nexport interface ScrollAreaProps { label?: string, maxHeight?: string, axis?: 'y' | 'x' | 'both', tone?: 'default' | 'dark', className?: string, children?: ReactNode }\n\nexport function ScrollArea({ label, maxHeight, axis = 'y', tone = 'default', className, children }: ScrollAreaProps) {\n  return (\n    <>\n      <style href=\"ds-scroll-area\" precedence=\"ds\">{css}</style>\n      <div\n        data-ds=\"scroll-area\"\n        className={cn('ds-scroll overscroll-contain', axis === 'y' && 'fade-y overflow-y-auto overflow-x-hidden', axis === 'x' && 'fade-x overflow-x-auto overflow-y-hidden', axis === 'both' && 'fade-xy overflow-auto', className)}\n        data-tone={tone}\n        style={maxHeight ? { maxHeight } : undefined}\n        role={label ? 'region' : undefined}\n        aria-label={label}\n        tabIndex={label ? 0 : undefined}\n      >\n        {children}\n      </div>\n    </>\n  )\n}\n\nexport default ScrollArea\n\nconst css = `\n.ds-scroll { scrollbar-width: thin; scrollbar-color: var(--ds-color-neutral-600) transparent; }\n.ds-scroll[data-tone=\"dark\"] { scrollbar-color: var(--ds-color-neutral-400) transparent; }\n.ds-scroll:focus-visible { outline-offset: calc(var(--ds-border-focus) * -1); }\n`\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "ScrollArea",
+            "file": "react/components/ui/ScrollArea.tsx",
+            "props": [
+              {
+                "name": "label",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "maxHeight",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "axis",
+                "type": "'y' | 'x' | 'both'",
+                "required": false,
+                "default": "'y'"
+              },
+              {
+                "name": "tone",
+                "type": "'default' | 'dark'",
+                "required": false,
+                "default": "'default'"
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "A list and a row",
+          "center": false,
+          "half": false,
+          "path": "react/examples/scroll-area/Product.tsx",
+          "content": "import { ScrollArea } from '@/react/components/ui/ScrollArea'\n// A long list of documents in a short box, and a wide row of tags that scrolls sideways on its own.\n\nconst docs = Array.from({ length: 24 }, (_, i) => ({ id: `acme-contract-${String(i + 1).padStart(3, '0')}.pdf`, pages: 4 + ((i * 7) % 30) }))\nconst tags = ['contracts', 'support', 'crm', 'slack', 'drive', 'notion', 'gmail', 'billing', 'sales-calls', 'legal', 'hr', 'engineering']\n\nexport default function Product() {\n  return (\n    <div className=\"flex flex-col gap-6\">\n      <ScrollArea label=\"documents\" maxHeight=\"240px\" className=\"w-full max-w-sm border border-edge\">\n        <ul>\n          {docs.map(d => (\n            <li key={d.id} className=\"flex h-10 items-center justify-between gap-4 border-b border-edge px-3 last:border-b-0\">\n              <span className=\"truncate type-code-sm\">{d.id}</span>\n              <span className=\"type-meta text-fg-muted tabular-nums\">{d.pages} pages</span>\n            </li>\n          ))}\n        </ul>\n      </ScrollArea>\n      <ScrollArea label=\"namespaces\" axis=\"x\" className=\"w-full max-w-sm border border-edge\">\n        <div className=\"flex w-max gap-2 p-3\">\n          {tags.map(t => <span key={t} className=\"border border-edge px-2 type-code-sm leading-6\">{t}</span>)}\n        </div>\n      </ScrollArea>\n    </div>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/scroll-area.ts",
+          "content": "import { html, type PropertyValues } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// ScrollArea.vue as <conare-scroll-area>: a region that scrolls on its own with the console's thin scrollbars (main.css\n// html: scrollbar-width thin, the thumb in neutral-600 on a clear track; on the dark window, neutral-400 as\n// .v2-agentwin-code). Native scrolling, so wheel, touch and keyboard all work; with a `label` it is a named region a\n// keyboard can reach. `max-height` caps it; `axis` picks the direction. The host is the scrolling box (Vue's root div),\n// so a class on the element (a width, a border) lands on it.\n\n/**\n * @summary A region that scrolls on its own, with thin scrollbars.\n * @slot - The content.\n */\nexport class ScrollArea extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { label: {}, maxHeight: { attribute: 'max-height' }, axis: { reflect: true }, tone: { reflect: true } }\n\n\t/** Names the region and lets a keyboard reach it. */\n\tlabel?: string\n\t/** A cap on its height, such as 240px. */\n\tmaxHeight?: string\n\taxis: 'y' | 'x' | 'both' = 'y'\n\ttone: 'default' | 'dark' = 'default'\n\n\tprotected updated(changed: PropertyValues) {\n\t\tsuper.updated(changed)\n\t\t// The host is the region: its role, name, tab stop and cap go on it, as on Vue's root.\n\t\tif (changed.has('maxHeight')) this.style.maxHeight = this.maxHeight ?? ''\n\t\tif (changed.has('label')) {\n\t\t\tif (this.label) {\n\t\t\t\tthis.setAttribute('role', 'region')\n\t\t\t\tthis.setAttribute('aria-label', this.label)\n\t\t\t\tthis.tabIndex = 0\n\t\t\t} else {\n\t\t\t\tfor (const a of ['role', 'aria-label', 'tabindex']) this.removeAttribute(a)\n\t\t\t}\n\t\t}\n\t}\n\n\trender() {\n\t\treturn html`<slot></slot>`\n\t}\n}\n\ndefine('scroll-area', ScrollArea)\n"
+        },
+        {
+          "path": "elements/components/ui/scroll-area.css",
+          "content": "/* ScrollArea.vue's classes and <style>, with the scrolling box (.ds-scroll, the Vue root) as the host. */\n:host { @apply fade-y block overscroll-contain overflow-y-auto overflow-x-hidden; }\n:host([axis=\"x\"]) { @apply fade-x overflow-x-auto overflow-y-hidden; }\n:host([axis=\"both\"]) { @apply fade-xy overflow-auto; }\n:host { scrollbar-width: thin; scrollbar-color: var(--ds-color-neutral-600) transparent; }\n:host([tone=\"dark\"]) { scrollbar-color: var(--ds-color-neutral-400) transparent; }\n:host(:focus-visible) { outline-offset: calc(var(--ds-border-focus) * -1) !important; }\n/* !important: the page's scoped focus ring (outline-offset 2px) wins over a plain :host rule. */\n/* The fade's own focus rule reads :host:focus-visible, which a host never matches: the whole ring shows, as in Vue. */\n:host(:focus-visible) { mask-image: none; }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/scroll-area.js"
+      ],
+      "tag": "conare-scroll-area",
+      "tags": [
+        "conare-scroll-area"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-scroll-area",
+            "name": "ScrollArea",
+            "module": "elements/scroll-area.js",
+            "description": "A region that scrolls on its own, with thin scrollbars.",
+            "attributes": [
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string | undefined",
+                "description": "Names the region and lets a keyboard reach it."
+              },
+              {
+                "name": "max-height",
+                "field": "maxHeight",
+                "type": "string | undefined",
+                "description": "A cap on its height, such as 240px."
+              },
+              {
+                "name": "axis",
+                "field": "axis",
+                "type": "\"y\" | \"x\" | \"both\"",
+                "default": "'y'"
+              },
+              {
+                "name": "tone",
+                "field": "tone",
+                "type": "\"dark\" | \"default\"",
+                "default": "'default'"
+              }
+            ],
+            "properties": [
+              {
+                "name": "label",
+                "type": "string | undefined",
+                "description": "Names the region and lets a keyboard reach it.",
+                "attribute": "label"
+              },
+              {
+                "name": "maxHeight",
+                "type": "string | undefined",
+                "description": "A cap on its height, such as 240px.",
+                "attribute": "max-height"
+              },
+              {
+                "name": "axis",
+                "type": "\"y\" | \"x\" | \"both\"",
+                "default": "'y'",
+                "attribute": "axis"
+              },
+              {
+                "name": "tone",
+                "type": "\"dark\" | \"default\"",
+                "default": "'default'",
+                "attribute": "tone"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "The content."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "A list and a row",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/scroll-area/Product.html",
+          "content": "<!-- A long list of documents in a short box, and a wide row of tags that scrolls sideways on its own. -->\n<div class=\"flex flex-col gap-6\">\n  <conare-scroll-area label=\"documents\" max-height=\"240px\" class=\"w-full max-w-sm border border-edge\">\n    <ul id=\"scroll-docs\"></ul>\n  </conare-scroll-area>\n  <conare-scroll-area label=\"namespaces\" axis=\"x\" class=\"w-full max-w-sm border border-edge\">\n    <div id=\"scroll-tags\" class=\"flex w-max gap-2 p-3\"></div>\n  </conare-scroll-area>\n</div>\n<script type=\"module\">\n  const docs = Array.from({ length: 24 }, (_, i) => ({ id: `acme-contract-${String(i + 1).padStart(3, '0')}.pdf`, pages: 4 + ((i * 7) % 30) }))\n  const tags = ['contracts', 'support', 'crm', 'slack', 'drive', 'notion', 'gmail', 'billing', 'sales-calls', 'legal', 'hr', 'engineering']\n  document.getElementById('scroll-docs').innerHTML = docs.map((d) => `<li class=\"flex h-10 items-center justify-between gap-4 border-b border-edge px-3 last:border-b-0\"><span class=\"truncate type-code-sm\">${d.id}</span><span class=\"type-meta text-fg-muted tabular-nums\">${d.pages} pages</span></li>`).join('')\n  document.getElementById('scroll-tags').innerHTML = tags.map((t) => `<span class=\"border border-edge px-2 type-code-sm leading-6\">${t}</span>`).join('')\n</script>\n"
+        }
+      ]
+    }
+  }
+}

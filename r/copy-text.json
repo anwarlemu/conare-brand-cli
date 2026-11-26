@@ -1,0 +1,181 @@
+{
+  "name": "copy-text",
+  "title": "Copy text",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "An identifier or an endpoint as typed, in mono, with a quiet button that copies it and shows a check.",
+  "use_for": "Key IDs, model names, namespace IDs and endpoints in a definition list or a table cell.",
+  "never": [
+    "Secrets after they were first shown",
+    "Sentences: copy text holds one value",
+    "A long value without room: it truncates, with the whole value in its title"
+  ],
+  "source": "conare-web app/components/console/CopyText.vue",
+  "body": "`value` is what is copied and shown, `label` names it for the button (\"copy key id\"). The button is the console's: a 20px round hover in the sunken grey, as the branch draws it, the one round shape in the console. Copying uses the library's `useCopy`, which falls back to the copy command where the Clipboard API is refused. For a labelled Copy button use CopyButton.",
+  "requires": [],
+  "dependencies": [
+    "lucide-vue-next@^0.479.0"
+  ],
+  "files": [
+    {
+      "path": "components/ui/CopyText.vue",
+      "content": "<script setup lang=\"ts\">\nimport { Check, Copy } from 'lucide-vue-next'\nimport { useCopy } from '@/composables/useCopy'\n\n// An identifier or an endpoint as typed, with a button that copies it (CopyText.vue): the value in 12px Geist Mono,\n// cut with an ellipsis when it runs out of room (the whole value in its title), and a 20px quiet button whose glyph turns\n// to a check for 1.5s. The button is round, as the console draws it, and grows a 44px place to land on phones. One value\n// per copy text; never a secret after it was first shown.\nconst props = defineProps<{ value: string, label: string }>()\nconst { copied, copy } = useCopy()\n</script>\n\n<template>\n  <span data-ds=\"copy-text\" class=\"inline-flex max-w-full min-w-0 items-center gap-1\">\n    <code class=\"truncate font-code text-meta leading-5\" :title=\"value\">{{ value }}</code>\n    <button\n      type=\"button\"\n      class=\"relative inline-flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-fg-muted transition-colors duration-150 hover:bg-surface-sunken hover:text-fg pointer-coarse:after:absolute pointer-coarse:after:-inset-3 pointer-coarse:after:content-[''] max-md:after:absolute max-md:after:-inset-3 max-md:after:content-['']\"\n      :aria-label=\"copied ? `${label} copied` : `copy ${label}`\"\n      @click.stop=\"copy(props.value)\"\n    >\n      <Check v-if=\"copied\" :size=\"12\" :stroke-width=\"1.5\" aria-hidden=\"true\" />\n      <Copy v-else :size=\"12\" :stroke-width=\"1.5\" aria-hidden=\"true\" />\n    </button>\n  </span>\n</template>\n"
+    },
+    {
+      "path": "composables/useCopy.ts",
+      "content": "import { ref } from 'vue'\n\n/**\n * A copy button's state: copy(text) writes the clipboard, and copied is true for 1.5s after. Where the Clipboard API is\n * refused (a browser or a frame that denies it), the older copy command still works inside the click. Only if both are\n * refused does it answer false, and the text stays selectable.\n */\nexport function useCopy(ms = 1500) {\n  const copied = ref(false)\n  let timer: ReturnType<typeof setTimeout> | undefined\n  async function copy(text: string): Promise<boolean> {\n    try {\n      await navigator.clipboard.writeText(text)\n    }\n    catch {\n      if (!copyByCommand(text)) return false\n    }\n    copied.value = true\n    clearTimeout(timer)\n    // ds-latency: the Copied label stays 1.5s after the copy, which has already happened.\n    timer = setTimeout(() => { copied.value = false }, ms)\n    return true\n  }\n  return { copied, copy }\n}\n\n// The older way: select the text in an unseen field, run the copy command, hand focus back.\nfunction copyByCommand(text: string) {\n  const back = document.activeElement as HTMLElement | null\n  const field = document.createElement('textarea')\n  field.value = text\n  field.setAttribute('readonly', '')\n  field.style.position = 'fixed'\n  field.style.opacity = '0'\n  document.body.appendChild(field)\n  field.select()\n  let ok = false\n  try { ok = document.execCommand('copy') }\n  catch { ok = false }\n  field.remove()\n  back?.focus()\n  return ok\n}\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "In the product",
+      "center": true,
+      "half": false,
+      "path": "examples/copy-text/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport CopyText from '@/components/ui/CopyText.vue'\n// A key's ID and a custom model, as the keys and models pages list them.\n</script>\n\n<template>\n  <dl class=\"grid max-w-120 grid-cols-[96px_minmax(0,1fr)] items-center gap-x-4 gap-y-3\">\n    <dt class=\"type-meta text-fg-muted\">ID</dt><dd class=\"min-w-0\"><CopyText value=\"key_01JB7Q4ZK2M8F3\" label=\"key id\" /></dd>\n    <dt class=\"type-meta text-fg-muted\">Embedder</dt><dd class=\"min-w-0\"><CopyText value=\"acme-embed-legal-v2\" label=\"embedder model\" /></dd>\n  </dl>\n</template>\n",
+      "requires": [],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/CopyText.tsx",
+          "content": "'use client'\nimport { Check, Copy } from 'lucide-react'\nimport { useCopy } from '@/react/hooks/useCopy'\nimport { cn } from '@/react/lib/cn'\n\n// An identifier or an endpoint as typed, with a button that copies it (CopyText.vue): the value in 12px Geist Mono,\n// cut with an ellipsis when it runs out of room (the whole value in its title), and a 20px quiet button whose glyph turns\n// to a check for 1.5s. The button is round, as the console draws it, and grows a 44px place to land on phones. One value\n// per copy text; never a secret after it was first shown.\nexport interface CopyTextProps {\n  value: string\n  label: string\n  className?: string\n}\n\nexport function CopyText({ value, label, className }: CopyTextProps) {\n  const { copied, copy } = useCopy()\n  return (\n    <span data-ds=\"copy-text\" className={cn('inline-flex max-w-full min-w-0 items-center gap-1', className)}>\n      <code className=\"truncate font-code text-meta leading-5\" title={value}>{value}</code>\n      <button\n        type=\"button\"\n        className=\"relative inline-flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-fg-muted transition-colors duration-150 hover:bg-surface-sunken hover:text-fg pointer-coarse:after:absolute pointer-coarse:after:-inset-3 pointer-coarse:after:content-[''] max-md:after:absolute max-md:after:-inset-3 max-md:after:content-['']\"\n        aria-label={copied ? `${label} copied` : `copy ${label}`}\n        onClick={(e) => { e.stopPropagation(); void copy(value) }}\n      >\n        {copied ? <Check size={12} strokeWidth={1.5} aria-hidden=\"true\" /> : <Copy size={12} strokeWidth={1.5} aria-hidden=\"true\" />}\n      </button>\n    </span>\n  )\n}\n\nexport default CopyText\n"
+        },
+        {
+          "path": "react/hooks/useCopy.ts",
+          "content": "'use client'\nimport { useCallback, useEffect, useRef, useState } from 'react'\n\n/**\n * A copy button's state: copy(text) writes the clipboard, and copied is true for 1.5s after. Where the Clipboard API is\n * refused (a browser or a frame that denies it), the older copy command still works inside the click. Only if both are\n * refused does it answer false, and the text stays selectable.\n */\nexport function useCopy(ms = 1500) {\n  const [copied, setCopied] = useState(false)\n  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)\n  useEffect(() => () => clearTimeout(timer.current), [])\n  const copy = useCallback(async (text: string): Promise<boolean> => {\n    try {\n      await navigator.clipboard.writeText(text)\n    }\n    catch {\n      if (!copyByCommand(text)) return false\n    }\n    setCopied(true)\n    clearTimeout(timer.current)\n    // ds-latency: the Copied label stays 1.5s after the copy, which has already happened.\n    timer.current = setTimeout(() => setCopied(false), ms)\n    return true\n  }, [ms])\n  return { copied, copy }\n}\n\n// The older way: select the text in an unseen field, run the copy command, hand focus back.\nfunction copyByCommand(text: string) {\n  const back = document.activeElement as HTMLElement | null\n  const field = document.createElement('textarea')\n  field.value = text\n  field.setAttribute('readonly', '')\n  field.style.position = 'fixed'\n  field.style.opacity = '0'\n  document.body.appendChild(field)\n  field.select()\n  let ok = false\n  try { ok = document.execCommand('copy') }\n  catch { ok = false }\n  field.remove()\n  back?.focus()\n  return ok\n}\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [
+        "lucide-react@0.479.0"
+      ],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "CopyText",
+            "file": "react/components/ui/CopyText.tsx",
+            "props": [
+              {
+                "name": "value",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": true,
+          "half": false,
+          "path": "react/examples/copy-text/Product.tsx",
+          "content": "import { CopyText } from '@/react/components/ui/CopyText'\n// A key's ID and a custom model, as the keys and models pages list them.\n\nexport default function Product() {\n  return (\n    <dl className=\"grid max-w-120 grid-cols-[96px_minmax(0,1fr)] items-center gap-x-4 gap-y-3\">\n      <dt className=\"type-meta text-fg-muted\">ID</dt><dd className=\"min-w-0\"><CopyText value=\"key_01JB7Q4ZK2M8F3\" label=\"key id\" /></dd>\n      <dt className=\"type-meta text-fg-muted\">Embedder</dt><dd className=\"min-w-0\"><CopyText value=\"acme-embed-legal-v2\" label=\"embedder model\" /></dd>\n    </dl>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/copy-text.ts",
+          "content": "import { html } from 'lit'\nimport { Check, Copy } from 'lucide'\nimport { DsElement, define } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport { CopyController } from '@/elements/controllers/copy'\nimport styles from 'virtual:tw'\n\n// CopyText.vue as <conare-copy-text>: an identifier or an endpoint as typed, with a button that copies it: the value in\n// 12px Geist Mono, cut with an ellipsis when it runs out of room (the whole value in its title), and a 20px quiet button\n// whose glyph turns to a check for 1.5s. The button is round, as the console draws it, and grows a 44px place to land on\n// phones. One value per copy text; never a secret after it was first shown.\n\n/** @summary A value in mono with a quiet button that copies it. */\nexport class CopyText extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { value: {}, label: {} }\n\n\t/** The value, as typed. */\n\tvalue = ''\n\t/** What the value is, for the button's name (copy <label>). */\n\tlabel = ''\n\tprivate copier = new CopyController(this)\n\n\trender() {\n\t\tconst copied = this.copier.copied\n\t\treturn html`<span data-ds=\"copy-text\" class=\"inline-flex max-w-full min-w-0 items-center gap-1\">\n\t\t\t<code class=\"truncate font-code text-meta leading-5\" title=${this.value}>${this.value}</code>\n\t\t\t<button\n\t\t\t\ttype=\"button\"\n\t\t\t\tclass=\"relative inline-flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-fg-muted transition-colors duration-150 hover:bg-surface-sunken hover:text-fg pointer-coarse:after:absolute pointer-coarse:after:-inset-3 pointer-coarse:after:content-[''] max-md:after:absolute max-md:after:-inset-3 max-md:after:content-['']\"\n\t\t\t\taria-label=${copied ? `${this.label} copied` : `copy ${this.label}`}\n\t\t\t\t@click=${(e: Event) => { e.stopPropagation(); void this.copier.copy(this.value) }}\n\t\t\t>${copied ? icon(Check, 'check', { size: 12, strokeWidth: 1.5, attrs: { 'aria-hidden': 'true' } }) : icon(Copy, 'copy', { size: 12, strokeWidth: 1.5, attrs: { 'aria-hidden': 'true' } })}</button>\n\t\t</span>`\n\t}\n}\n\ndefine('copy-text', CopyText)\n"
+        },
+        {
+          "path": "elements/controllers/copy.ts",
+          "content": "import type { ReactiveController, ReactiveControllerHost } from 'lit'\n\n/**\n * useCopy as a Lit controller: copy(text) writes the clipboard, and `copied` is true for 1.5s after. Where the Clipboard\n * API is refused, the older copy command still works inside the click. Only if both are refused does it answer false.\n */\nexport class CopyController implements ReactiveController {\n\tcopied = false\n\tprivate timer?: ReturnType<typeof setTimeout>\n\tconstructor(private host: ReactiveControllerHost, private ms = 1500) {\n\t\thost.addController(this)\n\t}\n\thostDisconnected() {\n\t\tclearTimeout(this.timer)\n\t}\n\tasync copy(text: string): Promise<boolean> {\n\t\ttry {\n\t\t\tawait navigator.clipboard.writeText(text)\n\t\t} catch {\n\t\t\tif (!copyByCommand(text)) return false\n\t\t}\n\t\tthis.copied = true\n\t\tthis.host.requestUpdate()\n\t\tclearTimeout(this.timer)\n\t\t// ds-latency: the Copied label stays 1.5s after the copy, which has already happened.\n\t\tthis.timer = setTimeout(() => {\n\t\t\tthis.copied = false\n\t\t\tthis.host.requestUpdate()\n\t\t}, this.ms)\n\t\treturn true\n\t}\n}\n\n/** copy(text) without an element, for example scripts: the clipboard, or the copy command where it is refused. */\nexport async function copyText(text: string) {\n\ttry {\n\t\tawait navigator.clipboard.writeText(text)\n\t\treturn true\n\t} catch {\n\t\treturn copyByCommand(text)\n\t}\n}\n\nfunction copyByCommand(text: string) {\n\t// The focused element inside shadow roots, not the host, so focus goes back to the button that copied.\n\tlet back = document.activeElement as HTMLElement | null\n\twhile (back?.shadowRoot?.activeElement) back = back.shadowRoot.activeElement as HTMLElement\n\tconst field = document.createElement('textarea')\n\tfield.value = text\n\tfield.setAttribute('readonly', '')\n\tfield.style.position = 'fixed'\n\tfield.style.opacity = '0'\n\tdocument.body.appendChild(field)\n\tfield.select()\n\tlet ok = false\n\ttry {\n\t\tok = document.execCommand('copy')\n\t} catch {\n\t\tok = false\n\t}\n\tfield.remove()\n\tback?.focus()\n\treturn ok\n}\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/copy-text.js"
+      ],
+      "tag": "conare-copy-text",
+      "tags": [
+        "conare-copy-text"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-copy-text",
+            "name": "CopyText",
+            "module": "elements/copy-text.js",
+            "description": "A value in mono with a quiet button that copies it.",
+            "attributes": [
+              {
+                "name": "value",
+                "field": "value",
+                "type": "string",
+                "default": "''",
+                "description": "The value, as typed."
+              },
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string",
+                "default": "''",
+                "description": "What the value is, for the button's name (copy <label>)."
+              }
+            ],
+            "properties": [
+              {
+                "name": "value",
+                "type": "string",
+                "default": "''",
+                "description": "The value, as typed.",
+                "attribute": "value"
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "default": "''",
+                "description": "What the value is, for the button's name (copy <label>).",
+                "attribute": "label"
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": true,
+          "half": false,
+          "path": "elements/examples/copy-text/Product.html",
+          "content": "<!-- A key's ID and a custom model, as the keys and models pages list them. -->\n<dl class=\"grid max-w-120 grid-cols-[96px_minmax(0,1fr)] items-center gap-x-4 gap-y-3\">\n  <dt class=\"type-meta text-fg-muted\">ID</dt><dd class=\"min-w-0\"><conare-copy-text value=\"key_01JB7Q4ZK2M8F3\" label=\"key id\"></conare-copy-text></dd>\n  <dt class=\"type-meta text-fg-muted\">Embedder</dt><dd class=\"min-w-0\"><conare-copy-text value=\"acme-embed-legal-v2\" label=\"embedder model\"></conare-copy-text></dd>\n</dl>\n"
+        }
+      ]
+    }
+  }
+}

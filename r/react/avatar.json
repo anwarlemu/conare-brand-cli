@@ -1,0 +1,21 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "avatar",
+  "type": "registry:ui",
+  "title": "Avatar",
+  "description": "Who or what something belongs to, always square: the workspace switcher's 20px hairline tile with an initial, and the account's black square that stands in for a profile picture. A picture crops square and falls back to the initial.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Avatar.tsx",
+      "type": "registry:ui",
+      "content": "'use client'\nimport { useState, type HTMLAttributes } from 'react'\nimport { cn } from '@/lib/cn'\n\n// Who or what something belongs to, always square (never round). `tile` (console2.css .v2-tile, the workspace\n// switcher's organization): a 20px hairline box with the name's initial, 11px medium. `solid` (AccountMenu.vue): the\n// black square that stands in for a profile picture; with `initial` it carries the letter in off-white. A `src` shows a\n// picture cropped square, falling back to the initial if it fails. Sizes follow the controls: 20 (in a row), 28, 32.\nexport interface AvatarProps extends Omit<HTMLAttributes<HTMLSpanElement>, 'children'> {\n  name?: string\n  src?: string\n  variant?: 'tile' | 'solid'\n  size?: 20 | 28 | 32\n  initial?: boolean\n}\n\nconst SIZES = { 20: 'size-5 text-caption', 28: 'size-7 text-meta', 32: 'size-8 text-ui' }\n\nexport function Avatar({ name, src, variant = 'tile', size = 20, initial, className, ...rest }: AvatarProps) {\n  const [failed, setFailed] = useState(false)\n  const letter = (name?.trim()[0] ?? '').toUpperCase()\n  const showLetter = variant === 'tile' || initial\n  return (\n    <span\n      data-ds=\"avatar\"\n      className={cn('inline-flex shrink-0 items-center justify-center overflow-hidden leading-none font-medium select-none', SIZES[size], variant === 'tile' ? 'border border-edge bg-surface text-fg' : 'bg-off-black text-off-white', className)}\n      role={name ? 'img' : undefined}\n      aria-label={name}\n      aria-hidden={name ? undefined : 'true'}\n      {...rest}\n    >\n      {src && !failed ? <img src={src} alt=\"\" className=\"size-full object-cover\" onError={() => setFailed(true)} /> : showLetter ? letter : null}\n    </span>\n  )\n}\n\nexport default Avatar\n"
+    },
+    {
+      "path": "lib/cn.ts",
+      "type": "registry:lib",
+      "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+    }
+  ]
+}

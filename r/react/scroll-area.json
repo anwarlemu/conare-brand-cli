@@ -1,0 +1,21 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "scroll-area",
+  "type": "registry:ui",
+  "title": "Scroll area",
+  "description": "A region that scrolls on its own with the console's thin scrollbars: the thumb in neutral-600 on a clear track, neutral-400 on the dark window. Native scrolling, so wheel, touch and keyboard all work.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "components/ui/ScrollArea.tsx",
+      "type": "registry:ui",
+      "content": "import type { ReactNode } from 'react'\nimport { cn } from '@/lib/cn'\n\n// A region that scrolls on its own with the console's thin scrollbars (main.css html: scrollbar-width thin, the thumb\n// in neutral-600 on a clear track; on the dark window, neutral-400 as .v2-agentwin-code). Native scrolling, so wheel,\n// touch and keyboard all work; with a `label` it is a named region a keyboard can reach. `maxHeight` caps it; `axis`\n// picks the direction.\nexport interface ScrollAreaProps { label?: string, maxHeight?: string, axis?: 'y' | 'x' | 'both', tone?: 'default' | 'dark', className?: string, children?: ReactNode }\n\nexport function ScrollArea({ label, maxHeight, axis = 'y', tone = 'default', className, children }: ScrollAreaProps) {\n  return (\n    <>\n      <style href=\"ds-scroll-area\" precedence=\"ds\">{css}</style>\n      <div\n        data-ds=\"scroll-area\"\n        className={cn('ds-scroll overscroll-contain', axis === 'y' && 'fade-y overflow-y-auto overflow-x-hidden', axis === 'x' && 'fade-x overflow-x-auto overflow-y-hidden', axis === 'both' && 'fade-xy overflow-auto', className)}\n        data-tone={tone}\n        style={maxHeight ? { maxHeight } : undefined}\n        role={label ? 'region' : undefined}\n        aria-label={label}\n        tabIndex={label ? 0 : undefined}\n      >\n        {children}\n      </div>\n    </>\n  )\n}\n\nexport default ScrollArea\n\nconst css = `\n.ds-scroll { scrollbar-width: thin; scrollbar-color: var(--ds-color-neutral-600) transparent; }\n.ds-scroll[data-tone=\"dark\"] { scrollbar-color: var(--ds-color-neutral-400) transparent; }\n.ds-scroll:focus-visible { outline-offset: calc(var(--ds-border-focus) * -1); }\n`\n"
+    },
+    {
+      "path": "lib/cn.ts",
+      "type": "registry:lib",
+      "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+    }
+  ]
+}

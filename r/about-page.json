@@ -1,0 +1,320 @@
+{
+  "name": "about-page",
+  "title": "About page",
+  "type": "registry:block",
+  "group": "site",
+  "description": "About the company: the head, the story in one narrow column, the numbers in the double rule, what the team holds to (feature grid) and the closing band, in the site's frame.",
+  "use_for": "A website's about page.",
+  "never": [
+    "Team photos or names on the page: keep it about the company",
+    "Numbers without what they count"
+  ],
+  "source": "No about page in conare-web; set from its pages: the head (pricing.vue), the text column (blog/[slug].vue with DocsBlocks), the price cards' large figures (pricing.vue), the bands (home/*.vue)",
+  "body": "Built on `site-page`: `header`, `footer` and `announcement` are its props, and the `logo` and `actions` slots go to the header (`sheet-actions` too, in web components). `story` takes docs-blocks' blocks (paragraphs, headings, lists).",
+  "requires": [
+    "button-link",
+    "call-to-action",
+    "docs-blocks",
+    "feature-grid",
+    "section-head",
+    "site-page"
+  ],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/site/AboutPage.vue",
+      "content": "<script setup lang=\"ts\">\nimport ButtonLink from '@/components/site/ButtonLink.vue'\nimport CallToAction from '@/components/site/CallToAction.vue'\nimport DocsBlocks, { type DocsBlock } from '@/components/site/DocsBlocks.vue'\nimport FeatureGrid, { type Feature } from '@/components/site/FeatureGrid.vue'\nimport SectionHead from '@/components/site/SectionHead.vue'\nimport SitePage, { type SiteAction, type SiteAnnouncement, type SiteFooterData, type SiteHeaderData } from '@/components/site/SitePage.vue'\n\n// About the company: the head, the story in one narrow column (docs-blocks, as a blog post's text), the numbers in the\n// double rule (each large in tabular figures over its label, as a price), what the team holds to (feature-grid) and the\n// closing band, in the site's frame.\ndefineProps<{\n  header: SiteHeaderData, footer: SiteFooterData, announcement?: SiteAnnouncement\n  head: { tag?: string, title: string, body?: string }\n  story: DocsBlock[]\n  numbers: { value: string, label: string }[]\n  values: { title: string, tag?: string, body?: string, features: Feature[] }\n  cta: { title: string, action: SiteAction }\n}>()\n</script>\n\n<template>\n  <SitePage data-ds=\"about-page\" :header=\"header\" :footer=\"footer\" :announcement=\"announcement\">\n      <template #logo><slot name=\"logo\" /></template>\n      <template #actions=\"{ place }\"><slot name=\"actions\" :place=\"place\" /></template>\n    <section aria-labelledby=\"about-page-title\" class=\"mx-auto max-w-[1440px] px-4 pt-14 pb-16 sm:px-6 lg:px-10 lg:pt-20 lg:pb-20\">\n      <SectionHead as=\"h1\" title-id=\"about-page-title\" :tag=\"head.tag\" :title=\"head.title\" :body=\"head.body\" />\n      <div class=\"mx-auto mt-12 max-w-[640px]\"><DocsBlocks :blocks=\"story\" /></div>\n    </section>\n    <section aria-label=\"In numbers\" class=\"mx-auto max-w-[1440px] px-4 pb-24 sm:px-6 lg:px-10 lg:pb-32\">\n      <dl class=\"grid grid-cols-2 gap-px border border-edge bg-edge outline outline-offset-4 outline-edge lg:grid-cols-4\">\n        <div v-for=\"n in numbers\" :key=\"n.label\" class=\"flex flex-col-reverse gap-2 bg-surface px-5 py-6 sm:px-6\">\n          <dt class=\"text-body text-fg-muted\">{{ n.label }}</dt>\n          <dd class=\"text-viz-score tracking-display text-fg tabular-nums\">{{ n.value }}</dd>\n        </div>\n      </dl>\n    </section>\n    <FeatureGrid v-bind=\"values\" />\n    <CallToAction :title=\"cta.title\">\n      <ButtonLink :href=\"cta.action.href\" variant=\"light\" fill=\"black\">{{ cta.action.label }}</ButtonLink>\n    </CallToAction>\n  </SitePage>\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "About, on sample data",
+      "center": false,
+      "half": false,
+      "path": "examples/about-page/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport AboutPage from '@/components/site/AboutPage.vue'\nimport Button from '@/components/ui/Button.vue'\nimport PixelButton from '@/components/ui/PixelButton.vue'\nimport type { DocsBlock } from '@/components/site/DocsBlocks.vue'\n// About the company on sample data, in the site's frame.\nconst header = {\n  \"items\": [\n    {\n      \"label\": \"Search\",\n      \"desc\": \"Find the answer in any file.\",\n      \"href\": \"#search\"\n    },\n    {\n      \"label\": \"Sync\",\n      \"desc\": \"Keep your apps in step.\",\n      \"href\": \"#sync\"\n    },\n    {\n      \"label\": \"Parse\",\n      \"desc\": \"Read every row and cell.\",\n      \"href\": \"#parse\"\n    }\n  ],\n  \"links\": [\n    {\n      \"label\": \"Pricing\",\n      \"href\": \"#pricing\"\n    },\n    {\n      \"label\": \"Blog\",\n      \"href\": \"#blog\"\n    },\n    {\n      \"label\": \"Docs\",\n      \"href\": \"#docs\"\n    }\n  ],\n  \"homeLabel\": \"Acme home\"\n}\nconst footer = {\n  \"columns\": [\n    {\n      \"title\": \"Product\",\n      \"links\": [\n        {\n          \"label\": \"Search\",\n          \"href\": \"#search\"\n        },\n        {\n          \"label\": \"Sync\",\n          \"href\": \"#sync\"\n        },\n        {\n          \"label\": \"Parse\",\n          \"href\": \"#parse\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Company\",\n      \"links\": [\n        {\n          \"label\": \"About\",\n          \"href\": \"#about\"\n        },\n        {\n          \"label\": \"Blog\",\n          \"href\": \"#blog\"\n        },\n        {\n          \"label\": \"Changelog\",\n          \"href\": \"#changelog\"\n        },\n        {\n          \"label\": \"Contact\",\n          \"href\": \"#contact\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Resources\",\n      \"links\": [\n        {\n          \"label\": \"Docs\",\n          \"href\": \"#docs\"\n        },\n        {\n          \"label\": \"Pricing\",\n          \"href\": \"#pricing\"\n        },\n        {\n          \"label\": \"Status\",\n          \"href\": \"#status\"\n        }\n      ]\n    }\n  ],\n  \"tagline\": \"Search any data you bring. Get the right answer.\",\n  \"legal\": \"© 2026 Acme, Inc.\",\n  \"legalLinks\": [\n    {\n      \"label\": \"Privacy\",\n      \"href\": \"#privacy\"\n    },\n    {\n      \"label\": \"Terms\",\n      \"href\": \"#terms\"\n    }\n  ],\n  \"name\": \"Acme\"\n}\nconst head = {\n  \"tag\": \"About\",\n  \"title\": \"We make company data answer back.\",\n  \"body\": \"Acme stores what a company knows, keeps it in step and hands the right part to its AI.\"\n}\nconst story: DocsBlock[] = [\n  {\n    \"kind\": \"p\",\n    \"text\": \"Acme started with one question a support team kept asking: where did the agent get that? Every answer it gives now carries the passages it read.\"\n  },\n  {\n    \"kind\": \"p\",\n    \"text\": \"We run the servers, the index and the sync jobs, so a team connects its apps and asks. Nothing to tune, nothing to host.\"\n  },\n  {\n    \"kind\": \"list\",\n    \"items\": [\n      \"Accuracy you can check, losses included.\",\n      \"Your data serves your organization alone.\",\n      \"Prices on the page, for every layer.\"\n    ]\n  }\n]\nconst numbers = [\n  {\n    \"value\": \"100M+\",\n    \"label\": \"Documents searched\"\n  },\n  {\n    \"value\": \"1.2B\",\n    \"label\": \"Queries a month\"\n  },\n  {\n    \"value\": \"180 ms\",\n    \"label\": \"Typical search\"\n  },\n  {\n    \"value\": \"14\",\n    \"label\": \"Regions\"\n  }\n]\nconst values = {\n  \"tag\": \"How we work\",\n  \"title\": \"What we hold to.\",\n  \"features\": [\n    {\n      \"title\": \"Search\",\n      \"body\": \"Ask in plain words and get the passages that answer, ranked, with where each came from.\"\n    },\n    {\n      \"title\": \"Sync\",\n      \"body\": \"Connect the apps your team uses. A changed record replaces the old one; a deleted one is deleted.\"\n    },\n    {\n      \"title\": \"Parse\",\n      \"body\": \"Read any file in full: every page, table, row and cell, scanned or typed.\"\n    }\n  ]\n}\nconst cta = {\n  \"title\": \"See it on your own data.\",\n  \"action\": {\n    \"label\": \"Book a demo\",\n    \"href\": \"#demo\"\n  }\n}\n</script>\n\n<template>\n  <div class=\"-m-8\">\n    <AboutPage\n      :header=\"header\"\n      :footer=\"footer\"\n      :head=\"head\"\n      :story=\"story\"\n      :numbers=\"numbers\"\n      :values=\"values\"\n      :cta=\"cta\"\n    >\n      <template #logo><span class=\"font-heading text-heading-3 text-fg\">Acme</span></template>\n      <template #actions><Button href=\"#contact\">Contact us</Button><PixelButton href=\"#sign-in\">Sign in</PixelButton></template>\n    </AboutPage>\n  </div>\n</template>\n",
+      "requires": [
+        "button",
+        "button-link",
+        "call-to-action",
+        "docs-blocks",
+        "feature-grid",
+        "section-head",
+        "site-page"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/site/AboutPage.tsx",
+          "content": "import { ButtonLink } from '@/react/components/site/ButtonLink'\nimport { CallToAction } from '@/react/components/site/CallToAction'\nimport { DocsBlocks, type DocsBlock } from '@/react/components/site/DocsBlocks'\nimport { FeatureGrid, type Feature } from '@/react/components/site/FeatureGrid'\nimport { SectionHead } from '@/react/components/site/SectionHead'\nimport { SitePage, type SiteAction, type SiteFrameProps } from '@/react/components/site/SitePage'\n\n// About the company: the head, the story in one narrow column (docs-blocks, as a blog post's text), the numbers in the\n// double rule (each large in tabular figures over its label, as a price), what the team holds to (feature-grid) and the\n// closing band, in the site's frame.\nexport interface AboutPageProps extends SiteFrameProps {\n  head: { tag?: string, title: string, body?: string }\n  story: DocsBlock[]\n  numbers: { value: string, label: string }[]\n  values: { title: string, tag?: string, body?: string, features: Feature[] }\n  cta: { title: string, action: SiteAction }\n}\n\nexport function AboutPage({ header, footer, announcement, logo, actions, head, story, numbers, values, cta }: AboutPageProps) {\n  return (\n    <SitePage data-ds=\"about-page\" header={header} footer={footer} announcement={announcement} logo={logo} actions={actions}>\n      <section aria-labelledby=\"about-page-title\" className=\"mx-auto max-w-[1440px] px-4 pt-14 pb-16 sm:px-6 lg:px-10 lg:pt-20 lg:pb-20\">\n        <SectionHead as=\"h1\" titleId=\"about-page-title\" tag={head.tag} title={head.title} body={head.body} />\n        <div className=\"mx-auto mt-12 max-w-[640px]\"><DocsBlocks blocks={story} /></div>\n      </section>\n      <section aria-label=\"In numbers\" className=\"mx-auto max-w-[1440px] px-4 pb-24 sm:px-6 lg:px-10 lg:pb-32\">\n        <dl className=\"grid grid-cols-2 gap-px border border-edge bg-edge outline outline-offset-4 outline-edge lg:grid-cols-4\">\n          {numbers.map(n => (\n            <div key={n.label} className=\"flex flex-col-reverse gap-2 bg-surface px-5 py-6 sm:px-6\">\n              <dt className=\"text-body text-fg-muted\">{n.label}</dt>\n              <dd className=\"text-viz-score tracking-display text-fg tabular-nums\">{n.value}</dd>\n            </div>\n          ))}\n        </dl>\n      </section>\n      <FeatureGrid {...values} />\n      <CallToAction title={cta.title}>\n        <ButtonLink href={cta.action.href} variant=\"light\" fill=\"black\">{cta.action.label}</ButtonLink>\n      </CallToAction>\n    </SitePage>\n  )\n}\n\nexport default AboutPage\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "button-link",
+        "call-to-action",
+        "docs-blocks",
+        "feature-grid",
+        "section-head",
+        "site-page"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "AboutPage",
+            "file": "react/components/site/AboutPage.tsx",
+            "props": [
+              {
+                "name": "head",
+                "type": "{ tag?: string, title: string, body?: string }",
+                "required": true
+              },
+              {
+                "name": "story",
+                "type": "DocsBlock[]",
+                "required": true
+              },
+              {
+                "name": "numbers",
+                "type": "{ value: string, label: string }[]",
+                "required": true
+              },
+              {
+                "name": "values",
+                "type": "{ title: string, tag?: string, body?: string, features: Feature[] }",
+                "required": true
+              },
+              {
+                "name": "cta",
+                "type": "{ title: string, action: SiteAction }",
+                "required": true
+              }
+            ],
+            "extends": [
+              "SiteFrameProps"
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "About, on sample data",
+          "center": false,
+          "half": false,
+          "path": "react/examples/about-page/Site.tsx",
+          "content": "import { AboutPage } from '@/react/components/site/AboutPage'\nimport { Button } from '@/react/components/ui/Button'\nimport { PixelButton } from '@/react/components/ui/PixelButton'\nimport type { DocsBlock } from '@/react/components/site/DocsBlocks'\n// About the company on sample data, in the site's frame.\nconst header = {\n  \"items\": [\n    {\n      \"label\": \"Search\",\n      \"desc\": \"Find the answer in any file.\",\n      \"href\": \"#search\"\n    },\n    {\n      \"label\": \"Sync\",\n      \"desc\": \"Keep your apps in step.\",\n      \"href\": \"#sync\"\n    },\n    {\n      \"label\": \"Parse\",\n      \"desc\": \"Read every row and cell.\",\n      \"href\": \"#parse\"\n    }\n  ],\n  \"links\": [\n    {\n      \"label\": \"Pricing\",\n      \"href\": \"#pricing\"\n    },\n    {\n      \"label\": \"Blog\",\n      \"href\": \"#blog\"\n    },\n    {\n      \"label\": \"Docs\",\n      \"href\": \"#docs\"\n    }\n  ],\n  \"homeLabel\": \"Acme home\"\n}\nconst footer = {\n  \"columns\": [\n    {\n      \"title\": \"Product\",\n      \"links\": [\n        {\n          \"label\": \"Search\",\n          \"href\": \"#search\"\n        },\n        {\n          \"label\": \"Sync\",\n          \"href\": \"#sync\"\n        },\n        {\n          \"label\": \"Parse\",\n          \"href\": \"#parse\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Company\",\n      \"links\": [\n        {\n          \"label\": \"About\",\n          \"href\": \"#about\"\n        },\n        {\n          \"label\": \"Blog\",\n          \"href\": \"#blog\"\n        },\n        {\n          \"label\": \"Changelog\",\n          \"href\": \"#changelog\"\n        },\n        {\n          \"label\": \"Contact\",\n          \"href\": \"#contact\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Resources\",\n      \"links\": [\n        {\n          \"label\": \"Docs\",\n          \"href\": \"#docs\"\n        },\n        {\n          \"label\": \"Pricing\",\n          \"href\": \"#pricing\"\n        },\n        {\n          \"label\": \"Status\",\n          \"href\": \"#status\"\n        }\n      ]\n    }\n  ],\n  \"tagline\": \"Search any data you bring. Get the right answer.\",\n  \"legal\": \"© 2026 Acme, Inc.\",\n  \"legalLinks\": [\n    {\n      \"label\": \"Privacy\",\n      \"href\": \"#privacy\"\n    },\n    {\n      \"label\": \"Terms\",\n      \"href\": \"#terms\"\n    }\n  ],\n  \"name\": \"Acme\"\n}\nconst head = {\n  \"tag\": \"About\",\n  \"title\": \"We make company data answer back.\",\n  \"body\": \"Acme stores what a company knows, keeps it in step and hands the right part to its AI.\"\n}\nconst story: DocsBlock[] = [\n  {\n    \"kind\": \"p\",\n    \"text\": \"Acme started with one question a support team kept asking: where did the agent get that? Every answer it gives now carries the passages it read.\"\n  },\n  {\n    \"kind\": \"p\",\n    \"text\": \"We run the servers, the index and the sync jobs, so a team connects its apps and asks. Nothing to tune, nothing to host.\"\n  },\n  {\n    \"kind\": \"list\",\n    \"items\": [\n      \"Accuracy you can check, losses included.\",\n      \"Your data serves your organization alone.\",\n      \"Prices on the page, for every layer.\"\n    ]\n  }\n]\nconst numbers = [\n  {\n    \"value\": \"100M+\",\n    \"label\": \"Documents searched\"\n  },\n  {\n    \"value\": \"1.2B\",\n    \"label\": \"Queries a month\"\n  },\n  {\n    \"value\": \"180 ms\",\n    \"label\": \"Typical search\"\n  },\n  {\n    \"value\": \"14\",\n    \"label\": \"Regions\"\n  }\n]\nconst values = {\n  \"tag\": \"How we work\",\n  \"title\": \"What we hold to.\",\n  \"features\": [\n    {\n      \"title\": \"Search\",\n      \"body\": \"Ask in plain words and get the passages that answer, ranked, with where each came from.\"\n    },\n    {\n      \"title\": \"Sync\",\n      \"body\": \"Connect the apps your team uses. A changed record replaces the old one; a deleted one is deleted.\"\n    },\n    {\n      \"title\": \"Parse\",\n      \"body\": \"Read any file in full: every page, table, row and cell, scanned or typed.\"\n    }\n  ]\n}\nconst cta = {\n  \"title\": \"See it on your own data.\",\n  \"action\": {\n    \"label\": \"Book a demo\",\n    \"href\": \"#demo\"\n  }\n}\nexport default function Site() {\n  return (\n    <div className=\"-m-8\">\n      <AboutPage\n        header={header}\n        footer={footer}\n        head={head}\n        story={story}\n        numbers={numbers}\n        values={values}\n        cta={cta}\n        logo={<span className=\"font-heading text-heading-3 text-fg\">Acme</span>}\n        actions={() => (<><Button href=\"#contact\">Contact us</Button><PixelButton href=\"#sign-in\">Sign in</PixelButton></>)}\n      />\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "button",
+            "button-link",
+            "call-to-action",
+            "docs-blocks",
+            "feature-grid",
+            "section-head",
+            "site-page"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/site/about-page.ts",
+          "content": "import { html } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { define, tag } from '@/elements/lib/element'\nimport { SiteFrameElement, closing } from '@/elements/components/site/site-page'\nimport type { DocsBlock } from '@/elements/components/site/docs-blocks'\nimport type { Feature } from '@/elements/components/site/feature-grid'\nimport '@/elements/components/site/docs-blocks'\nimport '@/elements/components/site/feature-grid'\nimport '@/elements/components/site/section-head'\nimport styles from 'virtual:tw'\n\n// AboutPage.vue as <conare-about-page>: about the company: the head, the story in one narrow column (docs-blocks, as\n// a blog post's text), the numbers in the double rule (each large in tabular figures over its label, as a price), what\n// the team holds to (feature-grid) and the closing band, in the site's frame (site-page).\n\n/**\n * @summary About the company: the head, the story, the numbers, what the team holds to and the closing band.\n * @slot logo - The logo in the header's home link.\n * @slot actions - The header's buttons.\n * @slot sheet-actions - The same buttons again, for the header's sheet on phones.\n */\nexport class AboutPage extends SiteFrameElement {\n\tstatic styles = [SiteFrameElement.styles, styles]\n\tstatic properties = { head: { type: Object }, story: { type: Array }, numbers: { type: Array }, values: { type: Object }, cta: { type: Object } }\n\n\thead: { tag?: string, title: string, body?: string } = { title: '' }\n\tstory: DocsBlock[] = []\n\tnumbers: { value: string, label: string }[] = []\n\tvalues: { title: string, tag?: string, body?: string, features: Feature[] } = { title: '', features: [] }\n\tcta = { title: '', action: { label: '', href: '' } }\n\n\trender() {\n\t\tconst [sectionHead, blocks, grid] = [tag('section-head'), tag('docs-blocks'), tag('feature-grid')]\n\t\tconst h = this.head\n\t\tconst v = this.values\n\t\treturn this.frame('about-page', staticHtml`<section aria-labelledby=\"about-page-title\" class=\"mx-auto max-w-[1440px] px-4 pt-14 pb-16 sm:px-6 lg:px-10 lg:pt-20 lg:pb-20\"><${sectionHead} as=\"h1\" title-id=\"about-page-title\" .tag=${h.tag} .heading=${h.title} .body=${h.body}></${sectionHead}><div class=\"mx-auto mt-12 max-w-[640px]\"><${blocks} .blocks=${this.story}></${blocks}></div></section><section aria-label=\"In numbers\" class=\"mx-auto max-w-[1440px] px-4 pb-24 sm:px-6 lg:px-10 lg:pb-32\"><dl class=\"grid grid-cols-2 gap-px border border-edge bg-edge outline outline-offset-4 outline-edge lg:grid-cols-4\">${this.numbers.map((n) => html`<div class=\"flex flex-col-reverse gap-2 bg-surface px-5 py-6 sm:px-6\"><dt class=\"text-body text-fg-muted\">${n.label}</dt><dd class=\"text-viz-score tracking-display text-fg tabular-nums\">${n.value}</dd></div>`)}</dl></section><${grid} .heading=${v.title} .tag=${v.tag} .body=${v.body} .features=${v.features}></${grid}>${closing(this.cta)}`)\n\t}\n}\n\ndefine('about-page', AboutPage)\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/about-page.js",
+        "elements/site-page.js",
+        "elements/docs-blocks.js",
+        "elements/feature-grid.js",
+        "elements/section-head.js",
+        "elements/site-footer.js",
+        "elements/site-header.js",
+        "elements/product-menu.js",
+        "elements/announcement-bar.js",
+        "elements/button-link.js",
+        "elements/call-to-action.js",
+        "elements/code-block.js",
+        "elements/docs-fields.js",
+        "elements/docs-inline.js",
+        "elements/docs-table.js",
+        "elements/site-tag.js",
+        "elements/grain.js",
+        "elements/roll-text.js",
+        "elements/cell-burst.js",
+        "elements/code-copy.js",
+        "elements/button.js",
+        "elements/pixel-button.js"
+      ],
+      "tag": "conare-about-page",
+      "tags": [
+        "conare-about-page"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "announcement-bar",
+        "button-link",
+        "call-to-action",
+        "cell-burst",
+        "code-block",
+        "docs-blocks",
+        "feature-grid",
+        "product-menu",
+        "roll-text",
+        "section-head",
+        "site-footer",
+        "site-header",
+        "site-page",
+        "tag"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-about-page",
+            "name": "AboutPage",
+            "module": "elements/about-page.js",
+            "description": "About the company: the head, the story, the numbers, what the team holds to and the closing band.",
+            "attributes": [
+              {
+                "name": "head",
+                "field": "head",
+                "type": "{ tag?: string; title: string; body?: string; }",
+                "default": "{ title: '' }"
+              },
+              {
+                "name": "story",
+                "field": "story",
+                "type": "DocsBlock[]",
+                "default": "[]"
+              },
+              {
+                "name": "numbers",
+                "field": "numbers",
+                "type": "{ value: string; label: string; }[]",
+                "default": "[]"
+              },
+              {
+                "name": "values",
+                "field": "values",
+                "type": "{ title: string; tag?: string; body?: string; features: Feature[]; }",
+                "default": "{ title: '', features: [] }"
+              },
+              {
+                "name": "cta",
+                "field": "cta",
+                "type": "{ title: string; action: { label: string; href: string; }; }",
+                "default": "{ title: '', action: { label: '', href: '' } }"
+              },
+              {
+                "name": "header",
+                "field": "header",
+                "type": "SiteHeaderData",
+                "default": "{ items: [], links: [] }",
+                "description": "The header: items, more, links, productCurrent, homeHref, homeLabel."
+              },
+              {
+                "name": "footer",
+                "field": "footer",
+                "type": "SiteFooterData",
+                "default": "{ columns: [] }",
+                "description": "The footer: columns, tagline, legal, legalLinks, name."
+              },
+              {
+                "name": "announcement",
+                "field": "announcement",
+                "type": "SiteAnnouncement | undefined",
+                "description": "The bar above the header: tag, text, cta, href."
+              }
+            ],
+            "properties": [
+              {
+                "name": "head",
+                "type": "{ tag?: string; title: string; body?: string; }",
+                "default": "{ title: '' }",
+                "attribute": "head"
+              },
+              {
+                "name": "story",
+                "type": "DocsBlock[]",
+                "default": "[]",
+                "attribute": "story"
+              },
+              {
+                "name": "numbers",
+                "type": "{ value: string; label: string; }[]",
+                "default": "[]",
+                "attribute": "numbers"
+              },
+              {
+                "name": "values",
+                "type": "{ title: string; tag?: string; body?: string; features: Feature[]; }",
+                "default": "{ title: '', features: [] }",
+                "attribute": "values"
+              },
+              {
+                "name": "cta",
+                "type": "{ title: string; action: { label: string; href: string; }; }",
+                "default": "{ title: '', action: { label: '', href: '' } }",
+                "attribute": "cta"
+              },
+              {
+                "name": "header",
+                "type": "SiteHeaderData",
+                "default": "{ items: [], links: [] }",
+                "description": "The header: items, more, links, productCurrent, homeHref, homeLabel.",
+                "attribute": "header"
+              },
+              {
+                "name": "footer",
+                "type": "SiteFooterData",
+                "default": "{ columns: [] }",
+                "description": "The footer: columns, tagline, legal, legalLinks, name.",
+                "attribute": "footer"
+              },
+              {
+                "name": "announcement",
+                "type": "SiteAnnouncement | undefined",
+                "description": "The bar above the header: tag, text, cta, href.",
+                "attribute": "announcement"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "logo",
+                "description": "The logo in the header's home link."
+              },
+              {
+                "name": "actions",
+                "description": "The header's buttons."
+              },
+              {
+                "name": "sheet-actions",
+                "description": "The same buttons again, for the header's sheet on phones."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "About, on sample data",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/about-page/Site.html",
+          "content": "<!-- About the company on sample data, in the site's frame. -->\n<div class=\"-m-8\">\n  <conare-about-page\n    header='{\"items\": [{\"label\": \"Search\", \"desc\": \"Find the answer in any file.\", \"href\": \"#search\"}, {\"label\": \"Sync\", \"desc\": \"Keep your apps in step.\", \"href\": \"#sync\"}, {\"label\": \"Parse\", \"desc\": \"Read every row and cell.\", \"href\": \"#parse\"}], \"links\": [{\"label\": \"Pricing\", \"href\": \"#pricing\"}, {\"label\": \"Blog\", \"href\": \"#blog\"}, {\"label\": \"Docs\", \"href\": \"#docs\"}], \"homeLabel\": \"Acme home\"}'\n    footer='{\"columns\": [{\"title\": \"Product\", \"links\": [{\"label\": \"Search\", \"href\": \"#search\"}, {\"label\": \"Sync\", \"href\": \"#sync\"}, {\"label\": \"Parse\", \"href\": \"#parse\"}]}, {\"title\": \"Company\", \"links\": [{\"label\": \"About\", \"href\": \"#about\"}, {\"label\": \"Blog\", \"href\": \"#blog\"}, {\"label\": \"Changelog\", \"href\": \"#changelog\"}, {\"label\": \"Contact\", \"href\": \"#contact\"}]}, {\"title\": \"Resources\", \"links\": [{\"label\": \"Docs\", \"href\": \"#docs\"}, {\"label\": \"Pricing\", \"href\": \"#pricing\"}, {\"label\": \"Status\", \"href\": \"#status\"}]}], \"tagline\": \"Search any data you bring. Get the right answer.\", \"legal\": \"© 2026 Acme, Inc.\", \"legalLinks\": [{\"label\": \"Privacy\", \"href\": \"#privacy\"}, {\"label\": \"Terms\", \"href\": \"#terms\"}], \"name\": \"Acme\"}'\n    head='{\"tag\": \"About\", \"title\": \"We make company data answer back.\", \"body\": \"Acme stores what a company knows, keeps it in step and hands the right part to its AI.\"}'\n    story='[{\"kind\": \"p\", \"text\": \"Acme started with one question a support team kept asking: where did the agent get that? Every answer it gives now carries the passages it read.\"}, {\"kind\": \"p\", \"text\": \"We run the servers, the index and the sync jobs, so a team connects its apps and asks. Nothing to tune, nothing to host.\"}, {\"kind\": \"list\", \"items\": [\"Accuracy you can check, losses included.\", \"Your data serves your organization alone.\", \"Prices on the page, for every layer.\"]}]'\n    numbers='[{\"value\": \"100M+\", \"label\": \"Documents searched\"}, {\"value\": \"1.2B\", \"label\": \"Queries a month\"}, {\"value\": \"180 ms\", \"label\": \"Typical search\"}, {\"value\": \"14\", \"label\": \"Regions\"}]'\n    values='{\"tag\": \"How we work\", \"title\": \"What we hold to.\", \"features\": [{\"title\": \"Search\", \"body\": \"Ask in plain words and get the passages that answer, ranked, with where each came from.\"}, {\"title\": \"Sync\", \"body\": \"Connect the apps your team uses. A changed record replaces the old one; a deleted one is deleted.\"}, {\"title\": \"Parse\", \"body\": \"Read any file in full: every page, table, row and cell, scanned or typed.\"}]}'\n    cta='{\"title\": \"See it on your own data.\", \"action\": {\"label\": \"Book a demo\", \"href\": \"#demo\"}}'\n  >\n    <span slot=\"logo\" class=\"font-heading text-heading-3 text-fg\">Acme</span>\n    <conare-button slot=\"actions\" href=\"#contact\">Contact us</conare-button>\n    <conare-pixel-button slot=\"actions\" href=\"#sign-in\">Sign in</conare-pixel-button>\n    <conare-button slot=\"sheet-actions\" href=\"#contact\">Contact us</conare-button>\n    <conare-pixel-button slot=\"sheet-actions\" href=\"#sign-in\">Sign in</conare-pixel-button>\n  </conare-about-page>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

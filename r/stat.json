@@ -1,0 +1,239 @@
+{
+  "name": "stat",
+  "title": "Stat",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "A label over a number in a row of stats, split by hairlines. A stat that drives a chart is a button: it fills with the paper under the pointer, and the pinned one stays filled with a red edge on top.",
+  "use_for": "The few numbers a card is about: queries this month, today, latency.",
+  "never": [
+    "More than four in a row",
+    "A stat with no unit or period"
+  ],
+  "source": "conare-web app/assets/css/console2.css (.v2-stats, .v2-stat, .v2-stat-value)",
+  "body": "",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Stats.vue",
+      "content": "<script setup lang=\"ts\">\n// A row of stats (console2.css .v2-stats): two columns on phones, three from 640px, cells split by hairlines. On a\n// phone an odd last stat takes the whole row. Put Stat in the slot; four at most.\n</script>\n\n<template>\n  <div data-ds=\"stats\" class=\"ds-stats\"><slot /></div>\n</template>\n\n<style>\n.ds-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: var(--ds-border-hairline) solid var(--ds-color-edge); border-left: var(--ds-border-hairline) solid var(--ds-color-edge); }\n@media (min-width: 640px) { .ds-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }\n@media (max-width: 639px) { .ds-stats > :last-child:nth-child(odd) { grid-column: 1 / -1; } }\n</style>\n"
+    },
+    {
+      "path": "components/ui/Stat.vue",
+      "content": "<script setup lang=\"ts\">\n// A label over a number (console2.css .v2-stat): 12px muted label, 16px medium value in tabular figures. A stat that\n// drives a chart is a button: pass `pressed` and it fills with the paper under the pointer, and the pinned one stays\n// filled with a 2px red edge on top. Inside Stats, or alone at the top of a card.\nconst props = defineProps<{ label: string, value?: string, pressed?: boolean }>()\ndefineEmits<{ press: [] }>()\nconst pressable = props.pressed !== undefined\n</script>\n\n<template>\n  <button data-ds=\"stat\" v-if=\"pressable\" type=\"button\" class=\"ds-stat\" :aria-pressed=\"pressed\" :data-on=\"pressed || undefined\" @click=\"$emit('press')\">\n    <p class=\"type-meta text-fg-muted\">{{ label }}</p>\n    <p class=\"ds-stat-value\"><slot>{{ value }}</slot></p>\n  </button>\n  <div data-ds=\"stat\" v-else class=\"ds-stat\">\n    <p class=\"type-meta text-fg-muted\">{{ label }}</p>\n    <p class=\"ds-stat-value\"><slot>{{ value }}</slot></p>\n  </div>\n</template>\n\n<style>\n.ds-stat { position: relative; padding: var(--ds-space-md) var(--ds-space-lg); border-right: var(--ds-border-hairline) solid var(--ds-color-edge); border-bottom: var(--ds-border-hairline) solid var(--ds-color-edge); transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-stat-value { font-size: var(--ds-text-heading-4); font-weight: var(--ds-font-weight-medium); line-height: var(--ds-text-heading-4-leading); font-variant-numeric: tabular-nums; }\nbutton.ds-stat { width: 100%; text-align: left; cursor: pointer; }\n.ds-stat[data-on] { background: var(--ds-color-surface-subtle); }\n@media (hover: hover) and (pointer: fine) { button.ds-stat:hover { background: var(--ds-color-surface-subtle); } }\n.ds-stat[aria-pressed=\"true\"]::before { position: absolute; top: -1px; right: -1px; left: -1px; height: 2px; background: var(--ds-color-edge-accent); content: \"\"; }\nbutton.ds-stat:focus-visible { outline-offset: -2px; }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "In the product",
+      "center": false,
+      "half": false,
+      "path": "examples/stat/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport Stat from '@/components/ui/Stat.vue'\nimport Stats from '@/components/ui/Stats.vue'\n// The queries card's stats; press one to pin it.\nconst pinned = ref('month')\nconst stats = [\n  { id: 'month', label: 'This month', value: '186,402' },\n  { id: 'today', label: 'Today', value: '7,912' },\n  { id: 'latency', label: 'Search p50, 24 h', value: '238 ms' },\n]\n</script>\n\n<template>\n  <div class=\"max-w-160 border border-edge bg-surface\">\n    <Stats>\n      <Stat v-for=\"s in stats\" :key=\"s.id\" :label=\"s.label\" :value=\"s.value\" :pressed=\"pinned === s.id\" @press=\"pinned = s.id\" />\n    </Stats>\n  </div>\n</template>\n",
+      "requires": [],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Stats.tsx",
+          "content": "import type { HTMLAttributes } from 'react'\nimport { cn } from '@/react/lib/cn'\n\n// A row of stats (console2.css .v2-stats): two columns on phones, three from 640px, cells split by hairlines. On a\n// phone an odd last stat takes the whole row. Put Stat in the children; four at most.\nexport type StatsProps = HTMLAttributes<HTMLDivElement>\n\nexport function Stats({ className, children, ...rest }: StatsProps) {\n  return (\n    <>\n      <style href=\"ds-stats\" precedence=\"ds\">{css}</style>\n      <div data-ds=\"stats\" className={cn('ds-stats', className)} {...rest}>{children}</div>\n    </>\n  )\n}\n\nexport default Stats\n\nconst css = `\n.ds-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: var(--ds-border-hairline) solid var(--ds-color-edge); border-left: var(--ds-border-hairline) solid var(--ds-color-edge); }\n@media (min-width: 640px) { .ds-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }\n@media (max-width: 639px) { .ds-stats > :last-child:nth-child(odd) { grid-column: 1 / -1; } }\n`\n"
+        },
+        {
+          "path": "react/components/ui/Stat.tsx",
+          "content": "import type { ReactNode } from 'react'\nimport { cn } from '@/react/lib/cn'\n\n// A label over a number (console2.css .v2-stat): 12px muted label, 16px medium value in tabular figures. A stat that\n// drives a chart is a button: pass `pressed` and it fills with the paper under the pointer, and the pinned one stays\n// filled with a 2px red edge on top. Inside Stats, or alone at the top of a card.\nexport interface StatProps {\n  label: string\n  value?: string\n  pressed?: boolean\n  onPress?: () => void\n  className?: string\n  /** The value, in place of `value`. */\n  children?: ReactNode\n}\n\nexport function Stat({ label, value, pressed, onPress, className, children }: StatProps) {\n  const pressable = pressed !== undefined\n  const body = (\n    <>\n      <p className=\"type-meta text-fg-muted\">{label}</p>\n      <p className=\"ds-stat-value\">{children ?? value}</p>\n    </>\n  )\n  return (\n    <>\n      <style href=\"ds-stat\" precedence=\"ds\">{css}</style>\n      {pressable\n        ? <button data-ds=\"stat\" type=\"button\" className={cn('ds-stat', className)} aria-pressed={pressed} data-on={pressed || undefined} onClick={() => onPress?.()}>{body}</button>\n        : <div data-ds=\"stat\" className={cn('ds-stat', className)}>{body}</div>}\n    </>\n  )\n}\n\nexport default Stat\n\nconst css = `\n.ds-stat { position: relative; padding: var(--ds-space-md) var(--ds-space-lg); border-right: var(--ds-border-hairline) solid var(--ds-color-edge); border-bottom: var(--ds-border-hairline) solid var(--ds-color-edge); transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-stat-value { font-size: var(--ds-text-heading-4); font-weight: var(--ds-font-weight-medium); line-height: var(--ds-text-heading-4-leading); font-variant-numeric: tabular-nums; }\nbutton.ds-stat { width: 100%; text-align: left; cursor: pointer; }\n.ds-stat[data-on] { background: var(--ds-color-surface-subtle); }\n@media (hover: hover) and (pointer: fine) { button.ds-stat:hover { background: var(--ds-color-surface-subtle); } }\n.ds-stat[aria-pressed=\"true\"]::before { position: absolute; top: -1px; right: -1px; left: -1px; height: 2px; background: var(--ds-color-edge-accent); content: \"\"; }\nbutton.ds-stat:focus-visible { outline-offset: -2px; }\n`\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "Stats",
+            "file": "react/components/ui/Stats.tsx",
+            "props": []
+          },
+          {
+            "name": "Stat",
+            "file": "react/components/ui/Stat.tsx",
+            "props": [
+              {
+                "name": "label",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "value",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "pressed",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "onPress",
+                "type": "() => void",
+                "required": false
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false,
+                "description": "The value, in place of `value`."
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "react/examples/stat/Product.tsx",
+          "content": "'use client'\nimport { useState } from 'react'\nimport { Stat } from '@/react/components/ui/Stat'\nimport { Stats } from '@/react/components/ui/Stats'\n// The queries card's stats; press one to pin it.\nconst stats = [\n  { id: 'month', label: 'This month', value: '186,402' },\n  { id: 'today', label: 'Today', value: '7,912' },\n  { id: 'latency', label: 'Search p50, 24 h', value: '238 ms' },\n]\n\nexport default function Product() {\n  const [pinned, setPinned] = useState('month')\n  return (\n    <div className=\"max-w-160 border border-edge bg-surface\">\n      <Stats>\n        {stats.map(s => <Stat key={s.id} label={s.label} value={s.value} pressed={pinned === s.id} onPress={() => setPinned(s.id)} />)}\n      </Stats>\n    </div>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/stats.ts",
+          "content": "import { html } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// Stats.vue as <conare-stats>: a row of stats (console2.css .v2-stats): two columns on phones, three from 640px, cells\n// split by hairlines. On a phone an odd last stat takes the whole row. Put <conare-stat> inside; four at most.\n\n/**\n * @summary A row of stats, split by hairlines.\n * @slot - <conare-stat> elements.\n */\nexport class Stats extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\n\trender() {\n\t\treturn html`<div data-ds=\"stats\" class=\"ds-stats\"><slot></slot></div>`\n\t}\n}\n\ndefine('stats', Stats)\n"
+        },
+        {
+          "path": "elements/components/ui/stats.css",
+          "content": ".ds-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: var(--ds-border-hairline) solid var(--ds-color-edge); border-left: var(--ds-border-hairline) solid var(--ds-color-edge); }\n@media (min-width: 640px) { .ds-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }\n/* The odd last stat's whole row is set by <conare-stat> itself (:host(:last-child:nth-child(odd))): its host is\n   display: contents, so a ::slotted rule here would land on a box that is not there. */\n"
+        },
+        {
+          "path": "elements/components/ui/stat.ts",
+          "content": "import { html } from 'lit'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// Stat.vue as <conare-stat>: a label over a number (console2.css .v2-stat): 12px muted label, 16px medium value in\n// tabular figures. A stat that drives a chart is a button: set `pressed` (pressed=\"false\" for one that is not pinned)\n// and it fills with the paper under the pointer, and the pinned one stays filled with a 2px red edge on top. Inside\n// <conare-stats>, or alone at the top of a card.\n\n/** No attribute: not pressable; pressed=\"false\": pressable, not pinned; pressed or pressed=\"true\": pinned. */\nconst tristate = { fromAttribute: (v: string | null) => (v === null ? undefined : v !== 'false') }\n\n/**\n * @summary A label over a number; with `pressed`, a button that pins it.\n * @slot - The value, in place of `value`.\n * @fires press - A pressable stat was pressed.\n */\nexport class Stat extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { label: {}, value: {}, pressed: { converter: tristate } }\n\n\t/** The 12px label. */\n\tlabel = ''\n\t/** The number. */\n\tvalue?: string\n\t/** Set (true or false) for a stat that is a button; true while it is pinned. */\n\tpressed?: boolean\n\n\trender() {\n\t\tconst body = html`<p class=\"type-meta text-fg-muted\">${this.label}</p><p class=\"ds-stat-value\"><slot>${this.value}</slot></p>`\n\t\treturn this.pressed !== undefined\n\t\t\t? html`<button data-ds=\"stat\" type=\"button\" class=\"ds-stat\" aria-pressed=${String(this.pressed)} data-on=${ifDefined(this.pressed ? '' : undefined)} @click=${() => this.emit('press')}>${body}</button>`\n\t\t\t: html`<div data-ds=\"stat\" class=\"ds-stat\">${body}</div>`\n\t}\n}\n\ndefine('stat', Stat)\n"
+        },
+        {
+          "path": "elements/components/ui/stat.css",
+          "content": ".ds-stat { position: relative; padding: var(--ds-space-md) var(--ds-space-lg); border-right: var(--ds-border-hairline) solid var(--ds-color-edge); border-bottom: var(--ds-border-hairline) solid var(--ds-color-edge); transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-stat-value { font-size: var(--ds-text-heading-4); font-weight: var(--ds-font-weight-medium); line-height: var(--ds-text-heading-4-leading); font-variant-numeric: tabular-nums; }\nbutton.ds-stat { width: 100%; text-align: left; cursor: pointer; }\n.ds-stat[data-on] { background: var(--ds-color-surface-subtle); }\n@media (hover: hover) and (pointer: fine) { button.ds-stat:hover { background: var(--ds-color-surface-subtle); } }\n.ds-stat[aria-pressed=\"true\"]::before { position: absolute; top: -1px; right: -1px; left: -1px; height: 2px; background: var(--ds-color-edge-accent); content: \"\"; }\nbutton.ds-stat:focus-visible { outline-offset: -2px; }\n/* Stats.vue's `.ds-stats > :last-child:nth-child(odd)`, from the stat's side. */\n@media (max-width: 639px) { :host(:last-child:nth-child(odd)) .ds-stat { grid-column: 1 / -1; } }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/stats.js",
+        "elements/stat.js"
+      ],
+      "tag": "conare-stat",
+      "tags": [
+        "conare-stats",
+        "conare-stat"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-stats",
+            "name": "Stats",
+            "module": "elements/stats.js",
+            "description": "A row of stats, split by hairlines.",
+            "attributes": [],
+            "properties": [],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "<conare-stat> elements."
+              }
+            ],
+            "methods": []
+          },
+          {
+            "tag": "conare-stat",
+            "name": "Stat",
+            "module": "elements/stat.js",
+            "description": "A label over a number; with `pressed`, a button that pins it.",
+            "attributes": [
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string",
+                "default": "''",
+                "description": "The 12px label."
+              },
+              {
+                "name": "value",
+                "field": "value",
+                "type": "string | undefined",
+                "description": "The number."
+              },
+              {
+                "name": "pressed",
+                "field": "pressed",
+                "type": "boolean | undefined",
+                "description": "Set (true or false) for a stat that is a button; true while it is pinned."
+              }
+            ],
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "''",
+                "description": "The 12px label.",
+                "attribute": "label"
+              },
+              {
+                "name": "value",
+                "type": "string | undefined",
+                "description": "The number.",
+                "attribute": "value"
+              },
+              {
+                "name": "pressed",
+                "type": "boolean | undefined",
+                "description": "Set (true or false) for a stat that is a button; true while it is pinned.",
+                "attribute": "pressed"
+              }
+            ],
+            "events": [
+              {
+                "name": "press",
+                "description": "A pressable stat was pressed."
+              }
+            ],
+            "slots": [
+              {
+                "name": "",
+                "description": "The value, in place of `value`."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/stat/Product.html",
+          "content": "<!-- The queries card's stats; press one to pin it. -->\n<div class=\"max-w-160 border border-edge bg-surface\">\n  <conare-stats>\n    <conare-stat label=\"This month\" value=\"186,402\" pressed=\"true\"></conare-stat>\n    <conare-stat label=\"Today\" value=\"7,912\" pressed=\"false\"></conare-stat>\n    <conare-stat label=\"Search p50, 24 h\" value=\"238 ms\" pressed=\"false\"></conare-stat>\n  </conare-stats>\n</div>\n<script type=\"module\">\n  // Pin the stat pressed, unpin the others.\n  const stats = [...document.querySelectorAll('conare-stat')]\n  for (const s of stats) s.addEventListener('press', () => { for (const o of stats) o.pressed = o === s })\n</script>\n"
+        }
+      ]
+    }
+  }
+}

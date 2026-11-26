@@ -1,0 +1,166 @@
+{
+  "name": "empty-state",
+  "title": "Empty state",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "A dashed box for a list with nothing in it yet: one line on what is missing and the actions that fill it.",
+  "use_for": "A namespace, a source list or results that are empty.",
+  "never": [
+    "An empty state with no way forward",
+    "Illustrations"
+  ],
+  "source": "conare-web app/assets/css/console2.css (.v2-empty)",
+  "body": "",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/EmptyState.vue",
+      "content": "<script setup lang=\"ts\">\n// A dashed box for a list with nothing in it yet (console2.css .v2-empty): one line on what is missing and the\n// actions that fill it, 8px under it. No illustrations, and never without a way forward.\ndefineProps<{ title: string, description?: string }>()\n</script>\n\n<template>\n  <div data-ds=\"empty-state\" class=\"flex flex-col items-center gap-1 border border-dashed border-edge-strong px-4 py-10 text-center\">\n    <p class=\"type-ui\">{{ title }}</p>\n    <p v-if=\"description\" class=\"type-meta text-fg-muted\">{{ description }}</p>\n    <div v-if=\"$slots.default\" class=\"mt-2 flex flex-wrap justify-center gap-2\"><slot /></div>\n  </div>\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "Nothing to search yet",
+      "center": false,
+      "half": false,
+      "path": "examples/empty-state/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport Button from '@/components/ui/Button.vue'\nimport EmptyState from '@/components/ui/EmptyState.vue'\n// Nothing to search yet, with the two ways to fix it.\n</script>\n\n<template>\n  <EmptyState title=\"Nothing to search yet.\">\n    <Button>Connect an app</Button>\n    <Button variant=\"dark\">Add a sample</Button>\n  </EmptyState>\n</template>\n",
+      "requires": [
+        "button"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/EmptyState.tsx",
+          "content": "import type { HTMLAttributes } from 'react'\nimport { cn } from '@/react/lib/cn'\n\n// A dashed box for a list with nothing in it yet (console2.css .v2-empty): one line on what is missing and the\n// actions that fill it, 8px under it. No illustrations, and never without a way forward.\nexport interface EmptyStateProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title'> {\n  title: string\n  description?: string\n}\n\nexport function EmptyState({ title, description, className, children, ...rest }: EmptyStateProps) {\n  return (\n    <div data-ds=\"empty-state\" className={cn('flex flex-col items-center gap-1 border border-dashed border-edge-strong px-4 py-10 text-center', className)} {...rest}>\n      <p className=\"type-ui\">{title}</p>\n      {description && <p className=\"type-meta text-fg-muted\">{description}</p>}\n      {children && <div className=\"mt-2 flex flex-wrap justify-center gap-2\">{children}</div>}\n    </div>\n  )\n}\n\nexport default EmptyState\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "EmptyState",
+            "file": "react/components/ui/EmptyState.tsx",
+            "props": [
+              {
+                "name": "title",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "description",
+                "type": "string",
+                "required": false
+              }
+            ],
+            "extends": [
+              "Omit<HTMLAttributes<HTMLDivElement>, 'title'>"
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Nothing to search yet",
+          "center": false,
+          "half": false,
+          "path": "react/examples/empty-state/Product.tsx",
+          "content": "import { Button } from '@/react/components/ui/Button'\nimport { EmptyState } from '@/react/components/ui/EmptyState'\n// Nothing to search yet, with the two ways to fix it.\n\nexport default function Product() {\n  return (\n    <EmptyState title=\"Nothing to search yet.\">\n      <Button>Connect an app</Button>\n      <Button variant=\"dark\">Add a sample</Button>\n    </EmptyState>\n  )\n}\n",
+          "registryDependencies": [
+            "button"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/empty-state.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// EmptyState.vue as <conare-empty-state>: a dashed box for a list with nothing in it yet (console2.css .v2-empty): one\n// line on what is missing and the actions that fill it, 8px under it. No illustrations, and never without a way forward.\n\n/**\n * @summary A dashed box for a list with nothing in it yet, with the actions that fill it.\n * @slot - The actions (buttons).\n */\nexport class EmptyState extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { heading: {}, description: {} }\n\n\t/** The line on what is missing (Vue's `title`; `title` is HTML's tooltip attribute). */\n\theading = ''\n\t/** A second, muted line. */\n\tdescription?: string\n\n\trender() {\n\t\treturn html`<div data-ds=\"empty-state\" class=\"flex flex-col items-center gap-1 border border-dashed border-edge-strong px-4 py-10 text-center\">\n\t\t\t<p class=\"type-ui\">${this.heading}</p>\n\t\t\t${this.description ? html`<p class=\"type-meta text-fg-muted\">${this.description}</p>` : nothing}\n\t\t\t<div class=\"mt-2 flex flex-wrap justify-center gap-2\" ?hidden=${!this.hasSlot()}><slot></slot></div>\n\t\t</div>`\n\t}\n}\n\ndefine('empty-state', EmptyState)\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/empty-state.js",
+        "elements/button.js"
+      ],
+      "tag": "conare-empty-state",
+      "tags": [
+        "conare-empty-state"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-empty-state",
+            "name": "EmptyState",
+            "module": "elements/empty-state.js",
+            "description": "A dashed box for a list with nothing in it yet, with the actions that fill it.",
+            "attributes": [
+              {
+                "name": "heading",
+                "field": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The line on what is missing (Vue's `title`; `title` is HTML's tooltip attribute)."
+              },
+              {
+                "name": "description",
+                "field": "description",
+                "type": "string | undefined",
+                "description": "A second, muted line."
+              }
+            ],
+            "properties": [
+              {
+                "name": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The line on what is missing (Vue's `title`; `title` is HTML's tooltip attribute).",
+                "attribute": "heading"
+              },
+              {
+                "name": "description",
+                "type": "string | undefined",
+                "description": "A second, muted line.",
+                "attribute": "description"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "The actions (buttons)."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Nothing to search yet",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/empty-state/Product.html",
+          "content": "<!-- Nothing to search yet, with the two ways to fix it. -->\n<conare-empty-state heading=\"Nothing to search yet.\">\n  <conare-button>Connect an app</conare-button>\n  <conare-button variant=\"dark\">Add a sample</conare-button>\n</conare-empty-state>\n"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "typography",
+  "type": "registry:ui",
+  "title": "Typography",
+  "description": "The console's type as one reference: a 20px Faculty Glyphic page title, Geist at 13px for everything else, 12px meta, 11px captions, Geist Mono for keys and IDs, a link with a quiet underline and a query's words in medium weight.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Text.tsx",
+      "type": "registry:ui",
+      "content": "import type { ElementType, HTMLAttributes, ReactNode } from 'react'\nimport { cn } from '@/lib/cn'\n\n// The console's type as one part (main.css @theme, console2.css .v2-title, .v2-meta, .v2-mono, .v2-link, Marked.vue).\n// title: 20px Faculty Glyphic, a page's title (h1). ui: 13px Geist, the default. strong: 13px medium. meta: 12px muted,\n// captions under a field, timestamps. caption: 11px muted, the smallest. code: 13px Geist Mono; code-sm: 12px mono, for\n// IDs, keys and namespace names. link: ink text with a quiet underline 4px under it that turns ink on hover. mark: a\n// query's word in a passage, medium weight in ink, never a fill. `as` overrides the tag.\nexport type TextVariant = 'title' | 'ui' | 'strong' | 'meta' | 'caption' | 'code' | 'code-sm' | 'link' | 'mark'\n\nexport interface TextProps extends HTMLAttributes<HTMLElement> {\n  variant?: TextVariant\n  /** The tag, in place of the variant's own. */\n  as?: string\n  href?: string\n  children?: ReactNode\n}\n\nconst TAGS: Record<TextVariant, string> = { 'title': 'h1', 'ui': 'p', 'strong': 'p', 'meta': 'p', 'caption': 'p', 'code': 'code', 'code-sm': 'code', 'link': 'a', 'mark': 'strong' }\nconst CLASSES: Record<TextVariant, string> = {\n  'title': 'type-heading-3 text-fg',\n  'ui': 'type-ui text-fg',\n  'strong': 'type-ui-strong text-fg',\n  'meta': 'type-meta text-fg-muted',\n  'caption': 'type-caption text-fg-muted',\n  'code': 'type-code text-fg',\n  'code-sm': 'type-code-sm text-fg',\n  'link': 'ds-text-link text-fg',\n  'mark': 'font-medium text-fg',\n}\n\nexport function Text({ variant = 'ui', as, href, className, children, ...rest }: TextProps) {\n  const tag = as ?? (variant === 'link' && !href ? 'button' : TAGS[variant])\n  const Tag = tag as ElementType\n  return (\n    <>\n      <style href=\"ds-text\" precedence=\"ds\">{css}</style>\n      <Tag data-ds=\"text\" href={href} type={tag === 'button' ? 'button' : undefined} className={cn(CLASSES[variant], className)} {...rest}>{children}</Tag>\n    </>\n  )\n}\n\nexport default Text\n\nconst css = `\n.ds-text-link { cursor: pointer; text-decoration: underline; text-decoration-color: var(--ds-color-edge-strong); text-underline-offset: 4px; transition: text-decoration-color var(--ds-duration-enter) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-text-link:hover { text-decoration-color: var(--ds-color-fg); } }\n`\n"
+    },
+    {
+      "path": "lib/cn.ts",
+      "type": "registry:lib",
+      "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+    }
+  ]
+}

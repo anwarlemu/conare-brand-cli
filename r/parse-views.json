@@ -1,0 +1,818 @@
+{
+  "name": "parse-views",
+  "title": "Parse views",
+  "type": "registry:block",
+  "group": "product",
+  "description": "A document as Conare read it, three ways: Page beside text (the page and the dark window of what was read, joined by pointing; it ships), Regions (every region numbered with its OCR confidence) and Plain or Conare (a plain reader's text and Conare's, one handle between).",
+  "use_for": "An opened document's reading, and Parse: showing what was read from a page, region by region.",
+  "never": [
+    "A real customer's document as the sample",
+    "Hiding low OCR confidence: under 80% is marked to check by hand"
+  ],
+  "source": "conare-web app/components/console/parse/Reading.vue, Sheet.vue, Read.vue, Output.vue, Regions.vue, Plain.vue, app/utils/parse.ts, app/assets/css/console2.css (.v2-parse*)",
+  "body": "`ParseReading` takes the reading (`answer`, a `ParseAnswer` from `useParse.ts`: the page's regions with their boxes,\nreading order and OCR confidence, its Markdown and what a plain reader gets) and `version` (1, 2 or 3). The page is\ndrawn from the regions, so the page and the text can't disagree; in an app, put the file's own page image under them.\n\nEach view scrolls under a fade (`fade-xy`, down and across) at the edge with more past it.",
+  "requires": [
+    "count",
+    "table"
+  ],
+  "dependencies": [
+    "lucide-vue-next@^0.479.0"
+  ],
+  "files": [
+    {
+      "path": "components/product/ParseReading.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed } from 'vue'\nimport ParseOutput from '@/components/product/ParseOutput.vue'\nimport ParsePlain from '@/components/product/ParsePlain.vue'\nimport ParseRegions from '@/components/product/ParseRegions.vue'\nimport ParseSheet from '@/components/product/ParseSheet.vue'\nimport { useParsePoint, type ParseAnswer } from '@/composables/useParse'\nimport Count from '@/components/ui/Count.vue'\n\n// A file as Conare read it (parse/Reading.vue), three ways. 1 \"Page beside text\" (the one that ships): the page on the\n// paper beside the dark window of what was read, with four facts over it (how long, regions, tables, OCR; the counts\n// roll up as they land), joined by pointing. 2 \"Regions\": the page's structure, every region numbered with its\n// confidence. 3 \"Plain or Conare\": a plain reader's text and Conare's on the same page, one handle between them.\nconst props = withDefaults(defineProps<{ answer: ParseAnswer, version?: 1 | 2 | 3 }>(), { version: 1 })\nconst { on, lit, pick } = useParsePoint()\nconst facts = computed(() => {\n  const p = props.answer.part\n  const tables = p.blocks.filter(b => b.type === 'table').length\n  const all: Array<{ label: string, value: string, count?: number }> = [\n    { label: 'Read in', value: `${(props.answer.took_ms / 1000).toLocaleString('en-US', { maximumFractionDigits: 1 })} s` },\n    { label: 'Regions', value: '', count: p.blocks.length },\n    { label: 'Tables', value: '', count: tables },\n    { label: 'OCR', value: p.ocr ? `${Math.round((p.confidence ?? 0) * 100)}% sure` : 'Not needed' },\n  ]\n  return all\n})\n</script>\n\n<template>\n  <section data-ds=\"parse-reading\" v-if=\"version === 1\" class=\"m-1.25 grid grid-cols-2 border border-edge outline outline-offset-4 outline-edge max-lg:grid-cols-1\" aria-label=\"the page and what was read\">\n    <div class=\"flex min-w-0 flex-col gap-2 bg-surface-subtle p-4\">\n      <ParseSheet class=\"border border-edge\" :part=\"answer.part\" :scan=\"answer.scan\" :on=\"lit\" plays @point=\"on = $event\" @pick=\"pick\" />\n      <p class=\"flex justify-between gap-4 type-meta text-fg-muted\"><span class=\"truncate\">{{ answer.name }}</span><span class=\"shrink-0\">Page {{ answer.page }} of {{ answer.pages }}</span></p>\n    </div>\n    <div class=\"flex min-w-0 flex-col bg-code text-code-fg\">\n      <dl class=\"grid grid-cols-4 border-b border-code-edge max-md:grid-cols-2\">\n        <div v-for=\"(f, i) in facts\" :key=\"f.label\" class=\"min-w-0 px-4 py-3\" :class=\"[i > 0 && 'border-code-edge md:border-l', i % 2 === 1 && 'max-md:border-l', i > 1 && 'max-md:border-t']\">\n          <dt class=\"type-meta text-code-muted\">{{ f.label }}</dt>\n          <dd class=\"text-body tabular-nums\"><Count v-if=\"f.count != null\" :value=\"f.count\" rolls /><template v-else>{{ f.value }}</template></dd>\n        </div>\n      </dl>\n      <ParseOutput :answer=\"answer\" :on=\"lit\" plays @point=\"on = $event\" @pick=\"pick\" />\n    </div>\n  </section>\n  <ParseRegions data-ds=\"parse-reading\" v-else-if=\"version === 2\" :answer=\"answer\" />\n  <ParsePlain data-ds=\"parse-reading\" v-else :answer=\"answer\" />\n</template>\n"
+    },
+    {
+      "path": "components/product/ParseSheet.vue",
+      "content": "<script setup lang=\"ts\">\nimport { REGION, isTotal, tableOf, type ParseBlock, type ParsePart } from '@/composables/useParse'\n\n// A page as Conare read it (parse/Sheet.vue): each region drawn at its box in reading order, in a document face (a\n// typewriter face, a little askew and soft, for a scan). Sizes follow the page's width, so it reads the same as a\n// thumbnail and full size. `on` lights a region with a red edge and its kind; `all` outlines every region and numbers\n// it; `plays` runs a red line down the page once while the regions land in order (reduced motion shows them at once);\n// `mini` is a picture only. The boxes are the pointer's way in; the keyboard reaches the same regions in the text or the\n// list beside the page, so they stay out of the tab order.\ndefineProps<{ part: ParsePart, scan?: boolean, on?: number | null, mini?: boolean, plays?: boolean, all?: boolean }>()\nconst emit = defineEmits<{ point: [order: number | null], pick: [order: number] }>()\nconst box = (b: ParseBlock) => ({ left: `${b.bbox[0] * 100}%`, top: `${b.bbox[1] * 100}%`, width: `${(b.bbox[2] - b.bbox[0]) * 100}%`, height: `${(b.bbox[3] - b.bbox[1]) * 100}%`, '--o': b.order })\nconst name = (b: ParseBlock) => `${REGION[b.type] ?? b.type}: ${b.type === 'table' ? `${tableOf(b.content).rows.length} rows` : b.content.slice(0, 60)}`\nconst stamp = (b: ParseBlock) => b.content.replace(/^Stamp:\\s*/, '').split(', ')\n</script>\n\n<template>\n  <div data-ds=\"parse-sheet\" class=\"ds-parsepage\" :data-scan=\"scan || undefined\" :data-plays=\"plays || undefined\" :data-all=\"all || undefined\" :aria-hidden=\"mini || undefined\">\n    <span v-if=\"plays\" class=\"ds-parse-sweep\" aria-hidden=\"true\" />\n    <div v-for=\"b in part.blocks\" :key=\"b.order\" class=\"ds-parseregion\" :data-type=\"b.type\" :data-on=\"on === b.order || undefined\" :style=\"box(b)\">\n      <table v-if=\"b.type === 'table'\" class=\"ds-parsetable\">\n        <thead><tr><th v-for=\"(h, i) in tableOf(b.content).head\" :key=\"i\" scope=\"col\">{{ h }}</th></tr></thead>\n        <tbody>\n          <tr v-for=\"(r, k) in tableOf(b.content).rows\" :key=\"k\" :data-total=\"isTotal(r[0] ?? '') || undefined\">\n            <td v-for=\"(c, i) in r\" :key=\"i\">{{ c }}</td>\n          </tr>\n        </tbody>\n      </table>\n      <template v-else-if=\"b.type === 'image'\">\n        <svg v-if=\"b.content.startsWith('Signature')\" viewBox=\"0 0 120 40\" class=\"ds-parsesign\" aria-hidden=\"true\"><path d=\"M4 28c10-20 15-22 17-16s-6 18-3 18 10-20 15-18 0 14 4 14 8-12 12-10-2 10 2 10 10-8 16-8 12 4 22 2 18-6 27-6\" /></svg>\n        <span v-else class=\"ds-parsestamp\"><span>{{ stamp(b)[0] }}</span><span>{{ stamp(b).slice(1).join(', ') }}</span></span>\n      </template>\n      <template v-else-if=\"b.type === 'list'\"><p v-for=\"(l, i) in b.content.split('\\n')\" :key=\"i\">{{ l }}</p></template>\n      <p v-else>{{ b.content }}</p>\n      <template v-if=\"!mini\">\n        <span v-if=\"all\" class=\"ds-parsenum\" aria-hidden=\"true\">{{ b.order }}</span>\n        <span class=\"ds-parsetag\" aria-hidden=\"true\">{{ REGION[b.type] ?? b.type }}</span>\n        <button type=\"button\" tabindex=\"-1\" class=\"ds-parsehit\" :aria-label=\"name(b)\" :aria-pressed=\"on === b.order\" @pointerenter=\"emit('point', b.order)\" @pointerleave=\"emit('point', null)\" @click=\"emit('pick', b.order)\" />\n      </template>\n    </div>\n  </div>\n</template>\n\n<style>\n.ds-parsepage { position: relative; width: 100%; aspect-ratio: 8.5 / 11; overflow: hidden; background: var(--ds-color-surface); color: var(--ds-color-fg); font-family: var(--ds-font-document); container-type: inline-size; }\n.ds-parsepage[data-scan] { background: color-mix(in srgb, var(--ds-color-surface) 94%, var(--ds-color-fg) 6%); font-family: var(--ds-font-scan); }\n.ds-parsepage[data-scan] .ds-parseregion > :not(.ds-parsehit, .ds-parsetag, .ds-parsenum) { transform: rotate(-0.25deg); filter: blur(0.15px); }\n.ds-parseregion { position: absolute; font-size: 2.05cqw; line-height: 1.5; }\n.ds-parseregion p { margin: 0; }\n.ds-parseregion[data-type=\"title\"] { font-size: 3.1cqw; font-weight: var(--ds-font-weight-medium); line-height: 1.2; }\n.ds-parseregion:is([data-type=\"header\"], [data-type=\"footer\"], [data-type=\"footnote\"]) { color: var(--ds-color-fg-soft); font-size: 1.75cqw; }\n.ds-parseregion[data-type=\"footer\"] { text-align: center; }\n.ds-parseregion::before { position: absolute; inset: -0.6cqw; border: var(--ds-border-hairline) solid transparent; content: \"\"; pointer-events: none; transition: border-color var(--ds-duration-micro) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-parseregion[data-on]::before { border-color: var(--ds-color-edge-accent); border-left-width: 2px; background: color-mix(in srgb, var(--ds-color-surface-accent) 6%, transparent); }\n.ds-parsepage[data-all] .ds-parseregion::before { border-color: color-mix(in srgb, var(--ds-color-fg) 22%, transparent); }\n.ds-parsepage[data-all] .ds-parseregion[data-on]::before { border-color: var(--ds-color-edge-accent); }\n.ds-parsetag { position: absolute; bottom: calc(100% + 0.6cqw); left: -0.6cqw; z-index: 1; padding: 0 4px; background: var(--ds-color-home-red-press); color: var(--ds-color-fg-inverse); font-family: var(--ds-font-text); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-parseregion[data-on] .ds-parsetag { opacity: 1; }\n.ds-parsenum { position: absolute; top: -0.2cqw; right: calc(100% + 1.2cqw); z-index: 1; display: flex; min-width: 16px; height: 16px; align-items: center; justify-content: center; background: var(--ds-color-fg); color: var(--ds-color-fg-inverse); font-family: var(--ds-font-text); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); font-variant-numeric: tabular-nums; pointer-events: none; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-parseregion[data-on] .ds-parsenum { background: var(--ds-color-home-red-press); }\n.ds-parsehit { position: absolute; top: 50%; right: -0.6cqw; left: -0.6cqw; z-index: 2; height: calc(100% + 1.2cqw); min-height: 24px; transform: translateY(-50%); cursor: pointer; touch-action: manipulation; }\n.ds-parsetable { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }\n.ds-parsepage .ds-parsetable { height: 100%; font-size: 1.95cqw; line-height: 1.3; }\n.ds-parsetable th { padding-block: 0.3em; border-bottom: var(--ds-border-hairline) solid currentColor; font-weight: var(--ds-font-weight-medium); text-align: right; white-space: nowrap; }\n.ds-parsetable :is(th, td):first-child { text-align: left; }\n.ds-parsetable td { padding-block: 0.15em; text-align: right; white-space: nowrap; }\n.ds-parsetable :is(th, td) + :is(th, td) { padding-left: 1.2em; }\n.ds-parsetable td:first-child { padding-right: 1em; white-space: normal; }\n.ds-parsetable tr[data-total] td { border-top: var(--ds-border-hairline) solid currentColor; font-weight: var(--ds-font-weight-medium); }\n.ds-parsesign { width: 62%; height: 100%; }\n.ds-parsesign path { fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }\n.ds-parsestamp { display: inline-flex; flex-direction: column; padding: 0.4em 0.7em; border: var(--ds-border-hairline) solid currentColor; font-size: 1.6cqw; line-height: 1.3; transform: rotate(-4deg); }\n.ds-parse-sweep { position: absolute; top: 0; right: 0; left: 0; z-index: 3; height: 1px; background: var(--ds-color-edge-accent); opacity: 0; pointer-events: none; }\n@media (prefers-reduced-motion: no-preference) {\n  .ds-parsepage[data-plays] .ds-parse-sweep { animation: ds-parse-sweep var(--ds-duration-sweep) var(--ds-easing-standard) 1 both; }\n  .ds-parsepage[data-plays] .ds-parseregion { animation: ds-parse-land var(--ds-duration-land) var(--ds-easing-standard) both; animation-delay: calc(var(--o) * 90ms); }\n}\n@keyframes ds-parse-sweep { 0% { opacity: 1; transform: translateY(0); } 90% { opacity: 1; } 100% { opacity: 0; transform: translateY(129cqw); } }\n@keyframes ds-parse-land { from { opacity: 0; } }\n@media (pointer: coarse), (max-width: 767px) { .ds-parsehit { display: none; } }\n</style>\n"
+    },
+    {
+      "path": "components/product/ParseRead.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed } from 'vue'\nimport { isTotal, tableOf, type ParsePart } from '@/composables/useParse'\n\n// What Conare took from a page, as a person reads it (parse/Read.vue): the regions in reading order without the running\n// head and foot, tables as tables. Each region takes focus, and pointing at or focusing one emits `point`, so the page\n// beside it lights the same region; a click pins it (`pick`). `plays` lands them in order with the page's red line.\nconst props = defineProps<{ part: ParsePart, on?: number | null, plays?: boolean }>()\nconst emit = defineEmits<{ point: [order: number | null], pick: [order: number] }>()\nconst body = computed(() => props.part.blocks.filter(b => b.type !== 'header' && b.type !== 'footer'))\n</script>\n\n<template>\n  <div data-ds=\"parse-read\" class=\"ds-parseread\" :data-plays=\"plays || undefined\">\n    <div v-for=\"b in body\" :key=\"b.order\" class=\"ds-parseread-block\" :data-type=\"b.type\" :data-on=\"on === b.order || undefined\" :style=\"{ '--o': b.order }\" tabindex=\"0\" @pointerenter=\"emit('point', b.order)\" @pointerleave=\"emit('point', null)\" @focus=\"emit('point', b.order)\" @blur=\"emit('point', null)\" @click=\"emit('pick', b.order)\">\n      <table v-if=\"b.type === 'table'\" class=\"ds-parsetable\" data-read>\n        <thead><tr><th v-for=\"(h, i) in tableOf(b.content).head\" :key=\"i\" scope=\"col\">{{ h }}</th></tr></thead>\n        <tbody>\n          <tr v-for=\"(r, k) in tableOf(b.content).rows\" :key=\"k\" :data-total=\"isTotal(r[0] ?? '') || undefined\">\n            <td v-for=\"(c, i) in r\" :key=\"i\">{{ c }}</td>\n          </tr>\n        </tbody>\n      </table>\n      <template v-else-if=\"b.type === 'list'\"><p v-for=\"(l, i) in b.content.split('\\n')\" :key=\"i\">{{ l }}</p></template>\n      <p v-else>{{ b.content }}</p>\n    </div>\n  </div>\n</template>\n\n<style>\n.ds-parseread { display: flex; flex-direction: column; gap: var(--ds-space-2xs); font-size: var(--ds-text-ui); line-height: var(--ds-text-ui-leading); }\n.ds-parseread-block { padding: 8px; border-left: 2px solid transparent; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard), border-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-parseread-block p { margin: 0; }\n.ds-parseread-block[data-type=\"title\"] { font-size: var(--ds-text-heading-4); font-weight: var(--ds-font-weight-medium); line-height: var(--ds-text-heading-4-leading); }\n.ds-parseread-block:is([data-type=\"footnote\"], [data-type=\"image\"]) { font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); opacity: 0.7; }\n.ds-parseread-block[data-on] { border-left-color: var(--ds-color-edge-accent); background: color-mix(in srgb, var(--ds-color-surface-accent) 12%, transparent); }\n.ds-parseread-block:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: -2px; }\n.ds-parsetable[data-read] { font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); }\n@media (prefers-reduced-motion: no-preference) {\n  .ds-parseread[data-plays] .ds-parseread-block { animation: ds-parse-land var(--ds-duration-land) var(--ds-easing-standard) both; animation-delay: calc(var(--o) * 90ms); }\n}\n@media (max-width: 767px) { .ds-parsetable[data-read] :is(th, td) + :is(th, td) { padding-left: 0.6em; } }\n</style>\n"
+    },
+    {
+      "path": "components/product/ParseOutput.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed, ref } from 'vue'\nimport ParseRead from '@/components/product/ParseRead.vue'\nimport type { ParseAnswer } from '@/composables/useParse'\n\n// What was read, on the dark window (parse/Output.vue): as text, as Markdown or as the API's JSON, picked by line tabs\n// whose red underline draws from the left. The text and the page beside it point at each other.\nconst props = defineProps<{ answer: ParseAnswer, on?: number | null, plays?: boolean }>()\ndefineEmits<{ point: [order: number | null], pick: [order: number] }>()\nconst TABS = [{ id: 'text', label: 'Text' }, { id: 'markdown', label: 'Markdown' }, { id: 'json', label: 'JSON' }] as const\nconst tab = ref<typeof TABS[number]['id']>('text')\nconst json = computed(() => JSON.stringify({ id: props.answer.id, state: 'done', name: props.answer.name, pages: props.answer.pages, parts: [{ page: props.answer.part.page, ocr: props.answer.part.ocr, confidence: props.answer.part.confidence, blocks: props.answer.part.blocks }] }, null, 2))\n</script>\n\n<template>\n  <div data-ds=\"parse-output\" class=\"flex min-h-0 flex-1 flex-col\">\n    <div class=\"flex gap-4 border-b border-code-edge px-4\" role=\"tablist\" aria-label=\"what was read\">\n      <button v-for=\"t in TABS\" :key=\"t.id\" type=\"button\" role=\"tab\" class=\"ds-parsetab\" :aria-selected=\"tab === t.id\" @click=\"tab = t.id\">{{ t.label }}</button>\n    </div>\n    <ParseRead v-if=\"tab === 'text'\" role=\"tabpanel\" class=\"fade-xy min-h-0 flex-1 overflow-auto p-2\" :part=\"answer.part\" :on=\"on\" :plays=\"plays\" @point=\"$emit('point', $event)\" @pick=\"$emit('pick', $event)\" />\n    <pre v-else class=\"fade-xy m-0 min-h-0 flex-1 overflow-auto p-4 font-code text-meta leading-4.5 whitespace-pre\" tabindex=\"0\" role=\"tabpanel\">{{ tab === 'markdown' ? answer.markdown : json }}</pre>\n  </div>\n</template>\n\n<style>\n.ds-parsetab { position: relative; padding: 10px 0; color: var(--ds-color-code-muted); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); cursor: pointer; touch-action: manipulation; transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-parsetab::after { position: absolute; inset: auto 0 -1px; height: 1px; background: var(--ds-color-surface-accent); content: \"\"; transform: scaleX(0); transform-origin: left; transition: transform var(--ds-duration-glide) var(--ds-easing-out); }\n.ds-parsetab[aria-selected=\"true\"] { color: var(--ds-color-code-fg); }\n.ds-parsetab[aria-selected=\"true\"]::after { transform: scaleX(1); }\n.ds-parsetab:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: -2px; }\n@media (hover: hover) and (pointer: fine) { .ds-parsetab:hover { color: var(--ds-color-code-fg); } }\n@media (pointer: coarse), (max-width: 767px) { .ds-parsetab { min-width: 40px; min-height: 40px; } }\n@media (prefers-reduced-motion: reduce) { .ds-parsetab::after { transition: none; } }\n</style>\n"
+    },
+    {
+      "path": "components/product/ParseRegions.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed } from 'vue'\nimport ParseSheet from '@/components/product/ParseSheet.vue'\nimport Table from '@/components/ui/Table.vue'\nimport { REGION, tableOf, useParsePoint, type ParseAnswer, type ParseBlock } from '@/composables/useParse'\n\n// Parse, \"Regions\" (parse/Regions.vue): the page's structure is the result. The page in the double rule with every\n// region outlined and numbered, beside a table of the regions in reading order, what each is and how sure OCR was; the\n// least sure (under 80%) in red, so a reader sees at once what to check by hand. Pointing joins the two.\nconst props = defineProps<{ answer: ParseAnswer }>()\nconst { on, pinned, lit, pick } = useParsePoint()\nconst part = computed(() => props.answer.part)\nconst preview = (b: ParseBlock) => (b.type === 'table' ? `${tableOf(b.content).rows.length} rows, ${tableOf(b.content).head.length} columns` : b.content.split('\\n')[0]!)\nconst UNSURE = 0.8\nconst unsure = computed(() => part.value.blocks.filter(b => b.conf != null && b.conf < UNSURE).length)\n</script>\n\n<template>\n  <section data-ds=\"parse-regions\" class=\"grid grid-cols-[minmax(0,5fr)_minmax(0,7fr)] items-start gap-6 max-lg:grid-cols-1\" aria-label=\"regions in reading order\">\n    <div class=\"m-1.25 border border-edge bg-surface-subtle p-3 outline outline-offset-4 outline-edge\">\n      <ParseSheet :part=\"part\" :scan=\"answer.scan\" :on=\"lit\" all plays @point=\"on = $event\" @pick=\"pick\" />\n    </div>\n    <div class=\"min-w-0\">\n      <div class=\"mb-2 flex items-center justify-between gap-4\">\n        <h2 class=\"type-ui-strong\">{{ part.blocks.length }} regions in reading order</h2>\n        <p class=\"type-meta text-fg-muted\">{{ part.ocr ? (unsure ? `${unsure} to check by hand` : 'All read clearly') : 'Read from the text layer, no OCR needed' }}</p>\n      </div>\n      <div class=\"overflow-hidden border border-edge bg-surface\">\n        <Table>\n          <thead><tr><th scope=\"col\" class=\"w-8\"><span class=\"sr-only\">Order</span></th><th scope=\"col\" class=\"w-20\">Region</th><th scope=\"col\">Text</th><th v-if=\"part.ocr\" scope=\"col\" class=\"w-20 text-right\">OCR</th></tr></thead>\n          <tbody>\n            <tr v-for=\"b in part.blocks\" :key=\"b.order\" class=\"is-link\" :class=\"lit === b.order && 'ds-parse-on'\" @pointerenter=\"on = b.order\" @pointerleave=\"on = null\" @click=\"pick(b.order)\">\n              <td class=\"text-fg-muted tabular-nums\">{{ b.order }}</td>\n              <td>{{ REGION[b.type] ?? b.type }}</td>\n              <td class=\"max-w-0\"><button type=\"button\" class=\"block w-full cursor-pointer truncate text-left focus-visible:outline-2 focus-visible:outline-edge-accent\" :aria-pressed=\"pinned === b.order\" @click.stop=\"pick(b.order)\" @focus=\"on = b.order\" @blur=\"on = null\">{{ preview(b) }}</button></td>\n              <td v-if=\"part.ocr\" class=\"text-right tabular-nums\" :class=\"b.conf != null && b.conf < UNSURE && 'text-fg-accent'\">{{ b.conf == null ? '' : `${Math.round(b.conf * 100)}%` }}</td>\n            </tr>\n          </tbody>\n        </Table>\n      </div>\n    </div>\n  </section>\n</template>\n\n<style>\n.ds-table tbody tr.ds-parse-on td { background: color-mix(in srgb, var(--ds-color-surface-accent) 6%, transparent); }\n</style>\n"
+    },
+    {
+      "path": "components/product/ParsePlain.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport { GripVertical } from 'lucide-vue-next'\nimport ParseRead from '@/components/product/ParseRead.vue'\nimport ParseSheet from '@/components/product/ParseSheet.vue'\nimport type { ParseAnswer } from '@/composables/useParse'\n\n// Parse, \"Plain or Conare\" (parse/Plain.vue): what a plain PDF reader gets beside what Conare read, the same page, one\n// red handle between them, so the difference is seen and not claimed: a plain reader runs a table's columns together and\n// finds nothing on a scan. The handle is a range input, so arrows move it too; each side keeps reading at any width. On\n// a phone the two stack and there is no handle.\ndefineProps<{ answer: ParseAnswer }>()\nconst at = ref(50)\n</script>\n\n<template>\n  <section data-ds=\"parse-plain\" class=\"grid grid-cols-[minmax(0,4fr)_minmax(0,8fr)] items-stretch gap-6 max-lg:grid-cols-1\" aria-label=\"a plain reader and Conare, the same page\">\n    <div class=\"m-1.25 self-start border border-edge bg-surface-subtle p-3 outline outline-offset-4 outline-edge\">\n      <ParseSheet :part=\"answer.part\" :scan=\"answer.scan\" plays mini />\n    </div>\n    <div class=\"ds-parseplain m-1.25\" :style=\"{ '--at': `${at}%` }\">\n      <div class=\"ds-parseplain-layer\" data-side=\"plain\">\n        <p class=\"mb-3 type-meta text-fg-muted\">A plain PDF reader</p>\n        <p v-if=\"!answer.plain\" class=\"max-w-80 text-fg-soft\">No text found. A scan is a picture, so a plain reader has nothing to read.</p>\n        <pre v-else class=\"m-0 font-code text-meta leading-4.5 break-words whitespace-pre-wrap text-fg-soft\">{{ answer.plain }}</pre>\n      </div>\n      <div class=\"ds-parseplain-layer\" data-side=\"conare\">\n        <p class=\"mb-3 type-meta text-fg\">Conare</p>\n        <ParseRead :part=\"answer.part\" />\n      </div>\n      <span class=\"ds-parseplain-rule\" aria-hidden=\"true\"><span><GripVertical :size=\"12\" :stroke-width=\"1.5\" /></span></span>\n      <input v-model.number=\"at\" type=\"range\" min=\"24\" max=\"76\" step=\"1\" class=\"ds-parseplain-range\" aria-label=\"move between a plain reader and Conare\">\n    </div>\n  </section>\n</template>\n\n<style>\n.ds-parseplain { position: relative; display: grid; min-height: 560px; grid-template-columns: var(--at) minmax(0, 1fr); overflow: hidden; border: var(--ds-border-hairline) solid var(--ds-color-edge); outline: var(--ds-border-hairline) solid var(--ds-color-edge); outline-offset: 4px; }\n.ds-parseplain:has(.ds-parseplain-range:focus-visible) { outline-color: var(--ds-color-edge-accent); }\n.ds-parseplain-layer { min-width: 0; overflow: hidden; padding: 16px; background: var(--ds-color-surface); }\n.ds-parseplain-layer[data-side=\"plain\"] { background: var(--ds-color-surface-subtle); }\n.ds-parseplain-layer .ds-parseread-block { padding: 6px 0; }\n.ds-parseplain-rule { position: absolute; top: 0; bottom: 0; left: var(--at); width: 1px; background: var(--ds-color-edge-accent); pointer-events: none; }\n.ds-parseplain-rule > span { position: absolute; top: 50%; left: 50%; display: flex; width: 20px; height: 32px; align-items: center; justify-content: center; background: var(--ds-color-home-red-press); color: var(--ds-color-fg-inverse); transform: translate(-50%, -50%); }\n.ds-parseplain-range { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; cursor: ew-resize; opacity: 0; touch-action: pan-y; }\n@media (max-width: 767px) {\n  .ds-parseplain { min-height: 0; grid-template-columns: minmax(0, 1fr); }\n  .ds-parseplain-rule, .ds-parseplain-range { display: none; }\n  .ds-parseplain-layer[data-side=\"conare\"] { border-top: var(--ds-border-hairline) solid var(--ds-color-edge-accent); }\n}\n</style>\n"
+    },
+    {
+      "path": "composables/useParse.ts",
+      "content": "import { computed, ref } from 'vue'\n\n/**\n * A document as Conare read it (POST /parse?layout=true): every region with its box (shares of the page), its reading\n * order and its OCR confidence. The parse views draw it; useParsePoint() joins the page and the text, so pointing at a\n * region on one lights it on the other and a click pins it.\n */\nexport interface ParseBlock { type: string, bbox: [number, number, number, number], order: number, content: string, conf: number | null }\nexport interface ParsePart { page: number, markdown: string, ocr: boolean, confidence: number | null, blocks: ParseBlock[] }\nexport interface ParseAnswer {\n  id: string\n  name: string\n  /** The page shown, and how many the file has. */\n  page: number\n  pages: number\n  took_ms: number\n  /** A scanned page (drawn as a scan). */\n  scan?: boolean\n  markdown: string\n  /** What a plain PDF reader gets from the same page; empty for a scan. */\n  plain: string\n  part: ParsePart\n}\n\n/** A region's kind in plain words. */\nexport const REGION: Record<string, string> = { title: 'Title', text: 'Text', list: 'List', table: 'Table', image: 'Image', header: 'Header', footer: 'Footer', footnote: 'Footnote' }\n\n/** A Markdown table's cells: its head, then its rows. */\nexport function tableOf(content: string) {\n  const lines = content.split('\\n').filter(l => l.trim().startsWith('|'))\n  const cells = (l: string) => l.trim().replace(/^\\||\\|$/g, '').split('|').map(c => c.trim())\n  return { head: lines[0] ? cells(lines[0]) : [], rows: lines.slice(2).map(cells) }\n}\n\n/** Totals read heavier on the page and in the text. */\nexport const isTotal = (label: string) => /^(total|net earnings)/i.test(label)\n\n/** The region pointed at or pinned. */\nexport function useParsePoint() {\n  const on = ref<number | null>(null)\n  const pinned = ref<number | null>(null)\n  const lit = computed(() => on.value ?? pinned.value)\n  const pick = (order: number) => { pinned.value = pinned.value === order ? null : order }\n  return { on, pinned, lit, pick }\n}\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "PageBesideText",
+      "label": "Page beside text",
+      "center": false,
+      "half": false,
+      "path": "examples/parse-views/PageBesideText.vue",
+      "content": "<script setup lang=\"ts\">\nimport ParseReading from '@/components/product/ParseReading.vue'\nimport { parseSample } from '@/examples/parse-views/sample'\n// Document reading, Page beside text, the take that ships: the page and what was read, joined by pointing.\n// Point at a region on the page or in the text; a click pins it. A sample reading of Acme's income statement.\nconst answer = parseSample('statement')\n</script>\n\n<template>\n  <div class=\"flex w-full flex-col gap-6\">\n    <ParseReading :answer=\"answer\" :version=\"1\" />\n  </div>\n</template>\n",
+      "requires": [
+        "count",
+        "table"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    },
+    {
+      "name": "Regions",
+      "label": "Regions",
+      "center": false,
+      "half": false,
+      "path": "examples/parse-views/Regions.vue",
+      "content": "<script setup lang=\"ts\">\nimport ParseReading from '@/components/product/ParseReading.vue'\nimport { parseSample } from '@/examples/parse-views/sample'\n// Document reading, Regions: every region numbered in reading order, with how sure OCR was.\n// Point at a region on the page or in the text; a click pins it. A sample reading of Acme's income statement.\nconst answer = parseSample('statement')\n</script>\n\n<template>\n  <div class=\"flex w-full flex-col gap-6\">\n    <ParseReading :answer=\"answer\" :version=\"2\" />\n  </div>\n</template>\n",
+      "requires": [
+        "count",
+        "table"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    },
+    {
+      "name": "PlainOrConare",
+      "label": "Plain or Conare",
+      "center": false,
+      "half": false,
+      "path": "examples/parse-views/PlainOrConare.vue",
+      "content": "<script setup lang=\"ts\">\nimport ParseReading from '@/components/product/ParseReading.vue'\nimport { parseSample } from '@/examples/parse-views/sample'\n// Document reading, Plain or Conare: a plain PDF reader's text and Conare's, the same page, one handle between them.\n// Point at a region on the page or in the text; a click pins it. A sample reading of Acme's income statement.\nconst answer = parseSample('statement')\n</script>\n\n<template>\n  <div class=\"flex w-full flex-col gap-6\">\n    <ParseReading :answer=\"answer\" :version=\"3\" />\n  </div>\n</template>\n",
+      "requires": [
+        "count",
+        "table"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/product/ParseReading.tsx",
+          "content": "'use client'\nimport { ParseOutput } from '@/react/components/product/ParseOutput'\nimport { ParsePlain } from '@/react/components/product/ParsePlain'\nimport { ParseRegions } from '@/react/components/product/ParseRegions'\nimport { ParseSheet } from '@/react/components/product/ParseSheet'\nimport { useParsePoint, type ParseAnswer } from '@/react/hooks/useParse'\nimport { Count } from '@/react/components/ui/Count'\nimport { cn } from '@/react/lib/cn'\n\n// A file as Conare read it (parse/Reading.vue), three ways. 1 \"Page beside text\" (the one that ships): the page on the\n// paper beside the dark window of what was read, with four facts over it (how long, regions, tables, OCR; the counts\n// roll up as they land), joined by pointing. 2 \"Regions\": the page's structure, every region numbered with its\n// confidence. 3 \"Plain or Conare\": a plain reader's text and Conare's on the same page, one handle between them.\nexport interface ParseReadingProps {\n  answer: ParseAnswer\n  version?: 1 | 2 | 3\n  /** The root's data-ds (a page built on this one says its own, as Vue's fallthrough does). */\n  'data-ds'?: string\n}\n\nexport function ParseReading({ answer, version = 1, 'data-ds': ds = 'parse-reading' }: ParseReadingProps) {\n  const { setOn, lit, pick } = useParsePoint()\n  const p = answer.part\n  const tables = p.blocks.filter(b => b.type === 'table').length\n  const facts: Array<{ label: string, value: string, count?: number }> = [\n    { label: 'Read in', value: `${(answer.took_ms / 1000).toLocaleString('en-US', { maximumFractionDigits: 1 })} s` },\n    { label: 'Regions', value: '', count: p.blocks.length },\n    { label: 'Tables', value: '', count: tables },\n    { label: 'OCR', value: p.ocr ? `${Math.round((p.confidence ?? 0) * 100)}% sure` : 'Not needed' },\n  ]\n  if (version === 2) return <ParseRegions data-ds={ds} answer={answer} />\n  if (version === 3) return <ParsePlain data-ds={ds} answer={answer} />\n  return (\n    <section data-ds={ds} className=\"m-1.25 grid grid-cols-2 border border-edge outline outline-offset-4 outline-edge max-lg:grid-cols-1\" aria-label=\"the page and what was read\">\n      <div className=\"flex min-w-0 flex-col gap-2 bg-surface-subtle p-4\">\n        <ParseSheet className=\"border border-edge\" part={answer.part} scan={answer.scan} on={lit} plays onPoint={setOn} onPick={pick} />\n        <p className=\"flex justify-between gap-4 type-meta text-fg-muted\"><span className=\"truncate\">{answer.name}</span><span className=\"shrink-0\">{`Page ${answer.page} of ${answer.pages}`}</span></p>\n      </div>\n      <div className=\"flex min-w-0 flex-col bg-code text-code-fg\">\n        <dl className=\"grid grid-cols-4 border-b border-code-edge max-md:grid-cols-2\">\n          {facts.map((f, i) => (\n            <div key={f.label} className={cn('min-w-0 px-4 py-3', i > 0 && 'border-code-edge md:border-l', i % 2 === 1 && 'max-md:border-l', i > 1 && 'max-md:border-t')}>\n              <dt className=\"type-meta text-code-muted\">{f.label}</dt>\n              <dd className=\"text-body tabular-nums\">{f.count != null ? <Count value={f.count} rolls /> : f.value}</dd>\n            </div>\n          ))}\n        </dl>\n        <ParseOutput answer={answer} on={lit} plays onPoint={setOn} onPick={pick} />\n      </div>\n    </section>\n  )\n}\n\nexport default ParseReading\n"
+        },
+        {
+          "path": "react/components/product/ParseSheet.tsx",
+          "content": "import type { CSSProperties } from 'react'\nimport { cn } from '@/react/lib/cn'\nimport { REGION, isTotal, tableOf, type ParseBlock, type ParsePart } from '@/react/hooks/useParse'\n\n// A page as Conare read it (parse/Sheet.vue): each region drawn at its box in reading order, in a document face (a\n// typewriter face, a little askew and soft, for a scan). Sizes follow the page's width, so it reads the same as a\n// thumbnail and full size. `on` lights a region with a red edge and its kind; `all` outlines every region and numbers\n// it; `plays` runs a red line down the page once while the regions land in order (reduced motion shows them at once);\n// `mini` is a picture only. Pointing emits `onPoint`, a click `onPick`. The boxes are the pointer's way in; the keyboard reaches the same regions in the text or the\n// list beside the page, so they stay out of the tab order.\nexport interface ParseSheetProps {\n  part: ParsePart\n  scan?: boolean\n  on?: number | null\n  mini?: boolean\n  plays?: boolean\n  all?: boolean\n  className?: string\n  onPoint?: (order: number | null) => void\n  onPick?: (order: number) => void\n}\n\nconst box = (b: ParseBlock) => ({ left: `${b.bbox[0] * 100}%`, top: `${b.bbox[1] * 100}%`, width: `${(b.bbox[2] - b.bbox[0]) * 100}%`, height: `${(b.bbox[3] - b.bbox[1]) * 100}%`, '--o': b.order }) as CSSProperties\nconst name = (b: ParseBlock) => `${REGION[b.type] ?? b.type}: ${b.type === 'table' ? `${tableOf(b.content).rows.length} rows` : b.content.slice(0, 60)}`\nconst stamp = (b: ParseBlock) => b.content.replace(/^Stamp:\\s*/, '').split(', ')\n\nexport function ParseSheet({ part, scan, on, mini, plays, all, className, onPoint, onPick }: ParseSheetProps) {\n  return (\n    <>\n      <style href=\"ds-parse-sheet\" precedence=\"ds\">{css}</style>\n      <div data-ds=\"parse-sheet\" className={cn('ds-parsepage', className)} data-scan={scan || undefined} data-plays={plays || undefined} data-all={all || undefined} aria-hidden={mini || undefined}>\n        {plays && <span className=\"ds-parse-sweep\" aria-hidden=\"true\" />}\n        {part.blocks.map(b => (\n          <div key={b.order} className=\"ds-parseregion\" data-type={b.type} data-on={on === b.order || undefined} style={box(b)}>\n            {b.type === 'table'\n              ? (\n                  <table className=\"ds-parsetable\">\n                    <thead><tr>{tableOf(b.content).head.map((hd, i) => <th key={i} scope=\"col\">{hd}</th>)}</tr></thead>\n                    <tbody>\n                      {tableOf(b.content).rows.map((r, k) => (\n                        <tr key={k} data-total={isTotal(r[0] ?? '') || undefined}>\n                          {r.map((cell, i) => <td key={i}>{cell}</td>)}\n                        </tr>\n                      ))}\n                    </tbody>\n                  </table>\n                )\n              : b.type === 'image'\n                ? (b.content.startsWith('Signature')\n                    ? <svg viewBox=\"0 0 120 40\" className=\"ds-parsesign\" aria-hidden=\"true\"><path d=\"M4 28c10-20 15-22 17-16s-6 18-3 18 10-20 15-18 0 14 4 14 8-12 12-10-2 10 2 10 10-8 16-8 12 4 22 2 18-6 27-6\" /></svg>\n                    : <span className=\"ds-parsestamp\"><span>{stamp(b)[0]}</span><span>{stamp(b).slice(1).join(', ')}</span></span>)\n                : b.type === 'list'\n                  ? b.content.split('\\n').map((l, i) => <p key={i}>{l}</p>)\n                  : <p>{b.content}</p>}\n            {!mini && (\n              <>\n                {all && <span className=\"ds-parsenum\" aria-hidden=\"true\">{b.order}</span>}\n                <span className=\"ds-parsetag\" aria-hidden=\"true\">{REGION[b.type] ?? b.type}</span>\n                <button type=\"button\" tabIndex={-1} className=\"ds-parsehit\" aria-label={name(b)} aria-pressed={on === b.order} onPointerEnter={() => onPoint?.(b.order)} onPointerLeave={() => onPoint?.(null)} onClick={() => onPick?.(b.order)} />\n              </>\n            )}\n          </div>\n        ))}\n      </div>\n    </>\n  )\n}\n\nexport default ParseSheet\n\nconst css = `\n.ds-parsepage { position: relative; width: 100%; aspect-ratio: 8.5 / 11; overflow: hidden; background: var(--ds-color-surface); color: var(--ds-color-fg); font-family: var(--ds-font-document); container-type: inline-size; }\n.ds-parsepage[data-scan] { background: color-mix(in srgb, var(--ds-color-surface) 94%, var(--ds-color-fg) 6%); font-family: var(--ds-font-scan); }\n.ds-parsepage[data-scan] .ds-parseregion > :not(.ds-parsehit, .ds-parsetag, .ds-parsenum) { transform: rotate(-0.25deg); filter: blur(0.15px); }\n.ds-parseregion { position: absolute; font-size: 2.05cqw; line-height: 1.5; }\n.ds-parseregion p { margin: 0; }\n.ds-parseregion[data-type=\"title\"] { font-size: 3.1cqw; font-weight: var(--ds-font-weight-medium); line-height: 1.2; }\n.ds-parseregion:is([data-type=\"header\"], [data-type=\"footer\"], [data-type=\"footnote\"]) { color: var(--ds-color-fg-soft); font-size: 1.75cqw; }\n.ds-parseregion[data-type=\"footer\"] { text-align: center; }\n.ds-parseregion::before { position: absolute; inset: -0.6cqw; border: var(--ds-border-hairline) solid transparent; content: \"\"; pointer-events: none; transition: border-color var(--ds-duration-micro) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-parseregion[data-on]::before { border-color: var(--ds-color-edge-accent); border-left-width: 2px; background: color-mix(in srgb, var(--ds-color-surface-accent) 6%, transparent); }\n.ds-parsepage[data-all] .ds-parseregion::before { border-color: color-mix(in srgb, var(--ds-color-fg) 22%, transparent); }\n.ds-parsepage[data-all] .ds-parseregion[data-on]::before { border-color: var(--ds-color-edge-accent); }\n.ds-parsetag { position: absolute; bottom: calc(100% + 0.6cqw); left: -0.6cqw; z-index: 1; padding: 0 4px; background: var(--ds-color-home-red-press); color: var(--ds-color-fg-inverse); font-family: var(--ds-font-text); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-parseregion[data-on] .ds-parsetag { opacity: 1; }\n.ds-parsenum { position: absolute; top: -0.2cqw; right: calc(100% + 1.2cqw); z-index: 1; display: flex; min-width: 16px; height: 16px; align-items: center; justify-content: center; background: var(--ds-color-fg); color: var(--ds-color-fg-inverse); font-family: var(--ds-font-text); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); font-variant-numeric: tabular-nums; pointer-events: none; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-parseregion[data-on] .ds-parsenum { background: var(--ds-color-home-red-press); }\n.ds-parsehit { position: absolute; top: 50%; right: -0.6cqw; left: -0.6cqw; z-index: 2; height: calc(100% + 1.2cqw); min-height: 24px; transform: translateY(-50%); cursor: pointer; touch-action: manipulation; }\n.ds-parsetable { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }\n.ds-parsepage .ds-parsetable { height: 100%; font-size: 1.95cqw; line-height: 1.3; }\n.ds-parsetable th { padding-block: 0.3em; border-bottom: var(--ds-border-hairline) solid currentColor; font-weight: var(--ds-font-weight-medium); text-align: right; white-space: nowrap; }\n.ds-parsetable :is(th, td):first-child { text-align: left; }\n.ds-parsetable td { padding-block: 0.15em; text-align: right; white-space: nowrap; }\n.ds-parsetable :is(th, td) + :is(th, td) { padding-left: 1.2em; }\n.ds-parsetable td:first-child { padding-right: 1em; white-space: normal; }\n.ds-parsetable tr[data-total] td { border-top: var(--ds-border-hairline) solid currentColor; font-weight: var(--ds-font-weight-medium); }\n.ds-parsesign { width: 62%; height: 100%; }\n.ds-parsesign path { fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }\n.ds-parsestamp { display: inline-flex; flex-direction: column; padding: 0.4em 0.7em; border: var(--ds-border-hairline) solid currentColor; font-size: 1.6cqw; line-height: 1.3; transform: rotate(-4deg); }\n.ds-parse-sweep { position: absolute; top: 0; right: 0; left: 0; z-index: 3; height: 1px; background: var(--ds-color-edge-accent); opacity: 0; pointer-events: none; }\n@media (prefers-reduced-motion: no-preference) {\n  .ds-parsepage[data-plays] .ds-parse-sweep { animation: ds-parse-sweep var(--ds-duration-sweep) var(--ds-easing-standard) 1 both; }\n  .ds-parsepage[data-plays] .ds-parseregion { animation: ds-parse-land var(--ds-duration-land) var(--ds-easing-standard) both; animation-delay: calc(var(--o) * 90ms); }\n}\n@keyframes ds-parse-sweep { 0% { opacity: 1; transform: translateY(0); } 90% { opacity: 1; } 100% { opacity: 0; transform: translateY(129cqw); } }\n@keyframes ds-parse-land { from { opacity: 0; } }\n@media (pointer: coarse), (max-width: 767px) { .ds-parsehit { display: none; } }\n`\n"
+        },
+        {
+          "path": "react/components/product/ParseRead.tsx",
+          "content": "import type { CSSProperties, HTMLAttributes } from 'react'\nimport { cn } from '@/react/lib/cn'\nimport { isTotal, tableOf, type ParsePart } from '@/react/hooks/useParse'\n\n// What Conare took from a page, as a person reads it (parse/Read.vue): the regions in reading order without the running\n// head and foot, tables as tables. Each region takes focus, and pointing at or focusing one calls `onPoint`, so the page\n// beside it lights the same region; a click pins it (`onPick`). `plays` lands them in order with the page's red line.\nexport interface ParseReadProps extends Omit<HTMLAttributes<HTMLDivElement>, 'onPointerEnter' | 'part'> {\n  part: ParsePart\n  on?: number | null\n  plays?: boolean\n  onPoint?: (order: number | null) => void\n  onPick?: (order: number) => void\n}\n\nexport function ParseRead({ part, on, plays, onPoint, onPick, className, ...rest }: ParseReadProps) {\n  const body = part.blocks.filter(b => b.type !== 'header' && b.type !== 'footer')\n  return (\n    <>\n      <style href=\"ds-parse-read\" precedence=\"ds\">{css}</style>\n      <div data-ds=\"parse-read\" className={cn('ds-parseread', className)} data-plays={plays || undefined} {...rest}>\n        {body.map(b => (\n          <div key={b.order} className=\"ds-parseread-block\" data-type={b.type} data-on={on === b.order || undefined} style={{ '--o': b.order } as CSSProperties} tabIndex={0} onPointerEnter={() => onPoint?.(b.order)} onPointerLeave={() => onPoint?.(null)} onFocus={() => onPoint?.(b.order)} onBlur={() => onPoint?.(null)} onClick={() => onPick?.(b.order)}>\n            {b.type === 'table'\n              ? (\n                  <table className=\"ds-parsetable\" data-read>\n                    <thead><tr>{tableOf(b.content).head.map((hd, i) => <th key={i} scope=\"col\">{hd}</th>)}</tr></thead>\n                    <tbody>\n                      {tableOf(b.content).rows.map((r, k) => (\n                        <tr key={k} data-total={isTotal(r[0] ?? '') || undefined}>\n                          {r.map((cell, i) => <td key={i}>{cell}</td>)}\n                        </tr>\n                      ))}\n                    </tbody>\n                  </table>\n                )\n              : b.type === 'list'\n                ? b.content.split('\\n').map((l, i) => <p key={i}>{l}</p>)\n                : <p>{b.content}</p>}\n          </div>\n        ))}\n      </div>\n    </>\n  )\n}\n\nexport default ParseRead\n\nconst css = `\n.ds-parseread { display: flex; flex-direction: column; gap: var(--ds-space-2xs); font-size: var(--ds-text-ui); line-height: var(--ds-text-ui-leading); }\n.ds-parseread-block { padding: 8px; border-left: 2px solid transparent; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard), border-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-parseread-block p { margin: 0; }\n.ds-parseread-block[data-type=\"title\"] { font-size: var(--ds-text-heading-4); font-weight: var(--ds-font-weight-medium); line-height: var(--ds-text-heading-4-leading); }\n.ds-parseread-block:is([data-type=\"footnote\"], [data-type=\"image\"]) { font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); opacity: 0.7; }\n.ds-parseread-block[data-on] { border-left-color: var(--ds-color-edge-accent); background: color-mix(in srgb, var(--ds-color-surface-accent) 12%, transparent); }\n.ds-parseread-block:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: -2px; }\n.ds-parsetable[data-read] { font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); }\n@media (prefers-reduced-motion: no-preference) {\n  .ds-parseread[data-plays] .ds-parseread-block { animation: ds-parse-land var(--ds-duration-land) var(--ds-easing-standard) both; animation-delay: calc(var(--o) * 90ms); }\n}\n@media (max-width: 767px) { .ds-parsetable[data-read] :is(th, td) + :is(th, td) { padding-left: 0.6em; } }\n`\n"
+        },
+        {
+          "path": "react/components/product/ParseOutput.tsx",
+          "content": "'use client'\nimport { useState } from 'react'\nimport { ParseRead } from '@/react/components/product/ParseRead'\nimport type { ParseAnswer } from '@/react/hooks/useParse'\n\n// What was read, on the dark window (parse/Output.vue): as text, as Markdown or as the API's JSON, picked by line tabs\n// whose red underline draws from the left. The text and the page beside it point at each other.\nexport interface ParseOutputProps {\n  answer: ParseAnswer\n  on?: number | null\n  plays?: boolean\n  onPoint?: (order: number | null) => void\n  onPick?: (order: number) => void\n}\n\nconst TABS = [{ id: 'text', label: 'Text' }, { id: 'markdown', label: 'Markdown' }, { id: 'json', label: 'JSON' }] as const\n\nexport function ParseOutput({ answer, on, plays, onPoint, onPick }: ParseOutputProps) {\n  const [tab, setTab] = useState<typeof TABS[number]['id']>('text')\n  const json = JSON.stringify({ id: answer.id, state: 'done', name: answer.name, pages: answer.pages, parts: [{ page: answer.part.page, ocr: answer.part.ocr, confidence: answer.part.confidence, blocks: answer.part.blocks }] }, null, 2)\n  return (\n    <>\n      <style href=\"ds-parse-output\" precedence=\"ds\">{css}</style>\n      <div data-ds=\"parse-output\" className=\"flex min-h-0 flex-1 flex-col\">\n        <div className=\"flex gap-4 border-b border-code-edge px-4\" role=\"tablist\" aria-label=\"what was read\">\n          {TABS.map(t => <button key={t.id} type=\"button\" role=\"tab\" className=\"ds-parsetab\" aria-selected={tab === t.id} onClick={() => setTab(t.id)}>{t.label}</button>)}\n        </div>\n        {tab === 'text'\n          ? <ParseRead role=\"tabpanel\" className=\"fade-xy min-h-0 flex-1 overflow-auto p-2\" part={answer.part} on={on} plays={plays} onPoint={onPoint} onPick={onPick} />\n          : <pre className=\"fade-xy m-0 min-h-0 flex-1 overflow-auto p-4 font-code text-meta leading-4.5 whitespace-pre\" tabIndex={0} role=\"tabpanel\">{tab === 'markdown' ? answer.markdown : json}</pre>}\n      </div>\n    </>\n  )\n}\n\nexport default ParseOutput\n\nconst css = `\n.ds-parsetab { position: relative; padding: 10px 0; color: var(--ds-color-code-muted); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); cursor: pointer; touch-action: manipulation; transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-parsetab::after { position: absolute; inset: auto 0 -1px; height: 1px; background: var(--ds-color-surface-accent); content: \"\"; transform: scaleX(0); transform-origin: left; transition: transform var(--ds-duration-glide) var(--ds-easing-out); }\n.ds-parsetab[aria-selected=\"true\"] { color: var(--ds-color-code-fg); }\n.ds-parsetab[aria-selected=\"true\"]::after { transform: scaleX(1); }\n.ds-parsetab:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: -2px; }\n@media (hover: hover) and (pointer: fine) { .ds-parsetab:hover { color: var(--ds-color-code-fg); } }\n@media (pointer: coarse), (max-width: 767px) { .ds-parsetab { min-width: 40px; min-height: 40px; } }\n@media (prefers-reduced-motion: reduce) { .ds-parsetab::after { transition: none; } }\n`\n"
+        },
+        {
+          "path": "react/components/product/ParseRegions.tsx",
+          "content": "'use client'\nimport { Table } from '@/react/components/ui/Table'\nimport { ParseSheet } from '@/react/components/product/ParseSheet'\nimport { REGION, tableOf, useParsePoint, type ParseAnswer, type ParseBlock } from '@/react/hooks/useParse'\n\n// Parse, \"Regions\" (parse/Regions.vue): the page's structure is the result. The page in the double rule with every\n// region outlined and numbered, beside a table of the regions in reading order, what each is and how sure OCR was; the\n// least sure (under 80%) in red, so a reader sees at once what to check by hand. Pointing joins the two.\nexport interface ParseRegionsProps {\n  answer: ParseAnswer\n  'data-ds'?: string\n}\n\nconst preview = (b: ParseBlock) => (b.type === 'table' ? `${tableOf(b.content).rows.length} rows, ${tableOf(b.content).head.length} columns` : b.content.split('\\n')[0]!)\nconst UNSURE = 0.8\n\nexport function ParseRegions({ answer, 'data-ds': ds = 'parse-regions' }: ParseRegionsProps) {\n  const { setOn, pinned, lit, pick } = useParsePoint()\n  const part = answer.part\n  const unsure = part.blocks.filter(b => b.conf != null && b.conf < UNSURE).length\n  return (\n    <>\n      <style href=\"ds-parse-regions\" precedence=\"ds\">{css}</style>\n      <section data-ds={ds} className=\"grid grid-cols-[minmax(0,5fr)_minmax(0,7fr)] items-start gap-6 max-lg:grid-cols-1\" aria-label=\"regions in reading order\">\n        <div className=\"m-1.25 border border-edge bg-surface-subtle p-3 outline outline-offset-4 outline-edge\">\n          <ParseSheet part={part} scan={answer.scan} on={lit} all plays onPoint={setOn} onPick={pick} />\n        </div>\n        <div className=\"min-w-0\">\n          <div className=\"mb-2 flex items-center justify-between gap-4\">\n            <h2 className=\"type-ui-strong\">{part.blocks.length} regions in reading order</h2>\n            <p className=\"type-meta text-fg-muted\">{part.ocr ? (unsure ? `${unsure} to check by hand` : 'All read clearly') : 'Read from the text layer, no OCR needed'}</p>\n          </div>\n          <div className=\"overflow-hidden border border-edge bg-surface\">\n            <Table>\n              <thead><tr><th scope=\"col\" className=\"w-8\"><span className=\"sr-only\">Order</span></th><th scope=\"col\" className=\"w-20\">Region</th><th scope=\"col\">Text</th>{part.ocr && <th scope=\"col\" className=\"w-20 text-right\">OCR</th>}</tr></thead>\n              <tbody>\n                {part.blocks.map(b => (\n                  <tr key={b.order} className={lit === b.order ? 'is-link ds-parse-on' : 'is-link'} onPointerEnter={() => setOn(b.order)} onPointerLeave={() => setOn(null)} onClick={() => pick(b.order)}>\n                    <td className=\"text-fg-muted tabular-nums\">{b.order}</td>\n                    <td>{REGION[b.type] ?? b.type}</td>\n                    <td className=\"max-w-0\"><button type=\"button\" className=\"block w-full cursor-pointer truncate text-left focus-visible:outline-2 focus-visible:outline-edge-accent\" aria-pressed={pinned === b.order} onClick={(e) => { e.stopPropagation(); pick(b.order) }} onFocus={() => setOn(b.order)} onBlur={() => setOn(null)}>{preview(b)}</button></td>\n                    {part.ocr && <td className={b.conf != null && b.conf < UNSURE ? 'text-right tabular-nums text-fg-accent' : 'text-right tabular-nums'}>{b.conf == null ? '' : `${Math.round(b.conf * 100)}%`}</td>}\n                  </tr>\n                ))}\n              </tbody>\n            </Table>\n          </div>\n        </div>\n      </section>\n    </>\n  )\n}\n\nexport default ParseRegions\n\nconst css = `\n.ds-table tbody tr.ds-parse-on td { background: color-mix(in srgb, var(--ds-color-surface-accent) 6%, transparent); }\n`\n"
+        },
+        {
+          "path": "react/components/product/ParsePlain.tsx",
+          "content": "'use client'\nimport { useState, type CSSProperties } from 'react'\nimport { GripVertical } from 'lucide-react'\nimport { ParseRead } from '@/react/components/product/ParseRead'\nimport { ParseSheet } from '@/react/components/product/ParseSheet'\nimport type { ParseAnswer } from '@/react/hooks/useParse'\n\n// Parse, \"Plain or Conare\" (parse/Plain.vue): what a plain PDF reader gets beside what Conare read, the same page, one\n// red handle between them, so the difference is seen and not claimed: a plain reader runs a table's columns together and\n// finds nothing on a scan. The handle is a range input, so arrows move it too; each side keeps reading at any width. On\n// a phone the two stack and there is no handle.\nexport interface ParsePlainProps {\n  answer: ParseAnswer\n  'data-ds'?: string\n}\n\nexport function ParsePlain({ answer, 'data-ds': ds = 'parse-plain' }: ParsePlainProps) {\n  const [at, setAt] = useState(50)\n  return (\n    <>\n      <style href=\"ds-parse-plain\" precedence=\"ds\">{css}</style>\n      <section data-ds={ds} className=\"grid grid-cols-[minmax(0,4fr)_minmax(0,8fr)] items-stretch gap-6 max-lg:grid-cols-1\" aria-label=\"a plain reader and Conare, the same page\">\n        <div className=\"m-1.25 self-start border border-edge bg-surface-subtle p-3 outline outline-offset-4 outline-edge\">\n          <ParseSheet part={answer.part} scan={answer.scan} plays mini />\n        </div>\n        <div className=\"ds-parseplain m-1.25\" style={{ '--at': `${at}%` } as CSSProperties}>\n          <div className=\"ds-parseplain-layer\" data-side=\"plain\">\n            <p className=\"mb-3 type-meta text-fg-muted\">A plain PDF reader</p>\n            {!answer.plain\n              ? <p className=\"max-w-80 text-fg-soft\">No text found. A scan is a picture, so a plain reader has nothing to read.</p>\n              : <pre className=\"m-0 font-code text-meta leading-4.5 break-words whitespace-pre-wrap text-fg-soft\">{answer.plain}</pre>}\n          </div>\n          <div className=\"ds-parseplain-layer\" data-side=\"conare\">\n            <p className=\"mb-3 type-meta text-fg\">Conare</p>\n            <ParseRead part={answer.part} />\n          </div>\n          <span className=\"ds-parseplain-rule\" aria-hidden=\"true\"><span><GripVertical size={12} strokeWidth={1.5} /></span></span>\n          <input value={at} onChange={e => setAt(Number(e.target.value))} type=\"range\" min=\"24\" max=\"76\" step=\"1\" className=\"ds-parseplain-range\" aria-label=\"move between a plain reader and Conare\" />\n        </div>\n      </section>\n    </>\n  )\n}\n\nexport default ParsePlain\n\nconst css = `\n.ds-parseplain { position: relative; display: grid; min-height: 560px; grid-template-columns: var(--at) minmax(0, 1fr); overflow: hidden; border: var(--ds-border-hairline) solid var(--ds-color-edge); outline: var(--ds-border-hairline) solid var(--ds-color-edge); outline-offset: 4px; }\n.ds-parseplain:has(.ds-parseplain-range:focus-visible) { outline-color: var(--ds-color-edge-accent); }\n.ds-parseplain-layer { min-width: 0; overflow: hidden; padding: 16px; background: var(--ds-color-surface); }\n.ds-parseplain-layer[data-side=\"plain\"] { background: var(--ds-color-surface-subtle); }\n.ds-parseplain-layer .ds-parseread-block { padding: 6px 0; }\n.ds-parseplain-rule { position: absolute; top: 0; bottom: 0; left: var(--at); width: 1px; background: var(--ds-color-edge-accent); pointer-events: none; }\n.ds-parseplain-rule > span { position: absolute; top: 50%; left: 50%; display: flex; width: 20px; height: 32px; align-items: center; justify-content: center; background: var(--ds-color-home-red-press); color: var(--ds-color-fg-inverse); transform: translate(-50%, -50%); }\n.ds-parseplain-range { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; cursor: ew-resize; opacity: 0; touch-action: pan-y; }\n@media (max-width: 767px) {\n  .ds-parseplain { min-height: 0; grid-template-columns: minmax(0, 1fr); }\n  .ds-parseplain-rule, .ds-parseplain-range { display: none; }\n  .ds-parseplain-layer[data-side=\"conare\"] { border-top: var(--ds-border-hairline) solid var(--ds-color-edge-accent); }\n}\n`\n"
+        },
+        {
+          "path": "react/hooks/useParse.ts",
+          "content": "'use client'\nimport { useState } from 'react'\n\n/**\n * A document as Conare read it (POST /parse?layout=true): every region with its box (shares of the page), its reading\n * order and its OCR confidence. The parse views draw it; useParsePoint() joins the page and the text, so pointing at a\n * region on one lights it on the other and a click pins it.\n */\nexport interface ParseBlock { type: string, bbox: [number, number, number, number], order: number, content: string, conf: number | null }\nexport interface ParsePart { page: number, markdown: string, ocr: boolean, confidence: number | null, blocks: ParseBlock[] }\nexport interface ParseAnswer {\n  id: string\n  name: string\n  /** The page shown, and how many the file has. */\n  page: number\n  pages: number\n  took_ms: number\n  /** A scanned page (drawn as a scan). */\n  scan?: boolean\n  markdown: string\n  /** What a plain PDF reader gets from the same page; empty for a scan. */\n  plain: string\n  part: ParsePart\n}\n\n/** A region's kind in plain words. */\nexport const REGION: Record<string, string> = { title: 'Title', text: 'Text', list: 'List', table: 'Table', image: 'Image', header: 'Header', footer: 'Footer', footnote: 'Footnote' }\n\n/** A Markdown table's cells: its head, then its rows. */\nexport function tableOf(content: string) {\n  const lines = content.split('\\n').filter(l => l.trim().startsWith('|'))\n  const cells = (l: string) => l.trim().replace(/^\\||\\|$/g, '').split('|').map(c => c.trim())\n  return { head: lines[0] ? cells(lines[0]) : [], rows: lines.slice(2).map(cells) }\n}\n\n/** Totals read heavier on the page and in the text. */\nexport const isTotal = (label: string) => /^(total|net earnings)/i.test(label)\n\n/** The region pointed at or pinned. */\nexport function useParsePoint() {\n  const [on, setOn] = useState<number | null>(null)\n  const [pinned, setPinned] = useState<number | null>(null)\n  const lit = on ?? pinned\n  const pick = (order: number) => setPinned(p => (p === order ? null : order))\n  return { on, setOn, pinned, lit, pick }\n}\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [
+        "lucide-react@0.479.0"
+      ],
+      "registryDependencies": [
+        "count",
+        "table"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "ParseReading",
+            "file": "react/components/product/ParseReading.tsx",
+            "props": [
+              {
+                "name": "answer",
+                "type": "ParseAnswer",
+                "required": true
+              },
+              {
+                "name": "version",
+                "type": "1 | 2 | 3",
+                "required": false,
+                "default": "1"
+              },
+              {
+                "name": "data-ds",
+                "type": "string",
+                "required": false,
+                "description": "The root's data-ds (a page built on this one says its own, as Vue's fallthrough does)."
+              }
+            ]
+          },
+          {
+            "name": "ParseSheet",
+            "file": "react/components/product/ParseSheet.tsx",
+            "props": [
+              {
+                "name": "part",
+                "type": "ParsePart",
+                "required": true
+              },
+              {
+                "name": "scan",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "on",
+                "type": "number | null",
+                "required": false
+              },
+              {
+                "name": "mini",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "plays",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "all",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "onPoint",
+                "type": "(order: number | null) => void",
+                "required": false
+              },
+              {
+                "name": "onPick",
+                "type": "(order: number) => void",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "ParseRead",
+            "file": "react/components/product/ParseRead.tsx",
+            "props": [
+              {
+                "name": "part",
+                "type": "ParsePart",
+                "required": true
+              },
+              {
+                "name": "on",
+                "type": "number | null",
+                "required": false
+              },
+              {
+                "name": "plays",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "onPoint",
+                "type": "(order: number | null) => void",
+                "required": false
+              },
+              {
+                "name": "onPick",
+                "type": "(order: number) => void",
+                "required": false
+              }
+            ],
+            "extends": [
+              "Omit<HTMLAttributes<HTMLDivElement>, 'onPointerEnter' | 'part'>"
+            ]
+          },
+          {
+            "name": "ParseOutput",
+            "file": "react/components/product/ParseOutput.tsx",
+            "props": [
+              {
+                "name": "answer",
+                "type": "ParseAnswer",
+                "required": true
+              },
+              {
+                "name": "on",
+                "type": "number | null",
+                "required": false
+              },
+              {
+                "name": "plays",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "onPoint",
+                "type": "(order: number | null) => void",
+                "required": false
+              },
+              {
+                "name": "onPick",
+                "type": "(order: number) => void",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "ParseRegions",
+            "file": "react/components/product/ParseRegions.tsx",
+            "props": [
+              {
+                "name": "answer",
+                "type": "ParseAnswer",
+                "required": true
+              },
+              {
+                "name": "data-ds",
+                "type": "string",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "ParsePlain",
+            "file": "react/components/product/ParsePlain.tsx",
+            "props": [
+              {
+                "name": "answer",
+                "type": "ParseAnswer",
+                "required": true
+              },
+              {
+                "name": "data-ds",
+                "type": "string",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "PageBesideText",
+          "label": "Page beside text",
+          "center": false,
+          "half": false,
+          "path": "react/examples/parse-views/PageBesideText.tsx",
+          "content": "import { ParseReading } from '@/react/components/product/ParseReading'\nimport type { ParseAnswer } from '@/react/hooks/useParse'\n// Document reading, Page beside text, the take that ships: the page and what was read, joined by pointing.\n// Point at a region on the page or in the text; a click pins it. A sample reading of Acme's income statement.\nconst answer: ParseAnswer = {\"id\":\"prs_statement\",\"name\":\"Acme 2025 annual report.pdf\",\"page\":72,\"pages\":148,\"took_ms\":2140,\"markdown\":\"<!-- page 72 -->\\n\\n<!-- header: Acme Corporation and subsidiaries -->\\n\\n# Consolidated statements of earnings\\n\\n(dollars in thousands)\\n\\n| Year ended December 31 | 2025 | 2024 |\\n| --- | --- | --- |\\n| Subscription revenue | 48,212 | 39,870 |\\n| Services revenue | 9,644 | 8,915 |\\n| Hardware revenue | 3,108 | 3,402 |\\n| Interest and other income | 1,277 | 864 |\\n| Total revenues | 62,241 | 53,051 |\\n| Cost of subscription | 9,806 | 8,722 |\\n| Cost of services | 6,931 | 6,580 |\\n| Research and development | 14,402 | 12,118 |\\n| Sales and marketing | 15,760 | 14,204 |\\n| General and administrative | 5,318 | 4,906 |\\n| Interest expense | 412 | 455 |\\n| Total costs and expenses | 52,629 | 46,985 |\\n| Net earnings | 9,612 | 6,066 |\\n\\n_See accompanying notes to the consolidated financial statements_\\n\\n<!-- footer: K-72 -->\",\"plain\":\"ACME CORPORATION\\nand Subsidiaries\\nCONSOLIDATED STATEMENTS OF EARNINGS\\n(dollars in thousands)\\nYear Ended December 31,\\n2025 2024\\nSubscription revenue Services revenue Hardware revenue Interest and other income Total revenues\\n$ 48,212 9,644 3,108 1,277 62,241 $ 39,870 8,915 3,402 864 53,051\\nCost of subscription Cost of services Research and development Sales and marketing General and administrative Interest expense Total costs and expenses\\n9,806 6,931 14,402 15,760 5,318 412 52,629 8,722 6,580 12,118 14,204 4,906 455 46,985\\nNet earnings $ 9,612 $ 6,066\\nSee accompanying notes to the consolidated financial statements\\nK-72\",\"part\":{\"page\":72,\"markdown\":\"<!-- header: Acme Corporation and subsidiaries -->\\n\\n# Consolidated statements of earnings\\n\\n(dollars in thousands)\\n\\n| Year ended December 31 | 2025 | 2024 |\\n| --- | --- | --- |\\n| Subscription revenue | 48,212 | 39,870 |\\n| Services revenue | 9,644 | 8,915 |\\n| Hardware revenue | 3,108 | 3,402 |\\n| Interest and other income | 1,277 | 864 |\\n| Total revenues | 62,241 | 53,051 |\\n| Cost of subscription | 9,806 | 8,722 |\\n| Cost of services | 6,931 | 6,580 |\\n| Research and development | 14,402 | 12,118 |\\n| Sales and marketing | 15,760 | 14,204 |\\n| General and administrative | 5,318 | 4,906 |\\n| Interest expense | 412 | 455 |\\n| Total costs and expenses | 52,629 | 46,985 |\\n| Net earnings | 9,612 | 6,066 |\\n\\n_See accompanying notes to the consolidated financial statements_\\n\\n<!-- footer: K-72 -->\",\"ocr\":false,\"confidence\":null,\"blocks\":[{\"type\":\"header\",\"bbox\":[0.1,0.05,0.9,0.09],\"order\":1,\"conf\":null,\"content\":\"Acme Corporation and subsidiaries\"},{\"type\":\"title\",\"bbox\":[0.1,0.1,0.9,0.17],\"order\":2,\"conf\":null,\"content\":\"Consolidated statements of earnings\"},{\"type\":\"text\",\"bbox\":[0.1,0.17,0.9,0.2],\"order\":3,\"conf\":null,\"content\":\"(dollars in thousands)\"},{\"type\":\"table\",\"bbox\":[0.1,0.21,0.9,0.87],\"order\":4,\"conf\":null,\"content\":\"| Year ended December 31 | 2025 | 2024 |\\n| --- | --- | --- |\\n| Subscription revenue | 48,212 | 39,870 |\\n| Services revenue | 9,644 | 8,915 |\\n| Hardware revenue | 3,108 | 3,402 |\\n| Interest and other income | 1,277 | 864 |\\n| Total revenues | 62,241 | 53,051 |\\n| Cost of subscription | 9,806 | 8,722 |\\n| Cost of services | 6,931 | 6,580 |\\n| Research and development | 14,402 | 12,118 |\\n| Sales and marketing | 15,760 | 14,204 |\\n| General and administrative | 5,318 | 4,906 |\\n| Interest expense | 412 | 455 |\\n| Total costs and expenses | 52,629 | 46,985 |\\n| Net earnings | 9,612 | 6,066 |\"},{\"type\":\"footnote\",\"bbox\":[0.1,0.885,0.9,0.92],\"order\":5,\"conf\":null,\"content\":\"See accompanying notes to the consolidated financial statements\"},{\"type\":\"footer\",\"bbox\":[0.42,0.935,0.58,0.96],\"order\":6,\"conf\":null,\"content\":\"K-72\"}]}}\n\n\nexport default function PageBesideText() {\n  return (\n    <div className=\"flex w-full flex-col gap-6\">\n      <ParseReading answer={answer} version={1} />\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "count",
+            "table"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        },
+        {
+          "name": "Regions",
+          "label": "Regions",
+          "center": false,
+          "half": false,
+          "path": "react/examples/parse-views/Regions.tsx",
+          "content": "import { ParseReading } from '@/react/components/product/ParseReading'\nimport type { ParseAnswer } from '@/react/hooks/useParse'\n// Document reading, Regions: every region numbered in reading order, with how sure OCR was.\n// Point at a region on the page or in the text; a click pins it. A sample reading of Acme's income statement.\nconst answer: ParseAnswer = {\"id\":\"prs_statement\",\"name\":\"Acme 2025 annual report.pdf\",\"page\":72,\"pages\":148,\"took_ms\":2140,\"markdown\":\"<!-- page 72 -->\\n\\n<!-- header: Acme Corporation and subsidiaries -->\\n\\n# Consolidated statements of earnings\\n\\n(dollars in thousands)\\n\\n| Year ended December 31 | 2025 | 2024 |\\n| --- | --- | --- |\\n| Subscription revenue | 48,212 | 39,870 |\\n| Services revenue | 9,644 | 8,915 |\\n| Hardware revenue | 3,108 | 3,402 |\\n| Interest and other income | 1,277 | 864 |\\n| Total revenues | 62,241 | 53,051 |\\n| Cost of subscription | 9,806 | 8,722 |\\n| Cost of services | 6,931 | 6,580 |\\n| Research and development | 14,402 | 12,118 |\\n| Sales and marketing | 15,760 | 14,204 |\\n| General and administrative | 5,318 | 4,906 |\\n| Interest expense | 412 | 455 |\\n| Total costs and expenses | 52,629 | 46,985 |\\n| Net earnings | 9,612 | 6,066 |\\n\\n_See accompanying notes to the consolidated financial statements_\\n\\n<!-- footer: K-72 -->\",\"plain\":\"ACME CORPORATION\\nand Subsidiaries\\nCONSOLIDATED STATEMENTS OF EARNINGS\\n(dollars in thousands)\\nYear Ended December 31,\\n2025 2024\\nSubscription revenue Services revenue Hardware revenue Interest and other income Total revenues\\n$ 48,212 9,644 3,108 1,277 62,241 $ 39,870 8,915 3,402 864 53,051\\nCost of subscription Cost of services Research and development Sales and marketing General and administrative Interest expense Total costs and expenses\\n9,806 6,931 14,402 15,760 5,318 412 52,629 8,722 6,580 12,118 14,204 4,906 455 46,985\\nNet earnings $ 9,612 $ 6,066\\nSee accompanying notes to the consolidated financial statements\\nK-72\",\"part\":{\"page\":72,\"markdown\":\"<!-- header: Acme Corporation and subsidiaries -->\\n\\n# Consolidated statements of earnings\\n\\n(dollars in thousands)\\n\\n| Year ended December 31 | 2025 | 2024 |\\n| --- | --- | --- |\\n| Subscription revenue | 48,212 | 39,870 |\\n| Services revenue | 9,644 | 8,915 |\\n| Hardware revenue | 3,108 | 3,402 |\\n| Interest and other income | 1,277 | 864 |\\n| Total revenues | 62,241 | 53,051 |\\n| Cost of subscription | 9,806 | 8,722 |\\n| Cost of services | 6,931 | 6,580 |\\n| Research and development | 14,402 | 12,118 |\\n| Sales and marketing | 15,760 | 14,204 |\\n| General and administrative | 5,318 | 4,906 |\\n| Interest expense | 412 | 455 |\\n| Total costs and expenses | 52,629 | 46,985 |\\n| Net earnings | 9,612 | 6,066 |\\n\\n_See accompanying notes to the consolidated financial statements_\\n\\n<!-- footer: K-72 -->\",\"ocr\":false,\"confidence\":null,\"blocks\":[{\"type\":\"header\",\"bbox\":[0.1,0.05,0.9,0.09],\"order\":1,\"conf\":null,\"content\":\"Acme Corporation and subsidiaries\"},{\"type\":\"title\",\"bbox\":[0.1,0.1,0.9,0.17],\"order\":2,\"conf\":null,\"content\":\"Consolidated statements of earnings\"},{\"type\":\"text\",\"bbox\":[0.1,0.17,0.9,0.2],\"order\":3,\"conf\":null,\"content\":\"(dollars in thousands)\"},{\"type\":\"table\",\"bbox\":[0.1,0.21,0.9,0.87],\"order\":4,\"conf\":null,\"content\":\"| Year ended December 31 | 2025 | 2024 |\\n| --- | --- | --- |\\n| Subscription revenue | 48,212 | 39,870 |\\n| Services revenue | 9,644 | 8,915 |\\n| Hardware revenue | 3,108 | 3,402 |\\n| Interest and other income | 1,277 | 864 |\\n| Total revenues | 62,241 | 53,051 |\\n| Cost of subscription | 9,806 | 8,722 |\\n| Cost of services | 6,931 | 6,580 |\\n| Research and development | 14,402 | 12,118 |\\n| Sales and marketing | 15,760 | 14,204 |\\n| General and administrative | 5,318 | 4,906 |\\n| Interest expense | 412 | 455 |\\n| Total costs and expenses | 52,629 | 46,985 |\\n| Net earnings | 9,612 | 6,066 |\"},{\"type\":\"footnote\",\"bbox\":[0.1,0.885,0.9,0.92],\"order\":5,\"conf\":null,\"content\":\"See accompanying notes to the consolidated financial statements\"},{\"type\":\"footer\",\"bbox\":[0.42,0.935,0.58,0.96],\"order\":6,\"conf\":null,\"content\":\"K-72\"}]}}\n\n\nexport default function Regions() {\n  return (\n    <div className=\"flex w-full flex-col gap-6\">\n      <ParseReading answer={answer} version={2} />\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "count",
+            "table"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        },
+        {
+          "name": "PlainOrConare",
+          "label": "Plain or Conare",
+          "center": false,
+          "half": false,
+          "path": "react/examples/parse-views/PlainOrConare.tsx",
+          "content": "import { ParseReading } from '@/react/components/product/ParseReading'\nimport type { ParseAnswer } from '@/react/hooks/useParse'\n// Document reading, Plain or Conare: a plain PDF reader's text and Conare's, the same page, one handle between them.\n// Point at a region on the page or in the text; a click pins it. A sample reading of Acme's income statement.\nconst answer: ParseAnswer = {\"id\":\"prs_statement\",\"name\":\"Acme 2025 annual report.pdf\",\"page\":72,\"pages\":148,\"took_ms\":2140,\"markdown\":\"<!-- page 72 -->\\n\\n<!-- header: Acme Corporation and subsidiaries -->\\n\\n# Consolidated statements of earnings\\n\\n(dollars in thousands)\\n\\n| Year ended December 31 | 2025 | 2024 |\\n| --- | --- | --- |\\n| Subscription revenue | 48,212 | 39,870 |\\n| Services revenue | 9,644 | 8,915 |\\n| Hardware revenue | 3,108 | 3,402 |\\n| Interest and other income | 1,277 | 864 |\\n| Total revenues | 62,241 | 53,051 |\\n| Cost of subscription | 9,806 | 8,722 |\\n| Cost of services | 6,931 | 6,580 |\\n| Research and development | 14,402 | 12,118 |\\n| Sales and marketing | 15,760 | 14,204 |\\n| General and administrative | 5,318 | 4,906 |\\n| Interest expense | 412 | 455 |\\n| Total costs and expenses | 52,629 | 46,985 |\\n| Net earnings | 9,612 | 6,066 |\\n\\n_See accompanying notes to the consolidated financial statements_\\n\\n<!-- footer: K-72 -->\",\"plain\":\"ACME CORPORATION\\nand Subsidiaries\\nCONSOLIDATED STATEMENTS OF EARNINGS\\n(dollars in thousands)\\nYear Ended December 31,\\n2025 2024\\nSubscription revenue Services revenue Hardware revenue Interest and other income Total revenues\\n$ 48,212 9,644 3,108 1,277 62,241 $ 39,870 8,915 3,402 864 53,051\\nCost of subscription Cost of services Research and development Sales and marketing General and administrative Interest expense Total costs and expenses\\n9,806 6,931 14,402 15,760 5,318 412 52,629 8,722 6,580 12,118 14,204 4,906 455 46,985\\nNet earnings $ 9,612 $ 6,066\\nSee accompanying notes to the consolidated financial statements\\nK-72\",\"part\":{\"page\":72,\"markdown\":\"<!-- header: Acme Corporation and subsidiaries -->\\n\\n# Consolidated statements of earnings\\n\\n(dollars in thousands)\\n\\n| Year ended December 31 | 2025 | 2024 |\\n| --- | --- | --- |\\n| Subscription revenue | 48,212 | 39,870 |\\n| Services revenue | 9,644 | 8,915 |\\n| Hardware revenue | 3,108 | 3,402 |\\n| Interest and other income | 1,277 | 864 |\\n| Total revenues | 62,241 | 53,051 |\\n| Cost of subscription | 9,806 | 8,722 |\\n| Cost of services | 6,931 | 6,580 |\\n| Research and development | 14,402 | 12,118 |\\n| Sales and marketing | 15,760 | 14,204 |\\n| General and administrative | 5,318 | 4,906 |\\n| Interest expense | 412 | 455 |\\n| Total costs and expenses | 52,629 | 46,985 |\\n| Net earnings | 9,612 | 6,066 |\\n\\n_See accompanying notes to the consolidated financial statements_\\n\\n<!-- footer: K-72 -->\",\"ocr\":false,\"confidence\":null,\"blocks\":[{\"type\":\"header\",\"bbox\":[0.1,0.05,0.9,0.09],\"order\":1,\"conf\":null,\"content\":\"Acme Corporation and subsidiaries\"},{\"type\":\"title\",\"bbox\":[0.1,0.1,0.9,0.17],\"order\":2,\"conf\":null,\"content\":\"Consolidated statements of earnings\"},{\"type\":\"text\",\"bbox\":[0.1,0.17,0.9,0.2],\"order\":3,\"conf\":null,\"content\":\"(dollars in thousands)\"},{\"type\":\"table\",\"bbox\":[0.1,0.21,0.9,0.87],\"order\":4,\"conf\":null,\"content\":\"| Year ended December 31 | 2025 | 2024 |\\n| --- | --- | --- |\\n| Subscription revenue | 48,212 | 39,870 |\\n| Services revenue | 9,644 | 8,915 |\\n| Hardware revenue | 3,108 | 3,402 |\\n| Interest and other income | 1,277 | 864 |\\n| Total revenues | 62,241 | 53,051 |\\n| Cost of subscription | 9,806 | 8,722 |\\n| Cost of services | 6,931 | 6,580 |\\n| Research and development | 14,402 | 12,118 |\\n| Sales and marketing | 15,760 | 14,204 |\\n| General and administrative | 5,318 | 4,906 |\\n| Interest expense | 412 | 455 |\\n| Total costs and expenses | 52,629 | 46,985 |\\n| Net earnings | 9,612 | 6,066 |\"},{\"type\":\"footnote\",\"bbox\":[0.1,0.885,0.9,0.92],\"order\":5,\"conf\":null,\"content\":\"See accompanying notes to the consolidated financial statements\"},{\"type\":\"footer\",\"bbox\":[0.42,0.935,0.58,0.96],\"order\":6,\"conf\":null,\"content\":\"K-72\"}]}}\n\n\nexport default function PlainOrConare() {\n  return (\n    <div className=\"flex w-full flex-col gap-6\">\n      <ParseReading answer={answer} version={3} />\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "count",
+            "table"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/product/parse-reading.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport { ParsePointController, type ParseAnswer } from '@/elements/controllers/parse'\nimport '@/elements/components/product/parse-output'\nimport '@/elements/components/product/parse-plain'\nimport '@/elements/components/product/parse-regions'\nimport '@/elements/components/product/parse-sheet'\nimport '@/elements/components/ui/count'\nimport styles from 'virtual:tw'\n\n// ParseReading.vue as <conare-parse-reading>: a file as Conare read it (parse/Reading.vue), three ways. 1 \"Page beside text\" (the one that ships): the page on the\n// paper beside the dark window of what was read, with four facts over it (how long, regions, tables, OCR; the counts\n// roll up as they land), joined by pointing. 2 \"Regions\": the page's structure, every region numbered with its\n// confidence. 3 \"Plain or Conare\": a plain reader's text and Conare's on the same page, one handle between them.\n// `answer` is a JSON attribute or a property.\n\n/**\n * @summary A file as Conare read it: page beside text, regions, or plain beside Conare.\n */\nexport class ParseReading extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { answer: { type: Object }, version: { type: Number }, rootName: { attribute: false } }\n\n\tanswer?: ParseAnswer\n\t/** 1 page beside text, 2 regions, 3 plain or Conare. */\n\tversion: 1 | 2 | 3 = 1\n\t/** The root's data-ds (a page built on this one says its own, as Vue's fallthrough does). */\n\trootName = 'parse-reading'\n\tprivate pt = new ParsePointController(this)\n\n\tprivate onPoint = (e: CustomEvent<{ order: number | null }>) => this.pt.point(e.detail.order)\n\tprivate onPick = (e: CustomEvent<{ order: number }>) => this.pt.pick(e.detail.order)\n\n\trender() {\n\t\tconst a = this.answer\n\t\tif (!a) return nothing\n\t\tif (this.version === 2) return staticHtml`<${tag('parse-regions')} .answer=${a} .rootName=${this.rootName}></${tag('parse-regions')}>`\n\t\tif (this.version === 3) return staticHtml`<${tag('parse-plain')} .answer=${a} .rootName=${this.rootName}></${tag('parse-plain')}>`\n\t\tconst p = a.part\n\t\tconst tables = p.blocks.filter((b) => b.type === 'table').length\n\t\tconst facts: Array<{ label: string, value: string, count?: number }> = [\n\t\t\t{ label: 'Read in', value: `${(a.took_ms / 1000).toLocaleString('en-US', { maximumFractionDigits: 1 })} s` },\n\t\t\t{ label: 'Regions', value: '', count: p.blocks.length },\n\t\t\t{ label: 'Tables', value: '', count: tables },\n\t\t\t{ label: 'OCR', value: p.ocr ? `${Math.round((p.confidence ?? 0) * 100)}% sure` : 'Not needed' },\n\t\t]\n\t\tconst lit = this.pt.lit\n\t\treturn html`<section data-ds=\"${this.rootName}\" class=\"m-1.25 grid grid-cols-2 border border-edge outline outline-offset-4 outline-edge max-lg:grid-cols-1\" aria-label=\"the page and what was read\"><div class=\"flex min-w-0 flex-col gap-2 bg-surface-subtle p-4\">${staticHtml`<${tag('parse-sheet')} class=\"border border-edge\" .parsed=${p} ?scan=${!!a.scan} .on=${lit} plays @point=${this.onPoint} @pick=${this.onPick}></${tag('parse-sheet')}>`}<p class=\"flex justify-between gap-4 type-meta text-fg-muted\"><span class=\"truncate\">${a.name}</span><span class=\"shrink-0\">${`Page ${a.page} of ${a.pages}`}</span></p></div><div class=\"flex min-w-0 flex-col bg-code text-code-fg\"><dl class=\"grid grid-cols-4 border-b border-code-edge max-md:grid-cols-2\">${facts.map((f, i) => html`<div class=${['min-w-0 px-4 py-3', i > 0 ? 'border-code-edge md:border-l' : '', i % 2 === 1 ? 'max-md:border-l' : '', i > 1 ? 'max-md:border-t' : ''].join(' ')}><dt class=\"type-meta text-code-muted\">${f.label}</dt><dd class=\"text-body tabular-nums\">${f.count != null ? staticHtml`<${tag('count')} .value=${f.count} rolls></${tag('count')}>` : f.value}</dd></div>`)}</dl>${staticHtml`<${tag('parse-output')} .answer=${a} .on=${lit} plays @point=${this.onPoint} @pick=${this.onPick}></${tag('parse-output')}>`}</div></section>`\n\t}\n}\n\ndefine('parse-reading', ParseReading)\n"
+        },
+        {
+          "path": "elements/components/product/parse-sheet.ts",
+          "content": "import { html, nothing, type PropertyValues } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport { REGION, isTotal, tableOf, type ParseBlock, type ParsePart } from '@/elements/controllers/parse'\nimport styles from 'virtual:tw'\n\n// ParseSheet.vue as <conare-parse-sheet>: a page as Conare read it (parse/Sheet.vue): each region drawn at its box in reading order, in a document face (a\n// typewriter face, a little askew and soft, for a scan). Sizes follow the page's width, so it reads the same as a\n// thumbnail and full size. `on` lights a region with a red edge and its kind; `all` outlines every region and numbers\n// it; `plays` runs a red line down the page once while the regions land in order (reduced motion shows them at once);\n// `mini` is a picture only. The boxes are the pointer's way in; the keyboard reaches the same regions in the text or the\n// list beside the page, so they stay out of the tab order.\n// The host is the page (parse-sheet.css), so a class on it (a border) lands as one on <ParseSheet> does; `parsed` is\n// Vue's `part` (HTML's `part` is taken). Pointing fires `point` ({ order }, null when it leaves), a click `pick`.\n\nconst box = (b: ParseBlock) => `left: ${b.bbox[0] * 100}%; top: ${b.bbox[1] * 100}%; width: ${(b.bbox[2] - b.bbox[0]) * 100}%; height: ${(b.bbox[3] - b.bbox[1]) * 100}%; --o: ${b.order}`\nconst name = (b: ParseBlock) => `${REGION[b.type] ?? b.type}: ${b.type === 'table' ? `${tableOf(b.content).rows.length} rows` : b.content.slice(0, 60)}`\nconst stamp = (b: ParseBlock) => b.content.replace(/^Stamp:\\s*/, '').split(', ')\n\n/**\n * @summary A page as Conare read it: each region at its box.\n * @fires point - The pointer is on a region ({ order }) or left it ({ order: null }).\n * @fires pick - A region was clicked ({ order }).\n */\nexport class ParseSheet extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { parsed: { type: Object }, scan: { type: Boolean, reflect: true }, on: { type: Number }, mini: { type: Boolean }, plays: { type: Boolean, reflect: true }, all: { type: Boolean, reflect: true } }\n\n\t/** The page's reading (Vue's `part`). */\n\tparsed: ParsePart = { page: 1, markdown: '', ocr: false, confidence: null, blocks: [] }\n\t/** Drawn as a scan. */\n\tscan = false\n\t/** The region lit (its order). */\n\ton: number | null = null\n\t/** A picture only. */\n\tmini = false\n\t/** A red line runs down once while the regions land. */\n\tplays = false\n\t/** Every region outlined and numbered. */\n\tall = false\n\n\tprotected willUpdate(changed: PropertyValues) {\n\t\tsuper.willUpdate(changed)\n\t\tif (changed.has('mini')) this.toggleAttribute('aria-hidden', this.mini)\n\t}\n\n\tprivate point(order: number | null) {\n\t\tthis.emit('point', { order })\n\t}\n\n\trender() {\n\t\treturn html`${this.plays ? html`<span class=\"ds-parse-sweep\" aria-hidden=\"true\"></span>` : nothing}${this.parsed.blocks.map((b) => html`<div class=\"ds-parseregion\" data-type=${b.type} ?data-on=${this.on === b.order} style=${box(b)}>${b.type === 'table'\n\t\t\t? html`<table class=\"ds-parsetable\"><thead><tr>${tableOf(b.content).head.map((hd) => html`<th scope=\"col\">${hd}</th>`)}</tr></thead><tbody>${tableOf(b.content).rows.map((r) => html`<tr ?data-total=${isTotal(r[0] ?? '')}>${r.map((cell) => html`<td>${cell}</td>`)}</tr>`)}</tbody></table>`\n\t\t\t: b.type === 'image'\n\t\t\t\t? b.content.startsWith('Signature')\n\t\t\t\t\t? html`<svg viewBox=\"0 0 120 40\" class=\"ds-parsesign\" aria-hidden=\"true\"><path d=\"M4 28c10-20 15-22 17-16s-6 18-3 18 10-20 15-18 0 14 4 14 8-12 12-10-2 10 2 10 10-8 16-8 12 4 22 2 18-6 27-6\"></path></svg>`\n\t\t\t\t\t: html`<span class=\"ds-parsestamp\"><span>${stamp(b)[0]}</span><span>${stamp(b).slice(1).join(', ')}</span></span>`\n\t\t\t\t: b.type === 'list'\n\t\t\t\t\t? b.content.split('\\n').map((l) => html`<p>${l}</p>`)\n\t\t\t\t\t: html`<p>${b.content}</p>`}${!this.mini\n\t\t\t? html`${this.all ? html`<span class=\"ds-parsenum\" aria-hidden=\"true\">${b.order}</span>` : nothing}<span class=\"ds-parsetag\" aria-hidden=\"true\">${REGION[b.type] ?? b.type}</span><button type=\"button\" tabindex=\"-1\" class=\"ds-parsehit\" aria-label=${name(b)} aria-pressed=${String(this.on === b.order)} @pointerenter=${() => this.point(b.order)} @pointerleave=${() => this.point(null)} @click=${() => this.emit('pick', { order: b.order })}></button>`\n\t\t\t: nothing}</div>`)}`\n\t}\n}\n\ndefine('parse-sheet', ParseSheet)\n"
+        },
+        {
+          "path": "elements/components/product/parse-sheet.css",
+          "content": "/* ParseSheet.vue's <style>, with the host as .ds-parsepage (its data-scan, data-plays and data-all as attributes);\n   the host's own look is !important, as Vue's unlayered rule beats the page's scoped base. */\n:host { position: relative !important; display: block !important; width: 100% !important; aspect-ratio: 8.5 / 11 !important; overflow: hidden !important; background: var(--ds-color-surface) !important; color: var(--ds-color-fg) !important; font-family: var(--ds-font-document) !important; container-type: inline-size !important; }\n:host([scan]) { background: color-mix(in srgb, var(--ds-color-surface) 94%, var(--ds-color-fg) 6%) !important; font-family: var(--ds-font-scan) !important; }\n:host([scan]) .ds-parseregion > :not(.ds-parsehit, .ds-parsetag, .ds-parsenum) { transform: rotate(-0.25deg); filter: blur(0.15px); }\n.ds-parseregion { position: absolute; font-size: 2.05cqw; line-height: 1.5; }\n.ds-parseregion p { margin: 0; }\n.ds-parseregion[data-type=\"title\"] { font-size: 3.1cqw; font-weight: var(--ds-font-weight-medium); line-height: 1.2; }\n.ds-parseregion:is([data-type=\"header\"], [data-type=\"footer\"], [data-type=\"footnote\"]) { color: var(--ds-color-fg-soft); font-size: 1.75cqw; }\n.ds-parseregion[data-type=\"footer\"] { text-align: center; }\n.ds-parseregion::before { position: absolute; inset: -0.6cqw; border: var(--ds-border-hairline) solid transparent; content: \"\"; pointer-events: none; transition: border-color var(--ds-duration-micro) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-parseregion[data-on]::before { border-color: var(--ds-color-edge-accent); border-left-width: 2px; background: color-mix(in srgb, var(--ds-color-surface-accent) 6%, transparent); }\n:host([all]) .ds-parseregion::before { border-color: color-mix(in srgb, var(--ds-color-fg) 22%, transparent); }\n:host([all]) .ds-parseregion[data-on]::before { border-color: var(--ds-color-edge-accent); }\n.ds-parsetag { position: absolute; bottom: calc(100% + 0.6cqw); left: -0.6cqw; z-index: 1; padding: 0 4px; background: var(--ds-color-home-red-press); color: var(--ds-color-fg-inverse); font-family: var(--ds-font-text); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-parseregion[data-on] .ds-parsetag { opacity: 1; }\n.ds-parsenum { position: absolute; top: -0.2cqw; right: calc(100% + 1.2cqw); z-index: 1; display: flex; min-width: 16px; height: 16px; align-items: center; justify-content: center; background: var(--ds-color-fg); color: var(--ds-color-fg-inverse); font-family: var(--ds-font-text); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); font-variant-numeric: tabular-nums; pointer-events: none; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-parseregion[data-on] .ds-parsenum { background: var(--ds-color-home-red-press); }\n.ds-parsehit { position: absolute; top: 50%; right: -0.6cqw; left: -0.6cqw; z-index: 2; height: calc(100% + 1.2cqw); min-height: 24px; transform: translateY(-50%); cursor: pointer; touch-action: manipulation; }\n.ds-parsetable { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }\n.ds-parsetable:not([data-read]) { height: 100%; font-size: 1.95cqw; line-height: 1.3; }\n.ds-parsetable th { padding-block: 0.3em; border-bottom: var(--ds-border-hairline) solid currentColor; font-weight: var(--ds-font-weight-medium); text-align: right; white-space: nowrap; }\n.ds-parsetable :is(th, td):first-child { text-align: left; }\n.ds-parsetable td { padding-block: 0.15em; text-align: right; white-space: nowrap; }\n.ds-parsetable :is(th, td) + :is(th, td) { padding-left: 1.2em; }\n.ds-parsetable td:first-child { padding-right: 1em; white-space: normal; }\n.ds-parsetable tr[data-total] td { border-top: var(--ds-border-hairline) solid currentColor; font-weight: var(--ds-font-weight-medium); }\n.ds-parsesign { width: 62%; height: 100%; }\n.ds-parsesign path { fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }\n.ds-parsestamp { display: inline-flex; flex-direction: column; padding: 0.4em 0.7em; border: var(--ds-border-hairline) solid currentColor; font-size: 1.6cqw; line-height: 1.3; transform: rotate(-4deg); }\n.ds-parse-sweep { position: absolute; top: 0; right: 0; left: 0; z-index: 3; height: 1px; background: var(--ds-color-edge-accent); opacity: 0; pointer-events: none; }\n@media (prefers-reduced-motion: no-preference) {\n  :host([plays]) .ds-parse-sweep { animation: ds-parse-sweep var(--ds-duration-sweep) var(--ds-easing-standard) 1 both; }\n  :host([plays]) .ds-parseregion { animation: ds-parse-land var(--ds-duration-land) var(--ds-easing-standard) both; animation-delay: calc(var(--o) * 90ms); }\n}\n@keyframes ds-parse-sweep { 0% { opacity: 1; transform: translateY(0); } 90% { opacity: 1; } 100% { opacity: 0; transform: translateY(129cqw); } }\n@keyframes ds-parse-land { from { opacity: 0; } }\n@media (pointer: coarse), (max-width: 767px) { .ds-parsehit { display: none; } }\n"
+        },
+        {
+          "path": "elements/components/product/parse-read.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport { isTotal, tableOf, type ParsePart } from '@/elements/controllers/parse'\nimport styles from 'virtual:tw'\n\n// ParseRead.vue as <conare-parse-read>: what Conare took from a page, as a person reads it (parse/Read.vue): the regions in reading order without the running\n// head and foot, tables as tables. Each region takes focus, and pointing at or focusing one fires `point`, so the page\n// beside it lights the same region; a click pins it (`pick`). `plays` lands them in order with the page's red line.\n// The host is the column (parse-read.css), so classes on it (a scroll box) land as on <ParseRead>; `parsed` is Vue's\n// `part`.\n\n/**\n * @summary What Conare took from a page, in reading order.\n * @fires point - A region took the pointer or focus ({ order }) or lost it ({ order: null }).\n * @fires pick - A region was clicked ({ order }).\n */\nexport class ParseRead extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { parsed: { type: Object }, on: { type: Number }, plays: { type: Boolean, reflect: true }, tight: { type: Boolean, reflect: true } }\n\n\t/** The page's reading (Vue's `part`). */\n\tparsed: ParsePart = { page: 1, markdown: '', ocr: false, confidence: null, blocks: [] }\n\t/** The region lit (its order). */\n\ton: number | null = null\n\t/** Lands the regions in order with the page's red line. */\n\tplays = false\n\t/** 6px rows, beside a plain reader's text. */\n\ttight = false\n\n\tprivate point(order: number | null) {\n\t\tthis.emit('point', { order })\n\t}\n\n\trender() {\n\t\tconst body = this.parsed.blocks.filter((b) => b.type !== 'header' && b.type !== 'footer')\n\t\treturn html`${body.map((b) => html`<div class=\"ds-parseread-block\" data-type=${b.type} ?data-on=${this.on === b.order} style=\"--o: ${b.order}\" tabindex=\"0\" @pointerenter=${() => this.point(b.order)} @pointerleave=${() => this.point(null)} @focus=${() => this.point(b.order)} @blur=${() => this.point(null)} @click=${() => this.emit('pick', { order: b.order })}>${b.type === 'table'\n\t\t\t? html`<table class=\"ds-parsetable\" data-read><thead><tr>${tableOf(b.content).head.map((hd) => html`<th scope=\"col\">${hd}</th>`)}</tr></thead><tbody>${tableOf(b.content).rows.map((r) => html`<tr ?data-total=${isTotal(r[0] ?? '')}>${r.map((cell) => html`<td>${cell}</td>`)}</tr>`)}</tbody></table>`\n\t\t\t: b.type === 'list'\n\t\t\t\t? b.content.split('\\n').map((l) => html`<p>${l}</p>`)\n\t\t\t\t: html`<p>${b.content}</p>`}</div>`)}${nothing}`\n\t}\n}\n\ndefine('parse-read', ParseRead)\n"
+        },
+        {
+          "path": "elements/components/product/parse-read.css",
+          "content": "/* ParseRead.vue's <style>, with the host as .ds-parseread (its look !important, as Vue's unlayered rule beats the\n   page's scoped base). */\n:host { display: flex !important; flex-direction: column !important; gap: var(--ds-space-2xs) !important; font-size: var(--ds-text-ui) !important; line-height: var(--ds-text-ui-leading) !important; }\n.ds-parseread-block { padding: 8px; border-left: 2px solid transparent; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard), border-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-parseread-block p { margin: 0; }\n.ds-parseread-block[data-type=\"title\"] { font-size: var(--ds-text-heading-4); font-weight: var(--ds-font-weight-medium); line-height: var(--ds-text-heading-4-leading); }\n.ds-parseread-block:is([data-type=\"footnote\"], [data-type=\"image\"]) { font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); opacity: 0.7; }\n.ds-parseread-block[data-on] { border-left-color: var(--ds-color-edge-accent); background: color-mix(in srgb, var(--ds-color-surface-accent) 12%, transparent); }\n.ds-parseread-block:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: -2px; }\n.ds-parsetable[data-read] { font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); }\n@media (prefers-reduced-motion: no-preference) {\n  :host([plays]) .ds-parseread-block { animation: ds-parse-land var(--ds-duration-land) var(--ds-easing-standard) both; animation-delay: calc(var(--o) * 90ms); }\n}\n@media (max-width: 767px) { .ds-parsetable[data-read] :is(th, td) + :is(th, td) { padding-left: 0.6em; } }\n/* ParseSheet's table rules and its land keyframes, which Vue's page shares with this view. */\n.ds-parsetable { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }\n.ds-parsetable th { padding-block: 0.3em; border-bottom: var(--ds-border-hairline) solid currentColor; font-weight: var(--ds-font-weight-medium); text-align: right; white-space: nowrap; }\n.ds-parsetable :is(th, td):first-child { text-align: left; }\n.ds-parsetable td { padding-block: 0.15em; text-align: right; white-space: nowrap; }\n.ds-parsetable :is(th, td) + :is(th, td) { padding-left: 1.2em; }\n.ds-parsetable td:first-child { padding-right: 1em; white-space: normal; }\n.ds-parsetable tr[data-total] td { border-top: var(--ds-border-hairline) solid currentColor; font-weight: var(--ds-font-weight-medium); }\n@keyframes ds-parse-land { from { opacity: 0; } }\n/* `tight` (in parse-plain): its blocks' 6px rows (Vue's .ds-parseplain-layer .ds-parseread-block). */\n:host([tight]) .ds-parseread-block { padding: 6px 0; }\n"
+        },
+        {
+          "path": "elements/components/product/parse-output.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport type { ParseAnswer } from '@/elements/controllers/parse'\nimport '@/elements/components/product/parse-read'\nimport styles from 'virtual:tw'\n\n// ParseOutput.vue as <conare-parse-output>: what was read, on the dark window (parse/Output.vue): as text, as Markdown or as the API's JSON, picked by line tabs\n// whose red underline draws from the left. The text and the page beside it point at each other.\n// The text's `point` and `pick` events pass on out of it.\nconst TABS = [{ id: 'text', label: 'Text' }, { id: 'markdown', label: 'Markdown' }, { id: 'json', label: 'JSON' }] as const\n\n/**\n * @summary What was read, as text, Markdown or JSON.\n */\nexport class ParseOutput extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { answer: { type: Object }, on: { type: Number }, plays: { type: Boolean }, tab: { state: true } }\n\n\tanswer?: ParseAnswer\n\t/** The region lit (its order). */\n\ton: number | null = null\n\tplays = false\n\tprivate tab: typeof TABS[number]['id'] = 'text'\n\n\trender() {\n\t\tconst a = this.answer\n\t\tif (!a) return nothing\n\t\tconst json = JSON.stringify({ id: a.id, state: 'done', name: a.name, pages: a.pages, parts: [{ page: a.part.page, ocr: a.part.ocr, confidence: a.part.confidence, blocks: a.part.blocks }] }, null, 2)\n\t\treturn html`<div data-ds=\"parse-output\" class=\"flex min-h-0 flex-1 flex-col\"><div class=\"flex gap-4 border-b border-code-edge px-4\" role=\"tablist\" aria-label=\"what was read\">${TABS.map((t) => html`<button type=\"button\" role=\"tab\" class=\"ds-parsetab\" aria-selected=${String(this.tab === t.id)} @click=${() => { this.tab = t.id }}>${t.label}</button>`)}</div>${this.tab === 'text'\n\t\t\t? staticHtml`<${tag('parse-read')} role=\"tabpanel\" class=\"fade-xy min-h-0 flex-1 overflow-auto p-2\" .parsed=${a.part} .on=${this.on} ?plays=${this.plays}></${tag('parse-read')}>`\n\t\t\t: html`<pre class=\"fade-xy m-0 min-h-0 flex-1 overflow-auto p-4 font-code text-meta leading-4.5 whitespace-pre\" tabindex=\"0\" role=\"tabpanel\">${this.tab === 'markdown' ? a.markdown : json}</pre>`}</div>`\n\t}\n}\n\ndefine('parse-output', ParseOutput)\n"
+        },
+        {
+          "path": "elements/components/product/parse-output.css",
+          "content": "/* ParseOutput.vue's <style>, as it is. */\n.ds-parsetab { position: relative; padding: 10px 0; color: var(--ds-color-code-muted); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); cursor: pointer; touch-action: manipulation; transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-parsetab::after { position: absolute; inset: auto 0 -1px; height: 1px; background: var(--ds-color-surface-accent); content: \"\"; transform: scaleX(0); transform-origin: left; transition: transform var(--ds-duration-glide) var(--ds-easing-out); }\n.ds-parsetab[aria-selected=\"true\"] { color: var(--ds-color-code-fg); }\n.ds-parsetab[aria-selected=\"true\"]::after { transform: scaleX(1); }\n.ds-parsetab:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: -2px; }\n@media (hover: hover) and (pointer: fine) { .ds-parsetab:hover { color: var(--ds-color-code-fg); } }\n@media (pointer: coarse), (max-width: 767px) { .ds-parsetab { min-width: 40px; min-height: 40px; } }\n@media (prefers-reduced-motion: reduce) { .ds-parsetab::after { transition: none; } }\n"
+        },
+        {
+          "path": "elements/components/product/parse-regions.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport { ParsePointController, REGION, tableOf, type ParseAnswer, type ParseBlock } from '@/elements/controllers/parse'\nimport '@/elements/components/product/parse-sheet'\nimport '@/elements/components/ui/table'\nimport styles from 'virtual:tw'\n\n// ParseRegions.vue as <conare-parse-regions>: parse, \"Regions\" (parse/Regions.vue): the page's structure is the result. The page in the double rule with every\n// region outlined and numbered, beside a table of the regions in reading order, what each is and how sure OCR was; the\n// least sure (under 80%) in red, so a reader sees at once what to check by hand. Pointing joins the two.\n// `rootName` is the data-ds its root says (parse-reading draws it as its second version, as Vue's fallthrough does).\nconst preview = (b: ParseBlock) => (b.type === 'table' ? `${tableOf(b.content).rows.length} rows, ${tableOf(b.content).head.length} columns` : b.content.split('\\n')[0]!)\nconst UNSURE = 0.8\n\n/**\n * @summary The page's regions numbered in reading order, with how sure OCR was.\n */\nexport class ParseRegions extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { answer: { type: Object }, rootName: { attribute: false } }\n\n\tanswer?: ParseAnswer\n\t/** The root's data-ds. */\n\trootName = 'parse-regions'\n\tprivate pt = new ParsePointController(this)\n\n\trender() {\n\t\tconst a = this.answer\n\t\tif (!a) return nothing\n\t\tconst part = a.part\n\t\tconst unsure = part.blocks.filter((b) => b.conf != null && b.conf < UNSURE).length\n\t\tconst { lit, pinned } = this.pt\n\t\treturn html`<section data-ds=\"${this.rootName}\" class=\"grid grid-cols-[minmax(0,5fr)_minmax(0,7fr)] items-start gap-6 max-lg:grid-cols-1\" aria-label=\"regions in reading order\"><div class=\"m-1.25 border border-edge bg-surface-subtle p-3 outline outline-offset-4 outline-edge\">${staticHtml`<${tag('parse-sheet')} .parsed=${part} ?scan=${!!a.scan} .on=${lit} all plays @point=${(e: CustomEvent<{ order: number | null }>) => this.pt.point(e.detail.order)} @pick=${(e: CustomEvent<{ order: number }>) => this.pt.pick(e.detail.order)}></${tag('parse-sheet')}>`}</div><div class=\"min-w-0\"><div class=\"mb-2 flex items-center justify-between gap-4\"><h2 class=\"type-ui-strong\">${`${part.blocks.length} regions in reading order`}</h2><p class=\"type-meta text-fg-muted\">${part.ocr ? (unsure ? `${unsure} to check by hand` : 'All read clearly') : 'Read from the text layer, no OCR needed'}</p></div><div class=\"overflow-hidden border border-edge bg-surface\">${staticHtml`<${tag('table')}><table><thead><tr><th scope=\"col\" class=\"w-8\"><span class=\"sr-only\">Order</span></th><th scope=\"col\" class=\"w-20\">Region</th><th scope=\"col\">Text</th>${part.ocr ? html`<th scope=\"col\" class=\"w-20 text-right\">OCR</th>` : nothing}</tr></thead><tbody>${part.blocks.map((b) => html`<tr class=${lit === b.order ? 'is-link ds-parse-on' : 'is-link'} @pointerenter=${() => this.pt.point(b.order)} @pointerleave=${() => this.pt.point(null)} @click=${() => this.pt.pick(b.order)}><td class=\"text-fg-muted tabular-nums\">${b.order}</td><td>${REGION[b.type] ?? b.type}</td><td class=\"max-w-0\"><button type=\"button\" class=\"block w-full cursor-pointer truncate text-left focus-visible:outline-2 focus-visible:outline-edge-accent\" aria-pressed=${String(pinned === b.order)} @click=${(e: Event) => { e.stopPropagation(); this.pt.pick(b.order) }} @focus=${() => this.pt.point(b.order)} @blur=${() => this.pt.point(null)}>${preview(b)}</button></td>${part.ocr ? html`<td class=${b.conf != null && b.conf < UNSURE ? 'text-right tabular-nums text-fg-accent' : 'text-right tabular-nums'}>${b.conf == null ? '' : `${Math.round(b.conf * 100)}%`}</td>` : nothing}</tr>`)}</tbody></table></${tag('table')}>`}</div></div></section>`\n\t}\n}\n\ndefine('parse-regions', ParseRegions)\n"
+        },
+        {
+          "path": "elements/components/product/parse-regions.css",
+          "content": "/* ParseRegions.vue's <style>, as it is (the table is in this shadow root, with conare-table's rules). */\n.ds-table tbody tr.ds-parse-on td { background: color-mix(in srgb, var(--ds-color-surface-accent) 6%, transparent); }\n"
+        },
+        {
+          "path": "elements/components/product/parse-plain.ts",
+          "content": "import { html } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport { GripVertical } from 'lucide'\nimport type { ParseAnswer } from '@/elements/controllers/parse'\nimport '@/elements/components/product/parse-read'\nimport '@/elements/components/product/parse-sheet'\nimport styles from 'virtual:tw'\n\n// ParsePlain.vue as <conare-parse-plain>: parse, \"Plain or Conare\" (parse/Plain.vue): what a plain PDF reader gets beside what Conare read, the same page, one\n// red handle between them, so the difference is seen and not claimed: a plain reader runs a table's columns together and\n// finds nothing on a scan. The handle is a range input, so arrows move it too; each side keeps reading at any width. On\n// a phone the two stack and there is no handle.\n// Its rule for the read blocks' rows is parse-read's `tight`. `rootName` is the data-ds its root says.\n\n/**\n * @summary A plain PDF reader's text beside Conare's, one handle between them.\n */\nexport class ParsePlain extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { answer: { type: Object }, rootName: { attribute: false }, at: { state: true } }\n\n\tanswer?: ParseAnswer\n\t/** The root's data-ds. */\n\trootName = 'parse-plain'\n\tprivate at = 50\n\n\trender() {\n\t\tconst a = this.answer\n\t\tif (!a) return html``\n\t\treturn html`<section data-ds=\"${this.rootName}\" class=\"grid grid-cols-[minmax(0,4fr)_minmax(0,8fr)] items-stretch gap-6 max-lg:grid-cols-1\" aria-label=\"a plain reader and Conare, the same page\"><div class=\"m-1.25 self-start border border-edge bg-surface-subtle p-3 outline outline-offset-4 outline-edge\">${staticHtml`<${tag('parse-sheet')} .parsed=${a.part} ?scan=${!!a.scan} plays mini></${tag('parse-sheet')}>`}</div><div class=\"ds-parseplain m-1.25\" style=${`--at: ${this.at}%`}><div class=\"ds-parseplain-layer\" data-side=\"plain\"><p class=\"mb-3 type-meta text-fg-muted\">A plain PDF reader</p>${!a.plain ? html`<p class=\"max-w-80 text-fg-soft\">No text found. A scan is a picture, so a plain reader has nothing to read.</p>` : html`<pre class=\"m-0 font-code text-meta leading-4.5 break-words whitespace-pre-wrap text-fg-soft\">${a.plain}</pre>`}</div><div class=\"ds-parseplain-layer\" data-side=\"conare\"><p class=\"mb-3 type-meta text-fg\">Conare</p>${staticHtml`<${tag('parse-read')} .parsed=${a.part} tight></${tag('parse-read')}>`}</div><span class=\"ds-parseplain-rule\" aria-hidden=\"true\"><span>${icon(GripVertical, 'grip-vertical', { size: 12, strokeWidth: 1.5 })}</span></span><input .value=${String(this.at)} @input=${(e: Event) => { this.at = Number((e.target as HTMLInputElement).value) }} type=\"range\" min=\"24\" max=\"76\" step=\"1\" class=\"ds-parseplain-range\" aria-label=\"move between a plain reader and Conare\"></div></section>`\n\t}\n}\n\ndefine('parse-plain', ParsePlain)\n"
+        },
+        {
+          "path": "elements/components/product/parse-plain.css",
+          "content": "/* ParsePlain.vue's <style>, as it is, but for its rule for the read blocks (parse-read's `tight`). */\n.ds-parseplain { position: relative; display: grid; min-height: 560px; grid-template-columns: var(--at) minmax(0, 1fr); overflow: hidden; border: var(--ds-border-hairline) solid var(--ds-color-edge); outline: var(--ds-border-hairline) solid var(--ds-color-edge); outline-offset: 4px; }\n.ds-parseplain:has(.ds-parseplain-range:focus-visible) { outline-color: var(--ds-color-edge-accent); }\n.ds-parseplain-layer { min-width: 0; overflow: hidden; padding: 16px; background: var(--ds-color-surface); }\n.ds-parseplain-layer[data-side=\"plain\"] { background: var(--ds-color-surface-subtle); }\n.ds-parseplain-rule { position: absolute; top: 0; bottom: 0; left: var(--at); width: 1px; background: var(--ds-color-edge-accent); pointer-events: none; }\n.ds-parseplain-rule > span { position: absolute; top: 50%; left: 50%; display: flex; width: 20px; height: 32px; align-items: center; justify-content: center; background: var(--ds-color-home-red-press); color: var(--ds-color-fg-inverse); transform: translate(-50%, -50%); }\n.ds-parseplain-range { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; cursor: ew-resize; opacity: 0; touch-action: pan-y; }\n@media (max-width: 767px) {\n  .ds-parseplain { min-height: 0; grid-template-columns: minmax(0, 1fr); }\n  .ds-parseplain-rule, .ds-parseplain-range { display: none; }\n  .ds-parseplain-layer[data-side=\"conare\"] { border-top: var(--ds-border-hairline) solid var(--ds-color-edge-accent); }\n}\n"
+        },
+        {
+          "path": "elements/controllers/parse.ts",
+          "content": "import type { ReactiveController, ReactiveControllerHost } from 'lit'\n\n/**\n * A document as Conare read it (POST /parse?layout=true): every region with its box (shares of the page), its reading\n * order and its OCR confidence. The parse views draw it; ParsePointController (useParsePoint) joins the page and the\n * text, so pointing at a region on one lights it on the other and a click pins it.\n */\nexport interface ParseBlock { type: string, bbox: [number, number, number, number], order: number, content: string, conf: number | null }\nexport interface ParsePart { page: number, markdown: string, ocr: boolean, confidence: number | null, blocks: ParseBlock[] }\nexport interface ParseAnswer {\n\tid: string\n\tname: string\n\t/** The page shown, and how many the file has. */\n\tpage: number\n\tpages: number\n\ttook_ms: number\n\t/** A scanned page (drawn as a scan). */\n\tscan?: boolean\n\tmarkdown: string\n\t/** What a plain PDF reader gets from the same page; empty for a scan. */\n\tplain: string\n\tpart: ParsePart\n}\n\n/** A region's kind in plain words. */\nexport const REGION: Record<string, string> = { title: 'Title', text: 'Text', list: 'List', table: 'Table', image: 'Image', header: 'Header', footer: 'Footer', footnote: 'Footnote' }\n\n/** A Markdown table's cells: its head, then its rows. */\nexport function tableOf(content: string) {\n\tconst lines = content.split('\\n').filter(l => l.trim().startsWith('|'))\n\tconst cells = (l: string) => l.trim().replace(/^\\||\\|$/g, '').split('|').map(c => c.trim())\n\treturn { head: lines[0] ? cells(lines[0]) : [], rows: lines.slice(2).map(cells) }\n}\n\n/** Totals read heavier on the page and in the text. */\nexport const isTotal = (label: string) => /^(total|net earnings)/i.test(label)\n\n/** useParsePoint as a Lit controller: the region pointed at or pinned. */\nexport class ParsePointController implements ReactiveController {\n\ton: number | null = null\n\tpinned: number | null = null\n\tconstructor(private host: ReactiveControllerHost) {\n\t\thost.addController(this)\n\t}\n\thostConnected() {}\n\tget lit() {\n\t\treturn this.on ?? this.pinned\n\t}\n\tpoint = (order: number | null) => {\n\t\tthis.on = order\n\t\tthis.host.requestUpdate()\n\t}\n\tpick = (order: number) => {\n\t\tthis.pinned = this.pinned === order ? null : order\n\t\tthis.host.requestUpdate()\n\t}\n}\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/parse-reading.js",
+        "elements/parse-sheet.js",
+        "elements/parse-read.js",
+        "elements/parse-output.js",
+        "elements/parse-regions.js",
+        "elements/parse-plain.js",
+        "elements/count.js",
+        "elements/table.js"
+      ],
+      "tag": "conare-parse-reading",
+      "tags": [
+        "conare-parse-reading",
+        "conare-parse-sheet",
+        "conare-parse-read",
+        "conare-parse-output",
+        "conare-parse-regions",
+        "conare-parse-plain"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "count",
+        "table"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-parse-reading",
+            "name": "ParseReading",
+            "module": "elements/parse-reading.js",
+            "description": "A file as Conare read it: page beside text, regions, or plain beside Conare.",
+            "attributes": [
+              {
+                "name": "answer",
+                "field": "answer",
+                "type": "ParseAnswer | undefined"
+              },
+              {
+                "name": "version",
+                "field": "version",
+                "type": "1 | 2 | 3",
+                "default": "1",
+                "description": "1 page beside text, 2 regions, 3 plain or Conare."
+              }
+            ],
+            "properties": [
+              {
+                "name": "answer",
+                "type": "ParseAnswer | undefined",
+                "attribute": "answer"
+              },
+              {
+                "name": "version",
+                "type": "1 | 2 | 3",
+                "default": "1",
+                "description": "1 page beside text, 2 regions, 3 plain or Conare.",
+                "attribute": "version"
+              },
+              {
+                "name": "rootName",
+                "type": "string",
+                "default": "'parse-reading'",
+                "description": "The root's data-ds (a page built on this one says its own, as Vue's fallthrough does)."
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          },
+          {
+            "tag": "conare-parse-sheet",
+            "name": "ParseSheet",
+            "module": "elements/parse-sheet.js",
+            "description": "A page as Conare read it: each region at its box.",
+            "attributes": [
+              {
+                "name": "parsed",
+                "field": "parsed",
+                "type": "ParsePart",
+                "default": "{ page: 1, markdown: '', ocr: false, confidence: null, blocks: [] }",
+                "description": "The page's reading (Vue's `part`)."
+              },
+              {
+                "name": "scan",
+                "field": "scan",
+                "type": "boolean",
+                "default": "false",
+                "description": "Drawn as a scan."
+              },
+              {
+                "name": "on",
+                "field": "on",
+                "type": "number | null",
+                "default": "null",
+                "description": "The region lit (its order)."
+              },
+              {
+                "name": "mini",
+                "field": "mini",
+                "type": "boolean",
+                "default": "false",
+                "description": "A picture only."
+              },
+              {
+                "name": "plays",
+                "field": "plays",
+                "type": "boolean",
+                "default": "false",
+                "description": "A red line runs down once while the regions land."
+              },
+              {
+                "name": "all",
+                "field": "all",
+                "type": "boolean",
+                "default": "false",
+                "description": "Every region outlined and numbered."
+              }
+            ],
+            "properties": [
+              {
+                "name": "parsed",
+                "type": "ParsePart",
+                "default": "{ page: 1, markdown: '', ocr: false, confidence: null, blocks: [] }",
+                "description": "The page's reading (Vue's `part`).",
+                "attribute": "parsed"
+              },
+              {
+                "name": "scan",
+                "type": "boolean",
+                "default": "false",
+                "description": "Drawn as a scan.",
+                "attribute": "scan"
+              },
+              {
+                "name": "on",
+                "type": "number | null",
+                "default": "null",
+                "description": "The region lit (its order).",
+                "attribute": "on"
+              },
+              {
+                "name": "mini",
+                "type": "boolean",
+                "default": "false",
+                "description": "A picture only.",
+                "attribute": "mini"
+              },
+              {
+                "name": "plays",
+                "type": "boolean",
+                "default": "false",
+                "description": "A red line runs down once while the regions land.",
+                "attribute": "plays"
+              },
+              {
+                "name": "all",
+                "type": "boolean",
+                "default": "false",
+                "description": "Every region outlined and numbered.",
+                "attribute": "all"
+              }
+            ],
+            "events": [
+              {
+                "name": "point",
+                "description": "The pointer is on a region ({ order }) or left it ({ order: null })."
+              },
+              {
+                "name": "pick",
+                "description": "A region was clicked ({ order })."
+              }
+            ],
+            "slots": [],
+            "methods": []
+          },
+          {
+            "tag": "conare-parse-read",
+            "name": "ParseRead",
+            "module": "elements/parse-read.js",
+            "description": "What Conare took from a page, in reading order.",
+            "attributes": [
+              {
+                "name": "parsed",
+                "field": "parsed",
+                "type": "ParsePart",
+                "default": "{ page: 1, markdown: '', ocr: false, confidence: null, blocks: [] }",
+                "description": "The page's reading (Vue's `part`)."
+              },
+              {
+                "name": "on",
+                "field": "on",
+                "type": "number | null",
+                "default": "null",
+                "description": "The region lit (its order)."
+              },
+              {
+                "name": "plays",
+                "field": "plays",
+                "type": "boolean",
+                "default": "false",
+                "description": "Lands the regions in order with the page's red line."
+              },
+              {
+                "name": "tight",
+                "field": "tight",
+                "type": "boolean",
+                "default": "false",
+                "description": "6px rows, beside a plain reader's text."
+              }
+            ],
+            "properties": [
+              {
+                "name": "parsed",
+                "type": "ParsePart",
+                "default": "{ page: 1, markdown: '', ocr: false, confidence: null, blocks: [] }",
+                "description": "The page's reading (Vue's `part`).",
+                "attribute": "parsed"
+              },
+              {
+                "name": "on",
+                "type": "number | null",
+                "default": "null",
+                "description": "The region lit (its order).",
+                "attribute": "on"
+              },
+              {
+                "name": "plays",
+                "type": "boolean",
+                "default": "false",
+                "description": "Lands the regions in order with the page's red line.",
+                "attribute": "plays"
+              },
+              {
+                "name": "tight",
+                "type": "boolean",
+                "default": "false",
+                "description": "6px rows, beside a plain reader's text.",
+                "attribute": "tight"
+              }
+            ],
+            "events": [
+              {
+                "name": "point",
+                "description": "A region took the pointer or focus ({ order }) or lost it ({ order: null })."
+              },
+              {
+                "name": "pick",
+                "description": "A region was clicked ({ order })."
+              }
+            ],
+            "slots": [],
+            "methods": []
+          },
+          {
+            "tag": "conare-parse-output",
+            "name": "ParseOutput",
+            "module": "elements/parse-output.js",
+            "description": "What was read, as text, Markdown or JSON.",
+            "attributes": [
+              {
+                "name": "answer",
+                "field": "answer",
+                "type": "ParseAnswer | undefined"
+              },
+              {
+                "name": "on",
+                "field": "on",
+                "type": "number | null",
+                "default": "null",
+                "description": "The region lit (its order)."
+              },
+              {
+                "name": "plays",
+                "field": "plays",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "tab",
+                "field": "tab",
+                "type": "typeof TABS[number]['id']",
+                "default": "'text'"
+              }
+            ],
+            "properties": [
+              {
+                "name": "answer",
+                "type": "ParseAnswer | undefined",
+                "attribute": "answer"
+              },
+              {
+                "name": "on",
+                "type": "number | null",
+                "default": "null",
+                "description": "The region lit (its order).",
+                "attribute": "on"
+              },
+              {
+                "name": "plays",
+                "type": "boolean",
+                "default": "false",
+                "attribute": "plays"
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          },
+          {
+            "tag": "conare-parse-regions",
+            "name": "ParseRegions",
+            "module": "elements/parse-regions.js",
+            "description": "The page's regions numbered in reading order, with how sure OCR was.",
+            "attributes": [
+              {
+                "name": "answer",
+                "field": "answer",
+                "type": "ParseAnswer | undefined"
+              }
+            ],
+            "properties": [
+              {
+                "name": "answer",
+                "type": "ParseAnswer | undefined",
+                "attribute": "answer"
+              },
+              {
+                "name": "rootName",
+                "type": "string",
+                "default": "'parse-regions'",
+                "description": "The root's data-ds."
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          },
+          {
+            "tag": "conare-parse-plain",
+            "name": "ParsePlain",
+            "module": "elements/parse-plain.js",
+            "description": "A plain PDF reader's text beside Conare's, one handle between them.",
+            "attributes": [
+              {
+                "name": "answer",
+                "field": "answer",
+                "type": "ParseAnswer | undefined"
+              },
+              {
+                "name": "at",
+                "field": "at",
+                "type": "number",
+                "default": "50"
+              }
+            ],
+            "properties": [
+              {
+                "name": "answer",
+                "type": "ParseAnswer | undefined",
+                "attribute": "answer"
+              },
+              {
+                "name": "rootName",
+                "type": "string",
+                "default": "'parse-plain'",
+                "description": "The root's data-ds."
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "PageBesideText",
+          "label": "Page beside text",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/parse-views/PageBesideText.html",
+          "content": "<!-- Document reading, Page beside text, the take that ships: the page and what was read, joined by pointing.\n     Point at a region on the page or in the text; a click pins it. A sample reading of Acme's income statement. -->\n<div class=\"flex w-full flex-col gap-6\">\n  <conare-parse-reading version=\"1\" answer='{\"id\":\"prs_statement\",\"name\":\"Acme 2025 annual report.pdf\",\"page\":72,\"pages\":148,\"took_ms\":2140,\"markdown\":\"<!-- page 72 -->\\n\\n<!-- header: Acme Corporation and subsidiaries -->\\n\\n# Consolidated statements of earnings\\n\\n(dollars in thousands)\\n\\n| Year ended December 31 | 2025 | 2024 |\\n| --- | --- | --- |\\n| Subscription revenue | 48,212 | 39,870 |\\n| Services revenue | 9,644 | 8,915 |\\n| Hardware revenue | 3,108 | 3,402 |\\n| Interest and other income | 1,277 | 864 |\\n| Total revenues | 62,241 | 53,051 |\\n| Cost of subscription | 9,806 | 8,722 |\\n| Cost of services | 6,931 | 6,580 |\\n| Research and development | 14,402 | 12,118 |\\n| Sales and marketing | 15,760 | 14,204 |\\n| General and administrative | 5,318 | 4,906 |\\n| Interest expense | 412 | 455 |\\n| Total costs and expenses | 52,629 | 46,985 |\\n| Net earnings | 9,612 | 6,066 |\\n\\n_See accompanying notes to the consolidated financial statements_\\n\\n<!-- footer: K-72 -->\",\"plain\":\"ACME CORPORATION\\nand Subsidiaries\\nCONSOLIDATED STATEMENTS OF EARNINGS\\n(dollars in thousands)\\nYear Ended December 31,\\n2025 2024\\nSubscription revenue Services revenue Hardware revenue Interest and other income Total revenues\\n$ 48,212 9,644 3,108 1,277 62,241 $ 39,870 8,915 3,402 864 53,051\\nCost of subscription Cost of services Research and development Sales and marketing General and administrative Interest expense Total costs and expenses\\n9,806 6,931 14,402 15,760 5,318 412 52,629 8,722 6,580 12,118 14,204 4,906 455 46,985\\nNet earnings $ 9,612 $ 6,066\\nSee accompanying notes to the consolidated financial statements\\nK-72\",\"part\":{\"page\":72,\"markdown\":\"<!-- header: Acme Corporation and subsidiaries -->\\n\\n# Consolidated statements of earnings\\n\\n(dollars in thousands)\\n\\n| Year ended December 31 | 2025 | 2024 |\\n| --- | --- | --- |\\n| Subscription revenue | 48,212 | 39,870 |\\n| Services revenue | 9,644 | 8,915 |\\n| Hardware revenue | 3,108 | 3,402 |\\n| Interest and other income | 1,277 | 864 |\\n| Total revenues | 62,241 | 53,051 |\\n| Cost of subscription | 9,806 | 8,722 |\\n| Cost of services | 6,931 | 6,580 |\\n| Research and development | 14,402 | 12,118 |\\n| Sales and marketing | 15,760 | 14,204 |\\n| General and administrative | 5,318 | 4,906 |\\n| Interest expense | 412 | 455 |\\n| Total costs and expenses | 52,629 | 46,985 |\\n| Net earnings | 9,612 | 6,066 |\\n\\n_See accompanying notes to the consolidated financial statements_\\n\\n<!-- footer: K-72 -->\",\"ocr\":false,\"confidence\":null,\"blocks\":[{\"type\":\"header\",\"bbox\":[0.1,0.05,0.9,0.09],\"order\":1,\"conf\":null,\"content\":\"Acme Corporation and subsidiaries\"},{\"type\":\"title\",\"bbox\":[0.1,0.1,0.9,0.17],\"order\":2,\"conf\":null,\"content\":\"Consolidated statements of earnings\"},{\"type\":\"text\",\"bbox\":[0.1,0.17,0.9,0.2],\"order\":3,\"conf\":null,\"content\":\"(dollars in thousands)\"},{\"type\":\"table\",\"bbox\":[0.1,0.21,0.9,0.87],\"order\":4,\"conf\":null,\"content\":\"| Year ended December 31 | 2025 | 2024 |\\n| --- | --- | --- |\\n| Subscription revenue | 48,212 | 39,870 |\\n| Services revenue | 9,644 | 8,915 |\\n| Hardware revenue | 3,108 | 3,402 |\\n| Interest and other income | 1,277 | 864 |\\n| Total revenues | 62,241 | 53,051 |\\n| Cost of subscription | 9,806 | 8,722 |\\n| Cost of services | 6,931 | 6,580 |\\n| Research and development | 14,402 | 12,118 |\\n| Sales and marketing | 15,760 | 14,204 |\\n| General and administrative | 5,318 | 4,906 |\\n| Interest expense | 412 | 455 |\\n| Total costs and expenses | 52,629 | 46,985 |\\n| Net earnings | 9,612 | 6,066 |\"},{\"type\":\"footnote\",\"bbox\":[0.1,0.885,0.9,0.92],\"order\":5,\"conf\":null,\"content\":\"See accompanying notes to the consolidated financial statements\"},{\"type\":\"footer\",\"bbox\":[0.42,0.935,0.58,0.96],\"order\":6,\"conf\":null,\"content\":\"K-72\"}]}}\n'></conare-parse-reading>\n</div>\n"
+        },
+        {
+          "name": "Regions",
+          "label": "Regions",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/parse-views/Regions.html",
+          "content": "<!-- Document reading, Regions: every region numbered in reading order, with how sure OCR was.\n     Point at a region on the page or in the text; a click pins it. A sample reading of Acme's income statement. -->\n<div class=\"flex w-full flex-col gap-6\">\n  <conare-parse-reading version=\"2\" answer='{\"id\":\"prs_statement\",\"name\":\"Acme 2025 annual report.pdf\",\"page\":72,\"pages\":148,\"took_ms\":2140,\"markdown\":\"<!-- page 72 -->\\n\\n<!-- header: Acme Corporation and subsidiaries -->\\n\\n# Consolidated statements of earnings\\n\\n(dollars in thousands)\\n\\n| Year ended December 31 | 2025 | 2024 |\\n| --- | --- | --- |\\n| Subscription revenue | 48,212 | 39,870 |\\n| Services revenue | 9,644 | 8,915 |\\n| Hardware revenue | 3,108 | 3,402 |\\n| Interest and other income | 1,277 | 864 |\\n| Total revenues | 62,241 | 53,051 |\\n| Cost of subscription | 9,806 | 8,722 |\\n| Cost of services | 6,931 | 6,580 |\\n| Research and development | 14,402 | 12,118 |\\n| Sales and marketing | 15,760 | 14,204 |\\n| General and administrative | 5,318 | 4,906 |\\n| Interest expense | 412 | 455 |\\n| Total costs and expenses | 52,629 | 46,985 |\\n| Net earnings | 9,612 | 6,066 |\\n\\n_See accompanying notes to the consolidated financial statements_\\n\\n<!-- footer: K-72 -->\",\"plain\":\"ACME CORPORATION\\nand Subsidiaries\\nCONSOLIDATED STATEMENTS OF EARNINGS\\n(dollars in thousands)\\nYear Ended December 31,\\n2025 2024\\nSubscription revenue Services revenue Hardware revenue Interest and other income Total revenues\\n$ 48,212 9,644 3,108 1,277 62,241 $ 39,870 8,915 3,402 864 53,051\\nCost of subscription Cost of services Research and development Sales and marketing General and administrative Interest expense Total costs and expenses\\n9,806 6,931 14,402 15,760 5,318 412 52,629 8,722 6,580 12,118 14,204 4,906 455 46,985\\nNet earnings $ 9,612 $ 6,066\\nSee accompanying notes to the consolidated financial statements\\nK-72\",\"part\":{\"page\":72,\"markdown\":\"<!-- header: Acme Corporation and subsidiaries -->\\n\\n# Consolidated statements of earnings\\n\\n(dollars in thousands)\\n\\n| Year ended December 31 | 2025 | 2024 |\\n| --- | --- | --- |\\n| Subscription revenue | 48,212 | 39,870 |\\n| Services revenue | 9,644 | 8,915 |\\n| Hardware revenue | 3,108 | 3,402 |\\n| Interest and other income | 1,277 | 864 |\\n| Total revenues | 62,241 | 53,051 |\\n| Cost of subscription | 9,806 | 8,722 |\\n| Cost of services | 6,931 | 6,580 |\\n| Research and development | 14,402 | 12,118 |\\n| Sales and marketing | 15,760 | 14,204 |\\n| General and administrative | 5,318 | 4,906 |\\n| Interest expense | 412 | 455 |\\n| Total costs and expenses | 52,629 | 46,985 |\\n| Net earnings | 9,612 | 6,066 |\\n\\n_See accompanying notes to the consolidated financial statements_\\n\\n<!-- footer: K-72 -->\",\"ocr\":false,\"confidence\":null,\"blocks\":[{\"type\":\"header\",\"bbox\":[0.1,0.05,0.9,0.09],\"order\":1,\"conf\":null,\"content\":\"Acme Corporation and subsidiaries\"},{\"type\":\"title\",\"bbox\":[0.1,0.1,0.9,0.17],\"order\":2,\"conf\":null,\"content\":\"Consolidated statements of earnings\"},{\"type\":\"text\",\"bbox\":[0.1,0.17,0.9,0.2],\"order\":3,\"conf\":null,\"content\":\"(dollars in thousands)\"},{\"type\":\"table\",\"bbox\":[0.1,0.21,0.9,0.87],\"order\":4,\"conf\":null,\"content\":\"| Year ended December 31 | 2025 | 2024 |\\n| --- | --- | --- |\\n| Subscription revenue | 48,212 | 39,870 |\\n| Services revenue | 9,644 | 8,915 |\\n| Hardware revenue | 3,108 | 3,402 |\\n| Interest and other income | 1,277 | 864 |\\n| Total revenues | 62,241 | 53,051 |\\n| Cost of subscription | 9,806 | 8,722 |\\n| Cost of services | 6,931 | 6,580 |\\n| Research and development | 14,402 | 12,118 |\\n| Sales and marketing | 15,760 | 14,204 |\\n| General and administrative | 5,318 | 4,906 |\\n| Interest expense | 412 | 455 |\\n| Total costs and expenses | 52,629 | 46,985 |\\n| Net earnings | 9,612 | 6,066 |\"},{\"type\":\"footnote\",\"bbox\":[0.1,0.885,0.9,0.92],\"order\":5,\"conf\":null,\"content\":\"See accompanying notes to the consolidated financial statements\"},{\"type\":\"footer\",\"bbox\":[0.42,0.935,0.58,0.96],\"order\":6,\"conf\":null,\"content\":\"K-72\"}]}}\n'></conare-parse-reading>\n</div>\n"
+        },
+        {
+          "name": "PlainOrConare",
+          "label": "Plain or Conare",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/parse-views/PlainOrConare.html",
+          "content": "<!-- Document reading, Plain or Conare: a plain PDF reader's text and Conare's, the same page, one handle between\n     them. Point at a region on the page or in the text; a click pins it. A sample reading of Acme's income statement. -->\n<div class=\"flex w-full flex-col gap-6\">\n  <conare-parse-reading version=\"3\" answer='{\"id\":\"prs_statement\",\"name\":\"Acme 2025 annual report.pdf\",\"page\":72,\"pages\":148,\"took_ms\":2140,\"markdown\":\"<!-- page 72 -->\\n\\n<!-- header: Acme Corporation and subsidiaries -->\\n\\n# Consolidated statements of earnings\\n\\n(dollars in thousands)\\n\\n| Year ended December 31 | 2025 | 2024 |\\n| --- | --- | --- |\\n| Subscription revenue | 48,212 | 39,870 |\\n| Services revenue | 9,644 | 8,915 |\\n| Hardware revenue | 3,108 | 3,402 |\\n| Interest and other income | 1,277 | 864 |\\n| Total revenues | 62,241 | 53,051 |\\n| Cost of subscription | 9,806 | 8,722 |\\n| Cost of services | 6,931 | 6,580 |\\n| Research and development | 14,402 | 12,118 |\\n| Sales and marketing | 15,760 | 14,204 |\\n| General and administrative | 5,318 | 4,906 |\\n| Interest expense | 412 | 455 |\\n| Total costs and expenses | 52,629 | 46,985 |\\n| Net earnings | 9,612 | 6,066 |\\n\\n_See accompanying notes to the consolidated financial statements_\\n\\n<!-- footer: K-72 -->\",\"plain\":\"ACME CORPORATION\\nand Subsidiaries\\nCONSOLIDATED STATEMENTS OF EARNINGS\\n(dollars in thousands)\\nYear Ended December 31,\\n2025 2024\\nSubscription revenue Services revenue Hardware revenue Interest and other income Total revenues\\n$ 48,212 9,644 3,108 1,277 62,241 $ 39,870 8,915 3,402 864 53,051\\nCost of subscription Cost of services Research and development Sales and marketing General and administrative Interest expense Total costs and expenses\\n9,806 6,931 14,402 15,760 5,318 412 52,629 8,722 6,580 12,118 14,204 4,906 455 46,985\\nNet earnings $ 9,612 $ 6,066\\nSee accompanying notes to the consolidated financial statements\\nK-72\",\"part\":{\"page\":72,\"markdown\":\"<!-- header: Acme Corporation and subsidiaries -->\\n\\n# Consolidated statements of earnings\\n\\n(dollars in thousands)\\n\\n| Year ended December 31 | 2025 | 2024 |\\n| --- | --- | --- |\\n| Subscription revenue | 48,212 | 39,870 |\\n| Services revenue | 9,644 | 8,915 |\\n| Hardware revenue | 3,108 | 3,402 |\\n| Interest and other income | 1,277 | 864 |\\n| Total revenues | 62,241 | 53,051 |\\n| Cost of subscription | 9,806 | 8,722 |\\n| Cost of services | 6,931 | 6,580 |\\n| Research and development | 14,402 | 12,118 |\\n| Sales and marketing | 15,760 | 14,204 |\\n| General and administrative | 5,318 | 4,906 |\\n| Interest expense | 412 | 455 |\\n| Total costs and expenses | 52,629 | 46,985 |\\n| Net earnings | 9,612 | 6,066 |\\n\\n_See accompanying notes to the consolidated financial statements_\\n\\n<!-- footer: K-72 -->\",\"ocr\":false,\"confidence\":null,\"blocks\":[{\"type\":\"header\",\"bbox\":[0.1,0.05,0.9,0.09],\"order\":1,\"conf\":null,\"content\":\"Acme Corporation and subsidiaries\"},{\"type\":\"title\",\"bbox\":[0.1,0.1,0.9,0.17],\"order\":2,\"conf\":null,\"content\":\"Consolidated statements of earnings\"},{\"type\":\"text\",\"bbox\":[0.1,0.17,0.9,0.2],\"order\":3,\"conf\":null,\"content\":\"(dollars in thousands)\"},{\"type\":\"table\",\"bbox\":[0.1,0.21,0.9,0.87],\"order\":4,\"conf\":null,\"content\":\"| Year ended December 31 | 2025 | 2024 |\\n| --- | --- | --- |\\n| Subscription revenue | 48,212 | 39,870 |\\n| Services revenue | 9,644 | 8,915 |\\n| Hardware revenue | 3,108 | 3,402 |\\n| Interest and other income | 1,277 | 864 |\\n| Total revenues | 62,241 | 53,051 |\\n| Cost of subscription | 9,806 | 8,722 |\\n| Cost of services | 6,931 | 6,580 |\\n| Research and development | 14,402 | 12,118 |\\n| Sales and marketing | 15,760 | 14,204 |\\n| General and administrative | 5,318 | 4,906 |\\n| Interest expense | 412 | 455 |\\n| Total costs and expenses | 52,629 | 46,985 |\\n| Net earnings | 9,612 | 6,066 |\"},{\"type\":\"footnote\",\"bbox\":[0.1,0.885,0.9,0.92],\"order\":5,\"conf\":null,\"content\":\"See accompanying notes to the consolidated financial statements\"},{\"type\":\"footer\",\"bbox\":[0.42,0.935,0.58,0.96],\"order\":6,\"conf\":null,\"content\":\"K-72\"}]}}\n'></conare-parse-reading>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

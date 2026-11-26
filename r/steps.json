@@ -1,0 +1,310 @@
+{
+  "name": "steps",
+  "title": "Steps",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "Steps that open one at a time: the one to do is the only open thing, a finished step folds to a line that says what came of it, and a step not reached is dimmed and locked.",
+  "use_for": "A short job done in order on one page, such as sending data by API or setting up single sign-on.",
+  "never": [
+    "Steps that could be done in any order",
+    "More than five"
+  ],
+  "source": "conare-web app/components/console/byapi/Step.vue, app/components/console/Opens.vue, app/composables/useMoveSteps.ts, app/assets/css/console2.css (.v2-movesteps, .v2-movestep, .v2-rowgrow)",
+  "body": "`useSteps()` keeps the state: `state(n)` for each Step, `reach(n)` when a step is done (it opens the next), `toggle(n)`\non a head's `open`, `reset()` to start again.",
+  "requires": [],
+  "dependencies": [
+    "lucide-vue-next@^0.479.0"
+  ],
+  "files": [
+    {
+      "path": "components/ui/Steps.vue",
+      "content": "<template>\n  <!-- Steps that open one at a time (console2.css .v2-movesteps): Step rows, each over a hairline. -->\n  <ol data-ds=\"steps\" class=\"m-0 mt-2 flex w-full list-none flex-col p-0\"><slot /></ol>\n</template>\n"
+    },
+    {
+      "path": "components/ui/Step.vue",
+      "content": "<script setup lang=\"ts\">\nimport { Check } from 'lucide-vue-next'\nimport type { StepState } from '@/composables/useSteps'\n\n// One step (the console's byapi/Step.vue, .v2-movestep): a 44px head with its number in Geist Mono, the title and,\n// folded, a line that says what came of it. It opens when it's reached; a finished step folds to that line and opens\n// again on a click; a step not reached is dimmed and locked, so the next thing to do is the only open thing. The body\n// opens in place: its height on the strong ease-out over 180ms (in 200ms, out 140ms), its content rising 4px.\n// `locked`: what's done can't be undone from here, so its line doesn't open. Take states from useSteps().\ndefineProps<{ n: number, title: string, state: StepState, says?: string, locked?: boolean }>()\ndefineEmits<{ open: [] }>()\n</script>\n\n<template>\n  <li data-ds=\"step\" class=\"ds-step\" :data-state=\"state\">\n    <button type=\"button\" class=\"ds-step-head\" :disabled=\"state === 'next' || (locked && state !== 'now')\" :aria-expanded=\"state === 'now'\" @click=\"$emit('open')\">\n      <span class=\"ds-step-mark\" aria-hidden=\"true\"><Check v-if=\"state === 'done'\" :size=\"12\" :stroke-width=\"2\" /><template v-else>{{ n }}</template></span>\n      <span class=\"type-ui-strong\">{{ title }}</span>\n      <span v-if=\"says && state !== 'now'\" class=\"ds-step-says\">{{ says }}</span>\n    </button>\n    <Transition name=\"ds-step\" :duration=\"{ enter: 200, leave: 140 }\">\n      <div v-if=\"state === 'now'\"><div class=\"ds-step-grow\"><div><div class=\"ds-step-body\"><slot /></div></div></div></div>\n    </Transition>\n  </li>\n</template>\n\n<style>\n.ds-step { border-top: var(--ds-border-hairline) solid var(--ds-color-edge); }\n.ds-step-head { display: flex; width: 100%; min-height: 44px; align-items: center; gap: var(--ds-space-md); text-align: left; cursor: pointer; touch-action: manipulation; }\n.ds-step-head:disabled { cursor: default; }\n.ds-step-head:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: -2px; }\n.ds-step-mark { display: inline-flex; width: 16px; height: 16px; flex-shrink: 0; align-items: center; justify-content: center; color: var(--ds-color-fg-muted); font-family: var(--ds-font-code); font-size: var(--ds-text-meta); line-height: 16px; }\n.ds-step[data-state=\"now\"] .ds-step-mark { color: var(--ds-color-fg-accent); }\n.ds-step[data-state=\"done\"] .ds-step-mark { color: var(--ds-color-fg); }\n.ds-step[data-state=\"next\"] .ds-step-head, .ds-step[data-state=\"next\"] .type-ui-strong { color: var(--ds-color-fg-muted); }\n.ds-step-says { min-width: 0; margin-left: auto; overflow: hidden; color: var(--ds-color-fg-muted); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); text-overflow: ellipsis; white-space: nowrap; }\n.ds-step-body { display: flex; flex-direction: column; align-items: flex-start; gap: var(--ds-space-md); padding: 0 0 16px 24px; }\n.ds-step-grow { display: grid; grid-template-rows: 1fr; }\n.ds-step-grow > div { min-width: 0; min-height: 0; }\n:is(.ds-step-enter-from, .ds-step-leave-to) .ds-step-grow { grid-template-rows: 0fr; }\n:is(.ds-step-enter-active, .ds-step-leave-active) .ds-step-grow { transition: grid-template-rows var(--ds-duration-slide) var(--ds-easing-out); }\n:is(.ds-step-enter-active, .ds-step-leave-active) .ds-step-grow > div { overflow: hidden; }\n.ds-step-enter-active .ds-step-grow > div { transition: opacity var(--ds-duration-micro) var(--ds-easing-out), transform var(--ds-duration-slide) var(--ds-easing-out); }\n.ds-step-leave-active .ds-step-grow > div { transition: opacity var(--ds-duration-cell) var(--ds-easing-out); }\n.ds-step-enter-from .ds-step-grow > div { opacity: 0; transform: translateY(-4px); }\n.ds-step-leave-to .ds-step-grow > div { opacity: 0; }\n@media (prefers-reduced-motion: reduce) { :is(.ds-step-enter-active, .ds-step-leave-active) :is(.ds-step-grow, .ds-step-grow > div) { transition: none; } }\n</style>\n"
+    },
+    {
+      "path": "composables/useSteps.ts",
+      "content": "import { ref } from 'vue'\n\n/**\n * Steps that open one at a time (the console's useMoveSteps.ts). `reached` is the furthest step; one step shows at a\n * time, and any step reached opens again, so there is always a way back. state(n) is what Step takes: now (open),\n * done (reached and passed), todo (reached, folded) or next (not reached, locked).\n */\nexport type StepState = 'now' | 'done' | 'todo' | 'next'\nexport function useSteps(start = 1) {\n  const reached = ref(start)\n  const shown = ref(start)\n  const state = (n: number): StepState => (n === shown.value ? 'now' : n < reached.value ? 'done' : n === reached.value ? 'todo' : 'next')\n  function reach(n: number) {\n    reached.value = Math.max(reached.value, n)\n    shown.value = n\n  }\n  const toggle = (n: number) => { shown.value = shown.value === n ? 0 : n }\n  /** Back to the first step, nothing reached. */\n  function reset() {\n    reached.value = start\n    shown.value = start\n  }\n  return { reached, shown, state, reach, toggle, reset }\n}\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "Three steps",
+      "center": true,
+      "half": false,
+      "path": "examples/steps/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport Button from '@/components/ui/Button.vue'\nimport PixelButton from '@/components/ui/PixelButton.vue'\nimport Step from '@/components/ui/Step.vue'\nimport Steps from '@/components/ui/Steps.vue'\nimport { useSteps } from '@/composables/useSteps'\n// Steps that open one at a time: the one to do is the only open thing, a finished step folds to a line that says what\n// came of it, and a step not reached is dimmed and locked.\nconst { state, reach, toggle } = useSteps()\nconst said = ['Key created', 'Prompt copied']\n</script>\n\n<template>\n  <Steps class=\"max-w-140\">\n    <Step :n=\"1\" title=\"Create a key\" :state=\"state(1)\" :says=\"said[0]\" @open=\"toggle(1)\">\n      <p class=\"type-meta text-fg-muted\">Your agent uses it to read what you connect.</p>\n      <PixelButton @click=\"reach(2)\">Create key</PixelButton>\n    </Step>\n    <Step :n=\"2\" title=\"Give the prompt to your agent\" :state=\"state(2)\" :says=\"said[1]\" @open=\"toggle(2)\">\n      <p class=\"type-meta text-fg-muted\">It connects Acme's documents and runs a first search.</p>\n      <PixelButton @click=\"reach(3)\">Copy prompt</PixelButton>\n    </Step>\n    <Step :n=\"3\" title=\"Watch the first write\" :state=\"state(3)\" @open=\"toggle(3)\">\n      <p class=\"type-meta text-fg-muted\">Documents show here as they land.</p>\n      <Button @click=\"reach(1)\">Start again</Button>\n    </Step>\n  </Steps>\n</template>\n",
+      "requires": [
+        "button"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Steps.tsx",
+          "content": "import type { HTMLAttributes } from 'react'\nimport { cn } from '@/react/lib/cn'\n\n// Steps that open one at a time (console2.css .v2-movesteps): Step rows, each over a hairline.\nexport type StepsProps = HTMLAttributes<HTMLOListElement>\n\nexport function Steps({ className, children, ...rest }: StepsProps) {\n  return <ol data-ds=\"steps\" className={cn('m-0 mt-2 flex w-full list-none flex-col p-0', className)} {...rest}>{children}</ol>\n}\n\nexport default Steps\n"
+        },
+        {
+          "path": "react/components/ui/Step.tsx",
+          "content": "import { Check } from 'lucide-react'\nimport type { ReactNode } from 'react'\nimport type { StepState } from '@/react/hooks/useSteps'\nimport { Transition } from '@/react/lib/transition'\n\n// One step (the console's byapi/Step.vue, .v2-movestep): a 44px head with its number in Geist Mono, the title and,\n// folded, a line that says what came of it. It opens when it's reached; a finished step folds to that line and opens\n// again on a click; a step not reached is dimmed and locked, so the next thing to do is the only open thing. The body\n// opens in place: its height on the strong ease-out over 180ms (in 200ms, out 140ms), its content rising 4px.\n// `locked`: what's done can't be undone from here, so its line doesn't open. Take states from useSteps().\nexport interface StepProps {\n  n: number\n  title: string\n  state: StepState\n  says?: string\n  locked?: boolean\n  onOpen?: () => void\n  children?: ReactNode\n}\n\nexport function Step({ n, title, state, says, locked, onOpen, children }: StepProps) {\n  return (\n    <li data-ds=\"step\" className=\"ds-step\" data-state={state}>\n      <style href=\"ds-step\" precedence=\"ds\">{css}</style>\n      <button type=\"button\" className=\"ds-step-head\" disabled={state === 'next' || (locked && state !== 'now')} aria-expanded={state === 'now'} onClick={() => onOpen?.()}>\n        <span className=\"ds-step-mark\" aria-hidden=\"true\">{state === 'done' ? <Check size={12} strokeWidth={2} /> : n}</span>\n        <span className=\"type-ui-strong\">{title}</span>\n        {says && state !== 'now' && <span className=\"ds-step-says\">{says}</span>}\n      </button>\n      <Transition show={state === 'now'} name=\"ds-step\" duration={{ enter: 200, leave: 140 }}>\n        <div><div className=\"ds-step-grow\"><div><div className=\"ds-step-body\">{children}</div></div></div></div>\n      </Transition>\n    </li>\n  )\n}\n\nexport default Step\n\nconst css = `\n.ds-step { border-top: var(--ds-border-hairline) solid var(--ds-color-edge); }\n.ds-step-head { display: flex; width: 100%; min-height: 44px; align-items: center; gap: var(--ds-space-md); text-align: left; cursor: pointer; touch-action: manipulation; }\n.ds-step-head:disabled { cursor: default; }\n.ds-step-head:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: -2px; }\n.ds-step-mark { display: inline-flex; width: 16px; height: 16px; flex-shrink: 0; align-items: center; justify-content: center; color: var(--ds-color-fg-muted); font-family: var(--ds-font-code); font-size: var(--ds-text-meta); line-height: 16px; }\n.ds-step[data-state=\"now\"] .ds-step-mark { color: var(--ds-color-fg-accent); }\n.ds-step[data-state=\"done\"] .ds-step-mark { color: var(--ds-color-fg); }\n.ds-step[data-state=\"next\"] .ds-step-head, .ds-step[data-state=\"next\"] .type-ui-strong { color: var(--ds-color-fg-muted); }\n.ds-step-says { min-width: 0; margin-left: auto; overflow: hidden; color: var(--ds-color-fg-muted); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); text-overflow: ellipsis; white-space: nowrap; }\n.ds-step-body { display: flex; flex-direction: column; align-items: flex-start; gap: var(--ds-space-md); padding: 0 0 16px 24px; }\n.ds-step-grow { display: grid; grid-template-rows: 1fr; }\n.ds-step-grow > div { min-width: 0; min-height: 0; }\n:is(.ds-step-enter-from, .ds-step-leave-to) .ds-step-grow { grid-template-rows: 0fr; }\n:is(.ds-step-enter-active, .ds-step-leave-active) .ds-step-grow { transition: grid-template-rows var(--ds-duration-slide) var(--ds-easing-out); }\n:is(.ds-step-enter-active, .ds-step-leave-active) .ds-step-grow > div { overflow: hidden; }\n.ds-step-enter-active .ds-step-grow > div { transition: opacity var(--ds-duration-micro) var(--ds-easing-out), transform var(--ds-duration-slide) var(--ds-easing-out); }\n.ds-step-leave-active .ds-step-grow > div { transition: opacity var(--ds-duration-cell) var(--ds-easing-out); }\n.ds-step-enter-from .ds-step-grow > div { opacity: 0; transform: translateY(-4px); }\n.ds-step-leave-to .ds-step-grow > div { opacity: 0; }\n@media (prefers-reduced-motion: reduce) { :is(.ds-step-enter-active, .ds-step-leave-active) :is(.ds-step-grow, .ds-step-grow > div) { transition: none; } }\n`\n"
+        },
+        {
+          "path": "react/hooks/useSteps.ts",
+          "content": "'use client'\nimport { useCallback, useState } from 'react'\n\n/**\n * Steps that open one at a time (the console's useMoveSteps.ts). `reached` is the furthest step; one step shows at a\n * time, and any step reached opens again, so there is always a way back. state(n) is what Step takes: now (open),\n * done (reached and passed), todo (reached, folded) or next (not reached, locked).\n */\nexport type StepState = 'now' | 'done' | 'todo' | 'next'\nexport function useSteps(start = 1) {\n  const [reached, setReached] = useState(start)\n  const [shown, setShown] = useState(start)\n  const state = (n: number): StepState => (n === shown ? 'now' : n < reached ? 'done' : n === reached ? 'todo' : 'next')\n  const reach = useCallback((n: number) => {\n    setReached(r => Math.max(r, n))\n    setShown(n)\n  }, [])\n  const toggle = useCallback((n: number) => setShown(s => (s === n ? 0 : n)), [])\n  /** Back to the first step, nothing reached. */\n  const reset = useCallback(() => {\n    setReached(start)\n    setShown(start)\n  }, [start])\n  return { reached, shown, state, reach, toggle, reset }\n}\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        },
+        {
+          "path": "react/lib/transition.tsx",
+          "content": "'use client'\nimport { Children, cloneElement, isValidElement, useLayoutEffect, useRef, useState, type ReactElement, type ReactNode, type Ref } from 'react'\nimport { flushSync } from 'react-dom'\n\n// Vue's <Transition> and <TransitionGroup> for the React flavor, with the same class names, so a Vue item's CSS\n// (.ds-pop-enter-from, .ds-toast-leave-active, .ds-toast-move...) works unchanged:\n//\n//   <Transition show={open} name=\"ds-pop\">{<div ... />}</Transition>\n//   <TransitionGroup name=\"ds-toast\">{toasts.map((t) => <p key={t.id} ... />)}</TransitionGroup>\n//\n// Entering: <name>-enter-from and -enter-active, then a frame later -enter-to in place of -enter-from, until the\n// transition ends. Leaving: the same with -leave-*, and the element stays until it has, then goes in the same task its\n// classes come off (flushSync), so it never shows again for a frame. A group also moves the others with <name>-move\n// (FLIP), measured once the entering and leaving children have their classes, as Vue's are. `css={false}` skips the classes (Vue's :css=\"false\"); `duration` is Vue's explicit duration\n// in ms, a number or { enter, leave }. The child must take a ref (a DOM element) and className.\ntype Duration = number | { enter: number, leave: number }\ntype Phase = 'enter' | 'leave'\n\nconst ms = (d: Duration | undefined, phase: Phase) => (d === undefined ? undefined : typeof d === 'number' ? d : d[phase])\n\n/** Runs one Vue transition phase on an element and resolves when it has ended. */\nexport function runTransition(el: HTMLElement, name: string, phase: Phase, duration?: Duration): Promise<void> {\n  const from = `${name}-${phase}-from`\n  const active = `${name}-${phase}-active`\n  const to = `${name}-${phase}-to`\n  el.classList.add(from, active)\n  return new Promise((resolve) => {\n    let done = false\n    const finish = () => {\n      if (done) return\n      done = true\n      el.classList.remove(from, active, to)\n      el.removeEventListener('transitionend', onEnd)\n      el.removeEventListener('animationend', onEnd)\n      resolve()\n    }\n    const onEnd = (event: Event) => { if (event.target === el) finish() }\n    requestAnimationFrame(() => requestAnimationFrame(() => {\n      el.classList.remove(from)\n      el.classList.add(to)\n      const explicit = ms(duration, phase)\n      if (explicit !== undefined) return void setTimeout(finish, explicit)\n      // The longest transition or animation on it, as Vue reads it; none means done now.\n      const cs = getComputedStyle(el)\n      const longest = (durations: string, delays: string) => {\n        const d = durations.split(',').map(s => Number.parseFloat(s) * (s.trim().endsWith('ms') ? 1 : 1000))\n        const l = delays.split(',').map(s => Number.parseFloat(s) * (s.trim().endsWith('ms') ? 1 : 1000))\n        return Math.max(0, ...d.map((x, i) => x + (l[i % l.length] || 0)))\n      }\n      const total = Math.max(longest(cs.transitionDuration, cs.transitionDelay), longest(cs.animationDuration, cs.animationDelay))\n      if (!total) return finish()\n      el.addEventListener('transitionend', onEnd)\n      el.addEventListener('animationend', onEnd)\n      setTimeout(finish, total + 50)\n    }))\n  })\n}\n\nfunction mergeRefs<T>(...refs: Array<Ref<T> | undefined>) {\n  return (node: T) => {\n    for (const r of refs) {\n      if (typeof r === 'function') r(node)\n      else if (r) (r as { current: T }).current = node\n    }\n  }\n}\ntype Child = ReactElement<{ ref?: Ref<HTMLElement>, className?: string }>\n\nexport interface TransitionProps { show: boolean, name: string, css?: boolean, duration?: Duration, appear?: boolean, children: ReactNode }\n\n/** Vue's <Transition> around one element: it enters when `show` turns true and leaves before it unmounts. */\nexport function Transition({ show, name, css = true, duration, appear, children }: TransitionProps) {\n  // Whether the element is in the page: from the render where `show` turns true until its leave has ended.\n  const [present, setPresent] = useState(show)\n  const el = useRef<HTMLElement | null>(null)\n  const was = useRef<boolean | null>(null)\n  const last = useRef<ReactNode>(children)\n  if (show) last.current = children\n  if (show && !present) setPresent(true)\n  useLayoutEffect(() => {\n    const before = was.current\n    was.current = show\n    const node = el.current\n    if (before === show) return\n    if (show) {\n      if (node && css && (before !== null || appear)) void runTransition(node, name, 'enter', duration)\n    }\n    // Gone in the same task its leave classes come off, as Vue removes it, so no frame shows it whole again.\n    else if (node && css && before) void runTransition(node, name, 'leave', duration).then(() => { if (!was.current) flushSync(() => setPresent(false)) })\n    else setPresent(false)\n  }, [show]) // eslint-disable-line react-hooks/exhaustive-deps\n  const child = (show ? children : last.current) as Child\n  if (!(show || present) || !isValidElement(child)) return null\n  return cloneElement(child, { ref: mergeRefs(child.props.ref, (n: HTMLElement | null) => { el.current = n }) })\n}\n\nexport interface TransitionGroupProps { name: string, children: ReactNode }\n\n/** Vue's <TransitionGroup>: keyed children enter and leave as <Transition> does, and the rest move with <name>-move. */\nexport function TransitionGroup({ name, children }: TransitionGroupProps) {\n  const nodes = useRef(new Map<string, HTMLElement>())\n  const rects = useRef(new Map<string, DOMRect>())\n  const seen = useRef(new Set<string>())\n  const firstRender = useRef(true)\n  const current = Children.toArray(children).filter(isValidElement) as Child[]\n  const [leaving, setLeaving] = useState<Map<string, { child: Child, index: number }>>(new Map())\n  const prev = useRef<Child[]>([])\n\n  // Children that went away stay, leaving, where they were.\n  const keys = new Set(current.map(c => c.key!))\n  const gone = prev.current.filter(c => !keys.has(c.key!) && !leaving.has(c.key!))\n  if (gone.length) {\n    const next = new Map(leaving)\n    for (const c of gone) next.set(c.key!, { child: c, index: prev.current.indexOf(c) })\n    setLeaving(next)\n  }\n  prev.current = current\n  const list = [...current]\n  for (const [key, { child, index }] of leaving) if (!keys.has(key)) list.splice(Math.min(index, list.length), 0, child)\n\n  // Before the DOM changes: where every child is now (for the move).\n  for (const [key, node] of nodes.current) rects.current.set(key, node.getBoundingClientRect())\n\n  useLayoutEffect(() => {\n    // First every entering and leaving child takes its classes, so the measures for the move below see each as Vue does\n    // (an entering one at its enter-from, a leaving one out of the flow): measuring first would fix an entering child's\n    // style as it is, fully shown, and its transition would start from the end.\n    const entered = new Set<string>()\n    for (const c of list) {\n      const key = c.key!\n      const node = nodes.current.get(key)\n      if (!node) continue\n      if (leaving.has(key)) {\n        if (!node.classList.contains(`${name}-leave-active`)) {\n          // Gone in the same task its leave classes come off, so no frame shows it whole again.\n          void runTransition(node, name, 'leave').then(() => flushSync(() => setLeaving((m) => {\n            const n = new Map(m)\n            n.delete(key)\n            return n\n          })))\n        }\n        continue\n      }\n      if (!seen.current.has(key)) {\n        seen.current.add(key)\n        entered.add(key)\n        if (!firstRender.current) void runTransition(node, name, 'enter')\n      }\n    }\n    // Then the move: from where each stayed child was to where it is.\n    for (const c of list) {\n      const key = c.key!\n      const node = nodes.current.get(key)\n      if (!node || leaving.has(key) || entered.has(key)) continue\n      const before = rects.current.get(key)\n      if (!before) continue\n      const after = node.getBoundingClientRect()\n      if (before.left !== after.left || before.top !== after.top) {\n        node.style.transitionDuration = '0s'\n        node.style.transform = `translate(${before.left - after.left}px, ${before.top - after.top}px)`\n        void node.offsetWidth\n        node.classList.add(`${name}-move`)\n        node.style.transitionDuration = ''\n        node.style.transform = ''\n        const end = () => {\n          node.classList.remove(`${name}-move`)\n          node.removeEventListener('transitionend', end)\n        }\n        node.addEventListener('transitionend', end)\n      }\n    }\n    firstRender.current = false\n    for (const key of [...seen.current]) if (!list.some(c => c.key === key)) seen.current.delete(key)\n  })\n\n  return (\n    <>\n      {list.map(c => cloneElement(c, {\n        key: c.key,\n        ref: mergeRefs(c.props.ref, (n: HTMLElement | null) => {\n          if (n) nodes.current.set(c.key!, n)\n          else nodes.current.delete(c.key!)\n        }),\n      }))}\n    </>\n  )\n}\n"
+        }
+      ],
+      "dependencies": [
+        "lucide-react@0.479.0"
+      ],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "Steps",
+            "file": "react/components/ui/Steps.tsx",
+            "props": []
+          },
+          {
+            "name": "Step",
+            "file": "react/components/ui/Step.tsx",
+            "props": [
+              {
+                "name": "n",
+                "type": "number",
+                "required": true
+              },
+              {
+                "name": "title",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "state",
+                "type": "StepState",
+                "required": true
+              },
+              {
+                "name": "says",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "locked",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "onOpen",
+                "type": "() => void",
+                "required": false
+              },
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Three steps",
+          "center": true,
+          "half": false,
+          "path": "react/examples/steps/Product.tsx",
+          "content": "'use client'\nimport { Button } from '@/react/components/ui/Button'\nimport { PixelButton } from '@/react/components/ui/PixelButton'\nimport { Step } from '@/react/components/ui/Step'\nimport { Steps } from '@/react/components/ui/Steps'\nimport { useSteps } from '@/react/hooks/useSteps'\n// Steps that open one at a time: the one to do is the only open thing, a finished step folds to a line that says what\n// came of it, and a step not reached is dimmed and locked.\nconst said = ['Key created', 'Prompt copied']\n\nexport default function Product() {\n  const { state, reach, toggle } = useSteps()\n  return (\n    <Steps className=\"max-w-140\">\n      <Step n={1} title=\"Create a key\" state={state(1)} says={said[0]} onOpen={() => toggle(1)}>\n        <p className=\"type-meta text-fg-muted\">Your agent uses it to read what you connect.</p>\n        <PixelButton onClick={() => reach(2)}>Create key</PixelButton>\n      </Step>\n      <Step n={2} title=\"Give the prompt to your agent\" state={state(2)} says={said[1]} onOpen={() => toggle(2)}>\n        <p className=\"type-meta text-fg-muted\">It connects Acme's documents and runs a first search.</p>\n        <PixelButton onClick={() => reach(3)}>Copy prompt</PixelButton>\n      </Step>\n      <Step n={3} title=\"Watch the first write\" state={state(3)} onOpen={() => toggle(3)}>\n        <p className=\"type-meta text-fg-muted\">Documents show here as they land.</p>\n        <Button onClick={() => reach(1)}>Start again</Button>\n      </Step>\n    </Steps>\n  )\n}\n",
+          "registryDependencies": [
+            "button"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/steps.ts",
+          "content": "import { html } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// Steps.vue as <conare-steps>: steps that open one at a time (console2.css .v2-movesteps): <conare-step> rows, each\n// over a hairline.\n\n/**\n * @summary Steps that open one at a time.\n * @slot - <conare-step> elements.\n */\nexport class Steps extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\n\trender() {\n\t\treturn html`<ol class=\"contents\"><slot></slot></ol>`\n\t}\n}\n\ndefine('steps', Steps)\n"
+        },
+        {
+          "path": "elements/components/ui/steps.css",
+          "content": "/* The host is the list's box (Steps.vue's <ol>), so a class on <conare-steps> (a width) lands on it as a class on\n   <Steps> does; the <ol> inside keeps the list's meaning and lays out nothing. The page's reset (margin: 0 on every\n   element) outranks :host, so the 8px above is important here. */\n:host { @apply m-0 flex w-full list-none flex-col p-0; @apply mt-2!; }\n"
+        },
+        {
+          "path": "elements/components/ui/step.ts",
+          "content": "import { html, nothing, type PropertyValues } from 'lit'\nimport { Check } from 'lucide'\nimport { DsElement, define } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport { enter, leave } from '@/elements/lib/transition'\nimport type { StepState } from '@/elements/controllers/steps'\nimport styles from 'virtual:tw'\n\n// Step.vue as <conare-step>: one step (the console's byapi/Step.vue, .v2-movestep): a 44px head with its number in\n// Geist Mono, the title and, folded, a line that says what came of it. It opens when it's reached; a finished step\n// folds to that line and opens again on a click; a step not reached is dimmed and locked, so the next thing to do is\n// the only open thing. The body opens in place: its height on the strong ease-out over 180ms (in 200ms, out 140ms), its\n// content rising 4px. `locked`: what's done can't be undone from here, so its line doesn't open. Take states from\n// StepsController (controllers/steps.ts) or the page's own script.\n\nconst DURATION = { enter: 200, leave: 140 }\n\n/**\n * @summary One step: a numbered head that opens its body when it is the step to do.\n * @slot - The body: a line on what to do and its action.\n * @fires open - The head was pressed (open or fold it).\n */\nexport class Step extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { n: { type: Number }, heading: {}, state: { reflect: true }, says: {}, locked: { type: Boolean }, leaving: { state: true } }\n\n\t/** The step's number. */\n\tn = 1\n\t/** The step's title (Vue's `title`; `title` is HTML's tooltip attribute). */\n\theading = ''\n\t/** now (open), done, todo (reached, folded) or next (locked). */\n\tstate: StepState = 'next'\n\t/** What came of it, shown while folded. */\n\tsays?: string\n\t/** What's done can't be undone from here, so its line doesn't open. */\n\tlocked = false\n\t/** The body stays in the page while it folds away (Vue's leaving <Transition>). */\n\tprivate leaving = false\n\tprivate rendered = false\n\n\tprotected willUpdate(changed: PropertyValues) {\n\t\tconst was = changed.get('state') as StepState | undefined\n\t\tif (this.rendered && changed.has('state') && was === 'now' && this.state !== 'now') this.leaving = true\n\t}\n\n\tprotected updated(changed: PropertyValues) {\n\t\tsuper.updated(changed)\n\t\tconst was = changed.get('state') as StepState | undefined\n\t\tconst body = this.renderRoot.querySelector<HTMLElement>('.ds-step-wrap')\n\t\tif (this.rendered && changed.has('state') && body) {\n\t\t\tif (this.state === 'now' && was !== 'now') {\n\t\t\t\tthis.leaving = false\n\t\t\t\tvoid enter(body, 'ds-step', DURATION)\n\t\t\t} else if (was === 'now' && this.state !== 'now') {\n\t\t\t\tvoid leave(body, 'ds-step', DURATION).then(() => {\n\t\t\t\t\tif (this.state !== 'now') this.leaving = false\n\t\t\t\t})\n\t\t\t}\n\t\t}\n\t\tthis.rendered = true\n\t}\n\n\trender() {\n\t\tconst now = this.state === 'now'\n\t\treturn html`<li data-ds=\"step\" class=\"ds-step\" data-state=${this.state}>\n\t\t\t<button type=\"button\" class=\"ds-step-head\" ?disabled=${this.state === 'next' || (this.locked && !now)} aria-expanded=${String(now)} @click=${() => this.emit('open')}>\n\t\t\t\t<span class=\"ds-step-mark\" aria-hidden=\"true\">${this.state === 'done' ? icon(Check, 'check', { size: 12, strokeWidth: 2 }) : this.n}</span>\n\t\t\t\t<span class=\"type-ui-strong\">${this.heading}</span>\n\t\t\t\t${this.says && !now ? html`<span class=\"ds-step-says\">${this.says}</span>` : nothing}\n\t\t\t</button>\n\t\t\t${now || this.leaving ? html`<div class=\"ds-step-wrap\"><div class=\"ds-step-grow\"><div><div class=\"ds-step-body\"><slot></slot></div></div></div></div>` : nothing}\n\t\t</li>`\n\t}\n}\n\ndefine('step', Step)\n"
+        },
+        {
+          "path": "elements/components/ui/step.css",
+          "content": ".ds-step { border-top: var(--ds-border-hairline) solid var(--ds-color-edge); }\n.ds-step-head { display: flex; width: 100%; min-height: 44px; align-items: center; gap: var(--ds-space-md); text-align: left; cursor: pointer; touch-action: manipulation; }\n.ds-step-head:disabled { cursor: default; }\n.ds-step-head:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: -2px; }\n.ds-step-mark { display: inline-flex; width: 16px; height: 16px; flex-shrink: 0; align-items: center; justify-content: center; color: var(--ds-color-fg-muted); font-family: var(--ds-font-code); font-size: var(--ds-text-meta); line-height: 16px; }\n.ds-step[data-state=\"now\"] .ds-step-mark { color: var(--ds-color-fg-accent); }\n.ds-step[data-state=\"done\"] .ds-step-mark { color: var(--ds-color-fg); }\n.ds-step[data-state=\"next\"] .ds-step-head, .ds-step[data-state=\"next\"] .type-ui-strong { color: var(--ds-color-fg-muted); }\n.ds-step-says { min-width: 0; margin-left: auto; overflow: hidden; color: var(--ds-color-fg-muted); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); text-overflow: ellipsis; white-space: nowrap; }\n.ds-step-body { display: flex; flex-direction: column; align-items: flex-start; gap: var(--ds-space-md); padding: 0 0 16px 24px; }\n.ds-step-grow { display: grid; grid-template-rows: 1fr; }\n.ds-step-grow > div { min-width: 0; min-height: 0; }\n:is(.ds-step-enter-from, .ds-step-leave-to) .ds-step-grow { grid-template-rows: 0fr; }\n:is(.ds-step-enter-active, .ds-step-leave-active) .ds-step-grow { transition: grid-template-rows var(--ds-duration-slide) var(--ds-easing-out); }\n:is(.ds-step-enter-active, .ds-step-leave-active) .ds-step-grow > div { overflow: hidden; }\n.ds-step-enter-active .ds-step-grow > div { transition: opacity var(--ds-duration-micro) var(--ds-easing-out), transform var(--ds-duration-slide) var(--ds-easing-out); }\n.ds-step-leave-active .ds-step-grow > div { transition: opacity var(--ds-duration-cell) var(--ds-easing-out); }\n.ds-step-enter-from .ds-step-grow > div { opacity: 0; transform: translateY(-4px); }\n.ds-step-leave-to .ds-step-grow > div { opacity: 0; }\n@media (prefers-reduced-motion: reduce) { :is(.ds-step-enter-active, .ds-step-leave-active) :is(.ds-step-grow, .ds-step-grow > div) { transition: none; } }\n"
+        },
+        {
+          "path": "elements/controllers/steps.ts",
+          "content": "import type { ReactiveController, ReactiveControllerHost } from 'lit'\n\n/**\n * useSteps as a Lit controller: steps that open one at a time (the console's useMoveSteps.ts). `reached` is the\n * furthest step; one step shows at a time, and any step reached opens again, so there is always a way back. state(n) is\n * what <conare-step> takes: now (open), done (reached and passed), todo (reached, folded) or next (not reached, locked).\n */\nexport type StepState = 'now' | 'done' | 'todo' | 'next'\nexport class StepsController implements ReactiveController {\n\treached: number\n\tshown: number\n\tconstructor(private host: ReactiveControllerHost, private start = 1) {\n\t\tthis.reached = start\n\t\tthis.shown = start\n\t\thost.addController(this)\n\t}\n\thostConnected() {}\n\tstate(n: number): StepState {\n\t\treturn n === this.shown ? 'now' : n < this.reached ? 'done' : n === this.reached ? 'todo' : 'next'\n\t}\n\treach(n: number) {\n\t\tthis.reached = Math.max(this.reached, n)\n\t\tthis.shown = n\n\t\tthis.host.requestUpdate()\n\t}\n\ttoggle(n: number) {\n\t\tthis.shown = this.shown === n ? 0 : n\n\t\tthis.host.requestUpdate()\n\t}\n\t/** Back to the first step, nothing reached. */\n\treset() {\n\t\tthis.reached = this.start\n\t\tthis.shown = this.start\n\t\tthis.host.requestUpdate()\n\t}\n}\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/steps.js",
+        "elements/step.js",
+        "elements/pixel-button.js",
+        "elements/button.js"
+      ],
+      "tag": "conare-steps",
+      "tags": [
+        "conare-steps",
+        "conare-step"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-steps",
+            "name": "Steps",
+            "module": "elements/steps.js",
+            "description": "Steps that open one at a time.",
+            "attributes": [],
+            "properties": [],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "<conare-step> elements."
+              }
+            ],
+            "methods": []
+          },
+          {
+            "tag": "conare-step",
+            "name": "Step",
+            "module": "elements/step.js",
+            "description": "One step: a numbered head that opens its body when it is the step to do.",
+            "attributes": [
+              {
+                "name": "n",
+                "field": "n",
+                "type": "number",
+                "default": "1",
+                "description": "The step's number."
+              },
+              {
+                "name": "heading",
+                "field": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The step's title (Vue's `title`; `title` is HTML's tooltip attribute)."
+              },
+              {
+                "name": "state",
+                "field": "state",
+                "type": "StepState",
+                "default": "'next'",
+                "description": "now (open), done, todo (reached, folded) or next (locked)."
+              },
+              {
+                "name": "says",
+                "field": "says",
+                "type": "string | undefined",
+                "description": "What came of it, shown while folded."
+              },
+              {
+                "name": "locked",
+                "field": "locked",
+                "type": "boolean",
+                "default": "false",
+                "description": "What's done can't be undone from here, so its line doesn't open."
+              },
+              {
+                "name": "leaving",
+                "field": "leaving",
+                "type": "boolean",
+                "default": "false",
+                "description": "The body stays in the page while it folds away (Vue's leaving <Transition>)."
+              }
+            ],
+            "properties": [
+              {
+                "name": "n",
+                "type": "number",
+                "default": "1",
+                "description": "The step's number.",
+                "attribute": "n"
+              },
+              {
+                "name": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The step's title (Vue's `title`; `title` is HTML's tooltip attribute).",
+                "attribute": "heading"
+              },
+              {
+                "name": "state",
+                "type": "StepState",
+                "default": "'next'",
+                "description": "now (open), done, todo (reached, folded) or next (locked).",
+                "attribute": "state"
+              },
+              {
+                "name": "says",
+                "type": "string | undefined",
+                "description": "What came of it, shown while folded.",
+                "attribute": "says"
+              },
+              {
+                "name": "locked",
+                "type": "boolean",
+                "default": "false",
+                "description": "What's done can't be undone from here, so its line doesn't open.",
+                "attribute": "locked"
+              }
+            ],
+            "events": [
+              {
+                "name": "open",
+                "description": "The head was pressed (open or fold it)."
+              }
+            ],
+            "slots": [
+              {
+                "name": "",
+                "description": "The body: a line on what to do and its action."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Three steps",
+          "center": true,
+          "half": false,
+          "path": "elements/examples/steps/Product.html",
+          "content": "<!-- Steps that open one at a time: the one to do is the only open thing, a finished step folds to a line that says what\n     came of it, and a step not reached is dimmed and locked. -->\n<conare-steps class=\"max-w-140\">\n  <conare-step n=\"1\" heading=\"Create a key\" says=\"Key created\" state=\"now\">\n    <p class=\"type-meta text-fg-muted\">Your agent uses it to read what you connect.</p>\n    <conare-pixel-button data-reach=\"2\">Create key</conare-pixel-button>\n  </conare-step>\n  <conare-step n=\"2\" heading=\"Give the prompt to your agent\" says=\"Prompt copied\" state=\"next\">\n    <p class=\"type-meta text-fg-muted\">It connects Acme's documents and runs a first search.</p>\n    <conare-pixel-button data-reach=\"3\">Copy prompt</conare-pixel-button>\n  </conare-step>\n  <conare-step n=\"3\" heading=\"Watch the first write\" state=\"next\">\n    <p class=\"type-meta text-fg-muted\">Documents show here as they land.</p>\n    <conare-button data-reach=\"1\">Start again</conare-button>\n  </conare-step>\n</conare-steps>\n<script type=\"module\">\n  // useSteps: `reached` is the furthest step, `shown` the open one; a step's head opens or folds it.\n  let reached = 1\n  let shown = 1\n  const steps = [...document.querySelectorAll('conare-step')]\n  const state = (n) => (n === shown ? 'now' : n < reached ? 'done' : n === reached ? 'todo' : 'next')\n  const paint = () => steps.forEach((s, i) => { s.state = state(i + 1) })\n  steps.forEach((s, i) => s.addEventListener('open', () => { shown = shown === i + 1 ? 0 : i + 1; paint() }))\n  for (const b of document.querySelectorAll('[data-reach]')) {\n    b.addEventListener('click', () => { const n = Number(b.dataset.reach); reached = Math.max(reached, n); shown = n; paint() })\n  }\n</script>\n"
+        }
+      ]
+    }
+  }
+}

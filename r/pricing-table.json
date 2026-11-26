@@ -1,0 +1,215 @@
+{
+  "name": "pricing-table",
+  "title": "Pricing table",
+  "type": "registry:ui",
+  "group": "site",
+  "description": "One group of prices: its case on the left, its cards on the right in the double rule. Each card's price large in tabular figures with its unit, one line, and what it includes led by the red square.",
+  "use_for": "A pricing page, one table per group of prices.",
+  "never": [
+    "A plan marked as the popular one: the prices make the case",
+    "Prices without their unit",
+    "A button on every card: the page's head carries the one action"
+  ],
+  "source": "conare-web app/pages/pricing.vue (each group: its case, its cards in the double rule), app/content/pricing.ts",
+  "body": "Give each table its own `titleId` when a page has several. An odd last card takes the whole row.",
+  "requires": [
+    "section-head"
+  ],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/site/PricingTable.vue",
+      "content": "<script setup lang=\"ts\">\nimport SectionHead from '@/components/site/SectionHead.vue'\n\n// One group of prices (pricing.vue): its case on the left, its cards on the right in the website's double rule, side by\n// side from 1024px. Each card: the name in Faculty Glyphic 20px, the price large in tabular figures with its unit, one\n// line, and what it includes under a hairline, each led by the red square. Two across from 640px; an odd last card\n// takes the row.\nexport type PriceCard = { name: string, amount: string, unit?: string, line?: string, facts?: string[] }\nwithDefaults(defineProps<{ title: string, body?: string, cards: PriceCard[], titleId?: string }>(), { titleId: 'pricing-title' })\n</script>\n\n<template>\n  <section data-ds=\"pricing-table\" :aria-labelledby=\"titleId\" class=\"mx-auto grid max-w-[1440px] scroll-mt-16 grid-cols-[minmax(0,1fr)] gap-8 px-4 pb-24 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2.4fr)] lg:gap-16 lg:px-10 lg:pb-32\">\n    <SectionHead :title=\"title\" :body=\"body\" :title-id=\"titleId\" align=\"start\" />\n    <ul class=\"grid grid-cols-[minmax(0,1fr)] gap-px border border-edge bg-edge outline outline-offset-4 outline-edge sm:grid-cols-2\">\n      <li v-for=\"(c, i) in cards\" :key=\"c.name\" class=\"flex flex-col bg-surface px-5 py-6 sm:px-6\" :class=\"cards.length % 2 && i === cards.length - 1 ? 'sm:col-span-2' : ''\">\n        <h3 class=\"type-heading-3 text-fg\">{{ c.name }}</h3>\n        <p class=\"mt-4 flex flex-wrap items-baseline gap-x-2 gap-y-1\">\n          <span class=\"text-viz-score tracking-display text-fg tabular-nums\">{{ c.amount }}</span>\n          <span v-if=\"c.unit\" class=\"text-body text-fg-muted\">{{ c.unit }}</span>\n        </p>\n        <p v-if=\"c.line\" class=\"mt-3 text-body leading-5.5 text-fg-muted\">{{ c.line }}</p>\n        <ul v-if=\"c.facts?.length\" class=\"mt-5 flex flex-col gap-2 border-t border-edge pt-5\">\n          <li v-for=\"f in c.facts\" :key=\"f\" class=\"flex items-center gap-3 text-body text-fg\">\n            <span aria-hidden=\"true\" class=\"size-1.5 shrink-0 bg-home-red\" />\n            {{ f }}\n          </li>\n        </ul>\n      </li>\n    </ul>\n  </section>\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "One group of prices",
+      "center": false,
+      "half": false,
+      "path": "examples/pricing-table/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport PricingTable from '@/components/site/PricingTable.vue'\n// One group of prices: its case on the left, the cards beside it; the odd last card takes the row.\nconst cards = [\n  {\n    \"name\": \"Connected apps\",\n    \"amount\": \"$20\",\n    \"unit\": \"per app a month\",\n    \"line\": \"Each app you connect, synced as it changes.\",\n    \"facts\": [\n      \"Changes in minutes\",\n      \"Deletes carried over\"\n    ]\n  },\n  {\n    \"name\": \"Parsing\",\n    \"amount\": \"$3\",\n    \"unit\": \"per 1,000 pages\",\n    \"line\": \"Every page read in full, tables included.\",\n    \"facts\": [\n      \"Scanned and typed pages\",\n      \"Tables kept as tables\"\n    ]\n  },\n  {\n    \"name\": \"Embeddings\",\n    \"amount\": \"$0.02\",\n    \"unit\": \"per 1M tokens\",\n    \"line\": \"For any vector database you run.\",\n    \"facts\": []\n  }\n]\n</script>\n\n<template>\n  <PricingTable\n    title-id=\"pricing-sync\"\n    title=\"Sync\"\n    body=\"Keep your apps in a namespace, in step as they change.\"\n    :cards=\"cards\"\n  />\n</template>\n",
+      "requires": [
+        "section-head"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/site/PricingTable.tsx",
+          "content": "import { SectionHead } from '@/react/components/site/SectionHead'\n\n// One group of prices (pricing.vue): its case on the left, its cards on the right in the website's double rule, side by\n// side from 1024px. Each card: the name in Faculty Glyphic 20px, the price large in tabular figures with its unit, one\n// line, and what it includes under a hairline, each led by the red square. Two across from 640px; an odd last card\n// takes the row.\nexport type PriceCard = { name: string, amount: string, unit?: string, line?: string, facts?: string[] }\nexport interface PricingTableProps { title: string, body?: string, cards: PriceCard[], titleId?: string, id?: string }\n\nexport function PricingTable({ title, body, cards, titleId = 'pricing-title', id }: PricingTableProps) {\n  return (\n    <section id={id} data-ds=\"pricing-table\" aria-labelledby={titleId} className=\"mx-auto grid max-w-[1440px] scroll-mt-16 grid-cols-[minmax(0,1fr)] gap-8 px-4 pb-24 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2.4fr)] lg:gap-16 lg:px-10 lg:pb-32\">\n      <SectionHead title={title} body={body} titleId={titleId} align=\"start\" />\n      <ul className=\"grid grid-cols-[minmax(0,1fr)] gap-px border border-edge bg-edge outline outline-offset-4 outline-edge sm:grid-cols-2\">\n        {cards.map((c, i) => (\n          <li key={c.name} className={['flex flex-col bg-surface px-5 py-6 sm:px-6', cards.length % 2 && i === cards.length - 1 ? 'sm:col-span-2' : ''].join(' ')}>\n            <h3 className=\"type-heading-3 text-fg\">{c.name}</h3>\n            <p className=\"mt-4 flex flex-wrap items-baseline gap-x-2 gap-y-1\">\n              <span className=\"text-viz-score tracking-display text-fg tabular-nums\">{c.amount}</span>\n              {c.unit && <span className=\"text-body text-fg-muted\">{c.unit}</span>}\n            </p>\n            {c.line && <p className=\"mt-3 text-body leading-5.5 text-fg-muted\">{c.line}</p>}\n            {!!c.facts?.length && (\n              <ul className=\"mt-5 flex flex-col gap-2 border-t border-edge pt-5\">\n                {c.facts.map(f => (\n                  <li key={f} className=\"flex items-center gap-3 text-body text-fg\">\n                    <span aria-hidden=\"true\" className=\"size-1.5 shrink-0 bg-home-red\" />\n                    {f}\n                  </li>\n                ))}\n              </ul>\n            )}\n          </li>\n        ))}\n      </ul>\n    </section>\n  )\n}\n\nexport default PricingTable\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "section-head"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "PricingTable",
+            "file": "react/components/site/PricingTable.tsx",
+            "props": [
+              {
+                "name": "title",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "body",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "cards",
+                "type": "PriceCard[]",
+                "required": true
+              },
+              {
+                "name": "titleId",
+                "type": "string",
+                "required": false,
+                "default": "'pricing-title'"
+              },
+              {
+                "name": "id",
+                "type": "string",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "One group of prices",
+          "center": false,
+          "half": false,
+          "path": "react/examples/pricing-table/Site.tsx",
+          "content": "import { PricingTable } from '@/react/components/site/PricingTable'\n// One group of prices: its case on the left, the cards beside it; the odd last card takes the row.\nconst cards = [\n  {\n    \"name\": \"Connected apps\",\n    \"amount\": \"$20\",\n    \"unit\": \"per app a month\",\n    \"line\": \"Each app you connect, synced as it changes.\",\n    \"facts\": [\n      \"Changes in minutes\",\n      \"Deletes carried over\"\n    ]\n  },\n  {\n    \"name\": \"Parsing\",\n    \"amount\": \"$3\",\n    \"unit\": \"per 1,000 pages\",\n    \"line\": \"Every page read in full, tables included.\",\n    \"facts\": [\n      \"Scanned and typed pages\",\n      \"Tables kept as tables\"\n    ]\n  },\n  {\n    \"name\": \"Embeddings\",\n    \"amount\": \"$0.02\",\n    \"unit\": \"per 1M tokens\",\n    \"line\": \"For any vector database you run.\",\n    \"facts\": []\n  }\n]\nexport default function Site() {\n  return (\n    <PricingTable\n      titleId=\"pricing-sync\"\n      title=\"Sync\"\n      body=\"Keep your apps in a namespace, in step as they change.\"\n      cards={cards}\n    />\n  )\n}\n",
+          "registryDependencies": [
+            "section-head"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/site/pricing-table.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport '@/elements/components/site/section-head'\nimport styles from 'virtual:tw'\n\n// PricingTable.vue as <conare-pricing-table>: one group of prices (pricing.vue): its case on the left, its cards on\n// the right in the website's double rule, side by side from 1024px. Each card: the name in Faculty Glyphic 20px, the\n// price large in tabular figures with its unit, one line, and what it includes under a hairline, each led by the red\n// square. Two across from 640px; an odd last card takes the row. `heading` is Vue's `title`; `anchor` is the\n// section's id (Vue's fallthrough id).\nexport type PriceCard = { name: string, amount: string, unit?: string, line?: string, facts?: string[] }\n\n/** @summary One group of prices: its case, then its cards in the double rule. */\nexport class PricingTable extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { heading: {}, body: {}, cards: { type: Array }, titleId: { attribute: 'title-id' }, anchor: {} }\n\n\t/** The group's name (Vue's `title`). */\n\theading = ''\n\tbody?: string\n\t/** Each { name, amount, unit, line, facts }. */\n\tcards: PriceCard[] = []\n\ttitleId = 'pricing-title'\n\t/** The section's id, to link to the group. */\n\tanchor?: string\n\n\trender() {\n\t\tconst head = tag('section-head')\n\t\tconst n = this.cards.length\n\t\treturn html`<section id=${this.anchor ?? nothing} data-ds=\"pricing-table\" aria-labelledby=${this.titleId} class=\"mx-auto grid max-w-[1440px] scroll-mt-16 grid-cols-[minmax(0,1fr)] gap-8 px-4 pb-24 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2.4fr)] lg:gap-16 lg:px-10 lg:pb-32\">${staticHtml`<${head} .heading=${this.heading} .body=${this.body} .titleId=${this.titleId} align=\"start\"></${head}>`}<ul class=\"grid grid-cols-[minmax(0,1fr)] gap-px border border-edge bg-edge outline outline-offset-4 outline-edge sm:grid-cols-2\">${this.cards.map((c, i) => html`<li class=${['flex flex-col bg-surface px-5 py-6 sm:px-6', n % 2 && i === n - 1 ? 'sm:col-span-2' : ''].join(' ')}><h3 class=\"type-heading-3 text-fg\">${c.name}</h3><p class=\"mt-4 flex flex-wrap items-baseline gap-x-2 gap-y-1\"><span class=\"text-viz-score tracking-display text-fg tabular-nums\">${c.amount}</span>${c.unit ? html`<span class=\"text-body text-fg-muted\">${c.unit}</span>` : nothing}</p>${c.line ? html`<p class=\"mt-3 text-body leading-5.5 text-fg-muted\">${c.line}</p>` : nothing}${c.facts?.length ? html`<ul class=\"mt-5 flex flex-col gap-2 border-t border-edge pt-5\">${c.facts.map((f) => html`<li class=\"flex items-center gap-3 text-body text-fg\"><span aria-hidden=\"true\" class=\"size-1.5 shrink-0 bg-home-red\"></span>${f}</li>`)}</ul>` : nothing}</li>`)}</ul></section>`\n\t}\n}\n\ndefine('pricing-table', PricingTable)\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/pricing-table.js",
+        "elements/section-head.js",
+        "elements/site-tag.js"
+      ],
+      "tag": "conare-pricing-table",
+      "tags": [
+        "conare-pricing-table"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "section-head",
+        "tag"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-pricing-table",
+            "name": "PricingTable",
+            "module": "elements/pricing-table.js",
+            "description": "One group of prices: its case, then its cards in the double rule.",
+            "attributes": [
+              {
+                "name": "heading",
+                "field": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The group's name (Vue's `title`)."
+              },
+              {
+                "name": "body",
+                "field": "body",
+                "type": "string | undefined"
+              },
+              {
+                "name": "cards",
+                "field": "cards",
+                "type": "PriceCard[]",
+                "default": "[]",
+                "description": "Each { name, amount, unit, line, facts }."
+              },
+              {
+                "name": "title-id",
+                "field": "titleId",
+                "type": "string",
+                "default": "'pricing-title'"
+              },
+              {
+                "name": "anchor",
+                "field": "anchor",
+                "type": "string | undefined",
+                "description": "The section's id, to link to the group."
+              }
+            ],
+            "properties": [
+              {
+                "name": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The group's name (Vue's `title`).",
+                "attribute": "heading"
+              },
+              {
+                "name": "body",
+                "type": "string | undefined",
+                "attribute": "body"
+              },
+              {
+                "name": "cards",
+                "type": "PriceCard[]",
+                "default": "[]",
+                "description": "Each { name, amount, unit, line, facts }.",
+                "attribute": "cards"
+              },
+              {
+                "name": "titleId",
+                "type": "string",
+                "default": "'pricing-title'",
+                "attribute": "title-id"
+              },
+              {
+                "name": "anchor",
+                "type": "string | undefined",
+                "description": "The section's id, to link to the group.",
+                "attribute": "anchor"
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "One group of prices",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/pricing-table/Site.html",
+          "content": "<!-- One group of prices: its case on the left, the cards beside it; the odd last card takes the row. -->\n<conare-pricing-table\n  title-id=\"pricing-sync\"\n  heading=\"Sync\"\n  body=\"Keep your apps in a namespace, in step as they change.\"\n  cards='[{\"name\": \"Connected apps\", \"amount\": \"$20\", \"unit\": \"per app a month\", \"line\": \"Each app you connect, synced as it changes.\", \"facts\": [\"Changes in minutes\", \"Deletes carried over\"]}, {\"name\": \"Parsing\", \"amount\": \"$3\", \"unit\": \"per 1,000 pages\", \"line\": \"Every page read in full, tables included.\", \"facts\": [\"Scanned and typed pages\", \"Tables kept as tables\"]}, {\"name\": \"Embeddings\", \"amount\": \"$0.02\", \"unit\": \"per 1M tokens\", \"line\": \"For any vector database you run.\", \"facts\": []}]'\n></conare-pricing-table>\n"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,366 @@
+{
+  "name": "home-page",
+  "title": "Home page",
+  "type": "registry:block",
+  "group": "site",
+  "description": "The website's home: the hero with the one dark call to action and the window in the red frame, who connects (logo strip), what it does (feature grid), one customer's words, the questions and the closing red band, in the site's frame.",
+  "use_for": "The home page of a website.",
+  "never": [
+    "A second dark call to action above the closing band",
+    "Red past about 10% of the first screen"
+  ],
+  "source": "conare-web app/pages/index.vue (the order of the bands), app/components/home/*.vue",
+  "body": "Built on `site-page`: `header`, `footer` and `announcement` are its props, and the `logo` and `actions` slots go to the header (`sheet-actions` too, in web components). The `window` slot is the hero's window: draw it on `VizWindow`, as the hero's example does. Every band takes its own props (`hero`, `logos`, `features`, `testimonial`, `faq`, `cta`), so leave out what a page does not have by building your own page from the same items.",
+  "requires": [
+    "button-link",
+    "call-to-action",
+    "faq",
+    "feature-grid",
+    "hero",
+    "logo-strip",
+    "site-page",
+    "testimonial"
+  ],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/site/HomePage.vue",
+      "content": "<script setup lang=\"ts\">\nimport ButtonLink from '@/components/site/ButtonLink.vue'\nimport CallToAction from '@/components/site/CallToAction.vue'\nimport Faq from '@/components/site/Faq.vue'\nimport FeatureGrid, { type Feature } from '@/components/site/FeatureGrid.vue'\nimport Hero from '@/components/site/Hero.vue'\nimport LogoStrip, { type Logo } from '@/components/site/LogoStrip.vue'\nimport SitePage, { type SiteAction, type SiteAnnouncement, type SiteFooterData, type SiteHeaderData } from '@/components/site/SitePage.vue'\nimport Testimonial from '@/components/site/Testimonial.vue'\n\n// The website's home (pages/index.vue), in its order: the hero with the one dark call to action and the window in the\n// red frame (the `window` slot), who connects (logo-strip), what it does (feature-grid), one customer's words\n// (testimonial), the questions (faq) and the closing red band (call-to-action), in the site's frame (site-page).\ndefineProps<{\n  header: SiteHeaderData, footer: SiteFooterData, announcement?: SiteAnnouncement\n  hero: { eyebrow?: string, title: string, body?: string, action: SiteAction }\n  logos: { title: string, tag?: string, logos: Logo[] }\n  features: { title: string, tag?: string, body?: string, features: Feature[] }\n  testimonial: { quote: string, role: string, company: string }\n  faq: { q: string, a: string }[]\n  cta: { title: string, action: SiteAction }\n}>()\n</script>\n\n<template>\n  <SitePage data-ds=\"home-page\" :header=\"header\" :footer=\"footer\" :announcement=\"announcement\">\n      <template #logo><slot name=\"logo\" /></template>\n      <template #actions=\"{ place }\"><slot name=\"actions\" :place=\"place\" /></template>\n    <Hero :eyebrow=\"hero.eyebrow\" :title=\"hero.title\" :body=\"hero.body\">\n      <template #action><ButtonLink :href=\"hero.action.href\" grain pixels arrow>{{ hero.action.label }}</ButtonLink></template>\n      <template #window><slot name=\"window\" /></template>\n    </Hero>\n    <LogoStrip v-bind=\"logos\" />\n    <FeatureGrid v-bind=\"features\" />\n    <Testimonial v-bind=\"testimonial\" />\n    <Faq :items=\"faq\" />\n    <CallToAction :title=\"cta.title\">\n      <ButtonLink :href=\"cta.action.href\" variant=\"light\" fill=\"black\">{{ cta.action.label }}</ButtonLink>\n    </CallToAction>\n  </SitePage>\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "The home, on sample data",
+      "center": false,
+      "half": false,
+      "path": "examples/home-page/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport HomePage from '@/components/site/HomePage.vue'\nimport Button from '@/components/ui/Button.vue'\nimport PixelButton from '@/components/ui/PixelButton.vue'\nimport VizWindow from '@/components/visuals/VizWindow.vue'\n// The home on sample data, in the site's frame; the hero's window is drawn on VizWindow.\nconst header = {\n  \"items\": [\n    {\n      \"label\": \"Search\",\n      \"desc\": \"Find the answer in any file.\",\n      \"href\": \"#search\"\n    },\n    {\n      \"label\": \"Sync\",\n      \"desc\": \"Keep your apps in step.\",\n      \"href\": \"#sync\"\n    },\n    {\n      \"label\": \"Parse\",\n      \"desc\": \"Read every row and cell.\",\n      \"href\": \"#parse\"\n    }\n  ],\n  \"links\": [\n    {\n      \"label\": \"Pricing\",\n      \"href\": \"#pricing\"\n    },\n    {\n      \"label\": \"Blog\",\n      \"href\": \"#blog\"\n    },\n    {\n      \"label\": \"Docs\",\n      \"href\": \"#docs\"\n    }\n  ],\n  \"homeLabel\": \"Acme home\"\n}\nconst footer = {\n  \"columns\": [\n    {\n      \"title\": \"Product\",\n      \"links\": [\n        {\n          \"label\": \"Search\",\n          \"href\": \"#search\"\n        },\n        {\n          \"label\": \"Sync\",\n          \"href\": \"#sync\"\n        },\n        {\n          \"label\": \"Parse\",\n          \"href\": \"#parse\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Company\",\n      \"links\": [\n        {\n          \"label\": \"About\",\n          \"href\": \"#about\"\n        },\n        {\n          \"label\": \"Blog\",\n          \"href\": \"#blog\"\n        },\n        {\n          \"label\": \"Changelog\",\n          \"href\": \"#changelog\"\n        },\n        {\n          \"label\": \"Contact\",\n          \"href\": \"#contact\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Resources\",\n      \"links\": [\n        {\n          \"label\": \"Docs\",\n          \"href\": \"#docs\"\n        },\n        {\n          \"label\": \"Pricing\",\n          \"href\": \"#pricing\"\n        },\n        {\n          \"label\": \"Status\",\n          \"href\": \"#status\"\n        }\n      ]\n    }\n  ],\n  \"tagline\": \"Search any data you bring. Get the right answer.\",\n  \"legal\": \"© 2026 Acme, Inc.\",\n  \"legalLinks\": [\n    {\n      \"label\": \"Privacy\",\n      \"href\": \"#privacy\"\n    },\n    {\n      \"label\": \"Terms\",\n      \"href\": \"#terms\"\n    }\n  ],\n  \"name\": \"Acme\"\n}\nconst hero = {\n  \"eyebrow\": \"Search across 100M+ documents\",\n  \"title\": \"Everything your agent needs to know\",\n  \"body\": \"Acme finds the right answer in any data you bring, for your agents and the products you build on them.\",\n  \"action\": {\n    \"label\": \"Book a demo\",\n    \"href\": \"#demo\"\n  }\n}\nconst logos = {\n  \"tag\": \"Customers\",\n  \"title\": \"Teams at Acme companies search with it.\",\n  \"logos\": [\n    {\n      \"name\": \"Acme\",\n      \"mark\": true\n    },\n    {\n      \"name\": \"Acme Labs\",\n      \"mark\": false\n    },\n    {\n      \"name\": \"Acme Cloud\",\n      \"mark\": false\n    },\n    {\n      \"name\": \"Acme Health\",\n      \"mark\": true\n    },\n    {\n      \"name\": \"Acme Freight\",\n      \"mark\": false\n    },\n    {\n      \"name\": \"Acme Bank\",\n      \"mark\": false\n    },\n    {\n      \"name\": \"Acme Retail\",\n      \"mark\": true\n    },\n    {\n      \"name\": \"Acme Energy\",\n      \"mark\": false\n    },\n    {\n      \"name\": \"Acme Legal\",\n      \"mark\": false\n    },\n    {\n      \"name\": \"Acme Studio\",\n      \"mark\": true\n    },\n    {\n      \"name\": \"Acme Robotics\",\n      \"mark\": false\n    },\n    {\n      \"name\": \"Acme Foods\",\n      \"mark\": false\n    }\n  ]\n}\nconst features = {\n  \"tag\": \"Product\",\n  \"title\": \"Everything retrieval needs, behind one key.\",\n  \"features\": [\n    {\n      \"title\": \"Search\",\n      \"body\": \"Ask in plain words and get the passages that answer, ranked, with where each came from.\"\n    },\n    {\n      \"title\": \"Sync\",\n      \"body\": \"Connect the apps your team uses. A changed record replaces the old one; a deleted one is deleted.\"\n    },\n    {\n      \"title\": \"Parse\",\n      \"body\": \"Read any file in full: every page, table, row and cell, scanned or typed.\"\n    },\n    {\n      \"title\": \"Embed\",\n      \"body\": \"Embeddings for any vector database, from the same models search runs on.\"\n    },\n    {\n      \"title\": \"Rerank\",\n      \"body\": \"Put the best passages first, in one call after the search you already run.\"\n    },\n    {\n      \"title\": \"Audit\",\n      \"body\": \"Every search, what it read and how long it took, kept for as long as you need.\"\n    }\n  ]\n}\nconst testimonial = {\n  \"quote\": \"Our support agent answers from every ticket and policy we have, and when it is not sure, it says where it looked.\",\n  \"role\": \"Head of support\",\n  \"company\": \"Acme\"\n}\nconst faq = [\n  {\n    \"q\": \"How do I get started?\",\n    \"a\": \"Book a demo. We set up your organization with you, and your team then creates API keys in the console.\"\n  },\n  {\n    \"q\": \"Is my data used to train models?\",\n    \"a\": \"No. Your content serves your organization alone.\"\n  },\n  {\n    \"q\": \"What happens when a record changes?\",\n    \"a\": \"A changed record replaces its old version. A deleted one is deleted.\"\n  },\n  {\n    \"q\": \"What do I have to run?\",\n    \"a\": \"Nothing. The servers, the index and the sync jobs are ours to run.\"\n  }\n]\nconst cta = {\n  \"title\": \"See it on your own data.\",\n  \"action\": {\n    \"label\": \"Book a demo\",\n    \"href\": \"#demo\"\n  }\n}\n</script>\n\n<template>\n  <div class=\"-m-8\">\n    <HomePage\n      :header=\"header\"\n      :footer=\"footer\"\n      :hero=\"hero\"\n      :logos=\"logos\"\n      :features=\"features\"\n      :testimonial=\"testimonial\"\n      :faq=\"faq\"\n      :cta=\"cta\"\n    >\n      <template #logo><span class=\"font-heading text-heading-3 text-fg\">Acme</span></template>\n      <template #actions><Button href=\"#contact\">Contact us</Button><PixelButton href=\"#sign-in\">Sign in</PixelButton></template>\n      <template #window>\n        <VizWindow active class=\"text-left\">\n          <template #title>\n            <span class=\"text-ui\">Acme</span>\n            <span class=\"bg-ds-neutral-200 px-1.5 py-0.5 text-caption text-ds-neutral-500\">Support agent</span>\n          </template>\n          <div class=\"flex flex-col gap-4 px-4 pt-1 pb-5 sm:px-7 sm:pb-6\">\n            <p class=\"ds-viz-in self-end bg-ds-neutral-200 px-3 py-2 text-body\" style=\"--d: 200\">How does a customer reset their key?</p>\n            <p class=\"ds-viz-in text-body text-ds-neutral-600\" style=\"--d: 700\">Settings, then API keys: revoke the old one and create a new one in its place.</p>\n            <p class=\"ds-viz-in flex items-center gap-2 text-meta text-ds-neutral-500\" style=\"--d: 900\">Source <span class=\"ds-viz-chip text-off-white\"><span class=\"ds-viz-dot bg-home-red\" />help-center.md</span></p>\n          </div>\n        </VizWindow>\n      </template>\n    </HomePage>\n  </div>\n</template>\n",
+      "requires": [
+        "button",
+        "button-link",
+        "call-to-action",
+        "eval-viz",
+        "faq",
+        "feature-grid",
+        "hero",
+        "logo-strip",
+        "site-page",
+        "testimonial"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/site/HomePage.tsx",
+          "content": "import type { ReactNode } from 'react'\nimport { ButtonLink } from '@/react/components/site/ButtonLink'\nimport { CallToAction } from '@/react/components/site/CallToAction'\nimport { Faq } from '@/react/components/site/Faq'\nimport { FeatureGrid, type Feature } from '@/react/components/site/FeatureGrid'\nimport { Hero } from '@/react/components/site/Hero'\nimport { LogoStrip, type Logo } from '@/react/components/site/LogoStrip'\nimport { SitePage, type SiteAction, type SiteFrameProps } from '@/react/components/site/SitePage'\nimport { Testimonial } from '@/react/components/site/Testimonial'\n\n// The website's home (pages/index.vue), in its order: the hero with the one dark call to action and the window in the\n// red frame (`window`), who connects (logo-strip), what it does (feature-grid), one customer's words (testimonial),\n// the questions (faq) and the closing red band (call-to-action), in the site's frame (site-page).\nexport interface HomePageProps extends SiteFrameProps {\n  hero: { eyebrow?: string, title: string, body?: string, action: SiteAction }\n  logos: { title: string, tag?: string, logos: Logo[] }\n  features: { title: string, tag?: string, body?: string, features: Feature[] }\n  testimonial: { quote: string, role: string, company: string }\n  faq: { q: string, a: string }[]\n  cta: { title: string, action: SiteAction }\n  /** The window in the hero's red frame (Vue's `window` slot). */\n  window?: () => ReactNode\n}\n\nexport function HomePage({ header, footer, announcement, logo, actions, hero, logos, features, testimonial, faq, cta, window: win }: HomePageProps) {\n  return (\n    <SitePage data-ds=\"home-page\" header={header} footer={footer} announcement={announcement} logo={logo} actions={actions}>\n      <Hero eyebrow={hero.eyebrow} title={hero.title} body={hero.body} action={<ButtonLink href={hero.action.href} grain pixels arrow>{hero.action.label}</ButtonLink>} window={win} />\n      <LogoStrip {...logos} />\n      <FeatureGrid {...features} />\n      <Testimonial {...testimonial} />\n      <Faq items={faq} />\n      <CallToAction title={cta.title}>\n        <ButtonLink href={cta.action.href} variant=\"light\" fill=\"black\">{cta.action.label}</ButtonLink>\n      </CallToAction>\n    </SitePage>\n  )\n}\n\nexport default HomePage\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "button-link",
+        "call-to-action",
+        "faq",
+        "feature-grid",
+        "hero",
+        "logo-strip",
+        "site-page",
+        "testimonial"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "HomePage",
+            "file": "react/components/site/HomePage.tsx",
+            "props": [
+              {
+                "name": "hero",
+                "type": "{ eyebrow?: string, title: string, body?: string, action: SiteAction }",
+                "required": true
+              },
+              {
+                "name": "logos",
+                "type": "{ title: string, tag?: string, logos: Logo[] }",
+                "required": true
+              },
+              {
+                "name": "features",
+                "type": "{ title: string, tag?: string, body?: string, features: Feature[] }",
+                "required": true
+              },
+              {
+                "name": "testimonial",
+                "type": "{ quote: string, role: string, company: string }",
+                "required": true
+              },
+              {
+                "name": "faq",
+                "type": "{ q: string, a: string }[]",
+                "required": true
+              },
+              {
+                "name": "cta",
+                "type": "{ title: string, action: SiteAction }",
+                "required": true
+              },
+              {
+                "name": "window",
+                "type": "() => ReactNode",
+                "required": false,
+                "description": "The window in the hero's red frame (Vue's `window` slot)."
+              }
+            ],
+            "extends": [
+              "SiteFrameProps"
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "The home, on sample data",
+          "center": false,
+          "half": false,
+          "path": "react/examples/home-page/Site.tsx",
+          "content": "import type { CSSProperties } from 'react'\nimport { HomePage } from '@/react/components/site/HomePage'\nimport { Button } from '@/react/components/ui/Button'\nimport { PixelButton } from '@/react/components/ui/PixelButton'\nimport { VizWindow } from '@/react/components/visuals/VizWindow'\n// The home on sample data, in the site's frame; the hero's window is drawn on VizWindow.\nconst header = {\n  \"items\": [\n    {\n      \"label\": \"Search\",\n      \"desc\": \"Find the answer in any file.\",\n      \"href\": \"#search\"\n    },\n    {\n      \"label\": \"Sync\",\n      \"desc\": \"Keep your apps in step.\",\n      \"href\": \"#sync\"\n    },\n    {\n      \"label\": \"Parse\",\n      \"desc\": \"Read every row and cell.\",\n      \"href\": \"#parse\"\n    }\n  ],\n  \"links\": [\n    {\n      \"label\": \"Pricing\",\n      \"href\": \"#pricing\"\n    },\n    {\n      \"label\": \"Blog\",\n      \"href\": \"#blog\"\n    },\n    {\n      \"label\": \"Docs\",\n      \"href\": \"#docs\"\n    }\n  ],\n  \"homeLabel\": \"Acme home\"\n}\nconst footer = {\n  \"columns\": [\n    {\n      \"title\": \"Product\",\n      \"links\": [\n        {\n          \"label\": \"Search\",\n          \"href\": \"#search\"\n        },\n        {\n          \"label\": \"Sync\",\n          \"href\": \"#sync\"\n        },\n        {\n          \"label\": \"Parse\",\n          \"href\": \"#parse\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Company\",\n      \"links\": [\n        {\n          \"label\": \"About\",\n          \"href\": \"#about\"\n        },\n        {\n          \"label\": \"Blog\",\n          \"href\": \"#blog\"\n        },\n        {\n          \"label\": \"Changelog\",\n          \"href\": \"#changelog\"\n        },\n        {\n          \"label\": \"Contact\",\n          \"href\": \"#contact\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Resources\",\n      \"links\": [\n        {\n          \"label\": \"Docs\",\n          \"href\": \"#docs\"\n        },\n        {\n          \"label\": \"Pricing\",\n          \"href\": \"#pricing\"\n        },\n        {\n          \"label\": \"Status\",\n          \"href\": \"#status\"\n        }\n      ]\n    }\n  ],\n  \"tagline\": \"Search any data you bring. Get the right answer.\",\n  \"legal\": \"© 2026 Acme, Inc.\",\n  \"legalLinks\": [\n    {\n      \"label\": \"Privacy\",\n      \"href\": \"#privacy\"\n    },\n    {\n      \"label\": \"Terms\",\n      \"href\": \"#terms\"\n    }\n  ],\n  \"name\": \"Acme\"\n}\nconst hero = {\n  \"eyebrow\": \"Search across 100M+ documents\",\n  \"title\": \"Everything your agent needs to know\",\n  \"body\": \"Acme finds the right answer in any data you bring, for your agents and the products you build on them.\",\n  \"action\": {\n    \"label\": \"Book a demo\",\n    \"href\": \"#demo\"\n  }\n}\nconst logos = {\n  \"tag\": \"Customers\",\n  \"title\": \"Teams at Acme companies search with it.\",\n  \"logos\": [\n    {\n      \"name\": \"Acme\",\n      \"mark\": true\n    },\n    {\n      \"name\": \"Acme Labs\",\n      \"mark\": false\n    },\n    {\n      \"name\": \"Acme Cloud\",\n      \"mark\": false\n    },\n    {\n      \"name\": \"Acme Health\",\n      \"mark\": true\n    },\n    {\n      \"name\": \"Acme Freight\",\n      \"mark\": false\n    },\n    {\n      \"name\": \"Acme Bank\",\n      \"mark\": false\n    },\n    {\n      \"name\": \"Acme Retail\",\n      \"mark\": true\n    },\n    {\n      \"name\": \"Acme Energy\",\n      \"mark\": false\n    },\n    {\n      \"name\": \"Acme Legal\",\n      \"mark\": false\n    },\n    {\n      \"name\": \"Acme Studio\",\n      \"mark\": true\n    },\n    {\n      \"name\": \"Acme Robotics\",\n      \"mark\": false\n    },\n    {\n      \"name\": \"Acme Foods\",\n      \"mark\": false\n    }\n  ]\n}\nconst features = {\n  \"tag\": \"Product\",\n  \"title\": \"Everything retrieval needs, behind one key.\",\n  \"features\": [\n    {\n      \"title\": \"Search\",\n      \"body\": \"Ask in plain words and get the passages that answer, ranked, with where each came from.\"\n    },\n    {\n      \"title\": \"Sync\",\n      \"body\": \"Connect the apps your team uses. A changed record replaces the old one; a deleted one is deleted.\"\n    },\n    {\n      \"title\": \"Parse\",\n      \"body\": \"Read any file in full: every page, table, row and cell, scanned or typed.\"\n    },\n    {\n      \"title\": \"Embed\",\n      \"body\": \"Embeddings for any vector database, from the same models search runs on.\"\n    },\n    {\n      \"title\": \"Rerank\",\n      \"body\": \"Put the best passages first, in one call after the search you already run.\"\n    },\n    {\n      \"title\": \"Audit\",\n      \"body\": \"Every search, what it read and how long it took, kept for as long as you need.\"\n    }\n  ]\n}\nconst testimonial = {\n  \"quote\": \"Our support agent answers from every ticket and policy we have, and when it is not sure, it says where it looked.\",\n  \"role\": \"Head of support\",\n  \"company\": \"Acme\"\n}\nconst faq = [\n  {\n    \"q\": \"How do I get started?\",\n    \"a\": \"Book a demo. We set up your organization with you, and your team then creates API keys in the console.\"\n  },\n  {\n    \"q\": \"Is my data used to train models?\",\n    \"a\": \"No. Your content serves your organization alone.\"\n  },\n  {\n    \"q\": \"What happens when a record changes?\",\n    \"a\": \"A changed record replaces its old version. A deleted one is deleted.\"\n  },\n  {\n    \"q\": \"What do I have to run?\",\n    \"a\": \"Nothing. The servers, the index and the sync jobs are ours to run.\"\n  }\n]\nconst cta = {\n  \"title\": \"See it on your own data.\",\n  \"action\": {\n    \"label\": \"Book a demo\",\n    \"href\": \"#demo\"\n  }\n}\nexport default function Site() {\n  return (\n    <div className=\"-m-8\">\n      <HomePage\n        header={header}\n        footer={footer}\n        hero={hero}\n        logos={logos}\n        features={features}\n        testimonial={testimonial}\n        faq={faq}\n        cta={cta}\n        window={() => (\n        <VizWindow\n          active\n          className=\"text-left\"\n          title={(\n            <>\n              <span className=\"text-ui\">Acme</span>\n              <span className=\"bg-ds-neutral-200 px-1.5 py-0.5 text-caption text-ds-neutral-500\">Support agent</span>\n            </>\n          )}\n        >\n          <div className=\"flex flex-col gap-4 px-4 pt-1 pb-5 sm:px-7 sm:pb-6\">\n            <p className=\"ds-viz-in self-end bg-ds-neutral-200 px-3 py-2 text-body\" style={{ '--d': 200 } as CSSProperties}>How does a customer reset their key?</p>\n            <p className=\"ds-viz-in text-body text-ds-neutral-600\" style={{ '--d': 700 } as CSSProperties}>Settings, then API keys: revoke the old one and create a new one in its place.</p>\n            <p className=\"ds-viz-in flex items-center gap-2 text-meta text-ds-neutral-500\" style={{ '--d': 900 } as CSSProperties}>Source <span className=\"ds-viz-chip text-off-white\"><span className=\"ds-viz-dot bg-home-red\" />help-center.md</span></p>\n          </div>\n        </VizWindow>\n      )}\n        logo={<span className=\"font-heading text-heading-3 text-fg\">Acme</span>}\n        actions={() => (<><Button href=\"#contact\">Contact us</Button><PixelButton href=\"#sign-in\">Sign in</PixelButton></>)}\n      />\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "button",
+            "button-link",
+            "call-to-action",
+            "eval-viz",
+            "faq",
+            "feature-grid",
+            "hero",
+            "logo-strip",
+            "site-page",
+            "testimonial"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/site/home-page.ts",
+          "content": "import { nothing } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { define, tag } from '@/elements/lib/element'\nimport { SiteFrameElement, closing, type SiteAction } from '@/elements/components/site/site-page'\nimport type { Feature } from '@/elements/components/site/feature-grid'\nimport type { Logo } from '@/elements/components/site/logo-strip'\nimport '@/elements/components/site/button-link'\nimport '@/elements/components/site/faq'\nimport '@/elements/components/site/feature-grid'\nimport '@/elements/components/site/hero'\nimport '@/elements/components/site/logo-strip'\nimport '@/elements/components/site/testimonial'\nimport styles from 'virtual:tw'\n\n// HomePage.vue as <conare-home-page>: the website's home (pages/index.vue), in its order: the hero with the one dark\n// call to action and the window in the red frame (the `window` slot), who connects (logo-strip), what it does\n// (feature-grid), one customer's words (testimonial), the questions (faq) and the closing red band (call-to-action),\n// in the site's frame (site-page: `header`, `footer`, `announcement`, and the logo, actions and sheet-actions slots).\n\n/**\n * @summary The website's home: hero, logos, features, a quote, questions and the closing band.\n * @slot window - The window in the hero's red frame.\n * @slot logo - The logo in the header's home link.\n * @slot actions - The header's buttons.\n * @slot sheet-actions - The same buttons again, for the header's sheet on phones.\n */\nexport class HomePage extends SiteFrameElement {\n\tstatic styles = [SiteFrameElement.styles, styles]\n\tstatic properties = { hero: { type: Object }, logos: { type: Object }, features: { type: Object }, testimonial: { type: Object }, faq: { type: Array }, cta: { type: Object } }\n\n\thero: { eyebrow?: string, title: string, body?: string, action: SiteAction } = { title: '', action: { label: '', href: '' } }\n\tlogos: { title: string, tag?: string, logos: Logo[] } = { title: '', logos: [] }\n\tfeatures: { title: string, tag?: string, body?: string, features: Feature[] } = { title: '', features: [] }\n\ttestimonial: { quote: string, role: string, company: string } = { quote: '', role: '', company: '' }\n\tfaq: { q: string, a: string }[] = []\n\tcta = { title: '', action: { label: '', href: '' } }\n\n\trender() {\n\t\tconst [hero, button, logos, grid, quote, faq] = [tag('hero'), tag('button-link'), tag('logo-strip'), tag('feature-grid'), tag('testimonial'), tag('faq')]\n\t\tconst h = this.hero\n\t\tconst l = this.logos\n\t\tconst f = this.features\n\t\tconst t = this.testimonial\n\t\treturn this.frame('home-page', staticHtml`<${hero} eyebrow=${h.eyebrow ?? nothing} .heading=${h.title} body=${h.body ?? nothing}><${button} slot=\"action\" href=${h.action.href} grain pixels arrow>${h.action.label}</${button}><slot name=\"window\" slot=\"window\"></slot></${hero}><${logos} .heading=${l.title} .tag=${l.tag} .logos=${l.logos}></${logos}><${grid} .heading=${f.title} .tag=${f.tag} .body=${f.body} .features=${f.features}></${grid}><${quote} .quote=${t.quote} .jobTitle=${t.role} .company=${t.company}></${quote}><${faq} .items=${this.faq}></${faq}>${closing(this.cta)}`)\n\t}\n}\n\ndefine('home-page', HomePage)\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/home-page.js",
+        "elements/site-page.js",
+        "elements/feature-grid.js",
+        "elements/logo-strip.js",
+        "elements/button-link.js",
+        "elements/faq.js",
+        "elements/hero.js",
+        "elements/testimonial.js",
+        "elements/site-footer.js",
+        "elements/site-header.js",
+        "elements/product-menu.js",
+        "elements/announcement-bar.js",
+        "elements/call-to-action.js",
+        "elements/section-head.js",
+        "elements/site-tag.js",
+        "elements/highlight-text.js",
+        "elements/burst.js",
+        "elements/grain.js",
+        "elements/room-grid.js",
+        "elements/avatar.js",
+        "elements/roll-text.js",
+        "elements/cell-burst.js",
+        "elements/button.js",
+        "elements/pixel-button.js",
+        "elements/viz-window.js"
+      ],
+      "tag": "conare-home-page",
+      "tags": [
+        "conare-home-page"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "announcement-bar",
+        "avatar",
+        "burst",
+        "button-link",
+        "call-to-action",
+        "cell-burst",
+        "faq",
+        "feature-grid",
+        "hero",
+        "highlight-text",
+        "logo-strip",
+        "product-menu",
+        "roll-text",
+        "room-grid",
+        "section-head",
+        "site-footer",
+        "site-header",
+        "site-page",
+        "tag",
+        "testimonial"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-home-page",
+            "name": "HomePage",
+            "module": "elements/home-page.js",
+            "description": "The website's home: hero, logos, features, a quote, questions and the closing band.",
+            "attributes": [
+              {
+                "name": "hero",
+                "field": "hero",
+                "type": "{ eyebrow?: string; title: string; body?: string; action: SiteAction; }",
+                "default": "{ title: '', action: { label: '', href: '' } }"
+              },
+              {
+                "name": "logos",
+                "field": "logos",
+                "type": "{ title: string; tag?: string; logos: Logo[]; }",
+                "default": "{ title: '', logos: [] }"
+              },
+              {
+                "name": "features",
+                "field": "features",
+                "type": "{ title: string; tag?: string; body?: string; features: Feature[]; }",
+                "default": "{ title: '', features: [] }"
+              },
+              {
+                "name": "testimonial",
+                "field": "testimonial",
+                "type": "{ quote: string; role: string; company: string; }",
+                "default": "{ quote: '', role: '', company: '' }"
+              },
+              {
+                "name": "faq",
+                "field": "faq",
+                "type": "{ q: string; a: string; }[]",
+                "default": "[]"
+              },
+              {
+                "name": "cta",
+                "field": "cta",
+                "type": "{ title: string; action: { label: string; href: string; }; }",
+                "default": "{ title: '', action: { label: '', href: '' } }"
+              },
+              {
+                "name": "header",
+                "field": "header",
+                "type": "SiteHeaderData",
+                "default": "{ items: [], links: [] }",
+                "description": "The header: items, more, links, productCurrent, homeHref, homeLabel."
+              },
+              {
+                "name": "footer",
+                "field": "footer",
+                "type": "SiteFooterData",
+                "default": "{ columns: [] }",
+                "description": "The footer: columns, tagline, legal, legalLinks, name."
+              },
+              {
+                "name": "announcement",
+                "field": "announcement",
+                "type": "SiteAnnouncement | undefined",
+                "description": "The bar above the header: tag, text, cta, href."
+              }
+            ],
+            "properties": [
+              {
+                "name": "hero",
+                "type": "{ eyebrow?: string; title: string; body?: string; action: SiteAction; }",
+                "default": "{ title: '', action: { label: '', href: '' } }",
+                "attribute": "hero"
+              },
+              {
+                "name": "logos",
+                "type": "{ title: string; tag?: string; logos: Logo[]; }",
+                "default": "{ title: '', logos: [] }",
+                "attribute": "logos"
+              },
+              {
+                "name": "features",
+                "type": "{ title: string; tag?: string; body?: string; features: Feature[]; }",
+                "default": "{ title: '', features: [] }",
+                "attribute": "features"
+              },
+              {
+                "name": "testimonial",
+                "type": "{ quote: string; role: string; company: string; }",
+                "default": "{ quote: '', role: '', company: '' }",
+                "attribute": "testimonial"
+              },
+              {
+                "name": "faq",
+                "type": "{ q: string; a: string; }[]",
+                "default": "[]",
+                "attribute": "faq"
+              },
+              {
+                "name": "cta",
+                "type": "{ title: string; action: { label: string; href: string; }; }",
+                "default": "{ title: '', action: { label: '', href: '' } }",
+                "attribute": "cta"
+              },
+              {
+                "name": "header",
+                "type": "SiteHeaderData",
+                "default": "{ items: [], links: [] }",
+                "description": "The header: items, more, links, productCurrent, homeHref, homeLabel.",
+                "attribute": "header"
+              },
+              {
+                "name": "footer",
+                "type": "SiteFooterData",
+                "default": "{ columns: [] }",
+                "description": "The footer: columns, tagline, legal, legalLinks, name.",
+                "attribute": "footer"
+              },
+              {
+                "name": "announcement",
+                "type": "SiteAnnouncement | undefined",
+                "description": "The bar above the header: tag, text, cta, href.",
+                "attribute": "announcement"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "window",
+                "description": "The window in the hero's red frame."
+              },
+              {
+                "name": "logo",
+                "description": "The logo in the header's home link."
+              },
+              {
+                "name": "actions",
+                "description": "The header's buttons."
+              },
+              {
+                "name": "sheet-actions",
+                "description": "The same buttons again, for the header's sheet on phones."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "The home, on sample data",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/home-page/Site.html",
+          "content": "<!-- The home on sample data, in the site's frame; the hero's window is drawn on VizWindow. -->\n<div class=\"-m-8\">\n  <conare-home-page\n    header='{\"items\": [{\"label\": \"Search\", \"desc\": \"Find the answer in any file.\", \"href\": \"#search\"}, {\"label\": \"Sync\", \"desc\": \"Keep your apps in step.\", \"href\": \"#sync\"}, {\"label\": \"Parse\", \"desc\": \"Read every row and cell.\", \"href\": \"#parse\"}], \"links\": [{\"label\": \"Pricing\", \"href\": \"#pricing\"}, {\"label\": \"Blog\", \"href\": \"#blog\"}, {\"label\": \"Docs\", \"href\": \"#docs\"}], \"homeLabel\": \"Acme home\"}'\n    footer='{\"columns\": [{\"title\": \"Product\", \"links\": [{\"label\": \"Search\", \"href\": \"#search\"}, {\"label\": \"Sync\", \"href\": \"#sync\"}, {\"label\": \"Parse\", \"href\": \"#parse\"}]}, {\"title\": \"Company\", \"links\": [{\"label\": \"About\", \"href\": \"#about\"}, {\"label\": \"Blog\", \"href\": \"#blog\"}, {\"label\": \"Changelog\", \"href\": \"#changelog\"}, {\"label\": \"Contact\", \"href\": \"#contact\"}]}, {\"title\": \"Resources\", \"links\": [{\"label\": \"Docs\", \"href\": \"#docs\"}, {\"label\": \"Pricing\", \"href\": \"#pricing\"}, {\"label\": \"Status\", \"href\": \"#status\"}]}], \"tagline\": \"Search any data you bring. Get the right answer.\", \"legal\": \"© 2026 Acme, Inc.\", \"legalLinks\": [{\"label\": \"Privacy\", \"href\": \"#privacy\"}, {\"label\": \"Terms\", \"href\": \"#terms\"}], \"name\": \"Acme\"}'\n    hero='{\"eyebrow\": \"Search across 100M+ documents\", \"title\": \"Everything your agent needs to know\", \"body\": \"Acme finds the right answer in any data you bring, for your agents and the products you build on them.\", \"action\": {\"label\": \"Book a demo\", \"href\": \"#demo\"}}'\n    logos='{\"tag\": \"Customers\", \"title\": \"Teams at Acme companies search with it.\", \"logos\": [{\"name\": \"Acme\", \"mark\": true}, {\"name\": \"Acme Labs\", \"mark\": false}, {\"name\": \"Acme Cloud\", \"mark\": false}, {\"name\": \"Acme Health\", \"mark\": true}, {\"name\": \"Acme Freight\", \"mark\": false}, {\"name\": \"Acme Bank\", \"mark\": false}, {\"name\": \"Acme Retail\", \"mark\": true}, {\"name\": \"Acme Energy\", \"mark\": false}, {\"name\": \"Acme Legal\", \"mark\": false}, {\"name\": \"Acme Studio\", \"mark\": true}, {\"name\": \"Acme Robotics\", \"mark\": false}, {\"name\": \"Acme Foods\", \"mark\": false}]}'\n    features='{\"tag\": \"Product\", \"title\": \"Everything retrieval needs, behind one key.\", \"features\": [{\"title\": \"Search\", \"body\": \"Ask in plain words and get the passages that answer, ranked, with where each came from.\"}, {\"title\": \"Sync\", \"body\": \"Connect the apps your team uses. A changed record replaces the old one; a deleted one is deleted.\"}, {\"title\": \"Parse\", \"body\": \"Read any file in full: every page, table, row and cell, scanned or typed.\"}, {\"title\": \"Embed\", \"body\": \"Embeddings for any vector database, from the same models search runs on.\"}, {\"title\": \"Rerank\", \"body\": \"Put the best passages first, in one call after the search you already run.\"}, {\"title\": \"Audit\", \"body\": \"Every search, what it read and how long it took, kept for as long as you need.\"}]}'\n    testimonial='{\"quote\": \"Our support agent answers from every ticket and policy we have, and when it is not sure, it says where it looked.\", \"role\": \"Head of support\", \"company\": \"Acme\"}'\n    faq='[{\"q\": \"How do I get started?\", \"a\": \"Book a demo. We set up your organization with you, and your team then creates API keys in the console.\"}, {\"q\": \"Is my data used to train models?\", \"a\": \"No. Your content serves your organization alone.\"}, {\"q\": \"What happens when a record changes?\", \"a\": \"A changed record replaces its old version. A deleted one is deleted.\"}, {\"q\": \"What do I have to run?\", \"a\": \"Nothing. The servers, the index and the sync jobs are ours to run.\"}]'\n    cta='{\"title\": \"See it on your own data.\", \"action\": {\"label\": \"Book a demo\", \"href\": \"#demo\"}}'\n  >\n    <span slot=\"logo\" class=\"font-heading text-heading-3 text-fg\">Acme</span>\n    <conare-button slot=\"actions\" href=\"#contact\">Contact us</conare-button>\n    <conare-pixel-button slot=\"actions\" href=\"#sign-in\">Sign in</conare-pixel-button>\n    <conare-button slot=\"sheet-actions\" href=\"#contact\">Contact us</conare-button>\n    <conare-pixel-button slot=\"sheet-actions\" href=\"#sign-in\">Sign in</conare-pixel-button>\n    <conare-viz-window slot=\"window\" active class=\"text-left\">\n      <span slot=\"title\" class=\"contents\"><span class=\"text-ui\">Acme</span><span class=\"bg-ds-neutral-200 px-1.5 py-0.5 text-caption text-ds-neutral-500\">Support agent</span></span>\n      <div class=\"flex flex-col gap-4 px-4 pt-1 pb-5 sm:px-7 sm:pb-6\">\n        <p class=\"ds-viz-in self-end bg-ds-neutral-200 px-3 py-2 text-body\" style=\"--d: 200\">How does a customer reset their key?</p>\n        <p class=\"ds-viz-in text-body text-ds-neutral-600\" style=\"--d: 700\">Settings, then API keys: revoke the old one and create a new one in its place.</p>\n        <p class=\"ds-viz-in flex items-center gap-2 text-meta text-ds-neutral-500\" style=\"--d: 900\">Source <span class=\"ds-viz-chip text-off-white\"><span class=\"ds-viz-dot bg-home-red\"></span>help-center.md</span></p>\n      </div>\n    </conare-viz-window>\n  </conare-home-page>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

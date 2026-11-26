@@ -1,0 +1,348 @@
+{
+  "name": "sidebar",
+  "title": "Sidebar",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "The console's navigation: a label over each group, a row with its icon and count, a red edge on the page you are on, and a count that turns red when something failed.",
+  "use_for": "Moving between the console's pages. It stays open; on a phone the app shows it as a drawer over the page.",
+  "never": [
+    "Counts that never change",
+    "A second level of rows: a page's own sections go in Tabs"
+  ],
+  "source": "conare-web app/assets/css/console2.css (.v2-side, .v2-nav-label, .v2-nav-link, .v2-nav-status)",
+  "body": "The rows scroll under a fade (`fade-y`): an edge with more past it fades over 24px, so no row is ever cut off.",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Sidebar.vue",
+      "content": "<script setup lang=\"ts\">\n// The console's navigation (console2.css .v2-side): 216px of paper with a hairline at its edge. Put a SidebarLabel\n// over each group and a SidebarLink per page; `head` holds the workspace switcher (48px, over a hairline) and `foot`\n// the account menu. It stays open on wide screens; on a phone the app shows it as a drawer over the page.\ndefineProps<{ label?: string }>()\n</script>\n\n<template>\n  <nav data-ds=\"sidebar\" class=\"flex w-sidebar flex-col border-r border-edge bg-surface-subtle\" :aria-label=\"label ?? 'main'\">\n    <div v-if=\"$slots.head\" class=\"h-bar shrink-0 border-b border-edge\"><slot name=\"head\" /></div>\n    <div class=\"fade-y flex min-h-0 flex-1 flex-col overflow-y-auto pb-4\"><slot /></div>\n    <div v-if=\"$slots.foot\" class=\"shrink-0 border-t border-edge\"><slot name=\"foot\" /></div>\n  </nav>\n</template>\n"
+    },
+    {
+      "path": "components/ui/SidebarLabel.vue",
+      "content": "<template>\n  <!-- A group's name in the Sidebar (console2.css .v2-nav-label): 12px muted, 16px over it. -->\n  <p data-ds=\"sidebar-label\" class=\"px-3 pt-4 pb-1 text-meta text-fg-muted\"><slot /></p>\n</template>\n"
+    },
+    {
+      "path": "components/ui/SidebarLink.vue",
+      "content": "<script setup lang=\"ts\">\nimport type { Component } from 'vue'\n\n// One page in the Sidebar (console2.css .v2-nav-link): a 28px row (44px on phones) with its 14px icon, the label and\n// a count or health at the end. The page you are on sits on white in a hairline, in medium, with a 2px red edge at the\n// sidebar's side. `alert` turns the count red when something failed. `as` renders a router link component instead of an anchor.\nwithDefaults(defineProps<{ href?: string, active?: boolean, icon?: Component, status?: string, alert?: boolean, as?: string | Component }>(), { as: 'a' })\n</script>\n\n<template>\n  <component data-ds=\"sidebar-link\" :is=\"as\" :href=\"href\" class=\"ds-navlink\" :data-active=\"active || undefined\" :aria-current=\"active ? 'page' : undefined\">\n    <component :is=\"icon\" v-if=\"icon\" :size=\"14\" :stroke-width=\"1.5\" aria-hidden=\"true\" />\n    <span class=\"min-w-0 flex-1 truncate\"><slot /></span>\n    <span v-if=\"status\" class=\"text-meta tabular-nums\" :class=\"alert ? 'text-home-red-press' : 'text-fg-muted'\">{{ status }}</span>\n  </component>\n</template>\n\n<style>\n.ds-navlink { position: relative; display: flex; height: var(--ds-size-control-sm); flex-shrink: 0; align-items: center; gap: var(--ds-space-md); margin: 0 8px; padding: 0 8px; color: var(--ds-color-fg-soft); font-size: var(--ds-text-ui); transition: background-color var(--ds-duration-micro) var(--ds-easing-standard), color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-navlink svg { flex-shrink: 0; color: var(--ds-color-fg-muted); }\n@media (hover: hover) and (pointer: fine) { .ds-navlink:hover { background: color-mix(in srgb, var(--ds-color-edge) 50%, transparent); color: var(--ds-color-fg); } }\n.ds-navlink[data-active] { background: var(--ds-color-surface); color: var(--ds-color-fg); font-weight: var(--ds-font-weight-medium); outline: var(--ds-border-hairline) solid var(--ds-color-edge); outline-offset: -1px; }\n.ds-navlink[data-active]::before { position: absolute; top: 6px; bottom: 6px; left: -8px; width: 2px; background: var(--ds-color-edge-accent); content: \"\"; }\n.ds-navlink[data-active] svg { color: var(--ds-color-fg); }\n.ds-navlink:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }\n@media (pointer: coarse), (max-width: 767px) { .ds-navlink { height: 44px; font-size: var(--ds-text-body); } }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "The console's navigation",
+      "center": true,
+      "half": false,
+      "path": "examples/sidebar/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport { Activity, Atom, CreditCard, Gauge, House, KeyRound, Layers, Network, Settings, SquareTerminal } from 'lucide-vue-next'\nimport Sidebar from '@/components/ui/Sidebar.vue'\nimport SidebarLabel from '@/components/ui/SidebarLabel.vue'\nimport SidebarLink from '@/components/ui/SidebarLink.vue'\n// The console's navigation: a label over each group, a row with its icon and count, a red edge on the page you are on,\n// and the count turning red when something failed.\nconst groups = [\n  { label: 'Platform', links: [{ label: 'Overview', icon: House }, { label: 'Namespaces', icon: Layers, status: '11' }, { label: 'Sources', icon: Network, status: '1 failed', alert: true }, { label: 'Agents', icon: SquareTerminal }, { label: 'Custom models', icon: Atom }] },\n  { label: 'Manage', links: [{ label: 'API keys', icon: KeyRound, status: '4' }, { label: 'Performance', icon: Gauge }, { label: 'Usage', icon: Activity }, { label: 'Billing', icon: CreditCard }, { label: 'Settings', icon: Settings }] },\n]\nconst picked = ref('Namespaces')\n</script>\n\n<template>\n  <Sidebar label=\"console\" class=\"border border-edge\">\n    <template v-for=\"group in groups\" :key=\"group.label\">\n      <SidebarLabel>{{ group.label }}</SidebarLabel>\n      <SidebarLink v-for=\"link in group.links\" :key=\"link.label\" href=\"#\" :icon=\"link.icon\" :status=\"link.status\" :alert=\"link.alert\" :active=\"picked === link.label\" @click.prevent=\"picked = link.label\">{{ link.label }}</SidebarLink>\n    </template>\n  </Sidebar>\n</template>\n",
+      "requires": [],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Sidebar.tsx",
+          "content": "import type { HTMLAttributes, ReactNode } from 'react'\nimport { cn } from '@/react/lib/cn'\n\n// The console's navigation (console2.css .v2-side): 216px of paper with a hairline at its edge. Put a SidebarLabel\n// over each group and a SidebarLink per page; `head` holds the workspace switcher (48px, over a hairline) and `foot`\n// the account menu. It stays open on wide screens; on a phone the app shows it as a drawer over the page. Other\n// attributes (an id, data-*) land on the <nav>, as Vue's fall through.\nexport interface SidebarProps extends Omit<HTMLAttributes<HTMLElement>, 'children'> { label?: string, head?: ReactNode, foot?: ReactNode, className?: string, children?: ReactNode }\n\nexport function Sidebar({ label, head, foot, className, children, ...rest }: SidebarProps) {\n  return (\n    <nav data-ds=\"sidebar\" className={cn('flex w-sidebar flex-col border-r border-edge bg-surface-subtle', className)} aria-label={label ?? 'main'} {...rest}>\n      {head && <div className=\"h-bar shrink-0 border-b border-edge\">{head}</div>}\n      <div className=\"fade-y flex min-h-0 flex-1 flex-col overflow-y-auto pb-4\">{children}</div>\n      {foot && <div className=\"shrink-0 border-t border-edge\">{foot}</div>}\n    </nav>\n  )\n}\n\nexport default Sidebar\n"
+        },
+        {
+          "path": "react/components/ui/SidebarLabel.tsx",
+          "content": "import type { ReactNode } from 'react'\n\n// A group's name in the Sidebar (console2.css .v2-nav-label): 12px muted, 16px over it.\nexport function SidebarLabel({ children }: { children?: ReactNode }) {\n  return <p data-ds=\"sidebar-label\" className=\"px-3 pt-4 pb-1 text-meta text-fg-muted\">{children}</p>\n}\n\nexport default SidebarLabel\n"
+        },
+        {
+          "path": "react/components/ui/SidebarLink.tsx",
+          "content": "import type { AnchorHTMLAttributes, ComponentType, ElementType } from 'react'\nimport { cn } from '@/react/lib/cn'\n\n// One page in the Sidebar (console2.css .v2-nav-link): a 28px row (44px on phones) with its 14px icon, the label and\n// a count or health at the end. The page you are on sits on white in a hairline, in medium, with a 2px red edge at the\n// sidebar's side. `alert` turns the count red when something failed. `as` renders a router link component instead of\n// an anchor. Other props (onClick) land on the link.\nexport interface SidebarLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {\n  href?: string\n  active?: boolean\n  icon?: ComponentType<{ size?: number, strokeWidth?: number, 'aria-hidden'?: boolean | 'true' }>\n  status?: string\n  alert?: boolean\n  as?: ElementType\n}\n\nexport function SidebarLink({ href, active, icon: Icon, status, alert, as: Link = 'a', className, children, ...rest }: SidebarLinkProps) {\n  return (\n    <>\n      <style href=\"ds-sidebar-link\" precedence=\"ds\">{css}</style>\n      <Link data-ds=\"sidebar-link\" href={href} className={cn('ds-navlink', className)} data-active={active || undefined} aria-current={active ? 'page' : undefined} {...rest}>\n        {Icon && <Icon size={14} strokeWidth={1.5} aria-hidden=\"true\" />}\n        <span className=\"min-w-0 flex-1 truncate\">{children}</span>\n        {status && <span className={cn('text-meta tabular-nums', alert ? 'text-home-red-press' : 'text-fg-muted')}>{status}</span>}\n      </Link>\n    </>\n  )\n}\n\nexport default SidebarLink\n\nconst css = `\n.ds-navlink { position: relative; display: flex; height: var(--ds-size-control-sm); flex-shrink: 0; align-items: center; gap: var(--ds-space-md); margin: 0 8px; padding: 0 8px; color: var(--ds-color-fg-soft); font-size: var(--ds-text-ui); transition: background-color var(--ds-duration-micro) var(--ds-easing-standard), color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-navlink svg { flex-shrink: 0; color: var(--ds-color-fg-muted); }\n@media (hover: hover) and (pointer: fine) { .ds-navlink:hover { background: color-mix(in srgb, var(--ds-color-edge) 50%, transparent); color: var(--ds-color-fg); } }\n.ds-navlink[data-active] { background: var(--ds-color-surface); color: var(--ds-color-fg); font-weight: var(--ds-font-weight-medium); outline: var(--ds-border-hairline) solid var(--ds-color-edge); outline-offset: -1px; }\n.ds-navlink[data-active]::before { position: absolute; top: 6px; bottom: 6px; left: -8px; width: 2px; background: var(--ds-color-edge-accent); content: \"\"; }\n.ds-navlink[data-active] svg { color: var(--ds-color-fg); }\n.ds-navlink:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }\n@media (pointer: coarse), (max-width: 767px) { .ds-navlink { height: 44px; font-size: var(--ds-text-body); } }\n`\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "Sidebar",
+            "file": "react/components/ui/Sidebar.tsx",
+            "props": [
+              {
+                "name": "label",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "head",
+                "type": "ReactNode",
+                "required": false
+              },
+              {
+                "name": "foot",
+                "type": "ReactNode",
+                "required": false
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              }
+            ],
+            "extends": [
+              "Omit<HTMLAttributes<HTMLElement>, 'children'>"
+            ]
+          },
+          {
+            "name": "SidebarLabel",
+            "file": "react/components/ui/SidebarLabel.tsx",
+            "props": [
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "SidebarLink",
+            "file": "react/components/ui/SidebarLink.tsx",
+            "props": [
+              {
+                "name": "href",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "active",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "icon",
+                "type": "ComponentType<{ size?: number, strokeWidth?: number, 'aria-hidden'?: boolean | 'true' }>",
+                "required": false
+              },
+              {
+                "name": "status",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "alert",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "as",
+                "type": "ElementType",
+                "required": false
+              }
+            ],
+            "extends": [
+              "AnchorHTMLAttributes<HTMLAnchorElement>"
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "The console's navigation",
+          "center": true,
+          "half": false,
+          "path": "react/examples/sidebar/Product.tsx",
+          "content": "'use client'\nimport { Fragment, useState } from 'react'\nimport { Activity, Atom, CreditCard, Gauge, House, KeyRound, Layers, Network, Settings, SquareTerminal } from 'lucide-react'\nimport { Sidebar } from '@/react/components/ui/Sidebar'\nimport { SidebarLabel } from '@/react/components/ui/SidebarLabel'\nimport { SidebarLink } from '@/react/components/ui/SidebarLink'\n// The console's navigation: a label over each group, a row with its icon and count, a red edge on the page you are on,\n// and the count turning red when something failed.\nconst groups = [\n  { label: 'Platform', links: [{ label: 'Overview', icon: House }, { label: 'Namespaces', icon: Layers, status: '11' }, { label: 'Sources', icon: Network, status: '1 failed', alert: true }, { label: 'Agents', icon: SquareTerminal }, { label: 'Custom models', icon: Atom }] },\n  { label: 'Manage', links: [{ label: 'API keys', icon: KeyRound, status: '4' }, { label: 'Performance', icon: Gauge }, { label: 'Usage', icon: Activity }, { label: 'Billing', icon: CreditCard }, { label: 'Settings', icon: Settings }] },\n]\n\nexport default function Product() {\n  const [picked, setPicked] = useState('Namespaces')\n  return (\n    <Sidebar label=\"console\" className=\"border border-edge\">\n      {groups.map(group => (\n        <Fragment key={group.label}>\n          <SidebarLabel>{group.label}</SidebarLabel>\n          {group.links.map((link: { label: string, icon: typeof House, status?: string, alert?: boolean }) => (\n            <SidebarLink key={link.label} href=\"#\" icon={link.icon} status={link.status} alert={link.alert} active={picked === link.label} onClick={(e) => { e.preventDefault(); setPicked(link.label) }}>{link.label}</SidebarLink>\n          ))}\n        </Fragment>\n      ))}\n    </Sidebar>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/sidebar.ts",
+          "content": "import { html, nothing, type PropertyValues } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// Sidebar.vue as <conare-sidebar>: the console's navigation (console2.css .v2-side): 216px of paper with a hairline at\n// its edge. Put a <conare-sidebar-label> over each group and a <conare-sidebar-link> per page; the `head` slot holds\n// the workspace switcher (48px, over a hairline) and `foot` the account menu. It stays open on wide screens; on a\n// phone the app shows it as a drawer over the page. The host is the column (a navigation landmark named by `label`,\n// as Vue's <nav> is), so classes on it land on the column.\n\n/**\n * @summary The console's navigation column.\n * @slot - Labels and links.\n * @slot head - The workspace switcher.\n * @slot foot - The account menu.\n */\nexport class Sidebar extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { label: {} }\n\n\t/** The navigation's name for assistive tech (main by default). */\n\tlabel?: string\n\tprivate internals = this.attachInternals()\n\n\tconnectedCallback() {\n\t\tsuper.connectedCallback()\n\t\tthis.internals.role = 'navigation'\n\t}\n\tprotected willUpdate(changed: PropertyValues<this>) {\n\t\tif (changed.has('label') || !this.hasUpdated) this.internals.ariaLabel = this.label ?? 'main'\n\t}\n\n\trender() {\n\t\treturn html`${this.hasSlot('head') ? html`<div class=\"h-bar shrink-0 border-b border-edge\"><slot name=\"head\"></slot></div>` : nothing}<div class=\"fade-y flex min-h-0 flex-1 flex-col overflow-y-auto pb-4\"><slot></slot></div>${this.hasSlot('foot') ? html`<div class=\"shrink-0 border-t border-edge\"><slot name=\"foot\"></slot></div>` : nothing}`\n\t}\n}\n\ndefine('sidebar', Sidebar)\n"
+        },
+        {
+          "path": "elements/components/ui/sidebar.css",
+          "content": "/* The host is the column (Sidebar.vue's <nav>), so a class on <conare-sidebar> lands on it as a class on <Sidebar>\n   does. A page's own reset (Tailwind's preflight: * { border: 0 solid }) beats a host's normal styles, so the hairline\n   at its edge is important. */\n:host { @apply flex w-sidebar flex-col bg-surface-subtle; @apply border-r! border-edge!; }\n"
+        },
+        {
+          "path": "elements/components/ui/sidebar-label.ts",
+          "content": "import { html } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// SidebarLabel.vue as <conare-sidebar-label>: a group's name in the sidebar (console2.css .v2-nav-label): 12px muted,\n// 16px over it.\n\n/**\n * @summary A group's name in the sidebar.\n * @slot - The name.\n */\nexport class SidebarLabel extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\trender() {\n\t\treturn html`<p data-ds=\"sidebar-label\" class=\"px-3 pt-4 pb-1 text-meta text-fg-muted\"><slot></slot></p>`\n\t}\n}\n\ndefine('sidebar-label', SidebarLabel)\n"
+        },
+        {
+          "path": "elements/components/ui/sidebar-link.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// SidebarLink.vue as <conare-sidebar-link>: one page in the sidebar (console2.css .v2-nav-link): a 28px row (44px on\n// phones) with its 14px icon (an svg in the `icon` slot), the label and a count or health at the end. The page you are\n// on sits on white in a hairline, in medium, with a 2px red edge at the sidebar's side. `alert` turns the count red\n// when something failed.\n\n/**\n * @summary One page in the sidebar.\n * @slot - The label.\n * @slot icon - A 14px Lucide icon.\n */\nexport class SidebarLink extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { href: {}, active: { type: Boolean, reflect: true }, status: {}, alert: { type: Boolean } }\n\n\thref?: string\n\t/** The page you are on. */\n\tactive = false\n\t/** A count or health at the end. */\n\tstatus?: string\n\t/** The count in red: something failed. */\n\talert = false\n\n\trender() {\n\t\treturn html`<a data-ds=\"sidebar-link\" href=${ifDefined(this.href)} class=\"ds-navlink\" ?data-active=${this.active} aria-current=${ifDefined(this.active ? 'page' : undefined)}><slot name=\"icon\"></slot><span class=\"min-w-0 flex-1 truncate\"><slot></slot></span>${this.status ? html`<span class=${['text-meta tabular-nums', this.alert ? 'text-home-red-press' : 'text-fg-muted'].join(' ')}>${this.status}</span>` : nothing}</a>`\n\t}\n}\n\ndefine('sidebar-link', SidebarLink)\n"
+        },
+        {
+          "path": "elements/components/ui/sidebar-link.css",
+          "content": "/* SidebarLink.vue's <style>. The icon is slotted from the page, so its rules reach it through ::slotted. */\n.ds-navlink { position: relative; display: flex; height: var(--ds-size-control-sm); flex-shrink: 0; align-items: center; gap: var(--ds-space-md); margin: 0 8px; padding: 0 8px; color: var(--ds-color-fg-soft); font-size: var(--ds-text-ui); transition: background-color var(--ds-duration-micro) var(--ds-easing-standard), color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-navlink ::slotted(svg) { flex-shrink: 0; color: var(--ds-color-fg-muted); }\n@media (hover: hover) and (pointer: fine) { .ds-navlink:hover { background: color-mix(in srgb, var(--ds-color-edge) 50%, transparent); color: var(--ds-color-fg); } }\n.ds-navlink[data-active] { background: var(--ds-color-surface); color: var(--ds-color-fg); font-weight: var(--ds-font-weight-medium); outline: var(--ds-border-hairline) solid var(--ds-color-edge); outline-offset: -1px; }\n.ds-navlink[data-active]::before { position: absolute; top: 6px; bottom: 6px; left: -8px; width: 2px; background: var(--ds-color-edge-accent); content: \"\"; }\n.ds-navlink[data-active] ::slotted(svg) { color: var(--ds-color-fg); }\n.ds-navlink:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }\n@media (pointer: coarse), (max-width: 767px) { .ds-navlink { height: 44px; font-size: var(--ds-text-body); } }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/sidebar.js",
+        "elements/sidebar-label.js",
+        "elements/sidebar-link.js"
+      ],
+      "tag": "conare-sidebar",
+      "tags": [
+        "conare-sidebar",
+        "conare-sidebar-label",
+        "conare-sidebar-link"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-sidebar",
+            "name": "Sidebar",
+            "module": "elements/sidebar.js",
+            "description": "The console's navigation column.",
+            "attributes": [
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string | undefined",
+                "description": "The navigation's name for assistive tech (main by default)."
+              }
+            ],
+            "properties": [
+              {
+                "name": "label",
+                "type": "string | undefined",
+                "description": "The navigation's name for assistive tech (main by default).",
+                "attribute": "label"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "Labels and links."
+              },
+              {
+                "name": "head",
+                "description": "The workspace switcher."
+              },
+              {
+                "name": "foot",
+                "description": "The account menu."
+              }
+            ],
+            "methods": []
+          },
+          {
+            "tag": "conare-sidebar-label",
+            "name": "SidebarLabel",
+            "module": "elements/sidebar-label.js",
+            "description": "A group's name in the sidebar.",
+            "attributes": [],
+            "properties": [],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "The name."
+              }
+            ],
+            "methods": []
+          },
+          {
+            "tag": "conare-sidebar-link",
+            "name": "SidebarLink",
+            "module": "elements/sidebar-link.js",
+            "description": "One page in the sidebar.",
+            "attributes": [
+              {
+                "name": "href",
+                "field": "href",
+                "type": "string | undefined"
+              },
+              {
+                "name": "active",
+                "field": "active",
+                "type": "boolean",
+                "default": "false",
+                "description": "The page you are on."
+              },
+              {
+                "name": "status",
+                "field": "status",
+                "type": "string | undefined",
+                "description": "A count or health at the end."
+              },
+              {
+                "name": "alert",
+                "field": "alert",
+                "type": "boolean",
+                "default": "false",
+                "description": "The count in red: something failed."
+              }
+            ],
+            "properties": [
+              {
+                "name": "href",
+                "type": "string | undefined",
+                "attribute": "href"
+              },
+              {
+                "name": "active",
+                "type": "boolean",
+                "default": "false",
+                "description": "The page you are on.",
+                "attribute": "active"
+              },
+              {
+                "name": "status",
+                "type": "string | undefined",
+                "description": "A count or health at the end.",
+                "attribute": "status"
+              },
+              {
+                "name": "alert",
+                "type": "boolean",
+                "default": "false",
+                "description": "The count in red: something failed.",
+                "attribute": "alert"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "The label."
+              },
+              {
+                "name": "icon",
+                "description": "A 14px Lucide icon."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "The console's navigation",
+          "center": true,
+          "half": false,
+          "path": "elements/examples/sidebar/Product.html",
+          "content": "<!-- The console's navigation: a label over each group, a row with its icon and count, a red edge on the page you are\n     on, and the count turning red when something failed. -->\n<conare-sidebar label=\"console\" class=\"border border-edge\" id=\"console-nav\">\n  <conare-sidebar-label>Platform</conare-sidebar-label>\n  <conare-sidebar-link href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-house\" aria-hidden=\"true\" slot=\"icon\"><path d=\"M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8\"></path><path d=\"M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z\"></path></svg>Overview</conare-sidebar-link>\n  <conare-sidebar-link href=\"#\" status=\"11\" active><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-layers\" aria-hidden=\"true\" slot=\"icon\"><path d=\"M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z\"></path><path d=\"M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12\"></path><path d=\"M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17\"></path></svg>Namespaces</conare-sidebar-link>\n  <conare-sidebar-link href=\"#\" status=\"1 failed\" alert><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-network\" aria-hidden=\"true\" slot=\"icon\"><rect x=\"16\" y=\"16\" width=\"6\" height=\"6\" rx=\"1\"></rect><rect x=\"2\" y=\"16\" width=\"6\" height=\"6\" rx=\"1\"></rect><rect x=\"9\" y=\"2\" width=\"6\" height=\"6\" rx=\"1\"></rect><path d=\"M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3\"></path><path d=\"M12 12V8\"></path></svg>Sources</conare-sidebar-link>\n  <conare-sidebar-link href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-square-terminal\" aria-hidden=\"true\" slot=\"icon\"><path d=\"m7 11 2-2-2-2\"></path><path d=\"M11 13h4\"></path><rect width=\"18\" height=\"18\" x=\"3\" y=\"3\" rx=\"2\" ry=\"2\"></rect></svg>Agents</conare-sidebar-link>\n  <conare-sidebar-link href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-atom\" aria-hidden=\"true\" slot=\"icon\"><circle cx=\"12\" cy=\"12\" r=\"1\"></circle><path d=\"M20.2 20.2c2.04-2.03.02-7.36-4.5-11.9-4.54-4.52-9.87-6.54-11.9-4.5-2.04 2.03-.02 7.36 4.5 11.9 4.54 4.52 9.87 6.54 11.9 4.5Z\"></path><path d=\"M15.7 15.7c4.52-4.54 6.54-9.87 4.5-11.9-2.03-2.04-7.36-.02-11.9 4.5-4.52 4.54-6.54 9.87-4.5 11.9 2.03 2.04 7.36.02 11.9-4.5Z\"></path></svg>Custom models</conare-sidebar-link>\n  <conare-sidebar-label>Manage</conare-sidebar-label>\n  <conare-sidebar-link href=\"#\" status=\"4\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-key-round\" aria-hidden=\"true\" slot=\"icon\"><path d=\"M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z\"></path><circle cx=\"16.5\" cy=\"7.5\" r=\".5\" fill=\"currentColor\"></circle></svg>API keys</conare-sidebar-link>\n  <conare-sidebar-link href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-gauge\" aria-hidden=\"true\" slot=\"icon\"><path d=\"m12 14 4-4\"></path><path d=\"M3.34 19a10 10 0 1 1 17.32 0\"></path></svg>Performance</conare-sidebar-link>\n  <conare-sidebar-link href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-activity\" aria-hidden=\"true\" slot=\"icon\"><path d=\"M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2\"></path></svg>Usage</conare-sidebar-link>\n  <conare-sidebar-link href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-credit-card\" aria-hidden=\"true\" slot=\"icon\"><rect width=\"20\" height=\"14\" x=\"2\" y=\"5\" rx=\"2\"></rect><line x1=\"2\" x2=\"22\" y1=\"10\" y2=\"10\"></line></svg>Billing</conare-sidebar-link>\n  <conare-sidebar-link href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-settings\" aria-hidden=\"true\" slot=\"icon\"><path d=\"M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z\"></path><circle cx=\"12\" cy=\"12\" r=\"3\"></circle></svg>Settings</conare-sidebar-link>\n</conare-sidebar>\n<script type=\"module\">\n  // The row you pick becomes the page you are on.\n  const links = document.querySelectorAll('#console-nav conare-sidebar-link')\n  for (const link of links) {\n    link.addEventListener('click', (event) => {\n      event.preventDefault()\n      for (const other of links) other.active = other === link\n    })\n  }\n</script>\n"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "section-head",
+  "type": "registry:ui",
+  "title": "Section head",
+  "description": "How the website heads a page or a band: the red tag in the site's capitals, the line in Faculty Glyphic on 1.15 lines, one muted line and the one action under it. Centred, or started at the left beside its content.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://conare-ds-registry.vercel.app/r/react/tag.json"
+  ],
+  "files": [
+    {
+      "path": "components/site/SectionHead.tsx",
+      "type": "registry:ui",
+      "content": "import type { ReactNode } from 'react'\nimport { SiteTag } from '@/components/ui/SiteTag'\n\n// How the website heads a page or a band (pricing.vue's head, Tag.vue, the blog and the bands of the home): the red tag\n// in the site's capitals, then the line in Faculty Glyphic, 24px (32px from 640px) on 1.15 lines, balanced; under it\n// one muted line and the one action (`action`), each 16px and 32px down. Centred by default; `align=\"start\"` starts\n// it at the left, for a head beside its content. `as=\"h1\"` for the page's own head, h2 for a band.\nexport interface SectionHeadProps {\n  title: string\n  tag?: string\n  body?: string\n  as?: 'h1' | 'h2'\n  align?: 'center' | 'start'\n  titleId?: string\n  /** The one action (Vue's `action` slot): a button-link. */\n  action?: ReactNode\n}\n\nexport function SectionHead({ title, tag, body, as: Heading = 'h2', align = 'center', titleId, action }: SectionHeadProps) {\n  return (\n    <>\n      <style href=\"ds-section-head\" precedence=\"ds\">{css}</style>\n      <div data-ds=\"section-head\" className={align === 'center' ? 'flex flex-col items-center text-center' : 'flex flex-col items-start text-left'}>\n        {tag && <p className=\"mb-4 flex\"><SiteTag>{tag}</SiteTag></p>}\n        <Heading id={titleId} className=\"ds-section-title max-w-[640px] font-heading text-heading-2 font-normal tracking-tight text-fg sm:text-heading-1\">{title}</Heading>\n        {body && <p className=\"mt-4 max-w-[560px] text-input text-fg-muted\">{body}</p>}\n        {action && <div className=\"mt-8\">{action}</div>}\n      </div>\n    </>\n  )\n}\n\nexport default SectionHead\n\nconst css = `\n.ds-section-title { line-height: 1.15; text-wrap: balance; }\n`\n"
+    }
+  ]
+}

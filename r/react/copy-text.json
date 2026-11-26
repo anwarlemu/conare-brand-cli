@@ -1,0 +1,28 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "copy-text",
+  "type": "registry:ui",
+  "title": "Copy text",
+  "description": "An identifier or an endpoint as typed, in mono, with a quiet button that copies it and shows a check.",
+  "dependencies": [
+    "lucide-react@0.479.0"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "components/ui/CopyText.tsx",
+      "type": "registry:ui",
+      "content": "'use client'\nimport { Check, Copy } from 'lucide-react'\nimport { useCopy } from '@/hooks/useCopy'\nimport { cn } from '@/lib/cn'\n\n// An identifier or an endpoint as typed, with a button that copies it (CopyText.vue): the value in 12px Geist Mono,\n// cut with an ellipsis when it runs out of room (the whole value in its title), and a 20px quiet button whose glyph turns\n// to a check for 1.5s. The button is round, as the console draws it, and grows a 44px place to land on phones. One value\n// per copy text; never a secret after it was first shown.\nexport interface CopyTextProps {\n  value: string\n  label: string\n  className?: string\n}\n\nexport function CopyText({ value, label, className }: CopyTextProps) {\n  const { copied, copy } = useCopy()\n  return (\n    <span data-ds=\"copy-text\" className={cn('inline-flex max-w-full min-w-0 items-center gap-1', className)}>\n      <code className=\"truncate font-code text-meta leading-5\" title={value}>{value}</code>\n      <button\n        type=\"button\"\n        className=\"relative inline-flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-fg-muted transition-colors duration-150 hover:bg-surface-sunken hover:text-fg pointer-coarse:after:absolute pointer-coarse:after:-inset-3 pointer-coarse:after:content-[''] max-md:after:absolute max-md:after:-inset-3 max-md:after:content-['']\"\n        aria-label={copied ? `${label} copied` : `copy ${label}`}\n        onClick={(e) => { e.stopPropagation(); void copy(value) }}\n      >\n        {copied ? <Check size={12} strokeWidth={1.5} aria-hidden=\"true\" /> : <Copy size={12} strokeWidth={1.5} aria-hidden=\"true\" />}\n      </button>\n    </span>\n  )\n}\n\nexport default CopyText\n"
+    },
+    {
+      "path": "hooks/useCopy.ts",
+      "type": "registry:hook",
+      "content": "'use client'\nimport { useCallback, useEffect, useRef, useState } from 'react'\n\n/**\n * A copy button's state: copy(text) writes the clipboard, and copied is true for 1.5s after. Where the Clipboard API is\n * refused (a browser or a frame that denies it), the older copy command still works inside the click. Only if both are\n * refused does it answer false, and the text stays selectable.\n */\nexport function useCopy(ms = 1500) {\n  const [copied, setCopied] = useState(false)\n  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)\n  useEffect(() => () => clearTimeout(timer.current), [])\n  const copy = useCallback(async (text: string): Promise<boolean> => {\n    try {\n      await navigator.clipboard.writeText(text)\n    }\n    catch {\n      if (!copyByCommand(text)) return false\n    }\n    setCopied(true)\n    clearTimeout(timer.current)\n    // ds-latency: the Copied label stays 1.5s after the copy, which has already happened.\n    timer.current = setTimeout(() => setCopied(false), ms)\n    return true\n  }, [ms])\n  return { copied, copy }\n}\n\n// The older way: select the text in an unseen field, run the copy command, hand focus back.\nfunction copyByCommand(text: string) {\n  const back = document.activeElement as HTMLElement | null\n  const field = document.createElement('textarea')\n  field.value = text\n  field.setAttribute('readonly', '')\n  field.style.position = 'fixed'\n  field.style.opacity = '0'\n  document.body.appendChild(field)\n  field.select()\n  let ok = false\n  try { ok = document.execCommand('copy') }\n  catch { ok = false }\n  field.remove()\n  back?.focus()\n  return ok\n}\n"
+    },
+    {
+      "path": "lib/cn.ts",
+      "type": "registry:lib",
+      "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+    }
+  ]
+}

@@ -1,0 +1,339 @@
+{
+  "name": "contact-page",
+  "title": "Contact page",
+  "type": "registry:block",
+  "group": "site",
+  "description": "Contact: the head, the ways to reach the team on the left, the form on the right in the double rule with its one dark button. It calls nothing: it emits submit, and shows what happens next once the app says it is sent.",
+  "use_for": "A website's contact page.",
+  "never": [
+    "Calling the API from the component: it emits submit",
+    "More than four fields"
+  ],
+  "source": "No contact page in conare-web; set from its request-access page (app/pages/request-access.vue: the fields, the dark send button, what happens next) and the website's double rule",
+  "body": "Built on `site-page`: `header`, `footer` and `announcement` are its props, and the `logo` and `actions` slots go to the header (`sheet-actions` too, in web components). Wire `submit` (the answers: name, email, company, message) to your own endpoint, set `sending` while it runs and `sent` when it is done, or `error` with the server's words.",
+  "requires": [
+    "button",
+    "field",
+    "section-head",
+    "site-page",
+    "textarea"
+  ],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/site/ContactPage.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport SectionHead from '@/components/site/SectionHead.vue'\nimport SitePage, { type SiteAnnouncement, type SiteFooterData, type SiteHeaderData } from '@/components/site/SitePage.vue'\nimport Button from '@/components/ui/Button.vue'\nimport Field from '@/components/ui/Field.vue'\nimport Input from '@/components/ui/Input.vue'\nimport PixelButton from '@/components/ui/PixelButton.vue'\nimport Textarea from '@/components/ui/Textarea.vue'\n\n// Contact: the head, then the ways to reach the team on the left (each a label over its address, between hairlines)\n// and the form on the right in the double rule (name, work email, company, message; the browser asks for the empty\n// ones), its one dark button at the foot. It calls nothing: `submit` carries the answers, and `sent` (the app's)\n// swaps the form for what happens next; `edit` asks for the form back. A failure from the server shows above the button.\nexport type ContactAnswers = { name: string, email: string, company: string, message: string }\ndefineProps<{\n  header: SiteHeaderData, footer: SiteFooterData, announcement?: SiteAnnouncement\n  head: { tag?: string, title: string, body?: string }\n  channels: { label: string, value: string, href: string }[]\n  sent?: boolean\n  sending?: boolean\n  error?: string\n}>()\nconst emit = defineEmits<{ submit: [answers: ContactAnswers], edit: [] }>()\nconst answers = ref<ContactAnswers>({ name: '', email: '', company: '', message: '' })\nconst link = 'underline decoration-edge-strong underline-offset-4 transition-[text-decoration-color] duration-200 ease-standard hover:decoration-fg'\n</script>\n\n<template>\n  <SitePage data-ds=\"contact-page\" :header=\"header\" :footer=\"footer\" :announcement=\"announcement\">\n      <template #logo><slot name=\"logo\" /></template>\n      <template #actions=\"{ place }\"><slot name=\"actions\" :place=\"place\" /></template>\n    <section aria-labelledby=\"contact-page-title\" class=\"mx-auto max-w-[1440px] px-4 pt-14 pb-32 sm:px-6 lg:px-10 lg:pt-20 lg:pb-40\">\n      <SectionHead as=\"h1\" title-id=\"contact-page-title\" :tag=\"head.tag\" :title=\"head.title\" :body=\"head.body\" />\n      <div class=\"mx-auto mt-14 grid max-w-[1008px] grid-cols-[minmax(0,1fr)] gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] lg:gap-16\">\n        <dl class=\"flex flex-col self-start border-t border-edge\">\n          <div v-for=\"c in channels\" :key=\"c.label\" class=\"flex flex-col gap-1 border-b border-edge py-5\">\n            <dt class=\"type-meta text-fg-muted\">{{ c.label }}</dt>\n            <dd class=\"type-body-lg text-fg\"><a :href=\"c.href\" :class=\"link\">{{ c.value }}</a></dd>\n          </div>\n        </dl>\n        <div class=\"border border-edge p-5 outline outline-offset-4 outline-edge sm:p-6\">\n          <div v-if=\"sent\" role=\"status\" class=\"type-ui\">\n            <h2 class=\"type-heading-4\">We have your message.</h2>\n            <p class=\"mt-2 text-fg-muted\">We reply by email, usually within a working day.</p>\n            <Button class=\"mt-6\" @click=\"emit('edit')\">Send another</Button>\n          </div>\n          <form v-else class=\"flex flex-col gap-5\" aria-label=\"Contact\" @submit.prevent=\"emit('submit', { ...answers })\">\n            <div class=\"grid gap-5 sm:grid-cols-2\">\n              <Field v-slot=\"{ id }\" label=\"Name\">\n                <Input :id=\"id\" v-model=\"answers.name\" autocomplete=\"name\" maxlength=\"200\" required />\n              </Field>\n              <Field v-slot=\"{ id }\" label=\"Work email\">\n                <Input :id=\"id\" v-model=\"answers.email\" type=\"email\" autocomplete=\"email\" maxlength=\"200\" required />\n              </Field>\n            </div>\n            <Field v-slot=\"{ id }\" label=\"Company\">\n              <Input :id=\"id\" v-model=\"answers.company\" autocomplete=\"organization\" maxlength=\"200\" />\n            </Field>\n            <Field v-slot=\"{ id }\" label=\"Message\">\n              <Textarea :id=\"id\" v-model=\"answers.message\" :rows=\"5\" maxlength=\"4000\" placeholder=\"What you want to build, and what you need from us.\" required />\n            </Field>\n            <p v-if=\"error\" class=\"bg-surface-danger px-3 py-2 type-ui\" role=\"alert\">{{ error }}</p>\n            <div><PixelButton type=\"submit\" :disabled=\"sending\">{{ sending ? 'Sending' : 'Send message' }}</PixelButton></div>\n          </form>\n        </div>\n      </div>\n    </section>\n  </SitePage>\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "Contact, on sample data",
+      "center": false,
+      "half": false,
+      "path": "examples/contact-page/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport ContactPage from '@/components/site/ContactPage.vue'\nimport Button from '@/components/ui/Button.vue'\nimport PixelButton from '@/components/ui/PixelButton.vue'\n// Contact on sample data: send the form to see what happens next.\nconst header = {\n  \"items\": [\n    {\n      \"label\": \"Search\",\n      \"desc\": \"Find the answer in any file.\",\n      \"href\": \"#search\"\n    },\n    {\n      \"label\": \"Sync\",\n      \"desc\": \"Keep your apps in step.\",\n      \"href\": \"#sync\"\n    },\n    {\n      \"label\": \"Parse\",\n      \"desc\": \"Read every row and cell.\",\n      \"href\": \"#parse\"\n    }\n  ],\n  \"links\": [\n    {\n      \"label\": \"Pricing\",\n      \"href\": \"#pricing\"\n    },\n    {\n      \"label\": \"Blog\",\n      \"href\": \"#blog\"\n    },\n    {\n      \"label\": \"Docs\",\n      \"href\": \"#docs\"\n    }\n  ],\n  \"homeLabel\": \"Acme home\"\n}\nconst footer = {\n  \"columns\": [\n    {\n      \"title\": \"Product\",\n      \"links\": [\n        {\n          \"label\": \"Search\",\n          \"href\": \"#search\"\n        },\n        {\n          \"label\": \"Sync\",\n          \"href\": \"#sync\"\n        },\n        {\n          \"label\": \"Parse\",\n          \"href\": \"#parse\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Company\",\n      \"links\": [\n        {\n          \"label\": \"About\",\n          \"href\": \"#about\"\n        },\n        {\n          \"label\": \"Blog\",\n          \"href\": \"#blog\"\n        },\n        {\n          \"label\": \"Changelog\",\n          \"href\": \"#changelog\"\n        },\n        {\n          \"label\": \"Contact\",\n          \"href\": \"#contact\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Resources\",\n      \"links\": [\n        {\n          \"label\": \"Docs\",\n          \"href\": \"#docs\"\n        },\n        {\n          \"label\": \"Pricing\",\n          \"href\": \"#pricing\"\n        },\n        {\n          \"label\": \"Status\",\n          \"href\": \"#status\"\n        }\n      ]\n    }\n  ],\n  \"tagline\": \"Search any data you bring. Get the right answer.\",\n  \"legal\": \"© 2026 Acme, Inc.\",\n  \"legalLinks\": [\n    {\n      \"label\": \"Privacy\",\n      \"href\": \"#privacy\"\n    },\n    {\n      \"label\": \"Terms\",\n      \"href\": \"#terms\"\n    }\n  ],\n  \"name\": \"Acme\"\n}\nconst head = {\n  \"tag\": \"Contact\",\n  \"title\": \"Talk to the team.\",\n  \"body\": \"Tell us what you want to build. We reply by email.\"\n}\nconst channels = [\n  {\n    \"label\": \"Sales\",\n    \"value\": \"sales@acme.com\",\n    \"href\": \"mailto:sales@acme.com\"\n  },\n  {\n    \"label\": \"Support\",\n    \"value\": \"support@acme.com\",\n    \"href\": \"mailto:support@acme.com\"\n  },\n  {\n    \"label\": \"Security\",\n    \"value\": \"security@acme.com\",\n    \"href\": \"mailto:security@acme.com\"\n  }\n]\nconst sent = ref(false)\n</script>\n\n<template>\n  <div class=\"-m-8\">\n    <ContactPage\n      :header=\"header\"\n      :footer=\"footer\"\n      :head=\"head\"\n      :channels=\"channels\"\n      :sent=\"sent\"\n      @submit=\"sent = true\"\n      @edit=\"sent = false\"\n    >\n      <template #logo><span class=\"font-heading text-heading-3 text-fg\">Acme</span></template>\n      <template #actions><Button href=\"#contact\">Contact us</Button><PixelButton href=\"#sign-in\">Sign in</PixelButton></template>\n    </ContactPage>\n  </div>\n</template>\n",
+      "requires": [
+        "button",
+        "field",
+        "section-head",
+        "site-page",
+        "textarea"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/site/ContactPage.tsx",
+          "content": "'use client'\nimport { useState } from 'react'\nimport { SectionHead } from '@/react/components/site/SectionHead'\nimport { SitePage, type SiteFrameProps } from '@/react/components/site/SitePage'\nimport { Button } from '@/react/components/ui/Button'\nimport { Field } from '@/react/components/ui/Field'\nimport { Input } from '@/react/components/ui/Input'\nimport { PixelButton } from '@/react/components/ui/PixelButton'\nimport { Textarea } from '@/react/components/ui/Textarea'\n\n// Contact: the head, then the ways to reach the team on the left (each a label over its address, between hairlines)\n// and the form on the right in the double rule (name, work email, company, message; the browser asks for the empty\n// ones), its one dark button at the foot. It calls nothing: `onSubmit` carries the answers, and `sent` (the app's)\n// swaps the form for what happens next; `onEdit` asks for the form back. A failure from the server shows above the button.\nexport type ContactAnswers = { name: string, email: string, company: string, message: string }\nexport interface ContactPageProps extends SiteFrameProps {\n  head: { tag?: string, title: string, body?: string }\n  channels: { label: string, value: string, href: string }[]\n  sent?: boolean\n  sending?: boolean\n  error?: string\n  onSubmit?: (answers: ContactAnswers) => void\n  onEdit?: () => void\n}\n\nconst link = 'underline decoration-edge-strong underline-offset-4 transition-[text-decoration-color] duration-200 ease-standard hover:decoration-fg'\n\nexport function ContactPage({ header, footer, announcement, logo, actions, head, channels, sent, sending, error, onSubmit, onEdit }: ContactPageProps) {\n  const [answers, setAnswers] = useState<ContactAnswers>({ name: '', email: '', company: '', message: '' })\n  const set = (key: keyof ContactAnswers) => (event: { target: { value: string } }) => setAnswers(a => ({ ...a, [key]: event.target.value }))\n  return (\n    <SitePage data-ds=\"contact-page\" header={header} footer={footer} announcement={announcement} logo={logo} actions={actions}>\n      <section aria-labelledby=\"contact-page-title\" className=\"mx-auto max-w-[1440px] px-4 pt-14 pb-32 sm:px-6 lg:px-10 lg:pt-20 lg:pb-40\">\n        <SectionHead as=\"h1\" titleId=\"contact-page-title\" tag={head.tag} title={head.title} body={head.body} />\n        <div className=\"mx-auto mt-14 grid max-w-[1008px] grid-cols-[minmax(0,1fr)] gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] lg:gap-16\">\n          <dl className=\"flex flex-col self-start border-t border-edge\">\n            {channels.map(c => (\n              <div key={c.label} className=\"flex flex-col gap-1 border-b border-edge py-5\">\n                <dt className=\"type-meta text-fg-muted\">{c.label}</dt>\n                <dd className=\"type-body-lg text-fg\"><a href={c.href} className={link}>{c.value}</a></dd>\n              </div>\n            ))}\n          </dl>\n          <div className=\"border border-edge p-5 outline outline-offset-4 outline-edge sm:p-6\">\n            {sent\n              ? (\n                  <div role=\"status\" className=\"type-ui\">\n                    <h2 className=\"type-heading-4\">We have your message.</h2>\n                    <p className=\"mt-2 text-fg-muted\">We reply by email, usually within a working day.</p>\n                    <Button className=\"mt-6\" onClick={() => onEdit?.()}>Send another</Button>\n                  </div>\n                )\n              : (\n                  <form className=\"flex flex-col gap-5\" aria-label=\"Contact\" onSubmit={(e) => { e.preventDefault(); onSubmit?.({ ...answers }) }}>\n                    <div className=\"grid gap-5 sm:grid-cols-2\">\n                      <Field label=\"Name\">\n                        {({ id }) => <Input id={id} value={answers.name} onChange={set('name')} autoComplete=\"name\" maxLength={200} required />}\n                      </Field>\n                      <Field label=\"Work email\">\n                        {({ id }) => <Input id={id} value={answers.email} onChange={set('email')} type=\"email\" autoComplete=\"email\" maxLength={200} required />}\n                      </Field>\n                    </div>\n                    <Field label=\"Company\">\n                      {({ id }) => <Input id={id} value={answers.company} onChange={set('company')} autoComplete=\"organization\" maxLength={200} />}\n                    </Field>\n                    <Field label=\"Message\">\n                      {({ id }) => <Textarea id={id} value={answers.message} onChange={set('message')} rows={5} maxLength={4000} placeholder=\"What you want to build, and what you need from us.\" required />}\n                    </Field>\n                    {error && <p className=\"bg-surface-danger px-3 py-2 type-ui\" role=\"alert\">{error}</p>}\n                    <div><PixelButton type=\"submit\" disabled={sending}>{sending ? 'Sending' : 'Send message'}</PixelButton></div>\n                  </form>\n                )}\n          </div>\n        </div>\n      </section>\n    </SitePage>\n  )\n}\n\nexport default ContactPage\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "button",
+        "field",
+        "section-head",
+        "site-page",
+        "textarea"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "ContactPage",
+            "file": "react/components/site/ContactPage.tsx",
+            "props": [
+              {
+                "name": "head",
+                "type": "{ tag?: string, title: string, body?: string }",
+                "required": true
+              },
+              {
+                "name": "channels",
+                "type": "{ label: string, value: string, href: string }[]",
+                "required": true
+              },
+              {
+                "name": "sent",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "sending",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "error",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "onSubmit",
+                "type": "(answers: ContactAnswers) => void",
+                "required": false
+              },
+              {
+                "name": "onEdit",
+                "type": "() => void",
+                "required": false
+              }
+            ],
+            "extends": [
+              "SiteFrameProps"
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "Contact, on sample data",
+          "center": false,
+          "half": false,
+          "path": "react/examples/contact-page/Site.tsx",
+          "content": "'use client'\nimport { useState } from 'react'\nimport { ContactPage } from '@/react/components/site/ContactPage'\nimport { Button } from '@/react/components/ui/Button'\nimport { PixelButton } from '@/react/components/ui/PixelButton'\n// Contact on sample data: send the form to see what happens next.\nconst header = {\n  \"items\": [\n    {\n      \"label\": \"Search\",\n      \"desc\": \"Find the answer in any file.\",\n      \"href\": \"#search\"\n    },\n    {\n      \"label\": \"Sync\",\n      \"desc\": \"Keep your apps in step.\",\n      \"href\": \"#sync\"\n    },\n    {\n      \"label\": \"Parse\",\n      \"desc\": \"Read every row and cell.\",\n      \"href\": \"#parse\"\n    }\n  ],\n  \"links\": [\n    {\n      \"label\": \"Pricing\",\n      \"href\": \"#pricing\"\n    },\n    {\n      \"label\": \"Blog\",\n      \"href\": \"#blog\"\n    },\n    {\n      \"label\": \"Docs\",\n      \"href\": \"#docs\"\n    }\n  ],\n  \"homeLabel\": \"Acme home\"\n}\nconst footer = {\n  \"columns\": [\n    {\n      \"title\": \"Product\",\n      \"links\": [\n        {\n          \"label\": \"Search\",\n          \"href\": \"#search\"\n        },\n        {\n          \"label\": \"Sync\",\n          \"href\": \"#sync\"\n        },\n        {\n          \"label\": \"Parse\",\n          \"href\": \"#parse\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Company\",\n      \"links\": [\n        {\n          \"label\": \"About\",\n          \"href\": \"#about\"\n        },\n        {\n          \"label\": \"Blog\",\n          \"href\": \"#blog\"\n        },\n        {\n          \"label\": \"Changelog\",\n          \"href\": \"#changelog\"\n        },\n        {\n          \"label\": \"Contact\",\n          \"href\": \"#contact\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Resources\",\n      \"links\": [\n        {\n          \"label\": \"Docs\",\n          \"href\": \"#docs\"\n        },\n        {\n          \"label\": \"Pricing\",\n          \"href\": \"#pricing\"\n        },\n        {\n          \"label\": \"Status\",\n          \"href\": \"#status\"\n        }\n      ]\n    }\n  ],\n  \"tagline\": \"Search any data you bring. Get the right answer.\",\n  \"legal\": \"© 2026 Acme, Inc.\",\n  \"legalLinks\": [\n    {\n      \"label\": \"Privacy\",\n      \"href\": \"#privacy\"\n    },\n    {\n      \"label\": \"Terms\",\n      \"href\": \"#terms\"\n    }\n  ],\n  \"name\": \"Acme\"\n}\nconst head = {\n  \"tag\": \"Contact\",\n  \"title\": \"Talk to the team.\",\n  \"body\": \"Tell us what you want to build. We reply by email.\"\n}\nconst channels = [\n  {\n    \"label\": \"Sales\",\n    \"value\": \"sales@acme.com\",\n    \"href\": \"mailto:sales@acme.com\"\n  },\n  {\n    \"label\": \"Support\",\n    \"value\": \"support@acme.com\",\n    \"href\": \"mailto:support@acme.com\"\n  },\n  {\n    \"label\": \"Security\",\n    \"value\": \"security@acme.com\",\n    \"href\": \"mailto:security@acme.com\"\n  }\n]\nexport default function Site() {\n  const [sent, setSent] = useState(false)\n  return (\n    <div className=\"-m-8\">\n      <ContactPage\n        header={header}\n        footer={footer}\n        head={head}\n        channels={channels}\n        sent={sent}\n        onSubmit={() => setSent(true)}\n        onEdit={() => setSent(false)}\n        logo={<span className=\"font-heading text-heading-3 text-fg\">Acme</span>}\n        actions={() => (<><Button href=\"#contact\">Contact us</Button><PixelButton href=\"#sign-in\">Sign in</PixelButton></>)}\n      />\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "button",
+            "field",
+            "section-head",
+            "site-page",
+            "textarea"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/site/contact-page.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { define, tag } from '@/elements/lib/element'\nimport { SiteFrameElement } from '@/elements/components/site/site-page'\nimport '@/elements/components/site/section-head'\nimport '@/elements/components/ui/button'\nimport '@/elements/components/ui/field'\nimport '@/elements/components/ui/input'\nimport '@/elements/components/ui/pixel-button'\nimport '@/elements/components/ui/textarea'\nimport styles from 'virtual:tw'\n\n// ContactPage.vue as <conare-contact-page>: the head, then the ways to reach the team on the left (each a label over\n// its address, between hairlines) and the form on the right in the double rule (name, work email, company, message;\n// the browser asks for the empty ones), its one dark button at the foot. It calls nothing: `submit` carries the answers\n// (detail), and `sent` (the app's) swaps the form for what happens next; `edit` asks for the form back. A failure from\n// the server (`error`) shows above the button. In the site's frame (site-page).\nexport type ContactAnswers = { name: string, email: string, company: string, message: string }\nconst link = 'underline decoration-edge-strong underline-offset-4 transition-[text-decoration-color] duration-200 ease-standard hover:decoration-fg'\n\n/**\n * @summary Contact: the ways to reach the team and the form.\n * @fires submit - The form was sent; detail is the answers (name, email, company, message).\n * @fires edit - Send another was pressed.\n * @slot logo - The logo in the header's home link.\n * @slot actions - The header's buttons.\n * @slot sheet-actions - The same buttons again, for the header's sheet on phones.\n */\nexport class ContactPage extends SiteFrameElement {\n\tstatic styles = [SiteFrameElement.styles, styles]\n\tstatic properties = { head: { type: Object }, channels: { type: Array }, sent: { type: Boolean }, sending: { type: Boolean }, error: {}, answers: { state: true } }\n\n\thead: { tag?: string, title: string, body?: string } = { title: '' }\n\tchannels: { label: string, value: string, href: string }[] = []\n\t/** The app has the message: what happens next shows in place of the form. */\n\tsent = false\n\t/** The send is running. */\n\tsending = false\n\t/** The server's answer to a send, shown above the button. */\n\terror?: string\n\tprivate answers: ContactAnswers = { name: '', email: '', company: '', message: '' }\n\n\tprivate set(key: keyof ContactAnswers) {\n\t\treturn (event: Event) => {\n\t\t\tthis.answers = { ...this.answers, [key]: (event.target as HTMLElement & { value: string }).value }\n\t\t}\n\t}\n\tprivate onSubmit(event: SubmitEvent) {\n\t\tevent.preventDefault()\n\t\tthis.emit('submit', { ...this.answers })\n\t}\n\n\trender() {\n\t\tconst [sectionHead, button, pixel, field, input, textarea] = [tag('section-head'), tag('button'), tag('pixel-button'), tag('field'), tag('input'), tag('textarea')]\n\t\tconst h = this.head\n\t\tconst a = this.answers\n\t\treturn this.frame('contact-page', staticHtml`<section aria-labelledby=\"contact-page-title\" class=\"mx-auto max-w-[1440px] px-4 pt-14 pb-32 sm:px-6 lg:px-10 lg:pt-20 lg:pb-40\"><${sectionHead} as=\"h1\" title-id=\"contact-page-title\" .tag=${h.tag} .heading=${h.title} .body=${h.body}></${sectionHead}><div class=\"mx-auto mt-14 grid max-w-[1008px] grid-cols-[minmax(0,1fr)] gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] lg:gap-16\"><dl class=\"flex flex-col self-start border-t border-edge\">${this.channels.map((c) => html`<div class=\"flex flex-col gap-1 border-b border-edge py-5\"><dt class=\"type-meta text-fg-muted\">${c.label}</dt><dd class=\"type-body-lg text-fg\"><a href=${c.href} class=${link}>${c.value}</a></dd></div>`)}</dl><div class=\"border border-edge p-5 outline outline-offset-4 outline-edge sm:p-6\">${this.sent\n\t\t\t? staticHtml`<div role=\"status\" class=\"type-ui\"><h2 class=\"type-heading-4\">We have your message.</h2><p class=\"mt-2 text-fg-muted\">We reply by email, usually within a working day.</p><${button} class=\"mt-6\" @click=${() => this.emit('edit')}>Send another</${button}></div>`\n\t\t\t: staticHtml`<form class=\"flex flex-col gap-5\" aria-label=\"Contact\" @submit=${this.onSubmit}><div class=\"grid gap-5 sm:grid-cols-2\"><${field} label=\"Name\"><${input} .value=${a.name} name=\"name\" autocomplete=\"name\" maxlength=\"200\" required @input=${this.set('name')}></${input}></${field}><${field} label=\"Work email\"><${input} .value=${a.email} name=\"email\" type=\"email\" autocomplete=\"email\" maxlength=\"200\" required @input=${this.set('email')}></${input}></${field}></div><${field} label=\"Company\"><${input} .value=${a.company} name=\"company\" autocomplete=\"organization\" maxlength=\"200\" @input=${this.set('company')}></${input}></${field}><${field} label=\"Message\"><${textarea} .value=${a.message} name=\"message\" rows=\"5\" maxlength=\"4000\" placeholder=\"What you want to build, and what you need from us.\" required @input=${this.set('message')}></${textarea}></${field}>${this.error ? html`<p class=\"bg-surface-danger px-3 py-2 type-ui\" role=\"alert\">${this.error}</p>` : nothing}<div><${pixel} type=\"submit\" ?disabled=${this.sending}>${this.sending ? 'Sending' : 'Send message'}</${pixel}></div></form>`}</div></div></section>`)\n\t}\n}\n\ndefine('contact-page', ContactPage)\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/contact-page.js",
+        "elements/site-page.js",
+        "elements/section-head.js",
+        "elements/button.js",
+        "elements/field.js",
+        "elements/input.js",
+        "elements/pixel-button.js",
+        "elements/textarea.js",
+        "elements/site-footer.js",
+        "elements/site-header.js",
+        "elements/product-menu.js",
+        "elements/announcement-bar.js",
+        "elements/button-link.js",
+        "elements/call-to-action.js",
+        "elements/site-tag.js",
+        "elements/grain.js",
+        "elements/roll-text.js",
+        "elements/cell-burst.js"
+      ],
+      "tag": "conare-contact-page",
+      "tags": [
+        "conare-contact-page"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "announcement-bar",
+        "button",
+        "button-link",
+        "call-to-action",
+        "cell-burst",
+        "field",
+        "product-menu",
+        "roll-text",
+        "section-head",
+        "site-footer",
+        "site-header",
+        "site-page",
+        "tag",
+        "textarea"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-contact-page",
+            "name": "ContactPage",
+            "module": "elements/contact-page.js",
+            "description": "Contact: the ways to reach the team and the form.",
+            "attributes": [
+              {
+                "name": "head",
+                "field": "head",
+                "type": "{ tag?: string; title: string; body?: string; }",
+                "default": "{ title: '' }"
+              },
+              {
+                "name": "channels",
+                "field": "channels",
+                "type": "{ label: string; value: string; href: string; }[]",
+                "default": "[]"
+              },
+              {
+                "name": "sent",
+                "field": "sent",
+                "type": "boolean",
+                "default": "false",
+                "description": "The app has the message: what happens next shows in place of the form."
+              },
+              {
+                "name": "sending",
+                "field": "sending",
+                "type": "boolean",
+                "default": "false",
+                "description": "The send is running."
+              },
+              {
+                "name": "error",
+                "field": "error",
+                "type": "string | undefined",
+                "description": "The server's answer to a send, shown above the button."
+              },
+              {
+                "name": "answers",
+                "field": "answers",
+                "type": "ContactAnswers",
+                "default": "{ name: '', email: '', company: '', message: '' }"
+              },
+              {
+                "name": "header",
+                "field": "header",
+                "type": "SiteHeaderData",
+                "default": "{ items: [], links: [] }",
+                "description": "The header: items, more, links, productCurrent, homeHref, homeLabel."
+              },
+              {
+                "name": "footer",
+                "field": "footer",
+                "type": "SiteFooterData",
+                "default": "{ columns: [] }",
+                "description": "The footer: columns, tagline, legal, legalLinks, name."
+              },
+              {
+                "name": "announcement",
+                "field": "announcement",
+                "type": "SiteAnnouncement | undefined",
+                "description": "The bar above the header: tag, text, cta, href."
+              }
+            ],
+            "properties": [
+              {
+                "name": "head",
+                "type": "{ tag?: string; title: string; body?: string; }",
+                "default": "{ title: '' }",
+                "attribute": "head"
+              },
+              {
+                "name": "channels",
+                "type": "{ label: string; value: string; href: string; }[]",
+                "default": "[]",
+                "attribute": "channels"
+              },
+              {
+                "name": "sent",
+                "type": "boolean",
+                "default": "false",
+                "description": "The app has the message: what happens next shows in place of the form.",
+                "attribute": "sent"
+              },
+              {
+                "name": "sending",
+                "type": "boolean",
+                "default": "false",
+                "description": "The send is running.",
+                "attribute": "sending"
+              },
+              {
+                "name": "error",
+                "type": "string | undefined",
+                "description": "The server's answer to a send, shown above the button.",
+                "attribute": "error"
+              },
+              {
+                "name": "header",
+                "type": "SiteHeaderData",
+                "default": "{ items: [], links: [] }",
+                "description": "The header: items, more, links, productCurrent, homeHref, homeLabel.",
+                "attribute": "header"
+              },
+              {
+                "name": "footer",
+                "type": "SiteFooterData",
+                "default": "{ columns: [] }",
+                "description": "The footer: columns, tagline, legal, legalLinks, name.",
+                "attribute": "footer"
+              },
+              {
+                "name": "announcement",
+                "type": "SiteAnnouncement | undefined",
+                "description": "The bar above the header: tag, text, cta, href.",
+                "attribute": "announcement"
+              }
+            ],
+            "events": [
+              {
+                "name": "submit",
+                "description": "The form was sent; detail is the answers (name, email, company, message)."
+              },
+              {
+                "name": "edit",
+                "description": "Send another was pressed."
+              }
+            ],
+            "slots": [
+              {
+                "name": "logo",
+                "description": "The logo in the header's home link."
+              },
+              {
+                "name": "actions",
+                "description": "The header's buttons."
+              },
+              {
+                "name": "sheet-actions",
+                "description": "The same buttons again, for the header's sheet on phones."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "Contact, on sample data",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/contact-page/Site.html",
+          "content": "<!-- Contact on sample data: send the form to see what happens next. -->\n<div class=\"-m-8\">\n  <conare-contact-page\n    id=\"contact\"\n    header='{\"items\": [{\"label\": \"Search\", \"desc\": \"Find the answer in any file.\", \"href\": \"#search\"}, {\"label\": \"Sync\", \"desc\": \"Keep your apps in step.\", \"href\": \"#sync\"}, {\"label\": \"Parse\", \"desc\": \"Read every row and cell.\", \"href\": \"#parse\"}], \"links\": [{\"label\": \"Pricing\", \"href\": \"#pricing\"}, {\"label\": \"Blog\", \"href\": \"#blog\"}, {\"label\": \"Docs\", \"href\": \"#docs\"}], \"homeLabel\": \"Acme home\"}'\n    footer='{\"columns\": [{\"title\": \"Product\", \"links\": [{\"label\": \"Search\", \"href\": \"#search\"}, {\"label\": \"Sync\", \"href\": \"#sync\"}, {\"label\": \"Parse\", \"href\": \"#parse\"}]}, {\"title\": \"Company\", \"links\": [{\"label\": \"About\", \"href\": \"#about\"}, {\"label\": \"Blog\", \"href\": \"#blog\"}, {\"label\": \"Changelog\", \"href\": \"#changelog\"}, {\"label\": \"Contact\", \"href\": \"#contact\"}]}, {\"title\": \"Resources\", \"links\": [{\"label\": \"Docs\", \"href\": \"#docs\"}, {\"label\": \"Pricing\", \"href\": \"#pricing\"}, {\"label\": \"Status\", \"href\": \"#status\"}]}], \"tagline\": \"Search any data you bring. Get the right answer.\", \"legal\": \"© 2026 Acme, Inc.\", \"legalLinks\": [{\"label\": \"Privacy\", \"href\": \"#privacy\"}, {\"label\": \"Terms\", \"href\": \"#terms\"}], \"name\": \"Acme\"}'\n    head='{\"tag\": \"Contact\", \"title\": \"Talk to the team.\", \"body\": \"Tell us what you want to build. We reply by email.\"}'\n    channels='[{\"label\": \"Sales\", \"value\": \"sales@acme.com\", \"href\": \"mailto:sales@acme.com\"}, {\"label\": \"Support\", \"value\": \"support@acme.com\", \"href\": \"mailto:support@acme.com\"}, {\"label\": \"Security\", \"value\": \"security@acme.com\", \"href\": \"mailto:security@acme.com\"}]'\n  >\n    <span slot=\"logo\" class=\"font-heading text-heading-3 text-fg\">Acme</span>\n    <conare-button slot=\"actions\" href=\"#contact\">Contact us</conare-button>\n    <conare-pixel-button slot=\"actions\" href=\"#sign-in\">Sign in</conare-pixel-button>\n    <conare-button slot=\"sheet-actions\" href=\"#contact\">Contact us</conare-button>\n    <conare-pixel-button slot=\"sheet-actions\" href=\"#sign-in\">Sign in</conare-pixel-button>\n  </conare-contact-page>\n</div>\n<script type=\"module\">\n  await customElements.whenDefined('conare-contact-page')\n  const page = document.getElementById('contact')\n  page.addEventListener('submit', () => { page.sent = true })\n  page.addEventListener('edit', () => { page.sent = false })\n</script>\n"
+        }
+      ]
+    }
+  }
+}

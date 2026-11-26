@@ -1,0 +1,360 @@
+{
+  "name": "accordion",
+  "title": "Accordion",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "Rows that open in place, in Conare's style: hairlines between them, a 12px chevron that turns as one opens, the answer opening over 260ms and closing in 180ms with its words settling down a beat after. One open at a time unless multiple.",
+  "use_for": "Details most readers skip: limits, retention, a setup checklist. The website's questions use FAQ.",
+  "never": [
+    "A whole page's content behind rows",
+    "A row that opens on hover",
+    "Nesting one accordion in another"
+  ],
+  "source": "conare-web app/assets/css/console2.css (.v2-collapse), app/assets/css/main.css (.c-details), app/components/home/Faq.vue (the phone accordion)",
+  "body": "",
+  "requires": [],
+  "dependencies": [
+    "lucide-vue-next@^0.479.0"
+  ],
+  "files": [
+    {
+      "path": "components/ui/Accordion.vue",
+      "content": "<script setup lang=\"ts\">\nimport { provide, type Ref } from 'vue'\nimport { accordionKey } from '@/composables/useAccordion'\n\n// A stack of disclosures, built in Conare's style from the console's disclosure (.v2-collapse, .c-details) and the\n// website's FAQ: hairlines between rows, a 12px muted chevron that turns as a row opens, the row's height opening from\n// 0fr to 1fr over 260ms and closing in 180ms on the strong ease-out, its words fading down into place a beat after.\n// One open at a time by default (a second press closes it); `multiple` lets several stay open. v-model is the open\n// item's value (or the list of them with `multiple`). Compose with AccordionItem.\nconst props = defineProps<{ multiple?: boolean }>()\nconst model = defineModel<string | string[] | null>({ default: null })\n\nconst list = (m: Ref<string | string[] | null>) => (Array.isArray(m.value) ? m.value : m.value ? [m.value] : [])\nprovide(accordionKey, {\n  isOpen: v => list(model).includes(v),\n  toggle: (v) => {\n    const open = list(model)\n    if (props.multiple) model.value = open.includes(v) ? open.filter(x => x !== v) : [...open, v]\n    else model.value = open.includes(v) ? null : v\n  },\n})\n</script>\n\n<template>\n  <div data-ds=\"accordion\" class=\"ds-accordion border-t border-edge\"><slot /></div>\n</template>\n"
+    },
+    {
+      "path": "components/ui/AccordionItem.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed, inject, useId } from 'vue'\nimport { ChevronDown } from 'lucide-vue-next'\nimport { accordionKey } from '@/composables/useAccordion'\n\n// One row of an Accordion: the question as a full-width button (40px, 13px soft text that turns ink under the pointer\n// and while open) over a hairline, and the answer under it. The closed answer is inert, so its links leave the tab\n// order. `title` or the `title` slot names the row; the default slot is the answer.\nconst props = defineProps<{ value: string, title?: string, disabled?: boolean }>()\nconst ctx = inject(accordionKey)\nconst open = computed(() => ctx?.isOpen(props.value) ?? false)\nconst id = useId()\n</script>\n\n<template>\n  <div data-ds=\"accordion-item\" class=\"border-b border-edge\" :data-open=\"open\">\n    <h3>\n      <button\n        :id=\"`${id}-head`\"\n        type=\"button\"\n        :aria-expanded=\"open\"\n        :aria-controls=\"`${id}-body`\"\n        :disabled=\"disabled\"\n        class=\"flex min-h-row w-full cursor-pointer items-center justify-between gap-3 py-2 text-left type-ui text-fg-soft transition-colors duration-120 ease-standard hover:text-fg aria-expanded:text-fg disabled:cursor-default disabled:text-fg-muted\"\n        @click=\"ctx?.toggle(value)\"\n      >\n        <slot name=\"title\">{{ title }}</slot>\n        <ChevronDown :size=\"12\" :stroke-width=\"1.5\" aria-hidden=\"true\" class=\"shrink-0 text-fg-muted transition-[rotate] duration-200 ease-standard motion-reduce:transition-none\" :class=\"open && 'rotate-180'\" />\n      </button>\n    </h3>\n    <div :id=\"`${id}-body`\" role=\"region\" :aria-labelledby=\"`${id}-head`\" :inert=\"!open\" class=\"ds-collapse\" :data-open=\"open\">\n      <div><div class=\"ds-collapse-body pb-3 type-ui text-fg-soft\"><slot /></div></div>\n    </div>\n  </div>\n</template>\n\n<style>\n/* The console's disclosure (console2.css .v2-collapse): open over 260ms, close in 180ms, the words fading and\n   settling 6px down with a 2px blur that clears, so the text never pops. Reduced motion: no height or move, opacity only. */\n.ds-collapse { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--ds-duration-slide) var(--ds-easing-out); }\n.ds-collapse[data-open=\"true\"] { grid-template-rows: 1fr; transition-duration: var(--ds-duration-collapse); }\n.ds-collapse > div { min-height: 0; overflow: hidden; }\n.ds-collapse-body { opacity: 0; filter: blur(2px); transform: translateY(-6px); transition: opacity var(--ds-duration-micro) ease, filter var(--ds-duration-micro) ease, transform var(--ds-duration-slide) var(--ds-easing-out); }\n.ds-collapse[data-open=\"true\"] .ds-collapse-body { opacity: 1; filter: none; transform: none; transition: opacity var(--ds-duration-settle) ease 40ms, filter var(--ds-duration-settle) ease 40ms, transform var(--ds-duration-collapse) var(--ds-easing-out) 40ms; }\n@media (prefers-reduced-motion: reduce) {\n  .ds-collapse, .ds-collapse[data-open=\"true\"] { transition: none; }\n  .ds-collapse-body, .ds-collapse[data-open=\"true\"] .ds-collapse-body { filter: none; transform: none; transition: opacity var(--ds-duration-micro) ease; }\n}\n</style>\n"
+    },
+    {
+      "path": "composables/useAccordion.ts",
+      "content": "import type { InjectionKey } from 'vue'\n\n// What an Accordion gives its items: whether a value is open, and the press that opens or closes it.\nexport type AccordionContext = { isOpen: (v: string) => boolean, toggle: (v: string) => void }\nexport const accordionKey: InjectionKey<AccordionContext> = Symbol('accordion')\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "In the product",
+      "center": false,
+      "half": false,
+      "path": "examples/accordion/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport Accordion from '@/components/ui/Accordion.vue'\nimport AccordionItem from '@/components/ui/AccordionItem.vue'\n// Details most readers skip, one press away: one open at a time, a second press closes it.\nconst open = ref<string | string[] | null>('retention')\n</script>\n\n<template>\n  <div class=\"max-w-[560px]\">\n    <Accordion v-model=\"open\">\n      <AccordionItem value=\"retention\" title=\"How long are deleted documents kept?\">Deleted documents leave search at once and are removed from storage within 30 days.</AccordionItem>\n      <AccordionItem value=\"limits\" title=\"What are the limits on a namespace?\">A namespace holds up to 50 million documents. Ask for more and we raise it.</AccordionItem>\n      <AccordionItem value=\"regions\" title=\"Which regions can a namespace live in?\">The United States by default; the EU region on request, set when the namespace is created.</AccordionItem>\n    </Accordion>\n  </div>\n</template>\n",
+      "requires": [],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    },
+    {
+      "name": "Multiple",
+      "label": "Several open",
+      "center": false,
+      "half": false,
+      "path": "examples/accordion/Multiple.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport Accordion from '@/components/ui/Accordion.vue'\nimport AccordionItem from '@/components/ui/AccordionItem.vue'\n// Several open at once, for a checklist the person works down.\nconst open = ref<string | string[] | null>(['keys'])\n</script>\n\n<template>\n  <div class=\"max-w-[560px]\">\n    <Accordion v-model=\"open\" multiple>\n      <AccordionItem value=\"keys\" title=\"Create an API key\">Settings, then API keys. Copy it once: it is not shown again.</AccordionItem>\n      <AccordionItem value=\"source\" title=\"Connect a source\">Pick an app and sign in. Its documents start syncing into a namespace.</AccordionItem>\n      <AccordionItem value=\"search\" title=\"Run a search\">Ask a question in plain words. The best match comes first, with its source.</AccordionItem>\n    </Accordion>\n  </div>\n</template>\n",
+      "requires": [],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Accordion.tsx",
+          "content": "'use client'\nimport type { ReactNode } from 'react'\nimport { AccordionContext } from '@/react/hooks/useAccordion'\nimport { useControllable } from '@/react/hooks/useControllable'\nimport { cn } from '@/react/lib/cn'\n\n// A stack of disclosures, built in Conare's style from the console's disclosure (.v2-collapse, .c-details) and the\n// website's FAQ: hairlines between rows, a 12px muted chevron that turns as a row opens, the row's height opening from\n// 0fr to 1fr over 260ms and closing in 180ms on the strong ease-out, its words fading down into place a beat after.\n// One open at a time by default (a second press closes it); `multiple` lets several stay open. Vue's v-model is\n// `value` with `onValueChange` (or `defaultValue` alone): the open item's value (or the list of them with `multiple`).\n// Compose with AccordionItem.\nexport type AccordionValue = string | string[] | null\nexport interface AccordionProps {\n  multiple?: boolean\n  value?: AccordionValue\n  defaultValue?: AccordionValue\n  onValueChange?: (value: AccordionValue) => void\n  className?: string\n  children?: ReactNode\n}\n\nexport function Accordion({ multiple, value, defaultValue = null, onValueChange, className, children }: AccordionProps) {\n  const [model, setModel] = useControllable<AccordionValue>(value, defaultValue, onValueChange)\n  const list = Array.isArray(model) ? model : model ? [model] : []\n  const ctx = {\n    isOpen: (v: string) => list.includes(v),\n    toggle: (v: string) => {\n      if (multiple) setModel(list.includes(v) ? list.filter(x => x !== v) : [...list, v])\n      else setModel(list.includes(v) ? null : v)\n    },\n  }\n  return (\n    <AccordionContext.Provider value={ctx}>\n      <div data-ds=\"accordion\" className={cn('ds-accordion border-t border-edge', className)}>{children}</div>\n    </AccordionContext.Provider>\n  )\n}\n\nexport default Accordion\n"
+        },
+        {
+          "path": "react/components/ui/AccordionItem.tsx",
+          "content": "'use client'\nimport { useId, type ReactNode } from 'react'\nimport { ChevronDown } from 'lucide-react'\nimport { useAccordion } from '@/react/hooks/useAccordion'\nimport { cn } from '@/react/lib/cn'\n\n// One row of an Accordion: the question as a full-width button (40px, 13px soft text that turns ink under the pointer\n// and while open) over a hairline, and the answer under it. The closed answer is inert, so its links leave the tab\n// order. `title` names the row (a string, or a node for Vue's `title` slot); children are the answer.\nexport interface AccordionItemProps { value: string, title?: ReactNode, disabled?: boolean, children?: ReactNode }\n\nexport function AccordionItem({ value, title, disabled, children }: AccordionItemProps) {\n  const ctx = useAccordion()\n  const open = ctx?.isOpen(value) ?? false\n  const id = useId()\n  return (\n    <>\n      <style href=\"ds-accordion-item\" precedence=\"ds\">{css}</style>\n      <div data-ds=\"accordion-item\" className=\"border-b border-edge\" data-open={open}>\n        <h3>\n          <button\n            id={`${id}-head`}\n            type=\"button\"\n            aria-expanded={open}\n            aria-controls={`${id}-body`}\n            disabled={disabled}\n            className=\"flex min-h-row w-full cursor-pointer items-center justify-between gap-3 py-2 text-left type-ui text-fg-soft transition-colors duration-120 ease-standard hover:text-fg aria-expanded:text-fg disabled:cursor-default disabled:text-fg-muted\"\n            onClick={() => ctx?.toggle(value)}\n          >\n            {title}\n            <ChevronDown size={12} strokeWidth={1.5} aria-hidden=\"true\" className={cn('shrink-0 text-fg-muted transition-[rotate] duration-200 ease-standard motion-reduce:transition-none', open && 'rotate-180')} />\n          </button>\n        </h3>\n        <div id={`${id}-body`} role=\"region\" aria-labelledby={`${id}-head`} inert={!open} className=\"ds-collapse\" data-open={open}>\n          <div><div className=\"ds-collapse-body pb-3 type-ui text-fg-soft\">{children}</div></div>\n        </div>\n      </div>\n    </>\n  )\n}\n\nexport default AccordionItem\n\nconst css = `\n/* The console's disclosure (console2.css .v2-collapse): open over 260ms, close in 180ms, the words fading and\n   settling 6px down with a 2px blur that clears, so the text never pops. Reduced motion: no height or move, opacity only. */\n.ds-collapse { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--ds-duration-slide) var(--ds-easing-out); }\n.ds-collapse[data-open=\"true\"] { grid-template-rows: 1fr; transition-duration: var(--ds-duration-collapse); }\n.ds-collapse > div { min-height: 0; overflow: hidden; }\n.ds-collapse-body { opacity: 0; filter: blur(2px); transform: translateY(-6px); transition: opacity var(--ds-duration-micro) ease, filter var(--ds-duration-micro) ease, transform var(--ds-duration-slide) var(--ds-easing-out); }\n.ds-collapse[data-open=\"true\"] .ds-collapse-body { opacity: 1; filter: none; transform: none; transition: opacity var(--ds-duration-settle) ease 40ms, filter var(--ds-duration-settle) ease 40ms, transform var(--ds-duration-collapse) var(--ds-easing-out) 40ms; }\n@media (prefers-reduced-motion: reduce) {\n  .ds-collapse, .ds-collapse[data-open=\"true\"] { transition: none; }\n  .ds-collapse-body, .ds-collapse[data-open=\"true\"] .ds-collapse-body { filter: none; transform: none; transition: opacity var(--ds-duration-micro) ease; }\n}\n`\n"
+        },
+        {
+          "path": "react/hooks/useAccordion.ts",
+          "content": "'use client'\nimport { createContext, useContext } from 'react'\n\n// What an Accordion gives its items: whether a value is open, and the press that opens or closes it.\nexport type AccordionContextValue = { isOpen: (v: string) => boolean, toggle: (v: string) => void }\nexport const AccordionContext = createContext<AccordionContextValue | null>(null)\n\n/** The Accordion around an item, or null outside one. */\nexport function useAccordion() {\n  return useContext(AccordionContext)\n}\n"
+        },
+        {
+          "path": "react/hooks/useControllable.ts",
+          "content": "'use client'\nimport { useCallback, useRef, useState } from 'react'\n\n// Vue's defineModel in React: a value that is controlled when the caller passes it (value + onValueChange, as Radix\n// does) and kept inside otherwise (defaultValue). setValue calls onChange either way.\nexport function useControllable<T>(value: T | undefined, defaultValue: T, onChange?: (value: T) => void) {\n\tconst [inner, setInner] = useState<T>(defaultValue)\n\tconst controlled = value !== undefined\n\tconst current = controlled ? value : inner\n\tconst ref = useRef(onChange)\n\tref.current = onChange\n\tconst set = useCallback((next: T) => {\n\t\tif (!controlled) setInner(next)\n\t\tref.current?.(next)\n\t}, [controlled])\n\treturn [current, set] as const\n}\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [
+        "lucide-react@0.479.0"
+      ],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "Accordion",
+            "file": "react/components/ui/Accordion.tsx",
+            "props": [
+              {
+                "name": "multiple",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "value",
+                "type": "AccordionValue",
+                "required": false
+              },
+              {
+                "name": "defaultValue",
+                "type": "AccordionValue",
+                "required": false,
+                "default": "null"
+              },
+              {
+                "name": "onValueChange",
+                "type": "(value: AccordionValue) => void",
+                "required": false
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "AccordionItem",
+            "file": "react/components/ui/AccordionItem.tsx",
+            "props": [
+              {
+                "name": "value",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "title",
+                "type": "ReactNode",
+                "required": false
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "react/examples/accordion/Product.tsx",
+          "content": "'use client'\nimport { useState } from 'react'\nimport { Accordion, type AccordionValue } from '@/react/components/ui/Accordion'\nimport { AccordionItem } from '@/react/components/ui/AccordionItem'\n// Details most readers skip, one press away: one open at a time, a second press closes it.\n\nexport default function Product() {\n  const [open, setOpen] = useState<AccordionValue>('retention')\n  return (\n    <div className=\"max-w-[560px]\">\n      <Accordion value={open} onValueChange={setOpen}>\n        <AccordionItem value=\"retention\" title=\"How long are deleted documents kept?\">Deleted documents leave search at once and are removed from storage within 30 days.</AccordionItem>\n        <AccordionItem value=\"limits\" title=\"What are the limits on a namespace?\">A namespace holds up to 50 million documents. Ask for more and we raise it.</AccordionItem>\n        <AccordionItem value=\"regions\" title=\"Which regions can a namespace live in?\">The United States by default; the EU region on request, set when the namespace is created.</AccordionItem>\n      </Accordion>\n    </div>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        },
+        {
+          "name": "Multiple",
+          "label": "Several open",
+          "center": false,
+          "half": false,
+          "path": "react/examples/accordion/Multiple.tsx",
+          "content": "'use client'\nimport { useState } from 'react'\nimport { Accordion, type AccordionValue } from '@/react/components/ui/Accordion'\nimport { AccordionItem } from '@/react/components/ui/AccordionItem'\n// Several open at once, for a checklist the person works down.\n\nexport default function Multiple() {\n  const [open, setOpen] = useState<AccordionValue>(['keys'])\n  return (\n    <div className=\"max-w-[560px]\">\n      <Accordion value={open} onValueChange={setOpen} multiple>\n        <AccordionItem value=\"keys\" title=\"Create an API key\">Settings, then API keys. Copy it once: it is not shown again.</AccordionItem>\n        <AccordionItem value=\"source\" title=\"Connect a source\">Pick an app and sign in. Its documents start syncing into a namespace.</AccordionItem>\n        <AccordionItem value=\"search\" title=\"Run a search\">Ask a question in plain words. The best match comes first, with its source.</AccordionItem>\n      </Accordion>\n    </div>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/accordion.ts",
+          "content": "import { html, type PropertyValues } from 'lit'\nimport { DsElement, define, tagName } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// Accordion.vue as <conare-accordion>: a stack of disclosures, built in Conare's style from the console's disclosure\n// (.v2-collapse, .c-details) and the website's FAQ: hairlines between rows, a 12px muted chevron that turns as a row\n// opens, the row's height opening from 0fr to 1fr over 260ms and closing in 180ms on the strong ease-out, its words\n// fading down into place a beat after. One open at a time by default (a second press closes it); `multiple` lets\n// several stay open. v-model is `value` (the open item's value, or a JSON list of them with `multiple`) with `input`\n// and `change` events. Compose with <conare-accordion-item>.\nexport type AccordionValue = string | string[] | null\n\n/**\n * @summary A stack of disclosures, one open at a time or several.\n * @slot - The rows: <conare-accordion-item>.\n * @fires input - A row opened or closed (read `value`).\n * @fires change - A row opened or closed (read `value`).\n */\nexport class Accordion extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = {\n\t\tmultiple: { type: Boolean },\n\t\tvalue: { converter: { fromAttribute: (v: string | null) => (v?.trim().startsWith('[') ? JSON.parse(v) : v || null), toAttribute: (v: AccordionValue) => (Array.isArray(v) ? JSON.stringify(v) : v) } },\n\t}\n\n\t/** Several rows stay open. */\n\tmultiple = false\n\t/** The open row's value, or the list of them with `multiple`. */\n\tvalue: AccordionValue = null\n\n\tprivate list() {\n\t\treturn Array.isArray(this.value) ? this.value : this.value ? [this.value] : []\n\t}\n\t/** Whether the row with this value is open (read by the items). */\n\tisOpen(v: string) {\n\t\treturn this.list().includes(v)\n\t}\n\t/** Opens or closes the row with this value (the items' press). */\n\ttoggle(v: string) {\n\t\tconst open = this.list()\n\t\tif (this.multiple) this.commit(open.includes(v) ? open.filter((x) => x !== v) : [...open, v])\n\t\telse this.commit(open.includes(v) ? null : v)\n\t}\n\n\tprotected updated(changed: PropertyValues<this>) {\n\t\tsuper.updated(changed)\n\t\tif (changed.has('value')) for (const item of this.querySelectorAll<HTMLElement & { requestUpdate(): void }>(tagName('accordion-item'))) item.requestUpdate()\n\t}\n\n\trender() {\n\t\treturn html`<div data-ds=\"accordion\" class=\"ds-accordion border-t border-edge\"><slot></slot></div>`\n\t}\n}\n\ndefine('accordion', Accordion)\n"
+        },
+        {
+          "path": "elements/components/ui/accordion-item.ts",
+          "content": "import { html } from 'lit'\nimport { ChevronDown } from 'lucide'\nimport { accordionOf } from '@/elements/controllers/accordion'\nimport { DsElement, define, uid } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport styles from 'virtual:tw'\n\n// AccordionItem.vue as <conare-accordion-item>: one row of an accordion: the question as a full-width button (40px,\n// 13px soft text that turns ink under the pointer and while open) over a hairline, and the answer under it. The closed\n// answer is inert, so its links leave the tab order. `heading` (Vue's `title`) or the `title` slot names the row; the\n// default slot is the answer.\n\n/**\n * @summary One row of an accordion.\n * @slot - The answer.\n * @slot title - The question, in place of `heading`.\n */\nexport class AccordionItem extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { value: {}, heading: {}, disabled: { type: Boolean } }\n\n\t/** The value the accordion opens it by. */\n\tvalue = ''\n\t/** The question (Vue's `title`). */\n\theading?: string\n\tdisabled = false\n\tprivate rowId = uid('accordion')\n\n\trender() {\n\t\tconst ctx = accordionOf(this)\n\t\tconst open = ctx?.isOpen(this.value) ?? false\n\t\treturn html`<div data-ds=\"accordion-item\" class=\"border-b border-edge\" data-open=${String(open)}>\n\t\t\t<h3>\n\t\t\t\t<button id=${`${this.rowId}-head`} type=\"button\" aria-expanded=${String(open)} aria-controls=${`${this.rowId}-body`} ?disabled=${this.disabled} class=\"flex min-h-row w-full cursor-pointer items-center justify-between gap-3 py-2 text-left type-ui text-fg-soft transition-colors duration-120 ease-standard hover:text-fg aria-expanded:text-fg disabled:cursor-default disabled:text-fg-muted\" @click=${() => ctx?.toggle(this.value)}><slot name=\"title\">${this.heading}</slot>${icon(ChevronDown, 'chevron-down', { size: 12, strokeWidth: 1.5, class: 'shrink-0 text-fg-muted transition-[rotate] duration-200 ease-standard motion-reduce:transition-none', attrs: { 'aria-hidden': 'true' } })}</button>\n\t\t\t</h3>\n\t\t\t<div id=${`${this.rowId}-body`} role=\"region\" aria-labelledby=${`${this.rowId}-head`} ?inert=${!open} class=\"ds-collapse\" data-open=${String(open)}>\n\t\t\t\t<div><div class=\"ds-collapse-body pb-3 type-ui text-fg-soft\"><slot></slot></div></div>\n\t\t\t</div>\n\t\t</div>`\n\t}\n}\n\ndefine('accordion-item', AccordionItem)\n"
+        },
+        {
+          "path": "elements/components/ui/accordion-item.css",
+          "content": "/* Vue turns the chevron with the rotate-180 class; here the icon's markup stays the same from one render to the next\n   (so its transition runs) and the open row turns it. */\nbutton[aria-expanded=\"true\"] > .lucide-chevron-down { @apply rotate-180; }\n/* AccordionItem.vue's <style>, as it is. The console's disclosure (console2.css .v2-collapse): open over 260ms, close in\n   180ms, the words fading and settling 6px down with a 2px blur that clears, so the text never pops. Reduced motion: no\n   height or move, opacity only. */\n.ds-collapse { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--ds-duration-slide) var(--ds-easing-out); }\n.ds-collapse[data-open=\"true\"] { grid-template-rows: 1fr; transition-duration: var(--ds-duration-collapse); }\n.ds-collapse > div { min-height: 0; overflow: hidden; }\n.ds-collapse-body { opacity: 0; filter: blur(2px); transform: translateY(-6px); transition: opacity var(--ds-duration-micro) ease, filter var(--ds-duration-micro) ease, transform var(--ds-duration-slide) var(--ds-easing-out); }\n.ds-collapse[data-open=\"true\"] .ds-collapse-body { opacity: 1; filter: none; transform: none; transition: opacity var(--ds-duration-settle) ease 40ms, filter var(--ds-duration-settle) ease 40ms, transform var(--ds-duration-collapse) var(--ds-easing-out) 40ms; }\n@media (prefers-reduced-motion: reduce) {\n  .ds-collapse, .ds-collapse[data-open=\"true\"] { transition: none; }\n  .ds-collapse-body, .ds-collapse[data-open=\"true\"] .ds-collapse-body { filter: none; transform: none; transition: opacity var(--ds-duration-micro) ease; }\n}\n"
+        },
+        {
+          "path": "elements/controllers/accordion.ts",
+          "content": "import { tagName } from '@/elements/lib/element'\n\n// useAccordion for elements: what a <conare-accordion> gives its items (whether a value is open, and the press that\n// opens or closes it). An item finds its accordion as its closest ancestor, so accordions nest.\nexport type AccordionContext = { isOpen: (v: string) => boolean, toggle: (v: string) => void }\n\n/** The accordion around an item, or null outside one (or while it is not defined yet: it renders its items again once\n * it is). */\nexport function accordionOf(item: Element): AccordionContext | null {\n\tconst a = item.parentElement?.closest(tagName('accordion')) as (Element & Partial<AccordionContext>) | null\n\treturn a && typeof a.isOpen === 'function' ? (a as AccordionContext) : null\n}\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/accordion.js",
+        "elements/accordion-item.js"
+      ],
+      "tag": "conare-accordion",
+      "tags": [
+        "conare-accordion",
+        "conare-accordion-item"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-accordion",
+            "name": "Accordion",
+            "module": "elements/accordion.js",
+            "description": "A stack of disclosures, one open at a time or several.",
+            "attributes": [
+              {
+                "name": "multiple",
+                "field": "multiple",
+                "type": "boolean",
+                "default": "false",
+                "description": "Several rows stay open."
+              },
+              {
+                "name": "value",
+                "field": "value",
+                "type": "AccordionValue",
+                "default": "null",
+                "description": "The open row's value, or the list of them with `multiple`."
+              }
+            ],
+            "properties": [
+              {
+                "name": "multiple",
+                "type": "boolean",
+                "default": "false",
+                "description": "Several rows stay open.",
+                "attribute": "multiple"
+              },
+              {
+                "name": "value",
+                "type": "AccordionValue",
+                "default": "null",
+                "description": "The open row's value, or the list of them with `multiple`.",
+                "attribute": "value"
+              }
+            ],
+            "events": [
+              {
+                "name": "input",
+                "description": "A row opened or closed (read `value`)."
+              },
+              {
+                "name": "change",
+                "description": "A row opened or closed (read `value`)."
+              }
+            ],
+            "slots": [
+              {
+                "name": "",
+                "description": "The rows: <conare-accordion-item>."
+              }
+            ],
+            "methods": [
+              {
+                "name": "isOpen",
+                "description": "Whether the row with this value is open (read by the items)."
+              },
+              {
+                "name": "toggle",
+                "description": "Opens or closes the row with this value (the items' press)."
+              }
+            ]
+          },
+          {
+            "tag": "conare-accordion-item",
+            "name": "AccordionItem",
+            "module": "elements/accordion-item.js",
+            "description": "One row of an accordion.",
+            "attributes": [
+              {
+                "name": "value",
+                "field": "value",
+                "type": "string",
+                "default": "''",
+                "description": "The value the accordion opens it by."
+              },
+              {
+                "name": "heading",
+                "field": "heading",
+                "type": "string | undefined",
+                "description": "The question (Vue's `title`)."
+              },
+              {
+                "name": "disabled",
+                "field": "disabled",
+                "type": "boolean",
+                "default": "false"
+              }
+            ],
+            "properties": [
+              {
+                "name": "value",
+                "type": "string",
+                "default": "''",
+                "description": "The value the accordion opens it by.",
+                "attribute": "value"
+              },
+              {
+                "name": "heading",
+                "type": "string | undefined",
+                "description": "The question (Vue's `title`).",
+                "attribute": "heading"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "attribute": "disabled"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "The answer."
+              },
+              {
+                "name": "title",
+                "description": "The question, in place of `heading`."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/accordion/Product.html",
+          "content": "<!-- Details most readers skip, one press away: one open at a time, a second press closes it. -->\n<div class=\"max-w-[560px]\">\n  <conare-accordion value=\"retention\">\n    <conare-accordion-item value=\"retention\" heading=\"How long are deleted documents kept?\">Deleted documents leave search at once and are removed from storage within 30 days.</conare-accordion-item>\n    <conare-accordion-item value=\"limits\" heading=\"What are the limits on a namespace?\">A namespace holds up to 50 million documents. Ask for more and we raise it.</conare-accordion-item>\n    <conare-accordion-item value=\"regions\" heading=\"Which regions can a namespace live in?\">The United States by default; the EU region on request, set when the namespace is created.</conare-accordion-item>\n  </conare-accordion>\n</div>\n"
+        },
+        {
+          "name": "Multiple",
+          "label": "Several open",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/accordion/Multiple.html",
+          "content": "<!-- Several open at once, for a checklist the person works down. -->\n<div class=\"max-w-[560px]\">\n  <conare-accordion value='[\"keys\"]' multiple>\n    <conare-accordion-item value=\"keys\" heading=\"Create an API key\">Settings, then API keys. Copy it once: it is not shown again.</conare-accordion-item>\n    <conare-accordion-item value=\"source\" heading=\"Connect a source\">Pick an app and sign in. Its documents start syncing into a namespace.</conare-accordion-item>\n    <conare-accordion-item value=\"search\" heading=\"Run a search\">Ask a question in plain words. The best match comes first, with its source.</conare-accordion-item>\n  </conare-accordion>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,161 @@
+{
+  "name": "direction",
+  "title": "Direction",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "Sets the reading direction for what is inside it, left to right or right to left, and gives it to components through useDirection(). Logical utilities follow it; code stays left to right, as the code windows do.",
+  "use_for": "A page or a block in a right-to-left language.",
+  "never": [
+    "Flipping code, keys or IDs",
+    "Physical left and right utilities inside it: use start and end"
+  ],
+  "source": "New in Conare's style (no Conare equivalent): the dir attribute with code windows held ltr",
+  "body": "",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Direction.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed, provide } from 'vue'\nimport { DIRECTION, type Dir } from '@/composables/useDirection'\n\n// Sets the reading direction for what is inside it (the `dir` attribute, so logical utilities such as ps-, me- and\n// text-start follow it) and provides it to components through useDirection(). Code stays left to right: pre, code and\n// kbd inside it keep `ltr`, as the code windows do.\nconst props = withDefaults(defineProps<{ dir?: Dir }>(), { dir: 'ltr' })\nprovide(DIRECTION, computed(() => props.dir))\n</script>\n\n<template>\n  <div data-ds=\"direction\" class=\"ds-dir\" :dir=\"dir\"><slot /></div>\n</template>\n\n<style>\n.ds-dir :is(pre, code, kbd) { direction: ltr; unicode-bidi: isolate; }\n</style>\n"
+    },
+    {
+      "path": "composables/useDirection.ts",
+      "content": "import { computed, inject, type ComputedRef, type InjectionKey } from 'vue'\n\n// The reading direction a Direction wrapper provides to what is inside it, so a component can flip what it draws\n// (an arrow, a slide) for right-to-left text. Outside any wrapper it reads `ltr`.\nexport type Dir = 'ltr' | 'rtl'\nexport const DIRECTION: InjectionKey<ComputedRef<Dir>> = Symbol('ds-direction')\n\nexport function useDirection() {\n  return inject(DIRECTION, computed<Dir>(() => 'ltr'))\n}\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "Either direction",
+      "center": false,
+      "half": false,
+      "path": "examples/direction/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport Direction from '@/components/ui/Direction.vue'\nimport Tabs from '@/components/ui/Tabs.vue'\n// One card in either direction: the label and value swap sides, the code stays left to right.\nconst dir = ref<'ltr' | 'rtl'>('rtl')\nconst options = [{ value: 'ltr', label: 'Left to right' }, { value: 'rtl', label: 'Right to left' }]\n</script>\n\n<template>\n  <div class=\"flex flex-col gap-4\">\n    <Tabs v-model=\"dir\" :options=\"options\" label=\"direction\" />\n    <Direction :dir=\"dir\">\n      <div class=\"flex max-w-md flex-col gap-3 border border-edge p-4\">\n        <div class=\"flex items-center justify-between gap-4 type-ui\">\n          <span class=\"text-fg-soft\">مساحة الأسماء</span>\n          <span class=\"type-code-sm\">contracts</span>\n        </div>\n        <p class=\"border-s-2 border-edge-accent ps-3 type-meta text-fg-muted\">يبحث Conare في المستندات ويعيد المقاطع التي تجيب عن السؤال.</p>\n        <pre class=\"bg-code px-3 py-2 type-code-sm text-code-fg\">curl https://api.acme.com/v1/search</pre>\n      </div>\n    </Direction>\n  </div>\n</template>\n",
+      "requires": [
+        "tabs"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Direction.tsx",
+          "content": "'use client'\nimport type { ReactNode } from 'react'\nimport { DirectionContext, type Dir } from '@/react/hooks/useDirection'\n\n// Sets the reading direction for what is inside it (the `dir` attribute, so logical utilities such as ps-, me- and\n// text-start follow it) and provides it to components through useDirection(). Code stays left to right: pre, code and\n// kbd inside it keep `ltr`, as the code windows do.\nexport interface DirectionProps { dir?: Dir, children?: ReactNode }\n\nexport function Direction({ dir = 'ltr', children }: DirectionProps) {\n  return (\n    <DirectionContext.Provider value={dir}>\n      <style href=\"ds-direction\" precedence=\"ds\">{css}</style>\n      <div data-ds=\"direction\" className=\"ds-dir\" dir={dir}>{children}</div>\n    </DirectionContext.Provider>\n  )\n}\n\nexport default Direction\n\nconst css = `\n.ds-dir :is(pre, code, kbd) { direction: ltr; unicode-bidi: isolate; }\n`\n"
+        },
+        {
+          "path": "react/hooks/useDirection.ts",
+          "content": "'use client'\nimport { createContext, useContext } from 'react'\n\n// The reading direction a Direction wrapper provides to what is inside it, so a component can flip what it draws\n// (an arrow, a slide) for right-to-left text. Outside any wrapper it reads `ltr`.\nexport type Dir = 'ltr' | 'rtl'\nexport const DirectionContext = createContext<Dir>('ltr')\n\nexport function useDirection() {\n  return useContext(DirectionContext)\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "Direction",
+            "file": "react/components/ui/Direction.tsx",
+            "props": [
+              {
+                "name": "dir",
+                "type": "Dir",
+                "required": false,
+                "default": "'ltr'"
+              },
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Either direction",
+          "center": false,
+          "half": false,
+          "path": "react/examples/direction/Product.tsx",
+          "content": "'use client'\nimport { useState } from 'react'\nimport { Direction } from '@/react/components/ui/Direction'\nimport { Tabs } from '@/react/components/ui/Tabs'\n// One card in either direction: the label and value swap sides, the code stays left to right.\nconst options = [{ value: 'ltr', label: 'Left to right' }, { value: 'rtl', label: 'Right to left' }] as const\n\nexport default function Product() {\n  const [dir, setDir] = useState<'ltr' | 'rtl'>('rtl')\n  return (\n    <div className=\"flex flex-col gap-4\">\n      <Tabs value={dir} onValueChange={setDir} options={options} label=\"direction\" />\n      <Direction dir={dir}>\n        <div className=\"flex max-w-md flex-col gap-3 border border-edge p-4\">\n          <div className=\"flex items-center justify-between gap-4 type-ui\">\n            <span className=\"text-fg-soft\">مساحة الأسماء</span>\n            <span className=\"type-code-sm\">contracts</span>\n          </div>\n          <p className=\"border-s-2 border-edge-accent ps-3 type-meta text-fg-muted\">يبحث Conare في المستندات ويعيد المقاطع التي تجيب عن السؤال.</p>\n          <pre className=\"bg-code px-3 py-2 type-code-sm text-code-fg\">curl https://api.acme.com/v1/search</pre>\n        </div>\n      </Direction>\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "tabs"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/direction.ts",
+          "content": "import { html, type PropertyValues } from 'lit'\nimport { DsElement, define, tagName } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// Direction.vue as <conare-direction>: sets the reading direction for what is inside it (the `dir` attribute, so\n// logical utilities such as ps-, me- and text-start follow it), and elements inside read it through the direction\n// controller (Vue's useDirection). Code stays left to right: pre, code and kbd inside it keep `ltr`, as the code\n// windows do. Set `dir` as on any element (the attribute or the property).\n\n// The content is the page's (slotted), out of reach of the shadow root's styles: the rule for code goes to the\n// document (or the shadow root the wrapper sits in) once.\nconst sheets = new WeakSet<Document | ShadowRoot>()\nfunction adoptCodeRule(root: Node) {\n\tif (!(root instanceof Document || root instanceof ShadowRoot) || sheets.has(root)) return\n\tconst sheet = new CSSStyleSheet()\n\tsheet.replaceSync(`${tagName('direction')} :is(pre, code, kbd) { direction: ltr; unicode-bidi: isolate; }`)\n\troot.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet]\n\tsheets.add(root)\n}\n\n/**\n * @summary Sets the reading direction for what is inside it.\n * @slot - The content.\n * @fires direction-change - The direction changed (detail.value).\n */\nexport class Direction extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\t// `dir` is HTML's own attribute; the element reads it into `direction` and draws it on its box.\n\tstatic properties = { direction: { attribute: 'dir' } }\n\n\t/** ltr or rtl (the `dir` attribute). */\n\tdirection: 'ltr' | 'rtl' = 'ltr'\n\n\tconnectedCallback() {\n\t\tsuper.connectedCallback()\n\t\tadoptCodeRule(this.getRootNode())\n\t}\n\tprotected updated(changed: PropertyValues<this>) {\n\t\tsuper.updated(changed)\n\t\tif (changed.has('direction') && changed.get('direction') !== undefined) this.emit('direction-change', { value: this.direction })\n\t}\n\n\trender() {\n\t\treturn html`<div data-ds=\"direction\" class=\"ds-dir\" dir=${this.direction === 'rtl' ? 'rtl' : 'ltr'}><slot></slot></div>`\n\t}\n}\n\ndefine('direction', Direction)\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/direction.js",
+        "elements/tabs.js"
+      ],
+      "tag": "conare-direction",
+      "tags": [
+        "conare-direction"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-direction",
+            "name": "Direction",
+            "module": "elements/direction.js",
+            "description": "Sets the reading direction for what is inside it.",
+            "attributes": [
+              {
+                "name": "dir",
+                "field": "direction",
+                "type": "\"ltr\" | \"rtl\"",
+                "default": "'ltr'",
+                "description": "ltr or rtl (the `dir` attribute)."
+              }
+            ],
+            "properties": [
+              {
+                "name": "direction",
+                "type": "\"ltr\" | \"rtl\"",
+                "default": "'ltr'",
+                "description": "ltr or rtl (the `dir` attribute).",
+                "attribute": "dir"
+              }
+            ],
+            "events": [
+              {
+                "name": "direction-change",
+                "description": "The direction changed (detail.value)."
+              }
+            ],
+            "slots": [
+              {
+                "name": "",
+                "description": "The content."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Either direction",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/direction/Product.html",
+          "content": "<!-- One card in either direction: the label and value swap sides, the code stays left to right. -->\n<div class=\"flex flex-col gap-4\">\n  <conare-tabs id=\"dir-tabs\" value=\"rtl\" options='[{ \"value\": \"ltr\", \"label\": \"Left to right\" }, { \"value\": \"rtl\", \"label\": \"Right to left\" }]' label=\"direction\"></conare-tabs>\n  <conare-direction id=\"dir-card\" dir=\"rtl\">\n    <div class=\"flex max-w-md flex-col gap-3 border border-edge p-4\">\n      <div class=\"flex items-center justify-between gap-4 type-ui\">\n        <span class=\"text-fg-soft\">مساحة الأسماء</span>\n        <span class=\"type-code-sm\">contracts</span>\n      </div>\n      <p class=\"border-s-2 border-edge-accent ps-3 type-meta text-fg-muted\">يبحث Conare في المستندات ويعيد المقاطع التي تجيب عن السؤال.</p>\n      <pre class=\"bg-code px-3 py-2 type-code-sm text-code-fg\">curl https://api.acme.com/v1/search</pre>\n    </div>\n  </conare-direction>\n</div>\n<script type=\"module\">\n  const card = document.getElementById('dir-card')\n  document.getElementById('dir-tabs').addEventListener('change', (event) => { card.dir = event.target.value })\n</script>\n"
+        }
+      ]
+    }
+  }
+}

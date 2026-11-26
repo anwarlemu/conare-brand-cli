@@ -1,0 +1,194 @@
+{
+  "name": "announcement-bar",
+  "title": "Announcement bar",
+  "type": "registry:ui",
+  "group": "site",
+  "description": "One line above the header for news: the whole ribbon is the link, on the red wash, with a black capitals tag that turns red on hover and the call to action underlined in the same sentence.",
+  "use_for": "A launch or an event, for a few weeks at most.",
+  "never": [
+    "More than one line",
+    "Red fills"
+  ],
+  "source": "conare-web app/components/home/AnnouncementBar.vue",
+  "body": "",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/site/AnnouncementBar.vue",
+      "content": "<script setup lang=\"ts\">\n// One line above the website's header (AnnouncementBar.vue): the whole ribbon is the link. The red wash, the only\n// ground approved under off-black text; a square black tag in the site tag's capitals that turns red as the ribbon is\n// hovered; the line, and the call to action running on in the same sentence, underlined close (from sm). The ribbon\n// deepens to the hover wash in 200ms. It sits at z-10 so a pinned footer never reaches over it.\ndefineProps<{ tag: string, text: string, cta?: string, href: string }>()\n</script>\n\n<template>\n  <a data-ds=\"announcement-bar\" :href=\"href\" class=\"group relative z-10 block bg-red-wash text-off-black transition-colors duration-200 ease-standard hover:bg-home-wash-hover\">\n    <span class=\"mx-auto flex h-9 max-w-[1440px] items-center justify-center gap-2 px-4 text-ui sm:px-6 lg:px-10\">\n      <span class=\"shrink-0 bg-off-black py-0.75 pr-[calc(4px-0.06em)] pl-1 type-tag text-off-white transition-colors duration-200 ease-standard [text-box:trim-both_cap_alphabetic] group-hover:bg-home-red\">{{ tag }}</span>\n      <span class=\"truncate leading-4\">\n        {{ text }}\n        <span v-if=\"cta\" class=\"hidden underline decoration-off-black/30 underline-offset-2 transition-colors duration-200 ease-standard group-hover:decoration-off-black sm:inline\">{{ cta }}</span>\n      </span>\n    </span>\n  </a>\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "On the site",
+      "center": false,
+      "half": false,
+      "path": "examples/announcement-bar/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport AnnouncementBar from '@/components/site/AnnouncementBar.vue'\n// One line above the header: the whole ribbon is the link.\n</script>\n\n<template>\n  <AnnouncementBar tag=\"New\" text=\"Accuracy you can check: every benchmark, losses included.\" cta=\"See the evals\" href=\"#evals\" />\n</template>\n",
+      "requires": [],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/site/AnnouncementBar.tsx",
+          "content": "// One line above the website's header (AnnouncementBar.vue): the whole ribbon is the link. The red wash, the only\n// ground approved under off-black text; a square black tag in the site tag's capitals that turns red as the ribbon is\n// hovered; the line, and the call to action running on in the same sentence, underlined close (from sm). The ribbon\n// deepens to the hover wash in 200ms. It sits at z-10 so a pinned footer never reaches over it.\nimport { cn } from '@/react/lib/cn'\n\nexport interface AnnouncementBarProps {\n  tag: string\n  text: string\n  cta?: string\n  href: string\n  className?: string\n}\n\nexport function AnnouncementBar({ tag, text, cta, href, className }: AnnouncementBarProps) {\n  return (\n    <a data-ds=\"announcement-bar\" href={href} className={cn('group relative z-10 block bg-red-wash text-off-black transition-colors duration-200 ease-standard hover:bg-home-wash-hover', className)}>\n      <span className=\"mx-auto flex h-9 max-w-[1440px] items-center justify-center gap-2 px-4 text-ui sm:px-6 lg:px-10\">\n        <span className=\"shrink-0 bg-off-black py-0.75 pr-[calc(4px-0.06em)] pl-1 type-tag text-off-white transition-colors duration-200 ease-standard [text-box:trim-both_cap_alphabetic] group-hover:bg-home-red\">{tag}</span>\n        <span className=\"truncate leading-4\">\n          {text}\n          {cta && <>{' '}<span className=\"hidden underline decoration-off-black/30 underline-offset-2 transition-colors duration-200 ease-standard group-hover:decoration-off-black sm:inline\">{cta}</span></>}\n        </span>\n      </span>\n    </a>\n  )\n}\n\nexport default AnnouncementBar\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "AnnouncementBar",
+            "file": "react/components/site/AnnouncementBar.tsx",
+            "props": [
+              {
+                "name": "tag",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "text",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "cta",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "href",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "On the site",
+          "center": false,
+          "half": false,
+          "path": "react/examples/announcement-bar/Site.tsx",
+          "content": "import { AnnouncementBar } from '@/react/components/site/AnnouncementBar'\n// One line above the header: the whole ribbon is the link.\n\nexport default function Site() {\n  return <AnnouncementBar tag=\"New\" text=\"Accuracy you can check: every benchmark, losses included.\" cta=\"See the evals\" href=\"#evals\" />\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/site/announcement-bar.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// AnnouncementBar.vue as <conare-announcement-bar>: one line above the website's header: the whole ribbon is the link.\n// The red wash, the only ground approved under off-black text; a square black tag in the site tag's capitals that turns\n// red as the ribbon is hovered; the line, and the call to action running on in the same sentence, underlined close\n// (from sm). The ribbon deepens to the hover wash in 200ms. It sits at z-10 so a pinned footer never reaches over it.\n\n/** @summary One line above the website's header; the whole ribbon is the link. */\nexport class AnnouncementBar extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { tag: {}, text: {}, cta: {}, href: {} }\n\n\t/** The square black tag (New). */\n\ttag = ''\n\t/** The line. */\n\ttext = ''\n\t/** The call to action, running on in the same sentence. */\n\tcta?: string\n\thref = ''\n\n\trender() {\n\t\treturn html`<a data-ds=\"announcement-bar\" href=${this.href} class=\"group relative z-10 block bg-red-wash text-off-black transition-colors duration-200 ease-standard hover:bg-home-wash-hover\">\n\t\t\t<span class=\"mx-auto flex h-9 max-w-[1440px] items-center justify-center gap-2 px-4 text-ui sm:px-6 lg:px-10\">\n\t\t\t\t<span class=\"shrink-0 bg-off-black py-0.75 pr-[calc(4px-0.06em)] pl-1 type-tag text-off-white transition-colors duration-200 ease-standard [text-box:trim-both_cap_alphabetic] group-hover:bg-home-red\">${this.tag}</span>\n\t\t\t\t<span class=\"truncate leading-4\">${this.text}${this.cta ? html` <span class=\"hidden underline decoration-off-black/30 underline-offset-2 transition-colors duration-200 ease-standard group-hover:decoration-off-black sm:inline\">${this.cta}</span>` : nothing}</span>\n\t\t\t</span>\n\t\t</a>`\n\t}\n}\n\ndefine('announcement-bar', AnnouncementBar)\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/announcement-bar.js"
+      ],
+      "tag": "conare-announcement-bar",
+      "tags": [
+        "conare-announcement-bar"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-announcement-bar",
+            "name": "AnnouncementBar",
+            "module": "elements/announcement-bar.js",
+            "description": "One line above the website's header; the whole ribbon is the link.",
+            "attributes": [
+              {
+                "name": "tag",
+                "field": "tag",
+                "type": "string",
+                "default": "''",
+                "description": "The square black tag (New)."
+              },
+              {
+                "name": "text",
+                "field": "text",
+                "type": "string",
+                "default": "''",
+                "description": "The line."
+              },
+              {
+                "name": "cta",
+                "field": "cta",
+                "type": "string | undefined",
+                "description": "The call to action, running on in the same sentence."
+              },
+              {
+                "name": "href",
+                "field": "href",
+                "type": "string",
+                "default": "''"
+              }
+            ],
+            "properties": [
+              {
+                "name": "tag",
+                "type": "string",
+                "default": "''",
+                "description": "The square black tag (New).",
+                "attribute": "tag"
+              },
+              {
+                "name": "text",
+                "type": "string",
+                "default": "''",
+                "description": "The line.",
+                "attribute": "text"
+              },
+              {
+                "name": "cta",
+                "type": "string | undefined",
+                "description": "The call to action, running on in the same sentence.",
+                "attribute": "cta"
+              },
+              {
+                "name": "href",
+                "type": "string",
+                "default": "''",
+                "attribute": "href"
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "On the site",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/announcement-bar/Site.html",
+          "content": "<!-- One line above the header: the whole ribbon is the link. -->\n<conare-announcement-bar tag=\"New\" text=\"Accuracy you can check: every benchmark, losses included.\" cta=\"See the evals\" href=\"#evals\"></conare-announcement-bar>\n"
+        }
+      ]
+    }
+  }
+}

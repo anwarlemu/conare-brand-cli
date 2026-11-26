@@ -1,0 +1,28 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "top-bar",
+  "type": "registry:ui",
+  "title": "Top bar",
+  "description": "The 48px bar over every console page: breadcrumbs, each step back a link, the page itself in ink, a namespace in mono. Its crumbs are the breadcrumb.",
+  "dependencies": [
+    "lucide-react@0.479.0"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "components/ui/TopBar.tsx",
+      "type": "registry:ui",
+      "content": "import type { ReactNode } from 'react'\nimport { cn } from '@/lib/cn'\n\n// The 48px bar over every console page (console2.css .v2-bar): sticky, a hairline under it, the page showing faintly\n// through it (92% of the surface under an 8px blur), 12px text. Put a Breadcrumb in children; `start` holds the\n// phone's menu button, `end` what belongs to the whole console (setup progress, a loading mark), never the page's\n// own actions.\nexport interface TopBarProps { start?: ReactNode, end?: ReactNode, className?: string, children?: ReactNode }\n\nexport function TopBar({ start, end, className, children }: TopBarProps) {\n  return (\n    <header data-ds=\"top-bar\" className={cn('sticky top-0 z-10 flex h-bar shrink-0 items-center gap-2 border-b border-edge bg-bar px-4 text-meta leading-5 backdrop-blur-sm', className)}>\n      {start}\n      {children}\n      {end}\n    </header>\n  )\n}\n\nexport default TopBar\n"
+    },
+    {
+      "path": "components/ui/Breadcrumb.tsx",
+      "type": "registry:ui",
+      "content": "import { Fragment, type ElementType, type MouseEvent } from 'react'\nimport { Slash } from 'lucide-react'\nimport { cn } from '@/lib/cn'\n\n// Where you are (console2.css .v2-crumb): each step back a link in muted text that turns ink under the pointer, a 10px\n// slash between, the page itself in ink and the only step that truncates. `mono` sets a namespace or an ID in Geist\n// Mono. `as` renders a router link component for the steps back (it gets `href` and `to`). Vue's `navigate` event is\n// `onNavigate`.\nexport interface Crumb { label: string, href?: string, mono?: boolean }\nexport interface BreadcrumbProps { items: Crumb[], label?: string, as?: ElementType, onNavigate?: (crumb: Crumb, event: MouseEvent) => void }\n\nexport function Breadcrumb({ items, label = 'breadcrumb', as: Link = 'a', onNavigate }: BreadcrumbProps) {\n  return (\n    <>\n      <style href=\"ds-breadcrumb\" precedence=\"ds\">{css}</style>\n      <nav data-ds=\"breadcrumb\" className=\"flex min-w-0 flex-1 items-center gap-2 overflow-hidden text-meta leading-5\" aria-label={label}>\n        {items.map((crumb, i) => (\n          <Fragment key={i}>\n            {i > 0 && <Slash size={10} strokeWidth={1.5} className=\"shrink-0 text-fg-faint\" aria-hidden=\"true\" />}\n            {i < items.length - 1\n              ? <Link href={crumb.href ?? '#'} to={Link === 'a' ? undefined : crumb.href} className={cn('ds-crumb shrink-0', crumb.mono && 'type-code-sm')} onClick={(event: MouseEvent) => onNavigate?.(crumb, event)}>{crumb.label}</Link>\n              : <span className={cn('truncate text-fg', crumb.mono && 'type-code-sm')} aria-current=\"page\">{crumb.label}</span>}\n          </Fragment>\n        ))}\n      </nav>\n    </>\n  )\n}\n\nexport default Breadcrumb\n\nconst css = `\n.ds-crumb { color: var(--ds-color-fg-muted); transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-crumb:hover { color: var(--ds-color-fg); } }\n.ds-crumb:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: 2px; }\n`\n"
+    },
+    {
+      "path": "lib/cn.ts",
+      "type": "registry:lib",
+      "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+    }
+  ]
+}

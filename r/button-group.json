@@ -1,0 +1,189 @@
+{
+  "name": "button-group",
+  "title": "Button group",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "Buttons that belong together sharing a hairline: secondary buttons in a row, or the dark split button with its menu arrow.",
+  "use_for": "The agent prompt's Copy prompt with its other ways to connect; a pager's previous, page and next.",
+  "never": [
+    "Unrelated actions side by side (space them instead)",
+    "Two dark groups in one view"
+  ],
+  "source": "conare-web app/components/console/agent/Split.vue, app/assets/css/console2.css (.v2-split, .v2-split-arrow)",
+  "body": "New in Conare's grammar, from the split button. Each child overlaps the one before by 1px, and the hovered or focused one sits on top so its ink edge shows whole. Between two dark halves (PixelButton, or a dark trigger) it draws the split's 1px line at 24% of the light colour. The branch's split also runs the copy's red squares on into the arrow; this group keeps each half's own hover. `vertical` stacks them.",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/ButtonGroup.vue",
+      "content": "<script setup lang=\"ts\">\n// Buttons that belong together, sharing a hairline (from agent-prompt's split button, console2.css .v2-split): each\n// child overlaps the one before by 1px so two edges read as one, and the one under the pointer or focus sits on top so\n// its ink edge shows whole. Secondary buttons, a dark button with its menu arrow (the split button: a 24% white hairline\n// divides two dark halves), or a field with its button. `vertical` stacks them. Give it a label for the group.\ndefineProps<{ label?: string, vertical?: boolean }>()\n</script>\n\n<template>\n  <div data-ds=\"button-group\" class=\"ds-btngroup\" role=\"group\" :aria-label=\"label\" :data-vertical=\"vertical || undefined\"><slot /></div>\n</template>\n\n<style>\n.ds-btngroup { display: inline-flex; align-items: stretch; }\n.ds-btngroup[data-vertical] { flex-direction: column; }\n.ds-btngroup > * { position: relative; }\n.ds-btngroup > * + * { margin-left: -1px; }\n.ds-btngroup[data-vertical] > * + * { margin-top: -1px; margin-left: 0; }\n.ds-btngroup > :is(:hover, :focus-visible, :focus-within) { z-index: 1; }\n/* Two dark halves: a hairline of the light colour between them, so they stay one block. */\n.ds-btngroup > :is(.bg-action-primary, .ds-px) + :is(.bg-action-primary, .ds-px)::after,\n.ds-btngroup > :is(.bg-action-primary, .ds-px) + * > .bg-action-primary::after { position: absolute; inset: 0 auto 0 0; width: 1px; background: color-mix(in srgb, var(--ds-color-fg-inverse) 24%, transparent); content: \"\"; }\n.ds-btngroup > :is(.bg-action-primary, .ds-px) + :is(.bg-action-primary, .ds-px),\n.ds-btngroup > :is(.bg-action-primary, .ds-px) + * { margin-left: 0; }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "In the product",
+      "center": false,
+      "half": false,
+      "path": "examples/button-group/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport { ArrowUpRight, Check, ChevronDown, ChevronLeft, ChevronRight, Copy } from 'lucide-vue-next'\nimport Button from '@/components/ui/Button.vue'\nimport ButtonGroup from '@/components/ui/ButtonGroup.vue'\nimport Menu from '@/components/ui/Menu.vue'\nimport MenuItem from '@/components/ui/MenuItem.vue'\nimport PixelButton from '@/components/ui/PixelButton.vue'\nimport TextSwap from '@/components/visuals/TextSwap.vue'\nimport { useCopy } from '@/composables/useCopy'\n// The agent prompt's split button: Copy prompt, and an arrow with the one-click installs. Then secondary buttons that\n// share a hairline, as a pager does.\nconst { copied, copy } = useCopy()\nconst page = ref(2)\n</script>\n\n<template>\n  <div class=\"grid items-center gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8\">\n    <p class=\"type-meta leading-7 text-fg-muted\">Split</p>\n    <div class=\"h-28\">\n      <ButtonGroup label=\"connect your agent\">\n        <PixelButton :done=\"copied\" @click=\"copy('Connect to Acme over MCP.')\">\n          <TextSwap :on=\"copied\">\n            <template #a><Copy :size=\"12\" :stroke-width=\"1.5\" aria-hidden=\"true\" />Copy prompt</template>\n            <template #b><Check :size=\"12\" :stroke-width=\"2\" aria-hidden=\"true\" />Copied</template>\n          </TextSwap>\n        </PixelButton>\n        <Menu label=\"other ways to connect\" trigger-label=\"other ways to connect\" align=\"end\" width=\"200px\" trigger-class=\"relative inline-flex h-control-sm w-control-sm cursor-pointer items-center justify-center bg-action-primary text-action-primary-fg transition-[background-color] duration-120 ease-standard hover:bg-edge-accent focus-visible:outline-edge-accent max-md:h-control-touch max-md:w-control-touch\">\n          <template #trigger=\"{ open }\"><ChevronDown :size=\"12\" :stroke-width=\"1.5\" class=\"transition-[rotate] duration-120 ease-out motion-reduce:transition-none\" :class=\"open && 'rotate-180'\" aria-hidden=\"true\" /></template>\n          <MenuItem href=\"#cursor\"><span class=\"flex-1\">Add to Cursor</span><ArrowUpRight :size=\"12\" :stroke-width=\"1.5\" aria-hidden=\"true\" /></MenuItem>\n          <MenuItem href=\"#vscode\"><span class=\"flex-1\">Add to VS Code</span><ArrowUpRight :size=\"12\" :stroke-width=\"1.5\" aria-hidden=\"true\" /></MenuItem>\n        </Menu>\n      </ButtonGroup>\n    </div>\n    <p class=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">Secondary</p>\n    <div>\n      <ButtonGroup label=\"pages\">\n        <Button icon aria-label=\"previous page\" :disabled=\"page === 1\" @click=\"page--\"><ChevronLeft :size=\"14\" :stroke-width=\"1.5\" /></Button>\n        <Button class=\"tabular-nums\" aria-live=\"polite\">Page {{ page }} of 4</Button>\n        <Button icon aria-label=\"next page\" :disabled=\"page === 4\" @click=\"page++\"><ChevronRight :size=\"14\" :stroke-width=\"1.5\" /></Button>\n      </ButtonGroup>\n    </div>\n  </div>\n</template>\n",
+      "requires": [
+        "button",
+        "menu",
+        "text-swap"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/ButtonGroup.tsx",
+          "content": "import type { ReactNode } from 'react'\nimport { cn } from '@/react/lib/cn'\n\n// Buttons that belong together, sharing a hairline (from agent-prompt's split button, console2.css .v2-split): each\n// child overlaps the one before by 1px so two edges read as one, and the one under the pointer or focus sits on top so\n// its ink edge shows whole. Secondary buttons, a dark button with its menu arrow (the split button: a 24% white hairline\n// divides two dark halves), or a field with its button. `vertical` stacks them. Give it a label for the group.\nexport interface ButtonGroupProps {\n  label?: string\n  vertical?: boolean\n  className?: string\n  children?: ReactNode\n}\n\nexport function ButtonGroup({ label, vertical, className, children }: ButtonGroupProps) {\n  return (\n    <div data-ds=\"button-group\" className={cn('ds-btngroup', className)} role=\"group\" aria-label={label} data-vertical={vertical || undefined}>\n      <style href=\"ds-button-group\" precedence=\"ds\">{css}</style>\n      {children}\n    </div>\n  )\n}\n\nexport default ButtonGroup\n\nconst css = `\n.ds-btngroup { display: inline-flex; align-items: stretch; }\n.ds-btngroup[data-vertical] { flex-direction: column; }\n.ds-btngroup > * { position: relative; }\n.ds-btngroup > * + * { margin-left: -1px; }\n.ds-btngroup[data-vertical] > * + * { margin-top: -1px; margin-left: 0; }\n.ds-btngroup > :is(:hover, :focus-visible, :focus-within) { z-index: 1; }\n/* Two dark halves: a hairline of the light colour between them, so they stay one block. */\n.ds-btngroup > :is(.bg-action-primary, .ds-px) + :is(.bg-action-primary, .ds-px)::after,\n.ds-btngroup > :is(.bg-action-primary, .ds-px) + * > .bg-action-primary::after { position: absolute; inset: 0 auto 0 0; width: 1px; background: color-mix(in srgb, var(--ds-color-fg-inverse) 24%, transparent); content: \"\"; }\n.ds-btngroup > :is(.bg-action-primary, .ds-px) + :is(.bg-action-primary, .ds-px),\n.ds-btngroup > :is(.bg-action-primary, .ds-px) + * { margin-left: 0; }\n`\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "ButtonGroup",
+            "file": "react/components/ui/ButtonGroup.tsx",
+            "props": [
+              {
+                "name": "label",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "vertical",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "react/examples/button-group/Product.tsx",
+          "content": "'use client'\nimport { useState } from 'react'\nimport { ArrowUpRight, Check, ChevronDown, ChevronLeft, ChevronRight, Copy } from 'lucide-react'\nimport { Button } from '@/react/components/ui/Button'\nimport { ButtonGroup } from '@/react/components/ui/ButtonGroup'\nimport { Menu } from '@/react/components/ui/Menu'\nimport { MenuItem } from '@/react/components/ui/MenuItem'\nimport { PixelButton } from '@/react/components/ui/PixelButton'\nimport { TextSwap } from '@/react/components/visuals/TextSwap'\nimport { useCopy } from '@/react/hooks/useCopy'\nimport { cn } from '@/react/lib/cn'\n// The agent prompt's split button: Copy prompt, and an arrow with the one-click installs. Then secondary buttons that\n// share a hairline, as a pager does.\n\nexport default function Product() {\n  const { copied, copy } = useCopy()\n  const [page, setPage] = useState(2)\n  return (\n    <div className=\"grid items-center gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8\">\n      <p className=\"type-meta leading-7 text-fg-muted\">Split</p>\n      <div className=\"h-28\">\n        <ButtonGroup label=\"connect your agent\">\n          <PixelButton done={copied} onClick={() => void copy('Connect to Acme over MCP.')}>\n            <TextSwap\n              on={copied}\n              a={<><Copy size={12} strokeWidth={1.5} aria-hidden=\"true\" />Copy prompt</>}\n              b={<><Check size={12} strokeWidth={2} aria-hidden=\"true\" />Copied</>}\n            />\n          </PixelButton>\n          <Menu label=\"other ways to connect\" triggerLabel=\"other ways to connect\" align=\"end\" width=\"200px\" triggerClass=\"relative inline-flex h-control-sm w-control-sm cursor-pointer items-center justify-center bg-action-primary text-action-primary-fg transition-[background-color] duration-120 ease-standard hover:bg-edge-accent focus-visible:outline-edge-accent max-md:h-control-touch max-md:w-control-touch\" trigger={open => <ChevronDown size={12} strokeWidth={1.5} className={cn('transition-[rotate] duration-120 ease-out motion-reduce:transition-none', open && 'rotate-180')} aria-hidden=\"true\" />}>\n            <MenuItem href=\"#cursor\"><span className=\"flex-1\">Add to Cursor</span><ArrowUpRight size={12} strokeWidth={1.5} aria-hidden=\"true\" /></MenuItem>\n            <MenuItem href=\"#vscode\"><span className=\"flex-1\">Add to VS Code</span><ArrowUpRight size={12} strokeWidth={1.5} aria-hidden=\"true\" /></MenuItem>\n          </Menu>\n        </ButtonGroup>\n      </div>\n      <p className=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">Secondary</p>\n      <div>\n        <ButtonGroup label=\"pages\">\n          <Button icon aria-label=\"previous page\" disabled={page === 1} onClick={() => setPage(p => p - 1)}><ChevronLeft size={14} strokeWidth={1.5} /></Button>\n          <Button className=\"tabular-nums\" aria-live=\"polite\">{`Page ${page} of 4`}</Button>\n          <Button icon aria-label=\"next page\" disabled={page === 4} onClick={() => setPage(p => p + 1)}><ChevronRight size={14} strokeWidth={1.5} /></Button>\n        </ButtonGroup>\n      </div>\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "button",
+            "menu",
+            "text-swap"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/button-group.ts",
+          "content": "import { html } from 'lit'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { DsElement, define, tagName } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// ButtonGroup.vue as <conare-button-group>: buttons that belong together, sharing a hairline (from agent-prompt's split\n// button, console2.css .v2-split): each child overlaps the one before by 1px so two edges read as one, and the one\n// under the pointer or focus sits on top so its ink edge shows whole. Secondary buttons, a dark button with its menu\n// arrow (the split button: a 24% white hairline divides two dark halves), or a field with its button. `vertical` stacks\n// them. Give it a label for the group.\n//\n// Vue's rules reach each child's root (`.ds-btngroup > *`). A library element such as <conare-button> draws its root in\n// its own shadow root, so the group marks each child with what Vue's selectors decide (data-group-overlap, -divide) and\n// gives that shadow root a small sheet that draws it on the root there; a child that is its own box takes the rules in\n// button-group.css; a dark trigger inside a child (a menu's) takes its hairline from a rule given to the page.\n\nconst HAIRLINE = 'position: absolute; inset: 0 auto 0 0; width: 1px; background: color-mix(in srgb, var(--ds-color-fg-inverse) 24%, transparent); content: \"\";'\n\n// For a child's shadow root: the child's root box is the shadow root's element with data-ds.\nconst CHILD_RULES = `\n:host([data-group]) > [data-ds] { position: relative; }\n:host([data-group-overlap=\"x\"]) > [data-ds] { margin-left: -1px; }\n:host([data-group-overlap=\"y\"]) > [data-ds] { margin-top: -1px; }\n:host([data-group]) > [data-ds]:is(:hover, :focus-visible, :focus-within) { z-index: 1; }\n:host([data-group-divide=\"self\"]) > [data-ds]::after { ${HAIRLINE} }\n`\nconst childSheets = new WeakSet<ShadowRoot>()\nfunction adoptChildRules(root: ShadowRoot) {\n\tif (childSheets.has(root)) return\n\tconst sheet = new CSSStyleSheet()\n\tsheet.replaceSync(CHILD_RULES)\n\troot.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet]\n\tchildSheets.add(root)\n}\n// For the page (or the shadow root the group sits in): a child that is its own box, and a dark trigger inside a child.\nconst pageSheets = new WeakSet<Document | ShadowRoot>()\nfunction adoptPageRules(root: Node) {\n\tif (!(root instanceof Document || root instanceof ShadowRoot) || pageSheets.has(root)) return\n\tconst g = tagName('button-group')\n\tconst sheet = new CSSStyleSheet()\n\tsheet.replaceSync(`${g} > [data-group-divide=\"self\"]::after, ${g} > [data-group-divide=\"child\"] > .bg-action-primary::after { ${HAIRLINE} }`)\n\troot.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet]\n\tpageSheets.add(root)\n}\n\nconst DARK = '.bg-action-primary, .ds-px'\n\n/**\n * @summary Buttons that belong together, sharing a hairline.\n * @slot - The buttons (and a menu, or a field with its button).\n */\nexport class ButtonGroup extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { label: {}, vertical: { type: Boolean } }\n\n\t/** The group's name. */\n\tlabel?: string\n\t/** Stacked. */\n\tvertical = false\n\n\tconnectedCallback() {\n\t\tsuper.connectedCallback()\n\t\tadoptPageRules(this.getRootNode())\n\t}\n\n\t/** The box a child draws: its shadow root's root when its host lays out nothing, else the child itself. */\n\tprivate box(child: HTMLElement) {\n\t\tconst root = child.shadowRoot\n\t\tif (root && getComputedStyle(child).display === 'contents') return root.querySelector<HTMLElement>('[data-ds]') ?? child\n\t\treturn child\n\t}\n\n\tprivate async mark() {\n\t\tconst kids = [...this.children] as HTMLElement[]\n\t\t// Library elements draw their roots once defined and rendered.\n\t\tawait Promise.all(kids.filter((k) => k.localName.includes('-')).map(async (k) => {\n\t\t\tawait customElements.whenDefined(k.localName)\n\t\t\tawait (k as HTMLElement & { updateComplete?: Promise<unknown> }).updateComplete\n\t\t}))\n\t\tconst dark = kids.map((k) => this.box(k).matches(DARK))\n\t\tkids.forEach((k, i) => {\n\t\t\tif (k.shadowRoot && this.box(k) !== k) adoptChildRules(k.shadowRoot)\n\t\t\tk.setAttribute('data-group', '')\n\t\t\tconst prevDark = i > 0 && dark[i - 1]\n\t\t\t// `> * + *` overlaps by 1px; after a dark half, the next sits flush (`dark + *` margin-left: 0).\n\t\t\tconst overlap = i === 0 ? null : this.vertical ? 'y' : prevDark ? null : 'x'\n\t\t\tif (overlap) k.setAttribute('data-group-overlap', overlap)\n\t\t\telse k.removeAttribute('data-group-overlap')\n\t\t\t// Two dark halves: the hairline on the second, on itself or on the dark trigger inside it.\n\t\t\tconst divide = !prevDark ? null : dark[i] ? 'self' : k.querySelector(':scope > .bg-action-primary') ? 'child' : null\n\t\t\tif (divide) k.setAttribute('data-group-divide', divide)\n\t\t\telse k.removeAttribute('data-group-divide')\n\t\t})\n\t}\n\n\tprotected updated() {\n\t\tvoid this.mark()\n\t}\n\n\trender() {\n\t\treturn html`<div data-ds=\"button-group\" class=\"ds-btngroup\" role=\"group\" aria-label=${ifDefined(this.label)} ?data-vertical=${this.vertical}><slot @slotchange=${() => void this.mark()}></slot></div>`\n\t}\n}\n\ndefine('button-group', ButtonGroup)\n"
+        },
+        {
+          "path": "elements/components/ui/button-group.css",
+          "content": "/* ButtonGroup.vue's <style>, for the group's own box. Vue's rules for its children (`.ds-btngroup > *`) cannot reach\n   the boxes the library's elements draw in their own shadow roots, so the element marks each child (data-group,\n   data-group-overlap, data-group-divide) and these rules, with the ones it gives each child's shadow root and the page,\n   draw what Vue's do. */\n.ds-btngroup { display: inline-flex; align-items: stretch; }\n.ds-btngroup[data-vertical] { flex-direction: column; }\n/* A child that is its own box (a native field, an element whose host is its box, such as a menu). The page's reset\n   (margin: 0 on every element) outranks ::slotted, so the overlap is important. */\n::slotted(*) { position: relative; }\n::slotted([data-group-overlap=\"x\"]) { margin-left: -1px !important; }\n::slotted([data-group-overlap=\"y\"]) { margin-top: -1px !important; }\n::slotted(:is(:hover, :focus-visible, :focus-within)) { z-index: 1; }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/button-group.js",
+        "elements/pixel-button.js",
+        "elements/text-swap.js",
+        "elements/menu.js",
+        "elements/menu-item.js",
+        "elements/button.js"
+      ],
+      "tag": "conare-button-group",
+      "tags": [
+        "conare-button-group"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-button-group",
+            "name": "ButtonGroup",
+            "module": "elements/button-group.js",
+            "description": "Buttons that belong together, sharing a hairline.",
+            "attributes": [
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string | undefined",
+                "description": "The group's name."
+              },
+              {
+                "name": "vertical",
+                "field": "vertical",
+                "type": "boolean",
+                "default": "false",
+                "description": "Stacked."
+              }
+            ],
+            "properties": [
+              {
+                "name": "label",
+                "type": "string | undefined",
+                "description": "The group's name.",
+                "attribute": "label"
+              },
+              {
+                "name": "vertical",
+                "type": "boolean",
+                "default": "false",
+                "description": "Stacked.",
+                "attribute": "vertical"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "The buttons (and a menu, or a field with its button)."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/button-group/Product.html",
+          "content": "<!-- The agent prompt's split button: Copy prompt, and an arrow with the one-click installs. Then secondary buttons\n     that share a hairline, as a pager does. -->\n<div class=\"grid items-center gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8\">\n  <p class=\"type-meta leading-7 text-fg-muted\">Split</p>\n  <div class=\"h-28\">\n    <conare-button-group label=\"connect your agent\">\n      <conare-pixel-button id=\"copy-prompt\">\n        <conare-text-swap>\n          <span slot=\"a\" class=\"contents\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-copy\" aria-hidden=\"true\"><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"></rect><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"></path></svg>Copy prompt</span>\n          <span slot=\"b\" class=\"contents\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-check\" aria-hidden=\"true\"><path d=\"M20 6 9 17l-5-5\"></path></svg>Copied</span>\n        </conare-text-swap>\n      </conare-pixel-button>\n      <conare-menu placement=\"end\" label=\"other ways to connect\" trigger-label=\"other ways to connect\" width=\"200px\" id=\"installs\">\n        <button slot=\"trigger\" type=\"button\" class=\"group/trigger relative inline-flex h-control-sm w-control-sm cursor-pointer items-center justify-center bg-action-primary text-action-primary-fg transition-[background-color] duration-120 ease-standard hover:bg-edge-accent focus-visible:outline-edge-accent max-md:h-control-touch max-md:w-control-touch\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-chevron-down transition-[rotate] duration-120 ease-out motion-reduce:transition-none group-aria-expanded/trigger:rotate-180\" aria-hidden=\"true\"><path d=\"m6 9 6 6 6-6\"></path></svg></button>\n        <conare-menu-item href=\"#cursor\"><span class=\"flex-1\">Add to Cursor</span><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-arrow-up-right\" aria-hidden=\"true\"><path d=\"M7 7h10v10\"></path><path d=\"M7 17 17 7\"></path></svg></conare-menu-item>\n        <conare-menu-item href=\"#vscode\"><span class=\"flex-1\">Add to VS Code</span><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-arrow-up-right\" aria-hidden=\"true\"><path d=\"M7 7h10v10\"></path><path d=\"M7 17 17 7\"></path></svg></conare-menu-item>\n      </conare-menu>\n    </conare-button-group>\n  </div>\n  <p class=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">Secondary</p>\n  <div>\n    <conare-button-group label=\"pages\">\n      <conare-button icon aria-label=\"previous page\" id=\"prev\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-chevron-left\"><path d=\"m15 18-6-6 6-6\"></path></svg></conare-button>\n      <conare-button class=\"tabular-nums\" aria-live=\"polite\" id=\"page\">Page 2 of 4</conare-button>\n      <conare-button icon aria-label=\"next page\" id=\"next\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-chevron-right\"><path d=\"m9 18 6-6-6-6\"></path></svg></conare-button>\n    </conare-button-group>\n  </div>\n</div>\n<script type=\"module\">\n  // Copy prompt: the clipboard (or the copy command where it is refused), then Copied for 1.5s.\n  const copyButton = document.getElementById('copy-prompt')\n  const swap = copyButton.querySelector('conare-text-swap')\n  let timer\n  copyButton.addEventListener('click', async () => {\n    const text = 'Connect to Acme over MCP.'\n    try { await navigator.clipboard.writeText(text) }\n    catch {\n      const back = document.activeElement\n      let deep = back\n      while (deep?.shadowRoot?.activeElement) deep = deep.shadowRoot.activeElement\n      const field = Object.assign(document.createElement('textarea'), { value: text })\n      field.style.position = 'fixed'\n      field.style.opacity = '0'\n      document.body.append(field)\n      field.select()\n      try { document.execCommand('copy') } catch {}\n      field.remove()\n      deep?.focus()\n    }\n    copyButton.done = swap.on = true\n    clearTimeout(timer)\n    timer = setTimeout(() => { copyButton.done = swap.on = false }, 1500)\n  })\n  // The pager: Page n of 4, the ends disabled.\n  let page = 2\n  const paint = () => {\n    document.getElementById('page').textContent = `Page ${page} of 4`\n    for (const [id, off] of [['prev', page === 1], ['next', page === 4]]) {\n      const button = document.getElementById(id)\n      button.disabled = off\n    }\n  }\n  document.getElementById('prev').addEventListener('click', () => { page--; paint() })\n  document.getElementById('next').addEventListener('click', () => { page++; paint() })\n  await customElements.whenDefined('conare-button')\n  paint()\n</script>\n"
+        }
+      ]
+    }
+  }
+}

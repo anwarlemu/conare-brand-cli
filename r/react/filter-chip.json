@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "filter-chip",
+  "type": "registry:ui",
+  "title": "Filter chip",
+  "description": "One filter as a menu button under the search box: its name, or the name and the pick once chosen, opening a radio list with Any first.",
+  "dependencies": [
+    "lucide-react@0.479.0"
+  ],
+  "registryDependencies": [
+    "https://conare-ds-registry.vercel.app/r/react/menu.json"
+  ],
+  "files": [
+    {
+      "path": "components/product/FilterChip.tsx",
+      "type": "registry:ui",
+      "content": "'use client'\nimport { Check, ChevronDown } from 'lucide-react'\nimport { Menu } from '@/components/ui/Menu'\nimport { MenuItem } from '@/components/ui/MenuItem'\nimport { useControllable } from '@/hooks/useControllable'\nimport { cn } from '@/lib/cn'\n\n// One filter as a menu button under the search box (search/FilterChip.vue, console2.css .v2-scope): \"App\", or\n// \"App: Slack\" once chosen, with an ink edge while something is chosen or the menu is open. The menu is a radio list on\n// Menu's panel, \"Any\" first (the empty value: '' or 0), a check on the pick. 28px, 40px on phones. Vue's v-model is\n// `value` with `onValueChange` (or `defaultValue` alone).\nexport interface FilterChipProps<T extends string | number> {\n  label: string\n  any: string\n  options: Array<{ value: T, label: string }>\n  width?: string\n  value?: T\n  defaultValue?: T\n  onValueChange?: (value: T) => void\n}\n\nexport function FilterChip<T extends string | number>({ label, any, options, width = '200px', value, defaultValue, onValueChange }: FilterChipProps<T>) {\n  const empty = (typeof options[0]?.value === 'number' ? 0 : '') as T\n  const [model, setModel] = useControllable<T>(value, defaultValue ?? empty, onValueChange)\n  const all = [{ value: empty, label: any }, ...options]\n  const chosen = options.find(o => o.value === model)?.label ?? ''\n  const trigger = [\n    'inline-flex h-control-sm cursor-pointer items-center gap-1.5 border px-2 text-meta text-fg whitespace-nowrap transition-[border-color,background-color] duration-120 ease-standard',\n    'hover:border-edge-focus active:bg-surface-subtle aria-expanded:border-edge-focus aria-expanded:bg-surface focus-visible:outline-offset-1',\n    'max-md:h-control-touch max-md:text-ui pointer-coarse:h-control-touch pointer-coarse:text-ui',\n    chosen ? 'border-edge-focus bg-surface' : 'border-edge bg-surface-subtle',\n  ].join(' ')\n\n  return (\n    <Menu\n      data-ds=\"filter-chip\"\n      label={label}\n      width={width}\n      triggerClass={trigger}\n      trigger={open => (\n        <>\n          {label}{chosen && <>{': '}<span className=\"font-medium\">{chosen}</span></>}\n          <ChevronDown size={12} strokeWidth={1.5} className={cn('text-fg-muted transition-[rotate] duration-120 ease-out motion-reduce:transition-none', open && 'rotate-180')} aria-hidden=\"true\" />\n        </>\n      )}\n    >\n      <div className=\"fade-y flex max-h-75 flex-col overflow-y-auto\">\n        {all.map(o => (\n          <MenuItem key={o.value} role=\"menuitemradio\" aria-checked={model === o.value} onSelect={() => setModel(o.value)}>\n            <span className=\"min-w-0 flex-1 truncate\">{o.label}</span>\n            <Check size={14} strokeWidth={1.5} className={cn('shrink-0', model === o.value ? '' : 'invisible')} aria-hidden=\"true\" />\n          </MenuItem>\n        ))}\n      </div>\n    </Menu>\n  )\n}\n\nexport default FilterChip\n"
+    },
+    {
+      "path": "hooks/useControllable.ts",
+      "type": "registry:hook",
+      "content": "'use client'\nimport { useCallback, useRef, useState } from 'react'\n\n// Vue's defineModel in React: a value that is controlled when the caller passes it (value + onValueChange, as Radix\n// does) and kept inside otherwise (defaultValue). setValue calls onChange either way.\nexport function useControllable<T>(value: T | undefined, defaultValue: T, onChange?: (value: T) => void) {\n\tconst [inner, setInner] = useState<T>(defaultValue)\n\tconst controlled = value !== undefined\n\tconst current = controlled ? value : inner\n\tconst ref = useRef(onChange)\n\tref.current = onChange\n\tconst set = useCallback((next: T) => {\n\t\tif (!controlled) setInner(next)\n\t\tref.current?.(next)\n\t}, [controlled])\n\treturn [current, set] as const\n}\n"
+    },
+    {
+      "path": "lib/cn.ts",
+      "type": "registry:lib",
+      "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+    }
+  ]
+}

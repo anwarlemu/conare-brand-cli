@@ -1,0 +1,18 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "tooltip",
+  "type": "registry:ui",
+  "title": "Tooltip",
+  "description": "An icon button's name in the inverse fill, 11px, under its trigger: 300ms wait under the pointer, at once on keyboard focus, 125ms in. Right after another tooltip it shows at once.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://conare-ds-registry.vercel.app/r/react/popover.json"
+  ],
+  "files": [
+    {
+      "path": "components/ui/Tooltip.tsx",
+      "type": "registry:ui",
+      "content": "'use client'\nimport { useEffect, useId, useRef, type FocusEvent, type PointerEvent, type ReactNode } from 'react'\nimport { PopoverPanel } from '@/components/ui/PopoverPanel'\nimport { usePopover, type Align, type Side } from '@/hooks/usePopover'\n\n// When the last tooltip closed: one opened right after it shows at once, so moving along a toolbar reads fast.\nlet lastClosed = 0\n\n// A control's name, for icon buttons (Copy.vue version 1's tip): the inverse fill, 11px, 2px by 6px, 2px under its\n// trigger. Under the pointer it waits 300ms, then fades and drops 2px in over 125ms; on keyboard focus it shows at\n// once, without motion; a press, Escape or leaving hides it. Right after another tooltip it shows at once. It never\n// shows on touch (a tap presses the button). Wrap one focusable trigger; it gets aria-describedby.\nexport interface TooltipProps { text: string, side?: Side, align?: Align, children?: ReactNode }\n\nconst WAIT = 300\n\nexport function Tooltip({ text, side = 'bottom', align = 'center', children }: TooltipProps) {\n  const pop = usePopover({ side, align, gap: 2, sticky: true })\n  const id = `tip-${useId()}`\n  const root = useRef<HTMLSpanElement | null>(null)\n  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)\n\n  useEffect(() => {\n    const trigger = root.current?.firstElementChild as HTMLElement | null\n    pop.anchor.current = trigger\n    trigger?.setAttribute('aria-describedby', id)\n  }, [id]) // eslint-disable-line react-hooks/exhaustive-deps\n  const was = useRef(false)\n  useEffect(() => {\n    if (was.current && !pop.open) lastClosed = Date.now()\n    was.current = pop.open\n  }, [pop.open])\n  useEffect(() => () => clearTimeout(timer.current), [])\n\n  function enter(event: PointerEvent) {\n    if (event.pointerType !== 'mouse' || pop.open) return\n    clearTimeout(timer.current)\n    if (Date.now() - lastClosed < WAIT) return void pop.show({ keyboard: true })\n    // ds-latency: the wait is the point; a pass of the pointer shows nothing.\n    timer.current = setTimeout(() => void pop.show(), WAIT)\n  }\n  function leave() {\n    clearTimeout(timer.current)\n    // Closed now, not after the next render: the pointer entering the next button lands in the same moment.\n    if (pop.open) lastClosed = Date.now()\n    pop.hide()\n  }\n  function focus(event: FocusEvent) {\n    if ((event.target as HTMLElement).matches(':focus-visible')) void pop.show({ keyboard: true })\n  }\n  return (\n    <>\n      <span data-ds=\"tooltip\" ref={root} className=\"inline-flex\" onPointerEnter={enter} onPointerLeave={leave} onPointerDown={leave} onFocus={focus} onBlur={leave}>\n        {children}\n      </span>\n      <PopoverPanel data-ds=\"tooltip\" id={id} pop={pop} tip role=\"tooltip\">{text}</PopoverPanel>\n    </>\n  )\n}\n\nexport default Tooltip\n"
+    }
+  ]
+}

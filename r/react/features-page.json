@@ -1,0 +1,24 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "features-page",
+  "type": "registry:block",
+  "title": "Features page",
+  "description": "A product's page: the head with the one dark call to action, what it does (feature grid), what it connects to (logo strip), one customer's words and the closing band, in the site's frame.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://conare-ds-registry.vercel.app/r/react/button-link.json",
+    "https://conare-ds-registry.vercel.app/r/react/call-to-action.json",
+    "https://conare-ds-registry.vercel.app/r/react/feature-grid.json",
+    "https://conare-ds-registry.vercel.app/r/react/logo-strip.json",
+    "https://conare-ds-registry.vercel.app/r/react/section-head.json",
+    "https://conare-ds-registry.vercel.app/r/react/site-page.json",
+    "https://conare-ds-registry.vercel.app/r/react/testimonial.json"
+  ],
+  "files": [
+    {
+      "path": "components/site/FeaturesPage.tsx",
+      "type": "registry:ui",
+      "content": "import { ButtonLink } from '@/components/site/ButtonLink'\nimport { CallToAction } from '@/components/site/CallToAction'\nimport { FeatureGrid, type Feature } from '@/components/site/FeatureGrid'\nimport { LogoStrip, type Logo } from '@/components/site/LogoStrip'\nimport { SectionHead } from '@/components/site/SectionHead'\nimport { SitePage, type SiteAction, type SiteFrameProps } from '@/components/site/SitePage'\nimport { Testimonial } from '@/components/site/Testimonial'\n\n// A product's page: the head with the one dark call to action, what it does (feature-grid), what it connects to\n// (logo-strip), one customer's words (testimonial) and the closing band, in the site's frame.\nexport interface FeaturesPageProps extends SiteFrameProps {\n  head: { tag?: string, title: string, body?: string, action: SiteAction }\n  features: { title: string, tag?: string, body?: string, features: Feature[] }\n  logos: { title: string, tag?: string, logos: Logo[] }\n  testimonial: { quote: string, role: string, company: string }\n  cta: { title: string, action: SiteAction }\n}\n\nexport function FeaturesPage({ header, footer, announcement, logo, actions, head, features, logos, testimonial, cta }: FeaturesPageProps) {\n  return (\n    <SitePage data-ds=\"features-page\" header={header} footer={footer} announcement={announcement} logo={logo} actions={actions}>\n      <section aria-labelledby=\"features-page-title\" className=\"mx-auto max-w-[1440px] px-4 pt-14 pb-20 sm:px-6 lg:px-10 lg:pt-20 lg:pb-28\">\n        <SectionHead as=\"h1\" titleId=\"features-page-title\" tag={head.tag} title={head.title} body={head.body} action={<ButtonLink href={head.action.href} grain pixels arrow>{head.action.label}</ButtonLink>} />\n      </section>\n      <FeatureGrid {...features} />\n      <LogoStrip {...logos} />\n      <Testimonial {...testimonial} />\n      <CallToAction title={cta.title}>\n        <ButtonLink href={cta.action.href} variant=\"light\" fill=\"black\">{cta.action.label}</ButtonLink>\n      </CallToAction>\n    </SitePage>\n  )\n}\n\nexport default FeaturesPage\n"
+    }
+  ]
+}

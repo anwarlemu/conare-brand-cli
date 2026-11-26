@@ -1,0 +1,157 @@
+{
+  "name": "loader",
+  "title": "Loader",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "The website's dot matrix: a 3 by 3 of 2px squares that blink in a sweep while something works, beside the word for what is working.",
+  "use_for": "A search running, a source syncing, a page loading slowly. It appears only after 300ms.",
+  "never": [
+    "A blank screen while loading",
+    "An empty state before the answer has landed",
+    "Any other spinner",
+    "Loops that run off screen"
+  ],
+  "source": "conare-web app/components/console/Matrix.vue, app/assets/css/console2.css (.v2-matrix)",
+  "body": "",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/DotMatrix.vue",
+      "content": "<script setup lang=\"ts\">\n// The website's dot-matrix loader (console2.css .v2-matrix): a 3 by 3 of 2px squares that blink in a sweep, for\n// anything at work (a search, a sync). Put it beside the word for what is working; show it only after 300ms.\n// Reduced motion holds it still. `tone=\"inverse\"` is for a dark ground (a working tag, a dark button).\ndefineProps<{ tone?: 'default' | 'inverse' }>()\nconst ORDER = [0, 1, 2, 7, 8, 3, 6, 5, 4]\n</script>\n\n<template>\n  <span data-ds=\"dot-matrix\" class=\"ds-matrix\" :data-tone=\"tone\" aria-hidden=\"true\"><i v-for=\"k in 9\" :key=\"k\" :style=\"{ '--k': ORDER[k - 1] }\" /></span>\n</template>\n\n<style>\n.ds-matrix { display: grid; grid-template-columns: repeat(3, 2px); gap: var(--ds-space-2xs); flex-shrink: 0; }\n.ds-matrix i { width: 2px; height: 2px; background: var(--ds-color-neutral-500); animation: ds-blink 900ms steps(1, end) infinite; animation-delay: calc(var(--k) * 100ms); }\n.ds-matrix[data-tone=\"inverse\"] i { background: var(--ds-color-surface); }\n@keyframes ds-blink { 0% { opacity: 1; } 50% { opacity: 0.2; } }\n@media (prefers-reduced-motion: reduce) { .ds-matrix i { animation: none; } }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "Where the product uses it",
+      "center": false,
+      "half": false,
+      "path": "examples/loader/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { onBeforeUnmount, ref } from 'vue'\nimport { Check, RefreshCw } from 'lucide-vue-next'\nimport PixelButton from '@/components/ui/PixelButton.vue'\nimport DotMatrix from '@/components/ui/DotMatrix.vue'\nimport StatusTag from '@/components/ui/StatusTag.vue'\n// The dot matrix where the product uses it: beside what is working, inside a source's dark status, and in the dark button\n// while it syncs. Press Sync now to watch it go to Syncing, then Synced, and back.\nconst sync = ref<'idle' | 'busy' | 'done'>('idle')\nconst timers: Array<ReturnType<typeof setTimeout>> = []\nfunction press() {\n  if (sync.value !== 'idle') return\n  sync.value = 'busy'\n  // ds-latency: stands in for the sync request and its confirmation in this example.\n  timers.push(setTimeout(() => { sync.value = 'done' }, 2200))\n  // ds-latency: the example returns to its start after showing Synced.\n  timers.push(setTimeout(() => { sync.value = 'idle' }, 4200))\n}\nonBeforeUnmount(() => timers.forEach(clearTimeout))\n</script>\n\n<template>\n  <div class=\"grid items-start gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8\">\n    <p class=\"type-meta leading-7 text-fg-muted\">Beside what is working</p>\n    <p class=\"flex items-center gap-2 type-meta text-fg-muted\" aria-live=\"polite\"><DotMatrix />Syncing HubSpot</p>\n    <p class=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">In a status</p>\n    <div class=\"flex flex-wrap items-center gap-2\">\n      <StatusTag status=\"syncing\" />\n      <StatusTag status=\"connecting\" />\n    </div>\n    <p class=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">In a button</p>\n    <div class=\"flex items-center\">\n      <PixelButton :done=\"sync === 'done'\" :aria-busy=\"sync === 'busy'\" @click=\"press\">\n        <DotMatrix v-if=\"sync === 'busy'\" tone=\"inverse\" />\n        <Check v-else-if=\"sync === 'done'\" :size=\"12\" :stroke-width=\"2\" aria-hidden=\"true\" />\n        <RefreshCw v-else :size=\"12\" :stroke-width=\"1.5\" aria-hidden=\"true\" />\n        {{ sync === 'busy' ? 'Syncing' : sync === 'done' ? 'Synced' : 'Sync now' }}\n      </PixelButton>\n    </div>\n  </div>\n</template>\n",
+      "requires": [
+        "button",
+        "tag"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/DotMatrix.tsx",
+          "content": "import type { CSSProperties } from 'react'\nimport { cn } from '@/react/lib/cn'\n\n// The website's dot-matrix loader (console2.css .v2-matrix): a 3 by 3 of 2px squares that blink in a sweep, for\n// anything at work (a search, a sync). Put it beside the word for what is working; show it only after 300ms.\n// Reduced motion holds it still. `tone=\"inverse\"` is for a dark ground (a working tag, a dark button).\nexport interface DotMatrixProps {\n  tone?: 'default' | 'inverse'\n  className?: string\n}\n\nconst ORDER = [0, 1, 2, 7, 8, 3, 6, 5, 4]\n\nexport function DotMatrix({ tone, className }: DotMatrixProps) {\n  return (\n    <>\n      <style href=\"ds-dot-matrix\" precedence=\"ds\">{css}</style>\n      <span data-ds=\"dot-matrix\" className={cn('ds-matrix', className)} data-tone={tone} aria-hidden=\"true\">{ORDER.map((k, i) => <i key={i} style={{ '--k': k } as CSSProperties} />)}</span>\n    </>\n  )\n}\n\nexport default DotMatrix\n\nconst css = `\n.ds-matrix { display: grid; grid-template-columns: repeat(3, 2px); gap: var(--ds-space-2xs); flex-shrink: 0; }\n.ds-matrix i { width: 2px; height: 2px; background: var(--ds-color-neutral-500); animation: ds-blink 900ms steps(1, end) infinite; animation-delay: calc(var(--k) * 100ms); }\n.ds-matrix[data-tone=\"inverse\"] i { background: var(--ds-color-surface); }\n@keyframes ds-blink { 0% { opacity: 1; } 50% { opacity: 0.2; } }\n@media (prefers-reduced-motion: reduce) { .ds-matrix i { animation: none; } }\n`\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "DotMatrix",
+            "file": "react/components/ui/DotMatrix.tsx",
+            "props": [
+              {
+                "name": "tone",
+                "type": "'default' | 'inverse'",
+                "required": false
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Where the product uses it",
+          "center": false,
+          "half": false,
+          "path": "react/examples/loader/Product.tsx",
+          "content": "'use client'\nimport { useEffect, useRef, useState } from 'react'\nimport { Check, RefreshCw } from 'lucide-react'\nimport { PixelButton } from '@/react/components/ui/PixelButton'\nimport { DotMatrix } from '@/react/components/ui/DotMatrix'\nimport { StatusTag } from '@/react/components/ui/StatusTag'\n// The dot matrix where the product uses it: beside what is working, inside a source's dark status, and in the dark button\n// while it syncs. Press Sync now to watch it go to Syncing, then Synced, and back.\n\nexport default function Product() {\n  const [sync, setSync] = useState<'idle' | 'busy' | 'done'>('idle')\n  const timers = useRef<Array<ReturnType<typeof setTimeout>>>([])\n  useEffect(() => () => timers.current.forEach(clearTimeout), [])\n  function press() {\n    if (sync !== 'idle') return\n    setSync('busy')\n    // ds-latency: stands in for the sync request and its confirmation in this example.\n    timers.current.push(setTimeout(() => setSync('done'), 2200))\n    // ds-latency: the example returns to its start after showing Synced.\n    timers.current.push(setTimeout(() => setSync('idle'), 4200))\n  }\n  // PixelButton passes aria-* to its button; its props name only aria-label.\n  return (\n    <div className=\"grid items-start gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8\">\n      <p className=\"type-meta leading-7 text-fg-muted\">Beside what is working</p>\n      <p className=\"flex items-center gap-2 type-meta text-fg-muted\" aria-live=\"polite\"><DotMatrix />Syncing HubSpot</p>\n      <p className=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">In a status</p>\n      <div className=\"flex flex-wrap items-center gap-2\">\n        <StatusTag status=\"syncing\" />\n        <StatusTag status=\"connecting\" />\n      </div>\n      <p className=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">In a button</p>\n      <div className=\"flex items-center\">\n        <PixelButton done={sync === 'done'} aria-busy={sync === 'busy'} onClick={press}>\n          {sync === 'busy'\n            ? <DotMatrix tone=\"inverse\" />\n            : sync === 'done'\n              ? <Check size={12} strokeWidth={2} aria-hidden=\"true\" />\n              : <RefreshCw size={12} strokeWidth={1.5} aria-hidden=\"true\" />}\n          {sync === 'busy' ? 'Syncing' : sync === 'done' ? 'Synced' : 'Sync now'}\n        </PixelButton>\n      </div>\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "button",
+            "tag"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/dot-matrix.ts",
+          "content": "import { html } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// DotMatrix.vue as <conare-dot-matrix>: the website's dot-matrix loader (console2.css .v2-matrix): a 3 by 3 of 2px\n// squares that blink in a sweep, for anything at work (a search, a sync). Put it beside the word for what is working;\n// show it only after 300ms. Reduced motion holds it still. `tone=\"inverse\"` is for a dark ground (a working tag, a dark\n// button). The host is the grid (dot-matrix.css), so a class on it (a margin) lands as one on <DotMatrix> does.\nconst ORDER = [0, 1, 2, 7, 8, 3, 6, 5, 4]\n\n/**\n * @summary A 3 by 3 of squares that blink while something works.\n */\nexport class DotMatrix extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { tone: { reflect: true } }\n\n\t/** `inverse` on a dark ground. */\n\ttone?: 'default' | 'inverse'\n\n\tconnectedCallback() {\n\t\tsuper.connectedCallback()\n\t\tthis.setAttribute('aria-hidden', 'true')\n\t}\n\n\trender() {\n\t\treturn html`${ORDER.map((k) => html`<i style=\"--k: ${k}\"></i>`)}`\n\t}\n}\n\ndefine('dot-matrix', DotMatrix)\n"
+        },
+        {
+          "path": "elements/components/ui/dot-matrix.css",
+          "content": "/* DotMatrix.vue's <style>, with the host as .ds-matrix (the root span), so a class on <conare-dot-matrix> lands on it. */\n:host { display: grid; grid-template-columns: repeat(3, 2px); gap: var(--ds-space-2xs); flex-shrink: 0; }\ni { width: 2px; height: 2px; background: var(--ds-color-neutral-500); animation: ds-blink 900ms steps(1, end) infinite; animation-delay: calc(var(--k) * 100ms); }\n:host([tone=\"inverse\"]) i { background: var(--ds-color-surface); }\n@keyframes ds-blink { 0% { opacity: 1; } 50% { opacity: 0.2; } }\n@media (prefers-reduced-motion: reduce) { i { animation: none; } }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/dot-matrix.js",
+        "elements/status-tag.js",
+        "elements/pixel-button.js"
+      ],
+      "tag": "conare-dot-matrix",
+      "tags": [
+        "conare-dot-matrix"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-dot-matrix",
+            "name": "DotMatrix",
+            "module": "elements/dot-matrix.js",
+            "description": "A 3 by 3 of squares that blink while something works.",
+            "attributes": [
+              {
+                "name": "tone",
+                "field": "tone",
+                "type": "\"default\" | \"inverse\" | undefined",
+                "description": "`inverse` on a dark ground."
+              }
+            ],
+            "properties": [
+              {
+                "name": "tone",
+                "type": "\"default\" | \"inverse\" | undefined",
+                "description": "`inverse` on a dark ground.",
+                "attribute": "tone"
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Where the product uses it",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/loader/Product.html",
+          "content": "<!-- The dot matrix where the product uses it: beside what is working, inside a source's dark status, and in the dark\n     button while it syncs. Press Sync now to watch it go to Syncing, then Synced, and back. -->\n<div class=\"grid items-start gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8\">\n  <p class=\"type-meta leading-7 text-fg-muted\">Beside what is working</p>\n  <p class=\"flex items-center gap-2 type-meta text-fg-muted\" aria-live=\"polite\"><conare-dot-matrix></conare-dot-matrix>Syncing HubSpot</p>\n  <p class=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">In a status</p>\n  <div class=\"flex flex-wrap items-center gap-2\">\n    <conare-status-tag status=\"syncing\"></conare-status-tag>\n    <conare-status-tag status=\"connecting\"></conare-status-tag>\n  </div>\n  <p class=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">In a button</p>\n  <div class=\"flex items-center\">\n    <conare-pixel-button id=\"sync\" aria-busy=\"false\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-check\" aria-hidden=\"true\" hidden><path d=\"M20 6 9 17l-5-5\"></path></svg><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-refresh-cw\" aria-hidden=\"true\"><path d=\"M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8\"></path><path d=\"M21 3v5h-5\"></path><path d=\"M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16\"></path><path d=\"M8 16H3v5\"></path></svg><span>Sync now</span></conare-pixel-button>\n  </div>\n</div>\n<script type=\"module\">\n  const button = document.getElementById('sync')\n  // The dot matrix is in the button only while it syncs, as Vue's v-if has it.\n  const matrix = document.createElement('conare-dot-matrix')\n  matrix.setAttribute('tone', 'inverse')\n  const [check, refresh] = button.querySelectorAll('svg')\n  let sync = 'idle'\n  const show = (next) => {\n    sync = next\n    button.done = sync === 'done'\n    button.busy = sync === 'busy'\n    if (sync === 'busy') button.prepend(matrix)\n    else matrix.remove()\n    check.toggleAttribute('hidden', sync !== 'done')\n    refresh.toggleAttribute('hidden', sync !== 'idle')\n    button.querySelector('span').textContent = sync === 'busy' ? 'Syncing' : sync === 'done' ? 'Synced' : 'Sync now'\n  }\n  button.addEventListener('click', () => {\n    if (sync !== 'idle') return\n    show('busy')\n    // ds-latency: stands in for the sync request and its confirmation in this example.\n    setTimeout(() => show('done'), 2200)\n    // ds-latency: the example returns to its start after showing Synced.\n    setTimeout(() => show('idle'), 4200)\n  })\n</script>\n"
+        }
+      ]
+    }
+  }
+}

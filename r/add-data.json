@@ -1,0 +1,410 @@
+{
+  "name": "add-data",
+  "title": "Add data",
+  "type": "registry:product",
+  "group": "product",
+  "description": "The ways data comes in, the fewest clicks first: a corpus sent by API with one prompt, an app connected with one click, or files that upload as they land. Nothing to name first.",
+  "use_for": "The namespaces page and Home.",
+  "never": [
+    "Offering a way the account cannot use",
+    "Asking for a name before anything comes in"
+  ],
+  "source": "conare-web app/components/console/namespaces/AddData.vue, NewData.vue (take 1, API first), SendApi.vue (take 3), byapi/Prompt.vue, app/assets/css/console2.css (.v2-newdata, .v2-apptiles, .v2-apptile)",
+  "body": "It emits what was picked: `copied` (the prompt), `connect(app)`, `files(list)`, `open(namespace)`. Connect, upload and\nwatch for the first write in your app, and pass back `connecting` (an app's type), `uploading` (a count), `waiting`\nand `landed`. Apps show their `logo` when given, otherwise a square tile with the initial.",
+  "requires": [
+    "button",
+    "code-pop",
+    "loader",
+    "source-row"
+  ],
+  "dependencies": [
+    "lucide-vue-next@^0.479.0"
+  ],
+  "files": [
+    {
+      "path": "components/product/AddData.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport { Check, Copy, X } from 'lucide-vue-next'\nimport Button from '@/components/ui/Button.vue'\nimport AppMark from '@/components/product/AppMark.vue'\nimport CodePop from '@/components/ui/CodePop.vue'\nimport DotMatrix from '@/components/ui/DotMatrix.vue'\nimport PixelButton from '@/components/ui/PixelButton.vue'\nimport { useCopy } from '@/composables/useCopy'\n\n// The ways data comes in, the fewest clicks first, nothing to name first (the console's namespaces/NewData.vue, take\n// 1 with API first, the picks): Send by API leads with one prompt for a coding agent and the request a click away;\n// then the likeliest eight apps, each tile's Connect in its corner under the pointer (always there on touch); then one\n// quiet line for files, and the whole panel takes a drop. It emits what was picked; the app connects, uploads and\n// watches for the first write, passing back `connecting`, `uploading`, `waiting` and `landed`.\nexport interface App { type: string, name: string, logo?: string | null }\nconst props = defineProps<{\n  apps: App[]\n  /** The prompt that sends the documents, and the request it makes. */\n  prompt: string\n  code: string\n  /** Where the first API write lands. */\n  namespace: string\n  connecting?: string\n  uploading?: number\n  waiting?: boolean\n  landed?: boolean\n  error?: string\n  /** A close button beside it, where it opens over a page (the namespaces page); Home shows it without. */\n  closable?: boolean\n}>()\nconst emit = defineEmits<{ connect: [app: App], files: [files: File[]], copied: [], open: [namespace: string], close: [] }>()\nconst { copied, copy } = useCopy()\nasync function copyPrompt() {\n  if (await copy(props.prompt)) emit('copied')\n}\nconst picker = ref<HTMLInputElement | null>(null)\nconst dragging = ref(0)\nfunction dropped(event: DragEvent) {\n  dragging.value = 0\n  const files = Array.from(event.dataTransfer?.files ?? [])\n  if (files.length) emit('files', files)\n}\nfunction picked(event: Event) {\n  const input = event.target as HTMLInputElement\n  const files = Array.from(input.files ?? [])\n  if (files.length) emit('files', files)\n  input.value = ''\n}\n</script>\n\n<template>\n  <div data-ds=\"add-data\" class=\"flex items-start gap-3\">\n  <section class=\"ds-newdata min-w-0 flex-1\" :data-drag=\"dragging > 0 || undefined\" aria-label=\"add data\" @dragenter.prevent=\"dragging++\" @dragover.prevent @dragleave.prevent=\"dragging--\" @drop.prevent=\"dropped\">\n    <h3 class=\"type-ui-strong\">Send by API</h3>\n    <div class=\"flex flex-wrap items-center gap-2\">\n      <PixelButton :done=\"copied\" @click=\"copyPrompt\">\n        <span class=\"ds-newdata-swap\" :data-on=\"copied || undefined\">\n          <span class=\"ds-newdata-swap-a\"><Copy :size=\"12\" :stroke-width=\"1.5\" aria-hidden=\"true\" />Copy prompt for your agent</span>\n          <span class=\"ds-newdata-swap-b\" aria-hidden=\"true\"><Check :size=\"12\" :stroke-width=\"2\" />Copied</span>\n        </span>\n      </PixelButton>\n      <CodePop :code=\"code\" />\n    </div>\n    <p v-if=\"waiting\" class=\"flex flex-wrap items-center gap-1.5 type-meta\" role=\"status\">\n      <template v-if=\"landed\"><Check :size=\"12\" :stroke-width=\"2\" aria-hidden=\"true\" />1 document landed in <span class=\"type-code-sm\">{{ namespace }}</span></template>\n      <template v-else><DotMatrix />Waiting for your first document</template>\n      <PixelButton v-if=\"landed\" class=\"ml-auto\" @click=\"emit('open', namespace)\">Open {{ namespace }}</PixelButton>\n    </p>\n\n    <h3 class=\"type-ui-strong\">Or connect an app</h3>\n    <ul class=\"ds-apptiles\">\n      <li v-for=\"a in apps.slice(0, 8)\" :key=\"a.type\" class=\"ds-apptile\" :data-busy=\"connecting === a.type || undefined\" @click=\"emit('connect', a)\">\n        <AppMark :name=\"a.name\" :logo=\"a.logo\" :size=\"20\" />\n        <span class=\"max-w-full truncate\">{{ a.name }}</span>\n        <PixelButton class=\"ds-apptile-go\" :disabled=\"!!connecting\" :aria-label=\"`connect ${a.name}`\" @click.stop=\"emit('connect', a)\">{{ connecting === a.type ? 'Opening' : 'Connect' }}</PixelButton>\n      </li>\n    </ul>\n\n    <p class=\"type-meta text-fg-muted\" aria-live=\"polite\">\n      <template v-if=\"uploading\"><DotMatrix class=\"mr-1.5 inline-grid\" />Uploading {{ uploading === 1 ? '1 file' : `${uploading} files` }}</template>\n      <template v-else>Or drop files here, or <button type=\"button\" class=\"ds-newdata-link\" @click=\"picker?.click()\">choose files</button>.</template>\n    </p>\n    <p v-if=\"error\" class=\"bg-surface-danger px-3 py-2 type-ui text-fg\" role=\"alert\">{{ error }}</p>\n    <input ref=\"picker\" type=\"file\" multiple hidden @change=\"picked\">\n  </section>\n  <Button v-if=\"closable\" variant=\"ghost\" icon aria-label=\"close add data\" @click=\"emit('close')\"><X :size=\"14\" :stroke-width=\"1.5\" /></Button>\n  </div>\n</template>\n\n<style>\n.ds-newdata { position: relative; display: flex; flex-direction: column; gap: var(--ds-space-lg); font-size: var(--ds-text-ui); }\n.ds-newdata[data-drag]::after { position: absolute; inset: -8px; display: flex; align-items: center; justify-content: center; border: var(--ds-border-hairline) dashed var(--ds-color-edge-focus); background: color-mix(in srgb, var(--ds-color-surface-subtle) 92%, transparent); content: \"Drop files to upload\"; font-size: var(--ds-text-ui); pointer-events: none; }\n.ds-newdata-link { color: inherit; text-decoration: underline; text-decoration-color: var(--ds-color-edge-strong); text-underline-offset: 3px; cursor: pointer; transition: text-decoration-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-newdata-link:hover { text-decoration-color: var(--ds-color-fg); } }\n.ds-newdata-link:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: 2px; }\n.ds-newdata-swap { display: grid; }\n.ds-newdata-swap > span { display: inline-flex; grid-area: 1 / 1; align-items: center; justify-content: center; gap: var(--ds-space-sm); transition: opacity var(--ds-duration-glide) ease, filter var(--ds-duration-glide) ease, transform var(--ds-duration-settle) var(--ds-easing-out); }\n.ds-newdata-swap-b { opacity: 0; filter: blur(2px); transform: translateY(5px) scale(0.96); }\n.ds-newdata-swap[data-on] .ds-newdata-swap-a { opacity: 0; filter: blur(2px); transform: translateY(-5px) scale(0.96); }\n.ds-newdata-swap[data-on] .ds-newdata-swap-b { opacity: 1; filter: none; transform: none; }\n.ds-apptiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--ds-space-md); margin: 0; padding: 0; list-style: none; }\n@media (min-width: 900px) { .ds-apptiles { grid-template-columns: repeat(4, minmax(0, 1fr)); } }\n.ds-apptile { position: relative; display: flex; width: 100%; height: 100%; min-height: 104px; flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 12px; border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface); cursor: pointer; transition: border-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-apptile .ds-apptile-go { position: absolute; right: 10px; bottom: 10px; opacity: 0; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-apptile:hover { border-color: var(--ds-color-edge-focus); } .ds-apptile:hover .ds-apptile-go { opacity: 1; } }\n@media (hover: none) { .ds-apptile .ds-apptile-go { position: static; opacity: 1; } }\n.ds-apptile:focus-within { border-color: var(--ds-color-edge-focus); }\n.ds-apptile:focus-within .ds-apptile-go, .ds-apptile[data-busy] .ds-apptile-go { opacity: 1; }\n@media (max-width: 767px) {\n  .ds-apptiles { grid-template-columns: minmax(0, 1fr); gap: 0; border: var(--ds-border-hairline) solid var(--ds-color-edge); }\n  .ds-apptiles > li + li { border-top: var(--ds-border-hairline) solid var(--ds-color-edge); }\n  .ds-apptile { height: auto; min-height: 56px; flex-direction: row; align-items: center; justify-content: flex-start; gap: var(--ds-space-lg); padding: 8px 12px; border: 0; }\n  .ds-apptile > span { min-width: 0; }\n  .ds-apptile .ds-apptile-go { position: static; margin-left: auto; opacity: 1; }\n}\n@media (prefers-reduced-motion: reduce) { .ds-newdata-swap > span { filter: none; transform: none; transition: opacity var(--ds-duration-micro) ease; } }\n</style>\n"
+    },
+    {
+      "path": "composables/useCopy.ts",
+      "content": "import { ref } from 'vue'\n\n/**\n * A copy button's state: copy(text) writes the clipboard, and copied is true for 1.5s after. Where the Clipboard API is\n * refused (a browser or a frame that denies it), the older copy command still works inside the click. Only if both are\n * refused does it answer false, and the text stays selectable.\n */\nexport function useCopy(ms = 1500) {\n  const copied = ref(false)\n  let timer: ReturnType<typeof setTimeout> | undefined\n  async function copy(text: string): Promise<boolean> {\n    try {\n      await navigator.clipboard.writeText(text)\n    }\n    catch {\n      if (!copyByCommand(text)) return false\n    }\n    copied.value = true\n    clearTimeout(timer)\n    // ds-latency: the Copied label stays 1.5s after the copy, which has already happened.\n    timer = setTimeout(() => { copied.value = false }, ms)\n    return true\n  }\n  return { copied, copy }\n}\n\n// The older way: select the text in an unseen field, run the copy command, hand focus back.\nfunction copyByCommand(text: string) {\n  const back = document.activeElement as HTMLElement | null\n  const field = document.createElement('textarea')\n  field.value = text\n  field.setAttribute('readonly', '')\n  field.style.position = 'fixed'\n  field.style.opacity = '0'\n  document.body.appendChild(field)\n  field.select()\n  let ok = false\n  try { ok = document.execCommand('copy') }\n  catch { ok = false }\n  field.remove()\n  back?.focus()\n  return ok\n}\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "As Home shows it",
+      "center": false,
+      "half": false,
+      "path": "examples/add-data/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport AddData from '@/components/product/AddData.vue'\nimport Toaster from '@/components/ui/Toaster.vue'\nimport { useToast } from '@/composables/useToast'\n// As Home shows it: in a card, without a close button. Nothing connects or uploads here: the sample plays the first\n// API write once the prompt is copied, as the product would watch for it.\nconst apps = ['Google Drive', 'Slack', 'Notion', 'Gmail', 'HubSpot', 'Confluence', 'Dropbox', 'GitHub'].map(name => ({ type: name.toLowerCase().replace(/\\s/g, '-'), name }))\nconst prompt = 'Send my documents to Conare. Write them in batches of up to 100 to POST https://api.conare.ai/v1/namespaces/api-documents/documents with the header \"Authorization: Bearer $CONARE_API_KEY\". Each document needs an id and its text. The first write creates the namespace api-documents. Tell me how many landed.'\nconst code = `curl https://api.conare.ai/v1/namespaces/api-documents/documents \\\\\n  -H \"Authorization: Bearer $CONARE_API_KEY\" \\\\\n  -H \"Content-Type: application/json\" \\\\\n  -d '{\"documents\": [{\"id\": \"handbook\", \"text\": \"The text of your document.\"}]}'`\nconst waiting = ref(false)\nconst landed = ref(false)\nconst connecting = ref('')\nconst uploading = ref(0)\nconst toast = useToast()\nfunction copied() {\n  if (waiting.value) return\n  waiting.value = true\n  setTimeout(() => { landed.value = true }, 2400)\n}\nfunction connect(app: { type: string, name: string }) {\n  connecting.value = app.type\n  setTimeout(() => {\n    connecting.value = ''\n    toast(`${app.name}'s sign-in opens here`)\n  }, 900)\n}\nfunction files(list: File[]) {\n  uploading.value = list.length\n  setTimeout(() => {\n    uploading.value = 0\n    toast(`Uploaded ${list.length === 1 ? '1 file' : `${list.length} files`}`)\n  }, 1200)\n}\n</script>\n\n<template>\n  <div class=\"max-w-190 border border-edge p-4\">\n    <AddData :apps=\"apps\" :prompt=\"prompt\" :code=\"code\" namespace=\"api-documents\" :waiting=\"waiting\" :landed=\"landed\" :connecting=\"connecting\" :uploading=\"uploading\" @copied=\"copied\" @connect=\"connect\" @files=\"files\" @open=\"(ns) => toast('Opens the namespace', ns)\" />\n    <Toaster />\n  </div>\n</template>\n",
+      "requires": [
+        "button",
+        "code-pop",
+        "loader",
+        "source-row",
+        "toast"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/product/AddData.tsx",
+          "content": "'use client'\nimport { Check, Copy, X } from 'lucide-react'\nimport { useRef, useState, type ChangeEvent, type DragEvent } from 'react'\nimport { AppMark } from '@/react/components/product/AppMark'\nimport { Button } from '@/react/components/ui/Button'\nimport { CodePop } from '@/react/components/ui/CodePop'\nimport { DotMatrix } from '@/react/components/ui/DotMatrix'\nimport { PixelButton } from '@/react/components/ui/PixelButton'\nimport { useCopy } from '@/react/hooks/useCopy'\n\n// The ways data comes in, the fewest clicks first, nothing to name first (the console's namespaces/NewData.vue, take\n// 1 with API first, the picks): Send by API leads with one prompt for a coding agent and the request a click away;\n// then the likeliest eight apps, each tile's Connect in its corner under the pointer (always there on touch); then one\n// quiet line for files, and the whole panel takes a drop. It calls back with what was picked; the app connects,\n// uploads and watches for the first write, passing back `connecting`, `uploading`, `waiting` and `landed`.\nexport interface App { type: string, name: string, logo?: string | null }\n\nexport interface AddDataProps {\n  apps: App[]\n  /** The prompt that sends the documents, and the request it makes. */\n  prompt: string\n  code: string\n  /** Where the first API write lands. */\n  namespace: string\n  connecting?: string\n  uploading?: number\n  waiting?: boolean\n  landed?: boolean\n  error?: string\n  /** A close button beside it, where it opens over a page (the namespaces page); Home shows it without. */\n  closable?: boolean\n  onConnect?: (app: App) => void\n  onFiles?: (files: File[]) => void\n  onCopied?: () => void\n  onOpen?: (namespace: string) => void\n  onClose?: () => void\n}\n\nexport function AddData({ apps, prompt, code, namespace, connecting, uploading, waiting, landed, error, closable, onConnect, onFiles, onCopied, onOpen, onClose }: AddDataProps) {\n  const { copied, copy } = useCopy()\n  async function copyPrompt() {\n    if (await copy(prompt)) onCopied?.()\n  }\n  const picker = useRef<HTMLInputElement | null>(null)\n  const [dragging, setDragging] = useState(0)\n  function dropped(event: DragEvent) {\n    event.preventDefault()\n    setDragging(0)\n    const files = Array.from(event.dataTransfer?.files ?? [])\n    if (files.length) onFiles?.(files)\n  }\n  function picked(event: ChangeEvent<HTMLInputElement>) {\n    const input = event.target\n    const files = Array.from(input.files ?? [])\n    if (files.length) onFiles?.(files)\n    input.value = ''\n  }\n  return (\n    <div data-ds=\"add-data\" className=\"flex items-start gap-3\">\n      <style href=\"ds-add-data\" precedence=\"ds\">{css}</style>\n      <section className=\"ds-newdata min-w-0 flex-1\" data-drag={dragging > 0 || undefined} aria-label=\"add data\" onDragEnter={(e) => { e.preventDefault(); setDragging(d => d + 1) }} onDragOver={e => e.preventDefault()} onDragLeave={(e) => { e.preventDefault(); setDragging(d => d - 1) }} onDrop={dropped}>\n        <h3 className=\"type-ui-strong\">Send by API</h3>\n        <div className=\"flex flex-wrap items-center gap-2\">\n          <PixelButton done={copied} onClick={copyPrompt}>\n            <span className=\"ds-newdata-swap\" data-on={copied || undefined}>\n              <span className=\"ds-newdata-swap-a\"><Copy size={12} strokeWidth={1.5} aria-hidden=\"true\" />Copy prompt for your agent</span>\n              <span className=\"ds-newdata-swap-b\" aria-hidden=\"true\"><Check size={12} strokeWidth={2} />Copied</span>\n            </span>\n          </PixelButton>\n          <CodePop code={code} />\n        </div>\n        {waiting && (\n          <p className=\"flex flex-wrap items-center gap-1.5 type-meta\" role=\"status\">\n            {landed\n              ? <><Check size={12} strokeWidth={2} aria-hidden=\"true\" />1 document landed in <span className=\"type-code-sm\">{namespace}</span></>\n              : <><DotMatrix />Waiting for your first document</>}\n            {landed && <PixelButton className=\"ml-auto\" onClick={() => onOpen?.(namespace)}>{`Open ${namespace}`}</PixelButton>}\n          </p>\n        )}\n\n        <h3 className=\"type-ui-strong\">Or connect an app</h3>\n        <ul className=\"ds-apptiles\">\n          {apps.slice(0, 8).map(a => (\n            <li key={a.type} className=\"ds-apptile\" data-busy={connecting === a.type || undefined} onClick={() => onConnect?.(a)}>\n              <AppMark name={a.name} logo={a.logo} size={20} />\n              <span className=\"max-w-full truncate\">{a.name}</span>\n              <PixelButton className=\"ds-apptile-go\" disabled={!!connecting} aria-label={`connect ${a.name}`} onClick={(e) => { e.stopPropagation(); onConnect?.(a) }}>{connecting === a.type ? 'Opening' : 'Connect'}</PixelButton>\n            </li>\n          ))}\n        </ul>\n\n        <p className=\"type-meta text-fg-muted\" aria-live=\"polite\">\n          {uploading\n            ? <><DotMatrix className=\"mr-1.5 inline-grid\" />{`Uploading ${uploading === 1 ? '1 file' : `${uploading} files`}`}</>\n            : <>Or drop files here, or <button type=\"button\" className=\"ds-newdata-link\" onClick={() => picker.current?.click()}>choose files</button>.</>}\n        </p>\n        {error && <p className=\"bg-surface-danger px-3 py-2 type-ui text-fg\" role=\"alert\">{error}</p>}\n        <input ref={picker} type=\"file\" multiple hidden onChange={picked} />\n      </section>\n      {closable && <Button variant=\"ghost\" icon aria-label=\"close add data\" onClick={() => onClose?.()}><X size={14} strokeWidth={1.5} /></Button>}\n    </div>\n  )\n}\n\nexport default AddData\n\nconst css = `\n.ds-newdata { position: relative; display: flex; flex-direction: column; gap: var(--ds-space-lg); font-size: var(--ds-text-ui); }\n.ds-newdata[data-drag]::after { position: absolute; inset: -8px; display: flex; align-items: center; justify-content: center; border: var(--ds-border-hairline) dashed var(--ds-color-edge-focus); background: color-mix(in srgb, var(--ds-color-surface-subtle) 92%, transparent); content: \"Drop files to upload\"; font-size: var(--ds-text-ui); pointer-events: none; }\n.ds-newdata-link { color: inherit; text-decoration: underline; text-decoration-color: var(--ds-color-edge-strong); text-underline-offset: 3px; cursor: pointer; transition: text-decoration-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-newdata-link:hover { text-decoration-color: var(--ds-color-fg); } }\n.ds-newdata-link:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: 2px; }\n.ds-newdata-swap { display: grid; }\n.ds-newdata-swap > span { display: inline-flex; grid-area: 1 / 1; align-items: center; justify-content: center; gap: var(--ds-space-sm); transition: opacity var(--ds-duration-glide) ease, filter var(--ds-duration-glide) ease, transform var(--ds-duration-settle) var(--ds-easing-out); }\n.ds-newdata-swap-b { opacity: 0; filter: blur(2px); transform: translateY(5px) scale(0.96); }\n.ds-newdata-swap[data-on] .ds-newdata-swap-a { opacity: 0; filter: blur(2px); transform: translateY(-5px) scale(0.96); }\n.ds-newdata-swap[data-on] .ds-newdata-swap-b { opacity: 1; filter: none; transform: none; }\n.ds-apptiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--ds-space-md); margin: 0; padding: 0; list-style: none; }\n@media (min-width: 900px) { .ds-apptiles { grid-template-columns: repeat(4, minmax(0, 1fr)); } }\n.ds-apptile { position: relative; display: flex; width: 100%; height: 100%; min-height: 104px; flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 12px; border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface); cursor: pointer; transition: border-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-apptile .ds-apptile-go { position: absolute; right: 10px; bottom: 10px; opacity: 0; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-apptile:hover { border-color: var(--ds-color-edge-focus); } .ds-apptile:hover .ds-apptile-go { opacity: 1; } }\n@media (hover: none) { .ds-apptile .ds-apptile-go { position: static; opacity: 1; } }\n.ds-apptile:focus-within { border-color: var(--ds-color-edge-focus); }\n.ds-apptile:focus-within .ds-apptile-go, .ds-apptile[data-busy] .ds-apptile-go { opacity: 1; }\n@media (max-width: 767px) {\n  .ds-apptiles { grid-template-columns: minmax(0, 1fr); gap: 0; border: var(--ds-border-hairline) solid var(--ds-color-edge); }\n  .ds-apptiles > li + li { border-top: var(--ds-border-hairline) solid var(--ds-color-edge); }\n  .ds-apptile { height: auto; min-height: 56px; flex-direction: row; align-items: center; justify-content: flex-start; gap: var(--ds-space-lg); padding: 8px 12px; border: 0; }\n  .ds-apptile > span { min-width: 0; }\n  .ds-apptile .ds-apptile-go { position: static; margin-left: auto; opacity: 1; }\n}\n@media (prefers-reduced-motion: reduce) { .ds-newdata-swap > span { filter: none; transform: none; transition: opacity var(--ds-duration-micro) ease; } }\n`\n"
+        },
+        {
+          "path": "react/hooks/useCopy.ts",
+          "content": "'use client'\nimport { useCallback, useEffect, useRef, useState } from 'react'\n\n/**\n * A copy button's state: copy(text) writes the clipboard, and copied is true for 1.5s after. Where the Clipboard API is\n * refused (a browser or a frame that denies it), the older copy command still works inside the click. Only if both are\n * refused does it answer false, and the text stays selectable.\n */\nexport function useCopy(ms = 1500) {\n  const [copied, setCopied] = useState(false)\n  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)\n  useEffect(() => () => clearTimeout(timer.current), [])\n  const copy = useCallback(async (text: string): Promise<boolean> => {\n    try {\n      await navigator.clipboard.writeText(text)\n    }\n    catch {\n      if (!copyByCommand(text)) return false\n    }\n    setCopied(true)\n    clearTimeout(timer.current)\n    // ds-latency: the Copied label stays 1.5s after the copy, which has already happened.\n    timer.current = setTimeout(() => setCopied(false), ms)\n    return true\n  }, [ms])\n  return { copied, copy }\n}\n\n// The older way: select the text in an unseen field, run the copy command, hand focus back.\nfunction copyByCommand(text: string) {\n  const back = document.activeElement as HTMLElement | null\n  const field = document.createElement('textarea')\n  field.value = text\n  field.setAttribute('readonly', '')\n  field.style.position = 'fixed'\n  field.style.opacity = '0'\n  document.body.appendChild(field)\n  field.select()\n  let ok = false\n  try { ok = document.execCommand('copy') }\n  catch { ok = false }\n  field.remove()\n  back?.focus()\n  return ok\n}\n"
+        }
+      ],
+      "dependencies": [
+        "lucide-react@0.479.0"
+      ],
+      "registryDependencies": [
+        "button",
+        "code-pop",
+        "loader",
+        "source-row"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "AddData",
+            "file": "react/components/product/AddData.tsx",
+            "props": [
+              {
+                "name": "apps",
+                "type": "App[]",
+                "required": true
+              },
+              {
+                "name": "prompt",
+                "type": "string",
+                "required": true,
+                "description": "The prompt that sends the documents, and the request it makes."
+              },
+              {
+                "name": "code",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "namespace",
+                "type": "string",
+                "required": true,
+                "description": "Where the first API write lands."
+              },
+              {
+                "name": "connecting",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "uploading",
+                "type": "number",
+                "required": false
+              },
+              {
+                "name": "waiting",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "landed",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "error",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "closable",
+                "type": "boolean",
+                "required": false,
+                "description": "A close button beside it, where it opens over a page (the namespaces page); Home shows it without."
+              },
+              {
+                "name": "onConnect",
+                "type": "(app: App) => void",
+                "required": false
+              },
+              {
+                "name": "onFiles",
+                "type": "(files: File[]) => void",
+                "required": false
+              },
+              {
+                "name": "onCopied",
+                "type": "() => void",
+                "required": false
+              },
+              {
+                "name": "onOpen",
+                "type": "(namespace: string) => void",
+                "required": false
+              },
+              {
+                "name": "onClose",
+                "type": "() => void",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "As Home shows it",
+          "center": false,
+          "half": false,
+          "path": "react/examples/add-data/Product.tsx",
+          "content": "'use client'\nimport { useState } from 'react'\nimport { AddData } from '@/react/components/product/AddData'\nimport { Toaster } from '@/react/components/ui/Toaster'\nimport { useToast } from '@/react/hooks/useToast'\n// As Home shows it: in a card, without a close button. Nothing connects or uploads here: the sample plays the first\n// API write once the prompt is copied, as the product would watch for it.\nconst apps = ['Google Drive', 'Slack', 'Notion', 'Gmail', 'HubSpot', 'Confluence', 'Dropbox', 'GitHub'].map(name => ({ type: name.toLowerCase().replace(/\\s/g, '-'), name }))\nconst prompt = 'Send my documents to Conare. Write them in batches of up to 100 to POST https://api.conare.ai/v1/namespaces/api-documents/documents with the header \"Authorization: Bearer $CONARE_API_KEY\". Each document needs an id and its text. The first write creates the namespace api-documents. Tell me how many landed.'\nconst code = `curl https://api.conare.ai/v1/namespaces/api-documents/documents \\\\\n  -H \"Authorization: Bearer $CONARE_API_KEY\" \\\\\n  -H \"Content-Type: application/json\" \\\\\n  -d '{\"documents\": [{\"id\": \"handbook\", \"text\": \"The text of your document.\"}]}'`\n\nexport default function Product() {\n  const [waiting, setWaiting] = useState(false)\n  const [landed, setLanded] = useState(false)\n  const [connecting, setConnecting] = useState('')\n  const [uploading, setUploading] = useState(0)\n  const toast = useToast()\n  function copied() {\n    if (waiting) return\n    setWaiting(true)\n    setTimeout(() => setLanded(true), 2400)\n  }\n  function connect(app: { type: string, name: string }) {\n    setConnecting(app.type)\n    setTimeout(() => {\n      setConnecting('')\n      toast(`${app.name}'s sign-in opens here`)\n    }, 900)\n  }\n  function files(list: File[]) {\n    setUploading(list.length)\n    setTimeout(() => {\n      setUploading(0)\n      toast(`Uploaded ${list.length === 1 ? '1 file' : `${list.length} files`}`)\n    }, 1200)\n  }\n  return (\n    <div className=\"max-w-190 border border-edge p-4\">\n      <AddData apps={apps} prompt={prompt} code={code} namespace=\"api-documents\" waiting={waiting} landed={landed} connecting={connecting} uploading={uploading} onCopied={copied} onConnect={connect} onFiles={files} onOpen={ns => toast('Opens the namespace', ns)} />\n      <Toaster />\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "button",
+            "code-pop",
+            "loader",
+            "source-row",
+            "toast"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/product/add-data.ts",
+          "content": "import { nothing } from 'lit'\nimport { html } from 'lit/static-html.js'\nimport { repeat } from 'lit/directives/repeat.js'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { Check, Copy, X } from 'lucide'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport { CopyController } from '@/elements/controllers/copy'\nimport '@/elements/components/product/app-mark'\nimport '@/elements/components/ui/button'\nimport '@/elements/components/ui/code-pop'\nimport '@/elements/components/ui/dot-matrix'\nimport '@/elements/components/ui/pixel-button'\nimport styles from 'virtual:tw'\n\n// AddData.vue as <conare-add-data>: the ways data comes in, the fewest clicks first, nothing to name first (the\n// console's namespaces/NewData.vue, take 1 with API first, the picks): Send by API leads with one prompt for a coding\n// agent and the request a click away; then the likeliest eight apps, each tile's Connect in its corner under the\n// pointer (always there on touch); then one quiet line for files, and the whole panel takes a drop. It fires what was\n// picked; the app connects, uploads and watches for the first write, setting `connecting`, `uploading`, `waiting` and\n// `landed`.\nexport interface App { type: string, name: string, logo?: string | null }\n\n// Vue's classes on PixelButton's root (each tile's Connect, ds-apptile-go, and Open's ml-auto) have to reach the box\n// <conare-pixel-button> draws in its own shadow root: the panel marks the element (data-go, data-go-hover,\n// data-go-on, data-push) and gives that shadow root these rules once, the tile's own states set on it from here. A\n// tile's mark takes `.ds-apptile > span` on phones (min-width: 0) the same way (data-tile-mark).\nconst GO_RULES = `\n:host([data-go]) > [data-ds] { position: absolute; right: 10px; bottom: 10px; opacity: 0; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { :host([data-go][data-go-hover]) > [data-ds] { opacity: 1; } }\n@media (hover: none) { :host([data-go]) > [data-ds] { position: static; opacity: 1; } }\n:host([data-go][data-go-on]) > [data-ds] { opacity: 1; }\n@media (max-width: 767px) { :host([data-go]) > [data-ds] { position: static; margin-left: auto; opacity: 1; } }\n:host([data-push]) > [data-ds] { margin-left: auto; }\n@media (max-width: 767px) { :host([data-tile-mark]) > span { min-width: 0; } }\n`\nconst goSheets = new WeakSet<ShadowRoot>()\n\n/**\n * @summary The ways data comes in: a prompt for an agent, eight apps, and a drop for files.\n * @fires connect - An app was picked; detail { app }.\n * @fires files - Files were dropped or chosen; detail { files }.\n * @fires copied - The prompt is on the clipboard.\n * @fires open - Open the namespace the first write landed in; detail { namespace }.\n * @fires close - The close button.\n */\nexport class AddData extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { apps: { type: Array }, prompt: {}, code: {}, namespace: {}, connecting: {}, uploading: { type: Number }, waiting: { type: Boolean }, landed: { type: Boolean }, error: {}, closable: { type: Boolean }, dragging: { state: true } }\n\n\t/** [{ type, name, logo? }]; the first eight show. */\n\tapps: App[] = []\n\t/** The prompt that sends the documents. */\n\tprompt = ''\n\t/** The request it makes. */\n\tcode = ''\n\t/** Where the first API write lands. */\n\tnamespace = ''\n\t/** The app being connected (its type). */\n\tconnecting?: string\n\t/** How many files are uploading. */\n\tuploading?: number\n\t/** Waiting for the first API write. */\n\twaiting = false\n\t/** The first write landed. */\n\tlanded = false\n\terror?: string\n\t/** A close button beside it. */\n\tclosable = false\n\tprivate dragging = 0\n\tprivate copier = new CopyController(this)\n\n\tprivate async copyPrompt() {\n\t\tif (await this.copier.copy(this.prompt)) this.emit('copied')\n\t}\n\tprivate dropped(event: DragEvent) {\n\t\tevent.preventDefault()\n\t\tthis.dragging = 0\n\t\tconst files = Array.from(event.dataTransfer?.files ?? [])\n\t\tif (files.length) this.emit('files', { files })\n\t}\n\tprivate picked(event: Event) {\n\t\tconst input = event.target as HTMLInputElement\n\t\tconst files = Array.from(input.files ?? [])\n\t\tif (files.length) this.emit('files', { files })\n\t\tinput.value = ''\n\t}\n\n\t// The marked pixel buttons get their rules once they have drawn their shadow roots.\n\tprotected async updated() {\n\t\tconst marked = [...this.renderRoot.querySelectorAll<HTMLElement & { updateComplete?: Promise<unknown> }>('[data-go], [data-push], [data-tile-mark]')]\n\t\tfor (const el of marked) {\n\t\t\tawait customElements.whenDefined(el.localName)\n\t\t\tawait el.updateComplete\n\t\t\tconst root = el.shadowRoot\n\t\t\tif (!root || goSheets.has(root)) continue\n\t\t\tconst sheet = new CSSStyleSheet()\n\t\t\tsheet.replaceSync(GO_RULES)\n\t\t\troot.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet]\n\t\t\tgoSheets.add(root)\n\t\t}\n\t}\n\n\t// A tile under the pointer, or holding focus, shows its Connect (Vue's .ds-apptile:hover and :focus-within).\n\tprivate tile(event: Event, attr: 'data-go-hover' | 'data-go-focus', on: boolean) {\n\t\tconst go = (event.currentTarget as HTMLElement).querySelector('[data-go]')\n\t\tgo?.toggleAttribute(attr, on)\n\t\tgo?.toggleAttribute('data-go-on', go.hasAttribute('data-go-focus') || go.hasAttribute('data-go-busy'))\n\t}\n\n\trender() {\n\t\tconst [pixel, pop, dots, mark, button] = ['pixel-button', 'code-pop', 'dot-matrix', 'app-mark', 'button'].map(tag)\n\t\tconst copied = this.copier.copied\n\t\tconst n = this.uploading ?? 0\n\t\treturn html`<div data-ds=\"add-data\" class=\"flex items-start gap-3\">\n\t\t\t<section class=\"ds-newdata min-w-0 flex-1\" data-drag=${ifDefined(this.dragging > 0 ? 'true' : undefined)} aria-label=\"add data\" @dragenter=${(e: DragEvent) => { e.preventDefault(); this.dragging++ }} @dragover=${(e: DragEvent) => e.preventDefault()} @dragleave=${(e: DragEvent) => { e.preventDefault(); this.dragging-- }} @drop=${(e: DragEvent) => this.dropped(e)}>\n\t\t\t\t<h3 class=\"type-ui-strong\">Send by API</h3>\n\t\t\t\t<div class=\"flex flex-wrap items-center gap-2\">\n\t\t\t\t\t<${pixel} ?done=${copied} @click=${() => void this.copyPrompt()}><span class=\"ds-newdata-swap\" data-on=${ifDefined(copied ? 'true' : undefined)}><span class=\"ds-newdata-swap-a\">${icon(Copy, 'copy', { size: 12, strokeWidth: 1.5, attrs: { 'aria-hidden': 'true' } })}Copy prompt for your agent</span><span class=\"ds-newdata-swap-b\" aria-hidden=\"true\">${icon(Check, 'check', { size: 12, strokeWidth: 2 })}Copied</span></span></${pixel}>\n\t\t\t\t\t<${pop} .code=${this.code}></${pop}>\n\t\t\t\t</div>\n\t\t\t\t${this.waiting\n\t\t\t\t\t? html`<p class=\"flex flex-wrap items-center gap-1.5 type-meta\" role=\"status\">${this.landed\n\t\t\t\t\t\t? html`${icon(Check, 'check', { size: 12, strokeWidth: 2, attrs: { 'aria-hidden': 'true' } })}1 document landed in <span class=\"type-code-sm\">${this.namespace}</span>`\n\t\t\t\t\t\t: html`<${dots}></${dots}>Waiting for your first document`}${this.landed ? html`<${pixel} data-push @click=${() => this.emit('open', { namespace: this.namespace })}>${`Open ${this.namespace}`}</${pixel}>` : nothing}</p>`\n\t\t\t\t\t: nothing}\n\n\t\t\t\t<h3 class=\"type-ui-strong\">Or connect an app</h3>\n\t\t\t\t<ul class=\"ds-apptiles\">${repeat((this.apps ?? []).slice(0, 8), (a) => a.type, (a) => {\n\t\t\t\t\tconst busy = this.connecting === a.type\n\t\t\t\t\treturn html`<li class=\"ds-apptile\" data-busy=${ifDefined(busy ? 'true' : undefined)} @click=${() => this.emit('connect', { app: a })} @pointerenter=${(e: Event) => this.tile(e, 'data-go-hover', true)} @pointerleave=${(e: Event) => this.tile(e, 'data-go-hover', false)} @focusin=${(e: Event) => this.tile(e, 'data-go-focus', true)} @focusout=${(e: Event) => this.tile(e, 'data-go-focus', false)}>\n\t\t\t\t\t\t<${mark} data-tile-mark .name=${a.name} .logo=${a.logo} size=\"20\"></${mark}>\n\t\t\t\t\t\t<span class=\"max-w-full truncate\">${a.name}</span>\n\t\t\t\t\t\t<${pixel} data-go ?data-go-busy=${busy} ?data-go-on=${busy} ?disabled=${!!this.connecting} aria-label=${`connect ${a.name}`} @click=${(e: Event) => { e.stopPropagation(); this.emit('connect', { app: a }) }}>${busy ? 'Opening' : 'Connect'}</${pixel}>\n\t\t\t\t\t</li>`\n\t\t\t\t})}</ul>\n\n\t\t\t\t<p class=\"type-meta text-fg-muted\" aria-live=\"polite\">${n\n\t\t\t\t\t? html`<${dots} class=\"mr-1.5 inline-grid\"></${dots}>${`Uploading ${n === 1 ? '1 file' : `${n} files`}`}`\n\t\t\t\t\t: html`Or drop files here, or <button type=\"button\" class=\"ds-newdata-link\" @click=${() => this.renderRoot.querySelector<HTMLInputElement>('input[type=\"file\"]')?.click()}>choose files</button>.`}</p>\n\t\t\t\t${this.error ? html`<p class=\"bg-surface-danger px-3 py-2 type-ui text-fg\" role=\"alert\">${this.error}</p>` : nothing}\n\t\t\t\t<input type=\"file\" multiple hidden @change=${(e: Event) => this.picked(e)}>\n\t\t\t</section>\n\t\t\t${this.closable ? html`<${button} variant=\"ghost\" icon aria-label=\"close add data\" @click=${() => this.emit('close')}>${icon(X, 'x', { size: 14, strokeWidth: 1.5 })}</${button}>` : nothing}\n\t\t</div>`\n\t}\n}\n\ndefine('add-data', AddData)\n"
+        },
+        {
+          "path": "elements/components/product/add-data.css",
+          "content": ".ds-newdata { position: relative; display: flex; flex-direction: column; gap: var(--ds-space-lg); font-size: var(--ds-text-ui); }\n.ds-newdata[data-drag]::after { position: absolute; inset: -8px; display: flex; align-items: center; justify-content: center; border: var(--ds-border-hairline) dashed var(--ds-color-edge-focus); background: color-mix(in srgb, var(--ds-color-surface-subtle) 92%, transparent); content: \"Drop files to upload\"; font-size: var(--ds-text-ui); pointer-events: none; }\n.ds-newdata-link { color: inherit; text-decoration: underline; text-decoration-color: var(--ds-color-edge-strong); text-underline-offset: 3px; cursor: pointer; transition: text-decoration-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-newdata-link:hover { text-decoration-color: var(--ds-color-fg); } }\n.ds-newdata-link:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: 2px; }\n.ds-newdata-swap { display: grid; }\n.ds-newdata-swap > span { display: inline-flex; grid-area: 1 / 1; align-items: center; justify-content: center; gap: var(--ds-space-sm); transition: opacity var(--ds-duration-glide) ease, filter var(--ds-duration-glide) ease, transform var(--ds-duration-settle) var(--ds-easing-out); }\n.ds-newdata-swap-b { opacity: 0; filter: blur(2px); transform: translateY(5px) scale(0.96); }\n.ds-newdata-swap[data-on] .ds-newdata-swap-a { opacity: 0; filter: blur(2px); transform: translateY(-5px) scale(0.96); }\n.ds-newdata-swap[data-on] .ds-newdata-swap-b { opacity: 1; filter: none; transform: none; }\n.ds-apptiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--ds-space-md); margin: 0; padding: 0; list-style: none; }\n@media (min-width: 900px) { .ds-apptiles { grid-template-columns: repeat(4, minmax(0, 1fr)); } }\n.ds-apptile { position: relative; display: flex; width: 100%; height: 100%; min-height: 104px; flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 12px; border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface); cursor: pointer; transition: border-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-apptile .ds-apptile-go { position: absolute; right: 10px; bottom: 10px; opacity: 0; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-apptile:hover { border-color: var(--ds-color-edge-focus); } .ds-apptile:hover .ds-apptile-go { opacity: 1; } }\n@media (hover: none) { .ds-apptile .ds-apptile-go { position: static; opacity: 1; } }\n.ds-apptile:focus-within { border-color: var(--ds-color-edge-focus); }\n.ds-apptile:focus-within .ds-apptile-go, .ds-apptile[data-busy] .ds-apptile-go { opacity: 1; }\n@media (max-width: 767px) {\n  .ds-apptiles { grid-template-columns: minmax(0, 1fr); gap: 0; border: var(--ds-border-hairline) solid var(--ds-color-edge); }\n  .ds-apptiles > li + li { border-top: var(--ds-border-hairline) solid var(--ds-color-edge); }\n  .ds-apptile { height: auto; min-height: 56px; flex-direction: row; align-items: center; justify-content: flex-start; gap: var(--ds-space-lg); padding: 8px 12px; border: 0; }\n  .ds-apptile > span { min-width: 0; }\n  .ds-apptile .ds-apptile-go { position: static; margin-left: auto; opacity: 1; }\n}\n@media (prefers-reduced-motion: reduce) { .ds-newdata-swap > span { filter: none; transform: none; transition: opacity var(--ds-duration-micro) ease; } }\n"
+        },
+        {
+          "path": "elements/controllers/copy.ts",
+          "content": "import type { ReactiveController, ReactiveControllerHost } from 'lit'\n\n/**\n * useCopy as a Lit controller: copy(text) writes the clipboard, and `copied` is true for 1.5s after. Where the Clipboard\n * API is refused, the older copy command still works inside the click. Only if both are refused does it answer false.\n */\nexport class CopyController implements ReactiveController {\n\tcopied = false\n\tprivate timer?: ReturnType<typeof setTimeout>\n\tconstructor(private host: ReactiveControllerHost, private ms = 1500) {\n\t\thost.addController(this)\n\t}\n\thostDisconnected() {\n\t\tclearTimeout(this.timer)\n\t}\n\tasync copy(text: string): Promise<boolean> {\n\t\ttry {\n\t\t\tawait navigator.clipboard.writeText(text)\n\t\t} catch {\n\t\t\tif (!copyByCommand(text)) return false\n\t\t}\n\t\tthis.copied = true\n\t\tthis.host.requestUpdate()\n\t\tclearTimeout(this.timer)\n\t\t// ds-latency: the Copied label stays 1.5s after the copy, which has already happened.\n\t\tthis.timer = setTimeout(() => {\n\t\t\tthis.copied = false\n\t\t\tthis.host.requestUpdate()\n\t\t}, this.ms)\n\t\treturn true\n\t}\n}\n\n/** copy(text) without an element, for example scripts: the clipboard, or the copy command where it is refused. */\nexport async function copyText(text: string) {\n\ttry {\n\t\tawait navigator.clipboard.writeText(text)\n\t\treturn true\n\t} catch {\n\t\treturn copyByCommand(text)\n\t}\n}\n\nfunction copyByCommand(text: string) {\n\t// The focused element inside shadow roots, not the host, so focus goes back to the button that copied.\n\tlet back = document.activeElement as HTMLElement | null\n\twhile (back?.shadowRoot?.activeElement) back = back.shadowRoot.activeElement as HTMLElement\n\tconst field = document.createElement('textarea')\n\tfield.value = text\n\tfield.setAttribute('readonly', '')\n\tfield.style.position = 'fixed'\n\tfield.style.opacity = '0'\n\tdocument.body.appendChild(field)\n\tfield.select()\n\tlet ok = false\n\ttry {\n\t\tok = document.execCommand('copy')\n\t} catch {\n\t\tok = false\n\t}\n\tfield.remove()\n\tback?.focus()\n\treturn ok\n}\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/add-data.js",
+        "elements/app-mark.js",
+        "elements/button.js",
+        "elements/code-pop.js",
+        "elements/dot-matrix.js",
+        "elements/pixel-button.js",
+        "elements/code-block.js",
+        "elements/code-copy.js",
+        "elements/toaster.js"
+      ],
+      "tag": "conare-add-data",
+      "tags": [
+        "conare-add-data"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "button",
+        "code-block",
+        "code-pop",
+        "loader",
+        "source-row"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-add-data",
+            "name": "AddData",
+            "module": "elements/add-data.js",
+            "description": "The ways data comes in: a prompt for an agent, eight apps, and a drop for files.",
+            "attributes": [
+              {
+                "name": "apps",
+                "field": "apps",
+                "type": "App[]",
+                "default": "[]",
+                "description": "[{ type, name, logo? }]; the first eight show."
+              },
+              {
+                "name": "prompt",
+                "field": "prompt",
+                "type": "string",
+                "default": "''",
+                "description": "The prompt that sends the documents."
+              },
+              {
+                "name": "code",
+                "field": "code",
+                "type": "string",
+                "default": "''",
+                "description": "The request it makes."
+              },
+              {
+                "name": "namespace",
+                "field": "namespace",
+                "type": "string",
+                "default": "''",
+                "description": "Where the first API write lands."
+              },
+              {
+                "name": "connecting",
+                "field": "connecting",
+                "type": "string | undefined",
+                "description": "The app being connected (its type)."
+              },
+              {
+                "name": "uploading",
+                "field": "uploading",
+                "type": "number | undefined",
+                "description": "How many files are uploading."
+              },
+              {
+                "name": "waiting",
+                "field": "waiting",
+                "type": "boolean",
+                "default": "false",
+                "description": "Waiting for the first API write."
+              },
+              {
+                "name": "landed",
+                "field": "landed",
+                "type": "boolean",
+                "default": "false",
+                "description": "The first write landed."
+              },
+              {
+                "name": "error",
+                "field": "error",
+                "type": "string | undefined"
+              },
+              {
+                "name": "closable",
+                "field": "closable",
+                "type": "boolean",
+                "default": "false",
+                "description": "A close button beside it."
+              },
+              {
+                "name": "dragging",
+                "field": "dragging",
+                "type": "number",
+                "default": "0"
+              }
+            ],
+            "properties": [
+              {
+                "name": "apps",
+                "type": "App[]",
+                "default": "[]",
+                "description": "[{ type, name, logo? }]; the first eight show.",
+                "attribute": "apps"
+              },
+              {
+                "name": "prompt",
+                "type": "string",
+                "default": "''",
+                "description": "The prompt that sends the documents.",
+                "attribute": "prompt"
+              },
+              {
+                "name": "code",
+                "type": "string",
+                "default": "''",
+                "description": "The request it makes.",
+                "attribute": "code"
+              },
+              {
+                "name": "namespace",
+                "type": "string",
+                "default": "''",
+                "description": "Where the first API write lands.",
+                "attribute": "namespace"
+              },
+              {
+                "name": "connecting",
+                "type": "string | undefined",
+                "description": "The app being connected (its type).",
+                "attribute": "connecting"
+              },
+              {
+                "name": "uploading",
+                "type": "number | undefined",
+                "description": "How many files are uploading.",
+                "attribute": "uploading"
+              },
+              {
+                "name": "waiting",
+                "type": "boolean",
+                "default": "false",
+                "description": "Waiting for the first API write.",
+                "attribute": "waiting"
+              },
+              {
+                "name": "landed",
+                "type": "boolean",
+                "default": "false",
+                "description": "The first write landed.",
+                "attribute": "landed"
+              },
+              {
+                "name": "error",
+                "type": "string | undefined",
+                "attribute": "error"
+              },
+              {
+                "name": "closable",
+                "type": "boolean",
+                "default": "false",
+                "description": "A close button beside it.",
+                "attribute": "closable"
+              }
+            ],
+            "events": [
+              {
+                "name": "connect",
+                "description": "An app was picked; detail { app }."
+              },
+              {
+                "name": "files",
+                "description": "Files were dropped or chosen; detail { files }."
+              },
+              {
+                "name": "copied",
+                "description": "The prompt is on the clipboard."
+              },
+              {
+                "name": "open",
+                "description": "Open the namespace the first write landed in; detail { namespace }."
+              },
+              {
+                "name": "close",
+                "description": "The close button."
+              }
+            ],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "As Home shows it",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/add-data/Product.html",
+          "content": "<!-- As Home shows it: in a card, without a close button. Nothing connects or uploads here: the sample plays the first\n     API write once the prompt is copied, as the product would watch for it. -->\n<div class=\"max-w-190 border border-edge p-4\">\n  <conare-add-data namespace=\"api-documents\"></conare-add-data>\n  <conare-toaster></conare-toaster>\n</div>\n<script type=\"module\">\n  const add = document.querySelector('conare-add-data')\n  const toaster = document.querySelector('conare-toaster')\n  add.apps = ['Google Drive', 'Slack', 'Notion', 'Gmail', 'HubSpot', 'Confluence', 'Dropbox', 'GitHub'].map((name) => ({ type: name.toLowerCase().replace(/\\s/g, '-'), name }))\n  add.prompt = 'Send my documents to Conare. Write them in batches of up to 100 to POST https://api.conare.ai/v1/namespaces/api-documents/documents with the header \"Authorization: Bearer $CONARE_API_KEY\". Each document needs an id and its text. The first write creates the namespace api-documents. Tell me how many landed.'\n  add.code = `curl https://api.conare.ai/v1/namespaces/api-documents/documents \\\\\n  -H \"Authorization: Bearer $CONARE_API_KEY\" \\\\\n  -H \"Content-Type: application/json\" \\\\\n  -d '{\"documents\": [{\"id\": \"handbook\", \"text\": \"The text of your document.\"}]}'`\n  add.addEventListener('copied', () => {\n    if (add.waiting) return\n    add.waiting = true\n    setTimeout(() => { add.landed = true }, 2400)\n  })\n  add.addEventListener('connect', (e) => {\n    const app = e.detail.app\n    add.connecting = app.type\n    setTimeout(() => {\n      add.connecting = ''\n      toaster.toast(`${app.name}'s sign-in opens here`)\n    }, 900)\n  })\n  add.addEventListener('files', (e) => {\n    const n = e.detail.files.length\n    add.uploading = n\n    setTimeout(() => {\n      add.uploading = 0\n      toaster.toast(`Uploaded ${n === 1 ? '1 file' : `${n} files`}`)\n    }, 1200)\n  })\n  add.addEventListener('open', (e) => toaster.toast('Opens the namespace', e.detail.namespace))\n</script>\n"
+        }
+      ]
+    }
+  }
+}

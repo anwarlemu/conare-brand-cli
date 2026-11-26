@@ -1,0 +1,322 @@
+{
+  "name": "features-page",
+  "title": "Features page",
+  "type": "registry:block",
+  "group": "site",
+  "description": "A product's page: the head with the one dark call to action, what it does (feature grid), what it connects to (logo strip), one customer's words and the closing band, in the site's frame.",
+  "use_for": "A page per product or feature set.",
+  "never": [
+    "More than one feature grid: one page, one product",
+    "A second dark call to action above the closing band"
+  ],
+  "source": "conare-web app/pages/reranker.vue and pricing.vue (a page's head and bands), app/components/home/Products.vue, Integrations.vue",
+  "body": "Built on `site-page`: `header`, `footer` and `announcement` are its props, and the `logo` and `actions` slots go to the header (`sheet-actions` too, in web components).",
+  "requires": [
+    "button-link",
+    "call-to-action",
+    "feature-grid",
+    "logo-strip",
+    "section-head",
+    "site-page",
+    "testimonial"
+  ],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/site/FeaturesPage.vue",
+      "content": "<script setup lang=\"ts\">\nimport ButtonLink from '@/components/site/ButtonLink.vue'\nimport CallToAction from '@/components/site/CallToAction.vue'\nimport FeatureGrid, { type Feature } from '@/components/site/FeatureGrid.vue'\nimport LogoStrip, { type Logo } from '@/components/site/LogoStrip.vue'\nimport SectionHead from '@/components/site/SectionHead.vue'\nimport SitePage, { type SiteAction, type SiteAnnouncement, type SiteFooterData, type SiteHeaderData } from '@/components/site/SitePage.vue'\nimport Testimonial from '@/components/site/Testimonial.vue'\n\n// A product's page: the head with the one dark call to action, what it does (feature-grid), what it connects to\n// (logo-strip), one customer's words (testimonial) and the closing band, in the site's frame.\ndefineProps<{\n  header: SiteHeaderData, footer: SiteFooterData, announcement?: SiteAnnouncement\n  head: { tag?: string, title: string, body?: string, action: SiteAction }\n  features: { title: string, tag?: string, body?: string, features: Feature[] }\n  logos: { title: string, tag?: string, logos: Logo[] }\n  testimonial: { quote: string, role: string, company: string }\n  cta: { title: string, action: SiteAction }\n}>()\n</script>\n\n<template>\n  <SitePage data-ds=\"features-page\" :header=\"header\" :footer=\"footer\" :announcement=\"announcement\">\n      <template #logo><slot name=\"logo\" /></template>\n      <template #actions=\"{ place }\"><slot name=\"actions\" :place=\"place\" /></template>\n    <section aria-labelledby=\"features-page-title\" class=\"mx-auto max-w-[1440px] px-4 pt-14 pb-20 sm:px-6 lg:px-10 lg:pt-20 lg:pb-28\">\n      <SectionHead as=\"h1\" title-id=\"features-page-title\" :tag=\"head.tag\" :title=\"head.title\" :body=\"head.body\">\n        <template #action><ButtonLink :href=\"head.action.href\" grain pixels arrow>{{ head.action.label }}</ButtonLink></template>\n      </SectionHead>\n    </section>\n    <FeatureGrid v-bind=\"features\" />\n    <LogoStrip v-bind=\"logos\" />\n    <Testimonial v-bind=\"testimonial\" />\n    <CallToAction :title=\"cta.title\">\n      <ButtonLink :href=\"cta.action.href\" variant=\"light\" fill=\"black\">{{ cta.action.label }}</ButtonLink>\n    </CallToAction>\n  </SitePage>\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "A product page, on sample data",
+      "center": false,
+      "half": false,
+      "path": "examples/features-page/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport FeaturesPage from '@/components/site/FeaturesPage.vue'\nimport Button from '@/components/ui/Button.vue'\nimport PixelButton from '@/components/ui/PixelButton.vue'\n// A product's page on sample data, in the site's frame.\nconst header = {\n  \"items\": [\n    {\n      \"label\": \"Search\",\n      \"desc\": \"Find the answer in any file.\",\n      \"href\": \"#search\"\n    },\n    {\n      \"label\": \"Sync\",\n      \"desc\": \"Keep your apps in step.\",\n      \"href\": \"#sync\"\n    },\n    {\n      \"label\": \"Parse\",\n      \"desc\": \"Read every row and cell.\",\n      \"href\": \"#parse\"\n    }\n  ],\n  \"links\": [\n    {\n      \"label\": \"Pricing\",\n      \"href\": \"#pricing\"\n    },\n    {\n      \"label\": \"Blog\",\n      \"href\": \"#blog\"\n    },\n    {\n      \"label\": \"Docs\",\n      \"href\": \"#docs\"\n    }\n  ],\n  \"homeLabel\": \"Acme home\"\n}\nconst footer = {\n  \"columns\": [\n    {\n      \"title\": \"Product\",\n      \"links\": [\n        {\n          \"label\": \"Search\",\n          \"href\": \"#search\"\n        },\n        {\n          \"label\": \"Sync\",\n          \"href\": \"#sync\"\n        },\n        {\n          \"label\": \"Parse\",\n          \"href\": \"#parse\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Company\",\n      \"links\": [\n        {\n          \"label\": \"About\",\n          \"href\": \"#about\"\n        },\n        {\n          \"label\": \"Blog\",\n          \"href\": \"#blog\"\n        },\n        {\n          \"label\": \"Changelog\",\n          \"href\": \"#changelog\"\n        },\n        {\n          \"label\": \"Contact\",\n          \"href\": \"#contact\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Resources\",\n      \"links\": [\n        {\n          \"label\": \"Docs\",\n          \"href\": \"#docs\"\n        },\n        {\n          \"label\": \"Pricing\",\n          \"href\": \"#pricing\"\n        },\n        {\n          \"label\": \"Status\",\n          \"href\": \"#status\"\n        }\n      ]\n    }\n  ],\n  \"tagline\": \"Search any data you bring. Get the right answer.\",\n  \"legal\": \"© 2026 Acme, Inc.\",\n  \"legalLinks\": [\n    {\n      \"label\": \"Privacy\",\n      \"href\": \"#privacy\"\n    },\n    {\n      \"label\": \"Terms\",\n      \"href\": \"#terms\"\n    }\n  ],\n  \"name\": \"Acme\"\n}\nconst head = {\n  \"tag\": \"Search\",\n  \"title\": \"The right passage, from any file you bring.\",\n  \"body\": \"Hybrid search, reranking and filters behind one key, with the sources of every answer.\",\n  \"action\": {\n    \"label\": \"Book a demo\",\n    \"href\": \"#demo\"\n  }\n}\nconst features = {\n  \"tag\": \"How it works\",\n  \"title\": \"What search does for you.\",\n  \"features\": [\n    {\n      \"title\": \"Search\",\n      \"body\": \"Ask in plain words and get the passages that answer, ranked, with where each came from.\"\n    },\n    {\n      \"title\": \"Sync\",\n      \"body\": \"Connect the apps your team uses. A changed record replaces the old one; a deleted one is deleted.\"\n    },\n    {\n      \"title\": \"Parse\",\n      \"body\": \"Read any file in full: every page, table, row and cell, scanned or typed.\"\n    },\n    {\n      \"title\": \"Embed\",\n      \"body\": \"Embeddings for any vector database, from the same models search runs on.\"\n    },\n    {\n      \"title\": \"Rerank\",\n      \"body\": \"Put the best passages first, in one call after the search you already run.\"\n    },\n    {\n      \"title\": \"Audit\",\n      \"body\": \"Every search, what it read and how long it took, kept for as long as you need.\"\n    }\n  ]\n}\nconst logos = {\n  \"tag\": \"Integrations\",\n  \"title\": \"Connect the apps your team already uses.\",\n  \"logos\": [\n    {\n      \"name\": \"Acme\",\n      \"mark\": true\n    },\n    {\n      \"name\": \"Acme Labs\",\n      \"mark\": false\n    },\n    {\n      \"name\": \"Acme Cloud\",\n      \"mark\": false\n    },\n    {\n      \"name\": \"Acme Health\",\n      \"mark\": true\n    },\n    {\n      \"name\": \"Acme Freight\",\n      \"mark\": false\n    },\n    {\n      \"name\": \"Acme Bank\",\n      \"mark\": false\n    },\n    {\n      \"name\": \"Acme Retail\",\n      \"mark\": true\n    },\n    {\n      \"name\": \"Acme Energy\",\n      \"mark\": false\n    },\n    {\n      \"name\": \"Acme Legal\",\n      \"mark\": false\n    },\n    {\n      \"name\": \"Acme Studio\",\n      \"mark\": true\n    },\n    {\n      \"name\": \"Acme Robotics\",\n      \"mark\": false\n    },\n    {\n      \"name\": \"Acme Foods\",\n      \"mark\": false\n    }\n  ]\n}\nconst testimonial = {\n  \"quote\": \"Our support agent answers from every ticket and policy we have, and when it is not sure, it says where it looked.\",\n  \"role\": \"Head of support\",\n  \"company\": \"Acme\"\n}\nconst cta = {\n  \"title\": \"See it on your own data.\",\n  \"action\": {\n    \"label\": \"Book a demo\",\n    \"href\": \"#demo\"\n  }\n}\n</script>\n\n<template>\n  <div class=\"-m-8\">\n    <FeaturesPage\n      :header=\"header\"\n      :footer=\"footer\"\n      :head=\"head\"\n      :features=\"features\"\n      :logos=\"logos\"\n      :testimonial=\"testimonial\"\n      :cta=\"cta\"\n    >\n      <template #logo><span class=\"font-heading text-heading-3 text-fg\">Acme</span></template>\n      <template #actions><Button href=\"#contact\">Contact us</Button><PixelButton href=\"#sign-in\">Sign in</PixelButton></template>\n    </FeaturesPage>\n  </div>\n</template>\n",
+      "requires": [
+        "button",
+        "button-link",
+        "call-to-action",
+        "feature-grid",
+        "logo-strip",
+        "section-head",
+        "site-page",
+        "testimonial"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/site/FeaturesPage.tsx",
+          "content": "import { ButtonLink } from '@/react/components/site/ButtonLink'\nimport { CallToAction } from '@/react/components/site/CallToAction'\nimport { FeatureGrid, type Feature } from '@/react/components/site/FeatureGrid'\nimport { LogoStrip, type Logo } from '@/react/components/site/LogoStrip'\nimport { SectionHead } from '@/react/components/site/SectionHead'\nimport { SitePage, type SiteAction, type SiteFrameProps } from '@/react/components/site/SitePage'\nimport { Testimonial } from '@/react/components/site/Testimonial'\n\n// A product's page: the head with the one dark call to action, what it does (feature-grid), what it connects to\n// (logo-strip), one customer's words (testimonial) and the closing band, in the site's frame.\nexport interface FeaturesPageProps extends SiteFrameProps {\n  head: { tag?: string, title: string, body?: string, action: SiteAction }\n  features: { title: string, tag?: string, body?: string, features: Feature[] }\n  logos: { title: string, tag?: string, logos: Logo[] }\n  testimonial: { quote: string, role: string, company: string }\n  cta: { title: string, action: SiteAction }\n}\n\nexport function FeaturesPage({ header, footer, announcement, logo, actions, head, features, logos, testimonial, cta }: FeaturesPageProps) {\n  return (\n    <SitePage data-ds=\"features-page\" header={header} footer={footer} announcement={announcement} logo={logo} actions={actions}>\n      <section aria-labelledby=\"features-page-title\" className=\"mx-auto max-w-[1440px] px-4 pt-14 pb-20 sm:px-6 lg:px-10 lg:pt-20 lg:pb-28\">\n        <SectionHead as=\"h1\" titleId=\"features-page-title\" tag={head.tag} title={head.title} body={head.body} action={<ButtonLink href={head.action.href} grain pixels arrow>{head.action.label}</ButtonLink>} />\n      </section>\n      <FeatureGrid {...features} />\n      <LogoStrip {...logos} />\n      <Testimonial {...testimonial} />\n      <CallToAction title={cta.title}>\n        <ButtonLink href={cta.action.href} variant=\"light\" fill=\"black\">{cta.action.label}</ButtonLink>\n      </CallToAction>\n    </SitePage>\n  )\n}\n\nexport default FeaturesPage\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "button-link",
+        "call-to-action",
+        "feature-grid",
+        "logo-strip",
+        "section-head",
+        "site-page",
+        "testimonial"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "FeaturesPage",
+            "file": "react/components/site/FeaturesPage.tsx",
+            "props": [
+              {
+                "name": "head",
+                "type": "{ tag?: string, title: string, body?: string, action: SiteAction }",
+                "required": true
+              },
+              {
+                "name": "features",
+                "type": "{ title: string, tag?: string, body?: string, features: Feature[] }",
+                "required": true
+              },
+              {
+                "name": "logos",
+                "type": "{ title: string, tag?: string, logos: Logo[] }",
+                "required": true
+              },
+              {
+                "name": "testimonial",
+                "type": "{ quote: string, role: string, company: string }",
+                "required": true
+              },
+              {
+                "name": "cta",
+                "type": "{ title: string, action: SiteAction }",
+                "required": true
+              }
+            ],
+            "extends": [
+              "SiteFrameProps"
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "A product page, on sample data",
+          "center": false,
+          "half": false,
+          "path": "react/examples/features-page/Site.tsx",
+          "content": "import { FeaturesPage } from '@/react/components/site/FeaturesPage'\nimport { Button } from '@/react/components/ui/Button'\nimport { PixelButton } from '@/react/components/ui/PixelButton'\n// A product's page on sample data, in the site's frame.\nconst header = {\n  \"items\": [\n    {\n      \"label\": \"Search\",\n      \"desc\": \"Find the answer in any file.\",\n      \"href\": \"#search\"\n    },\n    {\n      \"label\": \"Sync\",\n      \"desc\": \"Keep your apps in step.\",\n      \"href\": \"#sync\"\n    },\n    {\n      \"label\": \"Parse\",\n      \"desc\": \"Read every row and cell.\",\n      \"href\": \"#parse\"\n    }\n  ],\n  \"links\": [\n    {\n      \"label\": \"Pricing\",\n      \"href\": \"#pricing\"\n    },\n    {\n      \"label\": \"Blog\",\n      \"href\": \"#blog\"\n    },\n    {\n      \"label\": \"Docs\",\n      \"href\": \"#docs\"\n    }\n  ],\n  \"homeLabel\": \"Acme home\"\n}\nconst footer = {\n  \"columns\": [\n    {\n      \"title\": \"Product\",\n      \"links\": [\n        {\n          \"label\": \"Search\",\n          \"href\": \"#search\"\n        },\n        {\n          \"label\": \"Sync\",\n          \"href\": \"#sync\"\n        },\n        {\n          \"label\": \"Parse\",\n          \"href\": \"#parse\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Company\",\n      \"links\": [\n        {\n          \"label\": \"About\",\n          \"href\": \"#about\"\n        },\n        {\n          \"label\": \"Blog\",\n          \"href\": \"#blog\"\n        },\n        {\n          \"label\": \"Changelog\",\n          \"href\": \"#changelog\"\n        },\n        {\n          \"label\": \"Contact\",\n          \"href\": \"#contact\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Resources\",\n      \"links\": [\n        {\n          \"label\": \"Docs\",\n          \"href\": \"#docs\"\n        },\n        {\n          \"label\": \"Pricing\",\n          \"href\": \"#pricing\"\n        },\n        {\n          \"label\": \"Status\",\n          \"href\": \"#status\"\n        }\n      ]\n    }\n  ],\n  \"tagline\": \"Search any data you bring. Get the right answer.\",\n  \"legal\": \"© 2026 Acme, Inc.\",\n  \"legalLinks\": [\n    {\n      \"label\": \"Privacy\",\n      \"href\": \"#privacy\"\n    },\n    {\n      \"label\": \"Terms\",\n      \"href\": \"#terms\"\n    }\n  ],\n  \"name\": \"Acme\"\n}\nconst head = {\n  \"tag\": \"Search\",\n  \"title\": \"The right passage, from any file you bring.\",\n  \"body\": \"Hybrid search, reranking and filters behind one key, with the sources of every answer.\",\n  \"action\": {\n    \"label\": \"Book a demo\",\n    \"href\": \"#demo\"\n  }\n}\nconst features = {\n  \"tag\": \"How it works\",\n  \"title\": \"What search does for you.\",\n  \"features\": [\n    {\n      \"title\": \"Search\",\n      \"body\": \"Ask in plain words and get the passages that answer, ranked, with where each came from.\"\n    },\n    {\n      \"title\": \"Sync\",\n      \"body\": \"Connect the apps your team uses. A changed record replaces the old one; a deleted one is deleted.\"\n    },\n    {\n      \"title\": \"Parse\",\n      \"body\": \"Read any file in full: every page, table, row and cell, scanned or typed.\"\n    },\n    {\n      \"title\": \"Embed\",\n      \"body\": \"Embeddings for any vector database, from the same models search runs on.\"\n    },\n    {\n      \"title\": \"Rerank\",\n      \"body\": \"Put the best passages first, in one call after the search you already run.\"\n    },\n    {\n      \"title\": \"Audit\",\n      \"body\": \"Every search, what it read and how long it took, kept for as long as you need.\"\n    }\n  ]\n}\nconst logos = {\n  \"tag\": \"Integrations\",\n  \"title\": \"Connect the apps your team already uses.\",\n  \"logos\": [\n    {\n      \"name\": \"Acme\",\n      \"mark\": true\n    },\n    {\n      \"name\": \"Acme Labs\",\n      \"mark\": false\n    },\n    {\n      \"name\": \"Acme Cloud\",\n      \"mark\": false\n    },\n    {\n      \"name\": \"Acme Health\",\n      \"mark\": true\n    },\n    {\n      \"name\": \"Acme Freight\",\n      \"mark\": false\n    },\n    {\n      \"name\": \"Acme Bank\",\n      \"mark\": false\n    },\n    {\n      \"name\": \"Acme Retail\",\n      \"mark\": true\n    },\n    {\n      \"name\": \"Acme Energy\",\n      \"mark\": false\n    },\n    {\n      \"name\": \"Acme Legal\",\n      \"mark\": false\n    },\n    {\n      \"name\": \"Acme Studio\",\n      \"mark\": true\n    },\n    {\n      \"name\": \"Acme Robotics\",\n      \"mark\": false\n    },\n    {\n      \"name\": \"Acme Foods\",\n      \"mark\": false\n    }\n  ]\n}\nconst testimonial = {\n  \"quote\": \"Our support agent answers from every ticket and policy we have, and when it is not sure, it says where it looked.\",\n  \"role\": \"Head of support\",\n  \"company\": \"Acme\"\n}\nconst cta = {\n  \"title\": \"See it on your own data.\",\n  \"action\": {\n    \"label\": \"Book a demo\",\n    \"href\": \"#demo\"\n  }\n}\nexport default function Site() {\n  return (\n    <div className=\"-m-8\">\n      <FeaturesPage\n        header={header}\n        footer={footer}\n        head={head}\n        features={features}\n        logos={logos}\n        testimonial={testimonial}\n        cta={cta}\n        logo={<span className=\"font-heading text-heading-3 text-fg\">Acme</span>}\n        actions={() => (<><Button href=\"#contact\">Contact us</Button><PixelButton href=\"#sign-in\">Sign in</PixelButton></>)}\n      />\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "button",
+            "button-link",
+            "call-to-action",
+            "feature-grid",
+            "logo-strip",
+            "section-head",
+            "site-page",
+            "testimonial"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/site/features-page.ts",
+          "content": "import { html as staticHtml } from 'lit/static-html.js'\nimport { define, tag } from '@/elements/lib/element'\nimport { SiteFrameElement, closing, type SiteAction } from '@/elements/components/site/site-page'\nimport type { Feature } from '@/elements/components/site/feature-grid'\nimport type { Logo } from '@/elements/components/site/logo-strip'\nimport '@/elements/components/site/button-link'\nimport '@/elements/components/site/feature-grid'\nimport '@/elements/components/site/logo-strip'\nimport '@/elements/components/site/section-head'\nimport '@/elements/components/site/testimonial'\nimport styles from 'virtual:tw'\n\n// FeaturesPage.vue as <conare-features-page>: a product's page: the head with the one dark call to action, what it\n// does (feature-grid), what it connects to (logo-strip), one customer's words (testimonial) and the closing band, in\n// the site's frame (site-page).\n\n/**\n * @summary A product's page: the head, its features, what it connects to, a quote and the closing band.\n * @slot logo - The logo in the header's home link.\n * @slot actions - The header's buttons.\n * @slot sheet-actions - The same buttons again, for the header's sheet on phones.\n */\nexport class FeaturesPage extends SiteFrameElement {\n\tstatic styles = [SiteFrameElement.styles, styles]\n\tstatic properties = { head: { type: Object }, features: { type: Object }, logos: { type: Object }, testimonial: { type: Object }, cta: { type: Object } }\n\n\thead: { tag?: string, title: string, body?: string, action: SiteAction } = { title: '', action: { label: '', href: '' } }\n\tfeatures: { title: string, tag?: string, body?: string, features: Feature[] } = { title: '', features: [] }\n\tlogos: { title: string, tag?: string, logos: Logo[] } = { title: '', logos: [] }\n\ttestimonial: { quote: string, role: string, company: string } = { quote: '', role: '', company: '' }\n\tcta = { title: '', action: { label: '', href: '' } }\n\n\trender() {\n\t\tconst [sectionHead, button, logos, grid, quote] = [tag('section-head'), tag('button-link'), tag('logo-strip'), tag('feature-grid'), tag('testimonial')]\n\t\tconst h = this.head\n\t\tconst f = this.features\n\t\tconst l = this.logos\n\t\tconst t = this.testimonial\n\t\treturn this.frame('features-page', staticHtml`<section aria-labelledby=\"features-page-title\" class=\"mx-auto max-w-[1440px] px-4 pt-14 pb-20 sm:px-6 lg:px-10 lg:pt-20 lg:pb-28\"><${sectionHead} as=\"h1\" title-id=\"features-page-title\" .tag=${h.tag} .heading=${h.title} .body=${h.body}><${button} slot=\"action\" href=${h.action.href} grain pixels arrow>${h.action.label}</${button}></${sectionHead}></section><${grid} .heading=${f.title} .tag=${f.tag} .body=${f.body} .features=${f.features}></${grid}><${logos} .heading=${l.title} .tag=${l.tag} .logos=${l.logos}></${logos}><${quote} .quote=${t.quote} .jobTitle=${t.role} .company=${t.company}></${quote}>${closing(this.cta)}`)\n\t}\n}\n\ndefine('features-page', FeaturesPage)\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/features-page.js",
+        "elements/site-page.js",
+        "elements/feature-grid.js",
+        "elements/logo-strip.js",
+        "elements/button-link.js",
+        "elements/section-head.js",
+        "elements/testimonial.js",
+        "elements/site-footer.js",
+        "elements/site-header.js",
+        "elements/product-menu.js",
+        "elements/announcement-bar.js",
+        "elements/call-to-action.js",
+        "elements/site-tag.js",
+        "elements/avatar.js",
+        "elements/grain.js",
+        "elements/roll-text.js",
+        "elements/cell-burst.js",
+        "elements/button.js",
+        "elements/pixel-button.js"
+      ],
+      "tag": "conare-features-page",
+      "tags": [
+        "conare-features-page"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "announcement-bar",
+        "avatar",
+        "button-link",
+        "call-to-action",
+        "cell-burst",
+        "feature-grid",
+        "logo-strip",
+        "product-menu",
+        "roll-text",
+        "section-head",
+        "site-footer",
+        "site-header",
+        "site-page",
+        "tag",
+        "testimonial"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-features-page",
+            "name": "FeaturesPage",
+            "module": "elements/features-page.js",
+            "description": "A product's page: the head, its features, what it connects to, a quote and the closing band.",
+            "attributes": [
+              {
+                "name": "head",
+                "field": "head",
+                "type": "{ tag?: string; title: string; body?: string; action: SiteAction; }",
+                "default": "{ title: '', action: { label: '', href: '' } }"
+              },
+              {
+                "name": "features",
+                "field": "features",
+                "type": "{ title: string; tag?: string; body?: string; features: Feature[]; }",
+                "default": "{ title: '', features: [] }"
+              },
+              {
+                "name": "logos",
+                "field": "logos",
+                "type": "{ title: string; tag?: string; logos: Logo[]; }",
+                "default": "{ title: '', logos: [] }"
+              },
+              {
+                "name": "testimonial",
+                "field": "testimonial",
+                "type": "{ quote: string; role: string; company: string; }",
+                "default": "{ quote: '', role: '', company: '' }"
+              },
+              {
+                "name": "cta",
+                "field": "cta",
+                "type": "{ title: string; action: { label: string; href: string; }; }",
+                "default": "{ title: '', action: { label: '', href: '' } }"
+              },
+              {
+                "name": "header",
+                "field": "header",
+                "type": "SiteHeaderData",
+                "default": "{ items: [], links: [] }",
+                "description": "The header: items, more, links, productCurrent, homeHref, homeLabel."
+              },
+              {
+                "name": "footer",
+                "field": "footer",
+                "type": "SiteFooterData",
+                "default": "{ columns: [] }",
+                "description": "The footer: columns, tagline, legal, legalLinks, name."
+              },
+              {
+                "name": "announcement",
+                "field": "announcement",
+                "type": "SiteAnnouncement | undefined",
+                "description": "The bar above the header: tag, text, cta, href."
+              }
+            ],
+            "properties": [
+              {
+                "name": "head",
+                "type": "{ tag?: string; title: string; body?: string; action: SiteAction; }",
+                "default": "{ title: '', action: { label: '', href: '' } }",
+                "attribute": "head"
+              },
+              {
+                "name": "features",
+                "type": "{ title: string; tag?: string; body?: string; features: Feature[]; }",
+                "default": "{ title: '', features: [] }",
+                "attribute": "features"
+              },
+              {
+                "name": "logos",
+                "type": "{ title: string; tag?: string; logos: Logo[]; }",
+                "default": "{ title: '', logos: [] }",
+                "attribute": "logos"
+              },
+              {
+                "name": "testimonial",
+                "type": "{ quote: string; role: string; company: string; }",
+                "default": "{ quote: '', role: '', company: '' }",
+                "attribute": "testimonial"
+              },
+              {
+                "name": "cta",
+                "type": "{ title: string; action: { label: string; href: string; }; }",
+                "default": "{ title: '', action: { label: '', href: '' } }",
+                "attribute": "cta"
+              },
+              {
+                "name": "header",
+                "type": "SiteHeaderData",
+                "default": "{ items: [], links: [] }",
+                "description": "The header: items, more, links, productCurrent, homeHref, homeLabel.",
+                "attribute": "header"
+              },
+              {
+                "name": "footer",
+                "type": "SiteFooterData",
+                "default": "{ columns: [] }",
+                "description": "The footer: columns, tagline, legal, legalLinks, name.",
+                "attribute": "footer"
+              },
+              {
+                "name": "announcement",
+                "type": "SiteAnnouncement | undefined",
+                "description": "The bar above the header: tag, text, cta, href.",
+                "attribute": "announcement"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "logo",
+                "description": "The logo in the header's home link."
+              },
+              {
+                "name": "actions",
+                "description": "The header's buttons."
+              },
+              {
+                "name": "sheet-actions",
+                "description": "The same buttons again, for the header's sheet on phones."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "A product page, on sample data",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/features-page/Site.html",
+          "content": "<!-- A product's page on sample data, in the site's frame. -->\n<div class=\"-m-8\">\n  <conare-features-page\n    header='{\"items\": [{\"label\": \"Search\", \"desc\": \"Find the answer in any file.\", \"href\": \"#search\"}, {\"label\": \"Sync\", \"desc\": \"Keep your apps in step.\", \"href\": \"#sync\"}, {\"label\": \"Parse\", \"desc\": \"Read every row and cell.\", \"href\": \"#parse\"}], \"links\": [{\"label\": \"Pricing\", \"href\": \"#pricing\"}, {\"label\": \"Blog\", \"href\": \"#blog\"}, {\"label\": \"Docs\", \"href\": \"#docs\"}], \"homeLabel\": \"Acme home\"}'\n    footer='{\"columns\": [{\"title\": \"Product\", \"links\": [{\"label\": \"Search\", \"href\": \"#search\"}, {\"label\": \"Sync\", \"href\": \"#sync\"}, {\"label\": \"Parse\", \"href\": \"#parse\"}]}, {\"title\": \"Company\", \"links\": [{\"label\": \"About\", \"href\": \"#about\"}, {\"label\": \"Blog\", \"href\": \"#blog\"}, {\"label\": \"Changelog\", \"href\": \"#changelog\"}, {\"label\": \"Contact\", \"href\": \"#contact\"}]}, {\"title\": \"Resources\", \"links\": [{\"label\": \"Docs\", \"href\": \"#docs\"}, {\"label\": \"Pricing\", \"href\": \"#pricing\"}, {\"label\": \"Status\", \"href\": \"#status\"}]}], \"tagline\": \"Search any data you bring. Get the right answer.\", \"legal\": \"© 2026 Acme, Inc.\", \"legalLinks\": [{\"label\": \"Privacy\", \"href\": \"#privacy\"}, {\"label\": \"Terms\", \"href\": \"#terms\"}], \"name\": \"Acme\"}'\n    head='{\"tag\": \"Search\", \"title\": \"The right passage, from any file you bring.\", \"body\": \"Hybrid search, reranking and filters behind one key, with the sources of every answer.\", \"action\": {\"label\": \"Book a demo\", \"href\": \"#demo\"}}'\n    features='{\"tag\": \"How it works\", \"title\": \"What search does for you.\", \"features\": [{\"title\": \"Search\", \"body\": \"Ask in plain words and get the passages that answer, ranked, with where each came from.\"}, {\"title\": \"Sync\", \"body\": \"Connect the apps your team uses. A changed record replaces the old one; a deleted one is deleted.\"}, {\"title\": \"Parse\", \"body\": \"Read any file in full: every page, table, row and cell, scanned or typed.\"}, {\"title\": \"Embed\", \"body\": \"Embeddings for any vector database, from the same models search runs on.\"}, {\"title\": \"Rerank\", \"body\": \"Put the best passages first, in one call after the search you already run.\"}, {\"title\": \"Audit\", \"body\": \"Every search, what it read and how long it took, kept for as long as you need.\"}]}'\n    logos='{\"tag\": \"Integrations\", \"title\": \"Connect the apps your team already uses.\", \"logos\": [{\"name\": \"Acme\", \"mark\": true}, {\"name\": \"Acme Labs\", \"mark\": false}, {\"name\": \"Acme Cloud\", \"mark\": false}, {\"name\": \"Acme Health\", \"mark\": true}, {\"name\": \"Acme Freight\", \"mark\": false}, {\"name\": \"Acme Bank\", \"mark\": false}, {\"name\": \"Acme Retail\", \"mark\": true}, {\"name\": \"Acme Energy\", \"mark\": false}, {\"name\": \"Acme Legal\", \"mark\": false}, {\"name\": \"Acme Studio\", \"mark\": true}, {\"name\": \"Acme Robotics\", \"mark\": false}, {\"name\": \"Acme Foods\", \"mark\": false}]}'\n    testimonial='{\"quote\": \"Our support agent answers from every ticket and policy we have, and when it is not sure, it says where it looked.\", \"role\": \"Head of support\", \"company\": \"Acme\"}'\n    cta='{\"title\": \"See it on your own data.\", \"action\": {\"label\": \"Book a demo\", \"href\": \"#demo\"}}'\n  >\n    <span slot=\"logo\" class=\"font-heading text-heading-3 text-fg\">Acme</span>\n    <conare-button slot=\"actions\" href=\"#contact\">Contact us</conare-button>\n    <conare-pixel-button slot=\"actions\" href=\"#sign-in\">Sign in</conare-pixel-button>\n    <conare-button slot=\"sheet-actions\" href=\"#contact\">Contact us</conare-button>\n    <conare-pixel-button slot=\"sheet-actions\" href=\"#sign-in\">Sign in</conare-pixel-button>\n  </conare-features-page>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

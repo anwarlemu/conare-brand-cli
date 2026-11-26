@@ -1,0 +1,279 @@
+{
+  "name": "menubar",
+  "title": "Menubar",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "Menu triggers in a row on the paper, each opening Menu's square panel of rows. Left and Right move along the row and carry an open menu with them; pointing at another trigger while one is open switches at once.",
+  "use_for": "A tool with several groups of commands on one surface, such as a document or a namespace editor.",
+  "never": [
+    "Site or console navigation: use the Sidebar or the site header",
+    "One menu alone: use Menu"
+  ],
+  "source": "conare-web app/assets/css/console2.css (.v2-menu, .v2-menu-item, the sidebar head's trigger fill). New in Conare's style: shadcn's menubar.",
+  "body": "",
+  "requires": [
+    "popover"
+  ],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Menubar.vue",
+      "content": "<script setup lang=\"ts\">\nimport { provide, ref, type Ref } from 'vue'\n\n// Menu triggers in a row on the paper (shadcn's menubar in Conare's grammar): a hairline strip, 28px triggers in 12px\n// medium, each opening Menu's square panel of rows (MenubarMenu). One trigger is in the tab order; Left and Right move\n// along the row, Down, Enter or Space open, and with a menu open Left and Right open the next one. While one is open,\n// pointing at another trigger switches to it at once.\nexport interface MenubarEntry { key: string, el: () => HTMLElement | null, open: () => Promise<void> }\nexport interface MenubarContext { active: Ref<string | null>, focused: Ref<string | null>, entries: MenubarEntry[], move: (from: string, step: number, open: boolean) => void }\ndefineProps<{ label: string }>()\nconst active = ref<string | null>(null)\nconst focused = ref<string | null>(null)\nconst entries: MenubarEntry[] = []\nfunction move(from: string, step: number, open: boolean) {\n  const at = entries.findIndex(e => e.key === from)\n  const next = entries[(at + step + entries.length) % entries.length]\n  if (!next) return\n  focused.value = next.key\n  next.el()?.focus()\n  if (open) void next.open()\n}\nprovide<MenubarContext>('ds-menubar', { active, focused, entries, move })\n</script>\n\n<template>\n  <div data-ds=\"menubar\" role=\"menubar\" :aria-label=\"label\" class=\"inline-flex items-center gap-0.5 border border-edge bg-surface-subtle p-0.5\">\n    <slot />\n  </div>\n</template>\n"
+    },
+    {
+      "path": "components/ui/MenubarMenu.vue",
+      "content": "<script setup lang=\"ts\">\nimport { inject, nextTick, onBeforeUnmount, provide, useId, watch } from 'vue'\nimport PopoverPanel from '@/components/ui/PopoverPanel.vue'\nimport { onMenuRows, usePopover } from '@/composables/usePopover'\nimport type { MenubarContext } from '@/components/ui/Menubar.vue'\n\n// One menu of a Menubar: its trigger and Menu's panel of rows (MenuItem, MenuLabel, MenuSeparator) under it.\nconst props = withDefaults(defineProps<{ label: string, width?: string }>(), { width: '224px' })\nconst bar = inject<MenubarContext>('ds-menubar')!\nconst key = useId()\nconst pop = usePopover({ side: 'bottom', align: 'start', gap: 4 })\nprovide('ds-menu-close', () => pop.hide(true))\n\nasync function open(focus: 'first' | 'last' | 'none' = 'first', keyboard = true) {\n  await pop.show({ keyboard })\n  await nextTick()\n  if (focus === 'none') return pop.panel.value?.focus({ preventScroll: true })\n  const rows = [...(pop.panel.value?.querySelectorAll<HTMLElement>('[role^=\"menuitem\"]:not([disabled])') ?? [])]\n  ;(focus === 'last' ? rows.at(-1) : rows[0])?.focus()\n}\nconst entry = { key, el: () => pop.anchor.value, open: () => open('first') }\nbar.entries.push(entry)\nif (!bar.focused.value) bar.focused.value = key\nonBeforeUnmount(() => bar.entries.splice(bar.entries.indexOf(entry), 1))\n\nwatch(pop.open, (now) => {\n  if (now) bar.active.value = key\n  else if (bar.active.value === key) bar.active.value = null\n})\nwatch(bar.active, (a) => { if (a !== key && pop.open.value) pop.hide(false, true) })\n\nfunction onClick(event: MouseEvent) {\n  if (pop.open.value) return pop.hide(event.detail === 0, event.detail === 0)\n  void open(event.detail === 0 ? 'first' : 'none', event.detail === 0)\n}\nfunction onEnter() {\n  if (bar.active.value && bar.active.value !== key) void open('none', true)\n}\nfunction onTriggerKey(event: KeyboardEvent) {\n  if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {\n    event.preventDefault()\n    bar.move(key, event.key === 'ArrowRight' ? 1 : -1, false)\n  }\n  else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {\n    event.preventDefault()\n    void open(event.key === 'ArrowDown' ? 'first' : 'last')\n  }\n}\nfunction onPanelKey(event: KeyboardEvent) {\n  if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {\n    event.preventDefault()\n    pop.hide(false, true)\n    bar.move(key, event.key === 'ArrowRight' ? 1 : -1, true)\n    return\n  }\n  onMenuRows(event, pop.panel.value, pop.hide)\n}\n</script>\n\n<template>\n  <button data-ds=\"menubar-menu\"\n    :ref=\"(el) => { pop.anchor.value = el as HTMLElement | null }\"\n    type=\"button\"\n    role=\"menuitem\"\n    aria-haspopup=\"menu\"\n    :aria-expanded=\"pop.open.value\"\n    :tabindex=\"bar.focused.value === key ? 0 : -1\"\n    class=\"inline-flex h-control-sm cursor-pointer items-center px-2.5 text-meta leading-5 font-medium text-fg transition-colors duration-120 ease-standard hover:bg-edge/45 aria-expanded:bg-surface focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-focus max-md:h-control-touch max-md:text-ui\"\n    @click=\"onClick\"\n    @pointerenter=\"onEnter\"\n    @focus=\"bar.focused.value = key\"\n    @keydown=\"onTriggerKey\"\n  >\n    {{ label }}\n  </button>\n  <PopoverPanel data-ds=\"menubar-menu\" :pop=\"pop\" role=\"menu\" :aria-label=\"label\" tabindex=\"-1\" class=\"flex flex-col p-1\" :style=\"{ width: props.width }\" @keydown=\"onPanelKey\">\n    <slot />\n  </PopoverPanel>\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "A namespace's tools",
+      "center": false,
+      "half": false,
+      "path": "examples/menubar/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport { Check, Copy, Download, FilePlus, Layers, RefreshCw, Trash2, Upload } from 'lucide-vue-next'\nimport Menubar from '@/components/ui/Menubar.vue'\nimport MenubarMenu from '@/components/ui/MenubarMenu.vue'\nimport MenuItem from '@/components/ui/MenuItem.vue'\nimport MenuLabel from '@/components/ui/MenuLabel.vue'\nimport MenuSeparator from '@/components/ui/MenuSeparator.vue'\n// A namespace's tools as a menubar: what to add, what to do with it, how to show its documents. Open one, then point\n// at the next or press Right.\nconst sort = ref<'newest' | 'title' | 'size'>('newest')\nconst sorts = [{ id: 'newest', label: 'Newest first' }, { id: 'title', label: 'Title' }, { id: 'size', label: 'Size' }] as const\n</script>\n\n<template>\n  <div class=\"min-h-72\">\n    <Menubar label=\"namespace\">\n      <MenubarMenu label=\"Add\">\n        <MenuItem><FilePlus :size=\"14\" :stroke-width=\"1.5\" class=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />Paste text</MenuItem>\n        <MenuItem><Upload :size=\"14\" :stroke-width=\"1.5\" class=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />Upload files</MenuItem>\n        <MenuItem><Layers :size=\"14\" :stroke-width=\"1.5\" class=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />Connect an app</MenuItem>\n      </MenubarMenu>\n      <MenubarMenu label=\"Namespace\">\n        <MenuItem><RefreshCw :size=\"14\" :stroke-width=\"1.5\" class=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />Sync now</MenuItem>\n        <MenuItem><Copy :size=\"14\" :stroke-width=\"1.5\" class=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />Copy name</MenuItem>\n        <MenuItem><Download :size=\"14\" :stroke-width=\"1.5\" class=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />Export documents</MenuItem>\n        <MenuSeparator />\n        <MenuItem danger><Trash2 :size=\"14\" :stroke-width=\"1.5\" class=\"shrink-0\" aria-hidden=\"true\" />Delete namespace</MenuItem>\n      </MenubarMenu>\n      <MenubarMenu label=\"View\">\n        <MenuLabel>Sort documents</MenuLabel>\n        <MenuItem v-for=\"s in sorts\" :key=\"s.id\" :current=\"sort === s.id\" @select=\"sort = s.id\">\n          <span class=\"min-w-0 flex-1\">{{ s.label }}</span>\n          <Check v-if=\"sort === s.id\" :size=\"14\" :stroke-width=\"1.5\" class=\"shrink-0\" aria-label=\"current\" />\n        </MenuItem>\n      </MenubarMenu>\n    </Menubar>\n  </div>\n</template>\n",
+      "requires": [
+        "menu",
+        "popover"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Menubar.tsx",
+          "content": "'use client'\nimport { createContext, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from 'react'\n\n// Menu triggers in a row on the paper (shadcn's menubar in Conare's grammar): a hairline strip, 28px triggers in 12px\n// medium, each opening Menu's square panel of rows (MenubarMenu). One trigger is in the tab order; Left and Right move\n// along the row, Down, Enter or Space open, and with a menu open Left and Right open the next one. While one is open,\n// pointing at another trigger switches to it at once.\nexport interface MenubarEntry { key: string, el: () => HTMLElement | null, open: () => Promise<void> }\nexport interface MenubarContextValue {\n  active: string | null\n  setActive: Dispatch<SetStateAction<string | null>>\n  focused: string | null\n  setFocused: Dispatch<SetStateAction<string | null>>\n  entries: MenubarEntry[]\n  move: (from: string, step: number, open: boolean) => void\n}\nexport const MenubarContext = createContext<MenubarContextValue | null>(null)\nexport interface MenubarProps { label: string, children?: ReactNode }\n\nexport function Menubar({ label, children }: MenubarProps) {\n  const [active, setActive] = useState<string | null>(null)\n  const [focused, setFocused] = useState<string | null>(null)\n  const entries = useRef<MenubarEntry[]>([]).current\n  function move(from: string, step: number, open: boolean) {\n    const at = entries.findIndex(e => e.key === from)\n    const next = entries[(at + step + entries.length) % entries.length]\n    if (!next) return\n    setFocused(next.key)\n    next.el()?.focus()\n    if (open) void next.open()\n  }\n  return (\n    <MenubarContext.Provider value={{ active, setActive, focused, setFocused, entries, move }}>\n      <div data-ds=\"menubar\" role=\"menubar\" aria-label={label} className=\"inline-flex items-center gap-0.5 border border-edge bg-surface-subtle p-0.5\">\n        {children}\n      </div>\n    </MenubarContext.Provider>\n  )\n}\n\nexport default Menubar\n"
+        },
+        {
+          "path": "react/components/ui/MenubarMenu.tsx",
+          "content": "'use client'\nimport { useContext, useEffect, useId, useRef, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react'\nimport { MenuClose } from '@/react/components/ui/Menu'\nimport { MenubarContext } from '@/react/components/ui/Menubar'\nimport { PopoverPanel } from '@/react/components/ui/PopoverPanel'\nimport { onMenuRows, usePopover } from '@/react/hooks/usePopover'\n\n// One menu of a Menubar: its trigger and Menu's panel of rows (MenuItem, MenuLabel, MenuSeparator) under it.\nexport interface MenubarMenuProps { label: string, width?: string, children?: ReactNode }\n\nexport function MenubarMenu({ label, width = '224px', children }: MenubarMenuProps) {\n  const bar = useContext(MenubarContext)!\n  const key = useId()\n  const pop = usePopover({ side: 'bottom', align: 'start', gap: 4 })\n\n  async function open(focus: 'first' | 'last' | 'none' = 'first', keyboard = true) {\n    await pop.show({ keyboard })\n    if (focus === 'none') return pop.panel.current?.focus({ preventScroll: true })\n    const rows = [...(pop.panel.current?.querySelectorAll<HTMLElement>('[role^=\"menuitem\"]:not([disabled])') ?? [])]\n    ;(focus === 'last' ? rows.at(-1) : rows[0])?.focus()\n  }\n  const openRef = useRef(open)\n  openRef.current = open\n  useEffect(() => {\n    const entry = { key, el: () => pop.anchor.current, open: () => openRef.current('first') }\n    bar.entries.push(entry)\n    bar.setFocused(f => f ?? key)\n    return () => { bar.entries.splice(bar.entries.indexOf(entry), 1) }\n  }, []) // eslint-disable-line react-hooks/exhaustive-deps\n\n  useEffect(() => {\n    if (pop.open) bar.setActive(key)\n    else bar.setActive(a => (a === key ? null : a))\n  }, [pop.open]) // eslint-disable-line react-hooks/exhaustive-deps\n  useEffect(() => {\n    if (bar.active !== key && pop.open) pop.hide(false, true)\n  }, [bar.active]) // eslint-disable-line react-hooks/exhaustive-deps\n\n  function onClick(event: MouseEvent) {\n    if (pop.open) return pop.hide(event.detail === 0, event.detail === 0)\n    void open(event.detail === 0 ? 'first' : 'none', event.detail === 0)\n  }\n  function onEnter() {\n    if (bar.active && bar.active !== key) void open('none', true)\n  }\n  function onTriggerKey(event: KeyboardEvent) {\n    if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {\n      event.preventDefault()\n      bar.move(key, event.key === 'ArrowRight' ? 1 : -1, false)\n    }\n    else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {\n      event.preventDefault()\n      void open(event.key === 'ArrowDown' ? 'first' : 'last')\n    }\n  }\n  function onPanelKey(event: KeyboardEvent) {\n    if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {\n      event.preventDefault()\n      pop.hide(false, true)\n      bar.move(key, event.key === 'ArrowRight' ? 1 : -1, true)\n      return\n    }\n    onMenuRows(event, pop.panel.current, pop.hide)\n  }\n  return (\n    <MenuClose.Provider value={() => pop.hide(true)}>\n      <button\n        data-ds=\"menubar-menu\"\n        ref={(el) => { pop.anchor.current = el }}\n        type=\"button\"\n        role=\"menuitem\"\n        aria-haspopup=\"menu\"\n        aria-expanded={pop.open}\n        tabIndex={bar.focused === key ? 0 : -1}\n        className=\"inline-flex h-control-sm cursor-pointer items-center px-2.5 text-meta leading-5 font-medium text-fg transition-colors duration-120 ease-standard hover:bg-edge/45 aria-expanded:bg-surface focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-focus max-md:h-control-touch max-md:text-ui\"\n        onClick={onClick}\n        onPointerEnter={onEnter}\n        onFocus={() => bar.setFocused(key)}\n        onKeyDown={onTriggerKey}\n      >\n        {label}\n      </button>\n      <PopoverPanel data-ds=\"menubar-menu\" pop={pop} role=\"menu\" aria-label={label} tabIndex={-1} className=\"flex flex-col p-1\" style={{ width }} onKeyDown={onPanelKey}>\n        {children}\n      </PopoverPanel>\n    </MenuClose.Provider>\n  )\n}\n\nexport default MenubarMenu\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "menu",
+        "popover"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "Menubar",
+            "file": "react/components/ui/Menubar.tsx",
+            "props": [
+              {
+                "name": "label",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "MenubarMenu",
+            "file": "react/components/ui/MenubarMenu.tsx",
+            "props": [
+              {
+                "name": "label",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "width",
+                "type": "string",
+                "required": false,
+                "default": "'224px'"
+              },
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "A namespace's tools",
+          "center": false,
+          "half": false,
+          "path": "react/examples/menubar/Product.tsx",
+          "content": "'use client'\nimport { useState } from 'react'\nimport { Check, Copy, Download, FilePlus, Layers, RefreshCw, Trash2, Upload } from 'lucide-react'\nimport { Menubar } from '@/react/components/ui/Menubar'\nimport { MenubarMenu } from '@/react/components/ui/MenubarMenu'\nimport { MenuItem } from '@/react/components/ui/MenuItem'\nimport { MenuLabel } from '@/react/components/ui/MenuLabel'\nimport { MenuSeparator } from '@/react/components/ui/MenuSeparator'\n// A namespace's tools as a menubar: what to add, what to do with it, how to show its documents. Open one, then point\n// at the next or press Right.\nconst sorts = [{ id: 'newest', label: 'Newest first' }, { id: 'title', label: 'Title' }, { id: 'size', label: 'Size' }] as const\n\nexport default function Product() {\n  const [sort, setSort] = useState<'newest' | 'title' | 'size'>('newest')\n  return (\n    <div className=\"min-h-72\">\n      <Menubar label=\"namespace\">\n        <MenubarMenu label=\"Add\">\n          <MenuItem><FilePlus size={14} strokeWidth={1.5} className=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />Paste text</MenuItem>\n          <MenuItem><Upload size={14} strokeWidth={1.5} className=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />Upload files</MenuItem>\n          <MenuItem><Layers size={14} strokeWidth={1.5} className=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />Connect an app</MenuItem>\n        </MenubarMenu>\n        <MenubarMenu label=\"Namespace\">\n          <MenuItem><RefreshCw size={14} strokeWidth={1.5} className=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />Sync now</MenuItem>\n          <MenuItem><Copy size={14} strokeWidth={1.5} className=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />Copy name</MenuItem>\n          <MenuItem><Download size={14} strokeWidth={1.5} className=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />Export documents</MenuItem>\n          <MenuSeparator />\n          <MenuItem danger><Trash2 size={14} strokeWidth={1.5} className=\"shrink-0\" aria-hidden=\"true\" />Delete namespace</MenuItem>\n        </MenubarMenu>\n        <MenubarMenu label=\"View\">\n          <MenuLabel>Sort documents</MenuLabel>\n          {sorts.map(s => (\n            <MenuItem key={s.id} current={sort === s.id} onSelect={() => setSort(s.id)}>\n              <span className=\"min-w-0 flex-1\">{s.label}</span>\n              {sort === s.id && <Check size={14} strokeWidth={1.5} className=\"shrink-0\" aria-label=\"current\" />}\n            </MenuItem>\n          ))}\n        </MenubarMenu>\n      </Menubar>\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "menu",
+            "popover"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/menubar.ts",
+          "content": "import { html, type PropertyValues } from 'lit'\nimport { DsElement, define, tagName } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// Menubar.vue as <conare-menubar>: menu triggers in a row on the paper (shadcn's menubar in Conare's grammar): a\n// hairline strip, 28px triggers in 12px medium, each opening a menu's square panel of rows (<conare-menubar-menu>).\n// One trigger is in the tab order; Left and Right move along the row, Down, Enter or Space open, and with a menu open\n// Left and Right open the next one. While one is open, pointing at another trigger switches to it at once.\n\n/** What a <conare-menubar-menu> offers its bar. */\nexport interface MenubarEntry extends HTMLElement { focusTrigger(): void, openMenu(focus?: 'first' | 'last' | 'none'): Promise<void> }\n\n/**\n * @summary Menu triggers in a row.\n * @slot - The menus: <conare-menubar-menu>.\n */\nexport class Menubar extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { label: {} }\n\n\t/** The bar's name for assistive tech. */\n\tlabel = ''\n\t/** The open menu, if any. */\n\tactive: Element | null = null\n\t/** The trigger in the tab order (the first until another takes focus). */\n\tfocused: Element | null = null\n\n\t/** The menus, in the order they sit. */\n\tentries() {\n\t\treturn [...this.querySelectorAll<MenubarEntry>(tagName('menubar-menu'))]\n\t}\n\t/** The trigger in the tab order. */\n\tcurrent() {\n\t\treturn this.focused ?? this.entries()[0] ?? null\n\t}\n\tprivate refresh() {\n\t\tfor (const m of this.entries()) (m as unknown as { requestUpdate(): void }).requestUpdate?.()\n\t}\n\tsetActive(menu: Element | null) {\n\t\tif (this.active === menu) return\n\t\tthis.active = menu\n\t\tthis.refresh()\n\t}\n\tsetFocused(menu: Element) {\n\t\tif (this.focused === menu) return\n\t\tthis.focused = menu\n\t\tthis.refresh()\n\t}\n\tmove(from: Element, step: number, open: boolean) {\n\t\tconst list = this.entries()\n\t\tconst at = list.indexOf(from as MenubarEntry)\n\t\tconst next = list[(at + step + list.length) % list.length]\n\t\tif (!next) return\n\t\tthis.setFocused(next)\n\t\tnext.focusTrigger()\n\t\tif (open) void next.openMenu('first')\n\t}\n\n\tprotected firstUpdated(changed: PropertyValues<this>) {\n\t\tsuper.firstUpdated(changed)\n\t\t// Menus that drew before the bar was defined learn which trigger is in the tab order.\n\t\tthis.refresh()\n\t}\n\n\trender() {\n\t\treturn html`<div data-ds=\"menubar\" role=\"menubar\" aria-label=${this.label} class=\"inline-flex items-center gap-0.5 border border-edge bg-surface-subtle p-0.5\"><slot></slot></div>`\n\t}\n}\n\ndefine('menubar', Menubar)\n"
+        },
+        {
+          "path": "elements/components/ui/menubar-menu.ts",
+          "content": "import { html, nothing, type PropertyValues } from 'lit'\nimport { DsElement, define, tagName } from '@/elements/lib/element'\nimport { CloseOnSelect, menuRows, onMenuRows } from '@/elements/lib/menu'\nimport { PopoverController, popoverStyles } from '@/elements/lib/popover'\nimport type { Menubar } from '@/elements/components/ui/menubar'\nimport styles from 'virtual:tw'\n\n// MenubarMenu.vue as <conare-menubar-menu>: one menu of a <conare-menubar>: its trigger and a menu's panel of rows\n// (<conare-menu-item>, <conare-menu-label>, <conare-menu-separator>) under it, in the top layer.\n\n/**\n * @summary One menu of a menubar.\n * @slot - The rows.\n */\nexport class MenubarMenu extends DsElement {\n\tstatic styles = [DsElement.styles, popoverStyles, styles]\n\tstatic properties = { label: {}, width: {} }\n\n\t/** The trigger's text and the menu's name. */\n\tlabel = ''\n\twidth = '224px'\n\tprivate wasOpen = false\n\tprivate pop = new PopoverController(this, {\n\t\tside: 'bottom',\n\t\talign: 'start',\n\t\tgap: 4,\n\t\tanchor: () => this.renderRoot.querySelector<HTMLElement>('button[role=\"menuitem\"]'),\n\t\tpanel: () => this.renderRoot.querySelector<HTMLElement>('.ds-pop'),\n\t})\n\n\tprivate get bar() {\n\t\tconst b = this.closest(tagName('menubar')) as Menubar | null\n\t\treturn b && typeof b.setActive === 'function' ? b : null\n\t}\n\tconstructor() {\n\t\tsuper()\n\t\t// A chosen row closes the menu, focus back on the trigger.\n\t\tnew CloseOnSelect(this, () => this.pop.hide(true))\n\t}\n\n\tprivate rows() {\n\t\treturn menuRows(this)\n\t}\n\t/** Focuses the trigger (the bar's arrows). */\n\tfocusTrigger() {\n\t\tthis.renderRoot.querySelector<HTMLElement>('button[role=\"menuitem\"]')?.focus()\n\t}\n\t/** Opens the menu, focusing its first or last row, or the panel. */\n\tasync openMenu(focus: 'first' | 'last' | 'none' = 'first', keyboard = true) {\n\t\tawait this.pop.show({ keyboard })\n\t\tawait this.updateComplete\n\t\tif (focus === 'none') return this.renderRoot.querySelector<HTMLElement>('.ds-pop')?.focus({ preventScroll: true })\n\t\tconst rows = this.rows()\n\t\t;(focus === 'last' ? rows.at(-1) : rows[0])?.focus()\n\t}\n\n\tprivate onClick = (event: MouseEvent) => {\n\t\tif (this.pop.open) return this.pop.hide(event.detail === 0, event.detail === 0)\n\t\tvoid this.openMenu(event.detail === 0 ? 'first' : 'none', event.detail === 0)\n\t}\n\tprivate onEnter = () => {\n\t\tconst bar = this.bar\n\t\tif (bar?.active && bar.active !== this) void this.openMenu('none', true)\n\t}\n\tprivate onTriggerKey = (event: KeyboardEvent) => {\n\t\tif (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {\n\t\t\tevent.preventDefault()\n\t\t\tthis.bar?.move(this, event.key === 'ArrowRight' ? 1 : -1, false)\n\t\t} else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {\n\t\t\tevent.preventDefault()\n\t\t\tvoid this.openMenu(event.key === 'ArrowDown' ? 'first' : 'last')\n\t\t}\n\t}\n\t// Vue's onMenuRows, after Left and Right, which open the next menu.\n\tprivate onPanelKey = (event: KeyboardEvent) => {\n\t\tif (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {\n\t\t\tevent.preventDefault()\n\t\t\tthis.pop.hide(false, true)\n\t\t\tthis.bar?.move(this, event.key === 'ArrowRight' ? 1 : -1, true)\n\t\t\treturn\n\t\t}\n\t\tonMenuRows(event, this.rows(), (refocus) => this.pop.hide(refocus))\n\t}\n\tprotected updated(changed: PropertyValues<this>) {\n\t\tsuper.updated(changed)\n\t\tconst bar = this.bar\n\t\tif (!bar) return\n\t\tif (this.pop.open !== this.wasOpen) {\n\t\t\tthis.wasOpen = this.pop.open\n\t\t\tif (this.pop.open) bar.setActive(this)\n\t\t\telse if (bar.active === this) bar.setActive(null)\n\t\t}\n\t\tif (bar.active !== this && this.pop.open) this.pop.hide(false, true)\n\t}\n\n\trender() {\n\t\tconst bar = this.bar\n\t\tconst tabbable = !bar || bar.current() === this\n\t\tconst panel = this.pop.rendered\n\t\t\t? html`<div data-ds=\"menubar-menu\" popover=\"manual\" class=\"ds-pop flex flex-col p-1\" role=\"menu\" aria-label=${this.label} tabindex=\"-1\" data-side=${this.pop.pos.side} ?data-instant=${this.pop.instant} ?data-placed=${this.pop.pos.placed} style=${this.pop.style(`width: ${this.width}`)} @keydown=${this.onPanelKey} @focusout=${this.pop.onFocusOut}><slot></slot></div>`\n\t\t\t: nothing\n\t\treturn html`<button data-ds=\"menubar-menu\" type=\"button\" role=\"menuitem\" aria-haspopup=\"menu\" aria-expanded=${String(this.pop.open)} tabindex=${tabbable ? 0 : -1} class=\"inline-flex h-control-sm cursor-pointer items-center px-2.5 text-meta leading-5 font-medium text-fg transition-colors duration-120 ease-standard hover:bg-edge/45 aria-expanded:bg-surface focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-focus max-md:h-control-touch max-md:text-ui\" @click=${this.onClick} @pointerenter=${this.onEnter} @focus=${() => this.bar?.setFocused(this)} @keydown=${this.onTriggerKey}>${this.label}</button>${panel}`\n\t}\n}\n\ndefine('menubar-menu', MenubarMenu)\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/menubar.js",
+        "elements/menubar-menu.js",
+        "elements/menu-item.js",
+        "elements/menu-separator.js",
+        "elements/menu-label.js"
+      ],
+      "tag": "conare-menubar",
+      "tags": [
+        "conare-menubar",
+        "conare-menubar-menu"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-menubar",
+            "name": "Menubar",
+            "module": "elements/menubar.js",
+            "description": "Menu triggers in a row.",
+            "attributes": [
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string",
+                "default": "''",
+                "description": "The bar's name for assistive tech."
+              }
+            ],
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "''",
+                "description": "The bar's name for assistive tech.",
+                "attribute": "label"
+              },
+              {
+                "name": "active",
+                "type": "Element | null",
+                "default": "null",
+                "description": "The open menu, if any."
+              },
+              {
+                "name": "focused",
+                "type": "Element | null",
+                "default": "null",
+                "description": "The trigger in the tab order (the first until another takes focus)."
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "The menus: <conare-menubar-menu>."
+              }
+            ],
+            "methods": [
+              {
+                "name": "entries",
+                "description": "The menus, in the order they sit."
+              },
+              {
+                "name": "current",
+                "description": "The trigger in the tab order."
+              },
+              {
+                "name": "setActive"
+              },
+              {
+                "name": "setFocused"
+              },
+              {
+                "name": "move"
+              }
+            ]
+          },
+          {
+            "tag": "conare-menubar-menu",
+            "name": "MenubarMenu",
+            "module": "elements/menubar-menu.js",
+            "description": "One menu of a menubar.",
+            "attributes": [
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string",
+                "default": "''",
+                "description": "The trigger's text and the menu's name."
+              },
+              {
+                "name": "width",
+                "field": "width",
+                "type": "string",
+                "default": "'224px'"
+              }
+            ],
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "''",
+                "description": "The trigger's text and the menu's name.",
+                "attribute": "label"
+              },
+              {
+                "name": "width",
+                "type": "string",
+                "default": "'224px'",
+                "attribute": "width"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "The rows."
+              }
+            ],
+            "methods": [
+              {
+                "name": "focusTrigger",
+                "description": "Focuses the trigger (the bar's arrows)."
+              },
+              {
+                "name": "openMenu",
+                "description": "Opens the menu, focusing its first or last row, or the panel."
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "A namespace's tools",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/menubar/Product.html",
+          "content": "<!-- A namespace's tools as a menubar: what to add, what to do with it, how to show its documents. Open one, then point\n     at the next or press Right. -->\n<div class=\"min-h-72\">\n  <conare-menubar label=\"namespace\">\n    <conare-menubar-menu label=\"Add\">\n      <conare-menu-item><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-file-plus shrink-0 text-fg-muted\" aria-hidden=\"true\"><path d=\"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z\"></path><path d=\"M14 2v4a2 2 0 0 0 2 2h4\"></path><path d=\"M9 15h6\"></path><path d=\"M12 18v-6\"></path></svg>Paste text</conare-menu-item>\n      <conare-menu-item><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-upload shrink-0 text-fg-muted\" aria-hidden=\"true\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"></path><polyline points=\"17 8 12 3 7 8\"></polyline><line x1=\"12\" x2=\"12\" y1=\"3\" y2=\"15\"></line></svg>Upload files</conare-menu-item>\n      <conare-menu-item><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-layers shrink-0 text-fg-muted\" aria-hidden=\"true\"><path d=\"M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z\"></path><path d=\"M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12\"></path><path d=\"M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17\"></path></svg>Connect an app</conare-menu-item>\n    </conare-menubar-menu>\n    <conare-menubar-menu label=\"Namespace\">\n      <conare-menu-item><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-refresh-cw shrink-0 text-fg-muted\" aria-hidden=\"true\"><path d=\"M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8\"></path><path d=\"M21 3v5h-5\"></path><path d=\"M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16\"></path><path d=\"M8 16H3v5\"></path></svg>Sync now</conare-menu-item>\n      <conare-menu-item><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-copy shrink-0 text-fg-muted\" aria-hidden=\"true\"><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"></rect><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"></path></svg>Copy name</conare-menu-item>\n      <conare-menu-item><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-download shrink-0 text-fg-muted\" aria-hidden=\"true\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"></path><polyline points=\"7 10 12 15 17 10\"></polyline><line x1=\"12\" x2=\"12\" y1=\"15\" y2=\"3\"></line></svg>Export documents</conare-menu-item>\n      <conare-menu-separator></conare-menu-separator>\n      <conare-menu-item danger><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-trash-2 shrink-0\" aria-hidden=\"true\"><path d=\"M3 6h18\"></path><path d=\"M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6\"></path><path d=\"M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2\"></path><line x1=\"10\" x2=\"10\" y1=\"11\" y2=\"17\"></line><line x1=\"14\" x2=\"14\" y1=\"11\" y2=\"17\"></line></svg>Delete namespace</conare-menu-item>\n    </conare-menubar-menu>\n    <conare-menubar-menu label=\"View\" id=\"view-menu\">\n      <conare-menu-label>Sort documents</conare-menu-label>\n      <conare-menu-item data-sort=\"newest\" current><span class=\"min-w-0 flex-1\">Newest first</span><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-check shrink-0\" aria-label=\"current\"><path d=\"M20 6 9 17l-5-5\"></path></svg></conare-menu-item>\n      <conare-menu-item data-sort=\"title\"><span class=\"min-w-0 flex-1\">Title</span><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-check shrink-0\" aria-label=\"current\" hidden><path d=\"M20 6 9 17l-5-5\"></path></svg></conare-menu-item>\n      <conare-menu-item data-sort=\"size\"><span class=\"min-w-0 flex-1\">Size</span><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-check shrink-0\" aria-label=\"current\" hidden><path d=\"M20 6 9 17l-5-5\"></path></svg></conare-menu-item>\n    </conare-menubar-menu>\n  </conare-menubar>\n</div>\n<script type=\"module\">\n  // Sorting: the chosen order becomes current, with its check.\n  const rows = document.querySelectorAll('#view-menu [data-sort]')\n  for (const row of rows) {\n    row.addEventListener('select', () => {\n      for (const other of rows) {\n        other.current = other === row\n        other.querySelector('svg').toggleAttribute('hidden', other !== row)\n      }\n    })\n  }\n</script>\n"
+        }
+      ]
+    }
+  }
+}

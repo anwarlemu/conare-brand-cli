@@ -1,0 +1,19 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "careers-page",
+  "type": "registry:block",
+  "title": "Careers page",
+  "description": "The open roles, a row each in the double rule (the name, the team and the place, the whole row a link), or a line when there are none, in the site's frame.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://conare-ds-registry.vercel.app/r/react/section-head.json",
+    "https://conare-ds-registry.vercel.app/r/react/site-page.json"
+  ],
+  "files": [
+    {
+      "path": "components/site/CareersPage.tsx",
+      "type": "registry:ui",
+      "content": "import { SectionHead } from '@/components/site/SectionHead'\nimport { SitePage, type SiteFrameProps } from '@/components/site/SitePage'\n\n// The open roles: the page's head, then a row per role in the website's double rule (its name in Faculty Glyphic, the\n// team and the place under it, the whole row a link that takes the paper under the pointer), or the line the page gives\n// when there are none. In the site's frame. The site has no careers page: set from the 404's cells and the pages' heads.\nexport type CareersRole = { title: string, team?: string, place?: string, href: string }\nexport interface CareersPageProps extends SiteFrameProps { tag?: string, title: string, body?: string, roles: CareersRole[], empty?: string }\n\nconst css = `.ds-role-link { transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-role-link:hover { background-color: var(--ds-color-surface-subtle); } }\n.ds-role-link:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }`\n\nexport function CareersPage({ header, footer, announcement, logo, actions, tag, title, body, roles, empty = '' }: CareersPageProps) {\n  return (\n    <>\n      <style href=\"ds-careers-page\" precedence=\"ds\">{css}</style>\n      <SitePage data-ds=\"careers-page\" header={header} footer={footer} announcement={announcement} logo={logo} actions={actions}>\n        <section aria-labelledby=\"careers-title\" className=\"mx-auto max-w-[1440px] px-4 pt-14 pb-32 sm:px-6 lg:px-10 lg:pt-20 lg:pb-40\">\n          <SectionHead as=\"h1\" titleId=\"careers-title\" tag={tag} title={title} body={body} />\n          {roles.length\n            ? (\n                <ul aria-label=\"Open roles\" className=\"mx-auto mt-14 grid max-w-[1008px] gap-px border border-edge bg-edge outline outline-offset-4 outline-edge\">\n                  {roles.map(r => (\n                    <li key={r.href} className=\"flex bg-surface\">\n                      <a href={r.href} className=\"ds-role-link flex w-full flex-col gap-1 px-5 py-5 sm:flex-row sm:items-baseline sm:justify-between sm:px-6\">\n                        <span className=\"type-heading-3 text-fg\">{r.title}</span>\n                        {(r.team || r.place) && <span className=\"type-meta text-fg-muted\">{[r.team, r.place].filter(Boolean).join(' · ')}</span>}\n                      </a>\n                    </li>\n                  ))}\n                </ul>\n              )\n            : empty && <p className=\"mx-auto mt-14 max-w-[1008px] border border-edge px-5 py-6 text-center type-ui text-fg-muted outline outline-offset-4 outline-edge\">{empty}</p>}\n        </section>\n      </SitePage>\n    </>\n  )\n}\n\nexport default CareersPage\n"
+    }
+  ]
+}

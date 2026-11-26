@@ -1,0 +1,294 @@
+{
+  "name": "code-pop",
+  "title": "Code pop",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "Code that opens from a \"Show code\" button: the request behind a result. It opens in place: the code takes its own line under the row, in the dark code window, and pushes what follows.",
+  "use_for": "\"Show code\" beside a result: the request that produced it.",
+  "never": [
+    "Code the person must read to continue: show it on the page",
+    "Long files",
+    "A floating window over the results: it belongs to the row"
+  ],
+  "source": "conare-web app/components/console/CodePop.vue (version 2, Opens in place), app/components/console/CodeWindow.vue",
+  "body": "Put it in a wrapping flex row (`flex flex-wrap items-center`): the button takes the row's end and the code its own line\nunder it. `opened` starts it open; `tab` names the code's pill (cURL for a curl command by default).",
+  "requires": [
+    "code-block"
+  ],
+  "dependencies": [
+    "lucide-vue-next@^0.479.0"
+  ],
+  "files": [
+    {
+      "path": "components/ui/CodePop.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref, useId } from 'vue'\nimport { ChevronDown, Code } from 'lucide-vue-next'\nimport CodeBlock from '@/components/ui/CodeBlock.vue'\n\n// Code that opens from its own button (the console's CodePop.vue, version 2, the one picked): no overlay, the code\n// takes its own line under the row, in the dark code window, and pushes what follows. The row grows from 0fr over\n// 200ms (back in 140ms), the window settles 6px down into place, and the label swaps to \"Hide code\" in the same box,\n// so the button keeps its width. The chevron turns as it opens and starts turning on the press. The trigger and the\n// code sit in the caller's row (display: contents): put it in a wrapping flex row; it takes the row's end. `large`\n// is the 36px size, beside a large dark button.\nconst props = withDefaults(defineProps<{ code: string, label?: string, title?: string, tab?: string, opened?: boolean, large?: boolean }>(), { label: 'Show code', title: 'This request in your code' })\nconst id = `codepop-${useId()}`\nconst open = ref(props.opened)\nconst panel = ref<HTMLElement | null>(null)\nlet timer: ReturnType<typeof setTimeout> | undefined\n// It opens under its button, which can sit low on the screen, so the code lands in view once the row has grown.\nfunction toggle() {\n  open.value = !open.value\n  clearTimeout(timer)\n  // ds-latency: waits for the row to finish growing before bringing it into view; the code shows at once.\n  if (open.value) timer = setTimeout(() => panel.value?.scrollIntoView({ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }), 200)\n}\n</script>\n\n<template>\n  <div data-ds=\"code-pop\" class=\"contents\" data-codepop>\n    <button type=\"button\" class=\"ds-codepop-btn\" :data-large=\"large || undefined\" :aria-expanded=\"open\" :aria-controls=\"id\" @click=\"toggle\">\n      <Code :size=\"12\" :stroke-width=\"1.5\" aria-hidden=\"true\" />\n      <span class=\"ds-codepop-stack\"><span :data-on=\"!open || undefined\" :aria-hidden=\"open\">{{ label }}</span><span :data-on=\"open || undefined\" :aria-hidden=\"!open\">Hide code</span></span>\n      <ChevronDown :size=\"12\" :stroke-width=\"1.5\" class=\"ds-codepop-chev\" aria-hidden=\"true\" />\n    </button>\n    <div :id=\"id\" ref=\"panel\" class=\"ds-codepop\" :data-open=\"open || undefined\" :inert=\"!open\" role=\"region\" :aria-label=\"title\">\n      <div class=\"ds-codepop-clip\">\n        <CodeBlock class=\"ds-codepop-win\" :code=\"code\" :label=\"tab\" />\n      </div>\n    </div>\n  </div>\n</template>\n\n<style>\n.ds-codepop-btn { display: inline-flex; height: var(--ds-size-control-sm); flex-shrink: 0; align-items: center; gap: var(--ds-space-sm); margin-left: auto; padding: 0 10px; border: var(--ds-border-hairline) solid transparent; color: var(--ds-color-fg-soft); font-size: var(--ds-text-meta); font-weight: var(--ds-font-weight-medium); white-space: nowrap; cursor: pointer; transition: color var(--ds-duration-micro) var(--ds-easing-standard), border-color var(--ds-duration-micro) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-codepop-btn:hover { border-color: var(--ds-color-edge); color: var(--ds-color-fg); } }\n.ds-codepop-btn:active { background: var(--ds-color-surface-subtle); }\n.ds-codepop-btn:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: var(--ds-border-focus); }\n.ds-codepop-stack { display: inline-grid; }\n.ds-codepop-stack > * { grid-area: 1 / 1; transition: opacity var(--ds-duration-swap) var(--ds-easing-out), filter var(--ds-duration-swap) var(--ds-easing-out), transform var(--ds-duration-enter) var(--ds-easing-out); }\n.ds-codepop-stack > :not([data-on]) { opacity: 0; filter: blur(2px); }\n.ds-codepop-stack > :first-child:not([data-on]) { transform: translateY(-4px); }\n.ds-codepop-stack > :last-child:not([data-on]) { transform: translateY(4px); }\n.ds-codepop-chev { flex-shrink: 0; transition: rotate var(--ds-duration-micro) var(--ds-easing-out); }\n.ds-codepop-btn[aria-expanded=\"true\"] .ds-codepop-chev { rotate: 180deg; transition-duration: var(--ds-duration-slide); }\n.ds-codepop-btn:active .ds-codepop-chev { rotate: 24deg; }\n.ds-codepop-btn[aria-expanded=\"true\"]:active .ds-codepop-chev { rotate: 156deg; }\n.ds-codepop { display: grid; flex-basis: 100%; grid-template-rows: 0fr; transition: grid-template-rows var(--ds-duration-fade) var(--ds-easing-out); }\n.ds-codepop[data-open] { grid-template-rows: 1fr; transition-duration: var(--ds-duration-enter); }\n.ds-codepop-clip { min-width: 0; min-height: 0; overflow: hidden; }\n.ds-codepop-win { margin-top: 8px; opacity: 0; translate: 0 -6px; transition: opacity var(--ds-duration-cell) var(--ds-easing-out), translate var(--ds-duration-fade) var(--ds-easing-out); }\n.ds-codepop[data-open] .ds-codepop-win { opacity: 1; translate: 0 0; transition: opacity var(--ds-duration-fade) var(--ds-easing-out), translate var(--ds-duration-enter) var(--ds-easing-out); }\n\n.ds-codepop-btn[data-large] { height: var(--ds-size-control-lg); padding: 0 12px; font-size: var(--ds-text-ui); }\n@media (pointer: coarse), (max-width: 767px) { .ds-codepop-btn, .ds-codepop-btn[data-large] { height: var(--ds-size-control-touch); font-size: var(--ds-text-ui); } }\n@media (prefers-reduced-motion: reduce) {\n  .ds-codepop-stack > * { filter: none; transform: none; transition: opacity var(--ds-duration-micro) ease; }\n  .ds-codepop, .ds-codepop-win, .ds-codepop-chev { translate: none; transition: none; }\n  .ds-codepop-btn:active .ds-codepop-chev { rotate: none; }\n}\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "OpensInPlace",
+      "label": "Opens in place",
+      "center": false,
+      "half": false,
+      "path": "examples/code-pop/OpensInPlace.vue",
+      "content": "<script setup lang=\"ts\">\nimport CodePop from '@/components/ui/CodePop.vue'\n// The end of a search's results, where the code pop lives: the count, the run's time and duration, then the button.\n// It starts open here to show it; the button closes it.\nconst code = `curl https://api.conare.ai/v1/namespaces/contracts/query \\\\\n  -H \"Authorization: Bearer $CONARE_API_KEY\" \\\\\n  -d '{ \"query\": \"notice period to terminate a contract\", \"top_k\": 5 }'`\n</script>\n\n<template>\n  <div class=\"flex flex-col gap-3\">\n    <p class=\"type-meta text-fg-muted tabular-nums\"><span class=\"text-fg-accent\">5</span> of 2,811,549 documents</p>\n    <div class=\"flex flex-wrap items-center gap-1.5 border-t border-edge pt-3\">\n      <span class=\"inline-flex items-center bg-surface-subtle px-2 py-1 text-meta text-fg-soft tabular-nums\">Done 4:34 PM</span>\n      <span class=\"inline-flex items-center bg-surface-subtle px-2 py-1 text-meta text-fg-soft tabular-nums\">257 ms</span>\n      <CodePop :code=\"code\" opened />\n    </div>\n  </div>\n</template>\n",
+      "requires": [
+        "code-block"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    },
+    {
+      "name": "Product",
+      "label": "Closed, at the end of the results",
+      "center": false,
+      "half": false,
+      "path": "examples/code-pop/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport CodePop from '@/components/ui/CodePop.vue'\n// Closed, as a search's results end: press Show code and the request takes its own line under the row.\nconst code = `curl https://api.conare.ai/v1/namespaces/contracts/query \\\\\n  -H \"Authorization: Bearer $CONARE_API_KEY\" \\\\\n  -d '{ \"query\": \"notice period to terminate a contract\", \"top_k\": 5 }'`\n</script>\n\n<template>\n  <div class=\"flex min-h-85 max-w-180 flex-col justify-end gap-3\">\n    <p class=\"type-meta text-fg-muted tabular-nums\"><span class=\"text-fg-accent\">5</span> of 2,811,549 documents</p>\n    <div class=\"flex flex-wrap items-center gap-1.5 border-t border-edge pt-3\">\n      <span class=\"inline-flex items-center bg-surface-subtle px-2 py-1 text-meta text-fg-soft tabular-nums\">Done 4:34 PM</span>\n      <span class=\"inline-flex items-center bg-surface-subtle px-2 py-1 text-meta text-fg-soft tabular-nums\">257 ms</span>\n      <CodePop :code=\"code\" />\n    </div>\n  </div>\n</template>\n",
+      "requires": [
+        "code-block"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/CodePop.tsx",
+          "content": "'use client'\nimport { ChevronDown, Code } from 'lucide-react'\nimport { useEffect, useId, useRef, useState } from 'react'\nimport { CodeBlock } from '@/react/components/ui/CodeBlock'\n\n// Code that opens from its own button (the console's CodePop.vue, version 2, the one picked): no overlay, the code\n// takes its own line under the row, in the dark code window, and pushes what follows. The row grows from 0fr over\n// 200ms (back in 140ms), the window settles 6px down into place, and the label swaps to \"Hide code\" in the same box,\n// so the button keeps its width. The chevron turns as it opens and starts turning on the press. The trigger and the\n// code sit in the caller's row (display: contents): put it in a wrapping flex row; it takes the row's end. `large`\n// is the 36px size, beside a large dark button.\nexport interface CodePopProps {\n  code: string\n  label?: string\n  title?: string\n  tab?: string\n  opened?: boolean\n  large?: boolean\n}\n\nexport function CodePop({ code, label = 'Show code', title = 'This request in your code', tab, opened, large }: CodePopProps) {\n  const id = `codepop-${useId()}`\n  const [open, setOpen] = useState(!!opened)\n  const panel = useRef<HTMLDivElement | null>(null)\n  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)\n  useEffect(() => () => clearTimeout(timer.current), [])\n  // It opens under its button, which can sit low on the screen, so the code lands in view once the row has grown.\n  function toggle() {\n    const next = !open\n    setOpen(next)\n    clearTimeout(timer.current)\n    // ds-latency: waits for the row to finish growing before bringing it into view; the code shows at once.\n    if (next) timer.current = setTimeout(() => panel.current?.scrollIntoView({ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }), 200)\n  }\n  return (\n    <div data-ds=\"code-pop\" className=\"contents\" data-codepop=\"\">\n      <style href=\"ds-code-pop\" precedence=\"ds\">{css}</style>\n      <button type=\"button\" className=\"ds-codepop-btn\" data-large={large || undefined} aria-expanded={open} aria-controls={id} onClick={toggle}>\n        <Code size={12} strokeWidth={1.5} aria-hidden=\"true\" />\n        <span className=\"ds-codepop-stack\"><span data-on={!open || undefined} aria-hidden={open}>{label}</span><span data-on={open || undefined} aria-hidden={!open}>Hide code</span></span>\n        <ChevronDown size={12} strokeWidth={1.5} className=\"ds-codepop-chev\" aria-hidden=\"true\" />\n      </button>\n      <div id={id} ref={panel} className=\"ds-codepop\" data-open={open || undefined} inert={!open} role=\"region\" aria-label={title}>\n        <div className=\"ds-codepop-clip\">\n          <CodeBlock className=\"ds-codepop-win\" code={code} label={tab} />\n        </div>\n      </div>\n    </div>\n  )\n}\n\nexport default CodePop\n\nconst css = `\n.ds-codepop-btn { display: inline-flex; height: var(--ds-size-control-sm); flex-shrink: 0; align-items: center; gap: var(--ds-space-sm); margin-left: auto; padding: 0 10px; border: var(--ds-border-hairline) solid transparent; color: var(--ds-color-fg-soft); font-size: var(--ds-text-meta); font-weight: var(--ds-font-weight-medium); white-space: nowrap; cursor: pointer; transition: color var(--ds-duration-micro) var(--ds-easing-standard), border-color var(--ds-duration-micro) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-codepop-btn:hover { border-color: var(--ds-color-edge); color: var(--ds-color-fg); } }\n.ds-codepop-btn:active { background: var(--ds-color-surface-subtle); }\n.ds-codepop-btn:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: var(--ds-border-focus); }\n.ds-codepop-stack { display: inline-grid; }\n.ds-codepop-stack > * { grid-area: 1 / 1; transition: opacity var(--ds-duration-swap) var(--ds-easing-out), filter var(--ds-duration-swap) var(--ds-easing-out), transform var(--ds-duration-enter) var(--ds-easing-out); }\n.ds-codepop-stack > :not([data-on]) { opacity: 0; filter: blur(2px); }\n.ds-codepop-stack > :first-child:not([data-on]) { transform: translateY(-4px); }\n.ds-codepop-stack > :last-child:not([data-on]) { transform: translateY(4px); }\n.ds-codepop-chev { flex-shrink: 0; transition: rotate var(--ds-duration-micro) var(--ds-easing-out); }\n.ds-codepop-btn[aria-expanded=\"true\"] .ds-codepop-chev { rotate: 180deg; transition-duration: var(--ds-duration-slide); }\n.ds-codepop-btn:active .ds-codepop-chev { rotate: 24deg; }\n.ds-codepop-btn[aria-expanded=\"true\"]:active .ds-codepop-chev { rotate: 156deg; }\n.ds-codepop { display: grid; flex-basis: 100%; grid-template-rows: 0fr; transition: grid-template-rows var(--ds-duration-fade) var(--ds-easing-out); }\n.ds-codepop[data-open] { grid-template-rows: 1fr; transition-duration: var(--ds-duration-enter); }\n.ds-codepop-clip { min-width: 0; min-height: 0; overflow: hidden; }\n.ds-codepop-win { margin-top: 8px; opacity: 0; translate: 0 -6px; transition: opacity var(--ds-duration-cell) var(--ds-easing-out), translate var(--ds-duration-fade) var(--ds-easing-out); }\n.ds-codepop[data-open] .ds-codepop-win { opacity: 1; translate: 0 0; transition: opacity var(--ds-duration-fade) var(--ds-easing-out), translate var(--ds-duration-enter) var(--ds-easing-out); }\n\n.ds-codepop-btn[data-large] { height: var(--ds-size-control-lg); padding: 0 12px; font-size: var(--ds-text-ui); }\n@media (pointer: coarse), (max-width: 767px) { .ds-codepop-btn, .ds-codepop-btn[data-large] { height: var(--ds-size-control-touch); font-size: var(--ds-text-ui); } }\n@media (prefers-reduced-motion: reduce) {\n  .ds-codepop-stack > * { filter: none; transform: none; transition: opacity var(--ds-duration-micro) ease; }\n  .ds-codepop, .ds-codepop-win, .ds-codepop-chev { translate: none; transition: none; }\n  .ds-codepop-btn:active .ds-codepop-chev { rotate: none; }\n}\n`\n"
+        }
+      ],
+      "dependencies": [
+        "lucide-react@0.479.0"
+      ],
+      "registryDependencies": [
+        "code-block"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "CodePop",
+            "file": "react/components/ui/CodePop.tsx",
+            "props": [
+              {
+                "name": "code",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "required": false,
+                "default": "'Show code'"
+              },
+              {
+                "name": "title",
+                "type": "string",
+                "required": false,
+                "default": "'This request in your code'"
+              },
+              {
+                "name": "tab",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "opened",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "large",
+                "type": "boolean",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "OpensInPlace",
+          "label": "Opens in place",
+          "center": false,
+          "half": false,
+          "path": "react/examples/code-pop/OpensInPlace.tsx",
+          "content": "import { CodePop } from '@/react/components/ui/CodePop'\n// The end of a search's results, where the code pop lives: the count, the run's time and duration, then the button.\n// It starts open here to show it; the button closes it.\nconst code = `curl https://api.conare.ai/v1/namespaces/contracts/query \\\\\n  -H \"Authorization: Bearer $CONARE_API_KEY\" \\\\\n  -d '{ \"query\": \"notice period to terminate a contract\", \"top_k\": 5 }'`\n\nexport default function OpensInPlace() {\n  return (\n    <div className=\"flex flex-col gap-3\">\n      <p className=\"type-meta text-fg-muted tabular-nums\"><span className=\"text-fg-accent\">5</span> of 2,811,549 documents</p>\n      <div className=\"flex flex-wrap items-center gap-1.5 border-t border-edge pt-3\">\n        <span className=\"inline-flex items-center bg-surface-subtle px-2 py-1 text-meta text-fg-soft tabular-nums\">Done 4:34 PM</span>\n        <span className=\"inline-flex items-center bg-surface-subtle px-2 py-1 text-meta text-fg-soft tabular-nums\">257 ms</span>\n        <CodePop code={code} opened />\n      </div>\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "code-block"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        },
+        {
+          "name": "Product",
+          "label": "Closed, at the end of the results",
+          "center": false,
+          "half": false,
+          "path": "react/examples/code-pop/Product.tsx",
+          "content": "import { CodePop } from '@/react/components/ui/CodePop'\n// Closed, as a search's results end: press Show code and the request takes its own line under the row.\nconst code = `curl https://api.conare.ai/v1/namespaces/contracts/query \\\\\n  -H \"Authorization: Bearer $CONARE_API_KEY\" \\\\\n  -d '{ \"query\": \"notice period to terminate a contract\", \"top_k\": 5 }'`\n\nexport default function Product() {\n  return (\n    <div className=\"flex min-h-85 max-w-180 flex-col justify-end gap-3\">\n      <p className=\"type-meta text-fg-muted tabular-nums\"><span className=\"text-fg-accent\">5</span> of 2,811,549 documents</p>\n      <div className=\"flex flex-wrap items-center gap-1.5 border-t border-edge pt-3\">\n        <span className=\"inline-flex items-center bg-surface-subtle px-2 py-1 text-meta text-fg-soft tabular-nums\">Done 4:34 PM</span>\n        <span className=\"inline-flex items-center bg-surface-subtle px-2 py-1 text-meta text-fg-soft tabular-nums\">257 ms</span>\n        <CodePop code={code} />\n      </div>\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "code-block"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/code-pop.ts",
+          "content": "import { type PropertyValues } from 'lit'\nimport { html } from 'lit/static-html.js'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { ChevronDown, Code } from 'lucide'\nimport { DsElement, define, tag, uid } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport '@/elements/components/ui/code-block'\nimport styles from 'virtual:tw'\n\n// CodePop.vue as <conare-code-pop>: code that opens from its own button (the console's CodePop.vue, version 2, the one\n// picked): no overlay, the code takes its own line under the row, in the dark code window, and pushes what follows. The\n// row grows from 0fr over 200ms (back in 140ms), the window settles 6px down into place, and the label swaps to \"Hide\n// code\" in the same box, so the button keeps its width. The chevron turns as it opens and starts turning on the press.\n// The trigger and the code sit in the caller's row (display: contents): put it in a wrapping flex row; it takes the\n// row's end. `large` is the 36px size, beside a large dark button. Vue's `title` is `heading`.\n\n/** @summary A Show code button whose code opens on its own line under the row. */\nexport class CodePop extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { code: {}, label: {}, heading: {}, tab: {}, opened: { type: Boolean }, large: { type: Boolean }, open: { state: true } }\n\n\t/** The code to show. */\n\tcode = ''\n\t/** The button's word while closed. */\n\tlabel = 'Show code'\n\t/** The code region's name (Vue's `title`; `title` is HTML's tooltip attribute). */\n\theading = 'This request in your code'\n\t/** The window's pill (cURL, Shell...). */\n\ttab?: string\n\t/** Open from the start. */\n\topened = false\n\t/** The 36px size. */\n\tlarge = false\n\tprivate open = false\n\tprivate panelId = uid('codepop')\n\tprivate timer?: ReturnType<typeof setTimeout>\n\n\tprotected willUpdate(changed: PropertyValues) {\n\t\tif (!this.hasUpdated && changed.has('opened')) this.open = this.opened\n\t}\n\tdisconnectedCallback() {\n\t\tsuper.disconnectedCallback()\n\t\tclearTimeout(this.timer)\n\t}\n\n\t// It opens under its button, which can sit low on the screen, so the code lands in view once the row has grown.\n\tprivate toggle() {\n\t\tthis.open = !this.open\n\t\tclearTimeout(this.timer)\n\t\t// ds-latency: waits for the row to finish growing before bringing it into view; the code shows at once.\n\t\tif (this.open) this.timer = setTimeout(() => this.renderRoot.querySelector('.ds-codepop')?.scrollIntoView({ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }), 200)\n\t}\n\n\trender() {\n\t\tconst open = this.open\n\t\tconst on = (v: boolean) => ifDefined(v ? 'true' : undefined)\n\t\tconst block = tag('code-block')\n\t\treturn html`<div data-ds=\"code-pop\" class=\"contents\" data-codepop>\n\t\t\t<button type=\"button\" class=\"ds-codepop-btn\" data-large=${on(this.large)} aria-expanded=${String(open)} aria-controls=${this.panelId} @click=${() => this.toggle()}>\n\t\t\t\t${icon(Code, 'code', { size: 12, strokeWidth: 1.5, attrs: { 'aria-hidden': 'true' } })}\n\t\t\t\t<span class=\"ds-codepop-stack\"><span data-on=${on(!open)} aria-hidden=${String(open)}>${this.label}</span><span data-on=${on(open)} aria-hidden=${String(!open)}>Hide code</span></span>\n\t\t\t\t${icon(ChevronDown, 'chevron-down', { size: 12, strokeWidth: 1.5, class: 'ds-codepop-chev', attrs: { 'aria-hidden': 'true' } })}\n\t\t\t</button>\n\t\t\t<div id=${this.panelId} class=\"ds-codepop\" data-open=${on(open)} ?inert=${!open} role=\"region\" aria-label=${this.heading}>\n\t\t\t\t<div class=\"ds-codepop-clip\">\n\t\t\t\t\t<${block} class=\"ds-codepop-win\" .code=${this.code} .label=${this.tab}></${block}>\n\t\t\t\t</div>\n\t\t\t</div>\n\t\t</div>`\n\t}\n}\n\ndefine('code-pop', CodePop)\n"
+        },
+        {
+          "path": "elements/components/ui/code-pop.css",
+          "content": ".ds-codepop-btn { display: inline-flex; height: var(--ds-size-control-sm); flex-shrink: 0; align-items: center; gap: var(--ds-space-sm); margin-left: auto; padding: 0 10px; border: var(--ds-border-hairline) solid transparent; color: var(--ds-color-fg-soft); font-size: var(--ds-text-meta); font-weight: var(--ds-font-weight-medium); white-space: nowrap; cursor: pointer; transition: color var(--ds-duration-micro) var(--ds-easing-standard), border-color var(--ds-duration-micro) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-codepop-btn:hover { border-color: var(--ds-color-edge); color: var(--ds-color-fg); } }\n.ds-codepop-btn:active { background: var(--ds-color-surface-subtle); }\n.ds-codepop-btn:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: var(--ds-border-focus); }\n.ds-codepop-stack { display: inline-grid; }\n.ds-codepop-stack > * { grid-area: 1 / 1; transition: opacity var(--ds-duration-swap) var(--ds-easing-out), filter var(--ds-duration-swap) var(--ds-easing-out), transform var(--ds-duration-enter) var(--ds-easing-out); }\n.ds-codepop-stack > :not([data-on]) { opacity: 0; filter: blur(2px); }\n.ds-codepop-stack > :first-child:not([data-on]) { transform: translateY(-4px); }\n.ds-codepop-stack > :last-child:not([data-on]) { transform: translateY(4px); }\n.ds-codepop-chev { flex-shrink: 0; transition: rotate var(--ds-duration-micro) var(--ds-easing-out); }\n.ds-codepop-btn[aria-expanded=\"true\"] .ds-codepop-chev { rotate: 180deg; transition-duration: var(--ds-duration-slide); }\n.ds-codepop-btn:active .ds-codepop-chev { rotate: 24deg; }\n.ds-codepop-btn[aria-expanded=\"true\"]:active .ds-codepop-chev { rotate: 156deg; }\n.ds-codepop { display: grid; flex-basis: 100%; grid-template-rows: 0fr; transition: grid-template-rows var(--ds-duration-fade) var(--ds-easing-out); }\n.ds-codepop[data-open] { grid-template-rows: 1fr; transition-duration: var(--ds-duration-enter); }\n.ds-codepop-clip { min-width: 0; min-height: 0; overflow: hidden; }\n.ds-codepop-win { margin-top: 8px; opacity: 0; translate: 0 -6px; transition: opacity var(--ds-duration-cell) var(--ds-easing-out), translate var(--ds-duration-fade) var(--ds-easing-out); }\n.ds-codepop[data-open] .ds-codepop-win { opacity: 1; translate: 0 0; transition: opacity var(--ds-duration-fade) var(--ds-easing-out), translate var(--ds-duration-enter) var(--ds-easing-out); }\n\n.ds-codepop-btn[data-large] { height: var(--ds-size-control-lg); padding: 0 12px; font-size: var(--ds-text-ui); }\n@media (pointer: coarse), (max-width: 767px) { .ds-codepop-btn, .ds-codepop-btn[data-large] { height: var(--ds-size-control-touch); font-size: var(--ds-text-ui); } }\n@media (prefers-reduced-motion: reduce) {\n  .ds-codepop-stack > * { filter: none; transform: none; transition: opacity var(--ds-duration-micro) ease; }\n  .ds-codepop, .ds-codepop-win, .ds-codepop-chev { translate: none; transition: none; }\n  .ds-codepop-btn:active .ds-codepop-chev { rotate: none; }\n}\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/code-pop.js",
+        "elements/code-block.js",
+        "elements/code-copy.js"
+      ],
+      "tag": "conare-code-pop",
+      "tags": [
+        "conare-code-pop"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "code-block"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-code-pop",
+            "name": "CodePop",
+            "module": "elements/code-pop.js",
+            "description": "A Show code button whose code opens on its own line under the row.",
+            "attributes": [
+              {
+                "name": "code",
+                "field": "code",
+                "type": "string",
+                "default": "''",
+                "description": "The code to show."
+              },
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string",
+                "default": "'Show code'",
+                "description": "The button's word while closed."
+              },
+              {
+                "name": "heading",
+                "field": "heading",
+                "type": "string",
+                "default": "'This request in your code'",
+                "description": "The code region's name (Vue's `title`; `title` is HTML's tooltip attribute)."
+              },
+              {
+                "name": "tab",
+                "field": "tab",
+                "type": "string | undefined",
+                "description": "The window's pill (cURL, Shell...)."
+              },
+              {
+                "name": "opened",
+                "field": "opened",
+                "type": "boolean",
+                "default": "false",
+                "description": "Open from the start."
+              },
+              {
+                "name": "large",
+                "field": "large",
+                "type": "boolean",
+                "default": "false",
+                "description": "The 36px size."
+              },
+              {
+                "name": "open",
+                "field": "open",
+                "type": "boolean",
+                "default": "false"
+              }
+            ],
+            "properties": [
+              {
+                "name": "code",
+                "type": "string",
+                "default": "''",
+                "description": "The code to show.",
+                "attribute": "code"
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "default": "'Show code'",
+                "description": "The button's word while closed.",
+                "attribute": "label"
+              },
+              {
+                "name": "heading",
+                "type": "string",
+                "default": "'This request in your code'",
+                "description": "The code region's name (Vue's `title`; `title` is HTML's tooltip attribute).",
+                "attribute": "heading"
+              },
+              {
+                "name": "tab",
+                "type": "string | undefined",
+                "description": "The window's pill (cURL, Shell...).",
+                "attribute": "tab"
+              },
+              {
+                "name": "opened",
+                "type": "boolean",
+                "default": "false",
+                "description": "Open from the start.",
+                "attribute": "opened"
+              },
+              {
+                "name": "large",
+                "type": "boolean",
+                "default": "false",
+                "description": "The 36px size.",
+                "attribute": "large"
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "OpensInPlace",
+          "label": "Opens in place",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/code-pop/OpensInPlace.html",
+          "content": "<!-- The end of a search's results, where the code pop lives: the count, the run's time and duration, then the button.\n     It starts open here to show it; the button closes it. -->\n<div class=\"flex flex-col gap-3\">\n  <p class=\"type-meta text-fg-muted tabular-nums\"><span class=\"text-fg-accent\">5</span> of 2,811,549 documents</p>\n  <div class=\"flex flex-wrap items-center gap-1.5 border-t border-edge pt-3\">\n    <span class=\"inline-flex items-center bg-surface-subtle px-2 py-1 text-meta text-fg-soft tabular-nums\">Done 4:34 PM</span>\n    <span class=\"inline-flex items-center bg-surface-subtle px-2 py-1 text-meta text-fg-soft tabular-nums\">257 ms</span>\n    <conare-code-pop opened></conare-code-pop>\n  </div>\n</div>\n<script type=\"module\">\n  // Code keeps its line breaks, so it is set as a property.\n  document.querySelector('conare-code-pop').code = `curl https://api.conare.ai/v1/namespaces/contracts/query \\\\\n  -H \"Authorization: Bearer $CONARE_API_KEY\" \\\\\n  -d '{ \"query\": \"notice period to terminate a contract\", \"top_k\": 5 }'`\n</script>\n"
+        },
+        {
+          "name": "Product",
+          "label": "Closed, at the end of the results",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/code-pop/Product.html",
+          "content": "<!-- Closed, as a search's results end: press Show code and the request takes its own line under the row. -->\n<div class=\"flex min-h-85 max-w-180 flex-col justify-end gap-3\">\n  <p class=\"type-meta text-fg-muted tabular-nums\"><span class=\"text-fg-accent\">5</span> of 2,811,549 documents</p>\n  <div class=\"flex flex-wrap items-center gap-1.5 border-t border-edge pt-3\">\n    <span class=\"inline-flex items-center bg-surface-subtle px-2 py-1 text-meta text-fg-soft tabular-nums\">Done 4:34 PM</span>\n    <span class=\"inline-flex items-center bg-surface-subtle px-2 py-1 text-meta text-fg-soft tabular-nums\">257 ms</span>\n    <conare-code-pop></conare-code-pop>\n  </div>\n</div>\n<script type=\"module\">\n  // Code keeps its line breaks, so it is set as a property.\n  document.querySelector('conare-code-pop').code = `curl https://api.conare.ai/v1/namespaces/contracts/query \\\\\n  -H \"Authorization: Bearer $CONARE_API_KEY\" \\\\\n  -d '{ \"query\": \"notice period to terminate a contract\", \"top_k\": 5 }'`\n</script>\n"
+        }
+      ]
+    }
+  }
+}

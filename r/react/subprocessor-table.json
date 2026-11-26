@@ -1,0 +1,21 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "subprocessor-table",
+  "type": "registry:ui",
+  "title": "Subprocessor table",
+  "description": "The subprocessors as a policy page's ruled table in the double rule: who, what for, what data and where, each name linking to its data-processing terms in the red.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "components/site/SubprocessorTable.tsx",
+      "type": "registry:ui",
+      "content": "// The subprocessors as a policy page's ruled table (SubprocessorTable.vue, home.css .legal-table): who, what for,\n// what data and where, each name linking to its data-processing terms. The double rule frames it; on a phone it\n// scrolls sideways inside its frame (a keyboard reaches it too), never the page.\nimport { cn } from '@/lib/cn'\n\nexport type Subprocessor = { name: string, terms: string, purpose: string, data: string, location: string }\n\nexport interface SubprocessorTableProps {\n  rows: readonly Subprocessor[]\n  label?: string\n  className?: string\n}\n\nexport function SubprocessorTable({ rows, label = 'subprocessors', className }: SubprocessorTableProps) {\n  return (\n    <>\n      <style href=\"ds-subprocessor-table\" precedence=\"ds\">{css}</style>\n      <div data-ds=\"subprocessor-table\" className={cn('ds-legal-table fade-x overflow-x-auto border border-edge outline outline-offset-4 outline-edge', className)} role=\"region\" aria-label={label} tabIndex={0}>\n        <table className=\"w-full min-w-160 text-left type-body\">\n          <thead>\n            <tr>\n              <th>Subprocessor</th>\n              <th>Purpose of processing</th>\n              <th>Data categories</th>\n              <th>Processing location</th>\n            </tr>\n          </thead>\n          <tbody>\n            {rows.map(p => (\n              <tr key={p.name}>\n                <td><a href={p.terms} target=\"_blank\" rel=\"noopener\">{p.name}</a></td>\n                <td>{p.purpose}</td>\n                <td>{p.data}</td>\n                <td>{p.location}</td>\n              </tr>\n            ))}\n          </tbody>\n        </table>\n      </div>\n    </>\n  )\n}\n\nexport default SubprocessorTable\n\nconst css = `\n.ds-legal-table th { padding: var(--ds-space-lg) var(--ds-space-xl); background: var(--ds-color-surface-subtle); font-family: var(--ds-font-text); font-size: var(--ds-text-meta); font-weight: var(--ds-font-weight-regular); color: var(--ds-color-fg-muted); white-space: nowrap; }\n.ds-legal-table td { padding: var(--ds-space-lg) var(--ds-space-xl); vertical-align: top; border-top: var(--ds-border-hairline) solid var(--ds-color-edge); }\n/* Links in the red, underlined at 40% that turns full under the pointer (home.css .legal a). */\n.ds-legal-table a { color: var(--ds-color-fg-accent-display); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--ds-color-fg-accent-display) 40%, transparent); text-underline-offset: 4px; transition: text-decoration-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-legal-table a:hover { text-decoration-color: var(--ds-color-fg-accent-display); } }\n`\n"
+    },
+    {
+      "path": "lib/cn.ts",
+      "type": "registry:lib",
+      "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+    }
+  ]
+}

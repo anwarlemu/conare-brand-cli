@@ -1,0 +1,433 @@
+{
+  "name": "request-access-page",
+  "title": "Request access page",
+  "type": "registry:ui",
+  "group": "site",
+  "description": "The request-access page as it ships: the mark, the title and one line, then the part for where the person is: sign in first, try again, the form (work email, name, company, team size, what they want to build) or what happens next.",
+  "use_for": "Where sign-in sends someone it does not admit: no invite, outside the open sign-up domains.",
+  "never": [
+    "Calling the API from the component: it emits submit, retry and edit",
+    "Asking for an email the person did not sign in with",
+    "A personal address taken for a company without saying so"
+  ],
+  "source": "conare-web app/pages/request-access.vue (example-only item), on the library's Field, Input, Button and PixelButton and the brand mark",
+  "body": "`state` is the app's: `loading` (its line appears only after 300ms), `signed-out`, `failed`, `form` or `sent`. Pass the\nrequester's `email`, `personalEmail` and `name`, the `teamSizes` to choose from, `sending` and `error` while it posts,\nand the links. `submit` carries `{ name, company, teamSize, useCase }`; `retry` asks the app to load again and `edit`\nto reopen the form.\n\nThe shipped page wears the older console primitives (Inter 600 capitals, 8px corners, lowercase button labels, cards with\nno inset); here it is drawn in the console's grammar with sentence-case labels and the card's 16px inset. The team size\nis a NativeSelect and the use case a Textarea, each in a Field.",
+  "requires": [
+    "button",
+    "field",
+    "native-select",
+    "textarea"
+  ],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/site/RequestAccessPage.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref, watch } from 'vue'\nimport Button from '@/components/ui/Button.vue'\nimport Field from '@/components/ui/Field.vue'\nimport Input from '@/components/ui/Input.vue'\nimport NativeSelect from '@/components/ui/NativeSelect.vue'\nimport PixelButton from '@/components/ui/PixelButton.vue'\nimport Textarea from '@/components/ui/Textarea.vue'\n\n// Where sign-in sends someone it does not admit (pages/request-access.vue): the mark, the title and one line, then the\n// part for where they are. `state` is the app's: loading (shown after 300ms), signed-out (sign in with a work email\n// first), failed (try again), form (their email, then name, company, team size and what they want to build) or sent\n// (what happens next). It calls nothing: `submit` carries the answers, `retry` and `edit` ask the app to load again or\n// reopen the form. `full` fills the window; off, it sits in its container.\nexport type AccessState = 'loading' | 'signed-out' | 'failed' | 'form' | 'sent'\nexport type AccessAnswers = { name: string, company: string, teamSize: string, useCase: string }\n\nconst props = withDefaults(defineProps<{\n  state: AccessState\n  email?: string\n  personalEmail?: boolean\n  name?: string\n  teamSizes?: readonly string[]\n  sending?: boolean\n  error?: string\n  title?: string\n  homeHref: string\n  demoHref: string\n  signInHref: string\n  privacyHref: string\n  supportEmail?: string\n  full?: boolean\n}>(), { teamSizes: () => ['1-10', '11-50', '51-200', '201-1,000', '1,001+'], title: 'Conare is invite-only', supportEmail: 'support@acme.com', full: true })\nconst emit = defineEmits<{ submit: [answers: AccessAnswers], retry: [], edit: [] }>()\n\nconst answers = ref<AccessAnswers>({ name: props.name ?? '', company: '', teamSize: '', useCase: '' })\nwatch(() => props.name, (n) => { if (n && !answers.value.name) answers.value.name = n })\nconst link = 'underline decoration-edge-strong underline-offset-4 transition-[text-decoration-color] duration-200 ease-standard hover:decoration-fg'\nconst MARK = 'M89.9457 0C78.5373 44.7769 44.0171 80.8044 0 93.9101V76.5306C31.3148 65.2608 53.8763 35.2427 53.8763 0.0219872V0H89.9457ZM0 74.7799V49.3572C6.77999 39.8903 10.8293 25.0091 10.6866 0H42.5338C42.9715 6.97682 43.1458 24.5886 32.7226 43.2406C21.955 62.5083 6.17623 71.6192 0 74.7799ZM0 107.597V95.6608C50.9824 86.7546 92.0424 49.6664 104.695 0H148.127C141.469 15.4405 128.26 40.2998 103.082 62.7968C62.7173 98.8614 17.3404 105.841 0 107.597ZM0.139963 120.692L0 120.696V109.348L0.139963 109.341C15.0227 108.547 29.4993 106.273 43.4134 102.67C84.5887 92.003 120.841 69.6901 148.132 39.6226V82.8631C129.632 92.8289 104.14 104.192 72.4324 111.856C44.4205 118.627 19.5812 120.571 0.139963 120.692ZM148.132 102.776V133.776H0V122.447C51.2376 122.434 101.006 115.324 148.132 102.776Z'\n</script>\n\n<template>\n  <main data-ds=\"request-access-page\" class=\"bg-surface px-4 py-12 text-fg md:py-24\" :class=\"full && 'min-h-dvh'\">\n    <div class=\"mx-auto max-w-140\">\n      <a :href=\"homeHref\" aria-label=\"Home\" class=\"inline-block\">\n        <svg viewBox=\"0 0 149 134\" class=\"h-8 w-auto\" fill=\"currentColor\" aria-hidden=\"true\"><path fill-rule=\"evenodd\" :d=\"MARK\" /></svg>\n      </a>\n      <h1 class=\"mt-12 type-heading-3\">{{ title }}</h1>\n      <p class=\"mt-4 type-ui text-fg-muted\">We set it up with each company directly. Tell us about your team and we'll reply by email, or <a :href=\"demoHref\" :class=\"link\" class=\"text-fg\">book a demo</a>.</p>\n\n      <p v-if=\"state === 'loading'\" class=\"ds-access-loading mt-8 type-ui text-fg-muted\" role=\"status\">Loading.</p>\n\n      <section v-else-if=\"state === 'signed-out'\" class=\"mt-8 border border-edge p-4 type-ui\" data-state=\"signed-out\">\n        <p>Sign in with your work email first. We reply to that address, and it's the one your organization will use.</p>\n        <div class=\"mt-6 flex flex-wrap items-center gap-4\">\n          <PixelButton :href=\"signInHref\">Sign in</PixelButton>\n          <a :href=\"`mailto:${supportEmail}`\" class=\"type-meta\" :class=\"link\">or write to {{ supportEmail }}</a>\n        </div>\n      </section>\n\n      <section v-else-if=\"state === 'failed'\" class=\"mt-8\" data-state=\"failed\">\n        <p class=\"bg-surface-danger px-3 py-2 type-ui\" role=\"alert\">Something went wrong. Try again.</p>\n        <Button class=\"mt-4\" @click=\"emit('retry')\">Try again</Button>\n      </section>\n\n      <form v-else-if=\"state === 'form'\" class=\"mt-8 flex flex-col gap-6 border border-edge p-4\" data-state=\"form\" @submit.prevent=\"emit('submit', { ...answers })\">\n        <div>\n          <p class=\"type-meta text-fg-soft\">Work email</p>\n          <p class=\"mt-1.5 type-ui wrap-anywhere\">{{ email }}</p>\n          <p v-if=\"personalEmail\" class=\"mt-2 type-meta text-fg-muted\">This is a personal address. To ask for your company, <a :href=\"signInHref\" class=\"text-fg\" :class=\"link\">sign in with your work email</a>.</p>\n          <a v-else :href=\"signInHref\" class=\"mt-2 inline-block type-meta\" :class=\"link\">Use a different email</a>\n        </div>\n        <Field v-slot=\"{ id }\" label=\"Name\">\n          <Input :id=\"id\" v-model=\"answers.name\" autocomplete=\"name\" maxlength=\"200\" required />\n        </Field>\n        <Field v-slot=\"{ id }\" label=\"Company\">\n          <Input :id=\"id\" v-model=\"answers.company\" autocomplete=\"organization\" maxlength=\"200\" required />\n        </Field>\n        <Field v-slot=\"{ id }\" label=\"Team size\">\n          <NativeSelect :id=\"id\" v-model=\"answers.teamSize\" required>\n            <option value=\"\" disabled>Choose</option>\n            <option v-for=\"size in teamSizes\" :key=\"size\" :value=\"size\">{{ size }} people</option>\n          </NativeSelect>\n        </Field>\n        <Field v-slot=\"{ id }\" label=\"What you want to build\">\n          <Textarea :id=\"id\" v-model=\"answers.useCase\" maxlength=\"4000\" placeholder=\"For example: support agents that answer from our help center and past tickets.\" required />\n        </Field>\n        <p v-if=\"error\" class=\"bg-surface-danger px-3 py-2 type-ui\" role=\"alert\">{{ error }}</p>\n        <div class=\"flex flex-wrap items-center gap-4\">\n          <PixelButton type=\"submit\" :disabled=\"sending\">{{ sending ? 'Sending' : 'Send request' }}</PixelButton>\n          <p class=\"type-meta text-fg-muted\">We use these answers only to reply to you. <a :href=\"privacyHref\" class=\"text-fg\" :class=\"link\">Privacy policy</a>.</p>\n        </div>\n      </form>\n\n      <section v-else-if=\"state === 'sent'\" class=\"mt-8 border border-edge p-4 type-ui\" data-state=\"sent\" role=\"status\">\n        <h2 class=\"type-heading-4\">We have your request.</h2>\n        <p class=\"mt-2\">We'll reply to <span class=\"wrap-anywhere\">{{ email }}</span>.</p>\n        <p class=\"mt-8 type-meta text-fg-muted\">What happens next</p>\n        <ol class=\"mt-4 flex flex-col gap-3\">\n          <li class=\"flex gap-4\"><span class=\"text-fg-muted tabular-nums\">1</span><span>We read your request and reply by email.</span></li>\n          <li class=\"flex gap-4\"><span class=\"text-fg-muted tabular-nums\">2</span><span>If it fits, we create an organization for your company and invite you to it.</span></li>\n          <li class=\"flex gap-4\"><span class=\"text-fg-muted tabular-nums\">3</span><span>Open the invite and sign in with this email. The dashboard opens on get started.</span></li>\n        </ol>\n        <div class=\"mt-8 flex flex-wrap items-center gap-4\">\n          <Button :href=\"homeHref\">Back to the website</Button>\n          <button type=\"button\" class=\"cursor-pointer type-meta\" :class=\"link\" @click=\"emit('edit')\">Change your answers</button>\n        </div>\n      </section>\n\n      <p v-if=\"state === 'form' || state === 'signed-out'\" class=\"mt-6 type-meta text-fg-muted\">Is your team already on it? Ask one of its admins to invite you.</p>\n    </div>\n  </main>\n</template>\n\n<style>\n/* \"Loading.\" shows only when a load is slow, after 300ms. */\n.ds-access-loading { animation: ds-access-appear var(--ds-duration-enter) var(--ds-easing-standard) 300ms both; }\n@keyframes ds-access-appear { from { opacity: 0; } }\n@media (prefers-reduced-motion: reduce) { .ds-access-loading { animation-duration: 0ms; } }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "On the site",
+      "center": false,
+      "half": false,
+      "path": "examples/request-access-page/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport RequestAccessPage from '@/components/site/RequestAccessPage.vue'\nimport type { AccessAnswers, AccessState } from '@/components/site/RequestAccessPage.vue'\n// The request-access page as it ships, with a sample requester: send the form to see the sent state, and change the\n// answers to come back. The app would post the answers; here they wait a moment instead.\nconst state = ref<AccessState>('form')\nconst sending = ref(false)\nfunction submit(_answers: AccessAnswers) {\n  sending.value = true\n  setTimeout(() => {\n    sending.value = false\n    state.value = 'sent'\n  }, 600)\n}\n</script>\n\n<template>\n  <RequestAccessPage\n    :state=\"state\"\n    email=\"sam@acme.com\"\n    name=\"Sam\"\n    :sending=\"sending\"\n    home-href=\"#home\"\n    demo-href=\"#demo\"\n    sign-in-href=\"#sign-in\"\n    privacy-href=\"#privacy\"\n    :full=\"false\"\n    @submit=\"submit\"\n    @edit=\"state = 'form'\"\n  />\n</template>\n",
+      "requires": [
+        "button",
+        "field",
+        "native-select",
+        "textarea"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/site/RequestAccessPage.tsx",
+          "content": "'use client'\nimport { useEffect, useState } from 'react'\nimport { Button } from '@/react/components/ui/Button'\nimport { Field } from '@/react/components/ui/Field'\nimport { Input } from '@/react/components/ui/Input'\nimport { NativeSelect } from '@/react/components/ui/NativeSelect'\nimport { PixelButton } from '@/react/components/ui/PixelButton'\nimport { Textarea } from '@/react/components/ui/Textarea'\nimport { cn } from '@/react/lib/cn'\n\n// Where sign-in sends someone it does not admit (pages/request-access.vue): the mark, the title and one line, then the\n// part for where they are. `state` is the app's: loading (shown after 300ms), signed-out (sign in with a work email\n// first), failed (try again), form (their email, then name, company, team size and what they want to build) or sent\n// (what happens next). It calls nothing: `onSubmit` carries the answers, `onRetry` and `onEdit` ask the app to load\n// again or reopen the form. `full` fills the window; off, it sits in its container.\nexport type AccessState = 'loading' | 'signed-out' | 'failed' | 'form' | 'sent'\nexport type AccessAnswers = { name: string, company: string, teamSize: string, useCase: string }\n\nexport interface RequestAccessPageProps {\n  state: AccessState\n  email?: string\n  personalEmail?: boolean\n  name?: string\n  teamSizes?: readonly string[]\n  sending?: boolean\n  error?: string\n  title?: string\n  homeHref: string\n  demoHref: string\n  signInHref: string\n  privacyHref: string\n  supportEmail?: string\n  full?: boolean\n  onSubmit?: (answers: AccessAnswers) => void\n  onRetry?: () => void\n  onEdit?: () => void\n}\n\nconst TEAM_SIZES = ['1-10', '11-50', '51-200', '201-1,000', '1,001+']\nconst link = 'underline decoration-edge-strong underline-offset-4 transition-[text-decoration-color] duration-200 ease-standard hover:decoration-fg'\nconst MARK = 'M89.9457 0C78.5373 44.7769 44.0171 80.8044 0 93.9101V76.5306C31.3148 65.2608 53.8763 35.2427 53.8763 0.0219872V0H89.9457ZM0 74.7799V49.3572C6.77999 39.8903 10.8293 25.0091 10.6866 0H42.5338C42.9715 6.97682 43.1458 24.5886 32.7226 43.2406C21.955 62.5083 6.17623 71.6192 0 74.7799ZM0 107.597V95.6608C50.9824 86.7546 92.0424 49.6664 104.695 0H148.127C141.469 15.4405 128.26 40.2998 103.082 62.7968C62.7173 98.8614 17.3404 105.841 0 107.597ZM0.139963 120.692L0 120.696V109.348L0.139963 109.341C15.0227 108.547 29.4993 106.273 43.4134 102.67C84.5887 92.003 120.841 69.6901 148.132 39.6226V82.8631C129.632 92.8289 104.14 104.192 72.4324 111.856C44.4205 118.627 19.5812 120.571 0.139963 120.692ZM148.132 102.776V133.776H0V122.447C51.2376 122.434 101.006 115.324 148.132 102.776Z'\n\nexport function RequestAccessPage({ state, email, personalEmail, name, teamSizes = TEAM_SIZES, sending, error, title = 'Conare is invite-only', homeHref, demoHref, signInHref, privacyHref, supportEmail = 'support@acme.com', full = true, onSubmit, onRetry, onEdit }: RequestAccessPageProps) {\n  const [answers, setAnswers] = useState<AccessAnswers>({ name: name ?? '', company: '', teamSize: '', useCase: '' })\n  useEffect(() => {\n    if (name) setAnswers(a => (a.name ? a : { ...a, name }))\n  }, [name])\n  const set = (key: keyof AccessAnswers) => (value: string) => setAnswers(a => ({ ...a, [key]: value }))\n\n  return (\n    <>\n      <style href=\"ds-request-access-page\" precedence=\"ds\">{css}</style>\n      <main data-ds=\"request-access-page\" className={cn('bg-surface px-4 py-12 text-fg md:py-24', full && 'min-h-dvh')}>\n        <div className=\"mx-auto max-w-140\">\n          <a href={homeHref} aria-label=\"Home\" className=\"inline-block\">\n            <svg viewBox=\"0 0 149 134\" className=\"h-8 w-auto\" fill=\"currentColor\" aria-hidden=\"true\"><path fillRule=\"evenodd\" d={MARK} /></svg>\n          </a>\n          <h1 className=\"mt-12 type-heading-3\">{title}</h1>\n          <p className=\"mt-4 type-ui text-fg-muted\">We set it up with each company directly. Tell us about your team and we'll reply by email, or <a href={demoHref} className={cn(link, 'text-fg')}>book a demo</a>.</p>\n\n          {state === 'loading' && <p className=\"ds-access-loading mt-8 type-ui text-fg-muted\" role=\"status\">Loading.</p>}\n\n          {state === 'signed-out' && (\n            <section className=\"mt-8 border border-edge p-4 type-ui\" data-state=\"signed-out\">\n              <p>Sign in with your work email first. We reply to that address, and it's the one your organization will use.</p>\n              <div className=\"mt-6 flex flex-wrap items-center gap-4\">\n                <PixelButton href={signInHref}>Sign in</PixelButton>\n                <a href={`mailto:${supportEmail}`} className={cn('type-meta', link)}>or write to {supportEmail}</a>\n              </div>\n            </section>\n          )}\n\n          {state === 'failed' && (\n            <section className=\"mt-8\" data-state=\"failed\">\n              <p className=\"bg-surface-danger px-3 py-2 type-ui\" role=\"alert\">Something went wrong. Try again.</p>\n              <Button className=\"mt-4\" onClick={() => onRetry?.()}>Try again</Button>\n            </section>\n          )}\n\n          {state === 'form' && (\n            <form className=\"mt-8 flex flex-col gap-6 border border-edge p-4\" data-state=\"form\" onSubmit={(e) => { e.preventDefault(); onSubmit?.({ ...answers }) }}>\n              <div>\n                <p className=\"type-meta text-fg-soft\">Work email</p>\n                <p className=\"mt-1.5 type-ui wrap-anywhere\">{email}</p>\n                {personalEmail\n                  ? <p className=\"mt-2 type-meta text-fg-muted\">This is a personal address. To ask for your company, <a href={signInHref} className={cn('text-fg', link)}>sign in with your work email</a>.</p>\n                  : <a href={signInHref} className={cn('mt-2 inline-block type-meta', link)}>Use a different email</a>}\n              </div>\n              <Field label=\"Name\">\n                {({ id }) => <Input id={id} value={answers.name} onChange={e => set('name')(e.target.value)} autoComplete=\"name\" maxLength={200} required />}\n              </Field>\n              <Field label=\"Company\">\n                {({ id }) => <Input id={id} value={answers.company} onChange={e => set('company')(e.target.value)} autoComplete=\"organization\" maxLength={200} required />}\n              </Field>\n              <Field label=\"Team size\">\n                {({ id }) => (\n                  <NativeSelect id={id} value={answers.teamSize} onChange={e => set('teamSize')(e.target.value)} required>\n                    <option value=\"\" disabled>Choose</option>\n                    {teamSizes.map(size => <option key={size} value={size}>{size} people</option>)}\n                  </NativeSelect>\n                )}\n              </Field>\n              <Field label=\"What you want to build\">\n                {({ id }) => <Textarea id={id} value={answers.useCase} onChange={e => set('useCase')(e.target.value)} maxLength={4000} placeholder=\"For example: support agents that answer from our help center and past tickets.\" required />}\n              </Field>\n              {error && <p className=\"bg-surface-danger px-3 py-2 type-ui\" role=\"alert\">{error}</p>}\n              <div className=\"flex flex-wrap items-center gap-4\">\n                <PixelButton type=\"submit\" disabled={sending}>{sending ? 'Sending' : 'Send request'}</PixelButton>\n                <p className=\"type-meta text-fg-muted\">We use these answers only to reply to you. <a href={privacyHref} className={cn('text-fg', link)}>Privacy policy</a>.</p>\n              </div>\n            </form>\n          )}\n\n          {state === 'sent' && (\n            <section className=\"mt-8 border border-edge p-4 type-ui\" data-state=\"sent\" role=\"status\">\n              <h2 className=\"type-heading-4\">We have your request.</h2>\n              <p className=\"mt-2\">We'll reply to <span className=\"wrap-anywhere\">{email}</span>.</p>\n              <p className=\"mt-8 type-meta text-fg-muted\">What happens next</p>\n              <ol className=\"mt-4 flex flex-col gap-3\">\n                <li className=\"flex gap-4\"><span className=\"text-fg-muted tabular-nums\">1</span><span>We read your request and reply by email.</span></li>\n                <li className=\"flex gap-4\"><span className=\"text-fg-muted tabular-nums\">2</span><span>If it fits, we create an organization for your company and invite you to it.</span></li>\n                <li className=\"flex gap-4\"><span className=\"text-fg-muted tabular-nums\">3</span><span>Open the invite and sign in with this email. The dashboard opens on get started.</span></li>\n              </ol>\n              <div className=\"mt-8 flex flex-wrap items-center gap-4\">\n                <Button href={homeHref}>Back to the website</Button>\n                <button type=\"button\" className={cn('cursor-pointer type-meta', link)} onClick={() => onEdit?.()}>Change your answers</button>\n              </div>\n            </section>\n          )}\n\n          {(state === 'form' || state === 'signed-out') && <p className=\"mt-6 type-meta text-fg-muted\">Is your team already on it? Ask one of its admins to invite you.</p>}\n        </div>\n      </main>\n    </>\n  )\n}\n\nexport default RequestAccessPage\n\nconst css = `\n/* \"Loading.\" shows only when a load is slow, after 300ms. */\n.ds-access-loading { animation: ds-access-appear var(--ds-duration-enter) var(--ds-easing-standard) 300ms both; }\n@keyframes ds-access-appear { from { opacity: 0; } }\n@media (prefers-reduced-motion: reduce) { .ds-access-loading { animation-duration: 0ms; } }\n`\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "button",
+        "field",
+        "native-select",
+        "textarea"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "RequestAccessPage",
+            "file": "react/components/site/RequestAccessPage.tsx",
+            "props": [
+              {
+                "name": "state",
+                "type": "AccessState",
+                "required": true
+              },
+              {
+                "name": "email",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "personalEmail",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "name",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "teamSizes",
+                "type": "readonly string[]",
+                "required": false,
+                "default": "TEAM_SIZES"
+              },
+              {
+                "name": "sending",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "error",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "title",
+                "type": "string",
+                "required": false,
+                "default": "'Conare is invite-only'"
+              },
+              {
+                "name": "homeHref",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "demoHref",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "signInHref",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "privacyHref",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "supportEmail",
+                "type": "string",
+                "required": false,
+                "default": "'support@acme.com'"
+              },
+              {
+                "name": "full",
+                "type": "boolean",
+                "required": false,
+                "default": "true"
+              },
+              {
+                "name": "onSubmit",
+                "type": "(answers: AccessAnswers) => void",
+                "required": false
+              },
+              {
+                "name": "onRetry",
+                "type": "() => void",
+                "required": false
+              },
+              {
+                "name": "onEdit",
+                "type": "() => void",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "On the site",
+          "center": false,
+          "half": false,
+          "path": "react/examples/request-access-page/Site.tsx",
+          "content": "'use client'\nimport { useState } from 'react'\nimport { RequestAccessPage, type AccessAnswers, type AccessState } from '@/react/components/site/RequestAccessPage'\n// The request-access page as it ships, with a sample requester: send the form to see the sent state, and change the\n// answers to come back. The app would post the answers; here they wait a moment instead.\n\nexport default function Site() {\n  const [state, setState] = useState<AccessState>('form')\n  const [sending, setSending] = useState(false)\n  function submit(_answers: AccessAnswers) {\n    setSending(true)\n    setTimeout(() => {\n      setSending(false)\n      setState('sent')\n    }, 600)\n  }\n  return (\n    <RequestAccessPage\n      state={state}\n      email=\"sam@acme.com\"\n      name=\"Sam\"\n      sending={sending}\n      homeHref=\"#home\"\n      demoHref=\"#demo\"\n      signInHref=\"#sign-in\"\n      privacyHref=\"#privacy\"\n      full={false}\n      onSubmit={submit}\n      onEdit={() => setState('form')}\n    />\n  )\n}\n",
+          "registryDependencies": [
+            "button",
+            "field",
+            "native-select",
+            "textarea"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/site/request-access-page.ts",
+          "content": "import { html, nothing, type PropertyValues } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport '@/elements/components/ui/button'\nimport '@/elements/components/ui/field'\nimport '@/elements/components/ui/input'\nimport '@/elements/components/ui/native-select'\nimport '@/elements/components/ui/pixel-button'\nimport '@/elements/components/ui/textarea'\nimport styles from 'virtual:tw'\n\n// RequestAccessPage.vue as <conare-request-access-page>: where sign-in sends someone it does not admit\n// (pages/request-access.vue): the mark, the heading and one line, then the part for where they are. `state` is the\n// app's: loading (shown after 300ms), signed-out (sign in with a work email first), failed (try again), form (their\n// email, then name, company, team size and what they want to build) or sent (what happens next). It calls nothing:\n// `submit` carries the answers (detail), `retry` and `edit` ask the app to load again or reopen the form. `full` fills\n// the window; full=\"false\" sits in its container. The browser checks the required fields, as\n// in Vue's form: the first empty one shows its message and takes focus, and nothing is sent.\nexport type AccessState = 'loading' | 'signed-out' | 'failed' | 'form' | 'sent'\nexport type AccessAnswers = { name: string, company: string, teamSize: string, useCase: string }\n\nconst MARK = 'M89.9457 0C78.5373 44.7769 44.0171 80.8044 0 93.9101V76.5306C31.3148 65.2608 53.8763 35.2427 53.8763 0.0219872V0H89.9457ZM0 74.7799V49.3572C6.77999 39.8903 10.8293 25.0091 10.6866 0H42.5338C42.9715 6.97682 43.1458 24.5886 32.7226 43.2406C21.955 62.5083 6.17623 71.6192 0 74.7799ZM0 107.597V95.6608C50.9824 86.7546 92.0424 49.6664 104.695 0H148.127C141.469 15.4405 128.26 40.2998 103.082 62.7968C62.7173 98.8614 17.3404 105.841 0 107.597ZM0.139963 120.692L0 120.696V109.348L0.139963 109.341C15.0227 108.547 29.4993 106.273 43.4134 102.67C84.5887 92.003 120.841 69.6901 148.132 39.6226V82.8631C129.632 92.8289 104.14 104.192 72.4324 111.856C44.4205 118.627 19.5812 120.571 0.139963 120.692ZM148.132 102.776V133.776H0V122.447C51.2376 122.434 101.006 115.324 148.132 102.776Z'\nconst link = 'underline decoration-edge-strong underline-offset-4 transition-[text-decoration-color] duration-200 ease-standard hover:decoration-fg'\n/** On by default, as in Vue: full=\"false\" turns it off. */\nconst onByDefault = { fromAttribute: (v: string | null) => v !== 'false' }\n\n/**\n * @summary The request-access page: the form, and the states around it.\n * @fires submit - The form was sent; detail is the answers (name, company, teamSize, useCase).\n * @fires retry - Try again was pressed after a failed load.\n * @fires edit - Change your answers was pressed.\n */\nexport class RequestAccessPage extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = {\n\t\tstate: {},\n\t\temail: {},\n\t\tpersonalEmail: { type: Boolean, attribute: 'personal-email' },\n\t\tname: {},\n\t\tteamSizes: { type: Array, attribute: 'team-sizes' },\n\t\tsending: { type: Boolean },\n\t\terror: {},\n\t\theading: {},\n\t\thomeHref: { attribute: 'home-href' },\n\t\tdemoHref: { attribute: 'demo-href' },\n\t\tsignInHref: { attribute: 'sign-in-href' },\n\t\tprivacyHref: { attribute: 'privacy-href' },\n\t\tsupportEmail: { attribute: 'support-email' },\n\t\tfull: { converter: onByDefault },\n\t\tanswers: { state: true },\n\t}\n\n\tstate: AccessState = 'form'\n\temail?: string\n\t/** The email is a personal address: say so, with a way to sign in with a work one. */\n\tpersonalEmail = false\n\t/** Fills the name field. */\n\tname?: string\n\tteamSizes: string[] = ['1-10', '11-50', '51-200', '201-1,000', '1,001+']\n\tsending = false\n\t/** The server's answer to a send, shown above the button. */\n\terror?: string\n\t/** The heading (Vue's `title`; `title` is HTML's tooltip attribute). */\n\theading = 'Conare is invite-only'\n\thomeHref = ''\n\tdemoHref = ''\n\tsignInHref = ''\n\tprivacyHref = ''\n\tsupportEmail = 'support@acme.com'\n\t/** Fills the window; full=\"false\" sits in its container. */\n\tfull = true\n\tprivate answers: AccessAnswers = { name: '', company: '', teamSize: '', useCase: '' }\n\n\tprotected willUpdate(changed: PropertyValues) {\n\t\tsuper.willUpdate(changed)\n\t\tif (changed.has('name') && this.name && !this.answers.name) this.answers = { ...this.answers, name: this.name }\n\t}\n\n\tprivate set(key: keyof AccessAnswers) {\n\t\treturn (event: Event) => {\n\t\t\tthis.answers = { ...this.answers, [key]: (event.target as HTMLElement & { value: string }).value }\n\t\t}\n\t}\n\t// Vue's form has no novalidate, and neither has this one: its fields are form-associated and report their own\n\t// validity, so the browser stops a send with a required field empty, shows its message and focuses the field.\n\tprivate onSubmit(event: SubmitEvent) {\n\t\tevent.preventDefault()\n\t\tthis.emit('submit', { ...this.answers })\n\t}\n\n\trender() {\n\t\tconst button = tag('button')\n\t\tconst pixel = tag('pixel-button')\n\t\tconst field = tag('field')\n\t\tconst input = tag('input')\n\t\tconst select = tag('native-select')\n\t\tconst textarea = tag('textarea')\n\t\tconst a = this.answers\n\t\tconst s = this.state\n\t\treturn html`<main data-ds=\"request-access-page\" class=${['bg-surface px-4 py-12 text-fg md:py-24', this.full ? 'min-h-dvh' : ''].join(' ')}>\n\t\t\t<div class=\"mx-auto max-w-140\">\n\t\t\t\t<a href=${this.homeHref} aria-label=\"Home\" class=\"inline-block\">\n\t\t\t\t\t<svg viewBox=\"0 0 149 134\" class=\"h-8 w-auto\" fill=\"currentColor\" aria-hidden=\"true\"><path fill-rule=\"evenodd\" d=${MARK}></path></svg>\n\t\t\t\t</a>\n\t\t\t\t<h1 class=\"mt-12 type-heading-3\">${this.heading}</h1>\n\t\t\t\t<p class=\"mt-4 type-ui text-fg-muted\">We set it up with each company directly. Tell us about your team and we'll reply by email, or <a href=${this.demoHref} class=${`text-fg ${link}`}>book a demo</a>.</p>\n\n\t\t\t\t${s === 'loading' ? html`<p class=\"ds-access-loading mt-8 type-ui text-fg-muted\" role=\"status\">Loading.</p>` : nothing}\n\n\t\t\t\t${s === 'signed-out'\n\t\t\t\t\t? html`<section class=\"mt-8 border border-edge p-4 type-ui\" data-state=\"signed-out\">\n\t\t\t\t\t\t\t<p>Sign in with your work email first. We reply to that address, and it's the one your organization will use.</p>\n\t\t\t\t\t\t\t<div class=\"mt-6 flex flex-wrap items-center gap-4\">\n\t\t\t\t\t\t\t\t${staticHtml`<${pixel} href=${this.signInHref}>Sign in</${pixel}>`}\n\t\t\t\t\t\t\t\t<a href=${`mailto:${this.supportEmail}`} class=${`type-meta ${link}`}>or write to ${this.supportEmail}</a>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t</section>`\n\t\t\t\t\t: nothing}\n\n\t\t\t\t${s === 'failed'\n\t\t\t\t\t? html`<section class=\"mt-8\" data-state=\"failed\">\n\t\t\t\t\t\t\t<p class=\"bg-surface-danger px-3 py-2 type-ui\" role=\"alert\">Something went wrong. Try again.</p>\n\t\t\t\t\t\t\t${staticHtml`<${button} class=\"mt-4\" @click=${() => this.emit('retry')}>Try again</${button}>`}\n\t\t\t\t\t\t</section>`\n\t\t\t\t\t: nothing}\n\n\t\t\t\t${s === 'form'\n\t\t\t\t\t? staticHtml`<form class=\"mt-8 flex flex-col gap-6 border border-edge p-4\" data-state=\"form\" @submit=${this.onSubmit}>\n\t\t\t\t\t\t\t<div>\n\t\t\t\t\t\t\t\t<p class=\"type-meta text-fg-soft\">Work email</p>\n\t\t\t\t\t\t\t\t<p class=\"mt-1.5 type-ui wrap-anywhere\">${this.email}</p>\n\t\t\t\t\t\t\t\t${this.personalEmail\n\t\t\t\t\t\t\t\t\t? html`<p class=\"mt-2 type-meta text-fg-muted\">This is a personal address. To ask for your company, <a href=${this.signInHref} class=${`text-fg ${link}`}>sign in with your work email</a>.</p>`\n\t\t\t\t\t\t\t\t\t: html`<a href=${this.signInHref} class=${`mt-2 inline-block type-meta ${link}`}>Use a different email</a>`}\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t<${field} label=\"Name\">\n\t\t\t\t\t\t\t\t<${input} .value=${a.name} name=\"name\" autocomplete=\"name\" maxlength=\"200\" required @input=${this.set('name')}></${input}>\n\t\t\t\t\t\t\t</${field}>\n\t\t\t\t\t\t\t<${field} label=\"Company\">\n\t\t\t\t\t\t\t\t<${input} .value=${a.company} name=\"company\" autocomplete=\"organization\" maxlength=\"200\" required @input=${this.set('company')}></${input}>\n\t\t\t\t\t\t\t</${field}>\n\t\t\t\t\t\t\t<${field} label=\"Team size\">\n\t\t\t\t\t\t\t\t<${select} .value=${a.teamSize} name=\"team-size\" required @input=${this.set('teamSize')}>\n\t\t\t\t\t\t\t\t\t<option value=\"\" disabled>Choose</option>\n\t\t\t\t\t\t\t\t\t${this.teamSizes.map((size) => html`<option value=${size}>${size} people</option>`)}\n\t\t\t\t\t\t\t\t</${select}>\n\t\t\t\t\t\t\t</${field}>\n\t\t\t\t\t\t\t<${field} label=\"What you want to build\">\n\t\t\t\t\t\t\t\t<${textarea} .value=${a.useCase} name=\"use-case\" maxlength=\"4000\" placeholder=\"For example: support agents that answer from our help center and past tickets.\" required @input=${this.set('useCase')}></${textarea}>\n\t\t\t\t\t\t\t</${field}>\n\t\t\t\t\t\t\t${this.error ? html`<p class=\"bg-surface-danger px-3 py-2 type-ui\" role=\"alert\">${this.error}</p>` : nothing}\n\t\t\t\t\t\t\t<div class=\"flex flex-wrap items-center gap-4\">\n\t\t\t\t\t\t\t\t<${pixel} type=\"submit\" ?disabled=${this.sending}>${this.sending ? 'Sending' : 'Send request'}</${pixel}>\n\t\t\t\t\t\t\t\t<p class=\"type-meta text-fg-muted\">We use these answers only to reply to you. <a href=${this.privacyHref} class=${`text-fg ${link}`}>Privacy policy</a>.</p>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t</form>`\n\t\t\t\t\t: nothing}\n\n\t\t\t\t${s === 'sent'\n\t\t\t\t\t? html`<section class=\"mt-8 border border-edge p-4 type-ui\" data-state=\"sent\" role=\"status\">\n\t\t\t\t\t\t\t<h2 class=\"type-heading-4\">We have your request.</h2>\n\t\t\t\t\t\t\t<p class=\"mt-2\">We'll reply to <span class=\"wrap-anywhere\">${this.email}</span>.</p>\n\t\t\t\t\t\t\t<p class=\"mt-8 type-meta text-fg-muted\">What happens next</p>\n\t\t\t\t\t\t\t<ol class=\"mt-4 flex flex-col gap-3\">\n\t\t\t\t\t\t\t\t<li class=\"flex gap-4\"><span class=\"text-fg-muted tabular-nums\">1</span><span>We read your request and reply by email.</span></li>\n\t\t\t\t\t\t\t\t<li class=\"flex gap-4\"><span class=\"text-fg-muted tabular-nums\">2</span><span>If it fits, we create an organization for your company and invite you to it.</span></li>\n\t\t\t\t\t\t\t\t<li class=\"flex gap-4\"><span class=\"text-fg-muted tabular-nums\">3</span><span>Open the invite and sign in with this email. The dashboard opens on get started.</span></li>\n\t\t\t\t\t\t\t</ol>\n\t\t\t\t\t\t\t<div class=\"mt-8 flex flex-wrap items-center gap-4\">\n\t\t\t\t\t\t\t\t${staticHtml`<${button} href=${this.homeHref}>Back to the website</${button}>`}\n\t\t\t\t\t\t\t\t<button type=\"button\" class=${`cursor-pointer type-meta ${link}`} @click=${() => this.emit('edit')}>Change your answers</button>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t</section>`\n\t\t\t\t\t: nothing}\n\n\t\t\t\t${s === 'form' || s === 'signed-out' ? html`<p class=\"mt-6 type-meta text-fg-muted\">Is your team already on it? Ask one of its admins to invite you.</p>` : nothing}\n\t\t\t</div>\n\t\t</main>`\n\t}\n}\n\ndefine('request-access-page', RequestAccessPage)\n"
+        },
+        {
+          "path": "elements/components/site/request-access-page.css",
+          "content": "/* RequestAccessPage.vue's <style>, as it is. */\n/* \"Loading.\" shows only when a load is slow, after 300ms. */\n.ds-access-loading { animation: ds-access-appear var(--ds-duration-enter) var(--ds-easing-standard) 300ms both; }\n@keyframes ds-access-appear { from { opacity: 0; } }\n@media (prefers-reduced-motion: reduce) { .ds-access-loading { animation-duration: 0ms; } }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/request-access-page.js",
+        "elements/button.js",
+        "elements/field.js",
+        "elements/input.js",
+        "elements/native-select.js",
+        "elements/pixel-button.js",
+        "elements/textarea.js"
+      ],
+      "tag": "conare-request-access-page",
+      "tags": [
+        "conare-request-access-page"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "button",
+        "field",
+        "native-select",
+        "textarea"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-request-access-page",
+            "name": "RequestAccessPage",
+            "module": "elements/request-access-page.js",
+            "description": "The request-access page: the form, and the states around it.",
+            "attributes": [
+              {
+                "name": "state",
+                "field": "state",
+                "type": "AccessState",
+                "default": "'form'"
+              },
+              {
+                "name": "email",
+                "field": "email",
+                "type": "string | undefined"
+              },
+              {
+                "name": "personal-email",
+                "field": "personalEmail",
+                "type": "boolean",
+                "default": "false",
+                "description": "The email is a personal address: say so, with a way to sign in with a work one."
+              },
+              {
+                "name": "name",
+                "field": "name",
+                "type": "string | undefined",
+                "description": "Fills the name field."
+              },
+              {
+                "name": "team-sizes",
+                "field": "teamSizes",
+                "type": "string[]",
+                "default": "['1-10', '11-50', '51-200', '201-1,000', '1,001+']"
+              },
+              {
+                "name": "sending",
+                "field": "sending",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "error",
+                "field": "error",
+                "type": "string | undefined",
+                "description": "The server's answer to a send, shown above the button."
+              },
+              {
+                "name": "heading",
+                "field": "heading",
+                "type": "string",
+                "default": "'Conare is invite-only'",
+                "description": "The heading (Vue's `title`; `title` is HTML's tooltip attribute)."
+              },
+              {
+                "name": "home-href",
+                "field": "homeHref",
+                "type": "string",
+                "default": "''"
+              },
+              {
+                "name": "demo-href",
+                "field": "demoHref",
+                "type": "string",
+                "default": "''"
+              },
+              {
+                "name": "sign-in-href",
+                "field": "signInHref",
+                "type": "string",
+                "default": "''"
+              },
+              {
+                "name": "privacy-href",
+                "field": "privacyHref",
+                "type": "string",
+                "default": "''"
+              },
+              {
+                "name": "support-email",
+                "field": "supportEmail",
+                "type": "string",
+                "default": "'support@acme.com'"
+              },
+              {
+                "name": "full",
+                "field": "full",
+                "type": "boolean",
+                "default": "true",
+                "description": "Fills the window; full=\"false\" sits in its container."
+              },
+              {
+                "name": "answers",
+                "field": "answers",
+                "type": "AccessAnswers",
+                "default": "{ name: '', company: '', teamSize: '', useCase: '' }"
+              }
+            ],
+            "properties": [
+              {
+                "name": "state",
+                "type": "AccessState",
+                "default": "'form'",
+                "attribute": "state"
+              },
+              {
+                "name": "email",
+                "type": "string | undefined",
+                "attribute": "email"
+              },
+              {
+                "name": "personalEmail",
+                "type": "boolean",
+                "default": "false",
+                "description": "The email is a personal address: say so, with a way to sign in with a work one.",
+                "attribute": "personal-email"
+              },
+              {
+                "name": "name",
+                "type": "string | undefined",
+                "description": "Fills the name field.",
+                "attribute": "name"
+              },
+              {
+                "name": "teamSizes",
+                "type": "string[]",
+                "default": "['1-10', '11-50', '51-200', '201-1,000', '1,001+']",
+                "attribute": "team-sizes"
+              },
+              {
+                "name": "sending",
+                "type": "boolean",
+                "default": "false",
+                "attribute": "sending"
+              },
+              {
+                "name": "error",
+                "type": "string | undefined",
+                "description": "The server's answer to a send, shown above the button.",
+                "attribute": "error"
+              },
+              {
+                "name": "heading",
+                "type": "string",
+                "default": "'Conare is invite-only'",
+                "description": "The heading (Vue's `title`; `title` is HTML's tooltip attribute).",
+                "attribute": "heading"
+              },
+              {
+                "name": "homeHref",
+                "type": "string",
+                "default": "''",
+                "attribute": "home-href"
+              },
+              {
+                "name": "demoHref",
+                "type": "string",
+                "default": "''",
+                "attribute": "demo-href"
+              },
+              {
+                "name": "signInHref",
+                "type": "string",
+                "default": "''",
+                "attribute": "sign-in-href"
+              },
+              {
+                "name": "privacyHref",
+                "type": "string",
+                "default": "''",
+                "attribute": "privacy-href"
+              },
+              {
+                "name": "supportEmail",
+                "type": "string",
+                "default": "'support@acme.com'",
+                "attribute": "support-email"
+              },
+              {
+                "name": "full",
+                "type": "boolean",
+                "default": "true",
+                "description": "Fills the window; full=\"false\" sits in its container.",
+                "attribute": "full"
+              }
+            ],
+            "events": [
+              {
+                "name": "submit",
+                "description": "The form was sent; detail is the answers (name, company, teamSize, useCase)."
+              },
+              {
+                "name": "retry",
+                "description": "Try again was pressed after a failed load."
+              },
+              {
+                "name": "edit",
+                "description": "Change your answers was pressed."
+              }
+            ],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "On the site",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/request-access-page/Site.html",
+          "content": "<!-- The request-access page as it ships, with a sample requester: send the form to see the sent state, and change the\n     answers to come back. The app would post the answers; here they wait a moment instead. -->\n<conare-request-access-page\n  id=\"request-access\"\n  state=\"form\"\n  email=\"sam@acme.com\"\n  name=\"Sam\"\n  home-href=\"#home\"\n  demo-href=\"#demo\"\n  sign-in-href=\"#sign-in\"\n  privacy-href=\"#privacy\"\n  full=\"false\"\n></conare-request-access-page>\n<script type=\"module\">\n  const page = document.getElementById('request-access')\n  page.addEventListener('submit', () => {\n    page.sending = true\n    setTimeout(() => {\n      page.sending = false\n      page.state = 'sent'\n    }, 600)\n  })\n  page.addEventListener('edit', () => { page.state = 'form' })\n</script>\n"
+        }
+      ]
+    }
+  }
+}

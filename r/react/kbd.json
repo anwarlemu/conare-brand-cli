@@ -1,0 +1,16 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "kbd",
+  "type": "registry:ui",
+  "title": "Kbd",
+  "description": "A key or a shortcut: 11px in the face around it, plain or in a hairline box, hidden on touch screens.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Kbd.tsx",
+      "type": "registry:ui",
+      "content": "import type { ReactNode } from 'react'\n\n// A key or a shortcut (console2.css .v2-side-search kbd): 11px in the face around it, no box, in the colour around it.\n// `boxed` adds the prompt bar's hairline box (1px, 4px across). Hidden on touch screens, which have no keyboard to press\n// it on. Several keys in one Kbd read as one shortcut: <Kbd>⌘K</Kbd>.\nexport interface KbdProps { boxed?: boolean, className?: string, children?: ReactNode }\n\nexport function Kbd({ boxed, className, children }: KbdProps) {\n  return (\n    <>\n      <style href=\"ds-kbd\" precedence=\"ds\">{css}</style>\n      <kbd data-ds=\"kbd\" className={className ? `ds-kbd ${className}` : 'ds-kbd'} data-boxed={boxed || undefined}>{children}</kbd>\n    </>\n  )\n}\n\nexport default Kbd\n\nconst css = `\n.ds-kbd { font-family: inherit; font-size: var(--ds-text-caption); line-height: var(--ds-text-caption-leading); white-space: nowrap; }\n.ds-kbd[data-boxed] { display: inline-block; padding: 0 4px; border: var(--ds-border-hairline) solid currentColor; border-color: color-mix(in srgb, currentColor 24%, transparent); }\n@media (pointer: coarse) { .ds-kbd { display: none; } }\n`\n"
+    }
+  ]
+}

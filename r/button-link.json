@@ -1,0 +1,451 @@
+{
+  "name": "button-link",
+  "title": "Button link",
+  "type": "registry:ui",
+  "group": "site",
+  "description": "The website's button: a square link, 36px with a 13px label (28px and 12px small), whose hover is a fill of 6px squares coming in from the left; dark with the pixel arrow for the main call to action, outlined for the rest, red, and light and ghost on dark bands.",
+  "use_for": "Calls to action on the website: Book a demo, Read the docs, Contact us. A link, never a form button.",
+  "never": [
+    "Inside the console (use Button or PixelButton)",
+    "A change of size or weight on hover: the fill is the hover",
+    "Two red buttons in one band",
+    "An arrow that moves on hover: the pixel arrow stays still"
+  ],
+  "source": "conare-web app/components/home/ButtonLink.vue, app/assets/css/home.css (.btn-px, .btn-label, .btn-arrow, .btn-grain)",
+  "body": "`variant` is `red` (the default, the flat red block whose squares come in black), `secondary` (outlined, its border\nturning red as red squares come in), `light` (off-white on a dark band) or `ghost` (outlined on a dark band). `pixels`\nmakes the dark main call to action, black with red squares, and `arrow` adds the pixel arrow: lit squares on a 5 by 5\nof dim ones. On the website the arrow steps one grid to the right on hover; here it stays still, as icons never move on\nhover. Where the label changes colour over the fill (secondary and light), each column of squares carries its own\noff-white copy of the label, so the label turns as the squares land. `grain` lays the footer's grain under the label. `fill=\"black\"` brings the squares in black: the light button on a\nred band (the closing call to action) takes it.\n\nThe squares come in over 80ms each on a decelerating curve with a delay along the button (about half a second end to\nend) and leave over 120ms, a touch quicker. A press lights them at once. Reduced motion drops the delays, so the fill\nfades in as one.",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/site/ButtonLink.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed, ref } from 'vue'\nimport { usePixelGrid } from '@/composables/usePixelGrid'\n\n// The website's button (home.css .btn-px, ButtonLink.vue): a square link, 36px with a 13px label (28px and 12px when\n// small), whose hover is a fill of 6px squares coming in from the left with a little scatter and going out the same\n// way; the label never changes size or weight. red is the flat red block (its squares come in black); secondary is\n// outlined (its border turns red, the squares red); light and ghost are for a dark band. `pixels` is the dark main\n// call to action (black, red squares); `arrow` adds the pixel arrow, lit and still. `grain` lays the footer's grain\n// over the button. `fill=\"black\"` brings the squares in black, for a light button on a red band. Where the label\n// changes colour over the fill (secondary, light), each column of squares carries its own off-white copy of the label,\n// so the label turns as the squares land and never fades through grey.\nexport type ButtonLinkVariant = 'red' | 'secondary' | 'light' | 'ghost'\n\nconst props = withDefaults(defineProps<{\n  href: string\n  variant?: ButtonLinkVariant\n  size?: 'sm' | 'md'\n  pixels?: boolean\n  arrow?: boolean\n  grain?: boolean\n  fill?: 'black'\n}>(), { variant: 'red', size: 'md' })\n\nconst PX = 6\nconst root = ref<HTMLElement | null>(null)\nconst { grid, style } = usePixelGrid(() => root.value)\nconst tone = computed(() => (props.pixels ? 'dark' : props.variant))\nconst inks = computed(() => !props.pixels && (props.variant === 'secondary' || props.variant === 'light'))\n// The copies are made the first time the pointer or focus arrives, from the label's text.\nconst armed = ref(false)\nconst label = ref('')\nfunction arm() {\n  if (armed.value || !inks.value) return\n  label.value = root.value?.querySelector(':scope > .ds-btnlink-label')?.textContent?.trim() ?? ''\n  armed.value = true\n}\nconst inkCols = computed(() => {\n  const g = grid.value\n  if (!g) return []\n  return Array.from({ length: g.cols }, (_, c) => ({ col: g.cells[c]!, ink: { width: `${g.w}px`, height: `${g.h}px`, transform: `translateX(${-c * PX}px)` } }))\n})\n// The arrow's lit cells on a 5 by 5 of dim ones, as [column, row]; each cell is 2px and a 1px gap.\nconst ARROW = [[2, 0], [3, 1], [0, 2], [1, 2], [2, 2], [3, 2], [4, 2], [3, 3], [2, 4]] as const\nconst CELL = 3\n</script>\n\n<template>\n  <a data-ds=\"button-link\"\n    ref=\"root\"\n    :href=\"href\"\n    class=\"ds-btnlink\"\n    :data-variant=\"tone\"\n    :data-size=\"size\"\n    :data-grain=\"grain || undefined\"\n    :data-arrow=\"arrow || undefined\"\n    :data-fill=\"fill\"\n    @pointerenter=\"arm\"\n    @pointerdown=\"arm\"\n    @focus=\"arm\"\n  >\n    <span v-if=\"grid\" aria-hidden=\"true\" class=\"ds-btnlink-fill\" :data-inks=\"inks || undefined\" :style=\"style\">\n      <i v-for=\"(c, k) in grid.cells\" :key=\"k\" :style=\"c\" />\n    </span>\n    <span v-if=\"grid && inks && armed\" aria-hidden=\"true\" class=\"ds-btnlink-inks\" :style=\"{ gridTemplateColumns: `repeat(${grid.cols}, ${PX}px)` }\">\n      <i v-for=\"(c, k) in inkCols\" :key=\"k\" :style=\"c.col\"><span class=\"ds-btnlink-ink\" :style=\"c.ink\"><span class=\"ds-btnlink-label\">{{ label }}</span></span></i>\n    </span>\n    <span class=\"ds-btnlink-label\"><slot /></span>\n    <svg v-if=\"arrow\" aria-hidden=\"true\" class=\"ds-btnlink-arrow\" :viewBox=\"`0 0 ${5 * CELL - 1} ${5 * CELL - 1}`\" width=\"11\" height=\"11\">\n      <g class=\"ds-btnlink-arrow-dim\">\n        <template v-for=\"c in 5\" :key=\"c\">\n          <rect v-for=\"r in 5\" :key=\"r\" :x=\"(c - 1) * CELL\" :y=\"(r - 1) * CELL\" :width=\"CELL - 1\" :height=\"CELL - 1\" />\n        </template>\n      </g>\n      <g class=\"ds-btnlink-arrow-lit\">\n        <rect v-for=\"[c, r] in ARROW\" :key=\"`${c}${r}`\" :x=\"c * CELL\" :y=\"r * CELL\" :width=\"CELL - 1\" :height=\"CELL - 1\" />\n      </g>\n    </svg>\n  </a>\n</template>\n\n<style>\n.ds-btnlink {\n  --btnlink-fill: var(--ds-color-home-red);\n  position: relative;\n  isolation: isolate;\n  display: inline-flex;\n  height: var(--ds-size-control-lg);\n  flex-shrink: 0;\n  align-items: center;\n  justify-content: center;\n  gap: var(--ds-space-md);\n  overflow: hidden;\n  padding: 0 12px;\n  border-radius: var(--ds-radius-control);\n  font-size: var(--ds-text-ui);\n  font-weight: var(--ds-font-weight-medium);\n  white-space: nowrap;\n  will-change: transform;\n  transition: color var(--ds-duration-enter) var(--ds-easing-standard), background-color var(--ds-duration-enter) var(--ds-easing-standard), border-color var(--ds-duration-enter) var(--ds-easing-standard);\n}\n.ds-btnlink[data-size=\"sm\"] { height: var(--ds-size-control-sm); padding: 0 10px; font-size: var(--ds-text-meta); }\n.ds-btnlink[data-arrow] { gap: var(--ds-space-lg); }\n.ds-btnlink:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-home-red); outline-offset: var(--ds-border-focus); }\n.ds-btnlink[data-variant=\"red\"] { --btnlink-fill: var(--ds-color-off-black); background: var(--ds-color-home-red); color: var(--ds-color-off-white); }\n.ds-btnlink[data-variant=\"secondary\"] { border: var(--ds-border-hairline) solid var(--ds-color-neutral-600); color: var(--ds-color-off-black); }\n.ds-btnlink[data-variant=\"light\"] { background: var(--ds-color-off-white); color: var(--ds-color-off-black); }\n.ds-btnlink[data-variant=\"ghost\"] { border: var(--ds-border-hairline) solid var(--ds-color-neutral-300); color: var(--ds-color-off-white); }\n.ds-btnlink[data-variant=\"dark\"] { background: var(--ds-color-off-black); color: var(--ds-color-off-white); }\n.ds-btnlink[data-fill=\"black\"] { --btnlink-fill: var(--ds-color-off-black); }\n@media (hover: hover) and (pointer: fine) {\n  .ds-btnlink:is([data-variant=\"secondary\"], [data-variant=\"ghost\"]):hover { border-color: var(--ds-color-home-red); }\n}\n.ds-btnlink[data-grain]::before { position: absolute; inset: 0; z-index: -1; background-image: url(\"/conare-ds/textures/grain.webp\"); background-size: 170px auto; opacity: 0.3; content: \"\"; pointer-events: none; }\n.ds-btnlink-label { display: block; line-height: 1.4; }\n.ds-btnlink-fill, .ds-btnlink-inks { position: absolute; inset: 0; z-index: -1; display: grid; pointer-events: none; }\n.ds-btnlink-fill[data-inks] { z-index: 1; }\n.ds-btnlink-inks { z-index: 2; }\n.ds-btnlink-fill i, .ds-btnlink-inks i { position: relative; overflow: hidden; font-style: normal; opacity: 0; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard) calc(var(--o) * 1ms); }\n.ds-btnlink-fill i { background: var(--btnlink-fill); }\n.ds-btnlink-ink { position: absolute; top: 0; left: 0; display: flex; align-items: center; justify-content: center; color: var(--ds-color-off-white); white-space: nowrap; }\n@media (hover: hover) and (pointer: fine) {\n  .ds-btnlink:hover :is(.ds-btnlink-fill, .ds-btnlink-inks) i { opacity: 1; transition: opacity var(--ds-duration-cell) var(--ds-easing-decelerate) calc(var(--i) * 1ms); }\n}\n.ds-btnlink:active :is(.ds-btnlink-fill, .ds-btnlink-inks) i { opacity: 1; transition: opacity var(--ds-duration-press) ease 0ms; }\n.ds-btnlink:focus-visible :is(.ds-btnlink-fill, .ds-btnlink-inks) i { opacity: 1; }\n.ds-btnlink-arrow { flex-shrink: 0; }\n.ds-btnlink-arrow-dim { fill: color-mix(in srgb, var(--ds-color-off-white) 14%, transparent); }\n.ds-btnlink-arrow-lit { fill: var(--ds-color-off-white); }\n@media (prefers-reduced-motion: reduce) {\n  .ds-btnlink-fill i, .ds-btnlink-inks i, .ds-btnlink:hover :is(.ds-btnlink-fill, .ds-btnlink-inks) i { transition-delay: 0ms !important; }\n}\n</style>\n"
+    },
+    {
+      "path": "composables/usePixelGrid.ts",
+      "content": "import { computed, onBeforeUnmount, onMounted, ref } from 'vue'\n\n// The website's dark button's red fill (PixelButton.vue): 6px squares laid over an element, each with its own delay in\n// and out, from the same seed as the website's, so the buttons feel like one product. It lays them again on resize.\nconst PX = 6\n\n/** A seeded random source (mulberry32), the same as the website's, so every button scatters the same way. */\nfunction rng(seed: number) {\n  let s = seed >>> 0\n  return () => {\n    s = (s + 0x6D2B79F5) >>> 0\n    let t = s\n    t = Math.imul(t ^ (t >>> 15), t | 1)\n    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)\n    return ((t ^ (t >>> 14)) >>> 0) / 4294967296\n  }\n}\n\nexport function usePixelGrid(el: () => HTMLElement | null) {\n  const grid = ref<{ cols: number, w: number, h: number, cells: Array<Record<string, number>> } | null>(null)\n  function lay() {\n    const box = el()\n    if (!box) return\n    const rect = box.getBoundingClientRect()\n    const w = rect.width - (box.offsetWidth - box.clientWidth)\n    const h = rect.height - (box.offsetHeight - box.clientHeight)\n    if (grid.value?.w === w && grid.value.h === h) return\n    const cols = Math.ceil(w / PX)\n    const rows = Math.ceil(h / PX)\n    const rand = rng(29)\n    grid.value = {\n      cols,\n      w,\n      h,\n      cells: Array.from({ length: cols * rows }, (_, k) => {\n        // Eased along the button, so the front starts quick and settles.\n        const e = 1 - (1 - (k % cols) / cols) ** 1.6\n        return { '--i': Math.round(e * 60 + rand() * 20), '--o': Math.round(e * 50 + rand() * 20) }\n      }),\n    }\n  }\n  let ro: ResizeObserver | undefined\n  onMounted(() => {\n    lay()\n    ro = new ResizeObserver(lay)\n    const box = el()\n    if (box) ro.observe(box)\n  })\n  onBeforeUnmount(() => ro?.disconnect())\n  const style = computed(() => (grid.value ? { gridTemplateColumns: `repeat(${grid.value.cols}, ${PX}px)`, gridAutoRows: `${PX}px` } : undefined))\n  return { grid, style }\n}\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "On the site",
+      "center": false,
+      "half": false,
+      "path": "examples/button-link/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport ButtonLink from '@/components/site/ButtonLink.vue'\n// The website's buttons: the dark one with its pixel fill and arrow for the main call to action, outlined for the rest;\n// light and ghost on a dark band.\n</script>\n\n<template>\n  <div class=\"flex flex-col gap-6\">\n    <div class=\"flex flex-wrap items-center gap-3\">\n      <ButtonLink href=\"#demo\" pixels arrow>Book a demo</ButtonLink>\n      <ButtonLink href=\"#docs\" variant=\"secondary\">Read the docs</ButtonLink>\n      <ButtonLink href=\"#pricing\" variant=\"secondary\" size=\"sm\">Pricing</ButtonLink>\n    </div>\n    <div data-theme=\"dark\" class=\"flex flex-wrap items-center gap-3 bg-off-black p-6\">\n      <ButtonLink href=\"#demo\" variant=\"light\">Book a demo</ButtonLink>\n      <ButtonLink href=\"#docs\" variant=\"ghost\">Read the docs</ButtonLink>\n    </div>\n  </div>\n</template>\n",
+      "requires": [],
+      "packages": []
+    },
+    {
+      "name": "Dark",
+      "label": "Dark",
+      "center": true,
+      "half": true,
+      "path": "examples/button-link/Dark.vue",
+      "content": "<script setup lang=\"ts\">\nimport ButtonLink from '@/components/site/ButtonLink.vue'\n// The website's main call to action: dark, its red squares running in on hover, and the pixel arrow.\n</script>\n\n<template>\n  <ButtonLink href=\"#demo\" pixels arrow>Book a demo</ButtonLink>\n</template>\n",
+      "requires": [],
+      "packages": []
+    },
+    {
+      "name": "Outlined",
+      "label": "Outlined",
+      "center": true,
+      "half": true,
+      "path": "examples/button-link/Outlined.vue",
+      "content": "<script setup lang=\"ts\">\nimport ButtonLink from '@/components/site/ButtonLink.vue'\n// Outlined, for every other action in a band.\n</script>\n\n<template>\n  <ButtonLink href=\"#docs\" variant=\"secondary\">Read the docs</ButtonLink>\n</template>\n",
+      "requires": [],
+      "packages": []
+    },
+    {
+      "name": "Small",
+      "label": "Small",
+      "center": true,
+      "half": true,
+      "path": "examples/button-link/Small.vue",
+      "content": "<script setup lang=\"ts\">\nimport ButtonLink from '@/components/site/ButtonLink.vue'\n// The small size, for the header and tight rows.\n</script>\n\n<template>\n  <ButtonLink href=\"#pricing\" variant=\"secondary\" size=\"sm\">Pricing</ButtonLink>\n</template>\n",
+      "requires": [],
+      "packages": []
+    },
+    {
+      "name": "Red",
+      "label": "Red",
+      "center": true,
+      "half": true,
+      "path": "examples/button-link/Red.vue",
+      "content": "<script setup lang=\"ts\">\nimport ButtonLink from '@/components/site/ButtonLink.vue'\n// The flat red block, one to a band: its squares come in black.\n</script>\n\n<template>\n  <ButtonLink href=\"#demo\">Book a demo</ButtonLink>\n</template>\n",
+      "requires": [],
+      "packages": []
+    },
+    {
+      "name": "Light",
+      "label": "Light, on a dark band",
+      "center": true,
+      "half": true,
+      "path": "examples/button-link/Light.vue",
+      "content": "<script setup lang=\"ts\">\nimport ButtonLink from '@/components/site/ButtonLink.vue'\n// The main call to action on a dark band.\n</script>\n\n<template>\n  <div data-theme=\"dark\" class=\"bg-off-black p-6\"><ButtonLink href=\"#demo\" variant=\"light\">Book a demo</ButtonLink></div>\n</template>\n",
+      "requires": [],
+      "packages": []
+    },
+    {
+      "name": "Ghost",
+      "label": "Ghost, on a dark band",
+      "center": true,
+      "half": true,
+      "path": "examples/button-link/Ghost.vue",
+      "content": "<script setup lang=\"ts\">\nimport ButtonLink from '@/components/site/ButtonLink.vue'\n// Every other action on a dark band, outlined.\n</script>\n\n<template>\n  <div data-theme=\"dark\" class=\"bg-off-black p-6\"><ButtonLink href=\"#docs\" variant=\"ghost\">Read the docs</ButtonLink></div>\n</template>\n",
+      "requires": [],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/site/ButtonLink.tsx",
+          "content": "'use client'\nimport { useRef, useState, type ReactNode } from 'react'\nimport { usePixelGrid } from '@/react/hooks/usePixelGrid'\n\n// The website's button (home.css .btn-px, ButtonLink.vue): a square link, 36px with a 13px label (28px and 12px when\n// small), whose hover is a fill of 6px squares coming in from the left with a little scatter and going out the same\n// way; the label never changes size or weight. red is the flat red block (its squares come in black); secondary is\n// outlined (its border turns red, the squares red); light and ghost are for a dark band. `pixels` is the dark main\n// call to action (black, red squares); `arrow` adds the pixel arrow, lit and still. `grain` lays the footer's grain\n// over the button. `fill=\"black\"` brings the squares in black, for a light button on a red band. Where the label\n// changes colour over the fill (secondary, light), each column of squares carries its own off-white copy of the label,\n// so the label turns as the squares land and never fades through grey.\nexport type ButtonLinkVariant = 'red' | 'secondary' | 'light' | 'ghost'\n\nexport interface ButtonLinkProps {\n  href: string\n  variant?: ButtonLinkVariant\n  size?: 'sm' | 'md'\n  pixels?: boolean\n  arrow?: boolean\n  grain?: boolean\n  fill?: 'black'\n  className?: string\n  children?: ReactNode\n}\n\nconst PX = 6\n// The arrow's lit cells on a 5 by 5 of dim ones, as [column, row]; each cell is 2px and a 1px gap.\nconst ARROW = [[2, 0], [3, 1], [0, 2], [1, 2], [2, 2], [3, 2], [4, 2], [3, 3], [2, 4]] as const\nconst CELL = 3\n\nexport function ButtonLink({ href, variant = 'red', size = 'md', pixels, arrow, grain, fill, className, children }: ButtonLinkProps) {\n  const root = useRef<HTMLAnchorElement | null>(null)\n  const { grid, style } = usePixelGrid(root)\n  const tone = pixels ? 'dark' : variant\n  const inks = !pixels && (variant === 'secondary' || variant === 'light')\n  // The copies are made the first time the pointer or focus arrives, from the label's text.\n  const [armed, setArmed] = useState(false)\n  const [label, setLabel] = useState('')\n  function arm() {\n    if (armed || !inks) return\n    setLabel(root.current?.querySelector(':scope > .ds-btnlink-label')?.textContent?.trim() ?? '')\n    setArmed(true)\n  }\n  const inkCols = grid ? Array.from({ length: grid.cols }, (_, c) => ({ col: grid.cells[c]!, ink: { width: `${grid.w}px`, height: `${grid.h}px`, transform: `translateX(${-c * PX}px)` } })) : []\n  return (\n    <>\n      <style href=\"ds-button-link\" precedence=\"ds\">{css}</style>\n      <a\n        data-ds=\"button-link\"\n        ref={root}\n        href={href}\n        className={className ? `ds-btnlink ${className}` : 'ds-btnlink'}\n        data-variant={tone}\n        data-size={size}\n        data-grain={grain || undefined}\n        data-arrow={arrow || undefined}\n        data-fill={fill}\n        onPointerEnter={arm}\n        onPointerDown={arm}\n        onFocus={arm}\n      >\n        {grid && (\n          <span aria-hidden=\"true\" className=\"ds-btnlink-fill\" data-inks={inks || undefined} style={style}>\n            {grid.cells.map((c, k) => <i key={k} style={c} />)}\n          </span>\n        )}\n        {grid && inks && armed && (\n          <span aria-hidden=\"true\" className=\"ds-btnlink-inks\" style={{ gridTemplateColumns: `repeat(${grid.cols}, ${PX}px)` }}>\n            {inkCols.map((c, k) => <i key={k} style={c.col}><span className=\"ds-btnlink-ink\" style={c.ink}><span className=\"ds-btnlink-label\">{label}</span></span></i>)}\n          </span>\n        )}\n        <span className=\"ds-btnlink-label\">{children}</span>\n        {arrow && (\n          <svg aria-hidden=\"true\" className=\"ds-btnlink-arrow\" viewBox={`0 0 ${5 * CELL - 1} ${5 * CELL - 1}`} width=\"11\" height=\"11\">\n            <g className=\"ds-btnlink-arrow-dim\">\n              {[1, 2, 3, 4, 5].map(c => [1, 2, 3, 4, 5].map(r => <rect key={`${c}-${r}`} x={(c - 1) * CELL} y={(r - 1) * CELL} width={CELL - 1} height={CELL - 1} />))}\n            </g>\n            <g className=\"ds-btnlink-arrow-lit\">\n              {ARROW.map(([c, r]) => <rect key={`${c}${r}`} x={c * CELL} y={r * CELL} width={CELL - 1} height={CELL - 1} />)}\n            </g>\n          </svg>\n        )}\n      </a>\n    </>\n  )\n}\n\nexport default ButtonLink\n\nconst css = `\n.ds-btnlink {\n  --btnlink-fill: var(--ds-color-home-red);\n  position: relative;\n  isolation: isolate;\n  display: inline-flex;\n  height: var(--ds-size-control-lg);\n  flex-shrink: 0;\n  align-items: center;\n  justify-content: center;\n  gap: var(--ds-space-md);\n  overflow: hidden;\n  padding: 0 12px;\n  border-radius: var(--ds-radius-control);\n  font-size: var(--ds-text-ui);\n  font-weight: var(--ds-font-weight-medium);\n  white-space: nowrap;\n  will-change: transform;\n  transition: color var(--ds-duration-enter) var(--ds-easing-standard), background-color var(--ds-duration-enter) var(--ds-easing-standard), border-color var(--ds-duration-enter) var(--ds-easing-standard);\n}\n.ds-btnlink[data-size=\"sm\"] { height: var(--ds-size-control-sm); padding: 0 10px; font-size: var(--ds-text-meta); }\n.ds-btnlink[data-arrow] { gap: var(--ds-space-lg); }\n.ds-btnlink:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-home-red); outline-offset: var(--ds-border-focus); }\n.ds-btnlink[data-variant=\"red\"] { --btnlink-fill: var(--ds-color-off-black); background: var(--ds-color-home-red); color: var(--ds-color-off-white); }\n.ds-btnlink[data-variant=\"secondary\"] { border: var(--ds-border-hairline) solid var(--ds-color-neutral-600); color: var(--ds-color-off-black); }\n.ds-btnlink[data-variant=\"light\"] { background: var(--ds-color-off-white); color: var(--ds-color-off-black); }\n.ds-btnlink[data-variant=\"ghost\"] { border: var(--ds-border-hairline) solid var(--ds-color-neutral-300); color: var(--ds-color-off-white); }\n.ds-btnlink[data-variant=\"dark\"] { background: var(--ds-color-off-black); color: var(--ds-color-off-white); }\n.ds-btnlink[data-fill=\"black\"] { --btnlink-fill: var(--ds-color-off-black); }\n@media (hover: hover) and (pointer: fine) {\n  .ds-btnlink:is([data-variant=\"secondary\"], [data-variant=\"ghost\"]):hover { border-color: var(--ds-color-home-red); }\n}\n.ds-btnlink[data-grain]::before { position: absolute; inset: 0; z-index: -1; background-image: url(\"/conare-ds/textures/grain.webp\"); background-size: 170px auto; opacity: 0.3; content: \"\"; pointer-events: none; }\n.ds-btnlink-label { display: block; line-height: 1.4; }\n.ds-btnlink-fill, .ds-btnlink-inks { position: absolute; inset: 0; z-index: -1; display: grid; pointer-events: none; }\n.ds-btnlink-fill[data-inks] { z-index: 1; }\n.ds-btnlink-inks { z-index: 2; }\n.ds-btnlink-fill i, .ds-btnlink-inks i { position: relative; overflow: hidden; font-style: normal; opacity: 0; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard) calc(var(--o) * 1ms); }\n.ds-btnlink-fill i { background: var(--btnlink-fill); }\n.ds-btnlink-ink { position: absolute; top: 0; left: 0; display: flex; align-items: center; justify-content: center; color: var(--ds-color-off-white); white-space: nowrap; }\n@media (hover: hover) and (pointer: fine) {\n  .ds-btnlink:hover :is(.ds-btnlink-fill, .ds-btnlink-inks) i { opacity: 1; transition: opacity var(--ds-duration-cell) var(--ds-easing-decelerate) calc(var(--i) * 1ms); }\n}\n.ds-btnlink:active :is(.ds-btnlink-fill, .ds-btnlink-inks) i { opacity: 1; transition: opacity var(--ds-duration-press) ease 0ms; }\n.ds-btnlink:focus-visible :is(.ds-btnlink-fill, .ds-btnlink-inks) i { opacity: 1; }\n.ds-btnlink-arrow { flex-shrink: 0; }\n.ds-btnlink-arrow-dim { fill: color-mix(in srgb, var(--ds-color-off-white) 14%, transparent); }\n.ds-btnlink-arrow-lit { fill: var(--ds-color-off-white); }\n@media (prefers-reduced-motion: reduce) {\n  .ds-btnlink-fill i, .ds-btnlink-inks i, .ds-btnlink:hover :is(.ds-btnlink-fill, .ds-btnlink-inks) i { transition-delay: 0ms !important; }\n}\n`\n"
+        },
+        {
+          "path": "react/hooks/usePixelGrid.ts",
+          "content": "'use client'\nimport { useEffect, useState, type CSSProperties, type RefObject } from 'react'\n\n// The website's dark button's red fill (PixelButton): 6px squares laid over an element, each with its own delay in\n// and out, from the same seed as the website's, so the buttons feel like one product. It lays them again on resize.\nconst PX = 6\n\n/** A seeded random source (mulberry32), the same as the website's, so every button scatters the same way. */\nfunction rng(seed: number) {\n  let s = seed >>> 0\n  return () => {\n    s = (s + 0x6D2B79F5) >>> 0\n    let t = s\n    t = Math.imul(t ^ (t >>> 15), t | 1)\n    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)\n    return ((t ^ (t >>> 14)) >>> 0) / 4294967296\n  }\n}\n\nexport interface PixelGrid { cols: number, w: number, h: number, cells: Array<Record<string, number>> }\n\nexport function usePixelGrid(el: RefObject<HTMLElement | null>) {\n  const [grid, setGrid] = useState<PixelGrid | null>(null)\n  useEffect(() => {\n    const box = el.current\n    if (!box) return\n    function lay() {\n      if (!box) return\n      const rect = box.getBoundingClientRect()\n      const w = rect.width - (box.offsetWidth - box.clientWidth)\n      const h = rect.height - (box.offsetHeight - box.clientHeight)\n      setGrid((g) => {\n        if (g?.w === w && g.h === h) return g\n        const cols = Math.ceil(w / PX)\n        const rows = Math.ceil(h / PX)\n        const rand = rng(29)\n        return {\n          cols,\n          w,\n          h,\n          cells: Array.from({ length: cols * rows }, (_, k) => {\n            // Eased along the button, so the front starts quick and settles.\n            const e = 1 - (1 - (k % cols) / cols) ** 1.6\n            return { '--i': Math.round(e * 60 + rand() * 20), '--o': Math.round(e * 50 + rand() * 20) }\n          }),\n        }\n      })\n    }\n    lay()\n    const ro = new ResizeObserver(lay)\n    ro.observe(box)\n    return () => ro.disconnect()\n  }, [el])\n  const style: CSSProperties | undefined = grid ? { gridTemplateColumns: `repeat(${grid.cols}, ${PX}px)`, gridAutoRows: `${PX}px` } : undefined\n  return { grid, style }\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "ButtonLink",
+            "file": "react/components/site/ButtonLink.tsx",
+            "props": [
+              {
+                "name": "href",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "variant",
+                "type": "ButtonLinkVariant",
+                "required": false,
+                "default": "'red'"
+              },
+              {
+                "name": "size",
+                "type": "'sm' | 'md'",
+                "required": false,
+                "default": "'md'"
+              },
+              {
+                "name": "pixels",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "arrow",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "grain",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "fill",
+                "type": "'black'",
+                "required": false
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "On the site",
+          "center": false,
+          "half": false,
+          "path": "react/examples/button-link/Site.tsx",
+          "content": "import { ButtonLink } from '@/react/components/site/ButtonLink'\n// The website's buttons: the dark one with its pixel fill and arrow for the main call to action, outlined for the rest;\n// light and ghost on a dark band.\n\nexport default function Site() {\n  return (\n    <div className=\"flex flex-col gap-6\">\n      <div className=\"flex flex-wrap items-center gap-3\">\n        <ButtonLink href=\"#demo\" pixels arrow>Book a demo</ButtonLink>\n        <ButtonLink href=\"#docs\" variant=\"secondary\">Read the docs</ButtonLink>\n        <ButtonLink href=\"#pricing\" variant=\"secondary\" size=\"sm\">Pricing</ButtonLink>\n      </div>\n      <div data-theme=\"dark\" className=\"flex flex-wrap items-center gap-3 bg-off-black p-6\">\n        <ButtonLink href=\"#demo\" variant=\"light\">Book a demo</ButtonLink>\n        <ButtonLink href=\"#docs\" variant=\"ghost\">Read the docs</ButtonLink>\n      </div>\n    </div>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        },
+        {
+          "name": "Dark",
+          "label": "Dark",
+          "center": true,
+          "half": true,
+          "path": "react/examples/button-link/Dark.tsx",
+          "content": "import { ButtonLink } from '@/react/components/site/ButtonLink'\n// The website's main call to action: dark, its red squares running in on hover, and the pixel arrow.\n\nexport default function Dark() {\n  return <ButtonLink href=\"#demo\" pixels arrow>Book a demo</ButtonLink>\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        },
+        {
+          "name": "Outlined",
+          "label": "Outlined",
+          "center": true,
+          "half": true,
+          "path": "react/examples/button-link/Outlined.tsx",
+          "content": "import { ButtonLink } from '@/react/components/site/ButtonLink'\n// Outlined, for every other action in a band.\n\nexport default function Outlined() {\n  return <ButtonLink href=\"#docs\" variant=\"secondary\">Read the docs</ButtonLink>\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        },
+        {
+          "name": "Small",
+          "label": "Small",
+          "center": true,
+          "half": true,
+          "path": "react/examples/button-link/Small.tsx",
+          "content": "import { ButtonLink } from '@/react/components/site/ButtonLink'\n// The small size, for the header and tight rows.\n\nexport default function Small() {\n  return <ButtonLink href=\"#pricing\" variant=\"secondary\" size=\"sm\">Pricing</ButtonLink>\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        },
+        {
+          "name": "Red",
+          "label": "Red",
+          "center": true,
+          "half": true,
+          "path": "react/examples/button-link/Red.tsx",
+          "content": "import { ButtonLink } from '@/react/components/site/ButtonLink'\n// The flat red block, one to a band: its squares come in black.\n\nexport default function Red() {\n  return <ButtonLink href=\"#demo\">Book a demo</ButtonLink>\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        },
+        {
+          "name": "Light",
+          "label": "Light, on a dark band",
+          "center": true,
+          "half": true,
+          "path": "react/examples/button-link/Light.tsx",
+          "content": "import { ButtonLink } from '@/react/components/site/ButtonLink'\n// The main call to action on a dark band.\n\nexport default function Light() {\n  return <div data-theme=\"dark\" className=\"bg-off-black p-6\"><ButtonLink href=\"#demo\" variant=\"light\">Book a demo</ButtonLink></div>\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        },
+        {
+          "name": "Ghost",
+          "label": "Ghost, on a dark band",
+          "center": true,
+          "half": true,
+          "path": "react/examples/button-link/Ghost.tsx",
+          "content": "import { ButtonLink } from '@/react/components/site/ButtonLink'\n// Every other action on a dark band, outlined.\n\nexport default function Ghost() {\n  return <div data-theme=\"dark\" className=\"bg-off-black p-6\"><ButtonLink href=\"#docs\" variant=\"ghost\">Read the docs</ButtonLink></div>\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/site/button-link.ts",
+          "content": "import { html, nothing, svg } from 'lit'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { DsElement, define } from '@/elements/lib/element'\nimport { PixelGridController, vars } from '@/elements/controllers/pixel-grid'\nimport styles from 'virtual:tw'\n\n// ButtonLink.vue as <conare-button-link>: the website's button (home.css .btn-px): a square link, 36px with a 13px\n// label (28px and 12px when small), whose hover is a fill of 6px squares coming in from the left with a little scatter\n// and going out the same way; the label never changes size or weight. red is the flat red block (its squares come in\n// black); secondary is outlined (its border turns red, the squares red); light and ghost are for a dark band. `pixels`\n// is the dark main call to action (black, red squares); `arrow` adds the pixel arrow, lit and still. `grain` lays the\n// footer's grain over the button. `fill=\"black\"` brings the squares in black, for a light button on a red band. Where\n// the label changes colour over the fill (secondary, light), each column of squares carries its own off-white copy of\n// the label, so the label turns as the squares land and never fades through grey.\nexport type ButtonLinkVariant = 'red' | 'secondary' | 'light' | 'ghost'\n\nconst PX = 6\n// The arrow's lit cells on a 5 by 5 of dim ones, as [column, row]; each cell is 2px and a 1px gap.\nconst ARROW = [[2, 0], [3, 1], [0, 2], [1, 2], [2, 2], [3, 2], [4, 2], [3, 3], [2, 4]] as const\nconst CELL = 3\n\n/**\n * @summary The website's square link button, its hover a fill of 6px squares.\n * @slot - The label.\n */\nexport class ButtonLink extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = {\n\t\thref: {},\n\t\tvariant: {},\n\t\tsize: {},\n\t\tpixels: { type: Boolean },\n\t\tarrow: { type: Boolean },\n\t\tgrain: { type: Boolean },\n\t\tfill: {},\n\t\tarmed: { state: true },\n\t}\n\n\thref = ''\n\t/** red, secondary, light or ghost. */\n\tvariant: ButtonLinkVariant = 'red'\n\t/** md (36px) or sm (28px). */\n\tsize: 'sm' | 'md' = 'md'\n\t/** The dark main call to action: black, red squares. */\n\tpixels = false\n\t/** The pixel arrow, lit and still. */\n\tarrow = false\n\t/** The footer's grain over the button. */\n\tgrain = false\n\t/** \"black\" brings the squares in black, for a light button on a red band. */\n\tfill?: 'black'\n\tprivate armed = false\n\tprivate text = ''\n\n\tprivate grid = new PixelGridController(this, () => this.renderRoot.querySelector<HTMLElement>('.ds-btnlink'))\n\n\tprivate get inks() {\n\t\treturn !this.pixels && (this.variant === 'secondary' || this.variant === 'light')\n\t}\n\n\t// The copies are made the first time the pointer or focus arrives, from the label's text.\n\tprivate arm() {\n\t\tif (this.armed || !this.inks) return\n\t\tthis.text = this.textContent?.trim() ?? ''\n\t\tthis.armed = true\n\t}\n\n\trender() {\n\t\tconst g = this.grid.grid\n\t\tconst inks = this.inks\n\t\tconst arm = () => this.arm()\n\t\treturn html`<a data-ds=\"button-link\" href=${this.href} class=\"ds-btnlink\" data-variant=${this.pixels ? 'dark' : this.variant} data-size=${this.size} data-grain=${ifDefined(this.grain ? 'true' : undefined)} data-arrow=${ifDefined(this.arrow ? 'true' : undefined)} data-fill=${ifDefined(this.fill)} @pointerenter=${arm} @pointerdown=${arm} @focus=${arm}>\n\t\t\t${g ? html`<span aria-hidden=\"true\" class=\"ds-btnlink-fill\" data-inks=${ifDefined(inks ? 'true' : undefined)} style=${this.grid.style}>${g.cells.map((c) => html`<i style=${vars(c)}></i>`)}</span>` : nothing}\n\t\t\t${g && inks && this.armed\n\t\t\t\t? html`<span aria-hidden=\"true\" class=\"ds-btnlink-inks\" style=${`grid-template-columns: repeat(${g.cols}, ${PX}px)`}>${Array.from({ length: g.cols }, (_, c) => html`<i style=${vars(g.cells[c]!)}><span class=\"ds-btnlink-ink\" style=${`width: ${g.w}px; height: ${g.h}px; transform: translateX(${-c * PX}px)`}><span class=\"ds-btnlink-label\">${this.text}</span></span></i>`)}</span>`\n\t\t\t\t: nothing}\n\t\t\t<span class=\"ds-btnlink-label\"><slot></slot></span>\n\t\t\t${this.arrow\n\t\t\t\t? html`<svg aria-hidden=\"true\" class=\"ds-btnlink-arrow\" viewBox=${`0 0 ${5 * CELL - 1} ${5 * CELL - 1}`} width=\"11\" height=\"11\">\n\t\t\t\t\t\t<g class=\"ds-btnlink-arrow-dim\">${[0, 1, 2, 3, 4].flatMap((c) => [0, 1, 2, 3, 4].map((r) => svg`<rect x=${c * CELL} y=${r * CELL} width=${CELL - 1} height=${CELL - 1}></rect>`))}</g>\n\t\t\t\t\t\t<g class=\"ds-btnlink-arrow-lit\">${ARROW.map(([c, r]) => svg`<rect x=${c * CELL} y=${r * CELL} width=${CELL - 1} height=${CELL - 1}></rect>`)}</g>\n\t\t\t\t\t</svg>`\n\t\t\t\t: nothing}\n\t\t</a>`\n\t}\n}\n\ndefine('button-link', ButtonLink)\n"
+        },
+        {
+          "path": "elements/components/site/button-link.css",
+          "content": ".ds-btnlink {\n  --btnlink-fill: var(--ds-color-home-red);\n  position: relative;\n  isolation: isolate;\n  display: inline-flex;\n  height: var(--ds-size-control-lg);\n  flex-shrink: 0;\n  align-items: center;\n  justify-content: center;\n  gap: var(--ds-space-md);\n  overflow: hidden;\n  padding: 0 12px;\n  border-radius: var(--ds-radius-control);\n  font-size: var(--ds-text-ui);\n  font-weight: var(--ds-font-weight-medium);\n  white-space: nowrap;\n  will-change: transform;\n  transition: color var(--ds-duration-enter) var(--ds-easing-standard), background-color var(--ds-duration-enter) var(--ds-easing-standard), border-color var(--ds-duration-enter) var(--ds-easing-standard);\n}\n.ds-btnlink[data-size=\"sm\"] { height: var(--ds-size-control-sm); padding: 0 10px; font-size: var(--ds-text-meta); }\n.ds-btnlink[data-arrow] { gap: var(--ds-space-lg); }\n.ds-btnlink:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-home-red); outline-offset: var(--ds-border-focus); }\n.ds-btnlink[data-variant=\"red\"] { --btnlink-fill: var(--ds-color-off-black); background: var(--ds-color-home-red); color: var(--ds-color-off-white); }\n.ds-btnlink[data-variant=\"secondary\"] { border: var(--ds-border-hairline) solid var(--ds-color-neutral-600); color: var(--ds-color-off-black); }\n.ds-btnlink[data-variant=\"light\"] { background: var(--ds-color-off-white); color: var(--ds-color-off-black); }\n.ds-btnlink[data-variant=\"ghost\"] { border: var(--ds-border-hairline) solid var(--ds-color-neutral-300); color: var(--ds-color-off-white); }\n.ds-btnlink[data-variant=\"dark\"] { background: var(--ds-color-off-black); color: var(--ds-color-off-white); }\n.ds-btnlink[data-fill=\"black\"] { --btnlink-fill: var(--ds-color-off-black); }\n@media (hover: hover) and (pointer: fine) {\n  .ds-btnlink:is([data-variant=\"secondary\"], [data-variant=\"ghost\"]):hover { border-color: var(--ds-color-home-red); }\n}\n.ds-btnlink[data-grain]::before { position: absolute; inset: 0; z-index: -1; background-image: url(\"/conare-ds/textures/grain.webp\"); background-size: 170px auto; opacity: 0.3; content: \"\"; pointer-events: none; }\n.ds-btnlink-label { display: block; line-height: 1.4; }\n.ds-btnlink-fill, .ds-btnlink-inks { position: absolute; inset: 0; z-index: -1; display: grid; pointer-events: none; }\n.ds-btnlink-fill[data-inks] { z-index: 1; }\n.ds-btnlink-inks { z-index: 2; }\n.ds-btnlink-fill i, .ds-btnlink-inks i { position: relative; overflow: hidden; font-style: normal; opacity: 0; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard) calc(var(--o) * 1ms); }\n.ds-btnlink-fill i { background: var(--btnlink-fill); }\n.ds-btnlink-ink { position: absolute; top: 0; left: 0; display: flex; align-items: center; justify-content: center; color: var(--ds-color-off-white); white-space: nowrap; }\n@media (hover: hover) and (pointer: fine) {\n  .ds-btnlink:hover :is(.ds-btnlink-fill, .ds-btnlink-inks) i { opacity: 1; transition: opacity var(--ds-duration-cell) var(--ds-easing-decelerate) calc(var(--i) * 1ms); }\n}\n.ds-btnlink:active :is(.ds-btnlink-fill, .ds-btnlink-inks) i { opacity: 1; transition: opacity var(--ds-duration-press) ease 0ms; }\n.ds-btnlink:focus-visible :is(.ds-btnlink-fill, .ds-btnlink-inks) i { opacity: 1; }\n.ds-btnlink-arrow { flex-shrink: 0; }\n.ds-btnlink-arrow-dim { fill: color-mix(in srgb, var(--ds-color-off-white) 14%, transparent); }\n.ds-btnlink-arrow-lit { fill: var(--ds-color-off-white); }\n@media (prefers-reduced-motion: reduce) {\n  .ds-btnlink-fill i, .ds-btnlink-inks i, .ds-btnlink:hover :is(.ds-btnlink-fill, .ds-btnlink-inks) i { transition-delay: 0ms !important; }\n}\n"
+        },
+        {
+          "path": "elements/controllers/pixel-grid.ts",
+          "content": "import type { ReactiveController, ReactiveControllerHost } from 'lit'\n\n// usePixelGrid as a Lit controller: 6px squares laid over an element, each with its own delay in and out, from the same\n// seed as the website's, so the buttons feel like one product. It lays them again on resize. `el` returns the box\n// (an element in the shadow root), read after the first render.\nconst PX = 6\n\n/** A seeded random source (mulberry32), the same as the website's, so every button scatters the same way. */\nfunction rng(seed: number) {\n\tlet s = seed >>> 0\n\treturn () => {\n\t\ts = (s + 0x6d2b79f5) >>> 0\n\t\tlet t = s\n\t\tt = Math.imul(t ^ (t >>> 15), t | 1)\n\t\tt ^= t + Math.imul(t ^ (t >>> 7), t | 61)\n\t\treturn ((t ^ (t >>> 14)) >>> 0) / 4294967296\n\t}\n}\n\nexport interface PixelGrid { cols: number, w: number, h: number, cells: Array<Record<string, number>> }\n\nexport class PixelGridController implements ReactiveController {\n\tgrid: PixelGrid | null = null\n\tprivate ro?: ResizeObserver\n\tconstructor(private host: ReactiveControllerHost & HTMLElement, private el: () => HTMLElement | null | undefined) {\n\t\thost.addController(this)\n\t}\n\thostConnected() {\n\t\tvoid this.host.updateComplete.then(() => {\n\t\t\tconst box = this.el()\n\t\t\tif (!box) return\n\t\t\tthis.lay()\n\t\t\tthis.ro = new ResizeObserver(() => this.lay())\n\t\t\tthis.ro.observe(box)\n\t\t})\n\t}\n\thostDisconnected() {\n\t\tthis.ro?.disconnect()\n\t}\n\tprivate lay() {\n\t\tconst box = this.el()\n\t\tif (!box) return\n\t\tconst rect = box.getBoundingClientRect()\n\t\tconst w = rect.width - (box.offsetWidth - box.clientWidth)\n\t\tconst h = rect.height - (box.offsetHeight - box.clientHeight)\n\t\tif (this.grid?.w === w && this.grid.h === h) return\n\t\tconst cols = Math.ceil(w / PX)\n\t\tconst rows = Math.ceil(h / PX)\n\t\tconst rand = rng(29)\n\t\tthis.grid = {\n\t\t\tcols,\n\t\t\tw,\n\t\t\th,\n\t\t\tcells: Array.from({ length: cols * rows }, (_, k) => {\n\t\t\t\t// Eased along the button, so the front starts quick and settles.\n\t\t\t\tconst e = 1 - (1 - (k % cols) / cols) ** 1.6\n\t\t\t\treturn { '--i': Math.round(e * 60 + rand() * 20), '--o': Math.round(e * 50 + rand() * 20) }\n\t\t\t}),\n\t\t}\n\t\tthis.host.requestUpdate()\n\t}\n\t/** The fill's grid template, as a style string. */\n\tget style() {\n\t\treturn this.grid ? `grid-template-columns: repeat(${this.grid.cols}, ${PX}px); grid-auto-rows: ${PX}px` : ''\n\t}\n}\n\n/** A cell's custom properties as a style string ({ '--i': 12 } -> \"--i: 12\"). */\nexport const vars = (cell: Record<string, number | string>) => Object.entries(cell).map(([k, v]) => `${k}: ${v}`).join('; ')\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/button-link.js"
+      ],
+      "tag": "conare-button-link",
+      "tags": [
+        "conare-button-link"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-button-link",
+            "name": "ButtonLink",
+            "module": "elements/button-link.js",
+            "description": "The website's square link button, its hover a fill of 6px squares.",
+            "attributes": [
+              {
+                "name": "href",
+                "field": "href",
+                "type": "string",
+                "default": "''"
+              },
+              {
+                "name": "variant",
+                "field": "variant",
+                "type": "ButtonLinkVariant",
+                "default": "'red'",
+                "description": "red, secondary, light or ghost."
+              },
+              {
+                "name": "size",
+                "field": "size",
+                "type": "\"sm\" | \"md\"",
+                "default": "'md'",
+                "description": "md (36px) or sm (28px)."
+              },
+              {
+                "name": "pixels",
+                "field": "pixels",
+                "type": "boolean",
+                "default": "false",
+                "description": "The dark main call to action: black, red squares."
+              },
+              {
+                "name": "arrow",
+                "field": "arrow",
+                "type": "boolean",
+                "default": "false",
+                "description": "The pixel arrow, lit and still."
+              },
+              {
+                "name": "grain",
+                "field": "grain",
+                "type": "boolean",
+                "default": "false",
+                "description": "The footer's grain over the button."
+              },
+              {
+                "name": "fill",
+                "field": "fill",
+                "type": "\"black\" | undefined",
+                "description": "\"black\" brings the squares in black, for a light button on a red band."
+              },
+              {
+                "name": "armed",
+                "field": "armed",
+                "type": "boolean",
+                "default": "false"
+              }
+            ],
+            "properties": [
+              {
+                "name": "href",
+                "type": "string",
+                "default": "''",
+                "attribute": "href"
+              },
+              {
+                "name": "variant",
+                "type": "ButtonLinkVariant",
+                "default": "'red'",
+                "description": "red, secondary, light or ghost.",
+                "attribute": "variant"
+              },
+              {
+                "name": "size",
+                "type": "\"sm\" | \"md\"",
+                "default": "'md'",
+                "description": "md (36px) or sm (28px).",
+                "attribute": "size"
+              },
+              {
+                "name": "pixels",
+                "type": "boolean",
+                "default": "false",
+                "description": "The dark main call to action: black, red squares.",
+                "attribute": "pixels"
+              },
+              {
+                "name": "arrow",
+                "type": "boolean",
+                "default": "false",
+                "description": "The pixel arrow, lit and still.",
+                "attribute": "arrow"
+              },
+              {
+                "name": "grain",
+                "type": "boolean",
+                "default": "false",
+                "description": "The footer's grain over the button.",
+                "attribute": "grain"
+              },
+              {
+                "name": "fill",
+                "type": "\"black\" | undefined",
+                "description": "\"black\" brings the squares in black, for a light button on a red band.",
+                "attribute": "fill"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "The label."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "On the site",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/button-link/Site.html",
+          "content": "<!-- The website's buttons: the dark one with its pixel fill and arrow for the main call to action, outlined for the\n     rest; light and ghost on a dark band. -->\n<div class=\"flex flex-col gap-6\">\n  <div class=\"flex flex-wrap items-center gap-3\">\n    <conare-button-link href=\"#demo\" pixels arrow>Book a demo</conare-button-link>\n    <conare-button-link href=\"#docs\" variant=\"secondary\">Read the docs</conare-button-link>\n    <conare-button-link href=\"#pricing\" variant=\"secondary\" size=\"sm\">Pricing</conare-button-link>\n  </div>\n  <div data-theme=\"dark\" class=\"flex flex-wrap items-center gap-3 bg-off-black p-6\">\n    <conare-button-link href=\"#demo\" variant=\"light\">Book a demo</conare-button-link>\n    <conare-button-link href=\"#docs\" variant=\"ghost\">Read the docs</conare-button-link>\n  </div>\n</div>\n"
+        },
+        {
+          "name": "Dark",
+          "label": "Dark",
+          "center": true,
+          "half": true,
+          "path": "elements/examples/button-link/Dark.html",
+          "content": "<!-- The website's main call to action: dark, its red squares running in on hover, and the pixel arrow. -->\n<conare-button-link href=\"#demo\" pixels arrow>Book a demo</conare-button-link>\n"
+        },
+        {
+          "name": "Outlined",
+          "label": "Outlined",
+          "center": true,
+          "half": true,
+          "path": "elements/examples/button-link/Outlined.html",
+          "content": "<!-- Outlined, for every other action in a band. -->\n<conare-button-link href=\"#docs\" variant=\"secondary\">Read the docs</conare-button-link>\n"
+        },
+        {
+          "name": "Small",
+          "label": "Small",
+          "center": true,
+          "half": true,
+          "path": "elements/examples/button-link/Small.html",
+          "content": "<!-- The small size, for the header and tight rows. -->\n<conare-button-link href=\"#pricing\" variant=\"secondary\" size=\"sm\">Pricing</conare-button-link>\n"
+        },
+        {
+          "name": "Red",
+          "label": "Red",
+          "center": true,
+          "half": true,
+          "path": "elements/examples/button-link/Red.html",
+          "content": "<!-- The flat red block, one to a band: its squares come in black. -->\n<conare-button-link href=\"#demo\">Book a demo</conare-button-link>\n"
+        },
+        {
+          "name": "Light",
+          "label": "Light, on a dark band",
+          "center": true,
+          "half": true,
+          "path": "elements/examples/button-link/Light.html",
+          "content": "<!-- The main call to action on a dark band. -->\n<div data-theme=\"dark\" class=\"bg-off-black p-6\"><conare-button-link href=\"#demo\" variant=\"light\">Book a demo</conare-button-link></div>\n"
+        },
+        {
+          "name": "Ghost",
+          "label": "Ghost, on a dark band",
+          "center": true,
+          "half": true,
+          "path": "elements/examples/button-link/Ghost.html",
+          "content": "<!-- Every other action on a dark band, outlined. -->\n<div data-theme=\"dark\" class=\"bg-off-black p-6\"><conare-button-link href=\"#docs\" variant=\"ghost\">Read the docs</conare-button-link></div>\n"
+        }
+      ]
+    }
+  }
+}

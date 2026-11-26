@@ -1,0 +1,283 @@
+{
+  "name": "top-bar",
+  "title": "Top bar",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "The 48px bar over every console page: breadcrumbs, each step back a link, the page itself in ink, a namespace in mono. Its crumbs are the breadcrumb.",
+  "use_for": "Saying where you are and the way back, over every console page.",
+  "never": [
+    "Repeating the page's title as a heading right under it",
+    "Actions that belong to the page: they go in the page's head"
+  ],
+  "source": "conare-web app/layouts/console.vue (the header), app/assets/css/console2.css (.v2-bar, .v2-crumb, .v2-mono)",
+  "body": "`Breadcrumb` is shadcn's breadcrumb: pass `items` (`label`, `href`, `mono`), the last is the page. Give `as` your router\nlink (`NuxtLink`) to navigate without a reload.",
+  "requires": [],
+  "dependencies": [
+    "lucide-vue-next@^0.479.0"
+  ],
+  "files": [
+    {
+      "path": "components/ui/TopBar.vue",
+      "content": "<script setup lang=\"ts\">\n// The 48px bar over every console page (console2.css .v2-bar): sticky, a hairline under it, the page showing faintly\n// through it (92% of the surface under an 8px blur), 12px text. Put a Breadcrumb in the default slot; `start` holds the\n// phone's menu button, `end` what belongs to the whole console (setup progress, a loading mark), never the page's\n// own actions.\n</script>\n\n<template>\n  <header data-ds=\"top-bar\" class=\"sticky top-0 z-10 flex h-bar shrink-0 items-center gap-2 border-b border-edge bg-bar px-4 text-meta leading-5 backdrop-blur-sm\">\n    <slot name=\"start\" />\n    <slot />\n    <slot name=\"end\" />\n  </header>\n</template>\n"
+    },
+    {
+      "path": "components/ui/Breadcrumb.vue",
+      "content": "<script setup lang=\"ts\">\nimport type { Component } from 'vue'\nimport { Slash } from 'lucide-vue-next'\n\n// Where you are (console2.css .v2-crumb): each step back a link in muted text that turns ink under the pointer, a 10px\n// slash between, the page itself in ink and the only step that truncates. `mono` sets a namespace or an ID in Geist\n// Mono. `as` renders a router link component for the steps back (it gets `href` and `to`).\nexport interface Crumb { label: string, href?: string, mono?: boolean }\nwithDefaults(defineProps<{ items: Crumb[], label?: string, as?: string | Component }>(), { label: 'breadcrumb', as: 'a' })\ndefineEmits<{ navigate: [crumb: Crumb, event: MouseEvent] }>()\n</script>\n\n<template>\n  <nav data-ds=\"breadcrumb\" class=\"flex min-w-0 flex-1 items-center gap-2 overflow-hidden text-meta leading-5\" :aria-label=\"label\">\n    <template v-for=\"(crumb, i) in items\" :key=\"i\">\n      <Slash v-if=\"i > 0\" :size=\"10\" :stroke-width=\"1.5\" class=\"shrink-0 text-fg-faint\" aria-hidden=\"true\" />\n      <component :is=\"as\" v-if=\"i < items.length - 1\" :href=\"crumb.href ?? '#'\" :to=\"crumb.href\" class=\"ds-crumb shrink-0\" :class=\"crumb.mono && 'type-code-sm'\" @click=\"$emit('navigate', crumb, $event)\">{{ crumb.label }}</component>\n      <span v-else class=\"truncate text-fg\" :class=\"crumb.mono && 'type-code-sm'\" aria-current=\"page\">{{ crumb.label }}</span>\n    </template>\n  </nav>\n</template>\n\n<style>\n.ds-crumb { color: var(--ds-color-fg-muted); transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-crumb:hover { color: var(--ds-color-fg); } }\n.ds-crumb:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: 2px; }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "The console's bar",
+      "center": false,
+      "half": false,
+      "path": "examples/top-bar/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport Breadcrumb from '@/components/ui/Breadcrumb.vue'\nimport TopBar from '@/components/ui/TopBar.vue'\n// The bar over every console page: where you are, each step back a link, the page in ink, a namespace in mono.\nconst crumbs = [{ label: 'Overview', href: '#' }, { label: 'Namespaces', href: '#' }, { label: 'contracts', mono: true }]\n</script>\n\n<template>\n  <TopBar class=\"border border-edge\">\n    <Breadcrumb :items=\"crumbs\" @navigate=\"(_, e) => e.preventDefault()\" />\n  </TopBar>\n</template>\n",
+      "requires": [],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    },
+    {
+      "name": "Breadcrumb",
+      "label": "A long trail",
+      "center": false,
+      "half": false,
+      "path": "examples/top-bar/Breadcrumb.vue",
+      "content": "<script setup lang=\"ts\">\nimport Breadcrumb from '@/components/ui/Breadcrumb.vue'\n// The crumbs alone, as a breadcrumb anywhere: a long trail keeps every step back and truncates only the page.\nconst crumbs = [{ label: 'Overview', href: '#' }, { label: 'Sources', href: '#' }, { label: 'Acme drive', href: '#' }, { label: 'Quarterly planning notes for the platform team, final revision' }]\n</script>\n\n<template>\n  <div class=\"max-w-120\">\n    <Breadcrumb :items=\"crumbs\" @navigate=\"(_, e) => e.preventDefault()\" />\n  </div>\n</template>\n",
+      "requires": [],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/TopBar.tsx",
+          "content": "import type { ReactNode } from 'react'\nimport { cn } from '@/react/lib/cn'\n\n// The 48px bar over every console page (console2.css .v2-bar): sticky, a hairline under it, the page showing faintly\n// through it (92% of the surface under an 8px blur), 12px text. Put a Breadcrumb in children; `start` holds the\n// phone's menu button, `end` what belongs to the whole console (setup progress, a loading mark), never the page's\n// own actions.\nexport interface TopBarProps { start?: ReactNode, end?: ReactNode, className?: string, children?: ReactNode }\n\nexport function TopBar({ start, end, className, children }: TopBarProps) {\n  return (\n    <header data-ds=\"top-bar\" className={cn('sticky top-0 z-10 flex h-bar shrink-0 items-center gap-2 border-b border-edge bg-bar px-4 text-meta leading-5 backdrop-blur-sm', className)}>\n      {start}\n      {children}\n      {end}\n    </header>\n  )\n}\n\nexport default TopBar\n"
+        },
+        {
+          "path": "react/components/ui/Breadcrumb.tsx",
+          "content": "import { Fragment, type ElementType, type MouseEvent } from 'react'\nimport { Slash } from 'lucide-react'\nimport { cn } from '@/react/lib/cn'\n\n// Where you are (console2.css .v2-crumb): each step back a link in muted text that turns ink under the pointer, a 10px\n// slash between, the page itself in ink and the only step that truncates. `mono` sets a namespace or an ID in Geist\n// Mono. `as` renders a router link component for the steps back (it gets `href` and `to`). Vue's `navigate` event is\n// `onNavigate`.\nexport interface Crumb { label: string, href?: string, mono?: boolean }\nexport interface BreadcrumbProps { items: Crumb[], label?: string, as?: ElementType, onNavigate?: (crumb: Crumb, event: MouseEvent) => void }\n\nexport function Breadcrumb({ items, label = 'breadcrumb', as: Link = 'a', onNavigate }: BreadcrumbProps) {\n  return (\n    <>\n      <style href=\"ds-breadcrumb\" precedence=\"ds\">{css}</style>\n      <nav data-ds=\"breadcrumb\" className=\"flex min-w-0 flex-1 items-center gap-2 overflow-hidden text-meta leading-5\" aria-label={label}>\n        {items.map((crumb, i) => (\n          <Fragment key={i}>\n            {i > 0 && <Slash size={10} strokeWidth={1.5} className=\"shrink-0 text-fg-faint\" aria-hidden=\"true\" />}\n            {i < items.length - 1\n              ? <Link href={crumb.href ?? '#'} to={Link === 'a' ? undefined : crumb.href} className={cn('ds-crumb shrink-0', crumb.mono && 'type-code-sm')} onClick={(event: MouseEvent) => onNavigate?.(crumb, event)}>{crumb.label}</Link>\n              : <span className={cn('truncate text-fg', crumb.mono && 'type-code-sm')} aria-current=\"page\">{crumb.label}</span>}\n          </Fragment>\n        ))}\n      </nav>\n    </>\n  )\n}\n\nexport default Breadcrumb\n\nconst css = `\n.ds-crumb { color: var(--ds-color-fg-muted); transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-crumb:hover { color: var(--ds-color-fg); } }\n.ds-crumb:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: 2px; }\n`\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [
+        "lucide-react@0.479.0"
+      ],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "TopBar",
+            "file": "react/components/ui/TopBar.tsx",
+            "props": [
+              {
+                "name": "start",
+                "type": "ReactNode",
+                "required": false
+              },
+              {
+                "name": "end",
+                "type": "ReactNode",
+                "required": false
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "Breadcrumb",
+            "file": "react/components/ui/Breadcrumb.tsx",
+            "props": [
+              {
+                "name": "items",
+                "type": "Crumb[]",
+                "required": true
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "required": false,
+                "default": "'breadcrumb'"
+              },
+              {
+                "name": "as",
+                "type": "ElementType",
+                "required": false
+              },
+              {
+                "name": "onNavigate",
+                "type": "(crumb: Crumb, event: MouseEvent) => void",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "The console's bar",
+          "center": false,
+          "half": false,
+          "path": "react/examples/top-bar/Product.tsx",
+          "content": "import { Breadcrumb } from '@/react/components/ui/Breadcrumb'\nimport { TopBar } from '@/react/components/ui/TopBar'\n// The bar over every console page: where you are, each step back a link, the page in ink, a namespace in mono.\nconst crumbs = [{ label: 'Overview', href: '#' }, { label: 'Namespaces', href: '#' }, { label: 'contracts', mono: true }]\n\nexport default function Product() {\n  return (\n    <TopBar className=\"border border-edge\">\n      <Breadcrumb items={crumbs} onNavigate={(_, e) => e.preventDefault()} />\n    </TopBar>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        },
+        {
+          "name": "Breadcrumb",
+          "label": "A long trail",
+          "center": false,
+          "half": false,
+          "path": "react/examples/top-bar/Breadcrumb.tsx",
+          "content": "import { Breadcrumb as Trail } from '@/react/components/ui/Breadcrumb'\n// The crumbs alone, as a breadcrumb anywhere: a long trail keeps every step back and truncates only the page.\nconst crumbs = [{ label: 'Overview', href: '#' }, { label: 'Sources', href: '#' }, { label: 'Acme drive', href: '#' }, { label: 'Quarterly planning notes for the platform team, final revision' }]\n\nexport default function Breadcrumb() {\n  return (\n    <div className=\"max-w-120\">\n      <Trail items={crumbs} onNavigate={(_, e) => e.preventDefault()} />\n    </div>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/top-bar.ts",
+          "content": "import { html } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// TopBar.vue as <conare-top-bar>: the 48px bar over every console page (console2.css .v2-bar): sticky, a hairline\n// under it, the page showing faintly through it (92% of the surface under an 8px blur), 12px text. Put a\n// <conare-breadcrumb> in it; the `start` slot holds the phone's menu button, `end` what belongs to the whole console\n// (setup progress, a loading mark), never the page's own actions. The host is the bar (a banner landmark, as Vue's\n// <header> is), so classes on it land on the bar.\n\n/**\n * @summary The bar over every console page, with where you are.\n * @slot - A <conare-breadcrumb>.\n * @slot start - The phone's menu button.\n * @slot end - What belongs to the whole console.\n */\nexport class TopBar extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tprivate internals = this.attachInternals()\n\n\tconnectedCallback() {\n\t\tsuper.connectedCallback()\n\t\tthis.internals.role = 'banner'\n\t}\n\n\trender() {\n\t\treturn html`<slot name=\"start\"></slot><slot></slot><slot name=\"end\"></slot>`\n\t}\n}\n\ndefine('top-bar', TopBar)\n"
+        },
+        {
+          "path": "elements/components/ui/top-bar.css",
+          "content": "/* The host is the bar (TopBar.vue's <header>), so a class on <conare-top-bar> lands on it as a class on <TopBar> does.\n   A page's own reset (Tailwind's preflight: * { padding: 0; border: 0 solid }) beats a host's normal styles, so the\n   padding and the hairline under it are important. */\n:host { @apply sticky top-0 z-10 flex h-bar shrink-0 items-center gap-2 bg-bar text-meta leading-5 backdrop-blur-sm; @apply border-b! border-edge! px-4!; }\n"
+        },
+        {
+          "path": "elements/components/ui/breadcrumb.ts",
+          "content": "import { html } from 'lit'\nimport { Slash } from 'lucide'\nimport { DsElement, define } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport styles from 'virtual:tw'\n\n// Breadcrumb.vue as <conare-breadcrumb>: where you are (console2.css .v2-crumb): each step back a link in muted text\n// that turns ink under the pointer, a 10px slash between, the page itself in ink and the only step that truncates.\n// `mono` sets a namespace or an ID in Geist Mono. `items` is a JSON attribute or the property. A click on a step back\n// fires `navigate` (detail.crumb, detail.event: call detail.event.preventDefault() to route it yourself).\nexport interface Crumb { label: string, href?: string, mono?: boolean }\n\n/**\n * @summary Where you are: each step back a link, the page in ink.\n * @fires navigate - A step back was clicked (detail.crumb, detail.event).\n */\nexport class Breadcrumb extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { items: { type: Array }, label: {} }\n\n\t/** The steps, the page last: { label, href?, mono? }. */\n\titems: Crumb[] = []\n\t/** The trail's name for assistive tech. */\n\tlabel = 'breadcrumb'\n\n\trender() {\n\t\tconst last = this.items.length - 1\n\t\treturn html`<nav data-ds=\"breadcrumb\" class=\"flex min-w-0 flex-1 items-center gap-2 overflow-hidden text-meta leading-5\" aria-label=${this.label}>${this.items.map((crumb, i) => html`${i > 0 ? icon(Slash, 'slash', { size: 10, strokeWidth: 1.5, class: 'shrink-0 text-fg-faint', attrs: { 'aria-hidden': 'true' } }) : ''}${i < last\n\t\t\t? html`<a href=${crumb.href ?? '#'} class=${['ds-crumb shrink-0', crumb.mono ? 'type-code-sm' : ''].join(' ')} @click=${(event: MouseEvent) => this.emit('navigate', { crumb, event })}>${crumb.label}</a>`\n\t\t\t: html`<span class=${['truncate text-fg', crumb.mono ? 'type-code-sm' : ''].join(' ')} aria-current=\"page\">${crumb.label}</span>`}`)}</nav>`\n\t}\n}\n\ndefine('breadcrumb', Breadcrumb)\n"
+        },
+        {
+          "path": "elements/components/ui/breadcrumb.css",
+          "content": "/* Breadcrumb.vue's <style>, as it is. */\n.ds-crumb { color: var(--ds-color-fg-muted); transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-crumb:hover { color: var(--ds-color-fg); } }\n.ds-crumb:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: 2px; }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/top-bar.js",
+        "elements/breadcrumb.js"
+      ],
+      "tag": "conare-top-bar",
+      "tags": [
+        "conare-top-bar",
+        "conare-breadcrumb"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-top-bar",
+            "name": "TopBar",
+            "module": "elements/top-bar.js",
+            "description": "The bar over every console page, with where you are.",
+            "attributes": [],
+            "properties": [],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "A <conare-breadcrumb>."
+              },
+              {
+                "name": "start",
+                "description": "The phone's menu button."
+              },
+              {
+                "name": "end",
+                "description": "What belongs to the whole console."
+              }
+            ],
+            "methods": []
+          },
+          {
+            "tag": "conare-breadcrumb",
+            "name": "Breadcrumb",
+            "module": "elements/breadcrumb.js",
+            "description": "Where you are: each step back a link, the page in ink.",
+            "attributes": [
+              {
+                "name": "items",
+                "field": "items",
+                "type": "Crumb[]",
+                "default": "[]",
+                "description": "The steps, the page last: { label, href?, mono? }."
+              },
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string",
+                "default": "'breadcrumb'",
+                "description": "The trail's name for assistive tech."
+              }
+            ],
+            "properties": [
+              {
+                "name": "items",
+                "type": "Crumb[]",
+                "default": "[]",
+                "description": "The steps, the page last: { label, href?, mono? }.",
+                "attribute": "items"
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "default": "'breadcrumb'",
+                "description": "The trail's name for assistive tech.",
+                "attribute": "label"
+              }
+            ],
+            "events": [
+              {
+                "name": "navigate",
+                "description": "A step back was clicked (detail.crumb, detail.event)."
+              }
+            ],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "The console's bar",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/top-bar/Product.html",
+          "content": "<!-- The bar over every console page: where you are, each step back a link, the page in ink, a namespace in mono. -->\n<conare-top-bar class=\"border border-edge\">\n  <conare-breadcrumb id=\"bar-crumbs\" items='[{ \"label\": \"Overview\", \"href\": \"#\" }, { \"label\": \"Namespaces\", \"href\": \"#\" }, { \"label\": \"contracts\", \"mono\": true }]'></conare-breadcrumb>\n</conare-top-bar>\n<script type=\"module\">\n  document.getElementById('bar-crumbs').addEventListener('navigate', (event) => event.detail.event.preventDefault())\n</script>\n"
+        },
+        {
+          "name": "Breadcrumb",
+          "label": "A long trail",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/top-bar/Breadcrumb.html",
+          "content": "<!-- The crumbs alone, as a breadcrumb anywhere: a long trail keeps every step back and truncates only the page. -->\n<div class=\"max-w-120\">\n  <conare-breadcrumb id=\"long-trail\" items='[{ \"label\": \"Overview\", \"href\": \"#\" }, { \"label\": \"Sources\", \"href\": \"#\" }, { \"label\": \"Acme drive\", \"href\": \"#\" }, { \"label\": \"Quarterly planning notes for the platform team, final revision\" }]'></conare-breadcrumb>\n</div>\n<script type=\"module\">\n  document.getElementById('long-trail').addEventListener('navigate', (event) => event.detail.event.preventDefault())\n</script>\n"
+        }
+      ]
+    }
+  }
+}

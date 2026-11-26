@@ -1,0 +1,20 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "newsletter",
+  "type": "registry:block",
+  "title": "Newsletter",
+  "description": "A sign-up for news by email: the band's head, one email field and the one dark button in the double rule; the app sends it and says what follows.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://conare-ds-registry.vercel.app/r/react/button.json",
+    "https://conare-ds-registry.vercel.app/r/react/field.json",
+    "https://conare-ds-registry.vercel.app/r/react/section-head.json"
+  ],
+  "files": [
+    {
+      "path": "components/site/Newsletter.tsx",
+      "type": "registry:ui",
+      "content": "'use client'\nimport { useState } from 'react'\nimport { SectionHead } from '@/components/site/SectionHead'\nimport { Field } from '@/components/ui/Field'\nimport { Input } from '@/components/ui/Input'\nimport { PixelButton } from '@/components/ui/PixelButton'\n\n// A sign-up for news by email: the band's head, then one email field and the one dark button in the website's double\n// rule. It calls nothing: `onSubmit` carries the address, `sent` (the app's) swaps the form for the line the app gives,\n// and a failure from the server shows under it. The site has no newsletter: set from the contact form's field, button\n// and frame.\nexport interface NewsletterProps {\n  title: string, tag?: string, body?: string, label?: string, action?: string\n  sent?: boolean, sentText?: string, sending?: boolean, error?: string, titleId?: string\n  onSubmit?: (email: string) => void\n}\n\nexport function Newsletter({ title, tag, body, label = 'Work email', action = 'Subscribe', sent, sentText = '', sending, error, titleId = 'newsletter-title', onSubmit }: NewsletterProps) {\n  const [email, setEmail] = useState('')\n  return (\n    <section data-ds=\"newsletter\" aria-labelledby={titleId} className=\"mx-auto max-w-[1440px] px-4 pb-24 sm:px-6 lg:px-10 lg:pb-32\">\n      <SectionHead title={title} tag={tag} body={body} titleId={titleId} />\n      <div className=\"mx-auto mt-10 max-w-[560px] border border-edge p-5 outline outline-offset-4 outline-edge sm:p-6\">\n        {sent\n          ? <p role=\"status\" className=\"type-ui text-fg\">{sentText}</p>\n          : (\n              <form className=\"flex flex-col gap-4 sm:flex-row sm:items-end\" aria-label={title} onSubmit={(e) => { e.preventDefault(); onSubmit?.(email) }}>\n                <div className=\"min-w-0 flex-1\">\n                  <Field label={label}>\n                    {({ id }) => <Input id={id} value={email} onChange={(e: { target: { value: string } }) => setEmail(e.target.value)} type=\"email\" autoComplete=\"email\" maxLength={200} required />}\n                  </Field>\n                </div>\n                <div><PixelButton type=\"submit\" disabled={sending}>{action}</PixelButton></div>\n              </form>\n            )}\n        {error && <p className=\"mt-4 bg-surface-danger px-3 py-2 type-ui\" role=\"alert\">{error}</p>}\n      </div>\n    </section>\n  )\n}\n\nexport default Newsletter\n"
+    }
+  ]
+}

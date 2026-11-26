@@ -1,0 +1,20 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "account-menu",
+  "type": "registry:ui",
+  "title": "Account menu",
+  "description": "The sidebar's foot: a black square and the email; it opens upward with the credits left, sign-in and security, and Sign out in red.",
+  "dependencies": [
+    "lucide-react@0.479.0"
+  ],
+  "registryDependencies": [
+    "https://conare-ds-registry.vercel.app/r/react/menu.json"
+  ],
+  "files": [
+    {
+      "path": "components/product/AccountMenu.tsx",
+      "type": "registry:ui",
+      "content": "'use client'\nimport { ChevronsUpDown, LogOut, ShieldCheck } from 'lucide-react'\nimport { Menu } from '@/components/ui/Menu'\nimport { MenuItem } from '@/components/ui/MenuItem'\nimport { MenuSeparator } from '@/components/ui/MenuSeparator'\n\n// The person, at the foot of the sidebar (AccountMenu.vue): a black square for the picture, their email, and a menu\n// that opens upward with sign-in settings and Sign out in red. Its top shows the credits left on a 4px meter\n// (.v2-meter) when `credits` is given; `onOpen` is called each time it opens, so the app can fetch them then.\n// `signingOut` keeps the menu open on \"Signing out\" while the app ends the session. `up: false` opens it downward.\nexport interface AccountMenuProps {\n  email: string\n  credits?: { left: string, share: number } | null\n  securityHref?: string\n  signingOut?: boolean\n  up?: boolean\n  onOpen?: () => void\n  onSignOut?: () => void\n}\n\nexport function AccountMenu({ email, credits, securityHref = '#', signingOut, up = true, onOpen, onSignOut }: AccountMenuProps) {\n  const share = () => `${Math.max(0, Math.min(1, credits?.share ?? 0)) * 100}%`\n  return (\n    <Menu\n      data-ds=\"account-menu\"\n      label=\"account\"\n      onOpenChange={(open) => { if (open) onOpen?.() }}\n      up={up}\n      offset=\"8px\"\n      width=\"calc(100% - 16px)\"\n      className=\"!flex h-full w-full\"\n      triggerClass=\"relative isolate flex h-full w-full cursor-pointer items-center gap-2 px-3 text-left text-meta before:absolute before:inset-x-2 before:inset-y-1.5 before:-z-10 before:transition-colors before:duration-120 before:ease-standard hover:before:bg-edge/45 aria-expanded:before:bg-edge/45 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-focus\"\n      trigger={(\n        <>\n          <span className=\"size-5 shrink-0 bg-off-black\" aria-hidden=\"true\" />\n          <span className=\"min-w-0 flex-1 truncate text-left\">{email}</span>\n          <ChevronsUpDown size={14} strokeWidth={1.5} className=\"mr-0.75 shrink-0 text-fg-muted\" aria-hidden=\"true\" />\n        </>\n      )}\n    >\n      {credits && (\n        <>\n          <div className=\"flex flex-col gap-1.5 px-3.5 pt-2 pb-2.5\" role=\"none\">\n            <p className=\"flex items-baseline justify-between gap-2\"><span className=\"type-meta text-fg-muted\">Credits left</span><span className=\"font-medium tabular-nums\">{credits.left}</span></p>\n            <div className=\"h-1 bg-edge\" aria-hidden=\"true\"><span className=\"block h-full bg-surface-inverse\" style={{ width: share() }} /></div>\n          </div>\n          <MenuSeparator />\n        </>\n      )}\n      <MenuItem href={securityHref}><ShieldCheck size={14} strokeWidth={1.5} className=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />Sign-in and security</MenuItem>\n      <MenuSeparator />\n      <MenuItem danger keepOpen disabled={signingOut} onSelect={() => onSignOut?.()}><LogOut size={14} strokeWidth={1.5} className=\"shrink-0\" aria-hidden=\"true\" />{signingOut ? 'Signing out' : 'Sign out'}</MenuItem>\n    </Menu>\n  )\n}\n\nexport default AccountMenu\n"
+    }
+  ]
+}

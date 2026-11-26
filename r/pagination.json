@@ -1,0 +1,314 @@
+{
+  "name": "pagination",
+  "title": "Pagination",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "Pages of a long list: two secondary icon buttons around the page count in tabular figures. Show more is the quiet line under a list that opens a few more at a time, the console's usual way.",
+  "use_for": "Show more under credits added, matches and history; pages only where a page is a place to come back to, such as an audit log.",
+  "never": [
+    "Numbered page links in the console",
+    "Pages for a list read from the top",
+    "Infinite scroll"
+  ],
+  "source": "conare-web app/assets/css/console2.css (.v2-more), app/components/console/billing/Grants.vue; pages are new, on Button",
+  "body": "",
+  "requires": [
+    "button"
+  ],
+  "dependencies": [
+    "lucide-vue-next@^0.479.0"
+  ],
+  "files": [
+    {
+      "path": "components/ui/Pagination.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ChevronLeft, ChevronRight } from 'lucide-vue-next'\nimport Button from '@/components/ui/Button.vue'\n\n// Pages of a long list, when its order means a place to come back to (an audit log): two secondary icon buttons\n// around the page count in tabular figures, 12px muted. The buttons go grey at either end. Prefer ShowMore for a\n// list read from the top (credits added, matches): it keeps what was read on screen.\nconst page = defineModel<number>('page', { required: true })\nwithDefaults(defineProps<{ pages: number, label?: string }>(), { label: 'pages' })\n</script>\n\n<template>\n  <nav data-ds=\"pagination\" class=\"flex items-center gap-3\" :aria-label=\"label\">\n    <Button icon aria-label=\"Previous page\" :disabled=\"page <= 1\" @click=\"page = Math.max(1, page - 1)\"><ChevronLeft :size=\"14\" :stroke-width=\"1.5\" aria-hidden=\"true\" /></Button>\n    <span class=\"type-meta text-fg-muted tabular-nums\" aria-live=\"polite\">Page <span class=\"text-fg\">{{ page }}</span> of {{ pages }}</span>\n    <Button icon aria-label=\"Next page\" :disabled=\"page >= pages\" @click=\"page = Math.min(pages, page + 1)\"><ChevronRight :size=\"14\" :stroke-width=\"1.5\" aria-hidden=\"true\" /></Button>\n  </nav>\n</template>\n"
+    },
+    {
+      "path": "components/ui/ShowMore.vue",
+      "content": "<script setup lang=\"ts\">\n// The quiet \"Show 5 more\" under a list (console2.css .v2-more): 12px medium in the soft ink that darkens under the\n// pointer, a red focus ring, and a hit area 12px past its words. A list that can grow for years opens a few at a time\n// with it, rather than paging.\nwithDefaults(defineProps<{ count?: number, label?: string }>(), { count: 5 })\n</script>\n\n<template>\n  <button data-ds=\"show-more\" type=\"button\" class=\"ds-more relative ml-1 cursor-pointer text-meta font-medium whitespace-nowrap text-fg-soft\"><slot>{{ label ?? `Show ${count} more` }}</slot></button>\n</template>\n\n<style>\n.ds-more { transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-more::after { position: absolute; inset: -12px; content: \"\"; }\n@media (hover: hover) and (pointer: fine) { .ds-more:hover { color: var(--ds-color-fg); } }\n.ds-more:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: var(--ds-border-focus); }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "Pages and show more",
+      "center": false,
+      "half": false,
+      "path": "examples/pagination/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed, ref } from 'vue'\nimport Pagination from '@/components/ui/Pagination.vue'\nimport ShowMore from '@/components/ui/ShowMore.vue'\nimport Table from '@/components/ui/Table.vue'\n// The audit log by page, where a page is a place to come back to; and credits added, read from the top, five more at\n// a time.\nconst events = Array.from({ length: 23 }, (_, i) => ({ id: i, what: ['Key created', 'Member invited', 'Namespace deleted', 'Key revoked'][i % 4]!, who: `member${(i % 3) + 1}@acme.dev`, when: `Oct ${28 - i}` }))\nconst page = ref(1)\nconst PER = 5\nconst pages = Math.ceil(events.length / PER)\nconst onPage = computed(() => events.slice((page.value - 1) * PER, page.value * PER))\nconst grants = Array.from({ length: 12 }, (_, i) => ({ id: i, amount: (12 - i) * 50, when: `${['Oct', 'Sep', 'Aug', 'Jul'][i % 4]} ${1 + i}` }))\nconst shown = ref(5)\n</script>\n\n<template>\n  <div class=\"grid gap-8 md:grid-cols-2\">\n    <div class=\"flex flex-col gap-3\">\n      <Table framed label=\"audit log\">\n        <thead><tr><th>Event</th><th>By</th><th class=\"text-right\">When</th></tr></thead>\n        <tbody><tr v-for=\"e in onPage\" :key=\"e.id\"><td>{{ e.what }}</td><td class=\"type-code-sm\">{{ e.who }}</td><td class=\"text-right type-meta text-fg-muted\">{{ e.when }}</td></tr></tbody>\n      </Table>\n      <Pagination v-model:page=\"page\" :pages=\"pages\" label=\"audit log pages\" class=\"self-end\" />\n    </div>\n    <div class=\"flex flex-col gap-3\">\n      <ul class=\"flex flex-col border border-edge\">\n        <li v-for=\"g in grants.slice(0, shown)\" :key=\"g.id\" class=\"flex justify-between border-b border-edge px-3 py-2.5 last:border-b-0 type-ui\"><span class=\"text-fg-muted\">{{ g.when }}</span><span class=\"tabular-nums\">+${{ g.amount.toFixed(2) }}</span></li>\n      </ul>\n      <ShowMore v-if=\"shown < grants.length\" class=\"self-start\" :count=\"Math.min(5, grants.length - shown)\" @click=\"shown += 5\" />\n    </div>\n  </div>\n</template>\n",
+      "requires": [
+        "button",
+        "table"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Pagination.tsx",
+          "content": "'use client'\nimport { ChevronLeft, ChevronRight } from 'lucide-react'\nimport { Button } from '@/react/components/ui/Button'\nimport { useControllable } from '@/react/hooks/useControllable'\nimport { cn } from '@/react/lib/cn'\n\n// Pages of a long list, when its order means a place to come back to (an audit log): two secondary icon buttons\n// around the page count in tabular figures, 12px muted. The buttons go grey at either end. Prefer ShowMore for a\n// list read from the top (credits added, matches): it keeps what was read on screen. The page is `page` /\n// `defaultPage` / `onPageChange` (Vue's v-model:page).\nexport interface PaginationProps {\n  page?: number\n  defaultPage?: number\n  onPageChange?: (page: number) => void\n  pages: number\n  label?: string\n  className?: string\n}\n\nexport function Pagination({ page: given, defaultPage = 1, onPageChange, pages, label = 'pages', className }: PaginationProps) {\n  const [page, setPage] = useControllable(given, defaultPage, onPageChange)\n  return (\n    <nav data-ds=\"pagination\" className={cn('flex items-center gap-3', className)} aria-label={label}>\n      <Button icon aria-label=\"Previous page\" disabled={page <= 1} onClick={() => setPage(Math.max(1, page - 1))}><ChevronLeft size={14} strokeWidth={1.5} aria-hidden=\"true\" /></Button>\n      <span className=\"type-meta text-fg-muted tabular-nums\" aria-live=\"polite\">Page <span className=\"text-fg\">{page}</span>{` of ${pages}`}</span>\n      <Button icon aria-label=\"Next page\" disabled={page >= pages} onClick={() => setPage(Math.min(pages, page + 1))}><ChevronRight size={14} strokeWidth={1.5} aria-hidden=\"true\" /></Button>\n    </nav>\n  )\n}\n\nexport default Pagination\n"
+        },
+        {
+          "path": "react/components/ui/ShowMore.tsx",
+          "content": "import type { ButtonHTMLAttributes } from 'react'\nimport { cn } from '@/react/lib/cn'\n\n// The quiet \"Show 5 more\" under a list (console2.css .v2-more): 12px medium in the soft ink that darkens under the\n// pointer, a red focus ring, and a hit area 12px past its words. A list that can grow for years opens a few at a time\n// with it, rather than paging.\nexport interface ShowMoreProps extends ButtonHTMLAttributes<HTMLButtonElement> {\n  count?: number\n  label?: string\n}\n\nexport function ShowMore({ count = 5, label, className, children, ...rest }: ShowMoreProps) {\n  return (\n    <>\n      <style href=\"ds-show-more\" precedence=\"ds\">{css}</style>\n      <button data-ds=\"show-more\" type=\"button\" className={cn('ds-more relative ml-1 cursor-pointer text-meta font-medium whitespace-nowrap text-fg-soft', className)} {...rest}>{children ?? label ?? `Show ${count} more`}</button>\n    </>\n  )\n}\n\nexport default ShowMore\n\nconst css = `\n.ds-more { transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-more::after { position: absolute; inset: -12px; content: \"\"; }\n@media (hover: hover) and (pointer: fine) { .ds-more:hover { color: var(--ds-color-fg); } }\n.ds-more:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: var(--ds-border-focus); }\n`\n"
+        },
+        {
+          "path": "react/hooks/useControllable.ts",
+          "content": "'use client'\nimport { useCallback, useRef, useState } from 'react'\n\n// Vue's defineModel in React: a value that is controlled when the caller passes it (value + onValueChange, as Radix\n// does) and kept inside otherwise (defaultValue). setValue calls onChange either way.\nexport function useControllable<T>(value: T | undefined, defaultValue: T, onChange?: (value: T) => void) {\n\tconst [inner, setInner] = useState<T>(defaultValue)\n\tconst controlled = value !== undefined\n\tconst current = controlled ? value : inner\n\tconst ref = useRef(onChange)\n\tref.current = onChange\n\tconst set = useCallback((next: T) => {\n\t\tif (!controlled) setInner(next)\n\t\tref.current?.(next)\n\t}, [controlled])\n\treturn [current, set] as const\n}\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [
+        "lucide-react@0.479.0"
+      ],
+      "registryDependencies": [
+        "button"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "Pagination",
+            "file": "react/components/ui/Pagination.tsx",
+            "props": [
+              {
+                "name": "page",
+                "type": "number",
+                "required": false
+              },
+              {
+                "name": "defaultPage",
+                "type": "number",
+                "required": false,
+                "default": "1"
+              },
+              {
+                "name": "onPageChange",
+                "type": "(page: number) => void",
+                "required": false
+              },
+              {
+                "name": "pages",
+                "type": "number",
+                "required": true
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "required": false,
+                "default": "'pages'"
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "ShowMore",
+            "file": "react/components/ui/ShowMore.tsx",
+            "props": [
+              {
+                "name": "count",
+                "type": "number",
+                "required": false,
+                "default": "5"
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "required": false
+              }
+            ],
+            "extends": [
+              "ButtonHTMLAttributes<HTMLButtonElement>"
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Pages and show more",
+          "center": false,
+          "half": false,
+          "path": "react/examples/pagination/Product.tsx",
+          "content": "'use client'\nimport { useState } from 'react'\nimport { Pagination } from '@/react/components/ui/Pagination'\nimport { ShowMore } from '@/react/components/ui/ShowMore'\nimport { Table } from '@/react/components/ui/Table'\n// The audit log by page, where a page is a place to come back to; and credits added, read from the top, five more at\n// a time.\nconst events = Array.from({ length: 23 }, (_, i) => ({ id: i, what: ['Key created', 'Member invited', 'Namespace deleted', 'Key revoked'][i % 4]!, who: 'member' + ((i % 3) + 1) + '@acme.dev', when: `Oct ${28 - i}` }))\nconst PER = 5\nconst pages = Math.ceil(events.length / PER)\nconst grants = Array.from({ length: 12 }, (_, i) => ({ id: i, amount: (12 - i) * 50, when: `${['Oct', 'Sep', 'Aug', 'Jul'][i % 4]} ${1 + i}` }))\n\nexport default function Product() {\n  const [page, setPage] = useState(1)\n  const [shown, setShown] = useState(5)\n  const onPage = events.slice((page - 1) * PER, page * PER)\n  return (\n    <div className=\"grid gap-8 md:grid-cols-2\">\n      <div className=\"flex flex-col gap-3\">\n        <Table framed label=\"audit log\">\n          <thead><tr><th>Event</th><th>By</th><th className=\"text-right\">When</th></tr></thead>\n          <tbody>{onPage.map(e => <tr key={e.id}><td>{e.what}</td><td className=\"type-code-sm\">{e.who}</td><td className=\"text-right type-meta text-fg-muted\">{e.when}</td></tr>)}</tbody>\n        </Table>\n        <Pagination page={page} onPageChange={setPage} pages={pages} label=\"audit log pages\" className=\"self-end\" />\n      </div>\n      <div className=\"flex flex-col gap-3\">\n        <ul className=\"flex flex-col border border-edge\">\n          {grants.slice(0, shown).map(g => <li key={g.id} className=\"flex justify-between border-b border-edge px-3 py-2.5 last:border-b-0 type-ui\"><span className=\"text-fg-muted\">{g.when}</span><span className=\"tabular-nums\">{`+$${g.amount.toFixed(2)}`}</span></li>)}\n        </ul>\n        {shown < grants.length && <ShowMore className=\"self-start\" count={Math.min(5, grants.length - shown)} onClick={() => setShown(s => s + 5)} />}\n      </div>\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "button",
+            "table"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/pagination.ts",
+          "content": "import { html } from 'lit/static-html.js'\nimport { ChevronLeft, ChevronRight } from 'lucide'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport '@/elements/components/ui/button'\nimport styles from 'virtual:tw'\n\n// Pagination.vue as <conare-pagination>: pages of a long list, when its order means a place to come back to (an audit\n// log): two secondary icon buttons around the page count in tabular figures, 12px muted. The buttons go grey at either\n// end. Prefer <conare-show-more> for a list read from the top: it keeps what was read on screen. v-model:page is `page`\n// with `page-change`.\n\n/**\n * @summary Previous and next around the page count.\n * @fires page-change - The page changed (detail.value; read `page`).\n */\nexport class Pagination extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { page: { type: Number }, pages: { type: Number }, label: {} }\n\n\t/** The page shown, from 1. */\n\tpage = 1\n\t/** How many pages. */\n\tpages = 1\n\t/** The nav's name. */\n\tlabel = 'pages'\n\n\trender() {\n\t\tconst button = tag('button')\n\t\treturn html`<nav class=\"contents\" aria-label=${this.label}>\n\t\t\t<${button} icon aria-label=\"Previous page\" ?disabled=${this.page <= 1} @click=${() => this.commit(Math.max(1, this.page - 1), 'page')}>${icon(ChevronLeft, 'chevron-left', { size: 14, strokeWidth: 1.5, attrs: { 'aria-hidden': 'true' } })}</${button}>\n\t\t\t<span class=\"type-meta text-fg-muted tabular-nums\" aria-live=\"polite\">Page <span class=\"text-fg\">${this.page}</span>${` of ${this.pages}`}</span>\n\t\t\t<${button} icon aria-label=\"Next page\" ?disabled=${this.page >= this.pages} @click=${() => this.commit(Math.min(this.pages, this.page + 1), 'page')}>${icon(ChevronRight, 'chevron-right', { size: 14, strokeWidth: 1.5, attrs: { 'aria-hidden': 'true' } })}</${button}>\n\t\t</nav>`\n\t}\n}\n\ndefine('pagination', Pagination)\n"
+        },
+        {
+          "path": "elements/components/ui/pagination.css",
+          "content": "/* The host is the nav's box (Pagination.vue's root), so a class on <conare-pagination> (self-end) lands on it. */\n:host { @apply flex items-center gap-3; }\n"
+        },
+        {
+          "path": "elements/components/ui/show-more.ts",
+          "content": "import { html } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// ShowMore.vue as <conare-show-more>: the quiet \"Show 5 more\" under a list (console2.css .v2-more): 12px medium in the\n// soft ink that darkens under the pointer, a red focus ring, and a hit area 12px past its words. A list that can grow\n// for years opens a few at a time with it, rather than paging. The host is the button: it takes focus, and Enter and\n// Space press it, as a <button> does.\n\n/**\n * @summary The quiet \"Show 5 more\" under a list.\n * @slot - The words, in place of `label`.\n * @fires click - Pressed (pointer, Enter or Space).\n */\nexport class ShowMore extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { count: { type: Number }, label: {} }\n\n\t/** How many more it shows. */\n\tcount = 5\n\t/** The words (else \"Show <count> more\"). */\n\tlabel?: string\n\n\tconnectedCallback() {\n\t\tsuper.connectedCallback()\n\t\tif (!this.hasAttribute('role')) this.setAttribute('role', 'button')\n\t\tif (!this.hasAttribute('tabindex')) this.setAttribute('tabindex', '0')\n\t\tthis.addEventListener('keydown', this.onKey)\n\t}\n\tdisconnectedCallback() {\n\t\tsuper.disconnectedCallback()\n\t\tthis.removeEventListener('keydown', this.onKey)\n\t}\n\tprivate onKey = (e: KeyboardEvent) => {\n\t\tif (e.key !== 'Enter' && e.key !== ' ') return\n\t\te.preventDefault()\n\t\tthis.click()\n\t}\n\n\trender() {\n\t\treturn html`${this.hasSlot() ? html`<slot></slot>` : (this.label ?? `Show ${this.count} more`)}`\n\t}\n}\n\ndefine('show-more', ShowMore)\n"
+        },
+        {
+          "path": "elements/components/ui/show-more.css",
+          "content": "/* The host is the button (ShowMore.vue's root <button>, with role=\"button\" and the keys a button has), so a class on\n   <conare-show-more> (self-start) lands on it as on Vue's root. Its face is important: the page's reset and the scoped\n   base layer (the type of a data-ds root) outrank :host, and Vue's classes win over them. */\n:host { display: inline-block !important; position: relative !important; margin-left: calc(var(--spacing, 0.25rem) * 1) !important; cursor: pointer; font-size: var(--ds-text-meta) !important; line-height: var(--ds-text-meta-leading) !important; font-weight: var(--ds-font-weight-medium) !important; white-space: nowrap !important; color: var(--ds-color-fg-soft) !important; text-align: center; transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n:host::after { position: absolute; inset: -12px; content: \"\"; }\n@media (hover: hover) and (pointer: fine) { :host(:hover) { color: var(--ds-color-fg) !important; } }\n:host(:focus-visible) { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent) !important; outline-offset: var(--ds-border-focus) !important; }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/pagination.js",
+        "elements/show-more.js",
+        "elements/button.js",
+        "elements/table.js"
+      ],
+      "tag": "conare-pagination",
+      "tags": [
+        "conare-pagination",
+        "conare-show-more"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "button"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-pagination",
+            "name": "Pagination",
+            "module": "elements/pagination.js",
+            "description": "Previous and next around the page count.",
+            "attributes": [
+              {
+                "name": "page",
+                "field": "page",
+                "type": "number",
+                "default": "1",
+                "description": "The page shown, from 1."
+              },
+              {
+                "name": "pages",
+                "field": "pages",
+                "type": "number",
+                "default": "1",
+                "description": "How many pages."
+              },
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string",
+                "default": "'pages'",
+                "description": "The nav's name."
+              }
+            ],
+            "properties": [
+              {
+                "name": "page",
+                "type": "number",
+                "default": "1",
+                "description": "The page shown, from 1.",
+                "attribute": "page"
+              },
+              {
+                "name": "pages",
+                "type": "number",
+                "default": "1",
+                "description": "How many pages.",
+                "attribute": "pages"
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "default": "'pages'",
+                "description": "The nav's name.",
+                "attribute": "label"
+              }
+            ],
+            "events": [
+              {
+                "name": "page-change",
+                "description": "The page changed (detail.value; read `page`)."
+              }
+            ],
+            "slots": [],
+            "methods": []
+          },
+          {
+            "tag": "conare-show-more",
+            "name": "ShowMore",
+            "module": "elements/show-more.js",
+            "description": "The quiet \"Show 5 more\" under a list.",
+            "attributes": [
+              {
+                "name": "count",
+                "field": "count",
+                "type": "number",
+                "default": "5",
+                "description": "How many more it shows."
+              },
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string | undefined",
+                "description": "The words (else \"Show <count> more\")."
+              }
+            ],
+            "properties": [
+              {
+                "name": "count",
+                "type": "number",
+                "default": "5",
+                "description": "How many more it shows.",
+                "attribute": "count"
+              },
+              {
+                "name": "label",
+                "type": "string | undefined",
+                "description": "The words (else \"Show <count> more\").",
+                "attribute": "label"
+              }
+            ],
+            "events": [
+              {
+                "name": "click",
+                "description": "Pressed (pointer, Enter or Space)."
+              }
+            ],
+            "slots": [
+              {
+                "name": "",
+                "description": "The words, in place of `label`."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Pages and show more",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/pagination/Product.html",
+          "content": "<!-- The audit log by page, where a page is a place to come back to; and credits added, read from the top, five more\n     at a time. -->\n<div class=\"grid gap-8 md:grid-cols-2\">\n  <div class=\"flex flex-col gap-3\">\n    <conare-table framed label=\"audit log\">\n      <table>\n        <thead><tr><th>Event</th><th>By</th><th class=\"text-right\">When</th></tr></thead>\n        <tbody id=\"events\"></tbody>\n      </table>\n    </conare-table>\n    <conare-pagination id=\"pages\" page=\"1\" pages=\"5\" label=\"audit log pages\" class=\"self-end\"></conare-pagination>\n  </div>\n  <div class=\"flex flex-col gap-3\">\n    <ul class=\"flex flex-col border border-edge\" id=\"grants\"></ul>\n    <conare-show-more id=\"more\" class=\"self-start\" count=\"5\"></conare-show-more>\n  </div>\n</div>\n<script type=\"module\">\n  const events = Array.from({ length: 23 }, (_, i) => ({ what: ['Key created', 'Member invited', 'Namespace deleted', 'Key revoked'][i % 4], who: 'member' + ((i % 3) + 1) + '@acme.dev', when: `Oct ${28 - i}` }))\n  const PER = 5\n  const grants = Array.from({ length: 12 }, (_, i) => ({ amount: (12 - i) * 50, when: `${['Oct', 'Sep', 'Aug', 'Jul'][i % 4]} ${1 + i}` }))\n  const body = document.getElementById('events')\n  const pager = document.getElementById('pages')\n  const list = document.getElementById('grants')\n  const more = document.getElementById('more')\n  const cell = (text, cls) => Object.assign(document.createElement('td'), { textContent: text, className: cls ?? '' })\n  // The page's rows.\n  const paintPage = (page) => {\n    body.replaceChildren(...events.slice((page - 1) * PER, page * PER).map((e) => {\n      const tr = document.createElement('tr')\n      tr.append(cell(e.what), cell(e.who, 'type-code-sm'), cell(e.when, 'text-right type-meta text-fg-muted'))\n      return tr\n    }))\n  }\n  pager.addEventListener('page-change', () => paintPage(pager.page))\n  paintPage(1)\n  // Five more at a time; Show more goes once all are shown.\n  let shown = 5\n  const paintGrants = () => {\n    list.replaceChildren(...grants.slice(0, shown).map((g) => {\n      const li = document.createElement('li')\n      li.className = 'flex justify-between border-b border-edge px-3 py-2.5 last:border-b-0 type-ui'\n      li.append(Object.assign(document.createElement('span'), { className: 'text-fg-muted', textContent: g.when }), Object.assign(document.createElement('span'), { className: 'tabular-nums', textContent: `+$${g.amount.toFixed(2)}` }))\n      return li\n    }))\n    more.hidden = shown >= grants.length\n    more.count = Math.min(5, grants.length - shown)\n  }\n  more.addEventListener('click', () => { shown += 5; paintGrants() })\n  paintGrants()\n</script>\n"
+        }
+      ]
+    }
+  }
+}

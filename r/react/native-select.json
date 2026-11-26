@@ -1,0 +1,23 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "native-select",
+  "type": "registry:ui",
+  "title": "Native select",
+  "description": "The browser's own select drawn as the console's field: square, the hairline that darkens on hover and turns to a 2px ink edge on focus, and its own 12px chevron.",
+  "dependencies": [
+    "lucide-react@0.479.0"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "components/ui/NativeSelect.tsx",
+      "type": "registry:ui",
+      "content": "import type { Ref, SelectHTMLAttributes } from 'react'\nimport { ChevronDown } from 'lucide-react'\nimport { cn } from '@/lib/cn'\n\n// The browser's own select, drawn as the console's field (main.css select.c-input, square under the console): 32px (28px\n// with `small`), 13px, the #C3C1BF hairline that darkens on hover and turns to a 2px ink edge on focus, and its own 12px\n// chevron in the muted grey, the same in every browser. 40px and 16px on phones, where the system picker opens. Options\n// go in as <option> children. For a pick with search or marks, use Menu. `className` lands on the wrapper, every other\n// prop on the <select> (value and onChange as React's own), as Vue's attributes do.\nexport interface NativeSelectProps extends SelectHTMLAttributes<HTMLSelectElement> {\n  small?: boolean\n  invalid?: boolean\n  mono?: boolean\n  ref?: Ref<HTMLSelectElement>\n}\n\nexport function NativeSelect({ small, invalid, mono, className, children, ...rest }: NativeSelectProps) {\n  return (\n    <>\n      <style href=\"ds-native-select\" precedence=\"ds\">{css}</style>\n      <span data-ds=\"native-select\" className={cn('ds-select', className)} data-small={small || undefined}>\n        <select {...rest} aria-invalid={invalid || undefined} className={mono ? 'font-code' : undefined}>{children}</select>\n        <ChevronDown size={12} strokeWidth={2} aria-hidden=\"true\" />\n      </span>\n    </>\n  )\n}\n\nexport default NativeSelect\n\nconst css = `\n.ds-select { position: relative; display: inline-flex; width: 100%; align-items: center; }\n.ds-select > select { width: 100%; height: var(--ds-size-control-md); padding: 0 32px 0 12px; border: var(--ds-border-hairline) solid var(--ds-color-edge-strong); background: var(--ds-color-surface); color: var(--ds-color-fg); font-size: var(--ds-text-ui); line-height: var(--ds-text-ui-leading); appearance: none; cursor: pointer; transition: border-color var(--ds-duration-enter) var(--ds-easing-standard); }\n.ds-select > svg { position: absolute; right: 12px; color: var(--ds-color-fg-muted); pointer-events: none; }\n@media (hover: hover) and (pointer: fine) { .ds-select > select:hover:not(:disabled, :focus) { border-color: var(--ds-color-neutral-500); } }\n.ds-select > select:focus { padding: 0 calc(32px - 1px) 0 calc(12px - 1px); border: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline: none; }\n.ds-select > select[aria-invalid=\"true\"] { border-color: var(--ds-color-action-danger); }\n.ds-select > select:disabled { border-color: var(--ds-color-edge); color: var(--ds-color-fg-muted); cursor: not-allowed; }\n.ds-select[data-small] { width: auto; }\n.ds-select[data-small] > select { height: var(--ds-size-control-sm); padding: 0 28px 0 8px; font-size: var(--ds-text-meta); }\n.ds-select[data-small] > select:focus { padding: 0 calc(28px - 1px) 0 calc(8px - 1px); }\n.ds-select[data-small] > svg { right: 8px; }\n@media (pointer: coarse), (max-width: 767px) { .ds-select > select, .ds-select[data-small] > select { height: var(--ds-size-control-touch); font-size: var(--ds-text-input); } }\n`\n"
+    },
+    {
+      "path": "lib/cn.ts",
+      "type": "registry:lib",
+      "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+    }
+  ]
+}

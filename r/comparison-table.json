@@ -1,0 +1,265 @@
+{
+  "name": "comparison-table",
+  "title": "Comparison table",
+  "type": "registry:block",
+  "group": "site",
+  "description": "What each plan includes, side by side: a row per thing, a column per plan, the red square for included and a hairline for not, in the double rule.",
+  "use_for": "Comparing plans or editions under a pricing table.",
+  "never": [
+    "Green ticks or red crosses",
+    "Colors that carry the meaning alone"
+  ],
+  "source": "No comparison table in conare-web; set from its pricing cards (pricing.vue: the rule, the plan names in Faculty Glyphic, the red square marker)",
+  "body": "`rows` are `{ feature, values }` with a value per plan: `true`, `false` or a few words. Included and not are said aloud (`included`, `excluded`). On phones it scrolls sideways and fades at its edges.",
+  "requires": [
+    "section-head"
+  ],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/site/ComparisonTable.vue",
+      "content": "<script setup lang=\"ts\">\nimport SectionHead from '@/components/site/SectionHead.vue'\n\n// What each plan includes, side by side: the band's head, then a table in the website's double rule. A row per thing;\n// a column per plan, its name in Faculty Glyphic. A cell is the brand's red square (included), a short hairline (not\n// included, said aloud for screen readers) or a few words. It scrolls sideways on phones and fades at its edges. The\n// site has no comparison table: set from the pricing cards' rule, type and red square.\nexport type ComparisonRow = { feature: string, values: (boolean | string)[] }\nwithDefaults(defineProps<{ title: string, tag?: string, body?: string, plans: string[], rows: ComparisonRow[], titleId?: string, included?: string, excluded?: string }>(), { titleId: 'comparison-title', included: 'Included', excluded: 'Not included' })\n</script>\n\n<template>\n  <section data-ds=\"comparison-table\" :aria-labelledby=\"titleId\" class=\"mx-auto max-w-[1440px] px-4 pb-24 sm:px-6 lg:px-10 lg:pb-32\">\n    <SectionHead :title=\"title\" :tag=\"tag\" :body=\"body\" :title-id=\"titleId\" />\n    <div class=\"mt-10 border border-edge outline outline-offset-4 outline-edge\">\n      <div class=\"fade-x overflow-x-auto\" tabindex=\"0\" role=\"region\" :aria-labelledby=\"titleId\">\n        <table class=\"w-full min-w-[560px] border-collapse text-left\">\n          <thead>\n            <tr>\n              <th scope=\"col\" class=\"w-2/5 px-5 py-4 type-meta font-normal text-fg-muted\"><span class=\"sr-only\">Feature</span></th>\n              <th v-for=\"p in plans\" :key=\"p\" scope=\"col\" class=\"px-5 py-4 type-heading-3 font-normal text-fg\">{{ p }}</th>\n            </tr>\n          </thead>\n          <tbody>\n            <tr v-for=\"r in rows\" :key=\"r.feature\" class=\"border-t border-edge\">\n              <th scope=\"row\" class=\"px-5 py-4 text-body font-normal text-fg\">{{ r.feature }}</th>\n              <td v-for=\"(v, i) in r.values\" :key=\"i\" class=\"px-5 py-4 text-body text-fg\">\n                <template v-if=\"v === true\"><span aria-hidden=\"true\" class=\"inline-block size-2 bg-home-red\" /><span class=\"sr-only\">{{ included }}</span></template>\n                <template v-else-if=\"v === false\"><span aria-hidden=\"true\" class=\"inline-block h-px w-3 bg-edge-strong align-middle\" /><span class=\"sr-only\">{{ excluded }}</span></template>\n                <template v-else>{{ v }}</template>\n              </td>\n            </tr>\n          </tbody>\n        </table>\n      </div>\n    </div>\n  </section>\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "Comparison, on sample data",
+      "center": false,
+      "half": false,
+      "path": "examples/comparison-table/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport ComparisonTable from '@/components/site/ComparisonTable.vue'\n// The comparison on sample data: three plans, words and marks.\nconst plans = [\n  \"Free\",\n  \"Pro\",\n  \"Enterprise\"\n]\nconst rows = [\n  {\n    \"feature\": \"Searches a month\",\n    \"values\": [\n      \"1,000\",\n      \"100,000\",\n      \"Custom\"\n    ]\n  },\n  {\n    \"feature\": \"Files you bring\",\n    \"values\": [\n      \"100\",\n      \"10,000\",\n      \"Unlimited\"\n    ]\n  },\n  {\n    \"feature\": \"Sync with your apps\",\n    \"values\": [\n      false,\n      true,\n      true\n    ]\n  },\n  {\n    \"feature\": \"Answers with sources\",\n    \"values\": [\n      true,\n      true,\n      true\n    ]\n  },\n  {\n    \"feature\": \"Single sign-on\",\n    \"values\": [\n      false,\n      false,\n      true\n    ]\n  },\n  {\n    \"feature\": \"Support\",\n    \"values\": [\n      \"Community\",\n      \"Email\",\n      \"A named engineer\"\n    ]\n  }\n]\n</script>\n\n<template>\n  <div class=\"-mx-8 pt-8\">\n    <ComparisonTable tag=\"Compare\" title=\"What each plan includes.\" body=\"Every plan searches the same way. They differ in how much and who helps.\" :plans=\"plans\" :rows=\"rows\" />\n  </div>\n</template>\n",
+      "requires": [
+        "section-head"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/site/ComparisonTable.tsx",
+          "content": "import { SectionHead } from '@/react/components/site/SectionHead'\n\n// What each plan includes, side by side: the band's head, then a table in the website's double rule. A row per thing;\n// a column per plan, its name in Faculty Glyphic. A cell is the brand's red square (included), a short hairline (not\n// included, said aloud for screen readers) or a few words. It scrolls sideways on phones and fades at its edges. The\n// site has no comparison table: set from the pricing cards' rule, type and red square.\nexport type ComparisonRow = { feature: string, values: (boolean | string)[] }\nexport interface ComparisonTableProps { title: string, tag?: string, body?: string, plans: string[], rows: ComparisonRow[], titleId?: string, included?: string, excluded?: string }\n\nexport function ComparisonTable({ title, tag, body, plans, rows, titleId = 'comparison-title', included = 'Included', excluded = 'Not included' }: ComparisonTableProps) {\n  return (\n    <section data-ds=\"comparison-table\" aria-labelledby={titleId} className=\"mx-auto max-w-[1440px] px-4 pb-24 sm:px-6 lg:px-10 lg:pb-32\">\n      <SectionHead title={title} tag={tag} body={body} titleId={titleId} />\n      <div className=\"mt-10 border border-edge outline outline-offset-4 outline-edge\">\n        <div className=\"fade-x overflow-x-auto\" tabIndex={0} role=\"region\" aria-labelledby={titleId}>\n          <table className=\"w-full min-w-[560px] border-collapse text-left\">\n            <thead>\n              <tr>\n                <th scope=\"col\" className=\"w-2/5 px-5 py-4 type-meta font-normal text-fg-muted\"><span className=\"sr-only\">Feature</span></th>\n                {plans.map(p => <th key={p} scope=\"col\" className=\"px-5 py-4 type-heading-3 font-normal text-fg\">{p}</th>)}\n              </tr>\n            </thead>\n            <tbody>\n              {rows.map(r => (\n                <tr key={r.feature} className=\"border-t border-edge\">\n                  <th scope=\"row\" className=\"px-5 py-4 text-body font-normal text-fg\">{r.feature}</th>\n                  {r.values.map((v, i) => (\n                    <td key={i} className=\"px-5 py-4 text-body text-fg\">\n                      {v === true ? <><span aria-hidden=\"true\" className=\"inline-block size-2 bg-home-red\" /><span className=\"sr-only\">{included}</span></> : v === false ? <><span aria-hidden=\"true\" className=\"inline-block h-px w-3 bg-edge-strong align-middle\" /><span className=\"sr-only\">{excluded}</span></> : v}\n                    </td>\n                  ))}\n                </tr>\n              ))}\n            </tbody>\n          </table>\n        </div>\n      </div>\n    </section>\n  )\n}\n\nexport default ComparisonTable\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "section-head"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "ComparisonTable",
+            "file": "react/components/site/ComparisonTable.tsx",
+            "props": [
+              {
+                "name": "title",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "tag",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "body",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "plans",
+                "type": "string[]",
+                "required": true
+              },
+              {
+                "name": "rows",
+                "type": "ComparisonRow[]",
+                "required": true
+              },
+              {
+                "name": "titleId",
+                "type": "string",
+                "required": false,
+                "default": "'comparison-title'"
+              },
+              {
+                "name": "included",
+                "type": "string",
+                "required": false,
+                "default": "'Included'"
+              },
+              {
+                "name": "excluded",
+                "type": "string",
+                "required": false,
+                "default": "'Not included'"
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "Comparison, on sample data",
+          "center": false,
+          "half": false,
+          "path": "react/examples/comparison-table/Site.tsx",
+          "content": "import { ComparisonTable, type ComparisonRow } from '@/react/components/site/ComparisonTable'\n// The comparison on sample data: three plans, words and marks.\nconst plans = [\n  \"Free\",\n  \"Pro\",\n  \"Enterprise\"\n]\nconst rows: ComparisonRow[] = [\n  {\n    \"feature\": \"Searches a month\",\n    \"values\": [\n      \"1,000\",\n      \"100,000\",\n      \"Custom\"\n    ]\n  },\n  {\n    \"feature\": \"Files you bring\",\n    \"values\": [\n      \"100\",\n      \"10,000\",\n      \"Unlimited\"\n    ]\n  },\n  {\n    \"feature\": \"Sync with your apps\",\n    \"values\": [\n      false,\n      true,\n      true\n    ]\n  },\n  {\n    \"feature\": \"Answers with sources\",\n    \"values\": [\n      true,\n      true,\n      true\n    ]\n  },\n  {\n    \"feature\": \"Single sign-on\",\n    \"values\": [\n      false,\n      false,\n      true\n    ]\n  },\n  {\n    \"feature\": \"Support\",\n    \"values\": [\n      \"Community\",\n      \"Email\",\n      \"A named engineer\"\n    ]\n  }\n]\nexport default function Site() {\n  return (\n    <div className=\"-mx-8 pt-8\">\n      <ComparisonTable tag=\"Compare\" title=\"What each plan includes.\" body=\"Every plan searches the same way. They differ in how much and who helps.\" plans={plans} rows={rows} />\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "section-head"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/site/comparison-table.ts",
+          "content": "import { html } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport '@/elements/components/site/section-head'\nimport styles from 'virtual:tw'\n\n// ComparisonTable.vue as <conare-comparison-table>: what each plan includes, side by side: the band's head, then a table\n// in the website's double rule. A row per thing; a column per plan. A cell is the red square (included), a short\n// hairline (not included, said aloud for screen readers) or a few words. It scrolls sideways on phones and fades at its\n// edges. `heading` is Vue's `title`.\nexport type ComparisonRow = { feature: string, values: (boolean | string)[] }\n\n/** @summary What each plan includes, side by side, in the double rule. */\nexport class ComparisonTable extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { heading: {}, tag: {}, body: {}, plans: { type: Array }, rows: { type: Array }, titleId: { attribute: 'title-id' }, included: {}, excluded: {} }\n\n\t/** The band's line (Vue's `title`). */\n\theading = ''\n\ttag?: string\n\tbody?: string\n\tplans: string[] = []\n\t/** Each { feature, values } with a value per plan: true, false or words. */\n\trows: ComparisonRow[] = []\n\ttitleId = 'comparison-title'\n\tincluded = 'Included'\n\texcluded = 'Not included'\n\n\trender() {\n\t\tconst head = tag('section-head')\n\t\tconst cell = (v: boolean | string) => (v === true ? html`<span aria-hidden=\"true\" class=\"inline-block size-2 bg-home-red\"></span><span class=\"sr-only\">${this.included}</span>` : v === false ? html`<span aria-hidden=\"true\" class=\"inline-block h-px w-3 bg-edge-strong align-middle\"></span><span class=\"sr-only\">${this.excluded}</span>` : v)\n\t\treturn html`<section data-ds=\"comparison-table\" aria-labelledby=${this.titleId} class=\"mx-auto max-w-[1440px] px-4 pb-24 sm:px-6 lg:px-10 lg:pb-32\">${staticHtml`<${head} .heading=${this.heading} .tag=${this.tag} .body=${this.body} .titleId=${this.titleId}></${head}>`}<div class=\"mt-10 border border-edge outline outline-offset-4 outline-edge\"><div class=\"fade-x overflow-x-auto\" tabindex=\"0\" role=\"region\" aria-labelledby=${this.titleId}><table class=\"w-full min-w-[560px] border-collapse text-left\"><thead><tr><th scope=\"col\" class=\"w-2/5 px-5 py-4 type-meta font-normal text-fg-muted\"><span class=\"sr-only\">Feature</span></th>${this.plans.map((p) => html`<th scope=\"col\" class=\"px-5 py-4 type-heading-3 font-normal text-fg\">${p}</th>`)}</tr></thead><tbody>${this.rows.map((r) => html`<tr class=\"border-t border-edge\"><th scope=\"row\" class=\"px-5 py-4 text-body font-normal text-fg\">${r.feature}</th>${r.values.map((v) => html`<td class=\"px-5 py-4 text-body text-fg\">${cell(v)}</td>`)}</tr>`)}</tbody></table></div></div></section>`\n\t}\n}\n\ndefine('comparison-table', ComparisonTable)\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/comparison-table.js",
+        "elements/section-head.js",
+        "elements/site-tag.js"
+      ],
+      "tag": "conare-comparison-table",
+      "tags": [
+        "conare-comparison-table"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "section-head",
+        "tag"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-comparison-table",
+            "name": "ComparisonTable",
+            "module": "elements/comparison-table.js",
+            "description": "What each plan includes, side by side, in the double rule.",
+            "attributes": [
+              {
+                "name": "heading",
+                "field": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The band's line (Vue's `title`)."
+              },
+              {
+                "name": "tag",
+                "field": "tag",
+                "type": "string | undefined"
+              },
+              {
+                "name": "body",
+                "field": "body",
+                "type": "string | undefined"
+              },
+              {
+                "name": "plans",
+                "field": "plans",
+                "type": "string[]",
+                "default": "[]"
+              },
+              {
+                "name": "rows",
+                "field": "rows",
+                "type": "ComparisonRow[]",
+                "default": "[]",
+                "description": "Each { feature, values } with a value per plan: true, false or words."
+              },
+              {
+                "name": "title-id",
+                "field": "titleId",
+                "type": "string",
+                "default": "'comparison-title'"
+              },
+              {
+                "name": "included",
+                "field": "included",
+                "type": "string",
+                "default": "'Included'"
+              },
+              {
+                "name": "excluded",
+                "field": "excluded",
+                "type": "string",
+                "default": "'Not included'"
+              }
+            ],
+            "properties": [
+              {
+                "name": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The band's line (Vue's `title`).",
+                "attribute": "heading"
+              },
+              {
+                "name": "tag",
+                "type": "string | undefined",
+                "attribute": "tag"
+              },
+              {
+                "name": "body",
+                "type": "string | undefined",
+                "attribute": "body"
+              },
+              {
+                "name": "plans",
+                "type": "string[]",
+                "default": "[]",
+                "attribute": "plans"
+              },
+              {
+                "name": "rows",
+                "type": "ComparisonRow[]",
+                "default": "[]",
+                "description": "Each { feature, values } with a value per plan: true, false or words.",
+                "attribute": "rows"
+              },
+              {
+                "name": "titleId",
+                "type": "string",
+                "default": "'comparison-title'",
+                "attribute": "title-id"
+              },
+              {
+                "name": "included",
+                "type": "string",
+                "default": "'Included'",
+                "attribute": "included"
+              },
+              {
+                "name": "excluded",
+                "type": "string",
+                "default": "'Not included'",
+                "attribute": "excluded"
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "Comparison, on sample data",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/comparison-table/Site.html",
+          "content": "<!-- The comparison on sample data: three plans, words and marks. -->\n<div class=\"-mx-8 pt-8\">\n  <conare-comparison-table tag=\"Compare\" heading=\"What each plan includes.\" body=\"Every plan searches the same way. They differ in how much and who helps.\" plans='[\"Free\", \"Pro\", \"Enterprise\"]' rows='[{\"feature\": \"Searches a month\", \"values\": [\"1,000\", \"100,000\", \"Custom\"]}, {\"feature\": \"Files you bring\", \"values\": [\"100\", \"10,000\", \"Unlimited\"]}, {\"feature\": \"Sync with your apps\", \"values\": [false, true, true]}, {\"feature\": \"Answers with sources\", \"values\": [true, true, true]}, {\"feature\": \"Single sign-on\", \"values\": [false, false, true]}, {\"feature\": \"Support\", \"values\": [\"Community\", \"Email\", \"A named engineer\"]}]'></conare-comparison-table>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

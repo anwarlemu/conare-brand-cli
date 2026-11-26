@@ -1,0 +1,850 @@
+{
+  "name": "button",
+  "title": "Button",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "Every action in the console: secondary by default; dark for the one main action, the website's pixel button with red squares running in on hover; ghost for tools in rows; danger for what removes something, held to confirm; brand for the fix to a failure; and a square icon button.",
+  "use_for": "Any action in place: create, copy, save, revoke, open a menu. One dark button per view; the rest secondary or ghost. 28px tall with 12px labels, 40px on phones.",
+  "never": [
+    "Two dark buttons on one view",
+    "A faded button for \"not yet\": disabled is grey with a dark label",
+    "Red text on a secondary button instead of the danger variant",
+    "A size change on hover"
+  ],
+  "source": "conare-web app/assets/css/console2.css (.v2-btn, .v2-px, .v2-hold), app/components/console/PixelButton.vue, HoldButton.vue, composables/usePixelGrid.ts",
+  "body": "",
+  "requires": [],
+  "dependencies": [
+    "lucide-vue-next@^0.479.0"
+  ],
+  "files": [
+    {
+      "path": "components/ui/Button.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed } from 'vue'\n\n// Every action in the console (console2.css .v2-btn): square, 28px (40px on phones and touch), 12px medium labels.\n// secondary is the default; dark is the one main action of a view (it turns red on hover); primary is the red\n// action; ghost is a tool in a row; danger removes something (hold it with HoldButton); brand is the fix for a\n// failure, in the failure's red. Disabled is grey with a dark label, never faded. `press` gives a little under the\n// pointer (scale 0.97), for buttons pressed often in place. `href` renders a link.\nexport type ButtonVariant = 'secondary' | 'dark' | 'primary' | 'ghost' | 'danger' | 'brand'\n\nconst props = withDefaults(defineProps<{\n  variant?: ButtonVariant\n  icon?: boolean\n  press?: boolean\n  href?: string\n  type?: 'button' | 'submit' | 'reset'\n  disabled?: boolean\n}>(), { variant: 'secondary', type: 'button' })\n\nconst VARIANTS: Record<ButtonVariant, string> = {\n  secondary: 'border-action-secondary-edge bg-surface text-fg hover:enabled:border-action-secondary-edge-hover active:enabled:bg-surface-subtle',\n  dark: 'border-action-primary bg-action-primary text-action-primary-fg hover:enabled:border-edge-accent hover:enabled:bg-edge-accent',\n  primary: 'border-edge-accent bg-edge-accent text-off-white hover:enabled:border-home-red-hover hover:enabled:bg-home-red-hover active:enabled:border-home-red-press active:enabled:bg-home-red-press',\n  ghost: 'border-transparent bg-transparent text-fg-soft hover:enabled:border-edge hover:enabled:text-fg active:enabled:bg-surface-subtle disabled:!border-transparent disabled:!bg-transparent disabled:!text-fg-muted',\n  danger: 'border-action-danger bg-surface text-action-danger hover:enabled:bg-action-danger-hover hover:enabled:text-off-white disabled:!border-action-danger disabled:!bg-surface disabled:!text-action-danger',\n  brand: 'border-home-red-press bg-home-red-press text-off-white hover:enabled:border-surface-inverse hover:enabled:bg-surface-inverse',\n}\n\nconst classes = computed(() => [\n  'inline-flex h-control-sm shrink-0 cursor-pointer items-center justify-center gap-1.5 border text-meta leading-5 font-medium whitespace-nowrap select-none',\n  'transition-[color,background-color,border-color] duration-120 ease-standard',\n  'disabled:cursor-not-allowed disabled:border-edge disabled:bg-surface-sunken disabled:text-fg-soft',\n  'max-md:h-control-touch max-md:text-ui pointer-coarse:h-control-touch pointer-coarse:text-ui',\n  // One padding class, so the icon button's 0 never competes with the label's 10px in the stylesheet's order.\n  props.icon ? 'w-control-sm px-0 max-md:w-control-touch pointer-coarse:w-control-touch' : 'px-2.5',\n  props.press && 'transition-[color,background-color,border-color,scale] ease-out active:enabled:scale-97 motion-reduce:active:enabled:scale-100',\n  VARIANTS[props.variant],\n])\n</script>\n\n<template>\n  <a data-ds=\"button\" v-if=\"href\" :href=\"href\" :class=\"classes\"><slot /></a>\n  <button data-ds=\"button\" v-else :type=\"type\" :disabled=\"disabled\" :class=\"classes\"><slot /></button>\n</template>\n"
+    },
+    {
+      "path": "components/ui/PixelButton.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport { usePixelGrid } from '@/composables/usePixelGrid'\n\n// The website's dark button as a console button (console2.css .v2-px): black at rest; on hover a red fill comes in as\n// 6px squares from the left with a little scatter and goes out the same way, while the white label holds still. A\n// press darkens the squares at once with no change of size. `done` holds the red while an action shows it happened\n// (Copied). `large` is the 36px size with the grain, for the one main action of a page. `href` renders a link.\nconst props = defineProps<{ done?: boolean, large?: boolean, href?: string, type?: 'button' | 'submit', disabled?: boolean }>()\nconst root = ref<HTMLElement | null>(null)\nconst { grid, style } = usePixelGrid(() => root.value)\n</script>\n\n<template>\n  <component data-ds=\"pixel-button\"\n    :is=\"href ? 'a' : 'button'\"\n    ref=\"root\"\n    :href=\"href\"\n    :type=\"href ? undefined : (props.type ?? 'button')\"\n    :disabled=\"href ? undefined : disabled\"\n    class=\"ds-px\"\n    :data-done=\"done ? 'true' : undefined\"\n    :data-large=\"large ? 'true' : undefined\"\n  >\n    <span v-if=\"grid\" aria-hidden=\"true\" class=\"ds-px-fill\" :style=\"style\">\n      <i v-for=\"(c, k) in grid.cells\" :key=\"k\" :style=\"c\" />\n    </span>\n    <span class=\"ds-px-label\"><slot /></span>\n  </component>\n</template>\n\n<style>\n.ds-px {\n  position: relative;\n  isolation: isolate;\n  display: inline-flex;\n  height: var(--ds-size-control-sm);\n  flex-shrink: 0;\n  align-items: center;\n  justify-content: center;\n  gap: var(--ds-space-sm);\n  overflow: hidden;\n  padding: 0 10px;\n  background: var(--ds-color-surface-inverse);\n  color: var(--ds-color-off-white);\n  font-size: var(--ds-text-meta);\n  font-weight: var(--ds-font-weight-medium);\n  white-space: nowrap;\n  cursor: pointer;\n  will-change: transform;\n  transition-property: color, background-color;\n  transition-duration: var(--ds-duration-micro);\n  transition-timing-function: var(--ds-easing-standard);\n}\n.ds-px:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: var(--ds-border-focus); }\n.ds-px-fill { position: absolute; inset: 0; z-index: -1; display: grid; pointer-events: none; }\n.ds-px-fill i { position: relative; background: var(--ds-color-edge-accent); font-style: normal; opacity: 0; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard) calc(var(--o) * 1ms); }\n.ds-px-label { display: inline-flex; align-items: center; gap: var(--ds-space-sm); line-height: 1.4; }\n@media (hover: hover) and (pointer: fine) {\n  .ds-px:hover:not(:disabled) .ds-px-fill i { opacity: 1; transition: opacity var(--ds-duration-cell) var(--ds-easing-decelerate) calc(var(--i) * 1ms); }\n}\n.ds-px:active:not(:disabled) .ds-px-fill i { background: var(--ds-color-home-red-press); opacity: 1; transition: opacity var(--ds-duration-press) ease 0ms; }\n.ds-px:focus-visible .ds-px-fill i,\n.ds-px[data-done=\"true\"] .ds-px-fill i { opacity: 1; transition: opacity var(--ds-duration-cell) var(--ds-easing-decelerate) calc(var(--i) * 1ms); }\n.ds-px:disabled { background: var(--ds-color-surface-sunken); color: var(--ds-color-fg-soft); cursor: not-allowed; }\n.ds-px:disabled .ds-px-fill { display: none; }\n.ds-px[data-large=\"true\"] { height: var(--ds-size-control-lg); gap: var(--ds-space-lg); padding: 0 12px; font-size: var(--ds-text-ui); }\n.ds-px[data-large=\"true\"]::before { position: absolute; inset: 0; z-index: -1; background-image: url(\"/conare-ds/textures/grain.webp\"); background-size: 170px auto; opacity: 0.3; content: \"\"; pointer-events: none; }\n.ds-px[data-large=\"true\"]:disabled::before { display: none; }\n@media (pointer: coarse), (max-width: 767px) {\n  .ds-px, .ds-px[data-large=\"true\"] { height: var(--ds-size-control-touch); font-size: var(--ds-text-ui); }\n}\n@media (prefers-reduced-motion: reduce) {\n  .ds-px-fill i, .ds-px:hover .ds-px-fill i { transition: none; }\n}\n</style>\n"
+    },
+    {
+      "path": "components/ui/HoldButton.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed, onBeforeUnmount, onMounted, ref } from 'vue'\nimport { Check, Trash2 } from 'lucide-vue-next'\n\n// A destructive action (revoke a key, disconnect a source) confirmed in the button itself, never in a dialog: the\n// console's pixel hold (console2.css .v2-hold, version 1). Pressing and holding fills the button with the website's\n// red 6px squares from the left over `ms`; each column carries a white copy of the label, so it turns as the squares\n// land; the bin's lid lifts while held; letting go rewinds right to left in under 200ms; at the end the check draws\n// and holds a beat before `confirm` is emitted. The label rolls up to \"Hold\" under the pointer. Space or Enter hold\n// it from the keyboard. Set `done` back to false (by re-keying) if what it confirmed failed.\nconst props = withDefaults(defineProps<{ label: string, ms?: number }>(), { ms: 1000 })\nconst emit = defineEmits<{ confirm: [] }>()\n\nconst root = ref<HTMLButtonElement | null>(null)\nconst holding = ref(false)\nconst done = ref(false)\nlet timer: ReturnType<typeof setTimeout> | undefined\nlet landing: ReturnType<typeof setTimeout> | undefined\n\nfunction finish() {\n  done.value = true\n  holding.value = false\n  // ds-latency: the check is seen before what it confirms happens; the press itself answered at once.\n  landing = setTimeout(() => emit('confirm'), 320)\n}\nfunction start() {\n  if (done.value || holding.value) return\n  holding.value = true\n  // ds-latency: the hold is the confirmation; its length is the point.\n  timer = setTimeout(finish, props.ms)\n}\nfunction cancel() {\n  clearTimeout(timer)\n  holding.value = false\n}\n// Safari takes focus off a button as it is pressed, so losing focus ends a hold only by keyboard.\nlet pointing = false\nfunction press() { pointing = true; start() }\nfunction release() { pointing = false; cancel() }\nfunction onKeyDown(event: KeyboardEvent) {\n  if (event.key !== ' ' && event.key !== 'Enter') return\n  event.preventDefault()\n  if (!event.repeat) start()\n}\nfunction onKeyUp(event: KeyboardEvent) {\n  if (event.key === ' ' || event.key === 'Enter') cancel()\n}\nfunction blur() { if (!pointing) cancel() }\nonBeforeUnmount(() => { clearTimeout(timer); clearTimeout(landing) })\n\n// 6px cells across the button as measured, each lighting when the hold reaches its column, with a little scatter.\n// --d is the way in; --o the way out, right to left.\nconst PX = 6\nconst grid = ref<{ cols: number, w: number, h: number, cells: Array<Record<string, number>> } | null>(null)\nfunction lay() {\n  const el = root.value\n  if (!el) return\n  const w = el.offsetWidth\n  const h = el.offsetHeight\n  if (grid.value?.w === w && grid.value.h === h) return\n  const cols = Math.ceil(w / PX)\n  const rows = Math.ceil(h / PX)\n  grid.value = {\n    cols,\n    w,\n    h,\n    cells: Array.from({ length: cols * rows }, (_, k) => {\n      const col = k % cols\n      const scatter = ((k * 37) % 11) / 11\n      const at = (col + scatter) / cols\n      return { '--d': Math.round(at * props.ms * 0.94), '--o': Math.round((1 - at) * 120) }\n    }),\n  }\n}\nconst inks = computed(() => {\n  const g = grid.value\n  if (!g) return []\n  return Array.from({ length: g.cols }, (_, c) => ({ col: g.cells[c]!, ink: { width: `${g.w}px`, height: `${g.h}px`, transform: `translateX(${-c * PX}px)` } }))\n})\nlet ro: ResizeObserver | undefined\nonMounted(() => {\n  lay()\n  ro = new ResizeObserver(lay)\n  if (root.value) ro.observe(root.value)\n})\nonBeforeUnmount(() => ro?.disconnect())\nconst verb = computed(() => props.label.toLowerCase())\n</script>\n\n<template>\n  <button data-ds=\"hold-button\"\n    ref=\"root\"\n    type=\"button\"\n    class=\"ds-hold\"\n    :data-holding=\"holding || undefined\"\n    :data-done=\"done || undefined\"\n    :aria-label=\"`hold to ${verb}`\"\n    @pointerdown=\"press\"\n    @pointerup=\"release\"\n    @pointerleave=\"release\"\n    @pointercancel=\"release\"\n    @keydown=\"onKeyDown\"\n    @keyup=\"onKeyUp\"\n    @blur=\"blur\"\n    @contextmenu.prevent\n  >\n    <template v-if=\"grid\">\n      <span class=\"ds-hold-px\" aria-hidden=\"true\" :style=\"{ gridTemplateColumns: `repeat(${grid.cols}, ${PX}px)` }\"><i v-for=\"(c, k) in grid.cells\" :key=\"k\" :style=\"c\" /></span>\n      <span class=\"ds-hold-inks\" aria-hidden=\"true\" :style=\"{ gridTemplateColumns: `repeat(${grid.cols}, ${PX}px)` }\">\n        <i v-for=\"(c, k) in inks\" :key=\"k\" :style=\"c.col\"><span class=\"ds-hold-ink\" :style=\"c.ink\"><Trash2 :size=\"12\" :stroke-width=\"1.5\" /><span class=\"ds-hold-word\"><span class=\"invisible\">{{ label }}</span><span class=\"absolute inset-x-0\">Hold</span></span></span></i>\n      </span>\n      <span class=\"ds-hold-done\" aria-hidden=\"true\"><Check :size=\"12\" :stroke-width=\"2\" />Done</span>\n    </template>\n    <span class=\"ds-hold-label\"><Trash2 :size=\"12\" :stroke-width=\"1.5\" aria-hidden=\"true\" />\n      <span class=\"ds-roll\"><span class=\"ds-roll-a\">{{ label }}</span><span class=\"ds-roll-b\" aria-hidden=\"true\">Hold</span></span>\n    </span>\n  </button>\n</template>\n\n<style>\n.ds-hold {\n  position: relative;\n  display: inline-flex;\n  height: var(--ds-size-control-sm);\n  min-width: 92px;\n  flex-shrink: 0;\n  align-items: center;\n  justify-content: center;\n  gap: var(--ds-space-sm);\n  overflow: hidden;\n  padding: 0 10px;\n  border: var(--ds-border-hairline) solid var(--ds-color-action-danger);\n  background: var(--ds-color-surface);\n  color: var(--ds-color-action-danger);\n  font-size: var(--ds-text-meta);\n  font-weight: var(--ds-font-weight-medium);\n  white-space: nowrap;\n  cursor: pointer;\n  user-select: none;\n  -webkit-touch-callout: none;\n  touch-action: manipulation;\n  will-change: transform;\n  transition: transform var(--ds-duration-enter) var(--ds-easing-out), border-color var(--ds-duration-micro) var(--ds-easing-standard);\n}\n.ds-hold[data-holding] { transform: scale(0.97); transition-duration: var(--ds-duration-micro); }\n.ds-hold-label { position: relative; display: inline-flex; align-items: center; gap: var(--ds-space-sm); }\n.ds-hold .lucide-trash-2 path:nth-last-child(-n + 2) { transform-box: fill-box; transform-origin: 0% 100%; transition: transform var(--ds-duration-enter) var(--ds-easing-out); }\n.ds-hold[data-holding] .lucide-trash-2 path:nth-last-child(-n + 2) { transform: translateY(-1.5px) rotate(-9deg); }\n.ds-hold-px { position: absolute; inset: -1px; z-index: 1; display: grid; grid-auto-rows: 6px; pointer-events: none; }\n.ds-hold-inks { position: absolute; inset: -1px; z-index: 2; display: grid; pointer-events: none; }\n.ds-hold-inks i { position: relative; overflow: hidden; font-style: normal; }\n.ds-hold-ink { position: absolute; top: 0; left: 0; display: flex; align-items: center; justify-content: center; gap: var(--ds-space-sm); color: var(--ds-color-off-white); font-size: var(--ds-text-meta); font-weight: var(--ds-font-weight-medium); line-height: 1.4; white-space: nowrap; }\n.ds-hold-word { position: relative; display: block; text-align: center; }\n.ds-hold-px i { background: var(--ds-color-home-red-press); }\n.ds-hold-px i, .ds-hold-inks i { opacity: 0; transition: opacity var(--ds-duration-cell) ease calc(var(--o) * 1ms); }\n.ds-hold:is([data-holding], [data-done]) :is(.ds-hold-px, .ds-hold-inks) i { opacity: 1; transition: opacity var(--ds-duration-press) linear calc(var(--d) * 1ms); }\n.ds-hold[data-done] :is(.ds-hold-px, .ds-hold-inks) i { transition-duration: 0ms; transition-delay: 0ms; }\n.ds-hold-done { position: absolute; inset: -1px; z-index: 3; display: flex; align-items: center; justify-content: center; gap: var(--ds-space-sm); background: var(--ds-color-home-red-press); color: var(--ds-color-off-white); opacity: 0; pointer-events: none; }\n.ds-hold-done path { stroke-dasharray: 24; stroke-dashoffset: 24; }\n.ds-hold[data-done] .ds-hold-done { opacity: 1; transition: opacity var(--ds-duration-cell) ease; }\n.ds-hold[data-done] .ds-hold-done path { stroke-dashoffset: 0; transition: stroke-dashoffset var(--ds-duration-settle) var(--ds-easing-out) 40ms; }\n/* The label rolls up to a copy of itself under the pointer or focus (console2.css .roll). */\n.ds-roll { position: relative; display: block; overflow: hidden; line-height: 1.4; }\n.ds-roll-a, .ds-roll-b { display: block; transition: transform var(--ds-duration-glide) var(--ds-easing-standard); }\n.ds-roll-b { position: absolute; inset-inline: 0; top: 0; text-align: center; transform: translateY(110%); }\n.ds-hold:focus-visible .ds-roll-a { transform: translateY(-110%); }\n.ds-hold:focus-visible .ds-roll-b { transform: none; }\n@media (hover: hover) and (pointer: fine) {\n  .ds-hold:hover .ds-roll-a { transform: translateY(-110%); }\n  .ds-hold:hover .ds-roll-b { transform: none; }\n}\n@media (pointer: coarse), (max-width: 767px) {\n  .ds-hold { height: var(--ds-size-control-touch); font-size: var(--ds-text-ui); }\n}\n@media (prefers-reduced-motion: reduce) {\n  .ds-hold, .ds-roll-a, .ds-roll-b, .ds-hold .lucide-trash-2 path { transition: none; }\n  .ds-hold[data-holding] { transform: none; }\n}\n</style>\n"
+    },
+    {
+      "path": "composables/usePixelGrid.ts",
+      "content": "import { computed, onBeforeUnmount, onMounted, ref } from 'vue'\n\n// The website's dark button's red fill (PixelButton.vue): 6px squares laid over an element, each with its own delay in\n// and out, from the same seed as the website's, so the buttons feel like one product. It lays them again on resize.\nconst PX = 6\n\n/** A seeded random source (mulberry32), the same as the website's, so every button scatters the same way. */\nfunction rng(seed: number) {\n  let s = seed >>> 0\n  return () => {\n    s = (s + 0x6D2B79F5) >>> 0\n    let t = s\n    t = Math.imul(t ^ (t >>> 15), t | 1)\n    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)\n    return ((t ^ (t >>> 14)) >>> 0) / 4294967296\n  }\n}\n\nexport function usePixelGrid(el: () => HTMLElement | null) {\n  const grid = ref<{ cols: number, w: number, h: number, cells: Array<Record<string, number>> } | null>(null)\n  function lay() {\n    const box = el()\n    if (!box) return\n    const rect = box.getBoundingClientRect()\n    const w = rect.width - (box.offsetWidth - box.clientWidth)\n    const h = rect.height - (box.offsetHeight - box.clientHeight)\n    if (grid.value?.w === w && grid.value.h === h) return\n    const cols = Math.ceil(w / PX)\n    const rows = Math.ceil(h / PX)\n    const rand = rng(29)\n    grid.value = {\n      cols,\n      w,\n      h,\n      cells: Array.from({ length: cols * rows }, (_, k) => {\n        // Eased along the button, so the front starts quick and settles.\n        const e = 1 - (1 - (k % cols) / cols) ** 1.6\n        return { '--i': Math.round(e * 60 + rand() * 20), '--o': Math.round(e * 50 + rand() * 20) }\n      }),\n    }\n  }\n  let ro: ResizeObserver | undefined\n  onMounted(() => {\n    lay()\n    ro = new ResizeObserver(lay)\n    const box = el()\n    if (box) ro.observe(box)\n  })\n  onBeforeUnmount(() => ro?.disconnect())\n  const style = computed(() => (grid.value ? { gridTemplateColumns: `repeat(${grid.value.cols}, ${PX}px)`, gridAutoRows: `${PX}px` } : undefined))\n  return { grid, style }\n}\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "The console's buttons",
+      "center": false,
+      "half": false,
+      "path": "examples/button/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { Copy, MoreHorizontal, Plus, RotateCw, Trash2 } from 'lucide-vue-next'\nimport Button from '@/components/ui/Button.vue'\n// The console's buttons: one dark main action, secondary for the rest, ghost for tools in a row, danger for what\n// removes, the red fix for a failure, and an icon button with its name.\n</script>\n\n<template>\n  <div class=\"flex flex-col gap-4\">\n    <div class=\"flex flex-wrap items-center gap-2\">\n      <Button variant=\"dark\"><Plus :size=\"14\" :stroke-width=\"1.5\" aria-hidden=\"true\" />Create key</Button>\n      <Button><Copy :size=\"14\" :stroke-width=\"1.5\" aria-hidden=\"true\" />Copy as code</Button>\n      <Button>Cancel</Button>\n      <Button variant=\"ghost\"><RotateCw :size=\"14\" :stroke-width=\"1.5\" aria-hidden=\"true\" />Sync now</Button>\n      <Button variant=\"ghost\" icon aria-label=\"row actions\"><MoreHorizontal :size=\"14\" :stroke-width=\"1.5\" /></Button>\n    </div>\n    <div class=\"flex flex-wrap items-center gap-2\">\n      <Button variant=\"danger\"><Trash2 :size=\"14\" :stroke-width=\"1.5\" aria-hidden=\"true\" />Revoke</Button>\n      <Button variant=\"brand\">Reconnect HubSpot</Button>\n    </div>\n  </div>\n</template>\n",
+      "requires": [],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    },
+    {
+      "name": "Dark",
+      "label": "Dark",
+      "center": true,
+      "half": true,
+      "path": "examples/button/Dark.vue",
+      "content": "<script setup lang=\"ts\">\nimport { KeyRound } from 'lucide-vue-next'\nimport PixelButton from '@/components/ui/PixelButton.vue'\n// The one main action on a view, as API keys has it: the website's dark button, its red squares running in on hover.\n</script>\n\n<template>\n  <PixelButton large>Create key<KeyRound :size=\"14\" :stroke-width=\"1.5\" aria-hidden=\"true\" /></PixelButton>\n</template>\n",
+      "requires": [],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    },
+    {
+      "name": "Handoff",
+      "label": "Dark, handing off",
+      "center": true,
+      "half": true,
+      "path": "examples/button/Handoff.vue",
+      "content": "<script setup lang=\"ts\">\nimport { Check, Copy } from 'lucide-vue-next'\nimport PixelButton from '@/components/ui/PixelButton.vue'\nimport { useCopy } from '@/composables/useCopy'\n// The dark button handing something off, as Copy prompt: hover runs the red squares across, a press darkens them at\n// once with no change of size, and once copied the red holds while it says so.\nconst { copied, copy } = useCopy()\n</script>\n\n<template>\n  <PixelButton :done=\"copied\" @click=\"copy('Connect Conare to this project and run a first search.')\">\n    <Check v-if=\"copied\" :size=\"12\" :stroke-width=\"2\" aria-hidden=\"true\" />\n    <Copy v-else :size=\"12\" :stroke-width=\"1.5\" aria-hidden=\"true\" />\n    {{ copied ? 'Copied' : 'Copy prompt' }}\n  </PixelButton>\n  <span class=\"sr-only\" aria-live=\"polite\">{{ copied ? 'prompt copied' : '' }}</span>\n</template>\n",
+      "requires": [],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    },
+    {
+      "name": "Secondary",
+      "label": "Secondary",
+      "center": true,
+      "half": true,
+      "path": "examples/button/Secondary.vue",
+      "content": "<script setup lang=\"ts\">\nimport { Copy } from 'lucide-vue-next'\nimport Button from '@/components/ui/Button.vue'\n// Every other action, the default: a hairline that turns ink under the pointer, the paper while pressed.\n</script>\n\n<template>\n  <Button press><Copy :size=\"12\" :stroke-width=\"1.5\" aria-hidden=\"true\" />Copy as code</Button>\n</template>\n",
+      "requires": [],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    },
+    {
+      "name": "Ghost",
+      "label": "Ghost",
+      "center": true,
+      "half": true,
+      "path": "examples/button/Ghost.vue",
+      "content": "<script setup lang=\"ts\">\nimport { onBeforeUnmount, ref } from 'vue'\nimport { RefreshCw } from 'lucide-vue-next'\nimport Button from '@/components/ui/Button.vue'\n// A tool in a row, as a source's Sync now: its icon turns while it syncs, and it waits until the sync lands.\nconst syncing = ref(false)\nlet timer: ReturnType<typeof setTimeout> | undefined\nfunction sync() {\n  syncing.value = true\n  // ds-latency: stands in for the sync request in this example.\n  timer = setTimeout(() => { syncing.value = false }, 1800)\n}\nonBeforeUnmount(() => clearTimeout(timer))\n</script>\n\n<template>\n  <Button variant=\"ghost\" press :disabled=\"syncing\" @click=\"sync\">\n    <RefreshCw :size=\"12\" :stroke-width=\"1.5\" :class=\"{ 'animate-spin motion-reduce:animate-none': syncing }\" aria-hidden=\"true\" />{{ syncing ? 'Syncing' : 'Sync now' }}\n  </Button>\n</template>\n",
+      "requires": [],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    },
+    {
+      "name": "Icon",
+      "label": "Icon",
+      "center": true,
+      "half": true,
+      "path": "examples/button/Icon.vue",
+      "content": "<script setup lang=\"ts\">\nimport { X } from 'lucide-vue-next'\nimport Button from '@/components/ui/Button.vue'\n// A tool with no label, as the docs panel's close: its name goes to assistive tech.\n</script>\n\n<template>\n  <Button variant=\"ghost\" icon aria-label=\"close docs\"><X :size=\"14\" :stroke-width=\"1.5\" /></Button>\n</template>\n",
+      "requires": [],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    },
+    {
+      "name": "Danger",
+      "label": "Danger, held",
+      "center": true,
+      "half": true,
+      "path": "examples/button/Danger.vue",
+      "content": "<script setup lang=\"ts\">\nimport HoldButton from '@/components/ui/HoldButton.vue'\n// What removes something, as a key's Revoke: hold it and the red squares fill across, then the check draws; let go\n// early and it rewinds.\n</script>\n\n<template>\n  <HoldButton label=\"Revoke\" />\n</template>\n",
+      "requires": [],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    },
+    {
+      "name": "Brand",
+      "label": "Brand",
+      "center": true,
+      "half": true,
+      "path": "examples/button/Brand.vue",
+      "content": "<script setup lang=\"ts\">\nimport Button from '@/components/ui/Button.vue'\n// The fix for a failure, in the failure's own red, as Home's banner has it; it turns black under the pointer.\n</script>\n\n<template>\n  <Button variant=\"brand\">Reconnect HubSpot</Button>\n</template>\n",
+      "requires": [],
+      "packages": []
+    },
+    {
+      "name": "States",
+      "label": "States",
+      "center": true,
+      "half": false,
+      "path": "examples/button/States.vue",
+      "content": "<script setup lang=\"ts\">\nimport { Check, Copy } from 'lucide-vue-next'\nimport Button from '@/components/ui/Button.vue'\nimport { useCopy } from '@/composables/useCopy'\n// The states a button goes through: at rest, waiting (disabled is grey with a dark label, never faded), and done (the\n// check and \"Copied\" for 1.5s).\nconst { copied, copy } = useCopy()\n</script>\n\n<template>\n  <div class=\"flex flex-wrap items-center gap-2\">\n    <Button>At rest</Button>\n    <Button variant=\"dark\" disabled>Create key</Button>\n    <Button disabled>Disabled</Button>\n    <Button @click=\"copy('ns_contracts')\">\n      <Check v-if=\"copied\" :size=\"12\" :stroke-width=\"2\" aria-hidden=\"true\" />\n      <Copy v-else :size=\"12\" :stroke-width=\"1.5\" aria-hidden=\"true\" />{{ copied ? 'Copied' : 'Copy ID' }}\n    </Button>\n  </div>\n</template>\n",
+      "requires": [],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Button.tsx",
+          "content": "import type { AnchorHTMLAttributes, ButtonHTMLAttributes, Ref } from 'react'\nimport { cn } from '@/react/lib/cn'\n\n// Every action in the console (console2.css .v2-btn): square, 28px (40px on phones and touch), 12px medium labels.\n// secondary is the default; dark is the one main action of a view (it turns red on hover); primary is the red\n// action; ghost is a tool in a row; danger removes something (hold it with HoldButton); brand is the fix for a\n// failure, in the failure's red. Disabled is grey with a dark label, never faded. `press` gives a little under the\n// pointer (scale 0.97), for buttons pressed often in place. `href` renders a link.\nexport type ButtonVariant = 'secondary' | 'dark' | 'primary' | 'ghost' | 'danger' | 'brand'\n\nconst VARIANTS: Record<ButtonVariant, string> = {\n  secondary: 'border-action-secondary-edge bg-surface text-fg hover:enabled:border-action-secondary-edge-hover active:enabled:bg-surface-subtle',\n  dark: 'border-action-primary bg-action-primary text-action-primary-fg hover:enabled:border-edge-accent hover:enabled:bg-edge-accent',\n  primary: 'border-edge-accent bg-edge-accent text-off-white hover:enabled:border-home-red-hover hover:enabled:bg-home-red-hover active:enabled:border-home-red-press active:enabled:bg-home-red-press',\n  ghost: 'border-transparent bg-transparent text-fg-soft hover:enabled:border-edge hover:enabled:text-fg active:enabled:bg-surface-subtle disabled:!border-transparent disabled:!bg-transparent disabled:!text-fg-muted',\n  danger: 'border-action-danger bg-surface text-action-danger hover:enabled:bg-action-danger-hover hover:enabled:text-off-white disabled:!border-action-danger disabled:!bg-surface disabled:!text-action-danger',\n  brand: 'border-home-red-press bg-home-red-press text-off-white hover:enabled:border-surface-inverse hover:enabled:bg-surface-inverse',\n}\n\nexport interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'type'> {\n  variant?: ButtonVariant\n  icon?: boolean\n  press?: boolean\n  href?: string\n  type?: 'button' | 'submit' | 'reset'\n  ref?: Ref<HTMLButtonElement & HTMLAnchorElement>\n}\n\nexport function buttonClasses({ variant = 'secondary', icon, press }: Pick<ButtonProps, 'variant' | 'icon' | 'press'> = {}) {\n  return cn(\n    'inline-flex h-control-sm shrink-0 cursor-pointer items-center justify-center gap-1.5 border text-meta leading-5 font-medium whitespace-nowrap select-none',\n    'transition-[color,background-color,border-color] duration-120 ease-standard',\n    'disabled:cursor-not-allowed disabled:border-edge disabled:bg-surface-sunken disabled:text-fg-soft',\n    'max-md:h-control-touch max-md:text-ui pointer-coarse:h-control-touch pointer-coarse:text-ui',\n    // One padding class, so the icon button's 0 never competes with the label's 10px in the stylesheet's order.\n    icon ? 'w-control-sm px-0 max-md:w-control-touch pointer-coarse:w-control-touch' : 'px-2.5',\n    press && 'transition-[color,background-color,border-color,scale] ease-out active:enabled:scale-97 motion-reduce:active:enabled:scale-100',\n    VARIANTS[variant],\n  )\n}\n\nexport function Button({ variant = 'secondary', icon, press, href, type = 'button', disabled, className, children, ref, ...rest }: ButtonProps) {\n  const classes = cn(buttonClasses({ variant, icon, press }), className)\n  if (href) return <a data-ds=\"button\" ref={ref} href={href} className={classes} {...(rest as AnchorHTMLAttributes<HTMLAnchorElement>)}>{children}</a>\n  return <button data-ds=\"button\" ref={ref} type={type} disabled={disabled} className={classes} {...rest}>{children}</button>\n}\n\nexport default Button\n"
+        },
+        {
+          "path": "react/components/ui/PixelButton.tsx",
+          "content": "'use client'\nimport { useRef, type ReactNode, type Ref, type MouseEventHandler } from 'react'\nimport { usePixelGrid } from '@/react/hooks/usePixelGrid'\n\n// The website's dark button as a console button (console2.css .v2-px): black at rest; on hover a red fill comes in as\n// 6px squares from the left with a little scatter and goes out the same way, while the white label holds still. A\n// press darkens the squares at once with no change of size. `done` holds the red while an action shows it happened\n// (Copied). `large` is the 36px size with the grain, for the one main action of a page. `href` renders a link.\nexport interface PixelButtonProps {\n  done?: boolean\n  large?: boolean\n  href?: string\n  type?: 'button' | 'submit'\n  disabled?: boolean\n  className?: string\n  children?: ReactNode\n  onClick?: MouseEventHandler<HTMLElement>\n  'aria-label'?: string\n  'aria-busy'?: boolean\n}\n\nexport function PixelButton({ done, large, href, type, disabled, className, children, onClick, ...aria }: PixelButtonProps) {\n  const root = useRef<HTMLElement | null>(null)\n  const { grid, style } = usePixelGrid(root)\n  const content = (\n    <>\n      {grid && (\n        <span aria-hidden=\"true\" className=\"ds-px-fill\" style={style}>\n          {grid.cells.map((c, k) => <i key={k} style={c} />)}\n        </span>\n      )}\n      <span className=\"ds-px-label\">{children}</span>\n    </>\n  )\n  const shared = { 'data-ds': 'pixel-button', className: className ? `ds-px ${className}` : 'ds-px', 'data-done': done ? 'true' : undefined, 'data-large': large ? 'true' : undefined, onClick, ...aria }\n  return (\n    <>\n      <style href=\"ds-pixel-button\" precedence=\"ds\">{css}</style>\n      {href\n        ? <a ref={root as Ref<HTMLAnchorElement>} href={href} {...shared}>{content}</a>\n        : <button ref={root as Ref<HTMLButtonElement>} type={type ?? 'button'} disabled={disabled} {...shared}>{content}</button>}\n    </>\n  )\n}\n\nexport default PixelButton\n\nconst css = `\n.ds-px {\n  position: relative;\n  isolation: isolate;\n  display: inline-flex;\n  height: var(--ds-size-control-sm);\n  flex-shrink: 0;\n  align-items: center;\n  justify-content: center;\n  gap: var(--ds-space-sm);\n  overflow: hidden;\n  padding: 0 10px;\n  background: var(--ds-color-surface-inverse);\n  color: var(--ds-color-off-white);\n  font-size: var(--ds-text-meta);\n  font-weight: var(--ds-font-weight-medium);\n  white-space: nowrap;\n  cursor: pointer;\n  will-change: transform;\n  transition-property: color, background-color;\n  transition-duration: var(--ds-duration-micro);\n  transition-timing-function: var(--ds-easing-standard);\n}\n.ds-px:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: var(--ds-border-focus); }\n.ds-px-fill { position: absolute; inset: 0; z-index: -1; display: grid; pointer-events: none; }\n.ds-px-fill i { position: relative; background: var(--ds-color-edge-accent); font-style: normal; opacity: 0; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard) calc(var(--o) * 1ms); }\n.ds-px-label { display: inline-flex; align-items: center; gap: var(--ds-space-sm); line-height: 1.4; }\n@media (hover: hover) and (pointer: fine) {\n  .ds-px:hover:not(:disabled) .ds-px-fill i { opacity: 1; transition: opacity var(--ds-duration-cell) var(--ds-easing-decelerate) calc(var(--i) * 1ms); }\n}\n.ds-px:active:not(:disabled) .ds-px-fill i { background: var(--ds-color-home-red-press); opacity: 1; transition: opacity var(--ds-duration-press) ease 0ms; }\n.ds-px:focus-visible .ds-px-fill i,\n.ds-px[data-done=\"true\"] .ds-px-fill i { opacity: 1; transition: opacity var(--ds-duration-cell) var(--ds-easing-decelerate) calc(var(--i) * 1ms); }\n.ds-px:disabled { background: var(--ds-color-surface-sunken); color: var(--ds-color-fg-soft); cursor: not-allowed; }\n.ds-px:disabled .ds-px-fill { display: none; }\n.ds-px[data-large=\"true\"] { height: var(--ds-size-control-lg); gap: var(--ds-space-lg); padding: 0 12px; font-size: var(--ds-text-ui); }\n.ds-px[data-large=\"true\"]::before { position: absolute; inset: 0; z-index: -1; background-image: url(\"/conare-ds/textures/grain.webp\"); background-size: 170px auto; opacity: 0.3; content: \"\"; pointer-events: none; }\n.ds-px[data-large=\"true\"]:disabled::before { display: none; }\n@media (pointer: coarse), (max-width: 767px) {\n  .ds-px, .ds-px[data-large=\"true\"] { height: var(--ds-size-control-touch); font-size: var(--ds-text-ui); }\n}\n@media (prefers-reduced-motion: reduce) {\n  .ds-px-fill i, .ds-px:hover .ds-px-fill i { transition: none; }\n}\n`\n"
+        },
+        {
+          "path": "react/components/ui/HoldButton.tsx",
+          "content": "'use client'\nimport { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react'\nimport { Check, Trash2 } from 'lucide-react'\n\n// A destructive action (revoke a key, disconnect a source) confirmed in the button itself, never in a dialog: the\n// console's pixel hold (console2.css .v2-hold, version 1). Pressing and holding fills the button with the website's\n// red 6px squares from the left over `ms`; each column carries a white copy of the label, so it turns as the squares\n// land; the bin's lid lifts while held; letting go rewinds right to left in under 200ms; at the end the check draws\n// and holds a beat before `onConfirm` is called. The label rolls up to \"Hold\" under the pointer. Space or Enter hold\n// it from the keyboard. Re-key it to set it back if what it confirmed failed.\nexport interface HoldButtonProps { label: string, ms?: number, onConfirm?: () => void, className?: string }\n\nconst PX = 6\ninterface Grid { cols: number, w: number, h: number, cells: Array<Record<string, number>> }\n\nexport function HoldButton({ label, ms = 1000, onConfirm, className }: HoldButtonProps) {\n  const root = useRef<HTMLButtonElement | null>(null)\n  const [holding, setHolding] = useState(false)\n  const [done, setDone] = useState(false)\n  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)\n  const landing = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)\n  const state = useRef({ holding: false, done: false, pointing: false })\n  const confirm = useRef(onConfirm)\n  confirm.current = onConfirm\n\n  function finish() {\n    state.current.done = true\n    state.current.holding = false\n    setDone(true)\n    setHolding(false)\n    // ds-latency: the check is seen before what it confirms happens; the press itself answered at once.\n    landing.current = setTimeout(() => confirm.current?.(), 320)\n  }\n  function start() {\n    if (state.current.done || state.current.holding) return\n    state.current.holding = true\n    setHolding(true)\n    // ds-latency: the hold is the confirmation; its length is the point.\n    timer.current = setTimeout(finish, ms)\n  }\n  function cancel() {\n    clearTimeout(timer.current)\n    state.current.holding = false\n    setHolding(false)\n  }\n  // Safari takes focus off a button as it is pressed, so losing focus ends a hold only by keyboard.\n  function press() { state.current.pointing = true; start() }\n  function release() { state.current.pointing = false; cancel() }\n  function onKeyDown(event: KeyboardEvent) {\n    if (event.key !== ' ' && event.key !== 'Enter') return\n    event.preventDefault()\n    if (!event.repeat) start()\n  }\n  function onKeyUp(event: KeyboardEvent) {\n    if (event.key === ' ' || event.key === 'Enter') cancel()\n  }\n  function blur() { if (!state.current.pointing) cancel() }\n  useEffect(() => () => { clearTimeout(timer.current); clearTimeout(landing.current) }, [])\n\n  // 6px cells across the button as measured, each lighting when the hold reaches its column, with a little scatter.\n  // --d is the way in; --o the way out, right to left.\n  const [grid, setGrid] = useState<Grid | null>(null)\n  useLayoutEffect(() => {\n    const el = root.current\n    if (!el) return\n    function lay() {\n      if (!el) return\n      const w = el.offsetWidth\n      const h = el.offsetHeight\n      setGrid((g) => {\n        if (g?.w === w && g.h === h) return g\n        const cols = Math.ceil(w / PX)\n        const rows = Math.ceil(h / PX)\n        return {\n          cols,\n          w,\n          h,\n          cells: Array.from({ length: cols * rows }, (_, k) => {\n            const col = k % cols\n            const scatter = ((k * 37) % 11) / 11\n            const at = (col + scatter) / cols\n            return { '--d': Math.round(at * ms * 0.94), '--o': Math.round((1 - at) * 120) }\n          }),\n        }\n      })\n    }\n    lay()\n    const ro = new ResizeObserver(lay)\n    ro.observe(el)\n    return () => ro.disconnect()\n  }, [ms])\n  const inks = grid ? Array.from({ length: grid.cols }, (_, c) => ({ col: grid.cells[c]!, ink: { width: `${grid.w}px`, height: `${grid.h}px`, transform: `translateX(${-c * PX}px)` } })) : []\n  const verb = label.toLowerCase()\n  const columns: CSSProperties | undefined = grid ? { gridTemplateColumns: `repeat(${grid.cols}, ${PX}px)` } : undefined\n\n  return (\n    <>\n      <style href=\"ds-hold-button\" precedence=\"ds\">{css}</style>\n      <button\n        data-ds=\"hold-button\"\n        ref={root}\n        type=\"button\"\n        className={className ? `ds-hold ${className}` : 'ds-hold'}\n        data-holding={holding || undefined}\n        data-done={done || undefined}\n        aria-label={`hold to ${verb}`}\n        onPointerDown={press}\n        onPointerUp={release}\n        onPointerLeave={release}\n        onPointerCancel={release}\n        onKeyDown={onKeyDown}\n        onKeyUp={onKeyUp}\n        onBlur={blur}\n        onContextMenu={e => e.preventDefault()}\n      >\n        {grid && (\n          <>\n            <span className=\"ds-hold-px\" aria-hidden=\"true\" style={columns}>{grid.cells.map((c, k) => <i key={k} style={c} />)}</span>\n            <span className=\"ds-hold-inks\" aria-hidden=\"true\" style={columns}>\n              {inks.map((c, k) => <i key={k} style={c.col}><span className=\"ds-hold-ink\" style={c.ink}><Trash2 size={12} strokeWidth={1.5} /><span className=\"ds-hold-word\"><span className=\"invisible\">{label}</span><span className=\"absolute inset-x-0\">Hold</span></span></span></i>)}\n            </span>\n            <span className=\"ds-hold-done\" aria-hidden=\"true\"><Check size={12} strokeWidth={2} />Done</span>\n          </>\n        )}\n        <span className=\"ds-hold-label\"><Trash2 size={12} strokeWidth={1.5} aria-hidden=\"true\" />\n          <span className=\"ds-roll\"><span className=\"ds-roll-a\">{label}</span><span className=\"ds-roll-b\" aria-hidden=\"true\">Hold</span></span>\n        </span>\n      </button>\n    </>\n  )\n}\n\nexport default HoldButton\n\nconst css = `\n.ds-hold {\n  position: relative;\n  display: inline-flex;\n  height: var(--ds-size-control-sm);\n  min-width: 92px;\n  flex-shrink: 0;\n  align-items: center;\n  justify-content: center;\n  gap: var(--ds-space-sm);\n  overflow: hidden;\n  padding: 0 10px;\n  border: var(--ds-border-hairline) solid var(--ds-color-action-danger);\n  background: var(--ds-color-surface);\n  color: var(--ds-color-action-danger);\n  font-size: var(--ds-text-meta);\n  font-weight: var(--ds-font-weight-medium);\n  white-space: nowrap;\n  cursor: pointer;\n  user-select: none;\n  -webkit-touch-callout: none;\n  touch-action: manipulation;\n  will-change: transform;\n  transition: transform var(--ds-duration-enter) var(--ds-easing-out), border-color var(--ds-duration-micro) var(--ds-easing-standard);\n}\n.ds-hold[data-holding] { transform: scale(0.97); transition-duration: var(--ds-duration-micro); }\n.ds-hold-label { position: relative; display: inline-flex; align-items: center; gap: var(--ds-space-sm); }\n.ds-hold .lucide-trash-2 path:nth-last-child(-n + 2) { transform-box: fill-box; transform-origin: 0% 100%; transition: transform var(--ds-duration-enter) var(--ds-easing-out); }\n.ds-hold[data-holding] .lucide-trash-2 path:nth-last-child(-n + 2) { transform: translateY(-1.5px) rotate(-9deg); }\n.ds-hold-px { position: absolute; inset: -1px; z-index: 1; display: grid; grid-auto-rows: 6px; pointer-events: none; }\n.ds-hold-inks { position: absolute; inset: -1px; z-index: 2; display: grid; pointer-events: none; }\n.ds-hold-inks i { position: relative; overflow: hidden; font-style: normal; }\n.ds-hold-ink { position: absolute; top: 0; left: 0; display: flex; align-items: center; justify-content: center; gap: var(--ds-space-sm); color: var(--ds-color-off-white); font-size: var(--ds-text-meta); font-weight: var(--ds-font-weight-medium); line-height: 1.4; white-space: nowrap; }\n.ds-hold-word { position: relative; display: block; text-align: center; }\n.ds-hold-px i { background: var(--ds-color-home-red-press); }\n.ds-hold-px i, .ds-hold-inks i { opacity: 0; transition: opacity var(--ds-duration-cell) ease calc(var(--o) * 1ms); }\n.ds-hold:is([data-holding], [data-done]) :is(.ds-hold-px, .ds-hold-inks) i { opacity: 1; transition: opacity var(--ds-duration-press) linear calc(var(--d) * 1ms); }\n.ds-hold[data-done] :is(.ds-hold-px, .ds-hold-inks) i { transition-duration: 0ms; transition-delay: 0ms; }\n.ds-hold-done { position: absolute; inset: -1px; z-index: 3; display: flex; align-items: center; justify-content: center; gap: var(--ds-space-sm); background: var(--ds-color-home-red-press); color: var(--ds-color-off-white); opacity: 0; pointer-events: none; }\n.ds-hold-done path { stroke-dasharray: 24; stroke-dashoffset: 24; }\n.ds-hold[data-done] .ds-hold-done { opacity: 1; transition: opacity var(--ds-duration-cell) ease; }\n.ds-hold[data-done] .ds-hold-done path { stroke-dashoffset: 0; transition: stroke-dashoffset var(--ds-duration-settle) var(--ds-easing-out) 40ms; }\n/* The label rolls up to a copy of itself under the pointer or focus (console2.css .roll). */\n.ds-roll { position: relative; display: block; overflow: hidden; line-height: 1.4; }\n.ds-roll-a, .ds-roll-b { display: block; transition: transform var(--ds-duration-glide) var(--ds-easing-standard); }\n.ds-roll-b { position: absolute; inset-inline: 0; top: 0; text-align: center; transform: translateY(110%); }\n.ds-hold:focus-visible .ds-roll-a { transform: translateY(-110%); }\n.ds-hold:focus-visible .ds-roll-b { transform: none; }\n@media (hover: hover) and (pointer: fine) {\n  .ds-hold:hover .ds-roll-a { transform: translateY(-110%); }\n  .ds-hold:hover .ds-roll-b { transform: none; }\n}\n@media (pointer: coarse), (max-width: 767px) {\n  .ds-hold { height: var(--ds-size-control-touch); font-size: var(--ds-text-ui); }\n}\n@media (prefers-reduced-motion: reduce) {\n  .ds-hold, .ds-roll-a, .ds-roll-b, .ds-hold .lucide-trash-2 path { transition: none; }\n  .ds-hold[data-holding] { transform: none; }\n}\n`\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        },
+        {
+          "path": "react/hooks/usePixelGrid.ts",
+          "content": "'use client'\nimport { useEffect, useState, type CSSProperties, type RefObject } from 'react'\n\n// The website's dark button's red fill (PixelButton): 6px squares laid over an element, each with its own delay in\n// and out, from the same seed as the website's, so the buttons feel like one product. It lays them again on resize.\nconst PX = 6\n\n/** A seeded random source (mulberry32), the same as the website's, so every button scatters the same way. */\nfunction rng(seed: number) {\n  let s = seed >>> 0\n  return () => {\n    s = (s + 0x6D2B79F5) >>> 0\n    let t = s\n    t = Math.imul(t ^ (t >>> 15), t | 1)\n    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)\n    return ((t ^ (t >>> 14)) >>> 0) / 4294967296\n  }\n}\n\nexport interface PixelGrid { cols: number, w: number, h: number, cells: Array<Record<string, number>> }\n\nexport function usePixelGrid(el: RefObject<HTMLElement | null>) {\n  const [grid, setGrid] = useState<PixelGrid | null>(null)\n  useEffect(() => {\n    const box = el.current\n    if (!box) return\n    function lay() {\n      if (!box) return\n      const rect = box.getBoundingClientRect()\n      const w = rect.width - (box.offsetWidth - box.clientWidth)\n      const h = rect.height - (box.offsetHeight - box.clientHeight)\n      setGrid((g) => {\n        if (g?.w === w && g.h === h) return g\n        const cols = Math.ceil(w / PX)\n        const rows = Math.ceil(h / PX)\n        const rand = rng(29)\n        return {\n          cols,\n          w,\n          h,\n          cells: Array.from({ length: cols * rows }, (_, k) => {\n            // Eased along the button, so the front starts quick and settles.\n            const e = 1 - (1 - (k % cols) / cols) ** 1.6\n            return { '--i': Math.round(e * 60 + rand() * 20), '--o': Math.round(e * 50 + rand() * 20) }\n          }),\n        }\n      })\n    }\n    lay()\n    const ro = new ResizeObserver(lay)\n    ro.observe(box)\n    return () => ro.disconnect()\n  }, [el])\n  const style: CSSProperties | undefined = grid ? { gridTemplateColumns: `repeat(${grid.cols}, ${PX}px)`, gridAutoRows: `${PX}px` } : undefined\n  return { grid, style }\n}\n"
+        }
+      ],
+      "dependencies": [
+        "lucide-react@0.479.0"
+      ],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "Button",
+            "file": "react/components/ui/Button.tsx",
+            "props": [
+              {
+                "name": "variant",
+                "type": "ButtonVariant",
+                "required": false,
+                "default": "'secondary'"
+              },
+              {
+                "name": "icon",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "press",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "href",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "type",
+                "type": "'button' | 'submit' | 'reset'",
+                "required": false,
+                "default": "'button'"
+              }
+            ],
+            "extends": [
+              "Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'type'>"
+            ]
+          },
+          {
+            "name": "PixelButton",
+            "file": "react/components/ui/PixelButton.tsx",
+            "props": [
+              {
+                "name": "done",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "large",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "href",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "type",
+                "type": "'button' | 'submit'",
+                "required": false
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              },
+              {
+                "name": "onClick",
+                "type": "MouseEventHandler<HTMLElement>",
+                "required": false
+              },
+              {
+                "name": "aria-label",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "aria-busy",
+                "type": "boolean",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "HoldButton",
+            "file": "react/components/ui/HoldButton.tsx",
+            "props": [
+              {
+                "name": "label",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "ms",
+                "type": "number",
+                "required": false,
+                "default": "1000"
+              },
+              {
+                "name": "onConfirm",
+                "type": "() => void",
+                "required": false
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "The console's buttons",
+          "center": false,
+          "half": false,
+          "path": "react/examples/button/Product.tsx",
+          "content": "import { Copy, MoreHorizontal, Plus, RotateCw, Trash2 } from 'lucide-react'\nimport { Button } from '@/react/components/ui/Button'\n// The console's buttons: one dark main action, secondary for the rest, ghost for tools in a row, danger for what\n// removes, the red fix for a failure, and an icon button with its name.\n\nexport default function Product() {\n  return (\n    <div className=\"flex flex-col gap-4\">\n      <div className=\"flex flex-wrap items-center gap-2\">\n        <Button variant=\"dark\"><Plus size={14} strokeWidth={1.5} aria-hidden=\"true\" />Create key</Button>\n        <Button><Copy size={14} strokeWidth={1.5} aria-hidden=\"true\" />Copy as code</Button>\n        <Button>Cancel</Button>\n        <Button variant=\"ghost\"><RotateCw size={14} strokeWidth={1.5} aria-hidden=\"true\" />Sync now</Button>\n        <Button variant=\"ghost\" icon aria-label=\"row actions\"><MoreHorizontal size={14} strokeWidth={1.5} /></Button>\n      </div>\n      <div className=\"flex flex-wrap items-center gap-2\">\n        <Button variant=\"danger\"><Trash2 size={14} strokeWidth={1.5} aria-hidden=\"true\" />Revoke</Button>\n        <Button variant=\"brand\">Reconnect HubSpot</Button>\n      </div>\n    </div>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        },
+        {
+          "name": "Dark",
+          "label": "Dark",
+          "center": true,
+          "half": true,
+          "path": "react/examples/button/Dark.tsx",
+          "content": "import { KeyRound } from 'lucide-react'\nimport { PixelButton } from '@/react/components/ui/PixelButton'\n// The one main action on a view, as API keys has it: the website's dark button, its red squares running in on hover.\n\nexport default function Dark() {\n  return <PixelButton large>Create key<KeyRound size={14} strokeWidth={1.5} aria-hidden=\"true\" /></PixelButton>\n}\n",
+          "registryDependencies": [],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        },
+        {
+          "name": "Handoff",
+          "label": "Dark, handing off",
+          "center": true,
+          "half": true,
+          "path": "react/examples/button/Handoff.tsx",
+          "content": "'use client'\nimport { Check, Copy } from 'lucide-react'\nimport { PixelButton } from '@/react/components/ui/PixelButton'\nimport { useCopy } from '@/react/hooks/useCopy'\n// The dark button handing something off, as Copy prompt: hover runs the red squares across, a press darkens them at\n// once with no change of size, and once copied the red holds while it says so.\n\nexport default function Handoff() {\n  const { copied, copy } = useCopy()\n  return (\n    <>\n      <PixelButton done={copied} onClick={() => copy('Connect Conare to this project and run a first search.')}>\n        {copied ? <Check size={12} strokeWidth={2} aria-hidden=\"true\" /> : <Copy size={12} strokeWidth={1.5} aria-hidden=\"true\" />}\n        {copied ? 'Copied' : 'Copy prompt'}\n      </PixelButton>\n      <span className=\"sr-only\" aria-live=\"polite\">{copied ? 'prompt copied' : ''}</span>\n    </>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        },
+        {
+          "name": "Secondary",
+          "label": "Secondary",
+          "center": true,
+          "half": true,
+          "path": "react/examples/button/Secondary.tsx",
+          "content": "import { Copy } from 'lucide-react'\nimport { Button } from '@/react/components/ui/Button'\n// Every other action, the default: a hairline that turns ink under the pointer, the paper while pressed.\n\nexport default function Secondary() {\n  return <Button press><Copy size={12} strokeWidth={1.5} aria-hidden=\"true\" />Copy as code</Button>\n}\n",
+          "registryDependencies": [],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        },
+        {
+          "name": "Ghost",
+          "label": "Ghost",
+          "center": true,
+          "half": true,
+          "path": "react/examples/button/Ghost.tsx",
+          "content": "'use client'\nimport { useEffect, useRef, useState } from 'react'\nimport { RefreshCw } from 'lucide-react'\nimport { Button } from '@/react/components/ui/Button'\n// A tool in a row, as a source's Sync now: its icon turns while it syncs, and it waits until the sync lands.\n\nexport default function Ghost() {\n  const [syncing, setSyncing] = useState(false)\n  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)\n  useEffect(() => () => clearTimeout(timer.current), [])\n  function sync() {\n    setSyncing(true)\n    // ds-latency: stands in for the sync request in this example.\n    timer.current = setTimeout(() => setSyncing(false), 1800)\n  }\n  return (\n    <Button variant=\"ghost\" press disabled={syncing} onClick={sync}>\n      <RefreshCw size={12} strokeWidth={1.5} className={syncing ? 'animate-spin motion-reduce:animate-none' : undefined} aria-hidden=\"true\" />{syncing ? 'Syncing' : 'Sync now'}\n    </Button>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        },
+        {
+          "name": "Icon",
+          "label": "Icon",
+          "center": true,
+          "half": true,
+          "path": "react/examples/button/Icon.tsx",
+          "content": "import { X } from 'lucide-react'\nimport { Button } from '@/react/components/ui/Button'\n// A tool with no label, as the docs panel's close: its name goes to assistive tech.\n\nexport default function Icon() {\n  return <Button variant=\"ghost\" icon aria-label=\"close docs\"><X size={14} strokeWidth={1.5} /></Button>\n}\n",
+          "registryDependencies": [],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        },
+        {
+          "name": "Danger",
+          "label": "Danger, held",
+          "center": true,
+          "half": true,
+          "path": "react/examples/button/Danger.tsx",
+          "content": "import { HoldButton } from '@/react/components/ui/HoldButton'\n// What removes something, as a key's Revoke: hold it and the red squares fill across, then the check draws; let go\n// early and it rewinds.\n\nexport default function Danger() {\n  return <HoldButton label=\"Revoke\" />\n}\n",
+          "registryDependencies": [],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        },
+        {
+          "name": "Brand",
+          "label": "Brand",
+          "center": true,
+          "half": true,
+          "path": "react/examples/button/Brand.tsx",
+          "content": "import { Button } from '@/react/components/ui/Button'\n// The fix for a failure, in the failure's own red, as Home's banner has it; it turns black under the pointer.\n\nexport default function Brand() {\n  return <Button variant=\"brand\">Reconnect HubSpot</Button>\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        },
+        {
+          "name": "States",
+          "label": "States",
+          "center": true,
+          "half": false,
+          "path": "react/examples/button/States.tsx",
+          "content": "'use client'\nimport { Check, Copy } from 'lucide-react'\nimport { Button } from '@/react/components/ui/Button'\nimport { useCopy } from '@/react/hooks/useCopy'\n// The states a button goes through: at rest, waiting (disabled is grey with a dark label, never faded), and done (the\n// check and \"Copied\" for 1.5s).\n\nexport default function States() {\n  const { copied, copy } = useCopy()\n  return (\n    <div className=\"flex flex-wrap items-center gap-2\">\n      <Button>At rest</Button>\n      <Button variant=\"dark\" disabled>Create key</Button>\n      <Button disabled>Disabled</Button>\n      <Button onClick={() => copy('ns_contracts')}>\n        {copied ? <Check size={12} strokeWidth={2} aria-hidden=\"true\" /> : <Copy size={12} strokeWidth={1.5} aria-hidden=\"true\" />}{copied ? 'Copied' : 'Copy ID'}\n      </Button>\n    </div>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/button.ts",
+          "content": "import { html } from 'lit'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { DsFormElement, define, HostLayoutController } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// Button.vue as a web component, <conare-button>. Every action in the console: square, 28px (40px on phones and\n// touch), 12px medium labels. secondary is the default; dark is the one main action of a view; primary the red action;\n// ghost a tool in a row; danger removes something (hold it with <conare-hold-button>); brand is the fix for a\n// failure. Disabled is grey with a dark label, never faded. `press` gives a little under the pointer. `href` renders a\n// link. It is form-associated: type=\"submit\" submits its form, type=\"reset\" resets it. aria-label, aria-description,\n// aria-expanded, aria-haspopup and aria-controls on it pass to the inner button (the last three move there, so the\n// button opening a dialog or a menu is named expanded once).\nexport type ButtonVariant = 'secondary' | 'dark' | 'primary' | 'ghost' | 'danger' | 'brand'\n\n// The attributes that move from the element to its inner button, by property.\nconst MOVED = ['aria-expanded', 'aria-haspopup', 'aria-controls']\nconst FIELD: Record<string, 'expanded' | 'haspopup' | 'controls'> = { 'aria-expanded': 'expanded', 'aria-haspopup': 'haspopup', 'aria-controls': 'controls' }\n\nconst VARIANTS: Record<ButtonVariant, string> = {\n\tsecondary: 'border-action-secondary-edge bg-surface text-fg hover:enabled:border-action-secondary-edge-hover active:enabled:bg-surface-subtle',\n\tdark: 'border-action-primary bg-action-primary text-action-primary-fg hover:enabled:border-edge-accent hover:enabled:bg-edge-accent',\n\tprimary: 'border-edge-accent bg-edge-accent text-off-white hover:enabled:border-home-red-hover hover:enabled:bg-home-red-hover active:enabled:border-home-red-press active:enabled:bg-home-red-press',\n\tghost: 'border-transparent bg-transparent text-fg-soft hover:enabled:border-edge hover:enabled:text-fg active:enabled:bg-surface-subtle disabled:!border-transparent disabled:!bg-transparent disabled:!text-fg-muted',\n\tdanger: 'border-action-danger bg-surface text-action-danger hover:enabled:bg-action-danger-hover hover:enabled:text-off-white disabled:!border-action-danger disabled:!bg-surface disabled:!text-action-danger',\n\tbrand: 'border-home-red-press bg-home-red-press text-off-white hover:enabled:border-surface-inverse hover:enabled:bg-surface-inverse',\n}\n\n/**\n * @summary An action: secondary by default, dark, primary, ghost, danger or brand; `icon` for a square icon button.\n * @slot - The label, with a Lucide icon before it if any.\n * @fires click - When pressed (the native click, from the inner button).\n * @csspart control - The inner button or link, for a page's or another element's ::part(control).\n */\nexport class Button extends DsFormElement {\n\tstatic styles = [DsFormElement.styles, styles]\n\t// Layout classes on the element (mt-2, ml-auto, w-full) land on the box it draws, as on Vue's root.\n\tprotected readonly layout = new HostLayoutController(this, () => this.renderRoot.querySelector<HTMLElement>('[part~=\"control\"]'))\n\tstatic properties = {\n\t\tvariant: { reflect: true },\n\t\ticon: { type: Boolean },\n\t\tpress: { type: Boolean },\n\t\thref: {},\n\t\ttype: {},\n\t\tdisabled: { type: Boolean, reflect: true },\n\t\tlabel: { attribute: 'aria-label' },\n\t\tdescription: { attribute: 'aria-description' },\n\t\texpanded: { attribute: false },\n\t\thaspopup: { attribute: false },\n\t\tcontrols: { attribute: false },\n\t\trootName: { attribute: false },\n\t}\n\tstatic get observedAttributes() {\n\t\treturn [...super.observedAttributes, ...MOVED]\n\t}\n\n\t/** secondary, dark, primary, ghost, danger or brand. */\n\tvariant: ButtonVariant = 'secondary'\n\t/** A square icon button (put the name in aria-label). */\n\ticon = false\n\t/** Scale 0.97 under the pointer, for buttons pressed often in place. */\n\tpress = false\n\t/** Renders a link. */\n\thref?: string\n\ttype: 'button' | 'submit' | 'reset' = 'button'\n\tdisabled = false\n\t/** The name for assistive tech, passed to the inner button (aria-label on the element). */\n\tlabel?: string\n\t/** A description for assistive tech (a tooltip's text), passed to the inner button (aria-description on the element). */\n\tdescription?: string\n\t/** Whether what it opens is open (the aria-expanded attribute). */\n\texpanded?: string\n\t/** What it opens: dialog, menu, listbox (the aria-haspopup attribute). */\n\thaspopup?: string\n\t/** The id of what it opens (the aria-controls attribute); the button points at it across its shadow root. */\n\tcontrols?: string\n\t/** The data-ds its box says: button, or the name of an item drawn as a button (Vue's data-ds falls through). */\n\trootName = 'button'\n\n\tattributeChangedCallback(name: string, old: string | null, value: string | null) {\n\t\tconst field = FIELD[name]\n\t\tif (!field) return super.attributeChangedCallback(name, old, value)\n\t\tif (value === null) return\n\t\tthis[field] = value\n\t\tthis.removeAttribute(name)\n\t}\n\tprotected updated(changed: Map<PropertyKey, unknown>) {\n\t\tsuper.updated(changed)\n\t\t// An id inside the shadow root would not find the page's element: the button refers to it directly.\n\t\tconst inner = this.renderRoot.querySelector('button, a') as (HTMLElement & { ariaControlsElements?: Element[] | null }) | null\n\t\tif (inner && changed.has('controls') && 'ariaControlsElements' in inner) {\n\t\t\tconst target = this.controls ? (this.getRootNode() as Document | ShadowRoot).getElementById?.(this.controls) : null\n\t\t\tinner.ariaControlsElements = target ? [target] : null\n\t\t}\n\t}\n\n\tprivate onClick() {\n\t\tif (this.inactive || this.href) return\n\t\tif (this.type === 'submit') this.form?.requestSubmit()\n\t\telse if (this.type === 'reset') this.form?.reset()\n\t}\n\n\trender() {\n\t\tconst classes = [\n\t\t\t'inline-flex h-control-sm shrink-0 cursor-pointer items-center justify-center gap-1.5 border text-meta leading-5 font-medium whitespace-nowrap select-none',\n\t\t\t'transition-[color,background-color,border-color] duration-120 ease-standard',\n\t\t\t'disabled:cursor-not-allowed disabled:border-edge disabled:bg-surface-sunken disabled:text-fg-soft',\n\t\t\t'max-md:h-control-touch max-md:text-ui pointer-coarse:h-control-touch pointer-coarse:text-ui',\n\t\t\tthis.icon ? 'w-control-sm px-0 max-md:w-control-touch pointer-coarse:w-control-touch' : 'px-2.5',\n\t\t\tthis.press ? 'transition-[color,background-color,border-color,scale] ease-out active:enabled:scale-97 motion-reduce:active:enabled:scale-100' : '',\n\t\t\tVARIANTS[this.variant] ?? VARIANTS.secondary,\n\t\t].join(' ')\n\t\treturn this.href\n\t\t\t? html`<a data-ds=\"${this.rootName}\" part=\"control\" href=${this.href} class=${classes} aria-label=${ifDefined(this.label)} aria-description=${ifDefined(this.description)} aria-expanded=${ifDefined(this.expanded)} aria-haspopup=${ifDefined(this.haspopup as never)}><slot></slot></a>`\n\t\t\t: html`<button data-ds=\"${this.rootName}\" part=\"control\" type=\"button\" ?disabled=${this.inactive} class=${classes} aria-label=${ifDefined(this.label)} aria-description=${ifDefined(this.description)} aria-expanded=${ifDefined(this.expanded)} aria-haspopup=${ifDefined(this.haspopup as never)} @click=${this.onClick}><slot></slot></button>`\n\t}\n}\n\ndefine('button', Button)\n"
+        },
+        {
+          "path": "elements/components/ui/pixel-button.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { DsFormElement, define, HostLayoutController } from '@/elements/lib/element'\nimport { PixelGridController, vars } from '@/elements/controllers/pixel-grid'\nimport styles from 'virtual:tw'\n\n// PixelButton.vue as <conare-pixel-button>: the website's dark button as a console button (console2.css .v2-px): black\n// at rest; on hover a red fill comes in as 6px squares from the left with a little scatter and goes out the same way,\n// while the white label holds still. A press darkens the squares at once with no change of size. `done` holds the red\n// while an action shows it happened (Copied). `large` is the 36px size with the grain. `href` renders a link.\n\n/**\n * @summary The website's dark button: red squares run in on hover.\n * @slot - The label, with a Lucide icon if any.\n * @fires click - When pressed.\n * @csspart control - The inner button or link, for a page's or another element's ::part(control).\n */\nexport class PixelButton extends DsFormElement {\n\tstatic styles = [DsFormElement.styles, styles]\n\t// Layout classes on the element (mt-2, ml-auto, w-full) land on the box it draws, as on Vue's root.\n\tprotected readonly layout = new HostLayoutController(this, () => this.renderRoot.querySelector<HTMLElement>('[part~=\"control\"]'))\n\tstatic properties = {\n\t\tdone: { type: Boolean, reflect: true },\n\t\tlarge: { type: Boolean },\n\t\thref: {},\n\t\ttype: {},\n\t\tdisabled: { type: Boolean, reflect: true },\n\t\tlabel: { attribute: 'aria-label' },\n\t\tbusy: { attribute: 'aria-busy', converter: { fromAttribute: (v: string | null) => (v === null ? undefined : v === 'true') } },\n\t\trootName: { attribute: false },\n\t}\n\n\t/** Holds the red while an action shows it happened. */\n\tdone = false\n\t/** The 36px size with the grain, for the one main action of a page. */\n\tlarge = false\n\thref?: string\n\ttype: 'button' | 'submit' = 'button'\n\tdisabled = false\n\tlabel?: string\n\t/** Working (the aria-busy attribute), passed to the inner button as Vue's aria-busy falls through. */\n\tbusy?: boolean\n\t/** The data-ds its box says: pixel-button, or the name of an item drawn as one (Vue's data-ds falls through). */\n\trootName = 'pixel-button'\n\n\tprivate grid = new PixelGridController(this, () => this.renderRoot.querySelector<HTMLElement>('.ds-px'))\n\n\tprivate onClick() {\n\t\tif (!this.inactive && !this.href && this.type === 'submit') this.form?.requestSubmit()\n\t}\n\n\trender() {\n\t\tconst g = this.grid.grid\n\t\tconst inner = html`${g ? html`<span aria-hidden=\"true\" class=\"ds-px-fill\" style=${this.grid.style}>${g.cells.map((c) => html`<i style=${vars(c)}></i>`)}</span>` : nothing}<span class=\"ds-px-label\"><slot></slot></span>`\n\t\tconst done = this.done ? 'true' : undefined\n\t\tconst large = this.large ? 'true' : undefined\n\t\tconst busy = this.busy === undefined ? undefined : String(this.busy)\n\t\treturn this.href\n\t\t\t? html`<a data-ds=\"${this.rootName}\" part=\"control\" href=${this.href} class=\"ds-px\" data-done=${ifDefined(done)} data-large=${ifDefined(large)} aria-label=${ifDefined(this.label)} aria-busy=${ifDefined(busy)}>${inner}</a>`\n\t\t\t: html`<button data-ds=\"${this.rootName}\" part=\"control\" type=\"button\" ?disabled=${this.inactive} class=\"ds-px\" data-done=${ifDefined(done)} data-large=${ifDefined(large)} aria-label=${ifDefined(this.label)} aria-busy=${ifDefined(busy)} @click=${this.onClick}>${inner}</button>`\n\t}\n}\n\ndefine('pixel-button', PixelButton)\n"
+        },
+        {
+          "path": "elements/components/ui/pixel-button.css",
+          "content": "/* PixelButton.vue's <style>, as it is: it lands in the shadow root unlayered, as a Vue <style> block does. */\n.ds-px {\n  position: relative;\n  isolation: isolate;\n  display: inline-flex;\n  height: var(--ds-size-control-sm);\n  flex-shrink: 0;\n  align-items: center;\n  justify-content: center;\n  gap: var(--ds-space-sm);\n  overflow: hidden;\n  padding: 0 10px;\n  background: var(--ds-color-surface-inverse);\n  color: var(--ds-color-off-white);\n  font-size: var(--ds-text-meta);\n  font-weight: var(--ds-font-weight-medium);\n  white-space: nowrap;\n  cursor: pointer;\n  will-change: transform;\n  transition-property: color, background-color;\n  transition-duration: var(--ds-duration-micro);\n  transition-timing-function: var(--ds-easing-standard);\n}\n.ds-px:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: var(--ds-border-focus); }\n.ds-px-fill { position: absolute; inset: 0; z-index: -1; display: grid; pointer-events: none; }\n.ds-px-fill i { position: relative; background: var(--ds-color-edge-accent); font-style: normal; opacity: 0; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard) calc(var(--o) * 1ms); }\n.ds-px-label { display: inline-flex; align-items: center; gap: var(--ds-space-sm); line-height: 1.4; }\n@media (hover: hover) and (pointer: fine) {\n  .ds-px:hover:not(:disabled) .ds-px-fill i { opacity: 1; transition: opacity var(--ds-duration-cell) var(--ds-easing-decelerate) calc(var(--i) * 1ms); }\n}\n.ds-px:active:not(:disabled) .ds-px-fill i { background: var(--ds-color-home-red-press); opacity: 1; transition: opacity var(--ds-duration-press) ease 0ms; }\n.ds-px:focus-visible .ds-px-fill i,\n.ds-px[data-done=\"true\"] .ds-px-fill i { opacity: 1; transition: opacity var(--ds-duration-cell) var(--ds-easing-decelerate) calc(var(--i) * 1ms); }\n.ds-px:disabled { background: var(--ds-color-surface-sunken); color: var(--ds-color-fg-soft); cursor: not-allowed; }\n.ds-px:disabled .ds-px-fill { display: none; }\n.ds-px[data-large=\"true\"] { height: var(--ds-size-control-lg); gap: var(--ds-space-lg); padding: 0 12px; font-size: var(--ds-text-ui); }\n.ds-px[data-large=\"true\"]::before { position: absolute; inset: 0; z-index: -1; background-image: url(\"/conare-ds/textures/grain.webp\"); background-size: 170px auto; opacity: 0.3; content: \"\"; pointer-events: none; }\n.ds-px[data-large=\"true\"]:disabled::before { display: none; }\n@media (pointer: coarse), (max-width: 767px) {\n  .ds-px, .ds-px[data-large=\"true\"] { height: var(--ds-size-control-touch); font-size: var(--ds-text-ui); }\n}\n@media (prefers-reduced-motion: reduce) {\n  .ds-px-fill i, .ds-px:hover .ds-px-fill i { transition: none; }\n}\n"
+        },
+        {
+          "path": "elements/components/ui/hold-button.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { Check, Trash2 } from 'lucide'\nimport { DsElement, define } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport styles from 'virtual:tw'\n\n// HoldButton.vue as <conare-hold-button>: a destructive action (revoke a key, disconnect a source) confirmed in the\n// button itself, never in a dialog (console2.css .v2-hold, version 1). Pressing and holding fills the button with the\n// website's red 6px squares from the left over `ms`; each column carries a white copy of the label, so it turns as the\n// squares land; the bin's lid lifts while held; letting go rewinds right to left in under 200ms; at the end the check\n// draws and holds a beat before `confirm` fires. The label rolls up to \"Hold\" under the pointer. Space or Enter hold it\n// from the keyboard. Replace the element to set it back if what it confirmed failed.\nconst PX = 6\ninterface Grid { cols: number, w: number, h: number, cells: Array<{ d: number, o: number }> }\n\n/**\n * @summary A destructive action confirmed by holding it.\n * @fires confirm - Once the hold completes and the check has drawn.\n */\nexport class HoldButton extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = {\n\t\tlabel: {},\n\t\tms: { type: Number },\n\t\tholding: { state: true },\n\t\tdone: { state: true },\n\t\tgrid: { state: true },\n\t}\n\n\t/** The action, as the button says it (Revoke). */\n\tlabel = ''\n\t/** How long the hold takes, in ms. */\n\tms = 1000\n\tprivate holding = false\n\tprivate done = false\n\tprivate grid: Grid | null = null\n\tprivate timer?: ReturnType<typeof setTimeout>\n\tprivate landing?: ReturnType<typeof setTimeout>\n\tprivate pointing = false\n\tprivate ro?: ResizeObserver\n\n\tprivate finish() {\n\t\tthis.done = true\n\t\tthis.holding = false\n\t\t// ds-latency: the check is seen before what it confirms happens; the press itself answered at once.\n\t\tthis.landing = setTimeout(() => this.emit('confirm'), 320)\n\t}\n\tprivate start() {\n\t\tif (this.done || this.holding) return\n\t\tthis.holding = true\n\t\t// ds-latency: the hold is the confirmation; its length is the point.\n\t\tthis.timer = setTimeout(() => this.finish(), this.ms)\n\t}\n\tprivate cancel() {\n\t\tclearTimeout(this.timer)\n\t\tthis.holding = false\n\t}\n\t// Safari takes focus off a button as it is pressed, so losing focus ends a hold only by keyboard.\n\tprivate press = () => { this.pointing = true; this.start() }\n\tprivate release = () => { this.pointing = false; this.cancel() }\n\tprivate onKeyDown = (event: KeyboardEvent) => {\n\t\tif (event.key !== ' ' && event.key !== 'Enter') return\n\t\tevent.preventDefault()\n\t\tif (!event.repeat) this.start()\n\t}\n\tprivate onKeyUp = (event: KeyboardEvent) => {\n\t\tif (event.key === ' ' || event.key === 'Enter') this.cancel()\n\t}\n\tprivate onBlur = () => { if (!this.pointing) this.cancel() }\n\n\tdisconnectedCallback() {\n\t\tsuper.disconnectedCallback()\n\t\tclearTimeout(this.timer)\n\t\tclearTimeout(this.landing)\n\t\tthis.ro?.disconnect()\n\t}\n\n\t// 6px cells across the button as measured, each lighting when the hold reaches its column, with a little scatter.\n\t// --d is the way in; --o the way out, right to left.\n\tprivate lay() {\n\t\tconst el = this.renderRoot.querySelector<HTMLElement>('.ds-hold')\n\t\tif (!el) return\n\t\tconst w = el.offsetWidth\n\t\tconst h = el.offsetHeight\n\t\tif (this.grid?.w === w && this.grid.h === h) return\n\t\tconst cols = Math.ceil(w / PX)\n\t\tconst rows = Math.ceil(h / PX)\n\t\tthis.grid = {\n\t\t\tcols,\n\t\t\tw,\n\t\t\th,\n\t\t\tcells: Array.from({ length: cols * rows }, (_, k) => {\n\t\t\t\tconst col = k % cols\n\t\t\t\tconst scatter = ((k * 37) % 11) / 11\n\t\t\t\tconst at = (col + scatter) / cols\n\t\t\t\treturn { d: Math.round(at * this.ms * 0.94), o: Math.round((1 - at) * 120) }\n\t\t\t}),\n\t\t}\n\t}\n\tprotected firstUpdated(changed: Map<PropertyKey, unknown>) {\n\t\tsuper.firstUpdated(changed)\n\t\tthis.lay()\n\t\tconst el = this.renderRoot.querySelector<HTMLElement>('.ds-hold')\n\t\tif (el) {\n\t\t\tthis.ro = new ResizeObserver(() => this.lay())\n\t\t\tthis.ro.observe(el)\n\t\t}\n\t}\n\n\trender() {\n\t\tconst g = this.grid\n\t\tconst columns = g ? `grid-template-columns: repeat(${g.cols}, ${PX}px)` : ''\n\t\tconst cell = (c: { d: number, o: number }) => `--d: ${c.d}; --o: ${c.o}`\n\t\treturn html`<button data-ds=\"hold-button\"\n\t\t\ttype=\"button\"\n\t\t\tclass=\"ds-hold\"\n\t\t\t?data-holding=${this.holding}\n\t\t\t?data-done=${this.done}\n\t\t\taria-label=${`hold to ${this.label.toLowerCase()}`}\n\t\t\t@pointerdown=${this.press}\n\t\t\t@pointerup=${this.release}\n\t\t\t@pointerleave=${this.release}\n\t\t\t@pointercancel=${this.release}\n\t\t\t@keydown=${this.onKeyDown}\n\t\t\t@keyup=${this.onKeyUp}\n\t\t\t@blur=${this.onBlur}\n\t\t\t@contextmenu=${(e: Event) => e.preventDefault()}\n\t\t>${g\n\t\t\t? html`<span class=\"ds-hold-px\" aria-hidden=\"true\" style=${columns}>${g.cells.map((c) => html`<i style=${cell(c)}></i>`)}</span><span class=\"ds-hold-inks\" aria-hidden=\"true\" style=${columns}>${Array.from({ length: g.cols }, (_, c) => html`<i style=${cell(g.cells[c]!)}><span class=\"ds-hold-ink\" style=${`width: ${g.w}px; height: ${g.h}px; transform: translateX(${-c * PX}px)`}>${icon(Trash2, 'trash-2', { size: 12, strokeWidth: 1.5 })}<span class=\"ds-hold-word\"><span class=\"invisible\">${this.label}</span><span class=\"absolute inset-x-0\">Hold</span></span></span></i>`)}</span><span class=\"ds-hold-done\" aria-hidden=\"true\">${icon(Check, 'check', { size: 12, strokeWidth: 2 })}Done</span>`\n\t\t\t: nothing}<span class=\"ds-hold-label\">${icon(Trash2, 'trash-2', { size: 12, strokeWidth: 1.5, attrs: { 'aria-hidden': 'true' } })}<span class=\"ds-roll\"><span class=\"ds-roll-a\">${this.label}</span><span class=\"ds-roll-b\" aria-hidden=\"true\">Hold</span></span></span></button>`\n\t}\n}\n\ndefine('hold-button', HoldButton)\n"
+        },
+        {
+          "path": "elements/components/ui/hold-button.css",
+          "content": "/* HoldButton.vue's <style>, as it is: it lands in the shadow root unlayered, as a Vue <style> block does. */\n.ds-hold {\n  position: relative;\n  display: inline-flex;\n  height: var(--ds-size-control-sm);\n  min-width: 92px;\n  flex-shrink: 0;\n  align-items: center;\n  justify-content: center;\n  gap: var(--ds-space-sm);\n  overflow: hidden;\n  padding: 0 10px;\n  border: var(--ds-border-hairline) solid var(--ds-color-action-danger);\n  background: var(--ds-color-surface);\n  color: var(--ds-color-action-danger);\n  font-size: var(--ds-text-meta);\n  font-weight: var(--ds-font-weight-medium);\n  white-space: nowrap;\n  cursor: pointer;\n  user-select: none;\n  -webkit-touch-callout: none;\n  touch-action: manipulation;\n  will-change: transform;\n  transition: transform var(--ds-duration-enter) var(--ds-easing-out), border-color var(--ds-duration-micro) var(--ds-easing-standard);\n}\n.ds-hold[data-holding] { transform: scale(0.97); transition-duration: var(--ds-duration-micro); }\n.ds-hold-label { position: relative; display: inline-flex; align-items: center; gap: var(--ds-space-sm); }\n.ds-hold .lucide-trash-2 path:nth-last-child(-n + 2) { transform-box: fill-box; transform-origin: 0% 100%; transition: transform var(--ds-duration-enter) var(--ds-easing-out); }\n.ds-hold[data-holding] .lucide-trash-2 path:nth-last-child(-n + 2) { transform: translateY(-1.5px) rotate(-9deg); }\n.ds-hold-px { position: absolute; inset: -1px; z-index: 1; display: grid; grid-auto-rows: 6px; pointer-events: none; }\n.ds-hold-inks { position: absolute; inset: -1px; z-index: 2; display: grid; pointer-events: none; }\n.ds-hold-inks i { position: relative; overflow: hidden; font-style: normal; }\n.ds-hold-ink { position: absolute; top: 0; left: 0; display: flex; align-items: center; justify-content: center; gap: var(--ds-space-sm); color: var(--ds-color-off-white); font-size: var(--ds-text-meta); font-weight: var(--ds-font-weight-medium); line-height: 1.4; white-space: nowrap; }\n.ds-hold-word { position: relative; display: block; text-align: center; }\n.ds-hold-px i { background: var(--ds-color-home-red-press); }\n.ds-hold-px i, .ds-hold-inks i { opacity: 0; transition: opacity var(--ds-duration-cell) ease calc(var(--o) * 1ms); }\n.ds-hold:is([data-holding], [data-done]) :is(.ds-hold-px, .ds-hold-inks) i { opacity: 1; transition: opacity var(--ds-duration-press) linear calc(var(--d) * 1ms); }\n.ds-hold[data-done] :is(.ds-hold-px, .ds-hold-inks) i { transition-duration: 0ms; transition-delay: 0ms; }\n.ds-hold-done { position: absolute; inset: -1px; z-index: 3; display: flex; align-items: center; justify-content: center; gap: var(--ds-space-sm); background: var(--ds-color-home-red-press); color: var(--ds-color-off-white); opacity: 0; pointer-events: none; }\n.ds-hold-done path { stroke-dasharray: 24; stroke-dashoffset: 24; }\n.ds-hold[data-done] .ds-hold-done { opacity: 1; transition: opacity var(--ds-duration-cell) ease; }\n.ds-hold[data-done] .ds-hold-done path { stroke-dashoffset: 0; transition: stroke-dashoffset var(--ds-duration-settle) var(--ds-easing-out) 40ms; }\n/* The label rolls up to a copy of itself under the pointer or focus (console2.css .roll). */\n.ds-roll { position: relative; display: block; overflow: hidden; line-height: 1.4; }\n.ds-roll-a, .ds-roll-b { display: block; transition: transform var(--ds-duration-glide) var(--ds-easing-standard); }\n.ds-roll-b { position: absolute; inset-inline: 0; top: 0; text-align: center; transform: translateY(110%); }\n.ds-hold:focus-visible .ds-roll-a { transform: translateY(-110%); }\n.ds-hold:focus-visible .ds-roll-b { transform: none; }\n@media (hover: hover) and (pointer: fine) {\n  .ds-hold:hover .ds-roll-a { transform: translateY(-110%); }\n  .ds-hold:hover .ds-roll-b { transform: none; }\n}\n@media (pointer: coarse), (max-width: 767px) {\n  .ds-hold { height: var(--ds-size-control-touch); font-size: var(--ds-text-ui); }\n}\n@media (prefers-reduced-motion: reduce) {\n  .ds-hold, .ds-roll-a, .ds-roll-b, .ds-hold .lucide-trash-2 path { transition: none; }\n  .ds-hold[data-holding] { transform: none; }\n}\n"
+        },
+        {
+          "path": "elements/controllers/pixel-grid.ts",
+          "content": "import type { ReactiveController, ReactiveControllerHost } from 'lit'\n\n// usePixelGrid as a Lit controller: 6px squares laid over an element, each with its own delay in and out, from the same\n// seed as the website's, so the buttons feel like one product. It lays them again on resize. `el` returns the box\n// (an element in the shadow root), read after the first render.\nconst PX = 6\n\n/** A seeded random source (mulberry32), the same as the website's, so every button scatters the same way. */\nfunction rng(seed: number) {\n\tlet s = seed >>> 0\n\treturn () => {\n\t\ts = (s + 0x6d2b79f5) >>> 0\n\t\tlet t = s\n\t\tt = Math.imul(t ^ (t >>> 15), t | 1)\n\t\tt ^= t + Math.imul(t ^ (t >>> 7), t | 61)\n\t\treturn ((t ^ (t >>> 14)) >>> 0) / 4294967296\n\t}\n}\n\nexport interface PixelGrid { cols: number, w: number, h: number, cells: Array<Record<string, number>> }\n\nexport class PixelGridController implements ReactiveController {\n\tgrid: PixelGrid | null = null\n\tprivate ro?: ResizeObserver\n\tconstructor(private host: ReactiveControllerHost & HTMLElement, private el: () => HTMLElement | null | undefined) {\n\t\thost.addController(this)\n\t}\n\thostConnected() {\n\t\tvoid this.host.updateComplete.then(() => {\n\t\t\tconst box = this.el()\n\t\t\tif (!box) return\n\t\t\tthis.lay()\n\t\t\tthis.ro = new ResizeObserver(() => this.lay())\n\t\t\tthis.ro.observe(box)\n\t\t})\n\t}\n\thostDisconnected() {\n\t\tthis.ro?.disconnect()\n\t}\n\tprivate lay() {\n\t\tconst box = this.el()\n\t\tif (!box) return\n\t\tconst rect = box.getBoundingClientRect()\n\t\tconst w = rect.width - (box.offsetWidth - box.clientWidth)\n\t\tconst h = rect.height - (box.offsetHeight - box.clientHeight)\n\t\tif (this.grid?.w === w && this.grid.h === h) return\n\t\tconst cols = Math.ceil(w / PX)\n\t\tconst rows = Math.ceil(h / PX)\n\t\tconst rand = rng(29)\n\t\tthis.grid = {\n\t\t\tcols,\n\t\t\tw,\n\t\t\th,\n\t\t\tcells: Array.from({ length: cols * rows }, (_, k) => {\n\t\t\t\t// Eased along the button, so the front starts quick and settles.\n\t\t\t\tconst e = 1 - (1 - (k % cols) / cols) ** 1.6\n\t\t\t\treturn { '--i': Math.round(e * 60 + rand() * 20), '--o': Math.round(e * 50 + rand() * 20) }\n\t\t\t}),\n\t\t}\n\t\tthis.host.requestUpdate()\n\t}\n\t/** The fill's grid template, as a style string. */\n\tget style() {\n\t\treturn this.grid ? `grid-template-columns: repeat(${this.grid.cols}, ${PX}px); grid-auto-rows: ${PX}px` : ''\n\t}\n}\n\n/** A cell's custom properties as a style string ({ '--i': 12 } -> \"--i: 12\"). */\nexport const vars = (cell: Record<string, number | string>) => Object.entries(cell).map(([k, v]) => `${k}: ${v}`).join('; ')\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/button.js",
+        "elements/pixel-button.js",
+        "elements/hold-button.js"
+      ],
+      "tag": "conare-button",
+      "tags": [
+        "conare-button",
+        "conare-pixel-button",
+        "conare-hold-button"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-button",
+            "name": "Button",
+            "module": "elements/button.js",
+            "description": "An action: secondary by default, dark, primary, ghost, danger or brand; `icon` for a square icon button.",
+            "attributes": [
+              {
+                "name": "variant",
+                "field": "variant",
+                "type": "ButtonVariant",
+                "default": "'secondary'",
+                "description": "secondary, dark, primary, ghost, danger or brand."
+              },
+              {
+                "name": "icon",
+                "field": "icon",
+                "type": "boolean",
+                "default": "false",
+                "description": "A square icon button (put the name in aria-label)."
+              },
+              {
+                "name": "press",
+                "field": "press",
+                "type": "boolean",
+                "default": "false",
+                "description": "Scale 0.97 under the pointer, for buttons pressed often in place."
+              },
+              {
+                "name": "href",
+                "field": "href",
+                "type": "string | undefined",
+                "description": "Renders a link."
+              },
+              {
+                "name": "type",
+                "field": "type",
+                "type": "\"button\" | \"submit\" | \"reset\"",
+                "default": "'button'"
+              },
+              {
+                "name": "disabled",
+                "field": "disabled",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "aria-label",
+                "field": "label",
+                "type": "string | undefined",
+                "description": "The name for assistive tech, passed to the inner button (aria-label on the element)."
+              },
+              {
+                "name": "aria-description",
+                "field": "description",
+                "type": "string | undefined",
+                "description": "A description for assistive tech (a tooltip's text), passed to the inner button (aria-description on the element)."
+              }
+            ],
+            "properties": [
+              {
+                "name": "variant",
+                "type": "ButtonVariant",
+                "default": "'secondary'",
+                "description": "secondary, dark, primary, ghost, danger or brand.",
+                "attribute": "variant"
+              },
+              {
+                "name": "icon",
+                "type": "boolean",
+                "default": "false",
+                "description": "A square icon button (put the name in aria-label).",
+                "attribute": "icon"
+              },
+              {
+                "name": "press",
+                "type": "boolean",
+                "default": "false",
+                "description": "Scale 0.97 under the pointer, for buttons pressed often in place.",
+                "attribute": "press"
+              },
+              {
+                "name": "href",
+                "type": "string | undefined",
+                "description": "Renders a link.",
+                "attribute": "href"
+              },
+              {
+                "name": "type",
+                "type": "\"button\" | \"submit\" | \"reset\"",
+                "default": "'button'",
+                "attribute": "type"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "attribute": "disabled"
+              },
+              {
+                "name": "label",
+                "type": "string | undefined",
+                "description": "The name for assistive tech, passed to the inner button (aria-label on the element).",
+                "attribute": "aria-label"
+              },
+              {
+                "name": "description",
+                "type": "string | undefined",
+                "description": "A description for assistive tech (a tooltip's text), passed to the inner button (aria-description on the element).",
+                "attribute": "aria-description"
+              },
+              {
+                "name": "expanded",
+                "type": "string | undefined",
+                "description": "Whether what it opens is open (the aria-expanded attribute)."
+              },
+              {
+                "name": "haspopup",
+                "type": "string | undefined",
+                "description": "What it opens: dialog, menu, listbox (the aria-haspopup attribute)."
+              },
+              {
+                "name": "controls",
+                "type": "string | undefined",
+                "description": "The id of what it opens (the aria-controls attribute); the button points at it across its shadow root."
+              },
+              {
+                "name": "rootName",
+                "type": "string",
+                "default": "'button'",
+                "description": "The data-ds its box says: button, or the name of an item drawn as a button (Vue's data-ds falls through)."
+              }
+            ],
+            "events": [
+              {
+                "name": "click",
+                "description": "When pressed (the native click, from the inner button)."
+              }
+            ],
+            "slots": [
+              {
+                "name": "",
+                "description": "The label, with a Lucide icon before it if any."
+              }
+            ],
+            "methods": []
+          },
+          {
+            "tag": "conare-pixel-button",
+            "name": "PixelButton",
+            "module": "elements/pixel-button.js",
+            "description": "The website's dark button: red squares run in on hover.",
+            "attributes": [
+              {
+                "name": "done",
+                "field": "done",
+                "type": "boolean",
+                "default": "false",
+                "description": "Holds the red while an action shows it happened."
+              },
+              {
+                "name": "large",
+                "field": "large",
+                "type": "boolean",
+                "default": "false",
+                "description": "The 36px size with the grain, for the one main action of a page."
+              },
+              {
+                "name": "href",
+                "field": "href",
+                "type": "string | undefined"
+              },
+              {
+                "name": "type",
+                "field": "type",
+                "type": "\"button\" | \"submit\"",
+                "default": "'button'"
+              },
+              {
+                "name": "disabled",
+                "field": "disabled",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "aria-label",
+                "field": "label",
+                "type": "string | undefined"
+              },
+              {
+                "name": "aria-busy",
+                "field": "busy",
+                "type": "boolean | undefined",
+                "description": "Working (the aria-busy attribute), passed to the inner button as Vue's aria-busy falls through."
+              }
+            ],
+            "properties": [
+              {
+                "name": "done",
+                "type": "boolean",
+                "default": "false",
+                "description": "Holds the red while an action shows it happened.",
+                "attribute": "done"
+              },
+              {
+                "name": "large",
+                "type": "boolean",
+                "default": "false",
+                "description": "The 36px size with the grain, for the one main action of a page.",
+                "attribute": "large"
+              },
+              {
+                "name": "href",
+                "type": "string | undefined",
+                "attribute": "href"
+              },
+              {
+                "name": "type",
+                "type": "\"button\" | \"submit\"",
+                "default": "'button'",
+                "attribute": "type"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "attribute": "disabled"
+              },
+              {
+                "name": "label",
+                "type": "string | undefined",
+                "attribute": "aria-label"
+              },
+              {
+                "name": "busy",
+                "type": "boolean | undefined",
+                "description": "Working (the aria-busy attribute), passed to the inner button as Vue's aria-busy falls through.",
+                "attribute": "aria-busy"
+              },
+              {
+                "name": "rootName",
+                "type": "string",
+                "default": "'pixel-button'",
+                "description": "The data-ds its box says: pixel-button, or the name of an item drawn as one (Vue's data-ds falls through)."
+              }
+            ],
+            "events": [
+              {
+                "name": "click",
+                "description": "When pressed."
+              }
+            ],
+            "slots": [
+              {
+                "name": "",
+                "description": "The label, with a Lucide icon if any."
+              }
+            ],
+            "methods": []
+          },
+          {
+            "tag": "conare-hold-button",
+            "name": "HoldButton",
+            "module": "elements/hold-button.js",
+            "description": "A destructive action confirmed by holding it.",
+            "attributes": [
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string",
+                "default": "''",
+                "description": "The action, as the button says it (Revoke)."
+              },
+              {
+                "name": "ms",
+                "field": "ms",
+                "type": "number",
+                "default": "1000",
+                "description": "How long the hold takes, in ms."
+              },
+              {
+                "name": "holding",
+                "field": "holding",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "done",
+                "field": "done",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "grid",
+                "field": "grid",
+                "type": "Grid | null",
+                "default": "null"
+              }
+            ],
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "''",
+                "description": "The action, as the button says it (Revoke).",
+                "attribute": "label"
+              },
+              {
+                "name": "ms",
+                "type": "number",
+                "default": "1000",
+                "description": "How long the hold takes, in ms.",
+                "attribute": "ms"
+              }
+            ],
+            "events": [
+              {
+                "name": "confirm",
+                "description": "Once the hold completes and the check has drawn."
+              }
+            ],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "The console's buttons",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/button/Product.html",
+          "content": "<!-- The console's buttons: one dark main action, secondary for the rest, ghost for tools in a row, danger for what\n     removes, the red fix for a failure, and an icon button with its name. -->\n<div class=\"flex flex-col gap-4\">\n  <div class=\"flex flex-wrap items-center gap-2\">\n    <conare-button variant=\"dark\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-plus\" aria-hidden=\"true\"><path d=\"M5 12h14\"></path><path d=\"M12 5v14\"></path></svg>Create key</conare-button>\n    <conare-button><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-copy\" aria-hidden=\"true\"><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"></rect><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"></path></svg>Copy as code</conare-button>\n    <conare-button>Cancel</conare-button>\n    <conare-button variant=\"ghost\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-rotate-cw\" aria-hidden=\"true\"><path d=\"M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8\"></path><path d=\"M21 3v5h-5\"></path></svg>Sync now</conare-button>\n    <conare-button variant=\"ghost\" icon aria-label=\"row actions\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-ellipsis\"><circle cx=\"12\" cy=\"12\" r=\"1\"></circle><circle cx=\"19\" cy=\"12\" r=\"1\"></circle><circle cx=\"5\" cy=\"12\" r=\"1\"></circle></svg></conare-button>\n  </div>\n  <div class=\"flex flex-wrap items-center gap-2\">\n    <conare-button variant=\"danger\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-trash-2\" aria-hidden=\"true\"><path d=\"M3 6h18\"></path><path d=\"M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6\"></path><path d=\"M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2\"></path><line x1=\"10\" x2=\"10\" y1=\"11\" y2=\"17\"></line><line x1=\"14\" x2=\"14\" y1=\"11\" y2=\"17\"></line></svg>Revoke</conare-button>\n    <conare-button variant=\"brand\">Reconnect HubSpot</conare-button>\n  </div>\n</div>\n"
+        },
+        {
+          "name": "Dark",
+          "label": "Dark",
+          "center": true,
+          "half": true,
+          "path": "elements/examples/button/Dark.html",
+          "content": "<!-- The one main action on a view, as API keys has it: the website's dark button, its red squares running in on hover. -->\n<conare-pixel-button large>Create key<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-key-round\" aria-hidden=\"true\"><path d=\"M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z\"></path><circle cx=\"16.5\" cy=\"7.5\" r=\".5\" fill=\"currentColor\"></circle></svg></conare-pixel-button>\n"
+        },
+        {
+          "name": "Handoff",
+          "label": "Dark, handing off",
+          "center": true,
+          "half": true,
+          "path": "elements/examples/button/Handoff.html",
+          "content": "<!-- The dark button handing something off, as Copy prompt: hover runs the red squares across, a press darkens them at\n     once with no change of size, and once copied the red holds while it says so. -->\n<conare-pixel-button id=\"handoff\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-copy\" aria-hidden=\"true\"><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"></rect><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"></path></svg><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-check\" aria-hidden=\"true\" hidden><path d=\"M20 6 9 17l-5-5\"></path></svg><span>Copy prompt</span></conare-pixel-button>\n<span class=\"sr-only\" aria-live=\"polite\" id=\"handoff-status\"></span>\n<script type=\"module\">\n  const button = document.getElementById('handoff')\n  const [copyIcon, checkIcon] = button.querySelectorAll('svg')\n  let timer\n  button.addEventListener('click', async () => {\n    try { await navigator.clipboard.writeText('Connect Conare to this project and run a first search.') } catch { return }\n    const show = (copied) => {\n      button.done = copied\n      copyIcon.toggleAttribute('hidden', copied)\n      checkIcon.toggleAttribute('hidden', !copied)\n      button.querySelector('span').textContent = copied ? 'Copied' : 'Copy prompt'\n      document.getElementById('handoff-status').textContent = copied ? 'prompt copied' : ''\n    }\n    show(true)\n    clearTimeout(timer)\n    // ds-latency: the Copied label stays 1.5s after the copy, which has already happened.\n    timer = setTimeout(() => show(false), 1500)\n  })\n</script>\n"
+        },
+        {
+          "name": "Secondary",
+          "label": "Secondary",
+          "center": true,
+          "half": true,
+          "path": "elements/examples/button/Secondary.html",
+          "content": "<!-- Every other action, the default: a hairline that turns ink under the pointer, the paper while pressed. -->\n<conare-button press><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-copy\" aria-hidden=\"true\"><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"></rect><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"></path></svg>Copy as code</conare-button>\n"
+        },
+        {
+          "name": "Ghost",
+          "label": "Ghost",
+          "center": true,
+          "half": true,
+          "path": "elements/examples/button/Ghost.html",
+          "content": "<!-- A tool in a row, as a source's Sync now: its icon turns while it syncs, and it waits until the sync lands. -->\n<conare-button variant=\"ghost\" press id=\"sync\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-refresh-cw\" aria-hidden=\"true\"><path d=\"M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8\"></path><path d=\"M21 3v5h-5\"></path><path d=\"M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16\"></path><path d=\"M8 16H3v5\"></path></svg><span>Sync now</span></conare-button>\n<script type=\"module\">\n  const button = document.getElementById('sync')\n  button.addEventListener('click', () => {\n    button.disabled = true\n    button.querySelector('svg').classList.add('animate-spin', 'motion-reduce:animate-none')\n    button.querySelector('span').textContent = 'Syncing'\n    // ds-latency: stands in for the sync request in this example.\n    setTimeout(() => {\n      button.disabled = false\n      button.querySelector('svg').classList.remove('animate-spin', 'motion-reduce:animate-none')\n      button.querySelector('span').textContent = 'Sync now'\n    }, 1800)\n  })\n</script>\n"
+        },
+        {
+          "name": "Icon",
+          "label": "Icon",
+          "center": true,
+          "half": true,
+          "path": "elements/examples/button/Icon.html",
+          "content": "<!-- A tool with no label, as the docs panel's close: its name goes to assistive tech. -->\n<conare-button variant=\"ghost\" icon aria-label=\"close docs\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-x\"><path d=\"M18 6 6 18\"></path><path d=\"m6 6 12 12\"></path></svg></conare-button>\n"
+        },
+        {
+          "name": "Danger",
+          "label": "Danger, held",
+          "center": true,
+          "half": true,
+          "path": "elements/examples/button/Danger.html",
+          "content": "<!-- What removes something, as a key's Revoke: hold it and the red squares fill across, then the check draws; let go\n     early and it rewinds. Listen for `confirm`. -->\n<conare-hold-button label=\"Revoke\"></conare-hold-button>\n"
+        },
+        {
+          "name": "Brand",
+          "label": "Brand",
+          "center": true,
+          "half": true,
+          "path": "elements/examples/button/Brand.html",
+          "content": "<!-- The fix for a failure, in the failure's own red, as Home's banner has it; it turns black under the pointer. -->\n<conare-button variant=\"brand\">Reconnect HubSpot</conare-button>\n"
+        },
+        {
+          "name": "States",
+          "label": "States",
+          "center": true,
+          "half": false,
+          "path": "elements/examples/button/States.html",
+          "content": "<!-- The states a button goes through: at rest, waiting (disabled is grey with a dark label, never faded), and done (the\n     check and \"Copied\" for 1.5s). -->\n<div class=\"flex flex-wrap items-center gap-2\">\n  <conare-button>At rest</conare-button>\n  <conare-button variant=\"dark\" disabled>Create key</conare-button>\n  <conare-button disabled>Disabled</conare-button>\n  <conare-button id=\"copy-id\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-copy\" aria-hidden=\"true\"><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"></rect><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"></path></svg><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-check\" aria-hidden=\"true\" hidden><path d=\"M20 6 9 17l-5-5\"></path></svg><span>Copy ID</span></conare-button>\n</div>\n<script type=\"module\">\n  const button = document.getElementById('copy-id')\n  const [copyIcon, checkIcon] = button.querySelectorAll('svg')\n  let timer\n  button.addEventListener('click', async () => {\n    try { await navigator.clipboard.writeText('ns_contracts') } catch { return }\n    const show = (copied) => {\n      copyIcon.toggleAttribute('hidden', copied)\n      checkIcon.toggleAttribute('hidden', !copied)\n      button.querySelector('span').textContent = copied ? 'Copied' : 'Copy ID'\n    }\n    show(true)\n    clearTimeout(timer)\n    // ds-latency: the Copied label stays 1.5s after the copy, which has already happened.\n    timer = setTimeout(() => show(false), 1500)\n  })\n</script>\n"
+        }
+      ]
+    }
+  }
+}

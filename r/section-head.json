@@ -1,0 +1,284 @@
+{
+  "name": "section-head",
+  "title": "Section head",
+  "type": "registry:ui",
+  "group": "site",
+  "description": "How the website heads a page or a band: the red tag in the site's capitals, the line in Faculty Glyphic on 1.15 lines, one muted line and the one action under it. Centred, or started at the left beside its content.",
+  "use_for": "The head of a website page (as h1) or of a band (as h2) that has no head of its own.",
+  "never": [
+    "In the console: its pages use ConsolePage",
+    "Two actions in one head",
+    "A tag longer than a word or two"
+  ],
+  "source": "conare-web app/components/home/Tag.vue, app/pages/pricing.vue and blog/index.vue (the heads), Products.vue and Integrations.vue (the bands' heads)",
+  "body": "`as=\"h1\"` for the page's own head; bands default to h2. Put a `button-link` in the `action` slot: the dark one with\n`grain`, `pixels` and `arrow` for a page's one main call to action. `titleId` names the heading, so the band around it\ncan say `aria-labelledby`.",
+  "requires": [
+    "tag"
+  ],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/site/SectionHead.vue",
+      "content": "<script setup lang=\"ts\">\nimport SiteTag from '@/components/ui/SiteTag.vue'\n\n// How the website heads a page or a band (pricing.vue's head, Tag.vue, the blog and the bands of the home): the red tag\n// in the site's capitals, then the line in Faculty Glyphic, 24px (32px from 640px) on 1.15 lines, balanced; under it\n// one muted line and the one action (`action` slot), each 16px and 32px down. Centred by default; `align=\"start\"`\n// starts it at the left, for a head beside its content. `as=\"h1\"` for the page's own head, h2 for a band.\nwithDefaults(defineProps<{\n  title: string\n  tag?: string\n  body?: string\n  as?: 'h1' | 'h2'\n  align?: 'center' | 'start'\n  titleId?: string\n}>(), { as: 'h2', align: 'center' })\n</script>\n\n<template>\n  <div data-ds=\"section-head\" class=\"flex flex-col\" :class=\"align === 'center' ? 'items-center text-center' : 'items-start text-left'\">\n    <p v-if=\"tag\" class=\"mb-4 flex\"><SiteTag>{{ tag }}</SiteTag></p>\n    <component :is=\"as\" :id=\"titleId\" class=\"ds-section-title max-w-[640px] font-heading text-heading-2 font-normal tracking-tight text-fg sm:text-heading-1\">{{ title }}</component>\n    <p v-if=\"body\" class=\"mt-4 max-w-[560px] text-input text-fg-muted\">{{ body }}</p>\n    <div v-if=\"$slots.action\" class=\"mt-8\"><slot name=\"action\" /></div>\n  </div>\n</template>\n\n<style>\n.ds-section-title { line-height: 1.15; text-wrap: balance; }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "A page's head, with its action",
+      "center": false,
+      "half": false,
+      "path": "examples/section-head/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport SectionHead from '@/components/site/SectionHead.vue'\nimport ButtonLink from '@/components/site/ButtonLink.vue'\n// A page's own head: the tag, the line, one muted line and the one dark call to action.\n</script>\n\n<template>\n  <SectionHead\n    as=\"h1\"\n    tag=\"Pricing\"\n    title=\"Pay for what you use.\"\n    body=\"Usage pricing for every layer, with no monthly minimum.\"\n  >\n    <template #action><ButtonLink href=\"#demo\" grain pixels arrow>Book a demo</ButtonLink></template>\n  </SectionHead>\n</template>\n",
+      "requires": [
+        "button-link",
+        "tag"
+      ],
+      "packages": []
+    },
+    {
+      "name": "Start",
+      "label": "Beside its content",
+      "center": true,
+      "half": true,
+      "path": "examples/section-head/Start.vue",
+      "content": "<script setup lang=\"ts\">\nimport SectionHead from '@/components/site/SectionHead.vue'\n// A band's head started at the left, beside what it heads.\n</script>\n\n<template>\n  <SectionHead\n    align=\"start\"\n    title=\"Search\"\n    body=\"Store documents and query them. You pay for what you store and what you ask.\"\n  />\n</template>\n",
+      "requires": [
+        "tag"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/site/SectionHead.tsx",
+          "content": "import type { ReactNode } from 'react'\nimport { SiteTag } from '@/react/components/ui/SiteTag'\n\n// How the website heads a page or a band (pricing.vue's head, Tag.vue, the blog and the bands of the home): the red tag\n// in the site's capitals, then the line in Faculty Glyphic, 24px (32px from 640px) on 1.15 lines, balanced; under it\n// one muted line and the one action (`action`), each 16px and 32px down. Centred by default; `align=\"start\"` starts\n// it at the left, for a head beside its content. `as=\"h1\"` for the page's own head, h2 for a band.\nexport interface SectionHeadProps {\n  title: string\n  tag?: string\n  body?: string\n  as?: 'h1' | 'h2'\n  align?: 'center' | 'start'\n  titleId?: string\n  /** The one action (Vue's `action` slot): a button-link. */\n  action?: ReactNode\n}\n\nexport function SectionHead({ title, tag, body, as: Heading = 'h2', align = 'center', titleId, action }: SectionHeadProps) {\n  return (\n    <>\n      <style href=\"ds-section-head\" precedence=\"ds\">{css}</style>\n      <div data-ds=\"section-head\" className={align === 'center' ? 'flex flex-col items-center text-center' : 'flex flex-col items-start text-left'}>\n        {tag && <p className=\"mb-4 flex\"><SiteTag>{tag}</SiteTag></p>}\n        <Heading id={titleId} className=\"ds-section-title max-w-[640px] font-heading text-heading-2 font-normal tracking-tight text-fg sm:text-heading-1\">{title}</Heading>\n        {body && <p className=\"mt-4 max-w-[560px] text-input text-fg-muted\">{body}</p>}\n        {action && <div className=\"mt-8\">{action}</div>}\n      </div>\n    </>\n  )\n}\n\nexport default SectionHead\n\nconst css = `\n.ds-section-title { line-height: 1.15; text-wrap: balance; }\n`\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "tag"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "SectionHead",
+            "file": "react/components/site/SectionHead.tsx",
+            "props": [
+              {
+                "name": "title",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "tag",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "body",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "as",
+                "type": "'h1' | 'h2'",
+                "required": false
+              },
+              {
+                "name": "align",
+                "type": "'center' | 'start'",
+                "required": false,
+                "default": "'center'"
+              },
+              {
+                "name": "titleId",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "action",
+                "type": "ReactNode",
+                "required": false,
+                "description": "The one action (Vue's `action` slot): a button-link."
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "A page's head, with its action",
+          "center": false,
+          "half": false,
+          "path": "react/examples/section-head/Site.tsx",
+          "content": "import { SectionHead } from '@/react/components/site/SectionHead'\nimport { ButtonLink } from '@/react/components/site/ButtonLink'\n// A page's own head: the tag, the line, one muted line and the one dark call to action.\nexport default function Site() {\n  return (\n    <SectionHead\n      as=\"h1\"\n      tag=\"Pricing\"\n      title=\"Pay for what you use.\"\n      body=\"Usage pricing for every layer, with no monthly minimum.\"\n      action={<ButtonLink href=\"#demo\" grain pixels arrow>Book a demo</ButtonLink>}\n    />\n  )\n}\n",
+          "registryDependencies": [
+            "button-link",
+            "tag"
+          ],
+          "dependencies": []
+        },
+        {
+          "name": "Start",
+          "label": "Beside its content",
+          "center": true,
+          "half": true,
+          "path": "react/examples/section-head/Start.tsx",
+          "content": "import { SectionHead } from '@/react/components/site/SectionHead'\n// A band's head started at the left, beside what it heads.\nexport default function Start() {\n  return (\n    <SectionHead\n      align=\"start\"\n      title=\"Search\"\n      body=\"Store documents and query them. You pay for what you store and what you ask.\"\n    />\n  )\n}\n",
+          "registryDependencies": [
+            "tag"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/site/section-head.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport '@/elements/components/ui/site-tag'\nimport styles from 'virtual:tw'\n\n// SectionHead.vue as <conare-section-head>: how the website heads a page or a band (pricing.vue's head, Tag.vue, the\n// blog and the bands of the home): the red tag in the site's capitals, then the line in Faculty Glyphic, 24px (32px\n// from 640px) on 1.15 lines, balanced; under it one muted line and the one action (`action` slot), each 16px and 32px\n// down. Centred by default; align=\"start\" starts it at the left, for a head beside its content. as=\"h1\" for the\n// page's own head, h2 for a band. `heading` is Vue's `title`.\n\n/**\n * @summary The website's head of a page or a band: tag, line, one muted line, one action.\n * @slot action - The one action: a button-link.\n */\nexport class SectionHead extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { heading: {}, tag: {}, body: {}, as: {}, align: {}, titleId: { attribute: 'title-id' } }\n\n\t/** The line (Vue's `title`). */\n\theading = ''\n\t/** The red tag above it. */\n\ttag?: string\n\t/** One muted line under it. */\n\tbody?: string\n\t/** h1 for a page's own head, h2 for a band. */\n\tas: 'h1' | 'h2' = 'h2'\n\t/** center or start. */\n\talign: 'center' | 'start' = 'center'\n\t/** The heading's id, which names the band around it. */\n\ttitleId?: string\n\n\trender() {\n\t\tconst classes = 'ds-section-title max-w-[640px] font-heading text-heading-2 font-normal tracking-tight text-fg sm:text-heading-1'\n\t\tconst heading = this.as === 'h1'\n\t\t\t? html`<h1 id=${ifDefined(this.titleId)} class=${classes}>${this.heading}</h1>`\n\t\t\t: html`<h2 id=${ifDefined(this.titleId)} class=${classes}>${this.heading}</h2>`\n\t\treturn html`<div data-ds=\"section-head\" class=${this.align === 'center' ? 'flex flex-col items-center text-center' : 'flex flex-col items-start text-left'}>${this.tag ? html`<p class=\"mb-4 flex\">${staticHtml`<${tag('site-tag')}>${this.tag}</${tag('site-tag')}>`}</p>` : nothing}${heading}${this.body ? html`<p class=\"mt-4 max-w-[560px] text-input text-fg-muted\">${this.body}</p>` : nothing}${this.hasSlot('action') ? html`<div class=\"mt-8\"><slot name=\"action\"></slot></div>` : nothing}</div>`\n\t}\n}\n\ndefine('section-head', SectionHead)\n"
+        },
+        {
+          "path": "elements/components/site/section-head.css",
+          "content": "/* SectionHead.vue's <style>, as it is. */\n.ds-section-title { line-height: 1.15; text-wrap: balance; }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/section-head.js",
+        "elements/site-tag.js",
+        "elements/button-link.js"
+      ],
+      "tag": "conare-section-head",
+      "tags": [
+        "conare-section-head"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "tag"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-section-head",
+            "name": "SectionHead",
+            "module": "elements/section-head.js",
+            "description": "The website's head of a page or a band: tag, line, one muted line, one action.",
+            "attributes": [
+              {
+                "name": "heading",
+                "field": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The line (Vue's `title`)."
+              },
+              {
+                "name": "tag",
+                "field": "tag",
+                "type": "string | undefined",
+                "description": "The red tag above it."
+              },
+              {
+                "name": "body",
+                "field": "body",
+                "type": "string | undefined",
+                "description": "One muted line under it."
+              },
+              {
+                "name": "as",
+                "field": "as",
+                "type": "\"h1\" | \"h2\"",
+                "default": "'h2'",
+                "description": "h1 for a page's own head, h2 for a band."
+              },
+              {
+                "name": "align",
+                "field": "align",
+                "type": "\"start\" | \"center\"",
+                "default": "'center'",
+                "description": "center or start."
+              },
+              {
+                "name": "title-id",
+                "field": "titleId",
+                "type": "string | undefined",
+                "description": "The heading's id, which names the band around it."
+              }
+            ],
+            "properties": [
+              {
+                "name": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The line (Vue's `title`).",
+                "attribute": "heading"
+              },
+              {
+                "name": "tag",
+                "type": "string | undefined",
+                "description": "The red tag above it.",
+                "attribute": "tag"
+              },
+              {
+                "name": "body",
+                "type": "string | undefined",
+                "description": "One muted line under it.",
+                "attribute": "body"
+              },
+              {
+                "name": "as",
+                "type": "\"h1\" | \"h2\"",
+                "default": "'h2'",
+                "description": "h1 for a page's own head, h2 for a band.",
+                "attribute": "as"
+              },
+              {
+                "name": "align",
+                "type": "\"start\" | \"center\"",
+                "default": "'center'",
+                "description": "center or start.",
+                "attribute": "align"
+              },
+              {
+                "name": "titleId",
+                "type": "string | undefined",
+                "description": "The heading's id, which names the band around it.",
+                "attribute": "title-id"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "action",
+                "description": "The one action: a button-link."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "A page's head, with its action",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/section-head/Site.html",
+          "content": "<!-- A page's own head: the tag, the line, one muted line and the one dark call to action. -->\n<conare-section-head\n  as=\"h1\"\n  tag=\"Pricing\"\n  heading=\"Pay for what you use.\"\n  body=\"Usage pricing for every layer, with no monthly minimum.\"\n>\n  <conare-button-link slot=\"action\" href=\"#demo\" grain pixels arrow>Book a demo</conare-button-link>\n</conare-section-head>\n"
+        },
+        {
+          "name": "Start",
+          "label": "Beside its content",
+          "center": true,
+          "half": true,
+          "path": "elements/examples/section-head/Start.html",
+          "content": "<!-- A band's head started at the left, beside what it heads. -->\n<conare-section-head\n  align=\"start\"\n  heading=\"Search\"\n  body=\"Store documents and query them. You pay for what you store and what you ask.\"\n></conare-section-head>\n"
+        }
+      ]
+    }
+  }
+}

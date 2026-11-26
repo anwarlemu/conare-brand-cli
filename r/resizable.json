@@ -1,0 +1,268 @@
+{
+  "name": "resizable",
+  "title": "Resizable",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "Two panes and the hairline between them, as the docs panel sits beside the page. The hairline turns ink under the pointer, while dragged and when focused; drag it or use the arrow keys.",
+  "use_for": "A page beside its docs, a list beside the item it opens, a page beside the text read from it.",
+  "never": [
+    "A thick grip or a dotted handle: the hairline is the handle",
+    "Panes that can close to nothing: set a minimum"
+  ],
+  "source": "New in Conare's style, from conare-web app/assets/css/console2.css (.v2-docs: the hairline edge beside the page)",
+  "body": "Each pane scrolls under a fade (`fade-xy`, down and across) at the edge with more past it.",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Resizable.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed, ref, useId } from 'vue'\n\n// Two panes and the hairline between them (new in Conare's style, from the docs panel's split: a 1px edge beside the\n// page). The handle is the hairline itself with an 8px reach either side; it turns ink under the pointer, while\n// dragged and when focused. Drag it, or focus it and use the arrow keys (Shift for bigger steps, Home and End for the\n// limits). `v-model` is the first pane's share in percent, held between `min` and `max`. Write the panes in the\n// `first` and `second` slots.\nconst size = defineModel<number>({ default: 50 })\nconst props = withDefaults(defineProps<{ direction?: 'horizontal' | 'vertical', min?: number, max?: number, label?: string }>(), { direction: 'horizontal', min: 20, max: 80, label: 'resize panes' })\nconst root = ref<HTMLElement | null>(null)\nconst dragging = ref(false)\nconst firstId = `pane-${useId()}`\nconst across = computed(() => props.direction === 'horizontal')\nconst clamp = (n: number) => Math.min(props.max, Math.max(props.min, Math.round(n * 10) / 10))\n\nfunction onDown(e: PointerEvent) {\n  if (e.button !== 0) return\n  const el = e.currentTarget as HTMLElement\n  el.setPointerCapture(e.pointerId)\n  dragging.value = true\n}\nfunction onMove(e: PointerEvent) {\n  if (!dragging.value || !root.value) return\n  const box = root.value.getBoundingClientRect()\n  size.value = clamp(across.value ? ((e.clientX - box.left) / box.width) * 100 : ((e.clientY - box.top) / box.height) * 100)\n}\nfunction onUp(e: PointerEvent) {\n  dragging.value = false\n  ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)\n}\nfunction onKey(e: KeyboardEvent) {\n  const step = e.shiftKey ? 10 : 2\n  const back = across.value ? 'ArrowLeft' : 'ArrowUp'\n  const fwd = across.value ? 'ArrowRight' : 'ArrowDown'\n  if (e.key === back) size.value = clamp(size.value - step)\n  else if (e.key === fwd) size.value = clamp(size.value + step)\n  else if (e.key === 'Home') size.value = props.min\n  else if (e.key === 'End') size.value = props.max\n  else return\n  e.preventDefault()\n}\n</script>\n\n<template>\n  <div data-ds=\"resizable\" ref=\"root\" class=\"flex min-h-0 min-w-0\" :class=\"[across ? 'flex-row' : 'flex-col', dragging && 'select-none']\">\n    <div :id=\"firstId\" class=\"fade-xy min-h-0 min-w-0 overflow-auto\" :style=\"{ flexBasis: `${size}%` }\"><slot name=\"first\" /></div>\n    <div\n      class=\"ds-resize-handle\"\n      :data-direction=\"direction\"\n      :data-dragging=\"dragging || undefined\"\n      role=\"separator\"\n      tabindex=\"0\"\n      :aria-label=\"label\"\n      :aria-orientation=\"across ? 'vertical' : 'horizontal'\"\n      :aria-controls=\"firstId\"\n      :aria-valuenow=\"size\"\n      :aria-valuemin=\"min\"\n      :aria-valuemax=\"max\"\n      @pointerdown=\"onDown\"\n      @pointermove=\"onMove\"\n      @pointerup=\"onUp\"\n      @pointercancel=\"onUp\"\n      @keydown=\"onKey\"\n    />\n    <div class=\"fade-xy min-h-0 min-w-0 flex-1 overflow-auto\"><slot name=\"second\" /></div>\n  </div>\n</template>\n\n<style>\n.ds-resize-handle { position: relative; flex-shrink: 0; background: var(--ds-color-edge); touch-action: none; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-resize-handle[data-direction=\"horizontal\"] { width: var(--ds-border-hairline); cursor: col-resize; }\n.ds-resize-handle[data-direction=\"vertical\"] { height: var(--ds-border-hairline); cursor: row-resize; }\n/* The reach: 8px either side of the hairline, 20px on touch. */\n.ds-resize-handle::before { position: absolute; content: \"\"; }\n.ds-resize-handle[data-direction=\"horizontal\"]::before { inset: 0 calc(var(--ds-space-md) * -1); }\n.ds-resize-handle[data-direction=\"vertical\"]::before { inset: calc(var(--ds-space-md) * -1) 0; }\n@media (pointer: coarse) {\n  .ds-resize-handle[data-direction=\"horizontal\"]::before { inset: 0 -20px; }\n  .ds-resize-handle[data-direction=\"vertical\"]::before { inset: -20px 0; }\n}\n.ds-resize-handle[data-dragging], .ds-resize-handle:focus-visible { background: var(--ds-color-edge-focus); }\n.ds-resize-handle:focus-visible { outline: none; }\n@media (hover: hover) and (pointer: fine) { .ds-resize-handle:hover { background: var(--ds-color-edge-focus); } }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "A page and its docs",
+      "center": false,
+      "half": false,
+      "path": "examples/resizable/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport Resizable from '@/components/ui/Resizable.vue'\n// A page and its docs side by side, the hairline between them: drag it, or focus it and use the arrow keys.\nconst share = ref(62)\n</script>\n\n<template>\n  <div class=\"flex flex-col gap-2\">\n    <Resizable v-model=\"share\" class=\"h-72 border border-edge\" label=\"resize the docs panel\" :min=\"30\" :max=\"80\">\n      <template #first>\n        <div class=\"flex flex-col gap-1 p-4\">\n          <h3 class=\"type-heading-3\">Search</h3>\n          <p class=\"type-meta text-fg-muted\">Ask a question of the contracts namespace.</p>\n        </div>\n      </template>\n      <template #second>\n        <div class=\"flex h-12 items-center border-b border-edge px-4 type-ui-strong\">Docs</div>\n        <p class=\"p-4 type-ui text-fg-soft\">Search returns the passages that answer a question, best first, each with its source.</p>\n      </template>\n    </Resizable>\n    <p class=\"type-meta text-fg-muted tabular-nums\">Page {{ Math.round(share) }}%, docs {{ 100 - Math.round(share) }}%</p>\n  </div>\n</template>\n",
+      "requires": [],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Resizable.tsx",
+          "content": "'use client'\nimport { useId, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react'\nimport { cn } from '@/react/lib/cn'\nimport { useControllable } from '@/react/hooks/useControllable'\n\n// Two panes and the hairline between them (new in Conare's style, from the docs panel's split: a 1px edge beside the\n// page). The handle is the hairline itself with an 8px reach either side; it turns ink under the pointer, while\n// dragged and when focused. Drag it, or focus it and use the arrow keys (Shift for bigger steps, Home and End for the\n// limits). The value is the first pane's share in percent, held between `min` and `max` (Vue's v-model: `value` with\n// `onValueChange`, or `defaultValue` alone). The panes go in `first` and `second`.\nexport interface ResizableProps {\n  direction?: 'horizontal' | 'vertical'\n  min?: number\n  max?: number\n  label?: string\n  value?: number\n  defaultValue?: number\n  onValueChange?: (size: number) => void\n  first?: ReactNode\n  second?: ReactNode\n  className?: string\n}\n\nexport function Resizable({ direction = 'horizontal', min = 20, max = 80, label = 'resize panes', value, defaultValue = 50, onValueChange, first, second, className }: ResizableProps) {\n  const [size, setSize] = useControllable(value, defaultValue, onValueChange)\n  const root = useRef<HTMLDivElement | null>(null)\n  const [dragging, setDragging] = useState(false)\n  const firstId = `pane-${useId()}`\n  const across = direction === 'horizontal'\n  const clamp = (n: number) => Math.min(max, Math.max(min, Math.round(n * 10) / 10))\n\n  function onDown(e: PointerEvent<HTMLDivElement>) {\n    if (e.button !== 0) return\n    e.currentTarget.setPointerCapture(e.pointerId)\n    setDragging(true)\n  }\n  function onMove(e: PointerEvent<HTMLDivElement>) {\n    if (!dragging || !root.current) return\n    const box = root.current.getBoundingClientRect()\n    setSize(clamp(across ? ((e.clientX - box.left) / box.width) * 100 : ((e.clientY - box.top) / box.height) * 100))\n  }\n  function onUp(e: PointerEvent<HTMLDivElement>) {\n    setDragging(false)\n    e.currentTarget.releasePointerCapture(e.pointerId)\n  }\n  function onKey(e: KeyboardEvent<HTMLDivElement>) {\n    const step = e.shiftKey ? 10 : 2\n    const back = across ? 'ArrowLeft' : 'ArrowUp'\n    const fwd = across ? 'ArrowRight' : 'ArrowDown'\n    if (e.key === back) setSize(clamp(size - step))\n    else if (e.key === fwd) setSize(clamp(size + step))\n    else if (e.key === 'Home') setSize(min)\n    else if (e.key === 'End') setSize(max)\n    else return\n    e.preventDefault()\n  }\n\n  return (\n    <>\n      <style href=\"ds-resizable\" precedence=\"ds\">{css}</style>\n      <div data-ds=\"resizable\" ref={root} className={cn('flex min-h-0 min-w-0', [across ? 'flex-row' : 'flex-col', dragging && 'select-none'], className)}>\n        <div id={firstId} className=\"fade-xy min-h-0 min-w-0 overflow-auto\" style={{ flexBasis: `${size}%` }}>{first}</div>\n        <div\n          className=\"ds-resize-handle\"\n          data-direction={direction}\n          data-dragging={dragging || undefined}\n          role=\"separator\"\n          tabIndex={0}\n          aria-label={label}\n          aria-orientation={across ? 'vertical' : 'horizontal'}\n          aria-controls={firstId}\n          aria-valuenow={size}\n          aria-valuemin={min}\n          aria-valuemax={max}\n          onPointerDown={onDown}\n          onPointerMove={onMove}\n          onPointerUp={onUp}\n          onPointerCancel={onUp}\n          onKeyDown={onKey}\n        />\n        <div className=\"fade-xy min-h-0 min-w-0 flex-1 overflow-auto\">{second}</div>\n      </div>\n    </>\n  )\n}\n\nexport default Resizable\n\nconst css = `\n.ds-resize-handle { position: relative; flex-shrink: 0; background: var(--ds-color-edge); touch-action: none; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-resize-handle[data-direction=\"horizontal\"] { width: var(--ds-border-hairline); cursor: col-resize; }\n.ds-resize-handle[data-direction=\"vertical\"] { height: var(--ds-border-hairline); cursor: row-resize; }\n/* The reach: 8px either side of the hairline, 20px on touch. */\n.ds-resize-handle::before { position: absolute; content: \"\"; }\n.ds-resize-handle[data-direction=\"horizontal\"]::before { inset: 0 calc(var(--ds-space-md) * -1); }\n.ds-resize-handle[data-direction=\"vertical\"]::before { inset: calc(var(--ds-space-md) * -1) 0; }\n@media (pointer: coarse) {\n  .ds-resize-handle[data-direction=\"horizontal\"]::before { inset: 0 -20px; }\n  .ds-resize-handle[data-direction=\"vertical\"]::before { inset: -20px 0; }\n}\n.ds-resize-handle[data-dragging], .ds-resize-handle:focus-visible { background: var(--ds-color-edge-focus); }\n.ds-resize-handle:focus-visible { outline: none; }\n@media (hover: hover) and (pointer: fine) { .ds-resize-handle:hover { background: var(--ds-color-edge-focus); } }\n`\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        },
+        {
+          "path": "react/hooks/useControllable.ts",
+          "content": "'use client'\nimport { useCallback, useRef, useState } from 'react'\n\n// Vue's defineModel in React: a value that is controlled when the caller passes it (value + onValueChange, as Radix\n// does) and kept inside otherwise (defaultValue). setValue calls onChange either way.\nexport function useControllable<T>(value: T | undefined, defaultValue: T, onChange?: (value: T) => void) {\n\tconst [inner, setInner] = useState<T>(defaultValue)\n\tconst controlled = value !== undefined\n\tconst current = controlled ? value : inner\n\tconst ref = useRef(onChange)\n\tref.current = onChange\n\tconst set = useCallback((next: T) => {\n\t\tif (!controlled) setInner(next)\n\t\tref.current?.(next)\n\t}, [controlled])\n\treturn [current, set] as const\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "Resizable",
+            "file": "react/components/ui/Resizable.tsx",
+            "props": [
+              {
+                "name": "direction",
+                "type": "'horizontal' | 'vertical'",
+                "required": false,
+                "default": "'horizontal'"
+              },
+              {
+                "name": "min",
+                "type": "number",
+                "required": false,
+                "default": "20"
+              },
+              {
+                "name": "max",
+                "type": "number",
+                "required": false,
+                "default": "80"
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "required": false,
+                "default": "'resize panes'"
+              },
+              {
+                "name": "value",
+                "type": "number",
+                "required": false
+              },
+              {
+                "name": "defaultValue",
+                "type": "number",
+                "required": false,
+                "default": "50"
+              },
+              {
+                "name": "onValueChange",
+                "type": "(size: number) => void",
+                "required": false
+              },
+              {
+                "name": "first",
+                "type": "ReactNode",
+                "required": false
+              },
+              {
+                "name": "second",
+                "type": "ReactNode",
+                "required": false
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "A page and its docs",
+          "center": false,
+          "half": false,
+          "path": "react/examples/resizable/Product.tsx",
+          "content": "'use client'\nimport { useState } from 'react'\nimport { Resizable } from '@/react/components/ui/Resizable'\n// A page and its docs side by side, the hairline between them: drag it, or focus it and use the arrow keys.\n\nexport default function Product() {\n  const [share, setShare] = useState(62)\n  return (\n    <div className=\"flex flex-col gap-2\">\n      <Resizable\n        value={share}\n        onValueChange={setShare}\n        className=\"h-72 border border-edge\"\n        label=\"resize the docs panel\"\n        min={30}\n        max={80}\n        first={(\n          <div className=\"flex flex-col gap-1 p-4\">\n            <h3 className=\"type-heading-3\">Search</h3>\n            <p className=\"type-meta text-fg-muted\">Ask a question of the contracts namespace.</p>\n          </div>\n        )}\n        second={(\n          <>\n            <div className=\"flex h-12 items-center border-b border-edge px-4 type-ui-strong\">Docs</div>\n            <p className=\"p-4 type-ui text-fg-soft\">Search returns the passages that answer a question, best first, each with its source.</p>\n          </>\n        )}\n      />\n      <p className=\"type-meta text-fg-muted tabular-nums\">Page {Math.round(share)}%, docs {100 - Math.round(share)}%</p>\n    </div>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/resizable.ts",
+          "content": "import { html, type PropertyValues } from 'lit'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { styleMap } from 'lit/directives/style-map.js'\nimport { DsElement, define, uid } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// Resizable.vue as <conare-resizable>: two panes and the hairline between them (new in Conare's style, from the docs\n// panel's split: a 1px edge beside the page). The handle is the hairline itself with an 8px reach either side; it turns\n// ink under the pointer, while dragged and when focused. Drag it, or focus it and use the arrow keys (Shift for bigger\n// steps, Home and End for the limits). v-model is `value`, the first pane's share in percent, held between `min` and\n// `max`, with `input` and `change` as it moves. The panes go in the `first` and `second` slots. The host is the split\n// (Vue's root div), so a class on the element (a height, a border) lands on it.\n\n/**\n * @summary Two panes and the hairline between them.\n * @slot first - The first pane (left, or top when vertical).\n * @slot second - The second pane.\n * @fires input - The split moved (read `value`).\n * @fires change - The split moved (read `value`).\n */\nexport class Resizable extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { value: { type: Number }, direction: { reflect: true }, min: { type: Number }, max: { type: Number }, label: {}, dragging: { state: true } }\n\n\t/** The first pane's share, in percent. */\n\tvalue = 50\n\tdirection: 'horizontal' | 'vertical' = 'horizontal'\n\tmin = 20\n\tmax = 80\n\t/** The handle's name for assistive tech. */\n\tlabel = 'resize panes'\n\tprivate dragging = false\n\tprivate firstId = uid('pane')\n\n\tprivate get across() {\n\t\treturn this.direction !== 'vertical'\n\t}\n\tprivate clamp(n: number) {\n\t\treturn Math.min(this.max, Math.max(this.min, Math.round(n * 10) / 10))\n\t}\n\tprotected updated(changed: PropertyValues) {\n\t\tsuper.updated(changed)\n\t\t// No text is picked up while dragging (Vue's select-none on the root).\n\t\tif (changed.has('dragging')) this.toggleAttribute('data-dragging', this.dragging)\n\t}\n\n\tprivate onDown(e: PointerEvent) {\n\t\tif (e.button !== 0) return\n\t\t;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)\n\t\tthis.dragging = true\n\t}\n\tprivate onMove(e: PointerEvent) {\n\t\tif (!this.dragging) return\n\t\tconst box = this.getBoundingClientRect()\n\t\tthis.commit(this.clamp(this.across ? ((e.clientX - box.left) / box.width) * 100 : ((e.clientY - box.top) / box.height) * 100))\n\t}\n\tprivate onUp(e: PointerEvent) {\n\t\tthis.dragging = false\n\t\t;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)\n\t}\n\tprivate onKey(e: KeyboardEvent) {\n\t\tconst step = e.shiftKey ? 10 : 2\n\t\tconst back = this.across ? 'ArrowLeft' : 'ArrowUp'\n\t\tconst fwd = this.across ? 'ArrowRight' : 'ArrowDown'\n\t\tif (e.key === back) this.commit(this.clamp(this.value - step))\n\t\telse if (e.key === fwd) this.commit(this.clamp(this.value + step))\n\t\telse if (e.key === 'Home') this.commit(this.min)\n\t\telse if (e.key === 'End') this.commit(this.max)\n\t\telse return\n\t\te.preventDefault()\n\t}\n\n\trender() {\n\t\treturn html`<div id=${this.firstId} class=\"fade-xy min-h-0 min-w-0 overflow-auto\" style=${styleMap({ flexBasis: `${this.value}%` })}><slot name=\"first\"></slot></div>\n\t\t\t<div\n\t\t\t\tclass=\"ds-resize-handle\"\n\t\t\t\tdata-direction=${this.across ? 'horizontal' : 'vertical'}\n\t\t\t\tdata-dragging=${ifDefined(this.dragging ? 'true' : undefined)}\n\t\t\t\trole=\"separator\"\n\t\t\t\ttabindex=\"0\"\n\t\t\t\taria-label=${this.label}\n\t\t\t\taria-orientation=${this.across ? 'vertical' : 'horizontal'}\n\t\t\t\taria-controls=${this.firstId}\n\t\t\t\taria-valuenow=${this.value}\n\t\t\t\taria-valuemin=${this.min}\n\t\t\t\taria-valuemax=${this.max}\n\t\t\t\t@pointerdown=${this.onDown}\n\t\t\t\t@pointermove=${this.onMove}\n\t\t\t\t@pointerup=${this.onUp}\n\t\t\t\t@pointercancel=${this.onUp}\n\t\t\t\t@keydown=${this.onKey}\n\t\t\t></div>\n\t\t\t<div class=\"fade-xy min-h-0 min-w-0 flex-1 overflow-auto\"><slot name=\"second\"></slot></div>`\n\t}\n}\n\ndefine('resizable', Resizable)\n"
+        },
+        {
+          "path": "elements/components/ui/resizable.css",
+          "content": "/* The host is the split (Resizable.vue's root div and its classes), so a class on the element lands on it. */\n:host { @apply flex min-h-0 min-w-0 flex-row; }\n:host([direction=\"vertical\"]) { @apply flex-col; }\n:host([data-dragging]) { @apply select-none; }\n/* Resizable.vue's <style>, as it is. */\n.ds-resize-handle { position: relative; flex-shrink: 0; background: var(--ds-color-edge); touch-action: none; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-resize-handle[data-direction=\"horizontal\"] { width: var(--ds-border-hairline); cursor: col-resize; }\n.ds-resize-handle[data-direction=\"vertical\"] { height: var(--ds-border-hairline); cursor: row-resize; }\n/* The reach: 8px either side of the hairline, 20px on touch. */\n.ds-resize-handle::before { position: absolute; content: \"\"; }\n.ds-resize-handle[data-direction=\"horizontal\"]::before { inset: 0 calc(var(--ds-space-md) * -1); }\n.ds-resize-handle[data-direction=\"vertical\"]::before { inset: calc(var(--ds-space-md) * -1) 0; }\n@media (pointer: coarse) {\n  .ds-resize-handle[data-direction=\"horizontal\"]::before { inset: 0 -20px; }\n  .ds-resize-handle[data-direction=\"vertical\"]::before { inset: -20px 0; }\n}\n.ds-resize-handle[data-dragging], .ds-resize-handle:focus-visible { background: var(--ds-color-edge-focus); }\n.ds-resize-handle:focus-visible { outline: none; }\n@media (hover: hover) and (pointer: fine) { .ds-resize-handle:hover { background: var(--ds-color-edge-focus); } }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/resizable.js"
+      ],
+      "tag": "conare-resizable",
+      "tags": [
+        "conare-resizable"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-resizable",
+            "name": "Resizable",
+            "module": "elements/resizable.js",
+            "description": "Two panes and the hairline between them.",
+            "attributes": [
+              {
+                "name": "value",
+                "field": "value",
+                "type": "number",
+                "default": "50",
+                "description": "The first pane's share, in percent."
+              },
+              {
+                "name": "direction",
+                "field": "direction",
+                "type": "\"horizontal\" | \"vertical\"",
+                "default": "'horizontal'"
+              },
+              {
+                "name": "min",
+                "field": "min",
+                "type": "number",
+                "default": "20"
+              },
+              {
+                "name": "max",
+                "field": "max",
+                "type": "number",
+                "default": "80"
+              },
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string",
+                "default": "'resize panes'",
+                "description": "The handle's name for assistive tech."
+              },
+              {
+                "name": "dragging",
+                "field": "dragging",
+                "type": "boolean",
+                "default": "false"
+              }
+            ],
+            "properties": [
+              {
+                "name": "value",
+                "type": "number",
+                "default": "50",
+                "description": "The first pane's share, in percent.",
+                "attribute": "value"
+              },
+              {
+                "name": "direction",
+                "type": "\"horizontal\" | \"vertical\"",
+                "default": "'horizontal'",
+                "attribute": "direction"
+              },
+              {
+                "name": "min",
+                "type": "number",
+                "default": "20",
+                "attribute": "min"
+              },
+              {
+                "name": "max",
+                "type": "number",
+                "default": "80",
+                "attribute": "max"
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "default": "'resize panes'",
+                "description": "The handle's name for assistive tech.",
+                "attribute": "label"
+              }
+            ],
+            "events": [
+              {
+                "name": "input",
+                "description": "The split moved (read `value`)."
+              },
+              {
+                "name": "change",
+                "description": "The split moved (read `value`)."
+              }
+            ],
+            "slots": [
+              {
+                "name": "first",
+                "description": "The first pane (left, or top when vertical)."
+              },
+              {
+                "name": "second",
+                "description": "The second pane."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "A page and its docs",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/resizable/Product.html",
+          "content": "<!-- A page and its docs side by side, the hairline between them: drag it, or focus it and use the arrow keys. -->\n<div class=\"flex flex-col gap-2\">\n  <conare-resizable id=\"docs-split\" value=\"62\" class=\"h-72 border border-edge\" label=\"resize the docs panel\" min=\"30\" max=\"80\">\n    <div slot=\"first\" class=\"flex flex-col gap-1 p-4\">\n      <h3 class=\"type-heading-3\">Search</h3>\n      <p class=\"type-meta text-fg-muted\">Ask a question of the contracts namespace.</p>\n    </div>\n    <div slot=\"second\" class=\"flex h-12 items-center border-b border-edge px-4 type-ui-strong\">Docs</div>\n    <p slot=\"second\" class=\"p-4 type-ui text-fg-soft\">Search returns the passages that answer a question, best first, each with its source.</p>\n  </conare-resizable>\n  <p id=\"docs-split-share\" class=\"type-meta text-fg-muted tabular-nums\">Page 62%, docs 38%</p>\n</div>\n<script type=\"module\">\n  const split = document.getElementById('docs-split')\n  split.addEventListener('input', () => {\n    const page = Math.round(split.value)\n    document.getElementById('docs-split-share').textContent = `Page ${page}%, docs ${100 - page}%`\n  })\n</script>\n"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,193 @@
+{
+  "name": "typography",
+  "title": "Typography",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "The console's type as one reference: a 20px Faculty Glyphic page title, Geist at 13px for everything else, 12px meta, 11px captions, Geist Mono for keys and IDs, a link with a quiet underline and a query's words in medium weight.",
+  "use_for": "Any text in the console. Prefer the type-* utilities in markup; Text is the same set as a component.",
+  "never": [
+    "Bold (600 and up) weights",
+    "Capitals in the console",
+    "Text lighter than the meta gray",
+    "A marked word with a fill: weight only"
+  ],
+  "source": "conare-web app/assets/css/main.css (@theme), app/assets/css/console2.css (.v2-title, .v2-meta, .v2-mono, .v2-link), app/components/console/Marked.vue",
+  "body": "In the web component, the variant's colour and type hold over the page's own styles, so `<conare-text>` looks right\nin an app that only adds components. To give one a different colour, size or line height, set `--type-color`,\n`--type-size` or `--type-leading` on it (for example\n`class=\"[--type-color:var(--ds-color-fg-soft)]\"`); a colour class such as `text-fg-soft` does not reach it. These\ndon't pass down, so a marked word inside keeps its own look.",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Text.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed } from 'vue'\n\n// The console's type as one part (main.css @theme, console2.css .v2-title, .v2-meta, .v2-mono, .v2-link, Marked.vue).\n// title: 20px Faculty Glyphic, a page's title (h1). ui: 13px Geist, the default. strong: 13px medium. meta: 12px muted,\n// captions under a field, timestamps. caption: 11px muted, the smallest. code: 13px Geist Mono; code-sm: 12px mono, for\n// IDs, keys and namespace names. link: ink text with a quiet underline 4px under it that turns ink on hover. mark: a\n// query's word in a passage, medium weight in ink, never a fill. `as` overrides the tag.\nexport type TextVariant = 'title' | 'ui' | 'strong' | 'meta' | 'caption' | 'code' | 'code-sm' | 'link' | 'mark'\nconst props = withDefaults(defineProps<{ variant?: TextVariant, as?: string, href?: string }>(), { variant: 'ui' })\n\nconst TAGS: Record<TextVariant, string> = { 'title': 'h1', 'ui': 'p', 'strong': 'p', 'meta': 'p', 'caption': 'p', 'code': 'code', 'code-sm': 'code', 'link': 'a', 'mark': 'strong' }\nconst CLASSES: Record<TextVariant, string> = {\n  'title': 'type-heading-3 text-fg',\n  'ui': 'type-ui text-fg',\n  'strong': 'type-ui-strong text-fg',\n  'meta': 'type-meta text-fg-muted',\n  'caption': 'type-caption text-fg-muted',\n  'code': 'type-code text-fg',\n  'code-sm': 'type-code-sm text-fg',\n  'link': 'ds-text-link text-fg',\n  'mark': 'font-medium text-fg',\n}\nconst tag = computed(() => props.as ?? (props.variant === 'link' && !props.href ? 'button' : TAGS[props.variant]))\n</script>\n\n<template>\n  <component data-ds=\"text\" :is=\"tag\" :href=\"href\" :type=\"tag === 'button' ? 'button' : undefined\" :class=\"CLASSES[variant]\"><slot /></component>\n</template>\n\n<style>\n.ds-text-link { cursor: pointer; text-decoration: underline; text-decoration-color: var(--ds-color-edge-strong); text-underline-offset: 4px; transition: text-decoration-color var(--ds-duration-enter) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-text-link:hover { text-decoration-color: var(--ds-color-fg); } }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "The console's type",
+      "center": false,
+      "half": false,
+      "path": "examples/typography/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport Text from '@/components/ui/Text.vue'\n// The console's type: a page title in Faculty Glyphic, the 13px default, medium for emphasis, 12px meta, 11px\n// captions, mono for keys and IDs, a link in a sentence and a query's words marked in a passage.\n</script>\n\n<template>\n  <div class=\"grid items-baseline gap-x-6 gap-y-4 md:grid-cols-[112px_minmax(0,1fr)]\">\n    <Text variant=\"meta\">title</Text>\n    <Text variant=\"title\">Namespaces</Text>\n    <Text variant=\"meta\">ui</Text>\n    <Text>Connect a source and Conare keeps it in sync.</Text>\n    <Text variant=\"meta\">strong</Text>\n    <Text variant=\"strong\">412,830 documents</Text>\n    <Text variant=\"meta\">meta</Text>\n    <Text variant=\"meta\">Synced 2 min ago</Text>\n    <Text variant=\"meta\">caption</Text>\n    <Text variant=\"caption\">Shown to members of acme only.</Text>\n    <Text variant=\"meta\">code-sm</Text>\n    <Text variant=\"code-sm\">ns_contracts_2026</Text>\n    <Text variant=\"meta\">link</Text>\n    <Text class=\"text-fg-soft\">No queries yet. <Text variant=\"link\" href=\"#\">Try a search</Text></Text>\n    <Text variant=\"meta\">mark</Text>\n    <Text class=\"text-fg-soft\">Acme may <Text variant=\"mark\">renew</Text> for twelve months with 60 days written notice.</Text>\n  </div>\n</template>\n",
+      "requires": [],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Text.tsx",
+          "content": "import type { ElementType, HTMLAttributes, ReactNode } from 'react'\nimport { cn } from '@/react/lib/cn'\n\n// The console's type as one part (main.css @theme, console2.css .v2-title, .v2-meta, .v2-mono, .v2-link, Marked.vue).\n// title: 20px Faculty Glyphic, a page's title (h1). ui: 13px Geist, the default. strong: 13px medium. meta: 12px muted,\n// captions under a field, timestamps. caption: 11px muted, the smallest. code: 13px Geist Mono; code-sm: 12px mono, for\n// IDs, keys and namespace names. link: ink text with a quiet underline 4px under it that turns ink on hover. mark: a\n// query's word in a passage, medium weight in ink, never a fill. `as` overrides the tag.\nexport type TextVariant = 'title' | 'ui' | 'strong' | 'meta' | 'caption' | 'code' | 'code-sm' | 'link' | 'mark'\n\nexport interface TextProps extends HTMLAttributes<HTMLElement> {\n  variant?: TextVariant\n  /** The tag, in place of the variant's own. */\n  as?: string\n  href?: string\n  children?: ReactNode\n}\n\nconst TAGS: Record<TextVariant, string> = { 'title': 'h1', 'ui': 'p', 'strong': 'p', 'meta': 'p', 'caption': 'p', 'code': 'code', 'code-sm': 'code', 'link': 'a', 'mark': 'strong' }\nconst CLASSES: Record<TextVariant, string> = {\n  'title': 'type-heading-3 text-fg',\n  'ui': 'type-ui text-fg',\n  'strong': 'type-ui-strong text-fg',\n  'meta': 'type-meta text-fg-muted',\n  'caption': 'type-caption text-fg-muted',\n  'code': 'type-code text-fg',\n  'code-sm': 'type-code-sm text-fg',\n  'link': 'ds-text-link text-fg',\n  'mark': 'font-medium text-fg',\n}\n\nexport function Text({ variant = 'ui', as, href, className, children, ...rest }: TextProps) {\n  const tag = as ?? (variant === 'link' && !href ? 'button' : TAGS[variant])\n  const Tag = tag as ElementType\n  return (\n    <>\n      <style href=\"ds-text\" precedence=\"ds\">{css}</style>\n      <Tag data-ds=\"text\" href={href} type={tag === 'button' ? 'button' : undefined} className={cn(CLASSES[variant], className)} {...rest}>{children}</Tag>\n    </>\n  )\n}\n\nexport default Text\n\nconst css = `\n.ds-text-link { cursor: pointer; text-decoration: underline; text-decoration-color: var(--ds-color-edge-strong); text-underline-offset: 4px; transition: text-decoration-color var(--ds-duration-enter) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-text-link:hover { text-decoration-color: var(--ds-color-fg); } }\n`\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "Text",
+            "file": "react/components/ui/Text.tsx",
+            "props": [
+              {
+                "name": "variant",
+                "type": "TextVariant",
+                "required": false,
+                "default": "'ui'"
+              },
+              {
+                "name": "as",
+                "type": "string",
+                "required": false,
+                "description": "The tag, in place of the variant's own."
+              },
+              {
+                "name": "href",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              }
+            ],
+            "extends": [
+              "HTMLAttributes<HTMLElement>"
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "The console's type",
+          "center": false,
+          "half": false,
+          "path": "react/examples/typography/Product.tsx",
+          "content": "import { Text } from '@/react/components/ui/Text'\n// The console's type: a page title in Faculty Glyphic, the 13px default, medium for emphasis, 12px meta, 11px\n// captions, mono for keys and IDs, a link in a sentence and a query's words marked in a passage.\n\nexport default function Product() {\n  return (\n    <div className=\"grid items-baseline gap-x-6 gap-y-4 md:grid-cols-[112px_minmax(0,1fr)]\">\n      <Text variant=\"meta\">title</Text>\n      <Text variant=\"title\">Namespaces</Text>\n      <Text variant=\"meta\">ui</Text>\n      <Text>Connect a source and Conare keeps it in sync.</Text>\n      <Text variant=\"meta\">strong</Text>\n      <Text variant=\"strong\">412,830 documents</Text>\n      <Text variant=\"meta\">meta</Text>\n      <Text variant=\"meta\">Synced 2 min ago</Text>\n      <Text variant=\"meta\">caption</Text>\n      <Text variant=\"caption\">Shown to members of acme only.</Text>\n      <Text variant=\"meta\">code-sm</Text>\n      <Text variant=\"code-sm\">ns_contracts_2026</Text>\n      <Text variant=\"meta\">link</Text>\n      <Text className=\"text-fg-soft\">No queries yet. <Text variant=\"link\" href=\"#\">Try a search</Text></Text>\n      <Text variant=\"meta\">mark</Text>\n      <Text className=\"text-fg-soft\">Acme may <Text variant=\"mark\">renew</Text> for twelve months with 60 days written notice.</Text>\n    </div>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/text.ts",
+          "content": "import { html, type PropertyValues } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// Text.vue as <conare-text>: the console's type as one part (main.css @theme, console2.css .v2-title, .v2-meta,\n// .v2-mono, .v2-link, Marked.vue). title: 20px Faculty Glyphic, a page's title (a level 1 heading). ui: 13px Geist, the\n// default. strong: 13px medium. meta: 12px muted, captions under a field, timestamps. caption: 11px muted, the\n// smallest. code: 13px Geist Mono; code-sm: 12px mono, for IDs, keys and namespace names. link: ink text with a quiet\n// underline 4px under it that turns ink on hover. mark: a query's word in a passage, medium weight in ink, never a fill.\n//\n// The host is the text's box (text.css), so a class on <conare-text> (a margin, a width) lands on it as a class on\n// <Text> does, and it takes the role of the variant's tag (heading, paragraph, code, strong). Its variant's colour and\n// type are !important, so they hold over the page's scoped base in apps that only add components; set another through\n// --type-color, --type-size or --type-leading on the element (class=\"[--type-color:...]\"). A link is a real <a> (or a\n// <button> without `href`) inside, the host staying out of the way. `as` names another tag for its role.\nexport type TextVariant = 'title' | 'ui' | 'strong' | 'meta' | 'caption' | 'code' | 'code-sm' | 'link' | 'mark'\n\nconst TAGS: Record<TextVariant, string> = { 'title': 'h1', 'ui': 'p', 'strong': 'p', 'meta': 'p', 'caption': 'p', 'code': 'code', 'code-sm': 'code', 'link': 'a', 'mark': 'strong' }\n// The role each tag has, set on the host through ElementInternals.\nconst ROLES: Record<string, [string | null, string | null]> = {\n\th1: ['heading', '1'], h2: ['heading', '2'], h3: ['heading', '3'], h4: ['heading', '4'], p: ['paragraph', null], code: ['code', null],\n\tstrong: ['strong', null], em: ['emphasis', null], span: [null, null], div: [null, null], li: ['listitem', null], label: [null, null],\n}\n// Tags that sit in the line, as their own display: inline does.\nconst INLINE = new Set(['code', 'strong', 'em', 'span', 'label', 'a', 'button'])\n\n/**\n * @summary The console's type as one part.\n * @slot - The text.\n * @cssprop --type-color - The colour, in place of the variant's (a class like text-fg-soft does not reach it).\n * @cssprop --type-size - The font size, in place of the variant's.\n * @cssprop --type-leading - The line height, in place of the variant's.\n */\nexport class Text extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { variant: { reflect: true }, as: {}, href: {} }\n\n\tvariant: TextVariant = 'ui'\n\t/** The tag whose role it takes, in place of the variant's own. */\n\tas?: string\n\t/** On `link`: where it goes (without it, a button). */\n\thref?: string\n\tprivate internals = this.attachInternals()\n\n\tget tag() {\n\t\treturn this.as ?? (this.variant === 'link' && !this.href ? 'button' : TAGS[this.variant] ?? 'p')\n\t}\n\n\tprotected willUpdate(changed: PropertyValues) {\n\t\tsuper.willUpdate(changed)\n\t\tconst tag = this.tag\n\t\tconst box = tag !== 'a' && tag !== 'button'\n\t\tconst [role, level] = box ? ROLES[tag] ?? [null, null] : [null, null]\n\t\tthis.internals.role = role\n\t\tthis.internals.ariaLevel = level\n\t\tthis.toggleAttribute('data-inline', box && INLINE.has(tag))\n\t\tthis.toggleAttribute('data-control', !box)\n\t}\n\n\trender() {\n\t\tconst tag = this.tag\n\t\tif (tag === 'a') return html`<a data-ds=\"text\" href=${this.href ?? ''} class=\"ds-text-link text-fg\"><slot></slot></a>`\n\t\tif (tag === 'button') return html`<button data-ds=\"text\" type=\"button\" class=\"ds-text-link text-fg\"><slot></slot></button>`\n\t\treturn html`<slot></slot>`\n\t}\n}\n\ndefine('text', Text)\n"
+        },
+        {
+          "path": "elements/components/ui/text.css",
+          "content": "/* The host is the text's box (Text.vue's root). Its variant's look is !important, so it holds over the page's scoped\n   [data-ds] base in apps that only add components (Vue's utilities on the root beat that base; a :host rule would not).\n   A page sets another colour, size or line height through --type-color, --type-size and --type-leading on the\n   element (they don't inherit, so text inside keeps its own variant); any other class on the\n   host (a margin, a width) lands as one on <Text> does. */\n@property --type-color { syntax: \"*\"; inherits: false; }\n@property --type-size { syntax: \"*\"; inherits: false; }\n@property --type-leading { syntax: \"*\"; inherits: false; }\n:host {\n  display: block;\n  color: var(--type-color, var(--_color)) !important;\n}\n:host(:not([variant=\"mark\"])) {\n  font-family: var(--ds-font-text) !important;\n  font-size: var(--type-size, var(--_size)) !important;\n  line-height: var(--type-leading, var(--_leading)) !important;\n  font-weight: var(--_weight);\n  letter-spacing: var(--_tracking);\n}\n:host([data-inline]) { display: inline; }\n/* A link or button draws its own box inside. */\n:host([data-control]) { display: contents; }\n/* Each variant's type (type-* in the theme) and colour. */\n:host { --_color: var(--ds-color-fg); --_size: var(--ds-text-ui); --_leading: var(--ds-text-ui-leading); --_weight: var(--ds-font-weight-regular); --_tracking: 0; }\n:host([variant=\"title\"]) { font-family: var(--ds-font-heading) !important; --_size: var(--ds-text-heading-3); --_leading: var(--ds-text-heading-3-leading); }\n:host([variant=\"strong\"]) { --_weight: var(--ds-font-weight-medium); }\n:host([variant=\"meta\"]) { --_color: var(--ds-color-fg-muted); --_size: var(--ds-text-meta); --_leading: var(--ds-text-meta-leading); }\n:host([variant=\"caption\"]) { --_color: var(--ds-color-fg-muted); --_size: var(--ds-text-caption); --_leading: var(--ds-text-caption-leading); }\n:host([variant=\"code\"]) { font-family: var(--ds-font-code) !important; }\n:host([variant=\"code-sm\"]) { font-family: var(--ds-font-code) !important; --_size: var(--ds-text-meta); --_leading: var(--ds-text-meta-leading); }\n/* mark sets only weight and colour (font-medium text-fg), as in Vue: its type is the passage's (or the base's). */\n:host([variant=\"mark\"]) { font-weight: var(--ds-font-weight-medium); }\n/* Text.vue's <style>, as it is. */\n.ds-text-link { cursor: pointer; text-decoration: underline; text-decoration-color: var(--ds-color-edge-strong); text-underline-offset: 4px; transition: text-decoration-color var(--ds-duration-enter) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-text-link:hover { text-decoration-color: var(--ds-color-fg); } }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/text.js"
+      ],
+      "tag": "conare-text",
+      "tags": [
+        "conare-text"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-text",
+            "name": "Text",
+            "module": "elements/text.js",
+            "description": "The console's type as one part.",
+            "attributes": [
+              {
+                "name": "variant",
+                "field": "variant",
+                "type": "TextVariant",
+                "default": "'ui'"
+              },
+              {
+                "name": "as",
+                "field": "as",
+                "type": "string | undefined",
+                "description": "The tag whose role it takes, in place of the variant's own."
+              },
+              {
+                "name": "href",
+                "field": "href",
+                "type": "string | undefined",
+                "description": "On `link`: where it goes (without it, a button)."
+              }
+            ],
+            "properties": [
+              {
+                "name": "variant",
+                "type": "TextVariant",
+                "default": "'ui'",
+                "attribute": "variant"
+              },
+              {
+                "name": "as",
+                "type": "string | undefined",
+                "description": "The tag whose role it takes, in place of the variant's own.",
+                "attribute": "as"
+              },
+              {
+                "name": "href",
+                "type": "string | undefined",
+                "description": "On `link`: where it goes (without it, a button).",
+                "attribute": "href"
+              },
+              {
+                "name": "tag",
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "The text."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "The console's type",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/typography/Product.html",
+          "content": "<!-- The console's type: a page title in Faculty Glyphic, the 13px default, medium for emphasis, 12px meta, 11px\n     captions, mono for keys and IDs, a link in a sentence and a query's words marked in a passage. -->\n<div class=\"grid items-baseline gap-x-6 gap-y-4 md:grid-cols-[112px_minmax(0,1fr)]\">\n  <conare-text variant=\"meta\">title</conare-text>\n  <conare-text variant=\"title\">Namespaces</conare-text>\n  <conare-text variant=\"meta\">ui</conare-text>\n  <conare-text>Connect a source and Conare keeps it in sync.</conare-text>\n  <conare-text variant=\"meta\">strong</conare-text>\n  <conare-text variant=\"strong\">412,830 documents</conare-text>\n  <conare-text variant=\"meta\">meta</conare-text>\n  <conare-text variant=\"meta\">Synced 2 min ago</conare-text>\n  <conare-text variant=\"meta\">caption</conare-text>\n  <conare-text variant=\"caption\">Shown to members of acme only.</conare-text>\n  <conare-text variant=\"meta\">code-sm</conare-text>\n  <conare-text variant=\"code-sm\">ns_contracts_2026</conare-text>\n  <conare-text variant=\"meta\">link</conare-text>\n  <conare-text class=\"[--type-color:var(--ds-color-fg-soft)]\">No queries yet. <conare-text variant=\"link\" href=\"#\">Try a search</conare-text></conare-text>\n  <conare-text variant=\"meta\">mark</conare-text>\n  <conare-text class=\"[--type-color:var(--ds-color-fg-soft)]\">Acme may <conare-text variant=\"mark\">renew</conare-text> for twelve months with 60 days written notice.</conare-text>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

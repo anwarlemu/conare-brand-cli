@@ -1,0 +1,152 @@
+{
+  "name": "toast",
+  "title": "Toast",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "A short note at the bottom right saying what just happened: black, for four seconds, three at most. Pointing at one holds them, and a hidden tab stops their time.",
+  "use_for": "Confirming something that left the screen: a deleted document.",
+  "never": [
+    "Errors that need an answer: keep them where they happened",
+    "What the page already shows"
+  ],
+  "source": "conare-web app/components/console/Toasts.vue, app/composables/useToast.ts, app/assets/css/console2.css (.v2-toast)",
+  "body": "",
+  "requires": [],
+  "dependencies": [
+    "lucide-vue-next@^0.479.0"
+  ],
+  "files": [
+    {
+      "path": "components/ui/Toaster.vue",
+      "content": "<script setup lang=\"ts\">\nimport { onBeforeUnmount, ref, watch } from 'vue'\nimport { Check } from 'lucide-vue-next'\nimport { useToasts } from '@/composables/useToast'\n\n// The notes from useToast() at the bottom right, the newest lowest (console2.css .v2-toast): black, 12px, a check, the\n// note and its detail in mono, for four seconds, three at most. One timer runs them all, only while there are any.\n// Their time stops while one is pointed at and while the tab is hidden, so none leaves unread. The newest rises in on\n// the strong ease-out, the others move up as it lands, and the oldest fades. Mount one per app.\nconst toasts = useToasts()\nconst held = ref(false)\nconst STEP = 100\nlet timer: ReturnType<typeof setInterval> | undefined\nfunction tick() {\n  if (held.value || document.hidden) return\n  for (const t of toasts.value) t.left -= STEP\n  if (toasts.value.some(t => t.left <= 0)) toasts.value = toasts.value.filter(t => t.left > 0)\n}\nwatch(() => toasts.value.length, (count) => {\n  // ds-latency: the toasts' own clock, off the input path; nothing waits on it.\n  if (count && !timer) timer = setInterval(tick, STEP)\n  if (!count) {\n    clearInterval(timer)\n    timer = undefined\n    held.value = false\n  }\n}, { immediate: true })\nonBeforeUnmount(() => clearInterval(timer))\n</script>\n\n<template>\n  <div data-ds=\"toaster\" class=\"ds-toasts\" role=\"status\" aria-live=\"polite\" @pointerenter=\"held = true\" @pointerleave=\"held = false\">\n    <TransitionGroup name=\"ds-toast\">\n      <p v-for=\"t in toasts\" :key=\"t.id\" class=\"ds-toast\">\n        <Check :size=\"12\" :stroke-width=\"2\" aria-hidden=\"true\" class=\"shrink-0\" />\n        <span class=\"shrink-0\">{{ t.text }}</span>\n        <span v-if=\"t.detail\" class=\"min-w-0 truncate type-code-sm\">{{ t.detail }}</span>\n      </p>\n    </TransitionGroup>\n  </div>\n</template>\n\n<style>\n.ds-toasts { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 70; display: flex; width: min(320px, calc(100vw - 32px)); flex-direction: column; align-items: flex-end; gap: var(--ds-space-md); pointer-events: none; }\n.ds-toast { display: flex; max-width: 100%; min-height: var(--ds-size-control-lg); align-items: center; gap: var(--ds-space-md); padding: 8px 12px; background: var(--ds-color-surface-inverse); color: var(--ds-color-fg-inverse); font-size: var(--ds-text-meta); line-height: 20px; pointer-events: auto; }\n.ds-toast-move { transition: transform var(--ds-duration-enter) var(--ds-easing-out); }\n.ds-toast-enter-active { transition: opacity var(--ds-duration-enter) var(--ds-easing-out), transform var(--ds-duration-enter) var(--ds-easing-out); }\n.ds-toast-leave-active { position: absolute; transition: opacity var(--ds-duration-fade) ease-out; }\n.ds-toast-enter-from, .ds-toast-leave-to { opacity: 0; }\n.ds-toast-enter-from { transform: translateY(8px); }\n@media (prefers-reduced-motion: reduce) {\n  .ds-toast-move { transition: none; }\n  .ds-toast-enter-from { transform: none; }\n}\n</style>\n"
+    },
+    {
+      "path": "composables/useToast.ts",
+      "content": "import { ref } from 'vue'\n\n/**\n * A short note in the corner: what just happened, for a moment. Every note sits in one list, so a burst can't pile up:\n * three show at most, the oldest making way, and the same note again only restarts its time. Toaster.vue shows them.\n */\nexport interface Toast { id: number, text: string, detail?: string, left: number }\n\nexport const TOAST_MS = 4000\nconst MOST = 3\nconst toasts = ref<Toast[]>([])\nlet last = 0\n\n/** The notes on screen (read by Toaster.vue). */\nexport const useToasts = () => toasts\n\n/** toast(text, detail?) shows a note. */\nexport function useToast() {\n  return (text: string, detail?: string) => {\n    const same = toasts.value.find(t => t.text === text && t.detail === detail)\n    if (same) {\n      same.left = TOAST_MS\n      return\n    }\n    last += 1\n    toasts.value = [...toasts.value.slice(1 - MOST), { id: last, text, detail, left: TOAST_MS }]\n  }\n}\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "Delete a document",
+      "center": true,
+      "half": false,
+      "path": "examples/toast/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport Button from '@/components/ui/Button.vue'\nimport Toaster from '@/components/ui/Toaster.vue'\nimport { useToast } from '@/composables/useToast'\n// Press the button: a note comes up in the corner. Press it quickly and three show at most.\nconst toast = useToast()\nlet count = 0\nfunction send() {\n  count += 1\n  toast('Deleted', `northwind-msa-${count}.pdf`)\n}\n</script>\n\n<template>\n  <div class=\"min-h-50\">\n    <Button @click=\"send\">Delete a document</Button>\n    <Toaster />\n  </div>\n</template>\n",
+      "requires": [
+        "button"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Toaster.tsx",
+          "content": "'use client'\nimport { useEffect, useRef } from 'react'\nimport { Check } from 'lucide-react'\nimport { TransitionGroup } from '@/react/lib/transition'\nimport { toastStore, useToasts } from '@/react/hooks/useToast'\n\n// The notes from useToast() at the bottom right, the newest lowest (console2.css .v2-toast): black, 12px, a check, the\n// note and its detail in mono, for four seconds, three at most. One timer runs them all, only while there are any.\n// Their time stops while one is pointed at and while the tab is hidden, so none leaves unread. The newest rises in on\n// the strong ease-out, the others move up as it lands, and the oldest fades. Mount one per app.\nconst STEP = 100\n\nexport function Toaster() {\n  const toasts = useToasts()\n  const held = useRef(false)\n  const count = toasts.length\n  useEffect(() => {\n    if (!count) {\n      held.current = false\n      return\n    }\n    // ds-latency: the toasts' own clock, off the input path; nothing waits on it.\n    const timer = setInterval(() => {\n      if (held.current || document.hidden) return\n      const next = toastStore.get().map(t => ({ ...t, left: t.left - STEP }))\n      toastStore.set(next.filter(t => t.left > 0))\n    }, STEP)\n    return () => clearInterval(timer)\n  }, [count > 0]) // eslint-disable-line react-hooks/exhaustive-deps\n  return (\n    <>\n      <style href=\"ds-toaster\" precedence=\"ds\">{css}</style>\n      <div data-ds=\"toaster\" className=\"ds-toasts\" role=\"status\" aria-live=\"polite\" onPointerEnter={() => { held.current = true }} onPointerLeave={() => { held.current = false }}>\n        <TransitionGroup name=\"ds-toast\">\n          {toasts.map(t => (\n            <p key={t.id} className=\"ds-toast\">\n              <Check size={12} strokeWidth={2} aria-hidden=\"true\" className=\"shrink-0\" />\n              <span className=\"shrink-0\">{t.text}</span>\n              {t.detail && <span className=\"min-w-0 truncate type-code-sm\">{t.detail}</span>}\n            </p>\n          ))}\n        </TransitionGroup>\n      </div>\n    </>\n  )\n}\n\nexport default Toaster\n\nconst css = `\n.ds-toasts { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 70; display: flex; width: min(320px, calc(100vw - 32px)); flex-direction: column; align-items: flex-end; gap: var(--ds-space-md); pointer-events: none; }\n.ds-toast { display: flex; max-width: 100%; min-height: var(--ds-size-control-lg); align-items: center; gap: var(--ds-space-md); padding: 8px 12px; background: var(--ds-color-surface-inverse); color: var(--ds-color-fg-inverse); font-size: var(--ds-text-meta); line-height: 20px; pointer-events: auto; }\n.ds-toast-move { transition: transform var(--ds-duration-enter) var(--ds-easing-out); }\n.ds-toast-enter-active { transition: opacity var(--ds-duration-enter) var(--ds-easing-out), transform var(--ds-duration-enter) var(--ds-easing-out); }\n.ds-toast-leave-active { position: absolute; transition: opacity var(--ds-duration-fade) ease-out; }\n.ds-toast-enter-from, .ds-toast-leave-to { opacity: 0; }\n.ds-toast-enter-from { transform: translateY(8px); }\n@media (prefers-reduced-motion: reduce) {\n  .ds-toast-move { transition: none; }\n  .ds-toast-enter-from { transform: none; }\n}\n`\n"
+        },
+        {
+          "path": "react/lib/transition.tsx",
+          "content": "'use client'\nimport { Children, cloneElement, isValidElement, useLayoutEffect, useRef, useState, type ReactElement, type ReactNode, type Ref } from 'react'\nimport { flushSync } from 'react-dom'\n\n// Vue's <Transition> and <TransitionGroup> for the React flavor, with the same class names, so a Vue item's CSS\n// (.ds-pop-enter-from, .ds-toast-leave-active, .ds-toast-move...) works unchanged:\n//\n//   <Transition show={open} name=\"ds-pop\">{<div ... />}</Transition>\n//   <TransitionGroup name=\"ds-toast\">{toasts.map((t) => <p key={t.id} ... />)}</TransitionGroup>\n//\n// Entering: <name>-enter-from and -enter-active, then a frame later -enter-to in place of -enter-from, until the\n// transition ends. Leaving: the same with -leave-*, and the element stays until it has, then goes in the same task its\n// classes come off (flushSync), so it never shows again for a frame. A group also moves the others with <name>-move\n// (FLIP), measured once the entering and leaving children have their classes, as Vue's are. `css={false}` skips the classes (Vue's :css=\"false\"); `duration` is Vue's explicit duration\n// in ms, a number or { enter, leave }. The child must take a ref (a DOM element) and className.\ntype Duration = number | { enter: number, leave: number }\ntype Phase = 'enter' | 'leave'\n\nconst ms = (d: Duration | undefined, phase: Phase) => (d === undefined ? undefined : typeof d === 'number' ? d : d[phase])\n\n/** Runs one Vue transition phase on an element and resolves when it has ended. */\nexport function runTransition(el: HTMLElement, name: string, phase: Phase, duration?: Duration): Promise<void> {\n  const from = `${name}-${phase}-from`\n  const active = `${name}-${phase}-active`\n  const to = `${name}-${phase}-to`\n  el.classList.add(from, active)\n  return new Promise((resolve) => {\n    let done = false\n    const finish = () => {\n      if (done) return\n      done = true\n      el.classList.remove(from, active, to)\n      el.removeEventListener('transitionend', onEnd)\n      el.removeEventListener('animationend', onEnd)\n      resolve()\n    }\n    const onEnd = (event: Event) => { if (event.target === el) finish() }\n    requestAnimationFrame(() => requestAnimationFrame(() => {\n      el.classList.remove(from)\n      el.classList.add(to)\n      const explicit = ms(duration, phase)\n      if (explicit !== undefined) return void setTimeout(finish, explicit)\n      // The longest transition or animation on it, as Vue reads it; none means done now.\n      const cs = getComputedStyle(el)\n      const longest = (durations: string, delays: string) => {\n        const d = durations.split(',').map(s => Number.parseFloat(s) * (s.trim().endsWith('ms') ? 1 : 1000))\n        const l = delays.split(',').map(s => Number.parseFloat(s) * (s.trim().endsWith('ms') ? 1 : 1000))\n        return Math.max(0, ...d.map((x, i) => x + (l[i % l.length] || 0)))\n      }\n      const total = Math.max(longest(cs.transitionDuration, cs.transitionDelay), longest(cs.animationDuration, cs.animationDelay))\n      if (!total) return finish()\n      el.addEventListener('transitionend', onEnd)\n      el.addEventListener('animationend', onEnd)\n      setTimeout(finish, total + 50)\n    }))\n  })\n}\n\nfunction mergeRefs<T>(...refs: Array<Ref<T> | undefined>) {\n  return (node: T) => {\n    for (const r of refs) {\n      if (typeof r === 'function') r(node)\n      else if (r) (r as { current: T }).current = node\n    }\n  }\n}\ntype Child = ReactElement<{ ref?: Ref<HTMLElement>, className?: string }>\n\nexport interface TransitionProps { show: boolean, name: string, css?: boolean, duration?: Duration, appear?: boolean, children: ReactNode }\n\n/** Vue's <Transition> around one element: it enters when `show` turns true and leaves before it unmounts. */\nexport function Transition({ show, name, css = true, duration, appear, children }: TransitionProps) {\n  // Whether the element is in the page: from the render where `show` turns true until its leave has ended.\n  const [present, setPresent] = useState(show)\n  const el = useRef<HTMLElement | null>(null)\n  const was = useRef<boolean | null>(null)\n  const last = useRef<ReactNode>(children)\n  if (show) last.current = children\n  if (show && !present) setPresent(true)\n  useLayoutEffect(() => {\n    const before = was.current\n    was.current = show\n    const node = el.current\n    if (before === show) return\n    if (show) {\n      if (node && css && (before !== null || appear)) void runTransition(node, name, 'enter', duration)\n    }\n    // Gone in the same task its leave classes come off, as Vue removes it, so no frame shows it whole again.\n    else if (node && css && before) void runTransition(node, name, 'leave', duration).then(() => { if (!was.current) flushSync(() => setPresent(false)) })\n    else setPresent(false)\n  }, [show]) // eslint-disable-line react-hooks/exhaustive-deps\n  const child = (show ? children : last.current) as Child\n  if (!(show || present) || !isValidElement(child)) return null\n  return cloneElement(child, { ref: mergeRefs(child.props.ref, (n: HTMLElement | null) => { el.current = n }) })\n}\n\nexport interface TransitionGroupProps { name: string, children: ReactNode }\n\n/** Vue's <TransitionGroup>: keyed children enter and leave as <Transition> does, and the rest move with <name>-move. */\nexport function TransitionGroup({ name, children }: TransitionGroupProps) {\n  const nodes = useRef(new Map<string, HTMLElement>())\n  const rects = useRef(new Map<string, DOMRect>())\n  const seen = useRef(new Set<string>())\n  const firstRender = useRef(true)\n  const current = Children.toArray(children).filter(isValidElement) as Child[]\n  const [leaving, setLeaving] = useState<Map<string, { child: Child, index: number }>>(new Map())\n  const prev = useRef<Child[]>([])\n\n  // Children that went away stay, leaving, where they were.\n  const keys = new Set(current.map(c => c.key!))\n  const gone = prev.current.filter(c => !keys.has(c.key!) && !leaving.has(c.key!))\n  if (gone.length) {\n    const next = new Map(leaving)\n    for (const c of gone) next.set(c.key!, { child: c, index: prev.current.indexOf(c) })\n    setLeaving(next)\n  }\n  prev.current = current\n  const list = [...current]\n  for (const [key, { child, index }] of leaving) if (!keys.has(key)) list.splice(Math.min(index, list.length), 0, child)\n\n  // Before the DOM changes: where every child is now (for the move).\n  for (const [key, node] of nodes.current) rects.current.set(key, node.getBoundingClientRect())\n\n  useLayoutEffect(() => {\n    // First every entering and leaving child takes its classes, so the measures for the move below see each as Vue does\n    // (an entering one at its enter-from, a leaving one out of the flow): measuring first would fix an entering child's\n    // style as it is, fully shown, and its transition would start from the end.\n    const entered = new Set<string>()\n    for (const c of list) {\n      const key = c.key!\n      const node = nodes.current.get(key)\n      if (!node) continue\n      if (leaving.has(key)) {\n        if (!node.classList.contains(`${name}-leave-active`)) {\n          // Gone in the same task its leave classes come off, so no frame shows it whole again.\n          void runTransition(node, name, 'leave').then(() => flushSync(() => setLeaving((m) => {\n            const n = new Map(m)\n            n.delete(key)\n            return n\n          })))\n        }\n        continue\n      }\n      if (!seen.current.has(key)) {\n        seen.current.add(key)\n        entered.add(key)\n        if (!firstRender.current) void runTransition(node, name, 'enter')\n      }\n    }\n    // Then the move: from where each stayed child was to where it is.\n    for (const c of list) {\n      const key = c.key!\n      const node = nodes.current.get(key)\n      if (!node || leaving.has(key) || entered.has(key)) continue\n      const before = rects.current.get(key)\n      if (!before) continue\n      const after = node.getBoundingClientRect()\n      if (before.left !== after.left || before.top !== after.top) {\n        node.style.transitionDuration = '0s'\n        node.style.transform = `translate(${before.left - after.left}px, ${before.top - after.top}px)`\n        void node.offsetWidth\n        node.classList.add(`${name}-move`)\n        node.style.transitionDuration = ''\n        node.style.transform = ''\n        const end = () => {\n          node.classList.remove(`${name}-move`)\n          node.removeEventListener('transitionend', end)\n        }\n        node.addEventListener('transitionend', end)\n      }\n    }\n    firstRender.current = false\n    for (const key of [...seen.current]) if (!list.some(c => c.key === key)) seen.current.delete(key)\n  })\n\n  return (\n    <>\n      {list.map(c => cloneElement(c, {\n        key: c.key,\n        ref: mergeRefs(c.props.ref, (n: HTMLElement | null) => {\n          if (n) nodes.current.set(c.key!, n)\n          else nodes.current.delete(c.key!)\n        }),\n      }))}\n    </>\n  )\n}\n"
+        },
+        {
+          "path": "react/hooks/useToast.ts",
+          "content": "'use client'\nimport { useSyncExternalStore } from 'react'\n\n/**\n * A short note in the corner: what just happened, for a moment. Every note sits in one list, so a burst can't pile up:\n * three show at most, the oldest making way, and the same note again only restarts its time. Toaster shows them.\n */\nexport interface Toast { id: number, text: string, detail?: string, left: number }\n\nexport const TOAST_MS = 4000\nconst MOST = 3\nlet toasts: Toast[] = []\nlet last = 0\nconst listeners = new Set<() => void>()\nconst emit = () => listeners.forEach(l => l())\n\n/** The store behind the notes (read by Toaster). */\nexport const toastStore = {\n  get: () => toasts,\n  set(next: Toast[]) {\n    toasts = next\n    emit()\n  },\n  subscribe(listener: () => void) {\n    listeners.add(listener)\n    return () => { listeners.delete(listener) }\n  },\n}\n\n/** The notes on screen (read by Toaster). */\nexport const useToasts = () => useSyncExternalStore(toastStore.subscribe, toastStore.get, toastStore.get)\n\n/** toast(text, detail?) shows a note. Works outside components too: `toast` is exported as well. */\nexport function toast(text: string, detail?: string) {\n  const same = toasts.find(t => t.text === text && t.detail === detail)\n  if (same) {\n    toastStore.set(toasts.map(t => (t === same ? { ...t, left: TOAST_MS } : t)))\n    return\n  }\n  last += 1\n  toastStore.set([...toasts.slice(1 - MOST), { id: last, text, detail, left: TOAST_MS }])\n}\n\nexport function useToast() {\n  return toast\n}\n"
+        }
+      ],
+      "dependencies": [
+        "lucide-react@0.479.0"
+      ],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "Toaster",
+            "file": "react/components/ui/Toaster.tsx",
+            "props": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Delete a document",
+          "center": true,
+          "half": false,
+          "path": "react/examples/toast/Product.tsx",
+          "content": "'use client'\nimport { useRef } from 'react'\nimport { Button } from '@/react/components/ui/Button'\nimport { Toaster } from '@/react/components/ui/Toaster'\nimport { useToast } from '@/react/hooks/useToast'\n// Press the button: a note comes up in the corner. Press it quickly and three show at most.\n\nexport default function Product() {\n  const toast = useToast()\n  const count = useRef(0)\n  function send() {\n    count.current += 1\n    toast('Deleted', `northwind-msa-${count.current}.pdf`)\n  }\n  return (\n    <div className=\"min-h-50\">\n      <Button onClick={send}>Delete a document</Button>\n      <Toaster />\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "button"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/toaster.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { repeat } from 'lit/directives/repeat.js'\nimport { Check } from 'lucide'\nimport { DsElement, define } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport { enter, leave, measure, move } from '@/elements/lib/transition'\nimport styles from 'virtual:tw'\n\n// Toaster.vue as <conare-toaster>, with useToast: notes at the bottom right, the newest lowest (console2.css\n// .v2-toast): black, 12px, a check, the note and its detail in mono, for four seconds, three at most, the same note\n// again only restarting its time. One timer runs them all, only while there are any. Their time stops while one is\n// pointed at and while the tab is hidden. The newest rises in, the others move up as it lands, and the oldest fades.\n// Put one on the page; show a note with `toast(text, detail)` from this module, or the element's toast() method.\nexport interface Toast { id: number, text: string, detail?: string, left: number }\n\nexport const TOAST_MS = 4000\nconst MOST = 3\nconst STEP = 100\nlet toasts: Toast[] = []\nlet last = 0\nconst listeners = new Set<() => void>()\nconst set = (next: Toast[]) => {\n\ttoasts = next\n\tlisteners.forEach((l) => l())\n}\n\n/** Shows a note: what just happened, for a moment. */\nexport function toast(text: string, detail?: string) {\n\tconst same = toasts.find((t) => t.text === text && t.detail === detail)\n\tif (same) {\n\t\tset(toasts.map((t) => (t === same ? { ...t, left: TOAST_MS } : t)))\n\t\treturn\n\t}\n\tlast += 1\n\tset([...toasts.slice(1 - MOST), { id: last, text, detail, left: TOAST_MS }])\n}\n\n/**\n * @summary The corner where short notes show.\n */\nexport class Toaster extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { list: { state: true } }\n\n\t/** The notes drawn: the store's, and those still leaving. */\n\tprivate list: Array<Toast & { leaving?: boolean }> = []\n\tprivate held = false\n\tprivate timer?: ReturnType<typeof setInterval>\n\tprivate nodes = new Map<number, HTMLElement>()\n\tprivate rects = new Map<unknown, DOMRect>()\n\tprivate sync = () => {\n\t\tconst ids = new Set(toasts.map((t) => t.id))\n\t\tconst leaving = this.list.filter((t) => !ids.has(t.id)).map((t) => ({ ...t, leaving: true }))\n\t\t// Leaving notes keep their place; the store's order otherwise.\n\t\tconst next: typeof this.list = [...toasts]\n\t\tfor (const t of leaving) next.splice(Math.min(this.list.findIndex((x) => x.id === t.id), next.length), 0, t)\n\t\tthis.list = next\n\t\tthis.clock()\n\t}\n\n\t/** Shows a note (the module's toast()). */\n\ttoast(text: string, detail?: string) {\n\t\ttoast(text, detail)\n\t}\n\n\tprivate clock() {\n\t\tif (toasts.length && !this.timer) {\n\t\t\t// ds-latency: the toasts' own clock, off the input path; nothing waits on it.\n\t\t\tthis.timer = setInterval(() => {\n\t\t\t\tif (this.held || document.hidden) return\n\t\t\t\tconst next = toasts.map((t) => ({ ...t, left: t.left - STEP }))\n\t\t\t\tset(next.filter((t) => t.left > 0))\n\t\t\t}, STEP)\n\t\t}\n\t\tif (!toasts.length && this.timer) {\n\t\t\tclearInterval(this.timer)\n\t\t\tthis.timer = undefined\n\t\t\tthis.held = false\n\t\t}\n\t}\n\n\tconnectedCallback() {\n\t\tsuper.connectedCallback()\n\t\tlisteners.add(this.sync)\n\t\tthis.sync()\n\t}\n\tdisconnectedCallback() {\n\t\tsuper.disconnectedCallback()\n\t\tlisteners.delete(this.sync)\n\t\tclearInterval(this.timer)\n\t\tthis.timer = undefined\n\t}\n\n\tprotected willUpdate() {\n\t\tthis.rects = measure(this.nodes)\n\t}\n\tprotected updated() {\n\t\tthis.nodes.clear()\n\t\tfor (const node of this.renderRoot.querySelectorAll<HTMLElement>('.ds-toast')) this.nodes.set(Number(node.dataset.id), node)\n\t\tfor (const t of this.list) {\n\t\t\tconst node = this.nodes.get(t.id)\n\t\t\tif (!node || node.dataset.phase === (t.leaving ? 'leave' : 'shown')) continue\n\t\t\tif (t.leaving) {\n\t\t\t\tnode.dataset.phase = 'leave'\n\t\t\t\tvoid leave(node, 'ds-toast').then(() => {\n\t\t\t\t\tthis.list = this.list.filter((x) => x.id !== t.id)\n\t\t\t\t})\n\t\t\t} else {\n\t\t\t\tnode.dataset.phase = 'shown'\n\t\t\t\tif (this.rects.size || this.hasUpdated) void enter(node, 'ds-toast')\n\t\t\t}\n\t\t}\n\t\tmove(this.nodes, this.rects, 'ds-toast')\n\t}\n\n\trender() {\n\t\treturn html`<div data-ds=\"toaster\" class=\"ds-toasts\" role=\"status\" aria-live=\"polite\" @pointerenter=${() => { this.held = true }} @pointerleave=${() => { this.held = false }}>${repeat(this.list, (t) => t.id, (t) => html`<p class=\"ds-toast\" data-id=${t.id}>${icon(Check, 'check', { size: 12, strokeWidth: 2, class: 'shrink-0', attrs: { 'aria-hidden': 'true' } })}<span class=\"shrink-0\">${t.text}</span>${t.detail ? html`<span class=\"min-w-0 truncate type-code-sm\">${t.detail}</span>` : nothing}</p>`)}</div>`\n\t}\n}\n\ndefine('toaster', Toaster)\n"
+        },
+        {
+          "path": "elements/components/ui/toaster.css",
+          "content": "/* Toaster.vue's <style>, as it is. */\n.ds-toasts { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 70; display: flex; width: min(320px, calc(100vw - 32px)); flex-direction: column; align-items: flex-end; gap: var(--ds-space-md); pointer-events: none; }\n.ds-toast { display: flex; max-width: 100%; min-height: var(--ds-size-control-lg); align-items: center; gap: var(--ds-space-md); padding: 8px 12px; background: var(--ds-color-surface-inverse); color: var(--ds-color-fg-inverse); font-size: var(--ds-text-meta); line-height: 20px; pointer-events: auto; }\n.ds-toast-move { transition: transform var(--ds-duration-enter) var(--ds-easing-out); }\n.ds-toast-enter-active { transition: opacity var(--ds-duration-enter) var(--ds-easing-out), transform var(--ds-duration-enter) var(--ds-easing-out); }\n.ds-toast-leave-active { position: absolute; transition: opacity var(--ds-duration-fade) ease-out; }\n.ds-toast-enter-from, .ds-toast-leave-to { opacity: 0; }\n.ds-toast-enter-from { transform: translateY(8px); }\n@media (prefers-reduced-motion: reduce) {\n  .ds-toast-move { transition: none; }\n  .ds-toast-enter-from { transform: none; }\n}\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/toaster.js",
+        "elements/button.js"
+      ],
+      "tag": "conare-toaster",
+      "tags": [
+        "conare-toaster"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-toaster",
+            "name": "Toaster",
+            "module": "elements/toaster.js",
+            "description": "The corner where short notes show.",
+            "attributes": [
+              {
+                "name": "list",
+                "field": "list",
+                "type": "Array<Toast & { leaving?: boolean }>",
+                "default": "[]",
+                "description": "The notes drawn: the store's, and those still leaving."
+              }
+            ],
+            "properties": [],
+            "events": [],
+            "slots": [],
+            "methods": [
+              {
+                "name": "toast",
+                "description": "Shows a note (the module's toast())."
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Delete a document",
+          "center": true,
+          "half": false,
+          "path": "elements/examples/toast/Product.html",
+          "content": "<!-- Press the button: a note comes up in the corner. Press it quickly and three show at most. -->\n<div class=\"min-h-50\">\n  <conare-button id=\"delete-document\">Delete a document</conare-button>\n  <conare-toaster></conare-toaster>\n</div>\n<script type=\"module\">\n  let count = 0\n  document.getElementById('delete-document').addEventListener('click', () => {\n    count += 1\n    document.querySelector('conare-toaster').toast('Deleted', `northwind-msa-${count}.pdf`)\n  })\n</script>\n"
+        }
+      ]
+    }
+  }
+}

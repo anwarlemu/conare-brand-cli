@@ -1,0 +1,21 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "button-group",
+  "type": "registry:ui",
+  "title": "Button group",
+  "description": "Buttons that belong together sharing a hairline: secondary buttons in a row, or the dark split button with its menu arrow.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "components/ui/ButtonGroup.tsx",
+      "type": "registry:ui",
+      "content": "import type { ReactNode } from 'react'\nimport { cn } from '@/lib/cn'\n\n// Buttons that belong together, sharing a hairline (from agent-prompt's split button, console2.css .v2-split): each\n// child overlaps the one before by 1px so two edges read as one, and the one under the pointer or focus sits on top so\n// its ink edge shows whole. Secondary buttons, a dark button with its menu arrow (the split button: a 24% white hairline\n// divides two dark halves), or a field with its button. `vertical` stacks them. Give it a label for the group.\nexport interface ButtonGroupProps {\n  label?: string\n  vertical?: boolean\n  className?: string\n  children?: ReactNode\n}\n\nexport function ButtonGroup({ label, vertical, className, children }: ButtonGroupProps) {\n  return (\n    <div data-ds=\"button-group\" className={cn('ds-btngroup', className)} role=\"group\" aria-label={label} data-vertical={vertical || undefined}>\n      <style href=\"ds-button-group\" precedence=\"ds\">{css}</style>\n      {children}\n    </div>\n  )\n}\n\nexport default ButtonGroup\n\nconst css = `\n.ds-btngroup { display: inline-flex; align-items: stretch; }\n.ds-btngroup[data-vertical] { flex-direction: column; }\n.ds-btngroup > * { position: relative; }\n.ds-btngroup > * + * { margin-left: -1px; }\n.ds-btngroup[data-vertical] > * + * { margin-top: -1px; margin-left: 0; }\n.ds-btngroup > :is(:hover, :focus-visible, :focus-within) { z-index: 1; }\n/* Two dark halves: a hairline of the light colour between them, so they stay one block. */\n.ds-btngroup > :is(.bg-action-primary, .ds-px) + :is(.bg-action-primary, .ds-px)::after,\n.ds-btngroup > :is(.bg-action-primary, .ds-px) + * > .bg-action-primary::after { position: absolute; inset: 0 auto 0 0; width: 1px; background: color-mix(in srgb, var(--ds-color-fg-inverse) 24%, transparent); content: \"\"; }\n.ds-btngroup > :is(.bg-action-primary, .ds-px) + :is(.bg-action-primary, .ds-px),\n.ds-btngroup > :is(.bg-action-primary, .ds-px) + * { margin-left: 0; }\n`\n"
+    },
+    {
+      "path": "lib/cn.ts",
+      "type": "registry:lib",
+      "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+    }
+  ]
+}

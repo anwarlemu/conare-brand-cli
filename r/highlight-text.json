@@ -1,0 +1,229 @@
+{
+  "name": "highlight-text",
+  "title": "Highlight text",
+  "type": "registry:ui",
+  "group": "visuals",
+  "description": "The headline reveal: each letter starts faint and red, fades up, then settles to ink, spreading from the centre or the start; trailing characters stay red.",
+  "use_for": "The website hero and section titles; the console's greeting and search headline, once per session.",
+  "never": [
+    "On a screen opened many times a day, every time",
+    "Body text",
+    "More than one on a screen"
+  ],
+  "source": "conare-web app/components/home/HighlightText.vue, app/assets/css/home.css and console2.css (.hl, .hl-char, .hl-word)",
+  "body": "`as` picks the heading level, `text` the words and `accent` the trailing characters that stay red (the hero's full stop). Letters wait at 20% in red, fade up over 200ms, then settle to the heading's colour over 400ms; lines start 100ms apart and letters 40ms apart from the centre (from the start on left-aligned text). It plays once, when the heading comes on screen. The words are read once by screen readers. Without JavaScript and with reduced motion the text just shows. The two curves and the 400ms step are tokens of their own (`--ds-easing-reveal-fade`, `--ds-easing-reveal-ink`, `--ds-duration-reveal`).",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/visuals/HighlightText.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed, onBeforeUnmount, onMounted, ref } from 'vue'\n\n// The headline reveal (HighlightText.vue, home.css .hl): each letter waits faint and red, fades up over 200ms, then\n// settles to the heading's colour over 400ms. Lines go in order (100ms apart) and within a line the letters spread from\n// the centre, or from the start on left-aligned text (40ms a letter). It plays once, when the heading comes on screen.\n// `accent` is trailing characters that stay red, such as the hero's full stop. Without JavaScript, and with reduced\n// motion, the text just shows. Use it once per view: a screen opened many times a day should not replay it.\nconst props = withDefaults(defineProps<{ as?: 'h1' | 'h2' | 'h3' | 'p', text: string, accent?: string }>(), { as: 'h2', accent: '' })\n\nconst el = ref<HTMLElement | null>(null)\nconst ready = ref(false)\nconst on = ref(false)\nconst words = computed(() => props.text.split(' '))\n\nlet resize: ResizeObserver | undefined\nlet io: IntersectionObserver | undefined\n\n// Group the letters into rendered lines, then give each its delay.\nfunction stagger() {\n  const root = el.value\n  if (!root || on.value) return\n  const chars = [...root.querySelectorAll<HTMLElement>('.ds-hl-char')]\n  const align = getComputedStyle(root).textAlign\n  const fromStart = align === 'left' || align === 'start'\n  const lines: HTMLElement[][] = []\n  let lastTop: number | null = null\n  for (const c of chars) {\n    const top = Math.round(c.getBoundingClientRect().top)\n    if (lastTop === null || Math.abs(top - lastTop) > 4) lines.push([])\n    lines[lines.length - 1]!.push(c)\n    lastTop = top\n  }\n  lines.forEach((line, li) => {\n    const mid = (line.length - 1) / 2\n    line.forEach((c, ci) => {\n      const step = fromStart ? ci : Math.abs(ci - mid)\n      c.style.setProperty('--d', `${(0.1 * li + 0.04 * step).toFixed(3)}s`)\n    })\n  })\n}\n\nonMounted(async () => {\n  const root = el.value\n  if (!root) return\n  ready.value = true\n  await document.fonts?.ready\n  stagger()\n  resize = new ResizeObserver(stagger)\n  resize.observe(root)\n  io = new IntersectionObserver(([entry]) => {\n    if (!entry?.isIntersecting) return\n    io?.disconnect()\n    resize?.disconnect()\n    requestAnimationFrame(() => { on.value = true })\n  }, { threshold: 0, rootMargin: '0px 0px -15% 0px' })\n  io.observe(root)\n})\n\nonBeforeUnmount(() => {\n  io?.disconnect()\n  resize?.disconnect()\n})\n</script>\n\n<template>\n  <component data-ds=\"highlight-text\" :is=\"as\" ref=\"el\" class=\"ds-hl\" :class=\"{ 'ds-hl-ready': ready, 'ds-hl-on': on }\">\n    <span class=\"sr-only\">{{ text }}{{ accent }}</span>\n    <span aria-hidden=\"true\">\n      <span v-for=\"(word, wi) in words\" :key=\"wi\"><span class=\"ds-hl-word\"><span v-for=\"(ch, ci) in word\" :key=\"ci\" class=\"ds-hl-char\">{{ ch }}</span><span v-if=\"wi === words.length - 1 && accent\" class=\"inline-block w-0 whitespace-nowrap\"><span v-for=\"(ch, ci) in accent\" :key=\"`a${ci}`\" class=\"ds-hl-char text-fg-accent-display\">{{ ch }}</span></span></span>{{ wi === words.length - 1 ? '' : ' ' }}</span>\n    </span>\n  </component>\n</template>\n\n<style>\n.ds-hl-char { transition: opacity var(--ds-duration-enter) var(--ds-easing-reveal-fade) var(--d, 0s), color var(--ds-duration-reveal) var(--ds-easing-reveal-ink) calc(var(--d, 0s) + 0.2s); }\n.ds-hl.ds-hl-ready:not(.ds-hl-on) .ds-hl-char { color: var(--ds-color-fg-accent-display); opacity: 0.2; transition: none; }\n.ds-hl-word { display: inline-block; white-space: nowrap; }\n@media (prefers-reduced-motion: reduce) {\n  .ds-hl.ds-hl-ready:not(.ds-hl-on) .ds-hl-char { color: inherit; opacity: 1; }\n  .ds-hl.ds-hl-ready:not(.ds-hl-on) .ds-hl-char.text-fg-accent-display { color: var(--ds-color-fg-accent-display); }\n  .ds-hl-char { transition: none; }\n}\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "On the site",
+      "center": true,
+      "half": false,
+      "path": "examples/highlight-text/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport { onBeforeUnmount, onMounted, ref } from 'vue'\nimport HighlightText from '@/components/visuals/HighlightText.vue'\n// The hero's heading as the website draws it. Here it plays again every few seconds; on the website it plays once.\nconst round = ref(0)\nlet timer: ReturnType<typeof setInterval> | undefined\nonMounted(() => { timer = setInterval(() => round.value++, 4000) })\nonBeforeUnmount(() => clearInterval(timer))\n</script>\n\n<template>\n  <div class=\"flex flex-col items-center text-center\">\n    <HighlightText :key=\"round\" as=\"h1\" text=\"Search any data you bring\" accent=\".\" class=\"type-hero sm:type-display\" />\n  </div>\n</template>\n",
+      "requires": [],
+      "packages": []
+    },
+    {
+      "name": "Product",
+      "label": "In the product",
+      "center": true,
+      "half": false,
+      "path": "examples/highlight-text/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { onBeforeUnmount, onMounted, ref } from 'vue'\nimport HighlightText from '@/components/visuals/HighlightText.vue'\n// The reveal in the console, as Explorer's headline has it. Here it plays again every few seconds; in the product it\n// plays once.\nconst round = ref(0)\nlet timer: ReturnType<typeof setInterval> | undefined\nonMounted(() => { timer = setInterval(() => round.value++, 4000) })\nonBeforeUnmount(() => clearInterval(timer))\n</script>\n\n<template>\n  <HighlightText :key=\"round\" as=\"h1\" text=\"Explore your data\" accent=\".\" class=\"text-center type-heading-1 md:type-hero\" />\n</template>\n",
+      "requires": [],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/visuals/HighlightText.tsx",
+          "content": "'use client'\nimport { useEffect, useRef, useState, type Ref } from 'react'\nimport { cn } from '@/react/lib/cn'\n\n// The headline reveal (HighlightText.vue, home.css .hl): each letter waits faint and red, fades up over 200ms, then\n// settles to the heading's colour over 400ms. Lines go in order (100ms apart) and within a line the letters spread from\n// the centre, or from the start on left-aligned text (40ms a letter). It plays once, when the heading comes on screen.\n// `accent` is trailing characters that stay red, such as the hero's full stop. Without JavaScript, and with reduced\n// motion, the text just shows. Use it once per view: a screen opened many times a day should not replay it.\nexport interface HighlightTextProps {\n  as?: 'h1' | 'h2' | 'h3' | 'p'\n  text: string\n  accent?: string\n  className?: string\n  /** The heading's id (Vue's falls through to it), so a section can be labelled by it. */\n  id?: string\n}\n\nexport function HighlightText({ as: Tag = 'h2', text, accent = '', className, id }: HighlightTextProps) {\n  const el = useRef<HTMLElement | null>(null)\n  const [ready, setReady] = useState(false)\n  const [on, setOn] = useState(false)\n  const words = text.split(' ')\n\n  useEffect(() => {\n    const root = el.current\n    if (!root) return\n    let resize: ResizeObserver | undefined\n    let io: IntersectionObserver | undefined\n    let done = false\n    let lit = false\n    // Group the letters into rendered lines, then give each its delay.\n    const stagger = () => {\n      if (lit) return\n      const chars = [...root.querySelectorAll<HTMLElement>('.ds-hl-char')]\n      const align = getComputedStyle(root).textAlign\n      const fromStart = align === 'left' || align === 'start'\n      const lines: HTMLElement[][] = []\n      let lastTop: number | null = null\n      for (const c of chars) {\n        const top = Math.round(c.getBoundingClientRect().top)\n        if (lastTop === null || Math.abs(top - lastTop) > 4) lines.push([])\n        lines[lines.length - 1]!.push(c)\n        lastTop = top\n      }\n      lines.forEach((line, li) => {\n        const mid = (line.length - 1) / 2\n        line.forEach((c, ci) => {\n          const step = fromStart ? ci : Math.abs(ci - mid)\n          c.style.setProperty('--d', `${(0.1 * li + 0.04 * step).toFixed(3)}s`)\n        })\n      })\n    }\n    setReady(true)\n    void (async () => {\n      await document.fonts?.ready\n      if (done) return\n      stagger()\n      resize = new ResizeObserver(stagger)\n      resize.observe(root)\n      io = new IntersectionObserver(([entry]) => {\n        if (!entry?.isIntersecting) return\n        io?.disconnect()\n        resize?.disconnect()\n        requestAnimationFrame(() => {\n          lit = true\n          setOn(true)\n        })\n      }, { threshold: 0, rootMargin: '0px 0px -15% 0px' })\n      io.observe(root)\n    })()\n    return () => {\n      done = true\n      io?.disconnect()\n      resize?.disconnect()\n    }\n  }, [])\n\n  return (\n    <>\n      <style href=\"ds-highlight-text\" precedence=\"ds\">{css}</style>\n      <Tag data-ds=\"highlight-text\" id={id} ref={el as Ref<HTMLHeadingElement>} className={cn('ds-hl', ready && 'ds-hl-ready', on && 'ds-hl-on', className)}>\n        <span className=\"sr-only\">{text}{accent}</span>\n        <span aria-hidden=\"true\">\n          {words.map((word, wi) => (\n            <span key={wi}><span className=\"ds-hl-word\">{word.split('').map((ch, ci) => <span key={ci} className=\"ds-hl-char\">{ch}</span>)}{wi === words.length - 1 && accent && <span className=\"inline-block w-0 whitespace-nowrap\">{accent.split('').map((ch, ci) => <span key={\"a\" + ci} className=\"ds-hl-char text-fg-accent-display\">{ch}</span>)}</span>}</span>{wi === words.length - 1 ? '' : ' '}</span>\n          ))}\n        </span>\n      </Tag>\n    </>\n  )\n}\n\nexport default HighlightText\n\nconst css = `\n.ds-hl-char { transition: opacity var(--ds-duration-enter) var(--ds-easing-reveal-fade) var(--d, 0s), color var(--ds-duration-reveal) var(--ds-easing-reveal-ink) calc(var(--d, 0s) + 0.2s); }\n.ds-hl.ds-hl-ready:not(.ds-hl-on) .ds-hl-char { color: var(--ds-color-fg-accent-display); opacity: 0.2; transition: none; }\n.ds-hl-word { display: inline-block; white-space: nowrap; }\n@media (prefers-reduced-motion: reduce) {\n  .ds-hl.ds-hl-ready:not(.ds-hl-on) .ds-hl-char { color: inherit; opacity: 1; }\n  .ds-hl.ds-hl-ready:not(.ds-hl-on) .ds-hl-char.text-fg-accent-display { color: var(--ds-color-fg-accent-display); }\n  .ds-hl-char { transition: none; }\n}\n`\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "HighlightText",
+            "file": "react/components/visuals/HighlightText.tsx",
+            "props": [
+              {
+                "name": "as",
+                "type": "'h1' | 'h2' | 'h3' | 'p'",
+                "required": false
+              },
+              {
+                "name": "text",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "accent",
+                "type": "string",
+                "required": false,
+                "default": "''"
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "id",
+                "type": "string",
+                "required": false,
+                "description": "The heading's id (Vue's falls through to it), so a section can be labelled by it."
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "On the site",
+          "center": true,
+          "half": false,
+          "path": "react/examples/highlight-text/Site.tsx",
+          "content": "'use client'\nimport { useEffect, useState } from 'react'\nimport { HighlightText } from '@/react/components/visuals/HighlightText'\n// The hero's heading as the website draws it. Here it plays again every few seconds; on the website it plays once.\n\nexport default function Site() {\n  const [round, setRound] = useState(0)\n  useEffect(() => {\n    const timer = setInterval(() => setRound(r => r + 1), 4000)\n    return () => clearInterval(timer)\n  }, [])\n  return (\n    <div className=\"flex flex-col items-center text-center\">\n      <HighlightText key={round} as=\"h1\" text=\"Search any data you bring\" accent=\".\" className=\"type-hero sm:type-display\" />\n    </div>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        },
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": true,
+          "half": false,
+          "path": "react/examples/highlight-text/Product.tsx",
+          "content": "'use client'\nimport { useEffect, useState } from 'react'\nimport { HighlightText } from '@/react/components/visuals/HighlightText'\n// The reveal in the console, as Explorer's headline has it. Here it plays again every few seconds; in the product it\n// plays once.\n\nexport default function Product() {\n  const [round, setRound] = useState(0)\n  useEffect(() => {\n    const timer = setInterval(() => setRound(r => r + 1), 4000)\n    return () => clearInterval(timer)\n  }, [])\n  return <HighlightText key={round} as=\"h1\" text=\"Explore your data\" accent=\".\" className=\"text-center type-heading-1 md:type-hero\" />\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/visuals/highlight-text.ts",
+          "content": "import { html, nothing, type PropertyValues } from 'lit'\nimport { classMap } from 'lit/directives/class-map.js'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// HighlightText.vue as <conare-highlight-text>: the headline reveal (home.css .hl): each letter waits faint and red,\n// fades up over 200ms, then settles to the heading's colour over 400ms. Lines go in order (100ms apart) and within a\n// line the letters spread from the centre, or from the start on left-aligned text (40ms a letter). It plays once, when\n// the heading comes on screen. `accent` is trailing characters that stay red, such as the hero's full stop. Without\n// JavaScript, and with reduced motion, the text just shows. Use it once per view: a screen opened many times a day\n// should not replay it; to play it again, put a new element in its place.\n//\n// The host is the heading's box (highlight-text.css), so a class on it (the type, the alignment) lands as one on\n// <HighlightText> does, and it takes the heading's role and level from `as` (h1 to h3; p is a paragraph).\nconst ROLES = { h1: ['heading', '1'], h2: ['heading', '2'], h3: ['heading', '3'], p: ['paragraph', null] } as const\n\n/**\n * @summary A heading whose letters fade up from faint red once it comes on screen.\n */\nexport class HighlightText extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { as: {}, text: {}, accent: {}, ready: { state: true }, on: { state: true } }\n\n\t/** The tag whose role it takes. */\n\tas: 'h1' | 'h2' | 'h3' | 'p' = 'h2'\n\ttext = ''\n\t/** Trailing characters that stay red. */\n\taccent = ''\n\tprivate ready = false\n\tprivate on = false\n\tprivate internals = this.attachInternals()\n\tprivate resize?: ResizeObserver\n\tprivate io?: IntersectionObserver\n\n\tprotected willUpdate(changed: PropertyValues) {\n\t\tsuper.willUpdate(changed)\n\t\tconst [role, level] = ROLES[this.as] ?? ROLES.h2\n\t\tthis.internals.role = role\n\t\tthis.internals.ariaLevel = level\n\t}\n\n\t// Group the letters into rendered lines, then give each its delay.\n\tprivate stagger = () => {\n\t\tif (this.on) return\n\t\tconst chars = [...this.renderRoot.querySelectorAll<HTMLElement>('.ds-hl-char')]\n\t\tconst align = getComputedStyle(this).textAlign\n\t\tconst fromStart = align === 'left' || align === 'start'\n\t\tconst lines: HTMLElement[][] = []\n\t\tlet lastTop: number | null = null\n\t\tfor (const c of chars) {\n\t\t\tconst top = Math.round(c.getBoundingClientRect().top)\n\t\t\tif (lastTop === null || Math.abs(top - lastTop) > 4) lines.push([])\n\t\t\tlines[lines.length - 1]!.push(c)\n\t\t\tlastTop = top\n\t\t}\n\t\tlines.forEach((line, li) => {\n\t\t\tconst mid = (line.length - 1) / 2\n\t\t\tline.forEach((c, ci) => {\n\t\t\t\tconst step = fromStart ? ci : Math.abs(ci - mid)\n\t\t\t\tc.style.setProperty('--d', `${(0.1 * li + 0.04 * step).toFixed(3)}s`)\n\t\t\t})\n\t\t})\n\t}\n\n\tprotected async firstUpdated(changed: PropertyValues) {\n\t\tsuper.firstUpdated(changed)\n\t\tthis.ready = true\n\t\tawait document.fonts?.ready\n\t\tif (!this.isConnected) return\n\t\tthis.stagger()\n\t\tthis.resize = new ResizeObserver(this.stagger)\n\t\tthis.resize.observe(this)\n\t\tthis.io = new IntersectionObserver(([entry]) => {\n\t\t\tif (!entry?.isIntersecting) return\n\t\t\tthis.io?.disconnect()\n\t\t\tthis.resize?.disconnect()\n\t\t\trequestAnimationFrame(() => { this.on = true })\n\t\t}, { threshold: 0, rootMargin: '0px 0px -15% 0px' })\n\t\tthis.io.observe(this)\n\t}\n\n\tdisconnectedCallback() {\n\t\tsuper.disconnectedCallback()\n\t\tthis.io?.disconnect()\n\t\tthis.resize?.disconnect()\n\t}\n\n\trender() {\n\t\tconst words = this.text.split(' ')\n\t\tconst last = words.length - 1\n\t\treturn html`<span class=${classMap({ 'ds-hl': true, 'ds-hl-ready': this.ready, 'ds-hl-on': this.on })}><span class=\"sr-only\">${this.text}${this.accent}</span><span aria-hidden=\"true\">${words.map((word, wi) => html`<span><span class=\"ds-hl-word\">${word.split('').map((ch) => html`<span class=\"ds-hl-char\">${ch}</span>`)}${wi === last && this.accent ? html`<span class=\"inline-block w-0 whitespace-nowrap\">${this.accent.split('').map((ch) => html`<span class=\"ds-hl-char text-fg-accent-display\">${ch}</span>`)}</span>` : nothing}</span>${wi === last ? '' : ' '}</span>`)}</span></span>`\n\t}\n}\n\ndefine('highlight-text', HighlightText)\n"
+        },
+        {
+          "path": "elements/components/visuals/highlight-text.css",
+          "content": "/* The host is the heading's box (HighlightText.vue's root), so a class on <conare-highlight-text> lands on it as a\n   class on <HighlightText> does. Inside, .ds-hl (display: contents) carries the root's classes. */\n:host { display: block; }\n.ds-hl { display: contents; }\n/* HighlightText.vue's <style>, as it is. */\n.ds-hl-char { transition: opacity var(--ds-duration-enter) var(--ds-easing-reveal-fade) var(--d, 0s), color var(--ds-duration-reveal) var(--ds-easing-reveal-ink) calc(var(--d, 0s) + 0.2s); }\n.ds-hl.ds-hl-ready:not(.ds-hl-on) .ds-hl-char { color: var(--ds-color-fg-accent-display); opacity: 0.2; transition: none; }\n.ds-hl-word { display: inline-block; white-space: nowrap; }\n@media (prefers-reduced-motion: reduce) {\n  .ds-hl.ds-hl-ready:not(.ds-hl-on) .ds-hl-char { color: inherit; opacity: 1; }\n  .ds-hl.ds-hl-ready:not(.ds-hl-on) .ds-hl-char.text-fg-accent-display { color: var(--ds-color-fg-accent-display); }\n  .ds-hl-char { transition: none; }\n}\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/highlight-text.js"
+      ],
+      "tag": "conare-highlight-text",
+      "tags": [
+        "conare-highlight-text"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-highlight-text",
+            "name": "HighlightText",
+            "module": "elements/highlight-text.js",
+            "description": "A heading whose letters fade up from faint red once it comes on screen.",
+            "attributes": [
+              {
+                "name": "as",
+                "field": "as",
+                "type": "\"h1\" | \"h2\" | \"h3\" | \"p\"",
+                "default": "'h2'",
+                "description": "The tag whose role it takes."
+              },
+              {
+                "name": "text",
+                "field": "text",
+                "type": "string",
+                "default": "''"
+              },
+              {
+                "name": "accent",
+                "field": "accent",
+                "type": "string",
+                "default": "''",
+                "description": "Trailing characters that stay red."
+              },
+              {
+                "name": "ready",
+                "field": "ready",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "on",
+                "field": "on",
+                "type": "boolean",
+                "default": "false"
+              }
+            ],
+            "properties": [
+              {
+                "name": "as",
+                "type": "\"h1\" | \"h2\" | \"h3\" | \"p\"",
+                "default": "'h2'",
+                "description": "The tag whose role it takes.",
+                "attribute": "as"
+              },
+              {
+                "name": "text",
+                "type": "string",
+                "default": "''",
+                "attribute": "text"
+              },
+              {
+                "name": "accent",
+                "type": "string",
+                "default": "''",
+                "description": "Trailing characters that stay red.",
+                "attribute": "accent"
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "On the site",
+          "center": true,
+          "half": false,
+          "path": "elements/examples/highlight-text/Site.html",
+          "content": "<!-- The hero's heading as the website draws it. Here it plays again every few seconds (a new element in its place); on\n     the website it plays once. -->\n<div class=\"flex flex-col items-center text-center\">\n  <conare-highlight-text id=\"hero\" as=\"h1\" text=\"Search any data you bring\" accent=\".\" class=\"type-hero sm:type-display\"></conare-highlight-text>\n</div>\n<script type=\"module\">\n  let heading = document.getElementById('hero')\n  const timer = setInterval(() => {\n    if (!heading.isConnected) return clearInterval(timer)\n    const next = heading.cloneNode()\n    heading.replaceWith(next)\n    heading = next\n  }, 4000)\n</script>\n"
+        },
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": true,
+          "half": false,
+          "path": "elements/examples/highlight-text/Product.html",
+          "content": "<!-- The reveal in the console, as Explorer's headline has it. Here it plays again every few seconds (a new element in\n     its place); in the product it plays once. -->\n<conare-highlight-text id=\"explore\" as=\"h1\" text=\"Explore your data\" accent=\".\" class=\"text-center type-heading-1 md:type-hero\"></conare-highlight-text>\n<script type=\"module\">\n  let heading = document.getElementById('explore')\n  const timer = setInterval(() => {\n    if (!heading.isConnected) return clearInterval(timer)\n    const next = heading.cloneNode()\n    heading.replaceWith(next)\n    heading = next\n  }, 4000)\n</script>\n"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "facts",
+  "type": "registry:ui",
+  "title": "Facts",
+  "description": "Short facts about one thing, each a small hairline box with its name and value, so a row of them wraps cleanly.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Facts.tsx",
+      "type": "registry:ui",
+      "content": "import type { HTMLAttributes } from 'react'\nimport { Fact } from '@/components/ui/Fact'\nimport { cn } from '@/lib/cn'\n\n// Short facts about one thing (console2.css .v2-fact): each a small hairline box with its name, muted, and its value,\n// so a row of them wraps cleanly. Pass `facts`, or write Fact as children. `mono` sets a value in Geist Mono (a domain,\n// an ID). Six at most; a value that needs a sentence is not a fact.\nexport type FactItem = { name: string, value: string, mono?: boolean }\n\nexport interface FactsProps extends HTMLAttributes<HTMLDListElement> {\n  facts?: FactItem[]\n}\n\nexport function Facts({ facts, className, children, ...rest }: FactsProps) {\n  return (\n    <dl data-ds=\"facts\" className={cn('flex flex-wrap gap-2', className)} {...rest}>\n      {children ?? facts?.map(f => <Fact key={f.name} name={f.name} value={f.value} mono={f.mono} />)}\n    </dl>\n  )\n}\n\nexport default Facts\n"
+    },
+    {
+      "path": "components/ui/Fact.tsx",
+      "type": "registry:ui",
+      "content": "import type { HTMLAttributes } from 'react'\nimport { cn } from '@/lib/cn'\n\n// One fact: a 24px hairline box, 12px, the name muted and the value in ink. Inside Facts (a <dl>).\nexport interface FactProps extends HTMLAttributes<HTMLDivElement> {\n  name: string\n  value?: string\n  mono?: boolean\n}\n\nexport function Fact({ name, value, mono, className, children, ...rest }: FactProps) {\n  return (\n    <div data-ds=\"fact\" className={cn('flex min-w-0 items-center gap-1.5 border border-edge bg-surface px-2 py-1 type-meta', className)} {...rest}>\n      <dt className=\"text-fg-muted\">{name}</dt>\n      <dd className={cn('min-w-0', mono && 'font-code')}>{children ?? value}</dd>\n    </div>\n  )\n}\n\nexport default Fact\n"
+    },
+    {
+      "path": "lib/cn.ts",
+      "type": "registry:lib",
+      "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+    }
+  ]
+}

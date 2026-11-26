@@ -1,0 +1,236 @@
+{
+  "name": "step-viz",
+  "title": "Step window",
+  "type": "registry:ui",
+  "group": "visuals",
+  "description": "How it works' window: one search shown step by step as an agent window, from the ask to what changed, with a shimmering status, records as chips, the dot matrix and a ticking timer; picking a step crossfades what is in it.",
+  "use_for": "How it works and the docs' introduction (`step` 0 to 3; `runs` replays the picked one).",
+  "never": [
+    "Steps that do not happen in the product",
+    "Running while off screen: set `active` only while it is in view"
+  ],
+  "source": "conare-web app/components/home/StepViz.vue, app/assets/css/home.css (.viz-*, .step-body, .step-swap)",
+  "body": "",
+  "requires": [
+    "eval-viz"
+  ],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/visuals/StepViz.vue",
+      "content": "<script setup lang=\"ts\">\nimport VizWindow from '@/components/visuals/VizWindow.vue'\n\n// How it works' window (the website's StepViz.vue): one search shown step by step, as an agent window. The ask in a\n// filled bubble, what was added to context, a status that shimmers while it works and then says how it went, the\n// outcome as a sentence with the records it touched as inline chips, and a progress row with the dot matrix and a\n// ticking timer. Steps: 0 write, 1 sync a source, 2 search (results land where they were found, then glide to the\n// reranked order), 3 an agent over MCP. One window for every step: picking one keeps the window and crossfades what is\n// in it, every step's body in one grid cell so the window never resizes; `runs` re-keys the picked body, replaying it.\nconst props = defineProps<{ step: number, runs: number[], active: boolean }>()\n\nconst windows = [\n  { name: 'Conare', tag: 'Write', ask: 'Add our refund and shipping policies to docs', context: 'Policies.pdf', working: 'Writing', took: 'Worked for 2s' },\n  { name: 'Conare', tag: 'Source', ask: 'Keep HubSpot in sync with CRM', context: 'HubSpot', working: 'Syncing', took: 'Synced 3 records' },\n  { name: 'Conare', tag: 'Search', ask: 'How do refunds work?', context: 'Docs', working: 'Searching', took: 'Reranked in 62 ms' },\n  { name: 'Your agent', tag: 'MCP', ask: 'How do refunds work?', context: 'Conare', working: 'Thinking', took: 'Worked for 1s' },\n]\n\n// Found in one order, shown after the rerank in another: `from` and `to` are each row's place before and after.\nconst results = [\n  { id: 'Refunds', text: 'Refunds are available for 30 days.', score: '0.91', from: 2, to: 0 },\n  { id: 'Returns', text: 'Return an item from your orders page.', score: '0.47', from: 0, to: 1 },\n  { id: 'Shipping', text: 'Orders ship within two days.', score: '0.12', from: 1, to: 2 },\n].map(r => ({ ...r, row: { '--from': r.from, '--to': r.to, '--d': 1200 + r.from * 160 }, bar: { '--w': r.score, '--d': 2900 + r.to * 120 } }))\n\n// The loader's nine squares, each blinking a beat after the last.\nconst MATRIX_STYLES = Array.from({ length: 9 }, (_, i) => ({ '--k': i + 1 }))\n</script>\n\n<template>\n  <VizWindow data-ds=\"step-viz\" :active=\"active\" class=\"max-w-100\">\n    <template #title>\n      <span class=\"grid\">\n        <span v-for=\"(w, i) in windows\" :key=\"w.tag\" class=\"ds-viz-title flex items-center gap-2 whitespace-nowrap [grid-area:1/1]\" :data-active=\"i === props.step\">\n          <span class=\"text-ui leading-4\">{{ w.name }}</span>\n          <span class=\"bg-ds-neutral-200 px-1.5 py-0.5 text-caption text-ds-neutral-500\">{{ w.tag }}</span>\n        </span>\n      </span>\n    </template>\n\n    <div class=\"grid grid-cols-[minmax(0,1fr)]\">\n      <div v-for=\"(w, k) in windows\" :key=\"w.tag\" class=\"ds-viz-body [grid-area:1/1]\" :data-active=\"k === props.step\" :inert=\"k !== props.step\">\n        <div :key=\"`${k}-${props.runs[k] ?? 0}`\" class=\"ds-viz flex flex-col gap-3 px-4 pt-1 pb-4\" :data-active=\"active\">\n          <!-- The ask, and what came with it. -->\n          <p class=\"ds-viz-in ml-10 bg-ds-neutral-200 px-3 py-2.5 text-ui\" style=\"--d: 200\">{{ w.ask }}</p>\n          <p class=\"ds-viz-in flex items-center justify-end gap-1.5 text-meta text-ds-neutral-500\" style=\"--d: 600\">\n            <svg width=\"12\" height=\"12\" viewBox=\"0 0 12 12\" aria-hidden=\"true\"><rect x=\"0.5\" y=\"0.5\" width=\"11\" height=\"11\" fill=\"none\" stroke=\"currentColor\" /><rect x=\"3\" y=\"3\" width=\"3\" height=\"6\" fill=\"currentColor\" /></svg>\n            <span class=\"text-ds-neutral-600\">{{ w.context }}</span> added to context\n          </p>\n\n          <!-- Status: shimmers while it works, then says how it went. -->\n          <p class=\"ds-viz-in grid text-meta\" style=\"--d: 900\">\n            <span class=\"ds-viz-swap-a ds-viz-shimmer [grid-area:1/1]\" style=\"--d: 2400\">{{ w.working }}…</span>\n            <span class=\"ds-viz-swap-b [grid-area:1/1] text-ds-neutral-500\" style=\"--d: 2400\">{{ w.took }} <span class=\"ds-step-play\">▶</span></span>\n          </p>\n\n          <!-- Write -->\n          <template v-if=\"k === 0\">\n            <p class=\"ds-viz-in text-ui leading-6\" style=\"--d: 1300\">\n              Wrote <span class=\"ds-viz-chip\"><span class=\"ds-viz-dot bg-home-red\" />Refunds</span> and <span class=\"ds-viz-chip\"><span class=\"ds-viz-dot bg-home-red\" />Shipping</span> to the docs namespace, searchable now.\n            </p>\n            <div class=\"ds-viz-in ds-viz-progress\" style=\"--d: 1600\">\n              <span class=\"ds-viz-matrix\" aria-hidden=\"true\"><i v-for=\"m in 9\" :key=\"m\" :style=\"MATRIX_STYLES[m - 1]\" /></span>\n              <span class=\"grid flex-1\">\n                <span class=\"ds-viz-swap-a [grid-area:1/1]\" style=\"--d: 2400\">Writing 2 documents…</span>\n                <span class=\"ds-viz-swap-b [grid-area:1/1] text-ds-neutral-500\" style=\"--d: 2400\">2 documents created</span>\n              </span>\n              <span class=\"ds-viz-timer\" style=\"--to: 2; --d: 1600\" />\n            </div>\n          </template>\n\n          <!-- Sync -->\n          <template v-else-if=\"k === 1\">\n            <p class=\"ds-viz-in text-ui leading-6\" style=\"--d: 1300\">\n              Updated <span class=\"ds-viz-chip\"><span class=\"ds-viz-dot bg-home-red\" />Deal 4821</span>, created <span class=\"ds-viz-chip\"><span class=\"ds-viz-dot bg-home-red\" />Deal 4830</span> and deleted <span class=\"ds-viz-chip\"><span class=\"ds-viz-dot bg-ds-neutral-500\" /><span class=\"line-through\">Contact 913</span></span>.\n            </p>\n            <div class=\"ds-viz-in ds-viz-progress\" style=\"--d: 1600\">\n              <span class=\"ds-viz-matrix\" aria-hidden=\"true\"><i v-for=\"m in 9\" :key=\"m\" :style=\"MATRIX_STYLES[m - 1]\" /></span>\n              <span class=\"grid flex-1\">\n                <span class=\"ds-viz-swap-a [grid-area:1/1]\" style=\"--d: 2400\">Syncing HubSpot…</span>\n                <span class=\"ds-viz-swap-b [grid-area:1/1] text-ds-neutral-500\" style=\"--d: 2400\">Next sync in 15 min</span>\n              </span>\n              <span class=\"ds-viz-timer\" style=\"--to: 4; --d: 1600\" />\n            </div>\n          </template>\n\n          <!-- Search: results land where they were found, then glide to the reranked order on a 48px track. -->\n          <div v-else-if=\"k === 2\" class=\"relative h-[146px] border border-ds-neutral-300\">\n            <div v-for=\"r in results\" :key=\"r.id\" class=\"ds-viz-row absolute inset-x-0 top-0 flex h-12 items-center gap-3 border-b border-ds-neutral-300 bg-ds-neutral-100 px-3\" :style=\"r.row\">\n              <span class=\"ds-viz-dot\" :class=\"r.to === 0 ? 'bg-home-red' : 'bg-ds-neutral-500'\" />\n              <span class=\"min-w-0 flex-1\">\n                <span class=\"block text-ui leading-4\">{{ r.id }}</span>\n                <span class=\"block truncate text-meta text-ds-neutral-500\">{{ r.text }}</span>\n              </span>\n              <span class=\"w-16 shrink-0\">\n                <span class=\"block text-right text-caption text-ds-neutral-500 tabular-nums\">{{ r.score }}</span>\n                <span class=\"mt-1 block h-0.5 bg-ds-neutral-300\">\n                  <span class=\"ds-viz-bar block h-full bg-off-white\" :style=\"r.bar\" />\n                </span>\n              </span>\n            </div>\n          </div>\n\n          <!-- An agent over MCP -->\n          <template v-else>\n            <p class=\"ds-viz-in text-ui leading-6\" style=\"--d: 1300\">\n              Called <span class=\"ds-viz-chip\">Search</span> in docs. Refunds are available for 30 days.\n            </p>\n            <p class=\"ds-viz-in flex items-center gap-2 text-meta text-ds-neutral-500\" style=\"--d: 2600\">\n              Source <span class=\"ds-viz-chip text-off-white\"><span class=\"ds-viz-dot bg-home-red\" />Refunds</span>\n            </p>\n          </template>\n        </div>\n      </div>\n    </div>\n  </VizWindow>\n</template>\n\n<style>\n/* The finished status's play mark, three quarters of the line's size (9px on 12px). */\n.ds-step-play { font-size: 0.75em; }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "On the site",
+      "center": false,
+      "half": false,
+      "path": "examples/step-viz/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport StepViz from '@/components/visuals/StepViz.vue'\n// The four steps side by side: write, sync a source, search, and an agent over MCP.\nconst runs = [212, 238, 251, 196]\n</script>\n\n<template>\n  <div class=\"grid gap-4 md:grid-cols-2\">\n    <div v-for=\"s in 4\" :key=\"s\" class=\"relative grid min-h-80 place-items-center overflow-hidden bg-ds-neutral-200 px-4 py-8 text-ds-neutral-300\">\n      <StepViz :step=\"s - 1\" :runs=\"runs\" active />\n    </div>\n  </div>\n</template>\n",
+      "requires": [
+        "eval-viz"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/visuals/StepViz.tsx",
+          "content": "import type { CSSProperties } from 'react'\nimport { VizWindow } from '@/react/components/visuals/VizWindow'\n\n// How it works' window (the website's StepViz.vue): one search shown step by step, as an agent window. The ask in a\n// filled bubble, what was added to context, a status that shimmers while it works and then says how it went, the\n// outcome as a sentence with the records it touched as inline chips, and a progress row with the dot matrix and a\n// ticking timer. Steps: 0 write, 1 sync a source, 2 search (results land where they were found, then glide to the\n// reranked order), 3 an agent over MCP. One window for every step: picking one keeps the window and crossfades what is\n// in it, every step's body in one grid cell so the window never resizes; `runs` re-keys the picked body, replaying it.\nexport interface StepVizProps {\n  step: number\n  runs: number[]\n  active: boolean\n}\n\nconst windows = [\n  { name: 'Conare', tag: 'Write', ask: 'Add our refund and shipping policies to docs', context: 'Policies.pdf', working: 'Writing', took: 'Worked for 2s' },\n  { name: 'Conare', tag: 'Source', ask: 'Keep HubSpot in sync with CRM', context: 'HubSpot', working: 'Syncing', took: 'Synced 3 records' },\n  { name: 'Conare', tag: 'Search', ask: 'How do refunds work?', context: 'Docs', working: 'Searching', took: 'Reranked in 62 ms' },\n  { name: 'Your agent', tag: 'MCP', ask: 'How do refunds work?', context: 'Conare', working: 'Thinking', took: 'Worked for 1s' },\n]\n\n// Found in one order, shown after the rerank in another: `from` and `to` are each row's place before and after.\nconst results = [\n  { id: 'Refunds', text: 'Refunds are available for 30 days.', score: '0.91', from: 2, to: 0 },\n  { id: 'Returns', text: 'Return an item from your orders page.', score: '0.47', from: 0, to: 1 },\n  { id: 'Shipping', text: 'Orders ship within two days.', score: '0.12', from: 1, to: 2 },\n].map(r => ({ ...r, row: { '--from': r.from, '--to': r.to, '--d': 1200 + r.from * 160 } as CSSProperties, bar: { '--w': r.score, '--d': 2900 + r.to * 120 } as CSSProperties }))\n\n// The loader's nine squares, each blinking a beat after the last.\nconst MATRIX_STYLES = Array.from({ length: 9 }, (_, i) => ({ '--k': i + 1 }) as CSSProperties)\nconst s = (v: Record<string, number>) => v as CSSProperties\n\nfunction Matrix() {\n  return <span className=\"ds-viz-matrix\" aria-hidden=\"true\">{MATRIX_STYLES.map((m, i) => <i key={i + 1} style={m} />)}</span>\n}\n\nexport function StepViz({ step, runs, active }: StepVizProps) {\n  return (\n    <>\n      <style href=\"ds-step-viz\" precedence=\"ds\">{css}</style>\n      <VizWindow\n        data-ds=\"step-viz\"\n        active={active}\n        className=\"max-w-100\"\n        title={(\n          <span className=\"grid\">\n            {windows.map((w, i) => (\n              <span key={w.tag} className=\"ds-viz-title flex items-center gap-2 whitespace-nowrap [grid-area:1/1]\" data-active={i === step}>\n                <span className=\"text-ui leading-4\">{w.name}</span>\n                <span className=\"bg-ds-neutral-200 px-1.5 py-0.5 text-caption text-ds-neutral-500\">{w.tag}</span>\n              </span>\n            ))}\n          </span>\n        )}\n      >\n        <div className=\"grid grid-cols-[minmax(0,1fr)]\">\n          {windows.map((w, k) => (\n            <div key={w.tag} className=\"ds-viz-body [grid-area:1/1]\" data-active={k === step} inert={k !== step}>\n              <div key={`${k}-${runs[k] ?? 0}`} className=\"ds-viz flex flex-col gap-3 px-4 pt-1 pb-4\" data-active={active}>\n                {/* The ask, and what came with it. */}\n                <p className=\"ds-viz-in ml-10 bg-ds-neutral-200 px-3 py-2.5 text-ui\" style={s({ '--d': 200 })}>{w.ask}</p>\n                <p className=\"ds-viz-in flex items-center justify-end gap-1.5 text-meta text-ds-neutral-500\" style={s({ '--d': 600 })}>\n                  <svg width=\"12\" height=\"12\" viewBox=\"0 0 12 12\" aria-hidden=\"true\"><rect x=\"0.5\" y=\"0.5\" width=\"11\" height=\"11\" fill=\"none\" stroke=\"currentColor\" /><rect x=\"3\" y=\"3\" width=\"3\" height=\"6\" fill=\"currentColor\" /></svg>\n                  <span className=\"text-ds-neutral-600\">{w.context}</span> added to context\n                </p>\n\n                {/* Status: shimmers while it works, then says how it went. */}\n                <p className=\"ds-viz-in grid text-meta\" style={s({ '--d': 900 })}>\n                  <span className=\"ds-viz-swap-a ds-viz-shimmer [grid-area:1/1]\" style={s({ '--d': 2400 })}>{`${w.working}…`}</span>\n                  <span className=\"ds-viz-swap-b [grid-area:1/1] text-ds-neutral-500\" style={s({ '--d': 2400 })}>{`${w.took} `}<span className=\"ds-step-play\">▶</span></span>\n                </p>\n\n                {k === 0\n                  ? (\n                      <>\n                        <p className=\"ds-viz-in text-ui leading-6\" style={s({ '--d': 1300 })}>\n                          Wrote <span className=\"ds-viz-chip\"><span className=\"ds-viz-dot bg-home-red\" />Refunds</span> and <span className=\"ds-viz-chip\"><span className=\"ds-viz-dot bg-home-red\" />Shipping</span> to the docs namespace, searchable now.\n                        </p>\n                        <div className=\"ds-viz-in ds-viz-progress\" style={s({ '--d': 1600 })}>\n                          <Matrix />\n                          <span className=\"grid flex-1\">\n                            <span className=\"ds-viz-swap-a [grid-area:1/1]\" style={s({ '--d': 2400 })}>Writing 2 documents…</span>\n                            <span className=\"ds-viz-swap-b [grid-area:1/1] text-ds-neutral-500\" style={s({ '--d': 2400 })}>2 documents created</span>\n                          </span>\n                          <span className=\"ds-viz-timer\" style={s({ '--to': 2, '--d': 1600 })} />\n                        </div>\n                      </>\n                    )\n                  : k === 1\n                    ? (\n                        <>\n                          <p className=\"ds-viz-in text-ui leading-6\" style={s({ '--d': 1300 })}>\n                            Updated <span className=\"ds-viz-chip\"><span className=\"ds-viz-dot bg-home-red\" />Deal 4821</span>, created <span className=\"ds-viz-chip\"><span className=\"ds-viz-dot bg-home-red\" />Deal 4830</span> and deleted <span className=\"ds-viz-chip\"><span className=\"ds-viz-dot bg-ds-neutral-500\" /><span className=\"line-through\">Contact 913</span></span>.\n                          </p>\n                          <div className=\"ds-viz-in ds-viz-progress\" style={s({ '--d': 1600 })}>\n                            <Matrix />\n                            <span className=\"grid flex-1\">\n                              <span className=\"ds-viz-swap-a [grid-area:1/1]\" style={s({ '--d': 2400 })}>Syncing HubSpot…</span>\n                              <span className=\"ds-viz-swap-b [grid-area:1/1] text-ds-neutral-500\" style={s({ '--d': 2400 })}>Next sync in 15 min</span>\n                            </span>\n                            <span className=\"ds-viz-timer\" style={s({ '--to': 4, '--d': 1600 })} />\n                          </div>\n                        </>\n                      )\n                    : k === 2\n                      ? (\n                          // Search: results land where they were found, then glide to the reranked order on a 48px track.\n                          <div className=\"relative h-[146px] border border-ds-neutral-300\">\n                            {results.map(r => (\n                              <div key={r.id} className=\"ds-viz-row absolute inset-x-0 top-0 flex h-12 items-center gap-3 border-b border-ds-neutral-300 bg-ds-neutral-100 px-3\" style={r.row}>\n                                <span className={r.to === 0 ? 'ds-viz-dot bg-home-red' : 'ds-viz-dot bg-ds-neutral-500'} />\n                                <span className=\"min-w-0 flex-1\">\n                                  <span className=\"block text-ui leading-4\">{r.id}</span>\n                                  <span className=\"block truncate text-meta text-ds-neutral-500\">{r.text}</span>\n                                </span>\n                                <span className=\"w-16 shrink-0\">\n                                  <span className=\"block text-right text-caption text-ds-neutral-500 tabular-nums\">{r.score}</span>\n                                  <span className=\"mt-1 block h-0.5 bg-ds-neutral-300\">\n                                    <span className=\"ds-viz-bar block h-full bg-off-white\" style={r.bar} />\n                                  </span>\n                                </span>\n                              </div>\n                            ))}\n                          </div>\n                        )\n                      : (\n                          // An agent over MCP.\n                          <>\n                            <p className=\"ds-viz-in text-ui leading-6\" style={s({ '--d': 1300 })}>\n                              Called <span className=\"ds-viz-chip\">Search</span> in docs. Refunds are available for 30 days.\n                            </p>\n                            <p className=\"ds-viz-in flex items-center gap-2 text-meta text-ds-neutral-500\" style={s({ '--d': 2600 })}>\n                              Source <span className=\"ds-viz-chip text-off-white\"><span className=\"ds-viz-dot bg-home-red\" />Refunds</span>\n                            </p>\n                          </>\n                        )}\n              </div>\n            </div>\n          ))}\n        </div>\n      </VizWindow>\n    </>\n  )\n}\n\nexport default StepViz\n\nconst css = `\n/* The finished status's play mark, three quarters of the line's size (9px on 12px). */\n.ds-step-play { font-size: 0.75em; }\n`\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "eval-viz"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "StepViz",
+            "file": "react/components/visuals/StepViz.tsx",
+            "props": [
+              {
+                "name": "step",
+                "type": "number",
+                "required": true
+              },
+              {
+                "name": "runs",
+                "type": "number[]",
+                "required": true
+              },
+              {
+                "name": "active",
+                "type": "boolean",
+                "required": true
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "On the site",
+          "center": false,
+          "half": false,
+          "path": "react/examples/step-viz/Site.tsx",
+          "content": "import { StepViz } from '@/react/components/visuals/StepViz'\n// The four steps side by side: write, sync a source, search, and an agent over MCP.\nconst runs = [212, 238, 251, 196]\n\nexport default function Site() {\n  return (\n    <div className=\"grid gap-4 md:grid-cols-2\">\n      {[1, 2, 3, 4].map(n => (\n        <div key={n} className=\"relative grid min-h-80 place-items-center overflow-hidden bg-ds-neutral-200 px-4 py-8 text-ds-neutral-300\">\n          <StepViz step={n - 1} runs={runs} active />\n        </div>\n      ))}\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "eval-viz"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/visuals/step-viz.ts",
+          "content": "import { html } from 'lit'\nimport { repeat } from 'lit/directives/repeat.js'\nimport { define } from '@/elements/lib/element'\nimport { VizWindow } from '@/elements/components/visuals/viz-window'\nimport styles from 'virtual:tw'\n\n// StepViz.vue as <conare-step-viz>: How it works' window (the website's StepViz.vue): one search shown step by step, as\n// an agent window. The ask in a filled bubble, what was added to context, a status that shimmers while it works and\n// then says how it went, the outcome as a sentence with the records it touched as inline chips, and a progress row with\n// the dot matrix and a ticking timer. Steps: 0 write, 1 sync a source, 2 search (results land where they were found,\n// then glide to the reranked order), 3 an agent over MCP. One window for every step: picking one keeps the window and\n// crossfades what is in it, every step's body in one grid cell so the window never resizes; a new number in `runs`\n// draws the picked body anew, replaying it. It is a <conare-viz-window> drawing its own title and body.\nconst windows = [\n\t{ name: 'Conare', tag: 'Write', ask: 'Add our refund and shipping policies to docs', context: 'Policies.pdf', working: 'Writing', took: 'Worked for 2s' },\n\t{ name: 'Conare', tag: 'Source', ask: 'Keep HubSpot in sync with CRM', context: 'HubSpot', working: 'Syncing', took: 'Synced 3 records' },\n\t{ name: 'Conare', tag: 'Search', ask: 'How do refunds work?', context: 'Docs', working: 'Searching', took: 'Reranked in 62 ms' },\n\t{ name: 'Your agent', tag: 'MCP', ask: 'How do refunds work?', context: 'Conare', working: 'Thinking', took: 'Worked for 1s' },\n]\n\n// Found in one order, shown after the rerank in another: `from` and `to` are each row's place before and after.\nconst results = [\n\t{ id: 'Refunds', text: 'Refunds are available for 30 days.', score: '0.91', from: 2, to: 0 },\n\t{ id: 'Returns', text: 'Return an item from your orders page.', score: '0.47', from: 0, to: 1 },\n\t{ id: 'Shipping', text: 'Orders ship within two days.', score: '0.12', from: 1, to: 2 },\n]\n\n// The loader's nine squares, each blinking a beat after the last.\nconst matrix = () => html`<span class=\"ds-viz-matrix\" aria-hidden=\"true\">${Array.from({ length: 9 }, (_, i) => html`<i style=\"--k: ${i + 1}\"></i>`)}</span>`\n\n/**\n * @summary How it works' agent window, one step at a time.\n */\nexport class StepViz extends VizWindow {\n\tstatic styles = [VizWindow.styles, styles]\n\tstatic properties = { ...VizWindow.properties, step: { type: Number }, runs: { type: Array } }\n\n\t/** 0 write, 1 sync, 2 search, 3 an agent over MCP. */\n\tstep = 0\n\t/** Each step's run: a new number plays it again. */\n\truns: number[] = []\n\n\tprotected rootClass() {\n\t\treturn 'max-w-100'\n\t}\n\n\tprotected renderTitle() {\n\t\treturn html`<span class=\"grid\">${windows.map((w, i) => html`<span class=\"ds-viz-title flex items-center gap-2 whitespace-nowrap [grid-area:1/1]\" data-active=${String(i === this.step)}><span class=\"text-ui leading-4\">${w.name}</span><span class=\"bg-ds-neutral-200 px-1.5 py-0.5 text-caption text-ds-neutral-500\">${w.tag}</span></span>`)}</span>`\n\t}\n\n\tprotected renderBody() {\n\t\treturn html`<div class=\"grid grid-cols-[minmax(0,1fr)]\">${windows.map((w, k) => html`<div class=\"ds-viz-body [grid-area:1/1]\" data-active=${String(k === this.step)} ?inert=${k !== this.step}>${repeat([`${k}-${this.runs[k] ?? 0}`], (key) => key, () => this.renderStep(w, k))}</div>`)}</div>`\n\t}\n\n\tprivate renderStep(w: (typeof windows)[number], k: number) {\n\t\treturn html`<div class=\"ds-viz flex flex-col gap-3 px-4 pt-1 pb-4\" data-active=${String(this.active)}><p class=\"ds-viz-in ml-10 bg-ds-neutral-200 px-3 py-2.5 text-ui\" style=\"--d: 200\">${w.ask}</p><p class=\"ds-viz-in flex items-center justify-end gap-1.5 text-meta text-ds-neutral-500\" style=\"--d: 600\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 12 12\" aria-hidden=\"true\"><rect x=\"0.5\" y=\"0.5\" width=\"11\" height=\"11\" fill=\"none\" stroke=\"currentColor\"></rect><rect x=\"3\" y=\"3\" width=\"3\" height=\"6\" fill=\"currentColor\"></rect></svg><span class=\"text-ds-neutral-600\">${w.context}</span> added to context</p><p class=\"ds-viz-in grid text-meta\" style=\"--d: 900\"><span class=\"ds-viz-swap-a ds-viz-shimmer [grid-area:1/1]\" style=\"--d: 2400\">${`${w.working}…`}</span><span class=\"ds-viz-swap-b [grid-area:1/1] text-ds-neutral-500\" style=\"--d: 2400\">${`${w.took} `}<span class=\"ds-step-play\">▶</span></span></p>${this.renderOutcome(k)}</div>`\n\t}\n\n\tprivate renderOutcome(k: number) {\n\t\t// Write\n\t\tif (k === 0) return html`<p class=\"ds-viz-in text-ui leading-6\" style=\"--d: 1300\">Wrote <span class=\"ds-viz-chip\"><span class=\"ds-viz-dot bg-home-red\"></span>Refunds</span> and <span class=\"ds-viz-chip\"><span class=\"ds-viz-dot bg-home-red\"></span>Shipping</span> to the docs namespace, searchable now.</p><div class=\"ds-viz-in ds-viz-progress\" style=\"--d: 1600\">${matrix()}<span class=\"grid flex-1\"><span class=\"ds-viz-swap-a [grid-area:1/1]\" style=\"--d: 2400\">Writing 2 documents…</span><span class=\"ds-viz-swap-b [grid-area:1/1] text-ds-neutral-500\" style=\"--d: 2400\">2 documents created</span></span><span class=\"ds-viz-timer\" style=\"--to: 2; --d: 1600\"></span></div>`\n\t\t// Sync\n\t\tif (k === 1) return html`<p class=\"ds-viz-in text-ui leading-6\" style=\"--d: 1300\">Updated <span class=\"ds-viz-chip\"><span class=\"ds-viz-dot bg-home-red\"></span>Deal 4821</span>, created <span class=\"ds-viz-chip\"><span class=\"ds-viz-dot bg-home-red\"></span>Deal 4830</span> and deleted <span class=\"ds-viz-chip\"><span class=\"ds-viz-dot bg-ds-neutral-500\"></span><span class=\"line-through\">Contact 913</span></span>.</p><div class=\"ds-viz-in ds-viz-progress\" style=\"--d: 1600\">${matrix()}<span class=\"grid flex-1\"><span class=\"ds-viz-swap-a [grid-area:1/1]\" style=\"--d: 2400\">Syncing HubSpot…</span><span class=\"ds-viz-swap-b [grid-area:1/1] text-ds-neutral-500\" style=\"--d: 2400\">Next sync in 15 min</span></span><span class=\"ds-viz-timer\" style=\"--to: 4; --d: 1600\"></span></div>`\n\t\t// Search: results land where they were found, then glide to the reranked order on a 48px track.\n\t\tif (k === 2) return html`<div class=\"relative h-[146px] border border-ds-neutral-300\">${results.map((r) => html`<div class=\"ds-viz-row absolute inset-x-0 top-0 flex h-12 items-center gap-3 border-b border-ds-neutral-300 bg-ds-neutral-100 px-3\" style=\"--from: ${r.from}; --to: ${r.to}; --d: ${1200 + r.from * 160}\"><span class=${r.to === 0 ? 'ds-viz-dot bg-home-red' : 'ds-viz-dot bg-ds-neutral-500'}></span><span class=\"min-w-0 flex-1\"><span class=\"block text-ui leading-4\">${r.id}</span><span class=\"block truncate text-meta text-ds-neutral-500\">${r.text}</span></span><span class=\"w-16 shrink-0\"><span class=\"block text-right text-caption text-ds-neutral-500 tabular-nums\">${r.score}</span><span class=\"mt-1 block h-0.5 bg-ds-neutral-300\"><span class=\"ds-viz-bar block h-full bg-off-white\" style=\"--w: ${r.score}; --d: ${2900 + r.to * 120}\"></span></span></span></div>`)}</div>`\n\t\t// An agent over MCP\n\t\treturn html`<p class=\"ds-viz-in text-ui leading-6\" style=\"--d: 1300\">Called <span class=\"ds-viz-chip\">Search</span> in docs. Refunds are available for 30 days.</p><p class=\"ds-viz-in flex items-center gap-2 text-meta text-ds-neutral-500\" style=\"--d: 2600\">Source <span class=\"ds-viz-chip text-off-white\"><span class=\"ds-viz-dot bg-home-red\"></span>Refunds</span></p>`\n\t}\n}\n\ndefine('step-viz', StepViz)\n"
+        },
+        {
+          "path": "elements/components/visuals/step-viz.css",
+          "content": "/* StepViz.vue's <style>, as it is. */\n/* The finished status's play mark, three quarters of the line's size (9px on 12px). */\n.ds-step-play { font-size: 0.75em; }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/step-viz.js",
+        "elements/viz-window.js"
+      ],
+      "tag": "conare-step-viz",
+      "tags": [
+        "conare-step-viz"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "eval-viz"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-step-viz",
+            "name": "StepViz",
+            "module": "elements/step-viz.js",
+            "description": "How it works' agent window, one step at a time.",
+            "attributes": [
+              {
+                "name": "step",
+                "field": "step",
+                "type": "number",
+                "default": "0",
+                "description": "0 write, 1 sync, 2 search, 3 an agent over MCP."
+              },
+              {
+                "name": "runs",
+                "field": "runs",
+                "type": "number[]",
+                "default": "[]",
+                "description": "Each step's run: a new number plays it again."
+              },
+              {
+                "name": "active",
+                "field": "active",
+                "type": "boolean",
+                "default": "false",
+                "description": "Plays the entrance; inactive, it holds its finished state."
+              },
+              {
+                "name": "size",
+                "field": "size",
+                "type": "\"sm\" | \"md\"",
+                "default": "'md'",
+                "description": "`sm`: the product cards' 36px bar with two controls."
+              },
+              {
+                "name": "stretch",
+                "field": "stretch",
+                "type": "boolean",
+                "default": "false",
+                "description": "Fills its box (full height, no max width)."
+              },
+              {
+                "name": "relative",
+                "field": "relative",
+                "type": "boolean",
+                "default": "false",
+                "description": "Positions its box (Vue's class=\"relative\" on the window), so it paints over an absolute sibling such as a cell-burst."
+              }
+            ],
+            "properties": [
+              {
+                "name": "step",
+                "type": "number",
+                "default": "0",
+                "description": "0 write, 1 sync, 2 search, 3 an agent over MCP.",
+                "attribute": "step"
+              },
+              {
+                "name": "runs",
+                "type": "number[]",
+                "default": "[]",
+                "description": "Each step's run: a new number plays it again.",
+                "attribute": "runs"
+              },
+              {
+                "name": "active",
+                "type": "boolean",
+                "default": "false",
+                "description": "Plays the entrance; inactive, it holds its finished state.",
+                "attribute": "active"
+              },
+              {
+                "name": "size",
+                "type": "\"sm\" | \"md\"",
+                "default": "'md'",
+                "description": "`sm`: the product cards' 36px bar with two controls.",
+                "attribute": "size"
+              },
+              {
+                "name": "stretch",
+                "type": "boolean",
+                "default": "false",
+                "description": "Fills its box (full height, no max width).",
+                "attribute": "stretch"
+              },
+              {
+                "name": "relative",
+                "type": "boolean",
+                "default": "false",
+                "description": "Positions its box (Vue's class=\"relative\" on the window), so it paints over an absolute sibling such as a cell-burst.",
+                "attribute": "relative"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "title",
+                "description": "What the bar says after the mark."
+              },
+              {
+                "name": "",
+                "description": "The window's body."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "On the site",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/step-viz/Site.html",
+          "content": "<!-- The four steps side by side: write, sync a source, search, and an agent over MCP. -->\n<div class=\"grid gap-4 md:grid-cols-2\">\n  <div class=\"relative grid min-h-80 place-items-center overflow-hidden bg-ds-neutral-200 px-4 py-8 text-ds-neutral-300\"><conare-step-viz step=\"0\" runs=\"[212, 238, 251, 196]\" active></conare-step-viz></div>\n  <div class=\"relative grid min-h-80 place-items-center overflow-hidden bg-ds-neutral-200 px-4 py-8 text-ds-neutral-300\"><conare-step-viz step=\"1\" runs=\"[212, 238, 251, 196]\" active></conare-step-viz></div>\n  <div class=\"relative grid min-h-80 place-items-center overflow-hidden bg-ds-neutral-200 px-4 py-8 text-ds-neutral-300\"><conare-step-viz step=\"2\" runs=\"[212, 238, 251, 196]\" active></conare-step-viz></div>\n  <div class=\"relative grid min-h-80 place-items-center overflow-hidden bg-ds-neutral-200 px-4 py-8 text-ds-neutral-300\"><conare-step-viz step=\"3\" runs=\"[212, 238, 251, 196]\" active></conare-step-viz></div>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,199 @@
+{
+  "name": "link",
+  "title": "Link",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "Text that goes somewhere: ink with a quiet underline 4px under it that turns ink on hover, and the quiet link under a list that shows more of it.",
+  "use_for": "Links inside sentences and short link rows; Show 5 more under a list.",
+  "never": [
+    "Red links",
+    "Links that look like buttons, or buttons that look like links",
+    "An underline that moves or thickens on hover"
+  ],
+  "source": "conare-web app/assets/css/console2.css (.v2-link, .v2-more), app/design-system/examples/link/Product.vue",
+  "body": "`href` makes it an anchor (or pass `as` a router link component). `more` is the quiet link under a list: 12px medium in the soft grey, ink on hover, a button unless it has an href, with a 40px place to land on phones.",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Link.vue",
+      "content": "<script setup lang=\"ts\">\nimport type { Component } from 'vue'\n\n// Text that goes somewhere (console2.css .v2-link): ink with a quiet #C3C1BF underline 4px under it that turns ink on\n// hover, in 200ms. `more` is the quiet link under a list (.v2-more): 12px medium, soft grey to ink, no underline, and\n// a button unless it has an href. `as` renders a router link component in place of the anchor.\nwithDefaults(defineProps<{ href?: string, more?: boolean, as?: string | Component }>(), { as: 'a' })\n</script>\n\n<template>\n  <button data-ds=\"link\" v-if=\"more && !href\" type=\"button\" class=\"ds-more\"><slot /></button>\n  <component data-ds=\"link\" :is=\"as\" v-else :href=\"href\" :class=\"more ? 'ds-more' : 'ds-link'\"><slot /></component>\n</template>\n\n<style>\n.ds-link { text-decoration-line: underline; text-decoration-color: var(--ds-color-edge-strong); text-underline-offset: 4px; transition: text-decoration-color var(--ds-duration-enter) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-link:hover { text-decoration-color: var(--ds-color-fg); } }\n.ds-more { position: relative; color: var(--ds-color-fg-soft); font-size: var(--ds-text-meta); font-weight: var(--ds-font-weight-medium); line-height: var(--ds-text-meta-leading); white-space: nowrap; cursor: pointer; transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-more:hover { color: var(--ds-color-fg); } }\n.ds-more:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: var(--ds-border-focus); }\n/* A 40px place to land on phones, the text keeping its size. */\n@media (pointer: coarse), (max-width: 767px) { .ds-more::after { position: absolute; inset: -12px; content: \"\"; } }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "In the product",
+      "center": false,
+      "half": false,
+      "path": "examples/link/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport Link from '@/components/ui/Link.vue'\n// A link in a sentence, a row of them, and the quiet link that shows more of a list.\n</script>\n\n<template>\n  <div class=\"grid items-start gap-2 type-ui md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8\">\n    <p class=\"type-meta leading-7 text-fg-muted\">In a sentence</p>\n    <p class=\"leading-7 text-fg-soft\">No queries yet. <Link href=\"#search\" class=\"text-fg\">Try a search</Link></p>\n    <p class=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">In a row</p>\n    <p class=\"flex gap-4 leading-7\"><Link href=\"#billing\">Billing</Link><Link href=\"#docs\">Docs</Link><Link href=\"#status\">Status</Link></p>\n    <p class=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">Under a list</p>\n    <p class=\"leading-7\"><Link more>Show 5 more</Link></p>\n  </div>\n</template>\n",
+      "requires": [],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Link.tsx",
+          "content": "import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ElementType, ReactNode } from 'react'\nimport { cn } from '@/react/lib/cn'\n\n// Text that goes somewhere (console2.css .v2-link): ink with a quiet #C3C1BF underline 4px under it that turns ink on\n// hover, in 200ms. `more` is the quiet link under a list (.v2-more): 12px medium, soft grey to ink, no underline, and\n// a button unless it has an href. `as` renders a router link component in place of the anchor (it gets `href`,\n// `className` and the rest).\nexport interface LinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {\n  href?: string\n  more?: boolean\n  as?: ElementType\n  children?: ReactNode\n}\n\nexport function Link({ href, more, as: As = 'a', className, children, ...rest }: LinkProps) {\n  if (more && !href) {\n    return (\n      <>\n        <style href=\"ds-link\" precedence=\"ds\">{css}</style>\n        <button data-ds=\"link\" type=\"button\" {...(rest as ButtonHTMLAttributes<HTMLButtonElement>)} className={cn('ds-more', className)}>{children}</button>\n      </>\n    )\n  }\n  return (\n    <>\n      <style href=\"ds-link\" precedence=\"ds\">{css}</style>\n      <As data-ds=\"link\" {...rest} href={href} className={cn(more ? 'ds-more' : 'ds-link', className)}>{children}</As>\n    </>\n  )\n}\n\nexport default Link\n\nconst css = `\n.ds-link { text-decoration-line: underline; text-decoration-color: var(--ds-color-edge-strong); text-underline-offset: 4px; transition: text-decoration-color var(--ds-duration-enter) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-link:hover { text-decoration-color: var(--ds-color-fg); } }\n.ds-more { position: relative; color: var(--ds-color-fg-soft); font-size: var(--ds-text-meta); font-weight: var(--ds-font-weight-medium); line-height: var(--ds-text-meta-leading); white-space: nowrap; cursor: pointer; transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-more:hover { color: var(--ds-color-fg); } }\n.ds-more:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: var(--ds-border-focus); }\n/* A 40px place to land on phones, the text keeping its size. */\n@media (pointer: coarse), (max-width: 767px) { .ds-more::after { position: absolute; inset: -12px; content: \"\"; } }\n`\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "Link",
+            "file": "react/components/ui/Link.tsx",
+            "props": [
+              {
+                "name": "href",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "more",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "as",
+                "type": "ElementType",
+                "required": false
+              },
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              }
+            ],
+            "extends": [
+              "AnchorHTMLAttributes<HTMLAnchorElement>"
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "react/examples/link/Product.tsx",
+          "content": "import { Link } from '@/react/components/ui/Link'\n// A link in a sentence, a row of them, and the quiet link that shows more of a list.\n\nexport default function Product() {\n  return (\n    <div className=\"grid items-start gap-2 type-ui md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8\">\n      <p className=\"type-meta leading-7 text-fg-muted\">In a sentence</p>\n      <p className=\"leading-7 text-fg-soft\">No queries yet. <Link href=\"#search\" className=\"text-fg\">Try a search</Link></p>\n      <p className=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">In a row</p>\n      <p className=\"flex gap-4 leading-7\"><Link href=\"#billing\">Billing</Link><Link href=\"#docs\">Docs</Link><Link href=\"#status\">Status</Link></p>\n      <p className=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">Under a list</p>\n      <p className=\"leading-7\"><Link more>Show 5 more</Link></p>\n    </div>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/link.ts",
+          "content": "import { html } from 'lit'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// Link.vue as <conare-link>: text that goes somewhere (console2.css .v2-link): ink with a quiet #C3C1BF underline 4px\n// under it that turns ink on hover, in 200ms. `more` is the quiet link under a list (.v2-more): 12px medium, soft grey\n// to ink, no underline, and a button unless it has an href. Vue's `as` (a router link) has no equivalent: a router\n// that intercepts anchors (most do) works with the inner <a>. The host passes its colour to the link (a class such as\n// text-fg on the element reaches it).\n\n/**\n * @summary Text that goes somewhere.\n * @slot - The link's text.\n * @fires click - When pressed (the native click).\n */\nexport class Link extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { href: {}, more: { type: Boolean }, target: {}, rel: {} }\n\n\thref?: string\n\t/** The quiet link under a list (a button unless it has an href). */\n\tmore = false\n\ttarget?: string\n\trel?: string\n\n\trender() {\n\t\tif (this.more && !this.href) return html`<button data-ds=\"link\" type=\"button\" class=\"ds-more\"><slot></slot></button>`\n\t\treturn html`<a data-ds=\"link\" href=${ifDefined(this.href)} target=${ifDefined(this.target)} rel=${ifDefined(this.rel)} class=${this.more ? 'ds-more' : 'ds-link'}><slot></slot></a>`\n\t}\n}\n\ndefine('link', Link)\n"
+        },
+        {
+          "path": "elements/components/ui/link.css",
+          "content": "/* Link.vue's <style>, as it is. */\n.ds-link { text-decoration-line: underline; text-decoration-color: var(--ds-color-edge-strong); text-underline-offset: 4px; transition: text-decoration-color var(--ds-duration-enter) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-link:hover { text-decoration-color: var(--ds-color-fg); } }\n.ds-more { position: relative; color: var(--ds-color-fg-soft); font-size: var(--ds-text-meta); font-weight: var(--ds-font-weight-medium); line-height: var(--ds-text-meta-leading); white-space: nowrap; cursor: pointer; transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-more:hover { color: var(--ds-color-fg); } }\n.ds-more:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: var(--ds-border-focus); }\n/* A 40px place to land on phones, the text keeping its size. */\n@media (pointer: coarse), (max-width: 767px) { .ds-more::after { position: absolute; inset: -12px; content: \"\"; } }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/link.js"
+      ],
+      "tag": "conare-link",
+      "tags": [
+        "conare-link"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-link",
+            "name": "Link",
+            "module": "elements/link.js",
+            "description": "Text that goes somewhere.",
+            "attributes": [
+              {
+                "name": "href",
+                "field": "href",
+                "type": "string | undefined"
+              },
+              {
+                "name": "more",
+                "field": "more",
+                "type": "boolean",
+                "default": "false",
+                "description": "The quiet link under a list (a button unless it has an href)."
+              },
+              {
+                "name": "target",
+                "field": "target",
+                "type": "string | undefined"
+              },
+              {
+                "name": "rel",
+                "field": "rel",
+                "type": "string | undefined"
+              }
+            ],
+            "properties": [
+              {
+                "name": "href",
+                "type": "string | undefined",
+                "attribute": "href"
+              },
+              {
+                "name": "more",
+                "type": "boolean",
+                "default": "false",
+                "description": "The quiet link under a list (a button unless it has an href).",
+                "attribute": "more"
+              },
+              {
+                "name": "target",
+                "type": "string | undefined",
+                "attribute": "target"
+              },
+              {
+                "name": "rel",
+                "type": "string | undefined",
+                "attribute": "rel"
+              }
+            ],
+            "events": [
+              {
+                "name": "click",
+                "description": "When pressed (the native click)."
+              }
+            ],
+            "slots": [
+              {
+                "name": "",
+                "description": "The link's text."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/link/Product.html",
+          "content": "<!-- A link in a sentence, a row of them, and the quiet link that shows more of a list. -->\n<div class=\"grid items-start gap-2 type-ui md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8\">\n  <p class=\"type-meta leading-7 text-fg-muted\">In a sentence</p>\n  <p class=\"leading-7 text-fg-soft\">No queries yet. <conare-link href=\"#search\" class=\"text-fg\">Try a search</conare-link></p>\n  <p class=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">In a row</p>\n  <p class=\"flex gap-4 leading-7\"><conare-link href=\"#billing\">Billing</conare-link><conare-link href=\"#docs\">Docs</conare-link><conare-link href=\"#status\">Status</conare-link></p>\n  <p class=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">Under a list</p>\n  <p class=\"leading-7\"><conare-link more>Show 5 more</conare-link></p>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

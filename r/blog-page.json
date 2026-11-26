@@ -1,0 +1,323 @@
+{
+  "name": "blog-page",
+  "title": "Blog page",
+  "type": "registry:block",
+  "group": "site",
+  "description": "The blog: the head, the categories with a search beside them, the posts three across as blog cards, every card in a row one height, and the closing band. Nothing matching says so.",
+  "use_for": "A website's blog index.",
+  "never": [
+    "Pagination: the posts load in one list",
+    "A featured post larger than the rest"
+  ],
+  "source": "conare-web app/pages/blog/index.vue, app/components/home/BlogCard.vue",
+  "body": "Built on `site-page`: `header`, `footer` and `announcement` are its props, and the `logo` and `actions` slots go to the header (`sheet-actions` too, in web components). The category and the search filter the `posts` in place; a post is blog-card's props.",
+  "requires": [
+    "blog-card",
+    "button-link",
+    "call-to-action",
+    "field",
+    "section-head",
+    "site-page"
+  ],
+  "dependencies": [
+    "lucide-vue-next@^0.479.0"
+  ],
+  "files": [
+    {
+      "path": "components/site/BlogPage.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed, ref } from 'vue'\nimport { Search } from 'lucide-vue-next'\nimport BlogCard from '@/components/site/BlogCard.vue'\nimport ButtonLink from '@/components/site/ButtonLink.vue'\nimport CallToAction from '@/components/site/CallToAction.vue'\nimport SectionHead from '@/components/site/SectionHead.vue'\nimport SitePage, { type SiteAction, type SiteAnnouncement, type SiteFooterData, type SiteHeaderData } from '@/components/site/SitePage.vue'\nimport Input from '@/components/ui/Input.vue'\n\n// The blog (pages/blog/index.vue): the head, the categories with a search beside them, then the posts three across\n// (blog-card), every card in a row one height; nothing matching says so under a hairline. The picked category rests on\n// the paper with its red square, the others muted until the pointer reaches them. Then the closing band.\nexport type BlogPost = { href: string, title: string, dek?: string, category: string, author?: string, date?: string }\nconst props = defineProps<{\n  header: SiteHeaderData, footer: SiteFooterData, announcement?: SiteAnnouncement\n  head: { tag?: string, title: string }\n  categories: string[]\n  posts: BlogPost[]\n  cta: { title: string, action: SiteAction }\n}>()\nconst category = ref('All')\nconst query = ref('')\nconst shown = computed(() => {\n  const q = query.value.trim().toLowerCase()\n  return props.posts.filter(p => (category.value === 'All' || p.category === category.value) && (!q || `${p.title} ${p.dek ?? ''}`.toLowerCase().includes(q)))\n})\n</script>\n\n<template>\n  <SitePage data-ds=\"blog-page\" :header=\"header\" :footer=\"footer\" :announcement=\"announcement\">\n      <template #logo><slot name=\"logo\" /></template>\n      <template #actions=\"{ place }\"><slot name=\"actions\" :place=\"place\" /></template>\n    <section aria-labelledby=\"blog-page-title\" class=\"mx-auto max-w-[1440px] px-4 pt-14 pb-32 sm:px-6 lg:px-10 lg:pt-20 lg:pb-40\">\n      <SectionHead as=\"h1\" title-id=\"blog-page-title\" :tag=\"head.tag\" :title=\"head.title\" />\n      <div class=\"mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between\">\n        <div role=\"group\" aria-label=\"Categories\" class=\"flex flex-wrap gap-1 text-body leading-none\">\n          <button\n            v-for=\"c in ['All', ...categories]\"\n            :key=\"c\"\n            type=\"button\"\n            :aria-pressed=\"category === c\"\n            class=\"ds-blog-cat flex h-7.5 cursor-pointer items-center gap-2 px-3\"\n            :class=\"category === c ? 'bg-surface-subtle text-fg' : 'text-fg-muted'\"\n            @click=\"category = c\"\n          >\n            <span v-if=\"category === c\" aria-hidden=\"true\" class=\"size-1.5 bg-home-red\" />\n            {{ c }}\n          </button>\n        </div>\n        <div class=\"w-full sm:w-70\">\n          <Input v-model=\"query\" :icon=\"Search\" type=\"search\" enterkeyhint=\"search\" placeholder=\"Search\" aria-label=\"Search the blog\" @keydown.esc=\"query = ''\" />\n        </div>\n      </div>\n      <ul v-if=\"shown.length\" class=\"mt-12 grid grid-cols-[minmax(0,1fr)] gap-6 md:grid-cols-2 lg:grid-cols-3\">\n        <li v-for=\"p in shown\" :key=\"p.href\" class=\"flex\"><BlogCard v-bind=\"p\" /></li>\n      </ul>\n      <p v-else class=\"mt-12 border-t border-edge pt-6 text-body text-fg-muted\">{{ query ? `Nothing matches \"${query}\".` : `Nothing in ${category} yet.` }}</p>\n    </section>\n    <CallToAction :title=\"cta.title\">\n      <ButtonLink :href=\"cta.action.href\" variant=\"light\" fill=\"black\">{{ cta.action.label }}</ButtonLink>\n    </CallToAction>\n  </SitePage>\n</template>\n\n<style>\n.ds-blog-cat { transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-blog-cat:hover { color: var(--ds-color-fg); } }\n.ds-blog-cat:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "The blog, on sample data",
+      "center": false,
+      "half": false,
+      "path": "examples/blog-page/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport BlogPage from '@/components/site/BlogPage.vue'\nimport Button from '@/components/ui/Button.vue'\nimport PixelButton from '@/components/ui/PixelButton.vue'\n// The blog on sample data: pick a category or search the posts.\nconst header = {\n  \"items\": [\n    {\n      \"label\": \"Search\",\n      \"desc\": \"Find the answer in any file.\",\n      \"href\": \"#search\"\n    },\n    {\n      \"label\": \"Sync\",\n      \"desc\": \"Keep your apps in step.\",\n      \"href\": \"#sync\"\n    },\n    {\n      \"label\": \"Parse\",\n      \"desc\": \"Read every row and cell.\",\n      \"href\": \"#parse\"\n    }\n  ],\n  \"links\": [\n    {\n      \"label\": \"Pricing\",\n      \"href\": \"#pricing\"\n    },\n    {\n      \"label\": \"Blog\",\n      \"href\": \"#blog\"\n    },\n    {\n      \"label\": \"Docs\",\n      \"href\": \"#docs\"\n    }\n  ],\n  \"homeLabel\": \"Acme home\"\n}\nconst footer = {\n  \"columns\": [\n    {\n      \"title\": \"Product\",\n      \"links\": [\n        {\n          \"label\": \"Search\",\n          \"href\": \"#search\"\n        },\n        {\n          \"label\": \"Sync\",\n          \"href\": \"#sync\"\n        },\n        {\n          \"label\": \"Parse\",\n          \"href\": \"#parse\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Company\",\n      \"links\": [\n        {\n          \"label\": \"About\",\n          \"href\": \"#about\"\n        },\n        {\n          \"label\": \"Blog\",\n          \"href\": \"#blog\"\n        },\n        {\n          \"label\": \"Changelog\",\n          \"href\": \"#changelog\"\n        },\n        {\n          \"label\": \"Contact\",\n          \"href\": \"#contact\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Resources\",\n      \"links\": [\n        {\n          \"label\": \"Docs\",\n          \"href\": \"#docs\"\n        },\n        {\n          \"label\": \"Pricing\",\n          \"href\": \"#pricing\"\n        },\n        {\n          \"label\": \"Status\",\n          \"href\": \"#status\"\n        }\n      ]\n    }\n  ],\n  \"tagline\": \"Search any data you bring. Get the right answer.\",\n  \"legal\": \"© 2026 Acme, Inc.\",\n  \"legalLinks\": [\n    {\n      \"label\": \"Privacy\",\n      \"href\": \"#privacy\"\n    },\n    {\n      \"label\": \"Terms\",\n      \"href\": \"#terms\"\n    }\n  ],\n  \"name\": \"Acme\"\n}\nconst head = {\n  \"tag\": \"Blog\",\n  \"title\": \"Get the latest updates.\"\n}\nconst categories = [\n  \"Product\",\n  \"Changelog\",\n  \"Benchmarks\"\n]\nconst posts = [\n  {\n    \"href\": \"#post-1\",\n    \"title\": \"Search that says where it looked\",\n    \"dek\": \"Every answer now carries the passages it read, with their scores.\",\n    \"category\": \"Product\",\n    \"author\": \"Acme team\",\n    \"date\": \"Nov 12, 2026\"\n  },\n  {\n    \"href\": \"#post-2\",\n    \"title\": \"Sync for shared drives\",\n    \"dek\": \"Connect a shared drive once and every folder in it stays in step.\",\n    \"category\": \"Changelog\",\n    \"author\": \"Acme team\",\n    \"date\": \"Nov 4, 2026\"\n  },\n  {\n    \"href\": \"#post-3\",\n    \"title\": \"How we measure accuracy\",\n    \"dek\": \"The benchmark we run every week, losses included.\",\n    \"category\": \"Benchmarks\",\n    \"author\": \"Acme research\",\n    \"date\": \"Oct 28, 2026\"\n  },\n  {\n    \"href\": \"#post-4\",\n    \"title\": \"Reading tables cell by cell\",\n    \"dek\": \"Why a parser that keeps rows together answers more questions.\",\n    \"category\": \"Product\",\n    \"author\": \"Acme team\",\n    \"date\": \"Oct 20, 2026\"\n  },\n  {\n    \"href\": \"#post-5\",\n    \"title\": \"Deletes that stay deleted\",\n    \"dek\": \"What happens to a record, and its index, when you remove it.\",\n    \"category\": \"Changelog\",\n    \"author\": \"Acme team\",\n    \"date\": \"Oct 9, 2026\"\n  },\n  {\n    \"href\": \"#post-6\",\n    \"title\": \"Reranking on a budget\",\n    \"dek\": \"One call after the search you already run, and where it helps most.\",\n    \"category\": \"Benchmarks\",\n    \"author\": \"Acme research\",\n    \"date\": \"Sep 30, 2026\"\n  }\n]\nconst cta = {\n  \"title\": \"See it on your own data.\",\n  \"action\": {\n    \"label\": \"Book a demo\",\n    \"href\": \"#demo\"\n  }\n}\n</script>\n\n<template>\n  <div class=\"-m-8\">\n    <BlogPage\n      :header=\"header\"\n      :footer=\"footer\"\n      :head=\"head\"\n      :categories=\"categories\"\n      :posts=\"posts\"\n      :cta=\"cta\"\n    >\n      <template #logo><span class=\"font-heading text-heading-3 text-fg\">Acme</span></template>\n      <template #actions><Button href=\"#contact\">Contact us</Button><PixelButton href=\"#sign-in\">Sign in</PixelButton></template>\n    </BlogPage>\n  </div>\n</template>\n",
+      "requires": [
+        "blog-card",
+        "button",
+        "button-link",
+        "call-to-action",
+        "field",
+        "section-head",
+        "site-page"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/site/BlogPage.tsx",
+          "content": "'use client'\nimport { useMemo, useState } from 'react'\nimport { Search } from 'lucide-react'\nimport { BlogCard } from '@/react/components/site/BlogCard'\nimport { ButtonLink } from '@/react/components/site/ButtonLink'\nimport { CallToAction } from '@/react/components/site/CallToAction'\nimport { SectionHead } from '@/react/components/site/SectionHead'\nimport { SitePage, type SiteAction, type SiteFrameProps } from '@/react/components/site/SitePage'\nimport { Input } from '@/react/components/ui/Input'\n\n// The blog (pages/blog/index.vue): the head, the categories with a search beside them, then the posts three across\n// (blog-card), every card in a row one height; nothing matching says so under a hairline. The picked category rests on\n// the paper with its red square, the others muted until the pointer reaches them. Then the closing band.\nexport type BlogPost = { href: string, title: string, dek?: string, category: string, author?: string, date?: string }\nexport interface BlogPageProps extends SiteFrameProps {\n  head: { tag?: string, title: string }\n  categories: string[]\n  posts: BlogPost[]\n  cta: { title: string, action: SiteAction }\n}\n\nexport function BlogPage({ header, footer, announcement, logo, actions, head, categories, posts, cta }: BlogPageProps) {\n  const [category, setCategory] = useState('All')\n  const [query, setQuery] = useState('')\n  const shown = useMemo(() => {\n    const q = query.trim().toLowerCase()\n    return posts.filter(p => (category === 'All' || p.category === category) && (!q || `${p.title} ${p.dek ?? ''}`.toLowerCase().includes(q)))\n  }, [posts, category, query])\n  return (\n    <>\n      <style href=\"ds-blog-page\" precedence=\"ds\">{css}</style>\n      <SitePage data-ds=\"blog-page\" header={header} footer={footer} announcement={announcement} logo={logo} actions={actions}>\n        <section aria-labelledby=\"blog-page-title\" className=\"mx-auto max-w-[1440px] px-4 pt-14 pb-32 sm:px-6 lg:px-10 lg:pt-20 lg:pb-40\">\n          <SectionHead as=\"h1\" titleId=\"blog-page-title\" tag={head.tag} title={head.title} />\n          <div className=\"mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between\">\n            <div role=\"group\" aria-label=\"Categories\" className=\"flex flex-wrap gap-1 text-body leading-none\">\n              {['All', ...categories].map(c => (\n                <button\n                  key={c}\n                  type=\"button\"\n                  aria-pressed={category === c}\n                  className={['ds-blog-cat flex h-7.5 cursor-pointer items-center gap-2 px-3', category === c ? 'bg-surface-subtle text-fg' : 'text-fg-muted'].join(' ')}\n                  onClick={() => setCategory(c)}\n                >\n                  {category === c && <span aria-hidden=\"true\" className=\"size-1.5 bg-home-red\" />}\n                  {c}\n                </button>\n              ))}\n            </div>\n            <div className=\"w-full sm:w-70\">\n              <Input value={query} onChange={e => setQuery(e.target.value)} icon={Search} type=\"search\" enterKeyHint=\"search\" placeholder=\"Search\" aria-label=\"Search the blog\" onKeyDown={(e) => { if (e.key === 'Escape') setQuery('') }} />\n            </div>\n          </div>\n          {shown.length\n            ? (\n                <ul className=\"mt-12 grid grid-cols-[minmax(0,1fr)] gap-6 md:grid-cols-2 lg:grid-cols-3\">\n                  {shown.map(p => <li key={p.href} className=\"flex\"><BlogCard {...p} /></li>)}\n                </ul>\n              )\n            : <p className=\"mt-12 border-t border-edge pt-6 text-body text-fg-muted\">{query ? `Nothing matches \"${query}\".` : `Nothing in ${category} yet.`}</p>}\n        </section>\n        <CallToAction title={cta.title}>\n          <ButtonLink href={cta.action.href} variant=\"light\" fill=\"black\">{cta.action.label}</ButtonLink>\n        </CallToAction>\n      </SitePage>\n    </>\n  )\n}\n\nexport default BlogPage\n\nconst css = `\n.ds-blog-cat { transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-blog-cat:hover { color: var(--ds-color-fg); } }\n.ds-blog-cat:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }\n`\n"
+        }
+      ],
+      "dependencies": [
+        "lucide-react@0.479.0"
+      ],
+      "registryDependencies": [
+        "blog-card",
+        "button-link",
+        "call-to-action",
+        "field",
+        "section-head",
+        "site-page"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "BlogPage",
+            "file": "react/components/site/BlogPage.tsx",
+            "props": [
+              {
+                "name": "head",
+                "type": "{ tag?: string, title: string }",
+                "required": true
+              },
+              {
+                "name": "categories",
+                "type": "string[]",
+                "required": true
+              },
+              {
+                "name": "posts",
+                "type": "BlogPost[]",
+                "required": true
+              },
+              {
+                "name": "cta",
+                "type": "{ title: string, action: SiteAction }",
+                "required": true
+              }
+            ],
+            "extends": [
+              "SiteFrameProps"
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "The blog, on sample data",
+          "center": false,
+          "half": false,
+          "path": "react/examples/blog-page/Site.tsx",
+          "content": "import { BlogPage } from '@/react/components/site/BlogPage'\nimport { Button } from '@/react/components/ui/Button'\nimport { PixelButton } from '@/react/components/ui/PixelButton'\n// The blog on sample data: pick a category or search the posts.\nconst header = {\n  \"items\": [\n    {\n      \"label\": \"Search\",\n      \"desc\": \"Find the answer in any file.\",\n      \"href\": \"#search\"\n    },\n    {\n      \"label\": \"Sync\",\n      \"desc\": \"Keep your apps in step.\",\n      \"href\": \"#sync\"\n    },\n    {\n      \"label\": \"Parse\",\n      \"desc\": \"Read every row and cell.\",\n      \"href\": \"#parse\"\n    }\n  ],\n  \"links\": [\n    {\n      \"label\": \"Pricing\",\n      \"href\": \"#pricing\"\n    },\n    {\n      \"label\": \"Blog\",\n      \"href\": \"#blog\"\n    },\n    {\n      \"label\": \"Docs\",\n      \"href\": \"#docs\"\n    }\n  ],\n  \"homeLabel\": \"Acme home\"\n}\nconst footer = {\n  \"columns\": [\n    {\n      \"title\": \"Product\",\n      \"links\": [\n        {\n          \"label\": \"Search\",\n          \"href\": \"#search\"\n        },\n        {\n          \"label\": \"Sync\",\n          \"href\": \"#sync\"\n        },\n        {\n          \"label\": \"Parse\",\n          \"href\": \"#parse\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Company\",\n      \"links\": [\n        {\n          \"label\": \"About\",\n          \"href\": \"#about\"\n        },\n        {\n          \"label\": \"Blog\",\n          \"href\": \"#blog\"\n        },\n        {\n          \"label\": \"Changelog\",\n          \"href\": \"#changelog\"\n        },\n        {\n          \"label\": \"Contact\",\n          \"href\": \"#contact\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Resources\",\n      \"links\": [\n        {\n          \"label\": \"Docs\",\n          \"href\": \"#docs\"\n        },\n        {\n          \"label\": \"Pricing\",\n          \"href\": \"#pricing\"\n        },\n        {\n          \"label\": \"Status\",\n          \"href\": \"#status\"\n        }\n      ]\n    }\n  ],\n  \"tagline\": \"Search any data you bring. Get the right answer.\",\n  \"legal\": \"© 2026 Acme, Inc.\",\n  \"legalLinks\": [\n    {\n      \"label\": \"Privacy\",\n      \"href\": \"#privacy\"\n    },\n    {\n      \"label\": \"Terms\",\n      \"href\": \"#terms\"\n    }\n  ],\n  \"name\": \"Acme\"\n}\nconst head = {\n  \"tag\": \"Blog\",\n  \"title\": \"Get the latest updates.\"\n}\nconst categories = [\n  \"Product\",\n  \"Changelog\",\n  \"Benchmarks\"\n]\nconst posts = [\n  {\n    \"href\": \"#post-1\",\n    \"title\": \"Search that says where it looked\",\n    \"dek\": \"Every answer now carries the passages it read, with their scores.\",\n    \"category\": \"Product\",\n    \"author\": \"Acme team\",\n    \"date\": \"Nov 12, 2026\"\n  },\n  {\n    \"href\": \"#post-2\",\n    \"title\": \"Sync for shared drives\",\n    \"dek\": \"Connect a shared drive once and every folder in it stays in step.\",\n    \"category\": \"Changelog\",\n    \"author\": \"Acme team\",\n    \"date\": \"Nov 4, 2026\"\n  },\n  {\n    \"href\": \"#post-3\",\n    \"title\": \"How we measure accuracy\",\n    \"dek\": \"The benchmark we run every week, losses included.\",\n    \"category\": \"Benchmarks\",\n    \"author\": \"Acme research\",\n    \"date\": \"Oct 28, 2026\"\n  },\n  {\n    \"href\": \"#post-4\",\n    \"title\": \"Reading tables cell by cell\",\n    \"dek\": \"Why a parser that keeps rows together answers more questions.\",\n    \"category\": \"Product\",\n    \"author\": \"Acme team\",\n    \"date\": \"Oct 20, 2026\"\n  },\n  {\n    \"href\": \"#post-5\",\n    \"title\": \"Deletes that stay deleted\",\n    \"dek\": \"What happens to a record, and its index, when you remove it.\",\n    \"category\": \"Changelog\",\n    \"author\": \"Acme team\",\n    \"date\": \"Oct 9, 2026\"\n  },\n  {\n    \"href\": \"#post-6\",\n    \"title\": \"Reranking on a budget\",\n    \"dek\": \"One call after the search you already run, and where it helps most.\",\n    \"category\": \"Benchmarks\",\n    \"author\": \"Acme research\",\n    \"date\": \"Sep 30, 2026\"\n  }\n]\nconst cta = {\n  \"title\": \"See it on your own data.\",\n  \"action\": {\n    \"label\": \"Book a demo\",\n    \"href\": \"#demo\"\n  }\n}\nexport default function Site() {\n  return (\n    <div className=\"-m-8\">\n      <BlogPage\n        header={header}\n        footer={footer}\n        head={head}\n        categories={categories}\n        posts={posts}\n        cta={cta}\n        logo={<span className=\"font-heading text-heading-3 text-fg\">Acme</span>}\n        actions={() => (<><Button href=\"#contact\">Contact us</Button><PixelButton href=\"#sign-in\">Sign in</PixelButton></>)}\n      />\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "blog-card",
+            "button",
+            "button-link",
+            "call-to-action",
+            "field",
+            "section-head",
+            "site-page"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/site/blog-page.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { define, tag } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport { Search } from 'lucide'\nimport { SiteFrameElement, closing } from '@/elements/components/site/site-page'\nimport '@/elements/components/site/blog-card'\nimport '@/elements/components/site/section-head'\nimport '@/elements/components/ui/input'\nimport styles from 'virtual:tw'\n\n// BlogPage.vue as <conare-blog-page>: the blog (pages/blog/index.vue): the head, the categories with a search beside\n// them, then the posts three across (blog-card), every card in a row one height; nothing matching says so under a\n// hairline. The picked category rests on the paper with its red square, the others muted until the pointer reaches\n// them. Then the closing band, in the site's frame (site-page).\nexport type BlogPost = { href: string, title: string, dek?: string, category: string, author?: string, date?: string }\n\n/**\n * @summary The blog: the head, the categories and a search, the posts as cards and the closing band.\n * @slot logo - The logo in the header's home link.\n * @slot actions - The header's buttons.\n * @slot sheet-actions - The same buttons again, for the header's sheet on phones.\n */\nexport class BlogPage extends SiteFrameElement {\n\tstatic styles = [SiteFrameElement.styles, styles]\n\tstatic properties = { head: { type: Object }, categories: { type: Array }, posts: { type: Array }, cta: { type: Object }, category: { state: true }, query: { state: true } }\n\n\thead: { tag?: string, title: string } = { title: '' }\n\tcategories: string[] = []\n\t/** Each a blog card: href, title, dek, category, author, date. */\n\tposts: BlogPost[] = []\n\tcta = { title: '', action: { label: '', href: '' } }\n\tprivate category = 'All'\n\tprivate query = ''\n\n\tprivate onQuery(event: Event) {\n\t\tthis.query = (event.target as HTMLElement & { value: string }).value\n\t}\n\n\trender() {\n\t\tconst [sectionHead, card, input] = [tag('section-head'), tag('blog-card'), tag('input')]\n\t\tconst q = this.query.trim().toLowerCase()\n\t\tconst shown = this.posts.filter((p) => (this.category === 'All' || p.category === this.category) && (!q || `${p.title} ${p.dek ?? ''}`.toLowerCase().includes(q)))\n\t\treturn this.frame('blog-page', staticHtml`<section aria-labelledby=\"blog-page-title\" class=\"mx-auto max-w-[1440px] px-4 pt-14 pb-32 sm:px-6 lg:px-10 lg:pt-20 lg:pb-40\"><${sectionHead} as=\"h1\" title-id=\"blog-page-title\" .tag=${this.head.tag} .heading=${this.head.title}></${sectionHead}><div class=\"mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between\"><div role=\"group\" aria-label=\"Categories\" class=\"flex flex-wrap gap-1 text-body leading-none\">${['All', ...this.categories].map((c) => html`<button type=\"button\" aria-pressed=${String(this.category === c)} class=${['ds-blog-cat flex h-7.5 cursor-pointer items-center gap-2 px-3', this.category === c ? 'bg-surface-subtle text-fg' : 'text-fg-muted'].join(' ')} @click=${() => { this.category = c }}>${this.category === c ? html`<span aria-hidden=\"true\" class=\"size-1.5 bg-home-red\"></span>` : nothing}${c}</button>`)}</div><div class=\"w-full sm:w-70\"><${input} .value=${this.query} type=\"search\" placeholder=\"Search\" aria-label=\"Search the blog\" @input=${this.onQuery} @keydown=${(e: KeyboardEvent) => { if (e.key === 'Escape') this.query = '' }}>${icon(Search, 'search', { size: 12, strokeWidth: 1.5, attrs: { slot: 'icon' } })}</${input}></div></div>${shown.length ? html`<ul class=\"mt-12 grid grid-cols-[minmax(0,1fr)] gap-6 md:grid-cols-2 lg:grid-cols-3\">${shown.map((p) => html`<li class=\"flex\">${staticHtml`<${card} href=${p.href} .heading=${p.title} .dek=${p.dek} category=${p.category} .author=${p.author} .date=${p.date}></${card}>`}</li>`)}</ul>` : html`<p class=\"mt-12 border-t border-edge pt-6 text-body text-fg-muted\">${q ? `Nothing matches \"${this.query}\".` : `Nothing in ${this.category} yet.`}</p>`}</section>${closing(this.cta)}`)\n\t}\n}\n\ndefine('blog-page', BlogPage)\n"
+        },
+        {
+          "path": "elements/components/site/blog-page.css",
+          "content": "/* BlogPage.vue's <style>, as it is. */\n.ds-blog-cat { transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-blog-cat:hover { color: var(--ds-color-fg); } }\n.ds-blog-cat:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/blog-page.js",
+        "elements/site-page.js",
+        "elements/blog-card.js",
+        "elements/section-head.js",
+        "elements/input.js",
+        "elements/site-footer.js",
+        "elements/site-header.js",
+        "elements/product-menu.js",
+        "elements/announcement-bar.js",
+        "elements/button-link.js",
+        "elements/call-to-action.js",
+        "elements/grain.js",
+        "elements/cell-burst.js",
+        "elements/site-tag.js",
+        "elements/roll-text.js",
+        "elements/button.js",
+        "elements/pixel-button.js"
+      ],
+      "tag": "conare-blog-page",
+      "tags": [
+        "conare-blog-page"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "announcement-bar",
+        "blog-card",
+        "button-link",
+        "call-to-action",
+        "cell-burst",
+        "field",
+        "product-menu",
+        "roll-text",
+        "section-head",
+        "site-footer",
+        "site-header",
+        "site-page",
+        "tag"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-blog-page",
+            "name": "BlogPage",
+            "module": "elements/blog-page.js",
+            "description": "The blog: the head, the categories and a search, the posts as cards and the closing band.",
+            "attributes": [
+              {
+                "name": "head",
+                "field": "head",
+                "type": "{ tag?: string; title: string; }",
+                "default": "{ title: '' }"
+              },
+              {
+                "name": "categories",
+                "field": "categories",
+                "type": "string[]",
+                "default": "[]"
+              },
+              {
+                "name": "posts",
+                "field": "posts",
+                "type": "BlogPost[]",
+                "default": "[]",
+                "description": "Each a blog card: href, title, dek, category, author, date."
+              },
+              {
+                "name": "cta",
+                "field": "cta",
+                "type": "{ title: string; action: { label: string; href: string; }; }",
+                "default": "{ title: '', action: { label: '', href: '' } }"
+              },
+              {
+                "name": "category",
+                "field": "category",
+                "type": "string",
+                "default": "'All'"
+              },
+              {
+                "name": "query",
+                "field": "query",
+                "type": "string",
+                "default": "''"
+              },
+              {
+                "name": "header",
+                "field": "header",
+                "type": "SiteHeaderData",
+                "default": "{ items: [], links: [] }",
+                "description": "The header: items, more, links, productCurrent, homeHref, homeLabel."
+              },
+              {
+                "name": "footer",
+                "field": "footer",
+                "type": "SiteFooterData",
+                "default": "{ columns: [] }",
+                "description": "The footer: columns, tagline, legal, legalLinks, name."
+              },
+              {
+                "name": "announcement",
+                "field": "announcement",
+                "type": "SiteAnnouncement | undefined",
+                "description": "The bar above the header: tag, text, cta, href."
+              }
+            ],
+            "properties": [
+              {
+                "name": "head",
+                "type": "{ tag?: string; title: string; }",
+                "default": "{ title: '' }",
+                "attribute": "head"
+              },
+              {
+                "name": "categories",
+                "type": "string[]",
+                "default": "[]",
+                "attribute": "categories"
+              },
+              {
+                "name": "posts",
+                "type": "BlogPost[]",
+                "default": "[]",
+                "description": "Each a blog card: href, title, dek, category, author, date.",
+                "attribute": "posts"
+              },
+              {
+                "name": "cta",
+                "type": "{ title: string; action: { label: string; href: string; }; }",
+                "default": "{ title: '', action: { label: '', href: '' } }",
+                "attribute": "cta"
+              },
+              {
+                "name": "header",
+                "type": "SiteHeaderData",
+                "default": "{ items: [], links: [] }",
+                "description": "The header: items, more, links, productCurrent, homeHref, homeLabel.",
+                "attribute": "header"
+              },
+              {
+                "name": "footer",
+                "type": "SiteFooterData",
+                "default": "{ columns: [] }",
+                "description": "The footer: columns, tagline, legal, legalLinks, name.",
+                "attribute": "footer"
+              },
+              {
+                "name": "announcement",
+                "type": "SiteAnnouncement | undefined",
+                "description": "The bar above the header: tag, text, cta, href.",
+                "attribute": "announcement"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "logo",
+                "description": "The logo in the header's home link."
+              },
+              {
+                "name": "actions",
+                "description": "The header's buttons."
+              },
+              {
+                "name": "sheet-actions",
+                "description": "The same buttons again, for the header's sheet on phones."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "The blog, on sample data",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/blog-page/Site.html",
+          "content": "<!-- The blog on sample data: pick a category or search the posts. -->\n<div class=\"-m-8\">\n  <conare-blog-page\n    header='{\"items\": [{\"label\": \"Search\", \"desc\": \"Find the answer in any file.\", \"href\": \"#search\"}, {\"label\": \"Sync\", \"desc\": \"Keep your apps in step.\", \"href\": \"#sync\"}, {\"label\": \"Parse\", \"desc\": \"Read every row and cell.\", \"href\": \"#parse\"}], \"links\": [{\"label\": \"Pricing\", \"href\": \"#pricing\"}, {\"label\": \"Blog\", \"href\": \"#blog\"}, {\"label\": \"Docs\", \"href\": \"#docs\"}], \"homeLabel\": \"Acme home\"}'\n    footer='{\"columns\": [{\"title\": \"Product\", \"links\": [{\"label\": \"Search\", \"href\": \"#search\"}, {\"label\": \"Sync\", \"href\": \"#sync\"}, {\"label\": \"Parse\", \"href\": \"#parse\"}]}, {\"title\": \"Company\", \"links\": [{\"label\": \"About\", \"href\": \"#about\"}, {\"label\": \"Blog\", \"href\": \"#blog\"}, {\"label\": \"Changelog\", \"href\": \"#changelog\"}, {\"label\": \"Contact\", \"href\": \"#contact\"}]}, {\"title\": \"Resources\", \"links\": [{\"label\": \"Docs\", \"href\": \"#docs\"}, {\"label\": \"Pricing\", \"href\": \"#pricing\"}, {\"label\": \"Status\", \"href\": \"#status\"}]}], \"tagline\": \"Search any data you bring. Get the right answer.\", \"legal\": \"© 2026 Acme, Inc.\", \"legalLinks\": [{\"label\": \"Privacy\", \"href\": \"#privacy\"}, {\"label\": \"Terms\", \"href\": \"#terms\"}], \"name\": \"Acme\"}'\n    head='{\"tag\": \"Blog\", \"title\": \"Get the latest updates.\"}'\n    categories='[\"Product\", \"Changelog\", \"Benchmarks\"]'\n    posts='[{\"href\": \"#post-1\", \"title\": \"Search that says where it looked\", \"dek\": \"Every answer now carries the passages it read, with their scores.\", \"category\": \"Product\", \"author\": \"Acme team\", \"date\": \"Nov 12, 2026\"}, {\"href\": \"#post-2\", \"title\": \"Sync for shared drives\", \"dek\": \"Connect a shared drive once and every folder in it stays in step.\", \"category\": \"Changelog\", \"author\": \"Acme team\", \"date\": \"Nov 4, 2026\"}, {\"href\": \"#post-3\", \"title\": \"How we measure accuracy\", \"dek\": \"The benchmark we run every week, losses included.\", \"category\": \"Benchmarks\", \"author\": \"Acme research\", \"date\": \"Oct 28, 2026\"}, {\"href\": \"#post-4\", \"title\": \"Reading tables cell by cell\", \"dek\": \"Why a parser that keeps rows together answers more questions.\", \"category\": \"Product\", \"author\": \"Acme team\", \"date\": \"Oct 20, 2026\"}, {\"href\": \"#post-5\", \"title\": \"Deletes that stay deleted\", \"dek\": \"What happens to a record, and its index, when you remove it.\", \"category\": \"Changelog\", \"author\": \"Acme team\", \"date\": \"Oct 9, 2026\"}, {\"href\": \"#post-6\", \"title\": \"Reranking on a budget\", \"dek\": \"One call after the search you already run, and where it helps most.\", \"category\": \"Benchmarks\", \"author\": \"Acme research\", \"date\": \"Sep 30, 2026\"}]'\n    cta='{\"title\": \"See it on your own data.\", \"action\": {\"label\": \"Book a demo\", \"href\": \"#demo\"}}'\n  >\n    <span slot=\"logo\" class=\"font-heading text-heading-3 text-fg\">Acme</span>\n    <conare-button slot=\"actions\" href=\"#contact\">Contact us</conare-button>\n    <conare-pixel-button slot=\"actions\" href=\"#sign-in\">Sign in</conare-pixel-button>\n    <conare-button slot=\"sheet-actions\" href=\"#contact\">Contact us</conare-button>\n    <conare-pixel-button slot=\"sheet-actions\" href=\"#sign-in\">Sign in</conare-pixel-button>\n  </conare-blog-page>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

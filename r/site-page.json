@@ -1,0 +1,236 @@
+{
+  "name": "site-page",
+  "title": "Site page",
+  "type": "registry:block",
+  "group": "site",
+  "description": "Every website page's frame: the announcement bar if there is one, the header, the page in main on its own ground, and the footer pinned under it, uncovered as the page scrolls off it.",
+  "use_for": "The frame of a website page. The page templates (home-page, pricing-page and the rest) are built on it.",
+  "never": [
+    "In the console: use ConsoleFrame",
+    "A page without the footer: it is how the site leads on",
+    "A second header inside main"
+  ],
+  "source": "conare-web app/pages/index.vue, pricing.vue and blog/index.vue (the .home frame: AnnouncementBar, Header, main over the pinned Footer)",
+  "body": "`header` takes SiteHeader's props (`items`, `more`, `links`, `homeHref`, `homeLabel`), `footer` SiteFooter's (`columns`,\n`tagline`, `legal`, `legalLinks`) and `announcement` AnnouncementBar's. The `logo` and `actions` slots go to the header;\n`actions` renders twice, in the bar and in the phone sheet (`place` says which; in web components put the buttons in\n`actions` and again in `sheet-actions`). The page goes in the default slot.",
+  "requires": [
+    "announcement-bar",
+    "product-menu",
+    "site-footer",
+    "site-header"
+  ],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/site/SitePage.vue",
+      "content": "<script setup lang=\"ts\">\nimport AnnouncementBar from '@/components/site/AnnouncementBar.vue'\nimport SiteFooter, { type FooterLink } from '@/components/site/SiteFooter.vue'\nimport SiteHeader, { type SiteLink } from '@/components/site/SiteHeader.vue'\nimport type { ProductMenuItem } from '@/components/site/ProductMenu.vue'\n\n// Every website page's frame (pages/index.vue, pricing.vue, blog): the announcement bar if there is one, the header,\n// then the page in <main> on its own off-white ground above the footer, which waits pinned under it from 768px and is\n// uncovered as the page scrolls off it. `header` is SiteHeader's props, `footer` SiteFooter's and `announcement`\n// AnnouncementBar's; the `logo` and `actions` slots go to the header (`actions` renders for the bar and the sheet).\nexport interface SiteHeaderData { items: ProductMenuItem[], more?: ProductMenuItem[], links: SiteLink[], productCurrent?: boolean, homeHref?: string, homeLabel?: string }\nexport interface SiteFooterData { columns: { title: string, links: FooterLink[] }[], tagline?: string, legal?: string, legalLinks?: FooterLink[], name?: string }\nexport interface SiteAnnouncement { tag: string, text: string, cta?: string, href: string }\n/** A page's call to action: its words and where it goes. */\nexport type SiteAction = { label: string, href: string }\ndefineProps<{ header: SiteHeaderData, footer: SiteFooterData, announcement?: SiteAnnouncement }>()\n</script>\n\n<template>\n  <div data-ds=\"site-page\" class=\"relative bg-surface text-fg\">\n    <AnnouncementBar v-if=\"announcement\" v-bind=\"announcement\" />\n    <SiteHeader v-bind=\"header\">\n      <template #logo><slot name=\"logo\" /></template>\n      <template #actions=\"{ place }\"><slot name=\"actions\" :place=\"place\" /></template>\n    </SiteHeader>\n    <main class=\"relative z-10 bg-surface\"><slot /></main>\n    <SiteFooter v-bind=\"footer\" pinned />\n  </div>\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "A page in the site's frame",
+      "center": false,
+      "half": false,
+      "path": "examples/site-page/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport SitePage from '@/components/site/SitePage.vue'\nimport Button from '@/components/ui/Button.vue'\nimport PixelButton from '@/components/ui/PixelButton.vue'\nimport SectionHead from '@/components/site/SectionHead.vue'\n// A page in the site's frame: the announcement bar, the header, the page on its own ground and the footer pinned under it.\nconst header = {\n  \"items\": [\n    {\n      \"label\": \"Search\",\n      \"desc\": \"Find the answer in any file.\",\n      \"href\": \"#search\"\n    },\n    {\n      \"label\": \"Sync\",\n      \"desc\": \"Keep your apps in step.\",\n      \"href\": \"#sync\"\n    },\n    {\n      \"label\": \"Parse\",\n      \"desc\": \"Read every row and cell.\",\n      \"href\": \"#parse\"\n    }\n  ],\n  \"links\": [\n    {\n      \"label\": \"Pricing\",\n      \"href\": \"#pricing\"\n    },\n    {\n      \"label\": \"Blog\",\n      \"href\": \"#blog\"\n    },\n    {\n      \"label\": \"Docs\",\n      \"href\": \"#docs\"\n    }\n  ],\n  \"homeLabel\": \"Acme home\"\n}\nconst footer = {\n  \"columns\": [\n    {\n      \"title\": \"Product\",\n      \"links\": [\n        {\n          \"label\": \"Search\",\n          \"href\": \"#search\"\n        },\n        {\n          \"label\": \"Sync\",\n          \"href\": \"#sync\"\n        },\n        {\n          \"label\": \"Parse\",\n          \"href\": \"#parse\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Company\",\n      \"links\": [\n        {\n          \"label\": \"About\",\n          \"href\": \"#about\"\n        },\n        {\n          \"label\": \"Blog\",\n          \"href\": \"#blog\"\n        },\n        {\n          \"label\": \"Changelog\",\n          \"href\": \"#changelog\"\n        },\n        {\n          \"label\": \"Contact\",\n          \"href\": \"#contact\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Resources\",\n      \"links\": [\n        {\n          \"label\": \"Docs\",\n          \"href\": \"#docs\"\n        },\n        {\n          \"label\": \"Pricing\",\n          \"href\": \"#pricing\"\n        },\n        {\n          \"label\": \"Status\",\n          \"href\": \"#status\"\n        }\n      ]\n    }\n  ],\n  \"tagline\": \"Search any data you bring. Get the right answer.\",\n  \"legal\": \"© 2026 Acme, Inc.\",\n  \"legalLinks\": [\n    {\n      \"label\": \"Privacy\",\n      \"href\": \"#privacy\"\n    },\n    {\n      \"label\": \"Terms\",\n      \"href\": \"#terms\"\n    }\n  ],\n  \"name\": \"Acme\"\n}\nconst announcement = {\n  \"tag\": \"New\",\n  \"text\": \"Sync for shared drives is here.\",\n  \"cta\": \"Read the post\",\n  \"href\": \"#post\"\n}\n</script>\n\n<template>\n  <div class=\"-m-8\">\n    <SitePage\n      :header=\"header\"\n      :footer=\"footer\"\n      :announcement=\"announcement\"\n    >\n      <template #logo><span class=\"font-heading text-heading-3 text-fg\">Acme</span></template>\n      <template #actions><Button href=\"#contact\">Contact us</Button><PixelButton href=\"#sign-in\">Sign in</PixelButton></template>\n      <section class=\"mx-auto max-w-[1440px] px-4 pt-14 pb-32 sm:px-6 lg:px-10 lg:pt-20 lg:pb-40\">\n        <SectionHead as=\"h1\" tag=\"Docs\" title=\"Everything in one place.\" body=\"Guides, the API and the SDK, for every part of Acme.\" />\n      </section>\n    </SitePage>\n  </div>\n</template>\n",
+      "requires": [
+        "announcement-bar",
+        "button",
+        "product-menu",
+        "section-head",
+        "site-footer",
+        "site-header"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/site/SitePage.tsx",
+          "content": "import type { ReactNode } from 'react'\nimport { AnnouncementBar } from '@/react/components/site/AnnouncementBar'\nimport { SiteFooter, type FooterLink } from '@/react/components/site/SiteFooter'\nimport { SiteHeader, type SiteLink } from '@/react/components/site/SiteHeader'\nimport type { ProductMenuItem } from '@/react/components/site/ProductMenu'\n\n// Every website page's frame (pages/index.vue, pricing.vue, blog): the announcement bar if there is one, the header,\n// then the page in <main> on its own off-white ground above the footer, which waits pinned under it from 768px and is\n// uncovered as the page scrolls off it. `header` is SiteHeader's props, `footer` SiteFooter's and `announcement`\n// AnnouncementBar's; `logo` and `actions` go to the header (`actions` renders for the bar and the sheet).\nexport interface SiteHeaderData { items: ProductMenuItem[], more?: ProductMenuItem[], links: SiteLink[], productCurrent?: boolean, homeHref?: string, homeLabel?: string }\nexport interface SiteFooterData { columns: { title: string, links: FooterLink[] }[], tagline?: string, legal?: string, legalLinks?: FooterLink[], name?: string }\nexport interface SiteAnnouncement { tag: string, text: string, cta?: string, href: string }\n/** A page's call to action: its words and where it goes. */\nexport type SiteAction = { label: string, href: string }\n/** What every page built on this one takes for its frame. */\nexport interface SiteFrameProps {\n  header: SiteHeaderData\n  footer: SiteFooterData\n  announcement?: SiteAnnouncement\n  /** The logo in the header's home link (Vue's `logo` slot). */\n  logo?: ReactNode\n  /** The header's buttons, drawn for the bar and again for the sheet (Vue's `#actions=\"{ place }\"`). */\n  actions?: (slot: { place: 'bar' | 'sheet' }) => ReactNode\n}\nexport interface SitePageProps extends SiteFrameProps {\n  children?: ReactNode\n  /** The root's data-ds (a page built on this one says its own, as Vue's fallthrough does). */\n  'data-ds'?: string\n}\n\nexport function SitePage({ header, footer, announcement, logo, actions, children, 'data-ds': ds = 'site-page' }: SitePageProps) {\n  return (\n    <div data-ds={ds} className=\"relative bg-surface text-fg\">\n      {announcement && <AnnouncementBar {...announcement} />}\n      <SiteHeader {...header} logo={logo} actions={actions} />\n      <main className=\"relative z-10 bg-surface\">{children}</main>\n      <SiteFooter {...footer} pinned />\n    </div>\n  )\n}\n\nexport default SitePage\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "announcement-bar",
+        "product-menu",
+        "site-footer",
+        "site-header"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "SitePage",
+            "file": "react/components/site/SitePage.tsx",
+            "props": [
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              },
+              {
+                "name": "data-ds",
+                "type": "string",
+                "required": false,
+                "description": "The root's data-ds (a page built on this one says its own, as Vue's fallthrough does)."
+              }
+            ],
+            "extends": [
+              "SiteFrameProps"
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "A page in the site's frame",
+          "center": false,
+          "half": false,
+          "path": "react/examples/site-page/Site.tsx",
+          "content": "import { SitePage } from '@/react/components/site/SitePage'\nimport { Button } from '@/react/components/ui/Button'\nimport { PixelButton } from '@/react/components/ui/PixelButton'\nimport { SectionHead } from '@/react/components/site/SectionHead'\n// A page in the site's frame: the announcement bar, the header, the page on its own ground and the footer pinned under it.\nconst header = {\n  \"items\": [\n    {\n      \"label\": \"Search\",\n      \"desc\": \"Find the answer in any file.\",\n      \"href\": \"#search\"\n    },\n    {\n      \"label\": \"Sync\",\n      \"desc\": \"Keep your apps in step.\",\n      \"href\": \"#sync\"\n    },\n    {\n      \"label\": \"Parse\",\n      \"desc\": \"Read every row and cell.\",\n      \"href\": \"#parse\"\n    }\n  ],\n  \"links\": [\n    {\n      \"label\": \"Pricing\",\n      \"href\": \"#pricing\"\n    },\n    {\n      \"label\": \"Blog\",\n      \"href\": \"#blog\"\n    },\n    {\n      \"label\": \"Docs\",\n      \"href\": \"#docs\"\n    }\n  ],\n  \"homeLabel\": \"Acme home\"\n}\nconst footer = {\n  \"columns\": [\n    {\n      \"title\": \"Product\",\n      \"links\": [\n        {\n          \"label\": \"Search\",\n          \"href\": \"#search\"\n        },\n        {\n          \"label\": \"Sync\",\n          \"href\": \"#sync\"\n        },\n        {\n          \"label\": \"Parse\",\n          \"href\": \"#parse\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Company\",\n      \"links\": [\n        {\n          \"label\": \"About\",\n          \"href\": \"#about\"\n        },\n        {\n          \"label\": \"Blog\",\n          \"href\": \"#blog\"\n        },\n        {\n          \"label\": \"Changelog\",\n          \"href\": \"#changelog\"\n        },\n        {\n          \"label\": \"Contact\",\n          \"href\": \"#contact\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Resources\",\n      \"links\": [\n        {\n          \"label\": \"Docs\",\n          \"href\": \"#docs\"\n        },\n        {\n          \"label\": \"Pricing\",\n          \"href\": \"#pricing\"\n        },\n        {\n          \"label\": \"Status\",\n          \"href\": \"#status\"\n        }\n      ]\n    }\n  ],\n  \"tagline\": \"Search any data you bring. Get the right answer.\",\n  \"legal\": \"© 2026 Acme, Inc.\",\n  \"legalLinks\": [\n    {\n      \"label\": \"Privacy\",\n      \"href\": \"#privacy\"\n    },\n    {\n      \"label\": \"Terms\",\n      \"href\": \"#terms\"\n    }\n  ],\n  \"name\": \"Acme\"\n}\nconst announcement = {\n  \"tag\": \"New\",\n  \"text\": \"Sync for shared drives is here.\",\n  \"cta\": \"Read the post\",\n  \"href\": \"#post\"\n}\nexport default function Site() {\n  return (\n    <div className=\"-m-8\">\n      <SitePage\n        header={header}\n        footer={footer}\n        announcement={announcement}\n        children={(\n        <section className=\"mx-auto max-w-[1440px] px-4 pt-14 pb-32 sm:px-6 lg:px-10 lg:pt-20 lg:pb-40\">\n          <SectionHead as=\"h1\" tag=\"Docs\" title=\"Everything in one place.\" body=\"Guides, the API and the SDK, for every part of Acme.\" />\n        </section>\n      )}\n        logo={<span className=\"font-heading text-heading-3 text-fg\">Acme</span>}\n        actions={() => (<><Button href=\"#contact\">Contact us</Button><PixelButton href=\"#sign-in\">Sign in</PixelButton></>)}\n      />\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "announcement-bar",
+            "button",
+            "product-menu",
+            "section-head",
+            "site-footer",
+            "site-header"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/site/site-page.ts",
+          "content": "import { html as staticHtml } from 'lit/static-html.js'\nimport { nothing, type PropertyDeclarations } from 'lit'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport type { FooterLink } from '@/elements/components/site/site-footer'\nimport type { SiteLink } from '@/elements/components/site/site-header'\nimport type { ProductMenuItem } from '@/elements/components/site/product-menu'\nimport '@/elements/components/site/announcement-bar'\nimport '@/elements/components/site/button-link'\nimport '@/elements/components/site/call-to-action'\nimport '@/elements/components/site/site-footer'\nimport '@/elements/components/site/site-header'\nimport styles from 'virtual:tw'\n\n// SitePage.vue as <conare-site-page>: every website page's frame (pages/index.vue, pricing.vue, blog): the\n// announcement bar if there is one, the header, then the page in <main> on its own off-white ground above the footer,\n// which waits pinned under it from 768px and is uncovered as the page scrolls off it. `header` is site-header's\n// properties, `footer` site-footer's and `announcement` announcement-bar's (JSON attributes or properties). The\n// `logo`, `actions` and `sheet-actions` slots go to the header. `rootName` sets the root's data-ds, for a page built\n// on this one, as Vue's fallthrough data-ds does.\nexport interface SiteHeaderData { items: ProductMenuItem[], more?: ProductMenuItem[], links: SiteLink[], productCurrent?: boolean, homeHref?: string, homeLabel?: string }\nexport interface SiteFooterData { columns: { title: string, links: FooterLink[] }[], tagline?: string, legal?: string, legalLinks?: FooterLink[], name?: string }\nexport interface SiteAnnouncement { tag: string, text: string, cta?: string, href: string }\n/** A page's call to action: its words and where it goes. */\nexport type SiteAction = { label: string, href: string }\n\n/**\n * @summary The website page's frame: announcement, header, the page, the pinned footer.\n * @slot - The page.\n * @slot logo - The logo in the header's home link.\n * @slot actions - The header's buttons.\n * @slot sheet-actions - The same buttons again, for the header's sheet on phones.\n */\nexport class SitePage extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { header: { type: Object }, footer: { type: Object }, announcement: { type: Object }, rootName: { attribute: false } }\n\n\t/** The header: items, more, links, productCurrent, homeHref, homeLabel. */\n\theader: SiteHeaderData = { items: [], links: [] }\n\t/** The footer: columns, tagline, legal, legalLinks, name. */\n\tfooter: SiteFooterData = { columns: [] }\n\t/** The bar above the header: tag, text, cta, href. */\n\tannouncement?: SiteAnnouncement\n\t/** The root's data-ds (Vue's fallthrough data-ds). */\n\trootName = 'site-page'\n\n\trender() {\n\t\tconst h = this.header\n\t\tconst f = this.footer\n\t\tconst a = this.announcement\n\t\tconst bar = tag('announcement-bar')\n\t\tconst head = tag('site-header')\n\t\tconst foot = tag('site-footer')\n\t\treturn staticHtml`<div data-ds=${this.rootName} class=\"relative bg-surface text-fg\">${a ? staticHtml`<${bar} tag=${a.tag} text=${a.text} cta=${a.cta ?? nothing} href=${a.href}></${bar}>` : nothing}<${head} .items=${h.items} .more=${h.more ?? []} .links=${h.links} ?product-current=${!!h.productCurrent} home-href=${h.homeHref ?? '/'} home-label=${h.homeLabel ?? 'home'}><slot name=\"logo\" slot=\"logo\"></slot><slot name=\"actions\" slot=\"actions\"></slot><slot name=\"sheet-actions\" slot=\"sheet-actions\"></slot></${head}><main class=\"relative z-10 bg-surface\"><slot></slot></main><${foot} .columns=${f.columns} tagline=${f.tagline ?? nothing} legal=${f.legal ?? nothing} .legalLinks=${f.legalLinks ?? []} name=${f.name ?? 'Conare'} pinned></${foot}></div>`\n\t}\n}\n\ndefine('site-page', SitePage)\n\n/**\n * What every page built on site-page shares: the frame's three properties, and `frame(name, body)`, which draws\n * <conare-site-page> with them, the root named `name`, the header's slots passed on and `body` as the page.\n */\nexport class SiteFrameElement extends DsElement {\n\tstatic properties: PropertyDeclarations = { header: { type: Object }, footer: { type: Object }, announcement: { type: Object } }\n\n\t/** The header: items, more, links, productCurrent, homeHref, homeLabel. */\n\theader: SiteHeaderData = { items: [], links: [] }\n\t/** The footer: columns, tagline, legal, legalLinks, name. */\n\tfooter: SiteFooterData = { columns: [] }\n\t/** The bar above the header: tag, text, cta, href. */\n\tannouncement?: SiteAnnouncement\n\n\tprotected frame(name: string, body: unknown) {\n\t\tconst page = tag('site-page')\n\t\treturn staticHtml`<${page} data-ds=${name} .rootName=${name} .header=${this.header} .footer=${this.footer} .announcement=${this.announcement}><slot name=\"logo\" slot=\"logo\"></slot><slot name=\"actions\" slot=\"actions\"></slot><slot name=\"sheet-actions\" slot=\"sheet-actions\"></slot>${body}</${page}>`\n\t}\n}\n\n/** The closing band with its light button, as every page ends. */\nexport function closing(cta: { title: string, action: SiteAction }) {\n\tconst band = tag('call-to-action')\n\tconst button = tag('button-link')\n\treturn staticHtml`<${band} .heading=${cta.title}><${button} href=${cta.action.href} variant=\"light\" fill=\"black\">${cta.action.label}</${button}></${band}>`\n}\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/site-page.js",
+        "elements/site-footer.js",
+        "elements/site-header.js",
+        "elements/product-menu.js",
+        "elements/announcement-bar.js",
+        "elements/button-link.js",
+        "elements/call-to-action.js",
+        "elements/grain.js",
+        "elements/roll-text.js",
+        "elements/cell-burst.js",
+        "elements/button.js",
+        "elements/pixel-button.js",
+        "elements/section-head.js"
+      ],
+      "tag": "conare-site-page",
+      "tags": [
+        "conare-site-page"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "announcement-bar",
+        "button-link",
+        "call-to-action",
+        "cell-burst",
+        "product-menu",
+        "roll-text",
+        "site-footer",
+        "site-header"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-site-page",
+            "name": "SitePage",
+            "module": "elements/site-page.js",
+            "description": "The website page's frame: announcement, header, the page, the pinned footer.",
+            "attributes": [
+              {
+                "name": "header",
+                "field": "header",
+                "type": "SiteHeaderData",
+                "default": "{ items: [], links: [] }",
+                "description": "The header: items, more, links, productCurrent, homeHref, homeLabel."
+              },
+              {
+                "name": "footer",
+                "field": "footer",
+                "type": "SiteFooterData",
+                "default": "{ columns: [] }",
+                "description": "The footer: columns, tagline, legal, legalLinks, name."
+              },
+              {
+                "name": "announcement",
+                "field": "announcement",
+                "type": "SiteAnnouncement | undefined",
+                "description": "The bar above the header: tag, text, cta, href."
+              }
+            ],
+            "properties": [
+              {
+                "name": "header",
+                "type": "SiteHeaderData",
+                "default": "{ items: [], links: [] }",
+                "description": "The header: items, more, links, productCurrent, homeHref, homeLabel.",
+                "attribute": "header"
+              },
+              {
+                "name": "footer",
+                "type": "SiteFooterData",
+                "default": "{ columns: [] }",
+                "description": "The footer: columns, tagline, legal, legalLinks, name.",
+                "attribute": "footer"
+              },
+              {
+                "name": "announcement",
+                "type": "SiteAnnouncement | undefined",
+                "description": "The bar above the header: tag, text, cta, href.",
+                "attribute": "announcement"
+              },
+              {
+                "name": "rootName",
+                "type": "string",
+                "default": "'site-page'",
+                "description": "The root's data-ds (Vue's fallthrough data-ds)."
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "The page."
+              },
+              {
+                "name": "logo",
+                "description": "The logo in the header's home link."
+              },
+              {
+                "name": "actions",
+                "description": "The header's buttons."
+              },
+              {
+                "name": "sheet-actions",
+                "description": "The same buttons again, for the header's sheet on phones."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "A page in the site's frame",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/site-page/Site.html",
+          "content": "<!-- A page in the site's frame: the announcement bar, the header, the page on its own ground and the footer pinned under it. -->\n<div class=\"-m-8\">\n  <conare-site-page\n    header='{\"items\": [{\"label\": \"Search\", \"desc\": \"Find the answer in any file.\", \"href\": \"#search\"}, {\"label\": \"Sync\", \"desc\": \"Keep your apps in step.\", \"href\": \"#sync\"}, {\"label\": \"Parse\", \"desc\": \"Read every row and cell.\", \"href\": \"#parse\"}], \"links\": [{\"label\": \"Pricing\", \"href\": \"#pricing\"}, {\"label\": \"Blog\", \"href\": \"#blog\"}, {\"label\": \"Docs\", \"href\": \"#docs\"}], \"homeLabel\": \"Acme home\"}'\n    footer='{\"columns\": [{\"title\": \"Product\", \"links\": [{\"label\": \"Search\", \"href\": \"#search\"}, {\"label\": \"Sync\", \"href\": \"#sync\"}, {\"label\": \"Parse\", \"href\": \"#parse\"}]}, {\"title\": \"Company\", \"links\": [{\"label\": \"About\", \"href\": \"#about\"}, {\"label\": \"Blog\", \"href\": \"#blog\"}, {\"label\": \"Changelog\", \"href\": \"#changelog\"}, {\"label\": \"Contact\", \"href\": \"#contact\"}]}, {\"title\": \"Resources\", \"links\": [{\"label\": \"Docs\", \"href\": \"#docs\"}, {\"label\": \"Pricing\", \"href\": \"#pricing\"}, {\"label\": \"Status\", \"href\": \"#status\"}]}], \"tagline\": \"Search any data you bring. Get the right answer.\", \"legal\": \"© 2026 Acme, Inc.\", \"legalLinks\": [{\"label\": \"Privacy\", \"href\": \"#privacy\"}, {\"label\": \"Terms\", \"href\": \"#terms\"}], \"name\": \"Acme\"}'\n    announcement='{\"tag\": \"New\", \"text\": \"Sync for shared drives is here.\", \"cta\": \"Read the post\", \"href\": \"#post\"}'\n  >\n    <span slot=\"logo\" class=\"font-heading text-heading-3 text-fg\">Acme</span>\n    <conare-button slot=\"actions\" href=\"#contact\">Contact us</conare-button>\n    <conare-pixel-button slot=\"actions\" href=\"#sign-in\">Sign in</conare-pixel-button>\n    <conare-button slot=\"sheet-actions\" href=\"#contact\">Contact us</conare-button>\n    <conare-pixel-button slot=\"sheet-actions\" href=\"#sign-in\">Sign in</conare-pixel-button>\n    <section class=\"mx-auto max-w-[1440px] px-4 pt-14 pb-32 sm:px-6 lg:px-10 lg:pt-20 lg:pb-40\">\n      <conare-section-head as=\"h1\" tag=\"Docs\" heading=\"Everything in one place.\" body=\"Guides, the API and the SDK, for every part of Acme.\"></conare-section-head>\n    </section>\n  </conare-site-page>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

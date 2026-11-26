@@ -1,0 +1,339 @@
+{
+  "name": "legal-page",
+  "title": "Legal page",
+  "type": "registry:block",
+  "group": "site",
+  "description": "A page of policy text: on the left in the double rule, the page's sections, held in view, the one being read on the paper with the red square; beside it the tag, the title, when it was last updated and the text.",
+  "use_for": "Terms, privacy, a disclosure policy.",
+  "never": [
+    "Policy text in capitals beyond what the law asks for",
+    "Sections without ids: the side links lead to them"
+  ],
+  "source": "conare-web app/components/home/Legal.vue, app/pages/terms.vue",
+  "body": "Built on `site-page`: `header`, `footer` and `announcement` are its props, and the `logo` and `actions` slots go to the header (`sheet-actions` too, in web components). Each section's `blocks` takes docs-blocks' blocks; `intro` comes before the first section.",
+  "requires": [
+    "button-link",
+    "call-to-action",
+    "docs-blocks",
+    "site-page",
+    "tag"
+  ],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/site/LegalPage.vue",
+      "content": "<script setup lang=\"ts\">\nimport { onBeforeUnmount, onMounted, ref } from 'vue'\nimport ButtonLink from '@/components/site/ButtonLink.vue'\nimport CallToAction from '@/components/site/CallToAction.vue'\nimport DocsBlocks, { type DocsBlock } from '@/components/site/DocsBlocks.vue'\nimport SitePage, { type SiteAction, type SiteAnnouncement, type SiteFooterData, type SiteHeaderData } from '@/components/site/SitePage.vue'\nimport SiteTag from '@/components/ui/SiteTag.vue'\n\n// A page of policy text (Legal.vue: terms, privacy, disclosure): from 1024px, on the left in the double rule, the\n// page's sections, held in view, the one being read on the paper with the red square; beside it the tag, the title,\n// when it was last updated and the text (docs-blocks), each section with its id. Then the closing band, if any.\nexport type LegalSection = { id: string, label: string, blocks: DocsBlock[] }\nconst props = defineProps<{\n  header: SiteHeaderData, footer: SiteFooterData, announcement?: SiteAnnouncement\n  tag?: string\n  title: string\n  updated: string\n  intro?: DocsBlock[]\n  sections: LegalSection[]\n  cta?: { title: string, action: SiteAction }\n}>()\n\n// The section being read: the last one whose top has passed a band under the header.\nconst active = ref(props.sections[0]?.id ?? '')\nfunction track() {\n  let on = props.sections[0]?.id ?? ''\n  for (const s of props.sections) {\n    const el = document.getElementById(s.id)\n    if (el && el.getBoundingClientRect().top < 160) on = s.id\n  }\n  active.value = on\n}\nonMounted(() => {\n  track()\n  window.addEventListener('scroll', track, { passive: true })\n})\nonBeforeUnmount(() => window.removeEventListener('scroll', track))\n</script>\n\n<template>\n  <SitePage data-ds=\"legal-page\" :header=\"header\" :footer=\"footer\" :announcement=\"announcement\">\n      <template #logo><slot name=\"logo\" /></template>\n      <template #actions=\"{ place }\"><slot name=\"actions\" :place=\"place\" /></template>\n    <div class=\"mx-auto grid max-w-[1440px] grid-cols-[minmax(0,1fr)] gap-12 px-4 pt-14 pb-32 sm:px-6 lg:grid-cols-[224px_minmax(0,720px)] lg:gap-16 lg:px-10 lg:pt-20 lg:pb-40\">\n      <div role=\"navigation\" aria-label=\"On this page\" class=\"hidden lg:block\">\n        <div class=\"sticky top-28 border border-edge p-5 outline outline-offset-4 outline-edge\">\n          <p class=\"type-ui-strong text-fg\">On this page</p>\n          <ul class=\"-mx-2 mt-2 flex flex-col\">\n            <li v-for=\"s in sections\" :key=\"s.id\">\n              <a :href=\"`#${s.id}`\" :aria-current=\"s.id === active ? 'location' : undefined\" class=\"ds-legal-side relative flex items-center py-1.5 ps-5 pe-2 type-ui\" :class=\"s.id === active ? 'bg-surface-subtle text-fg' : 'text-fg-muted'\">\n                <span v-if=\"s.id === active\" aria-hidden=\"true\" class=\"absolute start-2 top-1/2 -mt-0.75 size-1.5 bg-home-red\" />\n                {{ s.label }}\n              </a>\n            </li>\n          </ul>\n        </div>\n      </div>\n      <article class=\"min-w-0\">\n        <p v-if=\"tag\" class=\"mb-4 flex\"><SiteTag>{{ tag }}</SiteTag></p>\n        <h1 class=\"ds-legal-title font-heading text-heading-2 font-normal tracking-tight text-fg sm:text-heading-1\">{{ title }}</h1>\n        <p class=\"mt-3 text-body text-fg-faint\">Last updated {{ updated }}</p>\n        <div class=\"mt-12 flex flex-col gap-12\">\n          <DocsBlocks v-if=\"intro?.length\" :blocks=\"intro\" />\n          <section v-for=\"s in sections\" :id=\"s.id\" :key=\"s.id\" :aria-labelledby=\"`${s.id}-title`\" class=\"scroll-mt-28\">\n            <h2 :id=\"`${s.id}-title`\" class=\"text-docs-heading tracking-tight text-fg\">{{ s.label }}</h2>\n            <div class=\"mt-5\"><DocsBlocks :blocks=\"s.blocks\" /></div>\n          </section>\n        </div>\n      </article>\n    </div>\n    <CallToAction v-if=\"cta\" :title=\"cta.title\">\n      <ButtonLink :href=\"cta.action.href\" variant=\"light\" fill=\"black\">{{ cta.action.label }}</ButtonLink>\n    </CallToAction>\n  </SitePage>\n</template>\n\n<style>\n.ds-legal-title { line-height: 1.15; text-wrap: balance; }\n.ds-legal-side { transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-legal-side:hover { color: var(--ds-color-fg); } }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "Terms, on sample data",
+      "center": false,
+      "half": false,
+      "path": "examples/legal-page/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport LegalPage from '@/components/site/LegalPage.vue'\nimport Button from '@/components/ui/Button.vue'\nimport PixelButton from '@/components/ui/PixelButton.vue'\nimport type { DocsBlock } from '@/components/site/DocsBlocks.vue'\nimport type { LegalSection } from '@/components/site/LegalPage.vue'\n// Terms on sample data: the side links lead to each section.\nconst header = {\n  \"items\": [\n    {\n      \"label\": \"Search\",\n      \"desc\": \"Find the answer in any file.\",\n      \"href\": \"#search\"\n    },\n    {\n      \"label\": \"Sync\",\n      \"desc\": \"Keep your apps in step.\",\n      \"href\": \"#sync\"\n    },\n    {\n      \"label\": \"Parse\",\n      \"desc\": \"Read every row and cell.\",\n      \"href\": \"#parse\"\n    }\n  ],\n  \"links\": [\n    {\n      \"label\": \"Pricing\",\n      \"href\": \"#pricing\"\n    },\n    {\n      \"label\": \"Blog\",\n      \"href\": \"#blog\"\n    },\n    {\n      \"label\": \"Docs\",\n      \"href\": \"#docs\"\n    }\n  ],\n  \"homeLabel\": \"Acme home\"\n}\nconst footer = {\n  \"columns\": [\n    {\n      \"title\": \"Product\",\n      \"links\": [\n        {\n          \"label\": \"Search\",\n          \"href\": \"#search\"\n        },\n        {\n          \"label\": \"Sync\",\n          \"href\": \"#sync\"\n        },\n        {\n          \"label\": \"Parse\",\n          \"href\": \"#parse\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Company\",\n      \"links\": [\n        {\n          \"label\": \"About\",\n          \"href\": \"#about\"\n        },\n        {\n          \"label\": \"Blog\",\n          \"href\": \"#blog\"\n        },\n        {\n          \"label\": \"Changelog\",\n          \"href\": \"#changelog\"\n        },\n        {\n          \"label\": \"Contact\",\n          \"href\": \"#contact\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Resources\",\n      \"links\": [\n        {\n          \"label\": \"Docs\",\n          \"href\": \"#docs\"\n        },\n        {\n          \"label\": \"Pricing\",\n          \"href\": \"#pricing\"\n        },\n        {\n          \"label\": \"Status\",\n          \"href\": \"#status\"\n        }\n      ]\n    }\n  ],\n  \"tagline\": \"Search any data you bring. Get the right answer.\",\n  \"legal\": \"© 2026 Acme, Inc.\",\n  \"legalLinks\": [\n    {\n      \"label\": \"Privacy\",\n      \"href\": \"#privacy\"\n    },\n    {\n      \"label\": \"Terms\",\n      \"href\": \"#terms\"\n    }\n  ],\n  \"name\": \"Acme\"\n}\nconst intro: DocsBlock[] = [\n  {\n    \"kind\": \"p\",\n    \"text\": \"These terms are an agreement between you and Acme, Inc. and govern your use of the Acme website, console, API and SDK.\"\n  }\n]\nconst sections: LegalSection[] = [\n  {\n    \"id\": \"accounts\",\n    \"label\": \"Accounts\",\n    \"blocks\": [\n      {\n        \"kind\": \"p\",\n        \"text\": \"You give accurate information when you create an account, and you keep your sign-in details and API keys secure.\"\n      }\n    ]\n  },\n  {\n    \"id\": \"use\",\n    \"label\": \"Use of the services\",\n    \"blocks\": [\n      {\n        \"kind\": \"p\",\n        \"text\": \"You may use the services for your internal business purposes. You agree not to:\"\n      },\n      {\n        \"kind\": \"list\",\n        \"items\": [\n          \"use them against any law or anyone's rights;\",\n          \"access other customers' data;\",\n          \"get around rate limits or security measures.\"\n        ]\n      }\n    ]\n  },\n  {\n    \"id\": \"content\",\n    \"label\": \"Your content\",\n    \"blocks\": [\n      {\n        \"kind\": \"p\",\n        \"text\": \"You own everything you send to the services. We host and process it only to provide them to you.\"\n      }\n    ]\n  },\n  {\n    \"id\": \"fees\",\n    \"label\": \"Fees\",\n    \"blocks\": [\n      {\n        \"kind\": \"p\",\n        \"text\": \"You pay for your use at the prices on the pricing page or in your order form, plus any taxes.\"\n      }\n    ]\n  },\n  {\n    \"id\": \"contact\",\n    \"label\": \"Contact\",\n    \"blocks\": [\n      {\n        \"kind\": \"p\",\n        \"text\": \"Questions about these terms: [legal@acme.com](mailto:legal@acme.com).\"\n      }\n    ]\n  }\n]\nconst cta = {\n  \"title\": \"See it on your own data.\",\n  \"action\": {\n    \"label\": \"Book a demo\",\n    \"href\": \"#demo\"\n  }\n}\n</script>\n\n<template>\n  <div class=\"-m-8\">\n    <LegalPage\n      :header=\"header\"\n      :footer=\"footer\"\n      tag=\"Legal\"\n      title=\"Terms of Service\"\n      updated=\"November 1, 2026\"\n      :intro=\"intro\"\n      :sections=\"sections\"\n      :cta=\"cta\"\n    >\n      <template #logo><span class=\"font-heading text-heading-3 text-fg\">Acme</span></template>\n      <template #actions><Button href=\"#contact\">Contact us</Button><PixelButton href=\"#sign-in\">Sign in</PixelButton></template>\n    </LegalPage>\n  </div>\n</template>\n",
+      "requires": [
+        "button",
+        "button-link",
+        "call-to-action",
+        "docs-blocks",
+        "site-page",
+        "tag"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/site/LegalPage.tsx",
+          "content": "'use client'\nimport { useEffect, useState } from 'react'\nimport { ButtonLink } from '@/react/components/site/ButtonLink'\nimport { CallToAction } from '@/react/components/site/CallToAction'\nimport { DocsBlocks, type DocsBlock } from '@/react/components/site/DocsBlocks'\nimport { SitePage, type SiteAction, type SiteFrameProps } from '@/react/components/site/SitePage'\nimport { SiteTag } from '@/react/components/ui/SiteTag'\n\n// A page of policy text (Legal.vue: terms, privacy, disclosure): from 1024px, on the left in the double rule, the\n// page's sections, held in view, the one being read on the paper with the red square; beside it the tag, the title,\n// when it was last updated and the text (docs-blocks), each section with its id. Then the closing band, if any.\nexport type LegalSection = { id: string, label: string, blocks: DocsBlock[] }\nexport interface LegalPageProps extends SiteFrameProps {\n  tag?: string\n  title: string\n  updated: string\n  intro?: DocsBlock[]\n  sections: LegalSection[]\n  cta?: { title: string, action: SiteAction }\n}\n\nexport function LegalPage({ header, footer, announcement, logo, actions, tag, title, updated, intro, sections, cta }: LegalPageProps) {\n  // The section being read: the last one whose top has passed a band under the header.\n  const [active, setActive] = useState(sections[0]?.id ?? '')\n  useEffect(() => {\n    const track = () => {\n      let on = sections[0]?.id ?? ''\n      for (const s of sections) {\n        const el = document.getElementById(s.id)\n        if (el && el.getBoundingClientRect().top < 160) on = s.id\n      }\n      setActive(on)\n    }\n    track()\n    window.addEventListener('scroll', track, { passive: true })\n    return () => window.removeEventListener('scroll', track)\n  }, [sections])\n  return (\n    <>\n      <style href=\"ds-legal-page\" precedence=\"ds\">{css}</style>\n      <SitePage data-ds=\"legal-page\" header={header} footer={footer} announcement={announcement} logo={logo} actions={actions}>\n        <div className=\"mx-auto grid max-w-[1440px] grid-cols-[minmax(0,1fr)] gap-12 px-4 pt-14 pb-32 sm:px-6 lg:grid-cols-[224px_minmax(0,720px)] lg:gap-16 lg:px-10 lg:pt-20 lg:pb-40\">\n          <div role=\"navigation\" aria-label=\"On this page\" className=\"hidden lg:block\">\n            <div className=\"sticky top-28 border border-edge p-5 outline outline-offset-4 outline-edge\">\n              <p className=\"type-ui-strong text-fg\">On this page</p>\n              <ul className=\"-mx-2 mt-2 flex flex-col\">\n                {sections.map(s => (\n                  <li key={s.id}>\n                    <a href={`#${s.id}`} aria-current={s.id === active ? 'location' : undefined} className={['ds-legal-side relative flex items-center py-1.5 ps-5 pe-2 type-ui', s.id === active ? 'bg-surface-subtle text-fg' : 'text-fg-muted'].join(' ')}>\n                      {s.id === active && <span aria-hidden=\"true\" className=\"absolute start-2 top-1/2 -mt-0.75 size-1.5 bg-home-red\" />}\n                      {s.label}\n                    </a>\n                  </li>\n                ))}\n              </ul>\n            </div>\n          </div>\n          <article className=\"min-w-0\">\n            {tag && <p className=\"mb-4 flex\"><SiteTag>{tag}</SiteTag></p>}\n            <h1 className=\"ds-legal-title font-heading text-heading-2 font-normal tracking-tight text-fg sm:text-heading-1\">{title}</h1>\n            <p className=\"mt-3 text-body text-fg-faint\">{`Last updated ${updated}`}</p>\n            <div className=\"mt-12 flex flex-col gap-12\">\n              {!!intro?.length && <DocsBlocks blocks={intro} />}\n              {sections.map(s => (\n                <section key={s.id} id={s.id} aria-labelledby={`${s.id}-title`} className=\"scroll-mt-28\">\n                  <h2 id={`${s.id}-title`} className=\"text-docs-heading tracking-tight text-fg\">{s.label}</h2>\n                  <div className=\"mt-5\"><DocsBlocks blocks={s.blocks} /></div>\n                </section>\n              ))}\n            </div>\n          </article>\n        </div>\n        {cta && (\n          <CallToAction title={cta.title}>\n            <ButtonLink href={cta.action.href} variant=\"light\" fill=\"black\">{cta.action.label}</ButtonLink>\n          </CallToAction>\n        )}\n      </SitePage>\n    </>\n  )\n}\n\nexport default LegalPage\n\nconst css = `\n.ds-legal-title { line-height: 1.15; text-wrap: balance; }\n.ds-legal-side { transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-legal-side:hover { color: var(--ds-color-fg); } }\n`\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "button-link",
+        "call-to-action",
+        "docs-blocks",
+        "site-page",
+        "tag"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "LegalPage",
+            "file": "react/components/site/LegalPage.tsx",
+            "props": [
+              {
+                "name": "tag",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "title",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "updated",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "intro",
+                "type": "DocsBlock[]",
+                "required": false
+              },
+              {
+                "name": "sections",
+                "type": "LegalSection[]",
+                "required": true
+              },
+              {
+                "name": "cta",
+                "type": "{ title: string, action: SiteAction }",
+                "required": false
+              }
+            ],
+            "extends": [
+              "SiteFrameProps"
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "Terms, on sample data",
+          "center": false,
+          "half": false,
+          "path": "react/examples/legal-page/Site.tsx",
+          "content": "import { LegalPage } from '@/react/components/site/LegalPage'\nimport { Button } from '@/react/components/ui/Button'\nimport { PixelButton } from '@/react/components/ui/PixelButton'\nimport type { DocsBlock } from '@/react/components/site/DocsBlocks'\nimport type { LegalSection } from '@/react/components/site/LegalPage'\n// Terms on sample data: the side links lead to each section.\nconst header = {\n  \"items\": [\n    {\n      \"label\": \"Search\",\n      \"desc\": \"Find the answer in any file.\",\n      \"href\": \"#search\"\n    },\n    {\n      \"label\": \"Sync\",\n      \"desc\": \"Keep your apps in step.\",\n      \"href\": \"#sync\"\n    },\n    {\n      \"label\": \"Parse\",\n      \"desc\": \"Read every row and cell.\",\n      \"href\": \"#parse\"\n    }\n  ],\n  \"links\": [\n    {\n      \"label\": \"Pricing\",\n      \"href\": \"#pricing\"\n    },\n    {\n      \"label\": \"Blog\",\n      \"href\": \"#blog\"\n    },\n    {\n      \"label\": \"Docs\",\n      \"href\": \"#docs\"\n    }\n  ],\n  \"homeLabel\": \"Acme home\"\n}\nconst footer = {\n  \"columns\": [\n    {\n      \"title\": \"Product\",\n      \"links\": [\n        {\n          \"label\": \"Search\",\n          \"href\": \"#search\"\n        },\n        {\n          \"label\": \"Sync\",\n          \"href\": \"#sync\"\n        },\n        {\n          \"label\": \"Parse\",\n          \"href\": \"#parse\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Company\",\n      \"links\": [\n        {\n          \"label\": \"About\",\n          \"href\": \"#about\"\n        },\n        {\n          \"label\": \"Blog\",\n          \"href\": \"#blog\"\n        },\n        {\n          \"label\": \"Changelog\",\n          \"href\": \"#changelog\"\n        },\n        {\n          \"label\": \"Contact\",\n          \"href\": \"#contact\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Resources\",\n      \"links\": [\n        {\n          \"label\": \"Docs\",\n          \"href\": \"#docs\"\n        },\n        {\n          \"label\": \"Pricing\",\n          \"href\": \"#pricing\"\n        },\n        {\n          \"label\": \"Status\",\n          \"href\": \"#status\"\n        }\n      ]\n    }\n  ],\n  \"tagline\": \"Search any data you bring. Get the right answer.\",\n  \"legal\": \"© 2026 Acme, Inc.\",\n  \"legalLinks\": [\n    {\n      \"label\": \"Privacy\",\n      \"href\": \"#privacy\"\n    },\n    {\n      \"label\": \"Terms\",\n      \"href\": \"#terms\"\n    }\n  ],\n  \"name\": \"Acme\"\n}\nconst intro: DocsBlock[] = [\n  {\n    \"kind\": \"p\",\n    \"text\": \"These terms are an agreement between you and Acme, Inc. and govern your use of the Acme website, console, API and SDK.\"\n  }\n]\nconst sections: LegalSection[] = [\n  {\n    \"id\": \"accounts\",\n    \"label\": \"Accounts\",\n    \"blocks\": [\n      {\n        \"kind\": \"p\",\n        \"text\": \"You give accurate information when you create an account, and you keep your sign-in details and API keys secure.\"\n      }\n    ]\n  },\n  {\n    \"id\": \"use\",\n    \"label\": \"Use of the services\",\n    \"blocks\": [\n      {\n        \"kind\": \"p\",\n        \"text\": \"You may use the services for your internal business purposes. You agree not to:\"\n      },\n      {\n        \"kind\": \"list\",\n        \"items\": [\n          \"use them against any law or anyone's rights;\",\n          \"access other customers' data;\",\n          \"get around rate limits or security measures.\"\n        ]\n      }\n    ]\n  },\n  {\n    \"id\": \"content\",\n    \"label\": \"Your content\",\n    \"blocks\": [\n      {\n        \"kind\": \"p\",\n        \"text\": \"You own everything you send to the services. We host and process it only to provide them to you.\"\n      }\n    ]\n  },\n  {\n    \"id\": \"fees\",\n    \"label\": \"Fees\",\n    \"blocks\": [\n      {\n        \"kind\": \"p\",\n        \"text\": \"You pay for your use at the prices on the pricing page or in your order form, plus any taxes.\"\n      }\n    ]\n  },\n  {\n    \"id\": \"contact\",\n    \"label\": \"Contact\",\n    \"blocks\": [\n      {\n        \"kind\": \"p\",\n        \"text\": \"Questions about these terms: [legal@acme.com](mailto:legal@acme.com).\"\n      }\n    ]\n  }\n]\nconst cta = {\n  \"title\": \"See it on your own data.\",\n  \"action\": {\n    \"label\": \"Book a demo\",\n    \"href\": \"#demo\"\n  }\n}\nexport default function Site() {\n  return (\n    <div className=\"-m-8\">\n      <LegalPage\n        header={header}\n        footer={footer}\n        tag=\"Legal\"\n        title=\"Terms of Service\"\n        updated=\"November 1, 2026\"\n        intro={intro}\n        sections={sections}\n        cta={cta}\n        logo={<span className=\"font-heading text-heading-3 text-fg\">Acme</span>}\n        actions={() => (<><Button href=\"#contact\">Contact us</Button><PixelButton href=\"#sign-in\">Sign in</PixelButton></>)}\n      />\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "button",
+            "button-link",
+            "call-to-action",
+            "docs-blocks",
+            "site-page",
+            "tag"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/site/legal-page.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { define, tag } from '@/elements/lib/element'\nimport { SiteFrameElement, closing, type SiteAction } from '@/elements/components/site/site-page'\nimport type { DocsBlock } from '@/elements/components/site/docs-blocks'\nimport '@/elements/components/site/docs-blocks'\nimport '@/elements/components/ui/site-tag'\nimport styles from 'virtual:tw'\n\n// LegalPage.vue as <conare-legal-page>: a page of policy text (Legal.vue: terms, privacy, disclosure): from 1024px, on\n// the left in the double rule, the page's sections, held in view, the one being read on the paper with the red square;\n// beside it the tag, the title, when it was last updated and the text (docs-blocks), each section with its id. Then\n// the closing band, if any. In the site's frame (site-page). `heading` is Vue's `title`. The sections live in this\n// element's shadow root, so the side links scroll to them themselves.\nexport type LegalSection = { id: string, label: string, blocks: DocsBlock[] }\n\n/**\n * @summary A page of policy text with its sections at the side.\n * @slot logo - The logo in the header's home link.\n * @slot actions - The header's buttons.\n * @slot sheet-actions - The same buttons again, for the header's sheet on phones.\n */\nexport class LegalPage extends SiteFrameElement {\n\tstatic styles = [SiteFrameElement.styles, styles]\n\tstatic properties = { tag: {}, heading: {}, lastUpdated: { attribute: 'updated' }, intro: { type: Array }, sections: { type: Array }, cta: { type: Object }, active: { state: true } }\n\n\ttag?: string\n\t/** The page's title (Vue's `title`). */\n\theading = ''\n\t/** When it last changed, as written (Vue's `updated`; `updated` is Lit's hook). */\n\tlastUpdated = ''\n\tintro: DocsBlock[] = []\n\tsections: LegalSection[] = []\n\tcta?: { title: string, action: SiteAction }\n\tprivate active = ''\n\n\tprivate track = () => {\n\t\tlet on = this.sections[0]?.id ?? ''\n\t\tfor (const s of this.sections) {\n\t\t\tconst el = this.renderRoot.querySelector(`[id=\"${s.id}\"]`)\n\t\t\tif (el && el.getBoundingClientRect().top < 160) on = s.id\n\t\t}\n\t\tthis.active = on\n\t}\n\tconnectedCallback() {\n\t\tsuper.connectedCallback()\n\t\twindow.addEventListener('scroll', this.track, { passive: true })\n\t}\n\tdisconnectedCallback() {\n\t\twindow.removeEventListener('scroll', this.track)\n\t\tsuper.disconnectedCallback()\n\t}\n\tprotected firstUpdated() {\n\t\tthis.track()\n\t}\n\t// An id inside a shadow root is out of the address bar's reach: the link scrolls to its section and keeps the hash.\n\tprivate go(event: MouseEvent, id: string) {\n\t\tconst el = this.renderRoot.querySelector(`[id=\"${id}\"]`)\n\t\tif (!el) return\n\t\tevent.preventDefault()\n\t\tel.scrollIntoView()\n\t\t// A fragment link leaves focus on the page, as the browser's own does.\n\t\t;(event.currentTarget as HTMLElement).blur()\n\t\thistory.replaceState(history.state, '', `#${id}`)\n\t}\n\n\trender() {\n\t\tconst [blocks, siteTag] = [tag('docs-blocks'), tag('site-tag')]\n\t\tconst active = this.active || this.sections[0]?.id\n\t\treturn this.frame('legal-page', staticHtml`<div class=\"mx-auto grid max-w-[1440px] grid-cols-[minmax(0,1fr)] gap-12 px-4 pt-14 pb-32 sm:px-6 lg:grid-cols-[224px_minmax(0,720px)] lg:gap-16 lg:px-10 lg:pt-20 lg:pb-40\"><div role=\"navigation\" aria-label=\"On this page\" class=\"hidden lg:block\"><div class=\"sticky top-28 border border-edge p-5 outline outline-offset-4 outline-edge\"><p class=\"type-ui-strong text-fg\">On this page</p><ul class=\"-mx-2 mt-2 flex flex-col\">${this.sections.map((s) => html`<li><a href=${`#${s.id}`} aria-current=${s.id === active ? 'location' : nothing} class=${['ds-legal-side relative flex items-center py-1.5 ps-5 pe-2 type-ui', s.id === active ? 'bg-surface-subtle text-fg' : 'text-fg-muted'].join(' ')} @click=${(e: MouseEvent) => this.go(e, s.id)}>${s.id === active ? html`<span aria-hidden=\"true\" class=\"absolute start-2 top-1/2 -mt-0.75 size-1.5 bg-home-red\"></span>` : nothing}${s.label}</a></li>`)}</ul></div></div><article class=\"min-w-0\">${this.tag ? html`<p class=\"mb-4 flex\">${staticHtml`<${siteTag}>${this.tag}</${siteTag}>`}</p>` : nothing}<h1 class=\"ds-legal-title font-heading text-heading-2 font-normal tracking-tight text-fg sm:text-heading-1\">${this.heading}</h1><p class=\"mt-3 text-body text-fg-faint\">${`Last updated ${this.lastUpdated}`}</p><div class=\"mt-12 flex flex-col gap-12\">${this.intro.length ? staticHtml`<${blocks} .blocks=${this.intro}></${blocks}>` : nothing}${this.sections.map((s) => html`<section id=${s.id} aria-labelledby=${`${s.id}-title`} class=\"scroll-mt-28\"><h2 id=${`${s.id}-title`} class=\"text-docs-heading tracking-tight text-fg\">${s.label}</h2><div class=\"mt-5\">${staticHtml`<${blocks} .blocks=${s.blocks}></${blocks}>`}</div></section>`)}</div></article></div>${this.cta ? closing(this.cta) : nothing}`)\n\t}\n}\n\ndefine('legal-page', LegalPage)\n"
+        },
+        {
+          "path": "elements/components/site/legal-page.css",
+          "content": "/* LegalPage.vue's <style>, as it is. */\n.ds-legal-title { line-height: 1.15; text-wrap: balance; }\n.ds-legal-side { transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-legal-side:hover { color: var(--ds-color-fg); } }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/legal-page.js",
+        "elements/site-page.js",
+        "elements/docs-blocks.js",
+        "elements/site-tag.js",
+        "elements/site-footer.js",
+        "elements/site-header.js",
+        "elements/product-menu.js",
+        "elements/announcement-bar.js",
+        "elements/button-link.js",
+        "elements/call-to-action.js",
+        "elements/code-block.js",
+        "elements/docs-fields.js",
+        "elements/docs-inline.js",
+        "elements/docs-table.js",
+        "elements/grain.js",
+        "elements/roll-text.js",
+        "elements/cell-burst.js",
+        "elements/code-copy.js",
+        "elements/button.js",
+        "elements/pixel-button.js"
+      ],
+      "tag": "conare-legal-page",
+      "tags": [
+        "conare-legal-page"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "announcement-bar",
+        "button-link",
+        "call-to-action",
+        "cell-burst",
+        "code-block",
+        "docs-blocks",
+        "product-menu",
+        "roll-text",
+        "site-footer",
+        "site-header",
+        "site-page",
+        "tag"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-legal-page",
+            "name": "LegalPage",
+            "module": "elements/legal-page.js",
+            "description": "A page of policy text with its sections at the side.",
+            "attributes": [
+              {
+                "name": "tag",
+                "field": "tag",
+                "type": "string | undefined"
+              },
+              {
+                "name": "heading",
+                "field": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The page's title (Vue's `title`)."
+              },
+              {
+                "name": "updated",
+                "field": "lastUpdated",
+                "type": "string",
+                "default": "''",
+                "description": "When it last changed, as written (Vue's `updated`; `updated` is Lit's hook)."
+              },
+              {
+                "name": "intro",
+                "field": "intro",
+                "type": "DocsBlock[]",
+                "default": "[]"
+              },
+              {
+                "name": "sections",
+                "field": "sections",
+                "type": "LegalSection[]",
+                "default": "[]"
+              },
+              {
+                "name": "cta",
+                "field": "cta",
+                "type": "{ title: string; action: SiteAction; } | undefined"
+              },
+              {
+                "name": "active",
+                "field": "active",
+                "type": "string",
+                "default": "''"
+              },
+              {
+                "name": "header",
+                "field": "header",
+                "type": "SiteHeaderData",
+                "default": "{ items: [], links: [] }",
+                "description": "The header: items, more, links, productCurrent, homeHref, homeLabel."
+              },
+              {
+                "name": "footer",
+                "field": "footer",
+                "type": "SiteFooterData",
+                "default": "{ columns: [] }",
+                "description": "The footer: columns, tagline, legal, legalLinks, name."
+              },
+              {
+                "name": "announcement",
+                "field": "announcement",
+                "type": "SiteAnnouncement | undefined",
+                "description": "The bar above the header: tag, text, cta, href."
+              }
+            ],
+            "properties": [
+              {
+                "name": "tag",
+                "type": "string | undefined",
+                "attribute": "tag"
+              },
+              {
+                "name": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The page's title (Vue's `title`).",
+                "attribute": "heading"
+              },
+              {
+                "name": "lastUpdated",
+                "type": "string",
+                "default": "''",
+                "description": "When it last changed, as written (Vue's `updated`; `updated` is Lit's hook).",
+                "attribute": "updated"
+              },
+              {
+                "name": "intro",
+                "type": "DocsBlock[]",
+                "default": "[]",
+                "attribute": "intro"
+              },
+              {
+                "name": "sections",
+                "type": "LegalSection[]",
+                "default": "[]",
+                "attribute": "sections"
+              },
+              {
+                "name": "cta",
+                "type": "{ title: string; action: SiteAction; } | undefined",
+                "attribute": "cta"
+              },
+              {
+                "name": "header",
+                "type": "SiteHeaderData",
+                "default": "{ items: [], links: [] }",
+                "description": "The header: items, more, links, productCurrent, homeHref, homeLabel.",
+                "attribute": "header"
+              },
+              {
+                "name": "footer",
+                "type": "SiteFooterData",
+                "default": "{ columns: [] }",
+                "description": "The footer: columns, tagline, legal, legalLinks, name.",
+                "attribute": "footer"
+              },
+              {
+                "name": "announcement",
+                "type": "SiteAnnouncement | undefined",
+                "description": "The bar above the header: tag, text, cta, href.",
+                "attribute": "announcement"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "logo",
+                "description": "The logo in the header's home link."
+              },
+              {
+                "name": "actions",
+                "description": "The header's buttons."
+              },
+              {
+                "name": "sheet-actions",
+                "description": "The same buttons again, for the header's sheet on phones."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "Terms, on sample data",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/legal-page/Site.html",
+          "content": "<!-- Terms on sample data: the side links lead to each section. -->\n<div class=\"-m-8\">\n  <conare-legal-page\n    header='{\"items\": [{\"label\": \"Search\", \"desc\": \"Find the answer in any file.\", \"href\": \"#search\"}, {\"label\": \"Sync\", \"desc\": \"Keep your apps in step.\", \"href\": \"#sync\"}, {\"label\": \"Parse\", \"desc\": \"Read every row and cell.\", \"href\": \"#parse\"}], \"links\": [{\"label\": \"Pricing\", \"href\": \"#pricing\"}, {\"label\": \"Blog\", \"href\": \"#blog\"}, {\"label\": \"Docs\", \"href\": \"#docs\"}], \"homeLabel\": \"Acme home\"}'\n    footer='{\"columns\": [{\"title\": \"Product\", \"links\": [{\"label\": \"Search\", \"href\": \"#search\"}, {\"label\": \"Sync\", \"href\": \"#sync\"}, {\"label\": \"Parse\", \"href\": \"#parse\"}]}, {\"title\": \"Company\", \"links\": [{\"label\": \"About\", \"href\": \"#about\"}, {\"label\": \"Blog\", \"href\": \"#blog\"}, {\"label\": \"Changelog\", \"href\": \"#changelog\"}, {\"label\": \"Contact\", \"href\": \"#contact\"}]}, {\"title\": \"Resources\", \"links\": [{\"label\": \"Docs\", \"href\": \"#docs\"}, {\"label\": \"Pricing\", \"href\": \"#pricing\"}, {\"label\": \"Status\", \"href\": \"#status\"}]}], \"tagline\": \"Search any data you bring. Get the right answer.\", \"legal\": \"© 2026 Acme, Inc.\", \"legalLinks\": [{\"label\": \"Privacy\", \"href\": \"#privacy\"}, {\"label\": \"Terms\", \"href\": \"#terms\"}], \"name\": \"Acme\"}'\n    tag=\"Legal\"\n    heading=\"Terms of Service\"\n    updated=\"November 1, 2026\"\n    intro='[{\"kind\": \"p\", \"text\": \"These terms are an agreement between you and Acme, Inc. and govern your use of the Acme website, console, API and SDK.\"}]'\n    sections='[{\"id\": \"accounts\", \"label\": \"Accounts\", \"blocks\": [{\"kind\": \"p\", \"text\": \"You give accurate information when you create an account, and you keep your sign-in details and API keys secure.\"}]}, {\"id\": \"use\", \"label\": \"Use of the services\", \"blocks\": [{\"kind\": \"p\", \"text\": \"You may use the services for your internal business purposes. You agree not to:\"}, {\"kind\": \"list\", \"items\": [\"use them against any law or anyone&#39;s rights;\", \"access other customers&#39; data;\", \"get around rate limits or security measures.\"]}]}, {\"id\": \"content\", \"label\": \"Your content\", \"blocks\": [{\"kind\": \"p\", \"text\": \"You own everything you send to the services. We host and process it only to provide them to you.\"}]}, {\"id\": \"fees\", \"label\": \"Fees\", \"blocks\": [{\"kind\": \"p\", \"text\": \"You pay for your use at the prices on the pricing page or in your order form, plus any taxes.\"}]}, {\"id\": \"contact\", \"label\": \"Contact\", \"blocks\": [{\"kind\": \"p\", \"text\": \"Questions about these terms: [legal@acme.com](mailto:legal@acme.com).\"}]}]'\n    cta='{\"title\": \"See it on your own data.\", \"action\": {\"label\": \"Book a demo\", \"href\": \"#demo\"}}'\n  >\n    <span slot=\"logo\" class=\"font-heading text-heading-3 text-fg\">Acme</span>\n    <conare-button slot=\"actions\" href=\"#contact\">Contact us</conare-button>\n    <conare-pixel-button slot=\"actions\" href=\"#sign-in\">Sign in</conare-pixel-button>\n    <conare-button slot=\"sheet-actions\" href=\"#contact\">Contact us</conare-button>\n    <conare-pixel-button slot=\"sheet-actions\" href=\"#sign-in\">Sign in</conare-pixel-button>\n  </conare-legal-page>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

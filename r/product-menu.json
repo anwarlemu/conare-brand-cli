@@ -1,0 +1,275 @@
+{
+  "name": "product-menu",
+  "title": "Product menu",
+  "type": "registry:ui",
+  "group": "site",
+  "description": "The header's Product dropdown: the products with their one line, a rule, then benchmarks and pricing, beside a window that shows the one pointed at. One highlight glides between items. It is the navigation menu.",
+  "use_for": "The site header's Product item (shadcn's navigation-menu).",
+  "never": [
+    "Links that are not products",
+    "Opening on hover on touch screens: there it opens on press"
+  ],
+  "source": "conare-web app/components/home/ProductMenu.vue, app/content/home.ts, app/assets/css/home.css (.menu-mark, .menu-mark-dot, .menu-text, .step-art, .footer-grain, .nav-link)",
+  "body": "ProductMenu renders an `<li>`: put it first in the header's list of links (SiteHeader does). Give each item its\nwindow through the `window` slot (`item`, `index`, `active`, `plays`, which changes each time a window should play\nagain): the website uses its product windows (`product-viz`, `eval-viz` and `price-viz`) over a `cell-burst`, as the\nexample does. Without the slot each item shows a small plain window with its name and line. The highlight is\n`glide-mark`'s `useGlideMark`.",
+  "requires": [
+    "cell-burst",
+    "glide-mark"
+  ],
+  "dependencies": [
+    "lucide-vue-next@^0.479.0"
+  ],
+  "files": [
+    {
+      "path": "components/site/ProductMenu.vue",
+      "content": "<script setup lang=\"ts\">\nimport { nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'\nimport { ChevronDown } from 'lucide-vue-next'\nimport Grain from '@/components/visuals/Grain.vue'\nimport { useGlideMark } from '@/composables/useGlideMark'\n\n// The website header's Product dropdown (home/ProductMenu.vue): one column of the products with their one line, a\n// rule, then the extra links (benchmarks, pricing), beside a portrait of the one under the pointer or focus on the dark\n// grained panel, crossfading between items and playing again each time it shows (slot `window`). One highlight, the\n// paper with a red square at its left, glides between items (glide-mark's useGlideMark, 160ms) while the item's title eases right to clear the\n// square; it rests on the portrait's item when the pointer leaves the list. It opens on hover for a mouse and on\n// press for touch and the keyboard; Escape (focus back on the button) or a press outside closes it. `current` gives the\n// button the header's resting block and red square. Render it as an item of the header's link list.\nexport interface ProductMenuItem { label: string, desc: string, href: string }\nconst props = withDefaults(defineProps<{ items: ProductMenuItem[], more?: ProductMenuItem[], label?: string, current?: boolean }>(), { more: () => [], label: 'Product' })\n\nconst open = ref(false)\nconst root = ref<HTMLElement | null>(null)\nconst button = ref<HTMLButtonElement | null>(null)\nconst list = ref<HTMLElement | null>(null)\nconst id = `product-menu-${useId()}`\n\n// The portrait's item: the last one pointed at, back to the first on each opening. Each change bumps `plays`.\nconst pick = ref(0)\nconst plays = ref(0)\n// One highlight for the list, resting on the portrait's item when the pointer leaves.\nconst { mark, shown, instant, hot, point, leave: rest, settle } = useGlideMark(list, () => pick.value)\nwatch(hot, (i) => {\n  if (i === null || i === pick.value) return\n  pick.value = i\n  plays.value += 1\n})\n// The portraits are built the first time the menu opens, not with the page.\nconst opened = ref(false)\nwatch(open, (o) => {\n  if (!o) return\n  opened.value = true\n  pick.value = 0\n  plays.value += 1\n  void nextTick(settle)\n})\n\nfunction leave(event?: FocusEvent) {\n  if (event && (event.currentTarget as HTMLElement).contains(event.relatedTarget as Node)) return\n  rest()\n}\n\nfunction onPointerDown(event: PointerEvent) {\n  if (open.value && !root.value?.contains(event.target as Node)) open.value = false\n}\n// Pointer activation toggles on pointerdown; detail 0 is the keyboard or assistive technology.\nfunction onClick(event: MouseEvent) { if (event.detail === 0) open.value = !open.value }\nfunction onKeydown(event: KeyboardEvent) {\n  if (event.key !== 'Escape' || !open.value) return\n  open.value = false\n  button.value?.focus()\n}\nfunction hover(event: PointerEvent, now: boolean) { if (event.pointerType === 'mouse') open.value = now }\nonMounted(() => {\n  document.addEventListener('pointerdown', onPointerDown)\n  document.addEventListener('keydown', onKeydown)\n})\nonBeforeUnmount(() => {\n  document.removeEventListener('pointerdown', onPointerDown)\n  document.removeEventListener('keydown', onKeydown)\n})\nconst all = () => [...props.items, ...props.more]\n</script>\n\n<template>\n  <li data-ds=\"product-menu\" ref=\"root\" class=\"relative flex\" @pointerenter=\"hover($event, true)\" @pointerleave=\"hover($event, false)\">\n    <button\n      ref=\"button\"\n      type=\"button\"\n      :aria-expanded=\"open\"\n      :aria-controls=\"id\"\n      data-nav-item\n      :aria-current=\"current ? 'location' : undefined\"\n      class=\"ds-navlink-site relative flex cursor-pointer items-center gap-1 py-2 hover:text-fg\"\n      :class=\"[{ 'text-fg': open || current }, current ? 'px-2.75' : 'px-4']\"\n      @pointerdown=\"open = !open\"\n      @click=\"onClick\"\n    >\n      <span v-if=\"current\" aria-hidden=\"true\" class=\"size-1.5 shrink-0 bg-home-red\" />\n      {{ label }}\n      <ChevronDown :size=\"14\" :stroke-width=\"1.5\" aria-hidden=\"true\" class=\"transition-[rotate] duration-200 ease-out motion-reduce:transition-none\" :class=\"open && 'rotate-180'\" />\n    </button>\n\n    <!-- pt-3 bridges the gap so the pointer can travel into the panel. -->\n    <div :id=\"id\" :hidden=\"!open\" class=\"absolute top-full left-1/2 z-30 -translate-x-1/2 pt-3\">\n      <div class=\"grid w-160 max-w-[calc(100vw-32px)] grid-cols-2 gap-px border border-edge bg-edge\">\n        <div class=\"bg-surface p-2\">\n          <p class=\"ds-product-menu-label px-3 pt-2 pb-1 text-meta text-fg-muted\">{{ label }}</p>\n          <ul ref=\"list\" class=\"relative\" @mouseleave=\"leave()\" @focusout=\"leave\">\n            <li\n              v-if=\"mark\"\n              aria-hidden=\"true\"\n              class=\"ds-product-mark pointer-events-none absolute inset-x-0 top-0 bg-surface-subtle\"\n              :data-shown=\"shown || undefined\"\n              :data-instant=\"instant || undefined\"\n              :style=\"{ height: `${mark.h}px`, transform: `translateY(${mark.y}px)` }\"\n            >\n              <span class=\"ds-product-dot absolute top-3.5 left-3 size-2 bg-home-red\" />\n            </li>\n            <template v-for=\"(item, i) in all()\" :key=\"item.label\">\n              <li v-if=\"i === items.length && more.length\" aria-hidden=\"true\" class=\"mx-3 my-1 border-t border-edge\" />\n              <li class=\"relative\" data-glide-row>\n                <a :href=\"item.href\" class=\"block px-3 py-2 outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-focus\" @mouseenter=\"point(i)\" @focus=\"point(i)\" @click=\"open = false\">\n                  <span class=\"ds-product-text block text-body leading-5 font-medium text-fg\" :data-hot=\"hot === i || undefined\">{{ item.label }}</span>\n                  <span class=\"block text-ui leading-5 text-fg-muted\">{{ item.desc }}</span>\n                </a>\n              </li>\n            </template>\n          </ul>\n        </div>\n        <!-- The portrait, as wide as the list: each item's window on the grained dark grey, crossfaded. -->\n        <div class=\"bg-surface p-2\">\n          <div aria-hidden=\"true\" class=\"relative grid h-full min-h-62.5 grid-cols-[minmax(0,1fr)] overflow-hidden bg-ds-neutral-200 text-ds-neutral-300\">\n            <Grain />\n            <template v-if=\"opened\">\n              <div v-for=\"(item, i) in all()\" :key=\"item.label\" class=\"ds-product-art relative flex items-center justify-center px-3 py-4 [grid-area:1/1]\" :data-active=\"i === pick || undefined\">\n                <slot name=\"window\" :item=\"item\" :index=\"i\" :active=\"open && i === pick\" :plays=\"plays\">\n                  <div class=\"relative w-full max-w-60 border border-ds-neutral-300 bg-ds-neutral-100 text-off-white\">\n                    <div class=\"flex h-6 items-center gap-1 border-b border-ds-neutral-300 px-2\"><i v-for=\"k in 3\" :key=\"k\" class=\"size-1.5 bg-ds-neutral-300\" /></div>\n                    <div class=\"flex flex-col gap-1 p-3\"><span class=\"type-code-sm\">{{ item.label.toLowerCase() }}</span><span class=\"type-meta text-ds-neutral-500\">{{ item.desc }}</span></div>\n                  </div>\n                </slot>\n              </div>\n            </template>\n          </div>\n        </div>\n      </div>\n    </div>\n  </li>\n</template>\n\n<style>\n/* The menu's small label: the website's capitals, 12px at 0.06em (home.css .label with uppercase). */\n.ds-product-menu-label { letter-spacing: var(--ds-tracking-tag); text-transform: uppercase; }\n.ds-navlink-site { transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-navlink-site:active { background: var(--ds-color-surface-subtle); }\n.ds-navlink-site:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }\n/* The highlight glides between items and fades when the pointer leaves the list; arriving from outside it fades in\n   where it lands, without the slide. Its red square grows in, and the hovered title eases right of it. */\n.ds-product-mark { opacity: 0; transition: transform var(--ds-duration-glide) var(--ds-easing-standard), opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-product-mark[data-shown] { opacity: 1; }\n.ds-product-mark[data-instant] { transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-product-dot { opacity: 0; transform: scale(0.5); transition: transform var(--ds-duration-glide) var(--ds-easing-standard), opacity var(--ds-duration-glide) var(--ds-easing-standard); }\n.ds-product-mark[data-shown] .ds-product-dot { opacity: 1; transform: none; }\n.ds-product-text { transition: transform var(--ds-duration-glide) var(--ds-easing-standard); }\n.ds-product-text[data-hot] { transform: translateX(16px); }\n/* Windows crossfade, a little quicker out than in; the one being left freezes where it is. */\n.ds-product-art { opacity: 0; transition: opacity var(--ds-duration-cell) ease; }\n.ds-product-art[data-active] { opacity: 1; transition-duration: var(--ds-duration-micro); }\n.ds-product-art:not([data-active]) * { animation-play-state: paused !important; }\n@media (prefers-reduced-motion: reduce) {\n  .ds-product-mark, .ds-product-dot { transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n  .ds-product-text { transition: none; }\n}\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "The Product menu",
+      "center": false,
+      "half": false,
+      "path": "examples/product-menu/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport { onMounted, ref } from 'vue'\nimport ProductMenu from '@/components/site/ProductMenu.vue'\nimport CellBurst from '@/components/visuals/CellBurst.vue'\nimport EvalViz, { type Eval } from '@/components/visuals/EvalViz.vue'\nimport PriceViz, { type PriceData } from '@/components/visuals/PriceViz.vue'\nimport ProductViz, { type ProductVizId } from '@/components/visuals/ProductViz.vue'\n// The menu, opened as the frame loads; point at a product to change the window. Each product shows its own window\n// (product-viz) over a sheet of cells; Benchmarks and Price vs accuracy show the leaderboard (eval-viz) and the price\n// chart (price-viz), drawn at their own width and scaled to fit, laid over the panel so they never set its height.\n// Each plays again every time it comes into view (`plays`).\nconst items = [\n  { label: 'Search', desc: 'Store documents and query them.', href: '#search' },\n  { label: 'Sync', desc: 'Keep your apps in a namespace.', href: '#sync' },\n  { label: 'Parse', desc: 'Read any file in full, every row and cell.', href: '#parse' },\n  { label: 'Embed', desc: 'Embeddings for any vector database.', href: '#embed' },\n  { label: 'Rerank', desc: 'Put the best passages first.', href: '#rerank' },\n]\nconst more = [\n  { label: 'Benchmarks', desc: 'Accuracy you can check, losses included.', href: '#benchmarks' },\n  { label: 'Price vs accuracy', desc: 'Most accurate, and the cheapest.', href: '#price' },\n]\nconst benchmark: Eval = {\n  id: 'acme-retrieval',\n  name: 'Acme retrieval benchmark',\n  description: 'Search over 19,252 business document pages with 2,419 questions.',\n  metric: 'nDCG@10',\n  better: 'higher',\n  model: 'conare-embed-1',\n  score: 67.0,\n  rank: { n: 1, of: 6 },\n  rows: [\n    { name: 'conare-embed-1', value: 67.02, ours: true },\n    { name: 'Provider B', value: 66.48 },\n    { name: 'Provider C', value: 64.24 },\n    { name: 'Provider D', value: 60.64 },\n    { name: 'Provider E', value: 58.7 },\n    { name: 'BM25', value: 49.68 },\n  ],\n  max: 80,\n}\nconst price: PriceData = {\n  benchmark: 'Acme retrieval benchmark',\n  metric: 'nDCG@10',\n  points: [\n    { name: 'conare-embed-1', price: 0.1, score: 67.02, ours: true },\n    { name: 'Provider B', price: 1.5, score: 62.25 },\n    { name: 'Provider C', price: 0.12, score: 60.64 },\n    { name: 'Provider D', price: 0.2, score: 58.7 },\n  ],\n}\nconst root = ref<HTMLElement | null>(null)\nonMounted(() => setTimeout(() => root.value?.querySelector<HTMLButtonElement>('button[aria-expanded]')?.click(), 300))\n</script>\n\n<template>\n  <div ref=\"root\" class=\"relative flex min-h-140 items-start justify-center px-6 py-4\">\n    <ul class=\"flex text-body leading-none text-fg-soft\">\n      <ProductMenu :items=\"items\" :more=\"more\">\n        <template #window=\"{ item, index, active, plays }\">\n          <template v-if=\"index < items.length\">\n            <CellBurst :seed=\"71 + index * 19\" jumble />\n            <ProductViz :id=\"(item.href.slice(1) as ProductVizId)\" :key=\"active ? `${index}-${plays}` : index\" :active=\"active\" class=\"relative\" />\n          </template>\n          <div v-else class=\"absolute inset-0 flex items-center justify-center overflow-hidden px-3 py-4\">\n            <CellBurst :seed=\"131 + (index - items.length) * 23\" jumble />\n            <div class=\"relative flex w-120 shrink-0 origin-center scale-[0.62] justify-center\">\n              <EvalViz v-if=\"index === items.length\" :key=\"active ? `b-${plays}` : 'b'\" :item=\"benchmark\" :limit=\"5\" :active=\"active\" />\n              <PriceViz v-else :key=\"active ? `p-${plays}` : 'p'\" :data=\"price\" :active=\"active\" />\n            </div>\n          </div>\n        </template>\n      </ProductMenu>\n    </ul>\n  </div>\n</template>\n",
+      "requires": [
+        "cell-burst",
+        "eval-viz",
+        "glide-mark",
+        "price-viz",
+        "product-viz"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/site/ProductMenu.tsx",
+          "content": "'use client'\nimport { Fragment, useEffect, useId, useRef, useState, type FocusEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'\nimport { ChevronDown } from 'lucide-react'\nimport { cn } from '@/react/lib/cn'\nimport { Grain } from '@/react/components/visuals/Grain'\nimport { useGlideMark } from '@/react/hooks/useGlideMark'\n\n// The website header's Product dropdown (home/ProductMenu.vue): one column of the products with their one line, a\n// rule, then the extra links (benchmarks, pricing), beside a portrait of the one under the pointer or focus on the dark\n// grained panel, crossfading between items and playing again each time it shows (`window`, Vue's scoped slot). One highlight, the\n// paper with a red square at its left, glides between items (glide-mark's useGlideMark, 160ms) while the item's title eases right to clear the\n// square; it rests on the portrait's item when the pointer leaves the list. It opens on hover for a mouse and on\n// press for touch and the keyboard; Escape (focus back on the button) or a press outside closes it. `current` gives the\n// button the header's resting block and red square. Render it as an item of the header's link list.\nexport interface ProductMenuItem { label: string, desc: string, href: string }\nexport interface ProductMenuProps {\n  items: ProductMenuItem[]\n  more?: ProductMenuItem[]\n  label?: string\n  current?: boolean\n  /** Draws an item's window in the portrait (Vue's `#window`): `active` while it shows, `plays` bumped each time. */\n  window?: (slot: { item: ProductMenuItem, index: number, active: boolean, plays: number }) => ReactNode\n}\n\nexport function ProductMenu({ items, more = [], label = 'Product', current, window: win }: ProductMenuProps) {\n  const [open, setOpen] = useState(false)\n  const openRef = useRef(false)\n  openRef.current = open\n  const root = useRef<HTMLLIElement | null>(null)\n  const button = useRef<HTMLButtonElement | null>(null)\n  const list = useRef<HTMLUListElement | null>(null)\n  const id = `product-menu-${useId()}`\n\n  // The portrait's item: the last one pointed at, back to the first on each opening. Each change bumps `plays`.\n  const [pick, setPick] = useState(0)\n  const [plays, setPlays] = useState(0)\n  const pickRef = useRef(0)\n  pickRef.current = pick\n  // One highlight for the list, resting on the portrait's item when the pointer leaves.\n  const { mark, shown, instant, hot, point, leave: rest, settle } = useGlideMark(list, () => pickRef.current)\n  useEffect(() => {\n    if (hot === null || hot === pickRef.current) return\n    pickRef.current = hot\n    setPick(hot)\n    setPlays(p => p + 1)\n  }, [hot])\n  // The portraits are built the first time the menu opens, not with the page.\n  const [opened, setOpened] = useState(false)\n  const settleNext = useRef(false)\n  useEffect(() => {\n    if (!open) return\n    setOpened(true)\n    pickRef.current = 0\n    setPick(0)\n    setPlays(p => p + 1)\n    settleNext.current = true\n  }, [open])\n  // After the render that shows the panel (Vue's nextTick).\n  useEffect(() => {\n    if (!settleNext.current) return\n    settleNext.current = false\n    settle()\n  })\n\n  function leave(event?: FocusEvent) {\n    if (event && event.currentTarget.contains(event.relatedTarget as Node)) return\n    rest()\n  }\n  useEffect(() => {\n    const onPointerDown = (event: PointerEvent) => {\n      if (openRef.current && !root.current?.contains(event.target as Node)) setOpen(false)\n    }\n    const onKeydown = (event: KeyboardEvent) => {\n      if (event.key !== 'Escape' || !openRef.current) return\n      setOpen(false)\n      button.current?.focus()\n    }\n    document.addEventListener('pointerdown', onPointerDown)\n    document.addEventListener('keydown', onKeydown)\n    return () => {\n      document.removeEventListener('pointerdown', onPointerDown)\n      document.removeEventListener('keydown', onKeydown)\n    }\n  }, [])\n  const hover = (event: ReactPointerEvent, now: boolean) => { if (event.pointerType === 'mouse') setOpen(now) }\n  const all = [...items, ...more]\n\n  return (\n    <>\n      <style href=\"ds-product-menu\" precedence=\"ds\">{css}</style>\n      <li data-ds=\"product-menu\" ref={root} className=\"relative flex\" onPointerEnter={e => hover(e, true)} onPointerLeave={e => hover(e, false)}>\n        <button\n          ref={button}\n          type=\"button\"\n          aria-expanded={open}\n          aria-controls={id}\n          data-nav-item\n          aria-current={current ? 'location' : undefined}\n          className={cn('ds-navlink-site relative flex cursor-pointer items-center gap-1 py-2 hover:text-fg', (open || current) && 'text-fg', current ? 'px-2.75' : 'px-4')}\n          onPointerDown={() => setOpen(o => !o)}\n          // Pointer activation toggles on pointerdown; detail 0 is the keyboard or assistive technology.\n          onClick={e => { if (e.detail === 0) setOpen(o => !o) }}\n        >\n          {current && <span aria-hidden=\"true\" className=\"size-1.5 shrink-0 bg-home-red\" />}\n          {label}\n          <ChevronDown size={14} strokeWidth={1.5} aria-hidden=\"true\" className={cn('transition-[rotate] duration-200 ease-out motion-reduce:transition-none', open && 'rotate-180')} />\n        </button>\n\n        {/* pt-3 bridges the gap so the pointer can travel into the panel. */}\n        <div id={id} hidden={!open} className=\"absolute top-full left-1/2 z-30 -translate-x-1/2 pt-3\">\n          <div className=\"grid w-160 max-w-[calc(100vw-32px)] grid-cols-2 gap-px border border-edge bg-edge\">\n            <div className=\"bg-surface p-2\">\n              <p className=\"ds-product-menu-label px-3 pt-2 pb-1 text-meta text-fg-muted\">{label}</p>\n              <ul ref={list} className=\"relative\" onMouseLeave={() => leave()} onBlur={leave}>\n                {mark && (\n                  <li\n                    aria-hidden=\"true\"\n                    className=\"ds-product-mark pointer-events-none absolute inset-x-0 top-0 bg-surface-subtle\"\n                    data-shown={shown || undefined}\n                    data-instant={instant || undefined}\n                    style={{ height: `${mark.h}px`, transform: `translateY(${mark.y}px)` }}\n                  >\n                    <span className=\"ds-product-dot absolute top-3.5 left-3 size-2 bg-home-red\" />\n                  </li>\n                )}\n                {all.map((item, i) => (\n                  <Fragment key={item.label}>\n                    {i === items.length && more.length > 0 && <li aria-hidden=\"true\" className=\"mx-3 my-1 border-t border-edge\" />}\n                    <li className=\"relative\" data-glide-row>\n                      <a href={item.href} className=\"block px-3 py-2 outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-focus\" onMouseEnter={() => point(i)} onFocus={() => point(i)} onClick={() => setOpen(false)}>\n                        <span className=\"ds-product-text block text-body leading-5 font-medium text-fg\" data-hot={hot === i || undefined}>{item.label}</span>\n                        <span className=\"block text-ui leading-5 text-fg-muted\">{item.desc}</span>\n                      </a>\n                    </li>\n                  </Fragment>\n                ))}\n              </ul>\n            </div>\n            {/* The portrait, as wide as the list: each item's window on the grained dark grey, crossfaded. */}\n            <div className=\"bg-surface p-2\">\n              <div aria-hidden=\"true\" className=\"relative grid h-full min-h-62.5 grid-cols-[minmax(0,1fr)] overflow-hidden bg-ds-neutral-200 text-ds-neutral-300\">\n                <Grain />\n                {opened && all.map((item, i) => (\n                  <div key={item.label} className=\"ds-product-art relative flex items-center justify-center px-3 py-4 [grid-area:1/1]\" data-active={i === pick || undefined}>\n                    {win\n                      ? win({ item, index: i, active: open && i === pick, plays })\n                      : (\n                          <div className=\"relative w-full max-w-60 border border-ds-neutral-300 bg-ds-neutral-100 text-off-white\">\n                            <div className=\"flex h-6 items-center gap-1 border-b border-ds-neutral-300 px-2\">{[1, 2, 3].map(k => <i key={k} className=\"size-1.5 bg-ds-neutral-300\" />)}</div>\n                            <div className=\"flex flex-col gap-1 p-3\"><span className=\"type-code-sm\">{item.label.toLowerCase()}</span><span className=\"type-meta text-ds-neutral-500\">{item.desc}</span></div>\n                          </div>\n                        )}\n                  </div>\n                ))}\n              </div>\n            </div>\n          </div>\n        </div>\n      </li>\n    </>\n  )\n}\n\nexport default ProductMenu\n\nconst css = `\n/* The menu's small label: the website's capitals, 12px at 0.06em (home.css .label with uppercase). */\n.ds-product-menu-label { letter-spacing: var(--ds-tracking-tag); text-transform: uppercase; }\n.ds-navlink-site { transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-navlink-site:active { background: var(--ds-color-surface-subtle); }\n.ds-navlink-site:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }\n/* The highlight glides between items and fades when the pointer leaves the list; arriving from outside it fades in\n   where it lands, without the slide. Its red square grows in, and the hovered title eases right of it. */\n.ds-product-mark { opacity: 0; transition: transform var(--ds-duration-glide) var(--ds-easing-standard), opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-product-mark[data-shown] { opacity: 1; }\n.ds-product-mark[data-instant] { transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-product-dot { opacity: 0; transform: scale(0.5); transition: transform var(--ds-duration-glide) var(--ds-easing-standard), opacity var(--ds-duration-glide) var(--ds-easing-standard); }\n.ds-product-mark[data-shown] .ds-product-dot { opacity: 1; transform: none; }\n.ds-product-text { transition: transform var(--ds-duration-glide) var(--ds-easing-standard); }\n.ds-product-text[data-hot] { transform: translateX(16px); }\n/* Windows crossfade, a little quicker out than in; the one being left freezes where it is. */\n.ds-product-art { opacity: 0; transition: opacity var(--ds-duration-cell) ease; }\n.ds-product-art[data-active] { opacity: 1; transition-duration: var(--ds-duration-micro); }\n.ds-product-art:not([data-active]) * { animation-play-state: paused !important; }\n@media (prefers-reduced-motion: reduce) {\n  .ds-product-mark, .ds-product-dot { transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n  .ds-product-text { transition: none; }\n}\n`\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [
+        "lucide-react@0.479.0"
+      ],
+      "registryDependencies": [
+        "cell-burst",
+        "glide-mark"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "ProductMenu",
+            "file": "react/components/site/ProductMenu.tsx",
+            "props": [
+              {
+                "name": "items",
+                "type": "ProductMenuItem[]",
+                "required": true
+              },
+              {
+                "name": "more",
+                "type": "ProductMenuItem[]",
+                "required": false,
+                "default": "[]"
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "required": false,
+                "default": "'Product'"
+              },
+              {
+                "name": "current",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "window",
+                "type": "(slot: { item: ProductMenuItem, index: number, active: boolean, plays: number }) => ReactNode",
+                "required": false,
+                "description": "Draws an item's window in the portrait (Vue's `#window`): `active` while it shows, `plays` bumped each time."
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "The Product menu",
+          "center": false,
+          "half": false,
+          "path": "react/examples/product-menu/Site.tsx",
+          "content": "'use client'\nimport { useEffect, useRef } from 'react'\nimport { ProductMenu } from '@/react/components/site/ProductMenu'\nimport { CellBurst } from '@/react/components/visuals/CellBurst'\nimport { EvalViz, type Eval } from '@/react/components/visuals/EvalViz'\nimport { PriceViz, type PriceData } from '@/react/components/visuals/PriceViz'\nimport { ProductViz, type ProductVizId } from '@/react/components/visuals/ProductViz'\n// The menu, opened as the frame loads; point at a product to change the window. Each product shows its own window\n// (product-viz) over a sheet of cells; Benchmarks and Price vs accuracy show the leaderboard (eval-viz) and the price\n// chart (price-viz), drawn at their own width and scaled to fit, laid over the panel so they never set its height.\n// Each plays again every time it comes into view (`plays`).\nconst items = [\n  { label: 'Search', desc: 'Store documents and query them.', href: '#search' },\n  { label: 'Sync', desc: 'Keep your apps in a namespace.', href: '#sync' },\n  { label: 'Parse', desc: 'Read any file in full, every row and cell.', href: '#parse' },\n  { label: 'Embed', desc: 'Embeddings for any vector database.', href: '#embed' },\n  { label: 'Rerank', desc: 'Put the best passages first.', href: '#rerank' },\n]\nconst more = [\n  { label: 'Benchmarks', desc: 'Accuracy you can check, losses included.', href: '#benchmarks' },\n  { label: 'Price vs accuracy', desc: 'Most accurate, and the cheapest.', href: '#price' },\n]\nconst benchmark: Eval = {\n  id: 'acme-retrieval',\n  name: 'Acme retrieval benchmark',\n  description: 'Search over 19,252 business document pages with 2,419 questions.',\n  metric: 'nDCG@10',\n  better: 'higher',\n  model: 'conare-embed-1',\n  score: 67.0,\n  rank: { n: 1, of: 6 },\n  rows: [\n    { name: 'conare-embed-1', value: 67.02, ours: true },\n    { name: 'Provider B', value: 66.48 },\n    { name: 'Provider C', value: 64.24 },\n    { name: 'Provider D', value: 60.64 },\n    { name: 'Provider E', value: 58.7 },\n    { name: 'BM25', value: 49.68 },\n  ],\n  max: 80,\n}\nconst price: PriceData = {\n  benchmark: 'Acme retrieval benchmark',\n  metric: 'nDCG@10',\n  points: [\n    { name: 'conare-embed-1', price: 0.1, score: 67.02, ours: true },\n    { name: 'Provider B', price: 1.5, score: 62.25 },\n    { name: 'Provider C', price: 0.12, score: 60.64 },\n    { name: 'Provider D', price: 0.2, score: 58.7 },\n  ],\n}\nexport default function Site() {\n  const root = useRef<HTMLDivElement | null>(null)\n  useEffect(() => {\n    const timer = setTimeout(() => root.current?.querySelector<HTMLButtonElement>('button[aria-expanded]')?.click(), 300)\n    return () => clearTimeout(timer)\n  }, [])\n  return (\n    <div ref={root} className=\"relative flex min-h-140 items-start justify-center px-6 py-4\">\n      <ul className=\"flex text-body leading-none text-fg-soft\">\n        <ProductMenu\n          items={items}\n          more={more}\n          window={({ item, index, active, plays }) => index < items.length\n            ? (\n                <>\n                  <CellBurst seed={71 + index * 19} jumble />\n                  <ProductViz id={item.href.slice(1) as ProductVizId} key={active ? `${index}-${plays}` : index} active={active} className=\"relative\" />\n                </>\n              )\n            : (\n                <div className=\"absolute inset-0 flex items-center justify-center overflow-hidden px-3 py-4\">\n                  <CellBurst seed={131 + (index - items.length) * 23} jumble />\n                  <div className=\"relative flex w-120 shrink-0 origin-center scale-[0.62] justify-center\">\n                    {index === items.length\n                      ? <EvalViz key={active ? `b-${plays}` : 'b'} item={benchmark} limit={5} active={active} />\n                      : <PriceViz key={active ? `p-${plays}` : 'p'} data={price} active={active} />}\n                  </div>\n                </div>\n              )}\n        />\n      </ul>\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "cell-burst",
+            "eval-viz",
+            "glide-mark",
+            "price-viz",
+            "product-viz"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/site/product-menu.ts",
+          "content": "import { html, nothing, type PropertyValues } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { DsElement, define, tag, uid } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport { GlideMarkController } from '@/elements/controllers/glide-mark'\nimport { ChevronDown } from 'lucide'\nimport '@/elements/components/visuals/grain'\nimport styles from 'virtual:tw'\n\n// ProductMenu.vue as <conare-product-menu>: the website header's Product dropdown (home/ProductMenu.vue): one column of the products with their one line, a\n// rule, then the extra links (benchmarks, pricing), beside a portrait of the one under the pointer or focus on the dark\n// grained panel, crossfading between items and playing again each time it shows (slot `window`). One highlight, the\n// paper with a red square at its left, glides between items (glide-mark's useGlideMark, 160ms) while the item's title eases right to clear the\n// square; it rests on the portrait's item when the pointer leaves the list. It opens on hover for a mouse and on\n// press for touch and the keyboard; Escape (focus back on the button) or a press outside closes it. `current` gives the\n// button the header's resting block and red square. Render it as an item of the header's link list.\n//\n// Each item's window goes in the slot `window-<index>` (Vue's scoped `#window`): the element puts `active` on what is in\n// it (and on anything inside that takes `active`, a viz window) while that item shows, so it plays again each time;\n// an item with nothing in its slot shows a plain window with its label. `open` opens it from a script. `items` and\n// `more` are JSON attributes or properties.\nexport interface ProductMenuItem { label: string, desc: string, href: string }\n\n/**\n * @summary The website header's Product dropdown, with a window for the item under the pointer.\n * @slot window-0 - The first item's window (window-1 the second, and so on through the more links).\n */\nexport class ProductMenu extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { items: { type: Array }, more: { type: Array }, label: {}, current: { type: Boolean }, open: { type: Boolean, reflect: true }, pick: { state: true }, plays: { state: true }, opened: { state: true } }\n\n\titems: ProductMenuItem[] = []\n\t/** The extra links after the rule. */\n\tmore: ProductMenuItem[] = []\n\tlabel = 'Product'\n\t/** The header's resting block and red square on the button. */\n\tcurrent = false\n\t/** Whether the panel is open. */\n\topen = false\n\t// The portrait's item: the last one pointed at, back to the first on each opening. Each change bumps `plays`.\n\tprivate pick = 0\n\tprivate plays = 0\n\t// The portraits are built the first time the menu opens, not with the page.\n\tprivate opened = false\n\tprivate panelId = uid('product-menu')\n\t// One highlight for the list, resting on the portrait's item when the pointer leaves.\n\tprivate glide = new GlideMarkController(this, () => this.renderRoot.querySelector<HTMLElement>('ul'), () => this.pick)\n\tprivate lastHot: number | null = null\n\n\tprivate get all() {\n\t\treturn [...this.items, ...this.more]\n\t}\n\n\tprivate onPointerDown = (event: PointerEvent) => {\n\t\tif (this.open && !event.composedPath().includes(this)) this.open = false\n\t}\n\tprivate onKeydown = (event: KeyboardEvent) => {\n\t\tif (event.key !== 'Escape' || !this.open) return\n\t\tthis.open = false\n\t\tthis.renderRoot.querySelector<HTMLButtonElement>('button[aria-expanded]')?.focus()\n\t}\n\tprivate hover(event: PointerEvent, now: boolean) {\n\t\tif (event.pointerType === 'mouse') this.open = now\n\t}\n\tprivate leave(event?: FocusEvent) {\n\t\tif (event && (event.currentTarget as HTMLElement).contains(event.relatedTarget as Node)) return\n\t\tthis.glide.leave()\n\t}\n\n\tconnectedCallback() {\n\t\tsuper.connectedCallback()\n\t\tdocument.addEventListener('pointerdown', this.onPointerDown)\n\t\tdocument.addEventListener('keydown', this.onKeydown)\n\t}\n\tdisconnectedCallback() {\n\t\tsuper.disconnectedCallback()\n\t\tdocument.removeEventListener('pointerdown', this.onPointerDown)\n\t\tdocument.removeEventListener('keydown', this.onKeydown)\n\t}\n\n\tprotected willUpdate(changed: PropertyValues) {\n\t\tsuper.willUpdate(changed)\n\t\t// Vue's watch on the highlight's row: the portrait follows it.\n\t\tconst hot = this.glide.hot\n\t\tif (hot !== this.lastHot) {\n\t\t\tthis.lastHot = hot\n\t\t\tif (hot !== null && hot !== this.pick) {\n\t\t\t\tthis.pick = hot\n\t\t\t\tthis.plays += 1\n\t\t\t}\n\t\t}\n\t\tif (changed.has('open') && this.open) {\n\t\t\tthis.opened = true\n\t\t\tthis.pick = 0\n\t\t\tthis.plays += 1\n\t\t}\n\t}\n\n\tprotected updated(changed: PropertyValues) {\n\t\tsuper.updated(changed)\n\t\t// After the render that shows the panel (Vue's nextTick).\n\t\tif (changed.has('open') && this.open) this.glide.settle()\n\t\t// Vue's scoped `active`: on each item's slotted window while it shows.\n\t\tthis.all.forEach((_, i) => {\n\t\t\tconst slot = this.renderRoot.querySelector<HTMLSlotElement>(`slot[name=\"window-${i}\"]`)\n\t\t\tconst on = this.open && i === this.pick\n\t\t\tfor (const el of slot?.assignedElements() ?? []) {\n\t\t\t\tfor (const n of [el, ...el.querySelectorAll('*')]) if (n === el || 'active' in n) n.toggleAttribute('active', on)\n\t\t\t}\n\t\t})\n\t}\n\n\trender() {\n\t\tconst { open, current, label } = this\n\t\tconst all = this.all\n\t\tconst m = this.glide.mark\n\t\tconst hot = this.glide.hot\n\t\treturn html`<li data-ds=\"product-menu\" class=\"relative flex\" @pointerenter=${(e: PointerEvent) => this.hover(e, true)} @pointerleave=${(e: PointerEvent) => this.hover(e, false)}><button type=\"button\" aria-expanded=${String(open)} aria-controls=${this.panelId} data-nav-item aria-current=${current ? 'location' : nothing} class=${['ds-navlink-site relative flex cursor-pointer items-center gap-1 py-2 hover:text-fg', open || current ? 'text-fg' : '', current ? 'px-2.75' : 'px-4'].join(' ')} @pointerdown=${() => { this.open = !this.open }} @click=${(e: MouseEvent) => { if (e.detail === 0) this.open = !this.open }}>${current ? html`<span aria-hidden=\"true\" class=\"size-1.5 shrink-0 bg-home-red\"></span>` : nothing}${label}${icon(ChevronDown, 'chevron-down', { size: 14, strokeWidth: 1.5, class: ['transition-[rotate] duration-200 ease-out motion-reduce:transition-none', open ? 'rotate-180' : ''].join(' ').trim(), attrs: { 'aria-hidden': 'true' } })}</button><div id=${this.panelId} ?hidden=${!open} class=\"absolute top-full left-1/2 z-30 -translate-x-1/2 pt-3\"><div class=\"grid w-160 max-w-[calc(100vw-32px)] grid-cols-2 gap-px border border-edge bg-edge\"><div class=\"bg-surface p-2\"><p class=\"ds-product-menu-label px-3 pt-2 pb-1 text-meta text-fg-muted\">${label}</p><ul class=\"relative\" @mouseleave=${() => this.leave()} @focusout=${(e: FocusEvent) => this.leave(e)}>${m ? html`<li aria-hidden=\"true\" class=\"ds-product-mark pointer-events-none absolute inset-x-0 top-0 bg-surface-subtle\" ?data-shown=${this.glide.shown} ?data-instant=${this.glide.instant} style=${`height: ${m.h}px; transform: translateY(${m.y}px)`}><span class=\"ds-product-dot absolute top-3.5 left-3 size-2 bg-home-red\"></span></li>` : nothing}${all.map((item, i) => html`${i === this.items.length && this.more.length ? html`<li aria-hidden=\"true\" class=\"mx-3 my-1 border-t border-edge\"></li>` : nothing}<li class=\"relative\" data-glide-row><a href=${item.href} class=\"block px-3 py-2 outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-focus\" @mouseenter=${() => this.glide.point(i)} @focus=${() => this.glide.point(i)} @click=${() => { this.open = false }}><span class=\"ds-product-text block text-body leading-5 font-medium text-fg\" ?data-hot=${hot === i}>${item.label}</span><span class=\"block text-ui leading-5 text-fg-muted\">${item.desc}</span></a></li>`)}</ul></div><div class=\"bg-surface p-2\"><div aria-hidden=\"true\" class=\"relative grid h-full min-h-62.5 grid-cols-[minmax(0,1fr)] overflow-hidden bg-ds-neutral-200 text-ds-neutral-300\">${staticHtml`<${tag('grain')}></${tag('grain')}>`}${this.opened ? all.map((item, i) => html`<div class=\"ds-product-art relative flex items-center justify-center px-3 py-4 [grid-area:1/1]\" ?data-active=${i === this.pick}>${this.hasSlot(`window-${i}`) ? html`<slot name=${`window-${i}`} @slotchange=${() => this.requestUpdate()}></slot>` : html`<slot name=${`window-${i}`} @slotchange=${() => this.requestUpdate()}><div class=\"relative w-full max-w-60 border border-ds-neutral-300 bg-ds-neutral-100 text-off-white\"><div class=\"flex h-6 items-center gap-1 border-b border-ds-neutral-300 px-2\">${[1, 2, 3].map(() => html`<i class=\"size-1.5 bg-ds-neutral-300\"></i>`)}</div><div class=\"flex flex-col gap-1 p-3\"><span class=\"type-code-sm\">${item.label.toLowerCase()}</span><span class=\"type-meta text-ds-neutral-500\">${item.desc}</span></div></div></slot>`}</div>`) : nothing}</div></div></div></div></li>`\n\t}\n}\n\ndefine('product-menu', ProductMenu)\n"
+        },
+        {
+          "path": "elements/components/site/product-menu.css",
+          "content": "/* ProductMenu.vue's <style>, as it is. */\n/* The menu's small label: the website's capitals, 12px at 0.06em (home.css .label with uppercase). */\n.ds-product-menu-label { letter-spacing: var(--ds-tracking-tag); text-transform: uppercase; }\n.ds-navlink-site { transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-navlink-site:active { background: var(--ds-color-surface-subtle); }\n.ds-navlink-site:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }\n/* The highlight glides between items and fades when the pointer leaves the list; arriving from outside it fades in\n   where it lands, without the slide. Its red square grows in, and the hovered title eases right of it. */\n.ds-product-mark { opacity: 0; transition: transform var(--ds-duration-glide) var(--ds-easing-standard), opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-product-mark[data-shown] { opacity: 1; }\n.ds-product-mark[data-instant] { transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-product-dot { opacity: 0; transform: scale(0.5); transition: transform var(--ds-duration-glide) var(--ds-easing-standard), opacity var(--ds-duration-glide) var(--ds-easing-standard); }\n.ds-product-mark[data-shown] .ds-product-dot { opacity: 1; transform: none; }\n.ds-product-text { transition: transform var(--ds-duration-glide) var(--ds-easing-standard); }\n.ds-product-text[data-hot] { transform: translateX(16px); }\n/* Windows crossfade, a little quicker out than in; the one being left freezes where it is. */\n.ds-product-art { opacity: 0; transition: opacity var(--ds-duration-cell) ease; }\n.ds-product-art[data-active] { opacity: 1; transition-duration: var(--ds-duration-micro); }\n.ds-product-art:not([data-active]) * { animation-play-state: paused !important; }\n@media (prefers-reduced-motion: reduce) {\n  .ds-product-mark, .ds-product-dot { transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n  .ds-product-text { transition: none; }\n}"
+        },
+        {
+          "path": "elements/controllers/glide-mark.ts",
+          "content": "import type { ReactiveController, ReactiveControllerHost } from 'lit'\n\n/**\n * useGlideMark as a Lit controller: one block for a whole list (the website's Product menu highlight): it glides on\n * transform to the row under the pointer or focus, and rests on the current row (`rest`) when the pointer leaves, or\n * hides when there is none. Rows are the list's [data-glide-row] elements, in order, each positioned relative to the\n * list. The first placement doesn't glide. It settles once the host has first rendered. Draw the block with\n * <conare-glide-mark>, which uses this on its own list when it has `follow`.\n */\nexport class GlideMarkController implements ReactiveController {\n\tmark: { y: number, h: number } | null = null\n\tshown = false\n\tinstant = true\n\thot: number | null = null\n\n\tconstructor(private host: ReactiveControllerHost, private list: () => HTMLElement | null | undefined, private rest: () => number | null) {\n\t\thost.addController(this)\n\t}\n\n\thostConnected() {\n\t\tvoid this.host.updateComplete.then(() => this.settle())\n\t}\n\n\tprivate place(i: number | null, instantly: boolean) {\n\t\tconst row = i === null ? undefined : this.list()?.querySelectorAll<HTMLElement>('[data-glide-row]')[i]\n\t\tif (!row) {\n\t\t\tthis.shown = false\n\t\t\tthis.hot = null\n\t\t\tthis.host.requestUpdate()\n\t\t\treturn\n\t\t}\n\t\tthis.instant = instantly\n\t\tthis.mark = { y: row.offsetTop, h: row.offsetHeight }\n\t\tthis.shown = true\n\t\tthis.hot = i\n\t\tthis.host.requestUpdate()\n\t}\n\n\t/** The pointer or focus is on row `i`. */\n\tpoint = (i: number) => this.place(i, !this.shown)\n\t/** The pointer left the list: back to the resting row, gliding. */\n\tleave = () => this.place(this.rest(), false)\n\t/** The resting row changed: put the block there at once. */\n\tsettle = () => this.place(this.rest(), true)\n}\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/product-menu.js",
+        "elements/grain.js",
+        "elements/cell-burst.js",
+        "elements/product-viz.js",
+        "elements/eval-viz.js",
+        "elements/price-viz.js"
+      ],
+      "tag": "conare-product-menu",
+      "tags": [
+        "conare-product-menu"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "cell-burst"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-product-menu",
+            "name": "ProductMenu",
+            "module": "elements/product-menu.js",
+            "description": "The website header's Product dropdown, with a window for the item under the pointer.",
+            "attributes": [
+              {
+                "name": "items",
+                "field": "items",
+                "type": "ProductMenuItem[]",
+                "default": "[]"
+              },
+              {
+                "name": "more",
+                "field": "more",
+                "type": "ProductMenuItem[]",
+                "default": "[]",
+                "description": "The extra links after the rule."
+              },
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string",
+                "default": "'Product'"
+              },
+              {
+                "name": "current",
+                "field": "current",
+                "type": "boolean",
+                "default": "false",
+                "description": "The header's resting block and red square on the button."
+              },
+              {
+                "name": "open",
+                "field": "open",
+                "type": "boolean",
+                "default": "false",
+                "description": "Whether the panel is open."
+              },
+              {
+                "name": "pick",
+                "field": "pick",
+                "type": "number",
+                "default": "0"
+              },
+              {
+                "name": "plays",
+                "field": "plays",
+                "type": "number",
+                "default": "0"
+              },
+              {
+                "name": "opened",
+                "field": "opened",
+                "type": "boolean",
+                "default": "false"
+              }
+            ],
+            "properties": [
+              {
+                "name": "items",
+                "type": "ProductMenuItem[]",
+                "default": "[]",
+                "attribute": "items"
+              },
+              {
+                "name": "more",
+                "type": "ProductMenuItem[]",
+                "default": "[]",
+                "description": "The extra links after the rule.",
+                "attribute": "more"
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "default": "'Product'",
+                "attribute": "label"
+              },
+              {
+                "name": "current",
+                "type": "boolean",
+                "default": "false",
+                "description": "The header's resting block and red square on the button.",
+                "attribute": "current"
+              },
+              {
+                "name": "open",
+                "type": "boolean",
+                "default": "false",
+                "description": "Whether the panel is open.",
+                "attribute": "open"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "window-0",
+                "description": "The first item's window (window-1 the second, and so on through the more links)."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "The Product menu",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/product-menu/Site.html",
+          "content": "<!-- The menu, opened as the frame loads; point at a product to change the window. Each product shows its own window\n     (product-viz) over a sheet of cells; Benchmarks and Price vs accuracy show the leaderboard (eval-viz) and the price\n     chart (price-viz), drawn at their own width and scaled to fit, laid over the panel so they never set its height.\n     Each plays again every time it comes into view (the menu sets their `active`). -->\n<div class=\"relative flex min-h-140 items-start justify-center px-6 py-4\">\n  <ul class=\"flex text-body leading-none text-fg-soft\">\n    <conare-product-menu id=\"product\" items='[{\"label\": \"Search\", \"desc\": \"Store documents and query them.\", \"href\": \"#search\"}, {\"label\": \"Sync\", \"desc\": \"Keep your apps in a namespace.\", \"href\": \"#sync\"}, {\"label\": \"Parse\", \"desc\": \"Read any file in full, every row and cell.\", \"href\": \"#parse\"}, {\"label\": \"Embed\", \"desc\": \"Embeddings for any vector database.\", \"href\": \"#embed\"}, {\"label\": \"Rerank\", \"desc\": \"Put the best passages first.\", \"href\": \"#rerank\"}]' more='[{\"label\": \"Benchmarks\", \"desc\": \"Accuracy you can check, losses included.\", \"href\": \"#benchmarks\"}, {\"label\": \"Price vs accuracy\", \"desc\": \"Most accurate, and the cheapest.\", \"href\": \"#price\"}]'>\n    <conare-cell-burst slot=\"window-0\" seed=\"71\" jumble></conare-cell-burst>\n    <conare-product-viz slot=\"window-0\" product=\"search\" relative></conare-product-viz>\n    <conare-cell-burst slot=\"window-1\" seed=\"90\" jumble></conare-cell-burst>\n    <conare-product-viz slot=\"window-1\" product=\"sync\" relative></conare-product-viz>\n    <conare-cell-burst slot=\"window-2\" seed=\"109\" jumble></conare-cell-burst>\n    <conare-product-viz slot=\"window-2\" product=\"parse\" relative></conare-product-viz>\n    <conare-cell-burst slot=\"window-3\" seed=\"128\" jumble></conare-cell-burst>\n    <conare-product-viz slot=\"window-3\" product=\"embed\" relative></conare-product-viz>\n    <conare-cell-burst slot=\"window-4\" seed=\"147\" jumble></conare-cell-burst>\n    <conare-product-viz slot=\"window-4\" product=\"rerank\" relative></conare-product-viz>\n    <div slot=\"window-5\" class=\"absolute inset-0 flex items-center justify-center overflow-hidden px-3 py-4\">\n      <conare-cell-burst seed=\"131\" jumble></conare-cell-burst>\n      <div class=\"relative flex w-120 shrink-0 origin-center scale-[0.62] justify-center\"><conare-eval-viz limit=\"5\" item='{\"id\": \"acme-retrieval\", \"name\": \"Acme retrieval benchmark\", \"description\": \"Search over 19,252 business document pages with 2,419 questions.\", \"metric\": \"nDCG@10\", \"better\": \"higher\", \"model\": \"conare-embed-1\", \"score\": 67, \"rank\": {\"n\": 1, \"of\": 6}, \"rows\": [{\"name\": \"conare-embed-1\", \"value\": 67.02, \"ours\": true}, {\"name\": \"Provider B\", \"value\": 66.48}, {\"name\": \"Provider C\", \"value\": 64.24}, {\"name\": \"Provider D\", \"value\": 60.64}, {\"name\": \"Provider E\", \"value\": 58.7}, {\"name\": \"BM25\", \"value\": 49.68}], \"max\": 80}'></conare-eval-viz></div>\n    </div>\n    <div slot=\"window-6\" class=\"absolute inset-0 flex items-center justify-center overflow-hidden px-3 py-4\">\n      <conare-cell-burst seed=\"154\" jumble></conare-cell-burst>\n      <div class=\"relative flex w-120 shrink-0 origin-center scale-[0.62] justify-center\"><conare-price-viz data='{\"benchmark\": \"Acme retrieval benchmark\", \"metric\": \"nDCG@10\", \"points\": [{\"name\": \"conare-embed-1\", \"price\": 0.1, \"score\": 67.02, \"ours\": true}, {\"name\": \"Provider B\", \"price\": 1.5, \"score\": 62.25}, {\"name\": \"Provider C\", \"price\": 0.12, \"score\": 60.64}, {\"name\": \"Provider D\", \"price\": 0.2, \"score\": 58.7}]}'></conare-price-viz></div>\n    </div>\n    </conare-product-menu>\n  </ul>\n</div>\n<script type=\"module\">\n  await customElements.whenDefined('conare-product-menu')\n  const menu = document.getElementById('product')\n  setTimeout(() => { menu.open = true }, 300)\n</script>\n"
+        }
+      ]
+    }
+  }
+}

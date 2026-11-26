@@ -1,0 +1,26 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "meter",
+  "type": "registry:ui",
+  "title": "Meter",
+  "description": "Progress as a 4px bar with an ink fill (the largest share red), or as one 6px square per step: done in ink, the next in red, the rest an empty hairline. It covers shadcn's progress.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Meter.tsx",
+      "type": "registry:ui",
+      "content": "import { cn } from '@/lib/cn'\n\n// Progress as a bar (console2.css .v2-meter): a 4px hairline-grey track with an ink fill. `tone=\"top\"` fills it red,\n// for the largest share in a list (the bill's amounts); `tone=\"rest\"` in neutral-500, for what the rest add up to.\n// `label` names it for screen readers (role meter); `decorative` hides it when the row's text already says it, such\n// as a share bar in a table. `live` eases the fill linearly as the value moves (a job's progress), on transform from the\n// left, still for reduced motion.\nexport interface MeterProps { value: number, max?: number, label?: string, tone?: 'default' | 'top' | 'rest', decorative?: boolean, live?: boolean, className?: string }\n\nconst FILL = { default: 'bg-surface-inverse', top: 'bg-edge-accent', rest: 'bg-ds-neutral-500' }\n\nexport function Meter({ value, max = 100, label, tone = 'default', decorative, live, className }: MeterProps) {\n  const share = Math.max(0, Math.min(1, value / (max || 1)))\n  return (\n    <>\n      <style href=\"ds-meter\" precedence=\"ds\">{css}</style>\n      <div\n        data-ds=\"meter\"\n        className={cn('block h-1 bg-edge', className)}\n        role={decorative ? undefined : 'meter'}\n        aria-hidden={decorative || undefined}\n        aria-label={decorative ? undefined : label}\n        aria-valuemin={decorative ? undefined : 0}\n        aria-valuemax={decorative ? undefined : max}\n        aria-valuenow={decorative ? undefined : value}\n      >\n        <span className={cn('block h-full', [FILL[tone], live && 'ds-meter-live'])} style={live ? { transform: `scaleX(${share})` } : { width: `${share * 100}%` }} />\n      </div>\n    </>\n  )\n}\n\nexport default Meter\n\nconst css = `\n/* A job's progress moves on its own clock, so it eases linearly (console2.css .v2-meter[data-state]). */\n.ds-meter-live { width: 100%; transform-origin: left; transition: transform var(--ds-duration-progress) linear; }\n@media (prefers-reduced-motion: reduce) { .ds-meter-live { transition: none; } }\n`\n"
+    },
+    {
+      "path": "components/ui/StepMeter.tsx",
+      "type": "registry:ui",
+      "content": "import { cn } from '@/lib/cn'\n\n// Steps as squares (SetupMeter.vue, after the overview's pixel meters): 6px squares 2px apart, done steps ink, the next\n// one red, the rest an empty hairline. A picture: put the words beside it (\"2 of 4 done\").\nexport interface StepMeterProps { steps: boolean[], className?: string }\n\nexport function StepMeter({ steps, className }: StepMeterProps) {\n  const next = steps.findIndex(f => !f)\n  return (\n    <span data-ds=\"step-meter\" className={cn('inline-flex gap-0.5', className)} aria-hidden=\"true\">\n      {steps.map((done, i) => (\n        <i key={i} className={cn('size-1.5 border', done ? 'border-surface-inverse bg-surface-inverse' : i === next ? 'border-edge-accent bg-edge-accent' : 'border-edge-strong')} />\n      ))}\n    </span>\n  )\n}\n\nexport default StepMeter\n"
+    },
+    {
+      "path": "lib/cn.ts",
+      "type": "registry:lib",
+      "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+    }
+  ]
+}

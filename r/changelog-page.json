@@ -1,0 +1,285 @@
+{
+  "name": "changelog-page",
+  "title": "Changelog page",
+  "type": "registry:block",
+  "group": "site",
+  "description": "What changed, newest first: the head, then each release under a hairline, its date and version on the left, held in view as its notes pass, the title and the notes beside it, and the closing band.",
+  "use_for": "A product's changelog.",
+  "never": [
+    "Marketing copy in a release: say what changed",
+    "Releases without a date"
+  ],
+  "source": "No changelog page in conare-web (its blog has a Changelog category); laid out as its policy pages (app/components/home/Legal.vue) with DocsBlocks for the notes",
+  "body": "Built on `site-page`: `header`, `footer` and `announcement` are its props, and the `logo` and `actions` slots go to the header (`sheet-actions` too, in web components). Each entry's `blocks` takes docs-blocks' blocks; its `id` is the anchor.",
+  "requires": [
+    "button-link",
+    "call-to-action",
+    "docs-blocks",
+    "section-head",
+    "site-page",
+    "tag"
+  ],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/site/ChangelogPage.vue",
+      "content": "<script setup lang=\"ts\">\nimport ButtonLink from '@/components/site/ButtonLink.vue'\nimport CallToAction from '@/components/site/CallToAction.vue'\nimport DocsBlocks, { type DocsBlock } from '@/components/site/DocsBlocks.vue'\nimport SectionHead from '@/components/site/SectionHead.vue'\nimport SitePage, { type SiteAction, type SiteAnnouncement, type SiteFooterData, type SiteHeaderData } from '@/components/site/SitePage.vue'\nimport Tag from '@/components/ui/Tag.vue'\n\n// What changed, newest first: the head, then each release under a hairline, laid out as a policy page (Legal.vue): its\n// date and version tag on the left, held in view from 1024px while its notes pass, the title and the notes\n// (docs-blocks) in a 720px column beside it. Then the closing band.\nexport type ChangelogEntry = { id: string, date: string, version?: string, title: string, blocks: DocsBlock[] }\ndefineProps<{\n  header: SiteHeaderData, footer: SiteFooterData, announcement?: SiteAnnouncement\n  head: { tag?: string, title: string, body?: string }\n  entries: ChangelogEntry[]\n  cta: { title: string, action: SiteAction }\n}>()\n</script>\n\n<template>\n  <SitePage data-ds=\"changelog-page\" :header=\"header\" :footer=\"footer\" :announcement=\"announcement\">\n      <template #logo><slot name=\"logo\" /></template>\n      <template #actions=\"{ place }\"><slot name=\"actions\" :place=\"place\" /></template>\n    <section aria-labelledby=\"changelog-page-title\" class=\"mx-auto max-w-[1440px] px-4 pt-14 pb-32 sm:px-6 lg:px-10 lg:pt-20 lg:pb-40\">\n      <SectionHead as=\"h1\" title-id=\"changelog-page-title\" :tag=\"head.tag\" :title=\"head.title\" :body=\"head.body\" />\n      <ol class=\"mx-auto mt-16 flex max-w-[1008px] flex-col gap-16\">\n        <li v-for=\"e in entries\" :id=\"e.id\" :key=\"e.id\" class=\"grid scroll-mt-24 grid-cols-[minmax(0,1fr)] gap-6 border-t border-edge pt-10 lg:grid-cols-[224px_minmax(0,720px)] lg:gap-16\">\n          <div class=\"flex items-center gap-3 self-start lg:sticky lg:top-28 lg:flex-col lg:items-start\">\n            <time class=\"type-ui text-fg-muted\">{{ e.date }}</time>\n            <Tag v-if=\"e.version\">{{ e.version }}</Tag>\n          </div>\n          <div class=\"min-w-0\">\n            <h2 class=\"font-heading text-heading-2 font-normal tracking-tight text-fg\">{{ e.title }}</h2>\n            <div class=\"mt-6\"><DocsBlocks :blocks=\"e.blocks\" /></div>\n          </div>\n        </li>\n      </ol>\n    </section>\n    <CallToAction :title=\"cta.title\">\n      <ButtonLink :href=\"cta.action.href\" variant=\"light\" fill=\"black\">{{ cta.action.label }}</ButtonLink>\n    </CallToAction>\n  </SitePage>\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "Three releases, on sample data",
+      "center": false,
+      "half": false,
+      "path": "examples/changelog-page/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport ChangelogPage from '@/components/site/ChangelogPage.vue'\nimport Button from '@/components/ui/Button.vue'\nimport PixelButton from '@/components/ui/PixelButton.vue'\nimport type { ChangelogEntry } from '@/components/site/ChangelogPage.vue'\n// Three releases on sample data, newest first.\nconst header = {\n  \"items\": [\n    {\n      \"label\": \"Search\",\n      \"desc\": \"Find the answer in any file.\",\n      \"href\": \"#search\"\n    },\n    {\n      \"label\": \"Sync\",\n      \"desc\": \"Keep your apps in step.\",\n      \"href\": \"#sync\"\n    },\n    {\n      \"label\": \"Parse\",\n      \"desc\": \"Read every row and cell.\",\n      \"href\": \"#parse\"\n    }\n  ],\n  \"links\": [\n    {\n      \"label\": \"Pricing\",\n      \"href\": \"#pricing\"\n    },\n    {\n      \"label\": \"Blog\",\n      \"href\": \"#blog\"\n    },\n    {\n      \"label\": \"Docs\",\n      \"href\": \"#docs\"\n    }\n  ],\n  \"homeLabel\": \"Acme home\"\n}\nconst footer = {\n  \"columns\": [\n    {\n      \"title\": \"Product\",\n      \"links\": [\n        {\n          \"label\": \"Search\",\n          \"href\": \"#search\"\n        },\n        {\n          \"label\": \"Sync\",\n          \"href\": \"#sync\"\n        },\n        {\n          \"label\": \"Parse\",\n          \"href\": \"#parse\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Company\",\n      \"links\": [\n        {\n          \"label\": \"About\",\n          \"href\": \"#about\"\n        },\n        {\n          \"label\": \"Blog\",\n          \"href\": \"#blog\"\n        },\n        {\n          \"label\": \"Changelog\",\n          \"href\": \"#changelog\"\n        },\n        {\n          \"label\": \"Contact\",\n          \"href\": \"#contact\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Resources\",\n      \"links\": [\n        {\n          \"label\": \"Docs\",\n          \"href\": \"#docs\"\n        },\n        {\n          \"label\": \"Pricing\",\n          \"href\": \"#pricing\"\n        },\n        {\n          \"label\": \"Status\",\n          \"href\": \"#status\"\n        }\n      ]\n    }\n  ],\n  \"tagline\": \"Search any data you bring. Get the right answer.\",\n  \"legal\": \"© 2026 Acme, Inc.\",\n  \"legalLinks\": [\n    {\n      \"label\": \"Privacy\",\n      \"href\": \"#privacy\"\n    },\n    {\n      \"label\": \"Terms\",\n      \"href\": \"#terms\"\n    }\n  ],\n  \"name\": \"Acme\"\n}\nconst head = {\n  \"tag\": \"Changelog\",\n  \"title\": \"What changed.\",\n  \"body\": \"Every release, newest first.\"\n}\nconst entries: ChangelogEntry[] = [\n  {\n    \"id\": \"v2-4\",\n    \"date\": \"Nov 12, 2026\",\n    \"version\": \"v2.4\",\n    \"title\": \"Sources on every answer\",\n    \"blocks\": [\n      {\n        \"kind\": \"p\",\n        \"text\": \"Search returns the passages behind each answer, with their scores.\"\n      },\n      {\n        \"kind\": \"list\",\n        \"items\": [\n          \"Passages come back in `sources`.\",\n          \"Scores share one scale across namespaces.\"\n        ]\n      }\n    ]\n  },\n  {\n    \"id\": \"v2-3\",\n    \"date\": \"Nov 4, 2026\",\n    \"version\": \"v2.3\",\n    \"title\": \"Shared drives\",\n    \"blocks\": [\n      {\n        \"kind\": \"p\",\n        \"text\": \"Connect a shared drive once; every folder in it stays in step.\"\n      }\n    ]\n  },\n  {\n    \"id\": \"v2-2\",\n    \"date\": \"Oct 9, 2026\",\n    \"version\": \"v2.2\",\n    \"title\": \"Deletes that stay deleted\",\n    \"blocks\": [\n      {\n        \"kind\": \"p\",\n        \"text\": \"Removing a record removes it from the index in the same call.\"\n      },\n      {\n        \"kind\": \"callout\",\n        \"tone\": \"note\",\n        \"text\": \"Nothing to change on your side.\"\n      }\n    ]\n  }\n]\nconst cta = {\n  \"title\": \"See it on your own data.\",\n  \"action\": {\n    \"label\": \"Book a demo\",\n    \"href\": \"#demo\"\n  }\n}\n</script>\n\n<template>\n  <div class=\"-m-8\">\n    <ChangelogPage\n      :header=\"header\"\n      :footer=\"footer\"\n      :head=\"head\"\n      :entries=\"entries\"\n      :cta=\"cta\"\n    >\n      <template #logo><span class=\"font-heading text-heading-3 text-fg\">Acme</span></template>\n      <template #actions><Button href=\"#contact\">Contact us</Button><PixelButton href=\"#sign-in\">Sign in</PixelButton></template>\n    </ChangelogPage>\n  </div>\n</template>\n",
+      "requires": [
+        "button",
+        "button-link",
+        "call-to-action",
+        "docs-blocks",
+        "section-head",
+        "site-page",
+        "tag"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/site/ChangelogPage.tsx",
+          "content": "import { ButtonLink } from '@/react/components/site/ButtonLink'\nimport { CallToAction } from '@/react/components/site/CallToAction'\nimport { DocsBlocks, type DocsBlock } from '@/react/components/site/DocsBlocks'\nimport { SectionHead } from '@/react/components/site/SectionHead'\nimport { SitePage, type SiteAction, type SiteFrameProps } from '@/react/components/site/SitePage'\nimport { Tag } from '@/react/components/ui/Tag'\n\n// What changed, newest first: the head, then each release under a hairline, laid out as a policy page (Legal.vue): its\n// date and version tag on the left, held in view from 1024px while its notes pass, the title and the notes\n// (docs-blocks) in a 720px column beside it. Then the closing band.\nexport type ChangelogEntry = { id: string, date: string, version?: string, title: string, blocks: DocsBlock[] }\nexport interface ChangelogPageProps extends SiteFrameProps {\n  head: { tag?: string, title: string, body?: string }\n  entries: ChangelogEntry[]\n  cta: { title: string, action: SiteAction }\n}\n\nexport function ChangelogPage({ header, footer, announcement, logo, actions, head, entries, cta }: ChangelogPageProps) {\n  return (\n    <SitePage data-ds=\"changelog-page\" header={header} footer={footer} announcement={announcement} logo={logo} actions={actions}>\n      <section aria-labelledby=\"changelog-page-title\" className=\"mx-auto max-w-[1440px] px-4 pt-14 pb-32 sm:px-6 lg:px-10 lg:pt-20 lg:pb-40\">\n        <SectionHead as=\"h1\" titleId=\"changelog-page-title\" tag={head.tag} title={head.title} body={head.body} />\n        <ol className=\"mx-auto mt-16 flex max-w-[1008px] flex-col gap-16\">\n          {entries.map(e => (\n            <li key={e.id} id={e.id} className=\"grid scroll-mt-24 grid-cols-[minmax(0,1fr)] gap-6 border-t border-edge pt-10 lg:grid-cols-[224px_minmax(0,720px)] lg:gap-16\">\n              <div className=\"flex items-center gap-3 self-start lg:sticky lg:top-28 lg:flex-col lg:items-start\">\n                <time className=\"type-ui text-fg-muted\">{e.date}</time>\n                {e.version && <Tag>{e.version}</Tag>}\n              </div>\n              <div className=\"min-w-0\">\n                <h2 className=\"font-heading text-heading-2 font-normal tracking-tight text-fg\">{e.title}</h2>\n                <div className=\"mt-6\"><DocsBlocks blocks={e.blocks} /></div>\n              </div>\n            </li>\n          ))}\n        </ol>\n      </section>\n      <CallToAction title={cta.title}>\n        <ButtonLink href={cta.action.href} variant=\"light\" fill=\"black\">{cta.action.label}</ButtonLink>\n      </CallToAction>\n    </SitePage>\n  )\n}\n\nexport default ChangelogPage\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "button-link",
+        "call-to-action",
+        "docs-blocks",
+        "section-head",
+        "site-page",
+        "tag"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "ChangelogPage",
+            "file": "react/components/site/ChangelogPage.tsx",
+            "props": [
+              {
+                "name": "head",
+                "type": "{ tag?: string, title: string, body?: string }",
+                "required": true
+              },
+              {
+                "name": "entries",
+                "type": "ChangelogEntry[]",
+                "required": true
+              },
+              {
+                "name": "cta",
+                "type": "{ title: string, action: SiteAction }",
+                "required": true
+              }
+            ],
+            "extends": [
+              "SiteFrameProps"
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "Three releases, on sample data",
+          "center": false,
+          "half": false,
+          "path": "react/examples/changelog-page/Site.tsx",
+          "content": "import { ChangelogPage } from '@/react/components/site/ChangelogPage'\nimport { Button } from '@/react/components/ui/Button'\nimport { PixelButton } from '@/react/components/ui/PixelButton'\nimport type { ChangelogEntry } from '@/react/components/site/ChangelogPage'\n// Three releases on sample data, newest first.\nconst header = {\n  \"items\": [\n    {\n      \"label\": \"Search\",\n      \"desc\": \"Find the answer in any file.\",\n      \"href\": \"#search\"\n    },\n    {\n      \"label\": \"Sync\",\n      \"desc\": \"Keep your apps in step.\",\n      \"href\": \"#sync\"\n    },\n    {\n      \"label\": \"Parse\",\n      \"desc\": \"Read every row and cell.\",\n      \"href\": \"#parse\"\n    }\n  ],\n  \"links\": [\n    {\n      \"label\": \"Pricing\",\n      \"href\": \"#pricing\"\n    },\n    {\n      \"label\": \"Blog\",\n      \"href\": \"#blog\"\n    },\n    {\n      \"label\": \"Docs\",\n      \"href\": \"#docs\"\n    }\n  ],\n  \"homeLabel\": \"Acme home\"\n}\nconst footer = {\n  \"columns\": [\n    {\n      \"title\": \"Product\",\n      \"links\": [\n        {\n          \"label\": \"Search\",\n          \"href\": \"#search\"\n        },\n        {\n          \"label\": \"Sync\",\n          \"href\": \"#sync\"\n        },\n        {\n          \"label\": \"Parse\",\n          \"href\": \"#parse\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Company\",\n      \"links\": [\n        {\n          \"label\": \"About\",\n          \"href\": \"#about\"\n        },\n        {\n          \"label\": \"Blog\",\n          \"href\": \"#blog\"\n        },\n        {\n          \"label\": \"Changelog\",\n          \"href\": \"#changelog\"\n        },\n        {\n          \"label\": \"Contact\",\n          \"href\": \"#contact\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Resources\",\n      \"links\": [\n        {\n          \"label\": \"Docs\",\n          \"href\": \"#docs\"\n        },\n        {\n          \"label\": \"Pricing\",\n          \"href\": \"#pricing\"\n        },\n        {\n          \"label\": \"Status\",\n          \"href\": \"#status\"\n        }\n      ]\n    }\n  ],\n  \"tagline\": \"Search any data you bring. Get the right answer.\",\n  \"legal\": \"© 2026 Acme, Inc.\",\n  \"legalLinks\": [\n    {\n      \"label\": \"Privacy\",\n      \"href\": \"#privacy\"\n    },\n    {\n      \"label\": \"Terms\",\n      \"href\": \"#terms\"\n    }\n  ],\n  \"name\": \"Acme\"\n}\nconst head = {\n  \"tag\": \"Changelog\",\n  \"title\": \"What changed.\",\n  \"body\": \"Every release, newest first.\"\n}\nconst entries: ChangelogEntry[] = [\n  {\n    \"id\": \"v2-4\",\n    \"date\": \"Nov 12, 2026\",\n    \"version\": \"v2.4\",\n    \"title\": \"Sources on every answer\",\n    \"blocks\": [\n      {\n        \"kind\": \"p\",\n        \"text\": \"Search returns the passages behind each answer, with their scores.\"\n      },\n      {\n        \"kind\": \"list\",\n        \"items\": [\n          \"Passages come back in `sources`.\",\n          \"Scores share one scale across namespaces.\"\n        ]\n      }\n    ]\n  },\n  {\n    \"id\": \"v2-3\",\n    \"date\": \"Nov 4, 2026\",\n    \"version\": \"v2.3\",\n    \"title\": \"Shared drives\",\n    \"blocks\": [\n      {\n        \"kind\": \"p\",\n        \"text\": \"Connect a shared drive once; every folder in it stays in step.\"\n      }\n    ]\n  },\n  {\n    \"id\": \"v2-2\",\n    \"date\": \"Oct 9, 2026\",\n    \"version\": \"v2.2\",\n    \"title\": \"Deletes that stay deleted\",\n    \"blocks\": [\n      {\n        \"kind\": \"p\",\n        \"text\": \"Removing a record removes it from the index in the same call.\"\n      },\n      {\n        \"kind\": \"callout\",\n        \"tone\": \"note\",\n        \"text\": \"Nothing to change on your side.\"\n      }\n    ]\n  }\n]\nconst cta = {\n  \"title\": \"See it on your own data.\",\n  \"action\": {\n    \"label\": \"Book a demo\",\n    \"href\": \"#demo\"\n  }\n}\nexport default function Site() {\n  return (\n    <div className=\"-m-8\">\n      <ChangelogPage\n        header={header}\n        footer={footer}\n        head={head}\n        entries={entries}\n        cta={cta}\n        logo={<span className=\"font-heading text-heading-3 text-fg\">Acme</span>}\n        actions={() => (<><Button href=\"#contact\">Contact us</Button><PixelButton href=\"#sign-in\">Sign in</PixelButton></>)}\n      />\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "button",
+            "button-link",
+            "call-to-action",
+            "docs-blocks",
+            "section-head",
+            "site-page",
+            "tag"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/site/changelog-page.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { define, tag } from '@/elements/lib/element'\nimport { SiteFrameElement, closing } from '@/elements/components/site/site-page'\nimport type { DocsBlock } from '@/elements/components/site/docs-blocks'\nimport '@/elements/components/site/docs-blocks'\nimport '@/elements/components/site/section-head'\nimport '@/elements/components/ui/tag'\nimport styles from 'virtual:tw'\n\n// ChangelogPage.vue as <conare-changelog-page>: what changed, newest first: the head, then each release under a\n// hairline, laid out as a policy page (Legal.vue): its date and version tag on the left, held in view from 1024px\n// while its notes pass, the title and the notes (docs-blocks) in a 720px column beside it. Then the closing band, in\n// the site's frame (site-page).\nexport type ChangelogEntry = { id: string, date: string, version?: string, title: string, blocks: DocsBlock[] }\n\n/**\n * @summary What changed: each release with its date, version and notes, newest first.\n * @slot logo - The logo in the header's home link.\n * @slot actions - The header's buttons.\n * @slot sheet-actions - The same buttons again, for the header's sheet on phones.\n */\nexport class ChangelogPage extends SiteFrameElement {\n\tstatic styles = [SiteFrameElement.styles, styles]\n\tstatic properties = { head: { type: Object }, entries: { type: Array }, cta: { type: Object } }\n\n\thead: { tag?: string, title: string, body?: string } = { title: '' }\n\tentries: ChangelogEntry[] = []\n\tcta = { title: '', action: { label: '', href: '' } }\n\n\trender() {\n\t\tconst [sectionHead, blocks, badge] = [tag('section-head'), tag('docs-blocks'), tag('tag')]\n\t\tconst h = this.head\n\t\treturn this.frame('changelog-page', staticHtml`<section aria-labelledby=\"changelog-page-title\" class=\"mx-auto max-w-[1440px] px-4 pt-14 pb-32 sm:px-6 lg:px-10 lg:pt-20 lg:pb-40\"><${sectionHead} as=\"h1\" title-id=\"changelog-page-title\" .tag=${h.tag} .heading=${h.title} .body=${h.body}></${sectionHead}><ol class=\"mx-auto mt-16 flex max-w-[1008px] flex-col gap-16\">${this.entries.map((e) => html`<li id=${e.id} class=\"grid scroll-mt-24 grid-cols-[minmax(0,1fr)] gap-6 border-t border-edge pt-10 lg:grid-cols-[224px_minmax(0,720px)] lg:gap-16\"><div class=\"flex items-center gap-3 self-start lg:sticky lg:top-28 lg:flex-col lg:items-start\"><time class=\"type-ui text-fg-muted\">${e.date}</time>${e.version ? staticHtml`<${badge}>${e.version}</${badge}>` : nothing}</div><div class=\"min-w-0\"><h2 class=\"font-heading text-heading-2 font-normal tracking-tight text-fg\">${e.title}</h2><div class=\"mt-6\">${staticHtml`<${blocks} .blocks=${e.blocks}></${blocks}>`}</div></div></li>`)}</ol></section>${closing(this.cta)}`)\n\t}\n}\n\ndefine('changelog-page', ChangelogPage)\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/changelog-page.js",
+        "elements/site-page.js",
+        "elements/docs-blocks.js",
+        "elements/section-head.js",
+        "elements/tag.js",
+        "elements/site-footer.js",
+        "elements/site-header.js",
+        "elements/product-menu.js",
+        "elements/announcement-bar.js",
+        "elements/button-link.js",
+        "elements/call-to-action.js",
+        "elements/code-block.js",
+        "elements/docs-fields.js",
+        "elements/docs-inline.js",
+        "elements/docs-table.js",
+        "elements/site-tag.js",
+        "elements/grain.js",
+        "elements/roll-text.js",
+        "elements/cell-burst.js",
+        "elements/code-copy.js",
+        "elements/button.js",
+        "elements/pixel-button.js"
+      ],
+      "tag": "conare-changelog-page",
+      "tags": [
+        "conare-changelog-page"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "announcement-bar",
+        "button-link",
+        "call-to-action",
+        "cell-burst",
+        "code-block",
+        "docs-blocks",
+        "product-menu",
+        "roll-text",
+        "section-head",
+        "site-footer",
+        "site-header",
+        "site-page",
+        "tag"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-changelog-page",
+            "name": "ChangelogPage",
+            "module": "elements/changelog-page.js",
+            "description": "What changed: each release with its date, version and notes, newest first.",
+            "attributes": [
+              {
+                "name": "head",
+                "field": "head",
+                "type": "{ tag?: string; title: string; body?: string; }",
+                "default": "{ title: '' }"
+              },
+              {
+                "name": "entries",
+                "field": "entries",
+                "type": "ChangelogEntry[]",
+                "default": "[]"
+              },
+              {
+                "name": "cta",
+                "field": "cta",
+                "type": "{ title: string; action: { label: string; href: string; }; }",
+                "default": "{ title: '', action: { label: '', href: '' } }"
+              },
+              {
+                "name": "header",
+                "field": "header",
+                "type": "SiteHeaderData",
+                "default": "{ items: [], links: [] }",
+                "description": "The header: items, more, links, productCurrent, homeHref, homeLabel."
+              },
+              {
+                "name": "footer",
+                "field": "footer",
+                "type": "SiteFooterData",
+                "default": "{ columns: [] }",
+                "description": "The footer: columns, tagline, legal, legalLinks, name."
+              },
+              {
+                "name": "announcement",
+                "field": "announcement",
+                "type": "SiteAnnouncement | undefined",
+                "description": "The bar above the header: tag, text, cta, href."
+              }
+            ],
+            "properties": [
+              {
+                "name": "head",
+                "type": "{ tag?: string; title: string; body?: string; }",
+                "default": "{ title: '' }",
+                "attribute": "head"
+              },
+              {
+                "name": "entries",
+                "type": "ChangelogEntry[]",
+                "default": "[]",
+                "attribute": "entries"
+              },
+              {
+                "name": "cta",
+                "type": "{ title: string; action: { label: string; href: string; }; }",
+                "default": "{ title: '', action: { label: '', href: '' } }",
+                "attribute": "cta"
+              },
+              {
+                "name": "header",
+                "type": "SiteHeaderData",
+                "default": "{ items: [], links: [] }",
+                "description": "The header: items, more, links, productCurrent, homeHref, homeLabel.",
+                "attribute": "header"
+              },
+              {
+                "name": "footer",
+                "type": "SiteFooterData",
+                "default": "{ columns: [] }",
+                "description": "The footer: columns, tagline, legal, legalLinks, name.",
+                "attribute": "footer"
+              },
+              {
+                "name": "announcement",
+                "type": "SiteAnnouncement | undefined",
+                "description": "The bar above the header: tag, text, cta, href.",
+                "attribute": "announcement"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "logo",
+                "description": "The logo in the header's home link."
+              },
+              {
+                "name": "actions",
+                "description": "The header's buttons."
+              },
+              {
+                "name": "sheet-actions",
+                "description": "The same buttons again, for the header's sheet on phones."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "Three releases, on sample data",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/changelog-page/Site.html",
+          "content": "<!-- Three releases on sample data, newest first. -->\n<div class=\"-m-8\">\n  <conare-changelog-page\n    header='{\"items\": [{\"label\": \"Search\", \"desc\": \"Find the answer in any file.\", \"href\": \"#search\"}, {\"label\": \"Sync\", \"desc\": \"Keep your apps in step.\", \"href\": \"#sync\"}, {\"label\": \"Parse\", \"desc\": \"Read every row and cell.\", \"href\": \"#parse\"}], \"links\": [{\"label\": \"Pricing\", \"href\": \"#pricing\"}, {\"label\": \"Blog\", \"href\": \"#blog\"}, {\"label\": \"Docs\", \"href\": \"#docs\"}], \"homeLabel\": \"Acme home\"}'\n    footer='{\"columns\": [{\"title\": \"Product\", \"links\": [{\"label\": \"Search\", \"href\": \"#search\"}, {\"label\": \"Sync\", \"href\": \"#sync\"}, {\"label\": \"Parse\", \"href\": \"#parse\"}]}, {\"title\": \"Company\", \"links\": [{\"label\": \"About\", \"href\": \"#about\"}, {\"label\": \"Blog\", \"href\": \"#blog\"}, {\"label\": \"Changelog\", \"href\": \"#changelog\"}, {\"label\": \"Contact\", \"href\": \"#contact\"}]}, {\"title\": \"Resources\", \"links\": [{\"label\": \"Docs\", \"href\": \"#docs\"}, {\"label\": \"Pricing\", \"href\": \"#pricing\"}, {\"label\": \"Status\", \"href\": \"#status\"}]}], \"tagline\": \"Search any data you bring. Get the right answer.\", \"legal\": \"© 2026 Acme, Inc.\", \"legalLinks\": [{\"label\": \"Privacy\", \"href\": \"#privacy\"}, {\"label\": \"Terms\", \"href\": \"#terms\"}], \"name\": \"Acme\"}'\n    head='{\"tag\": \"Changelog\", \"title\": \"What changed.\", \"body\": \"Every release, newest first.\"}'\n    entries='[{\"id\": \"v2-4\", \"date\": \"Nov 12, 2026\", \"version\": \"v2.4\", \"title\": \"Sources on every answer\", \"blocks\": [{\"kind\": \"p\", \"text\": \"Search returns the passages behind each answer, with their scores.\"}, {\"kind\": \"list\", \"items\": [\"Passages come back in `sources`.\", \"Scores share one scale across namespaces.\"]}]}, {\"id\": \"v2-3\", \"date\": \"Nov 4, 2026\", \"version\": \"v2.3\", \"title\": \"Shared drives\", \"blocks\": [{\"kind\": \"p\", \"text\": \"Connect a shared drive once; every folder in it stays in step.\"}]}, {\"id\": \"v2-2\", \"date\": \"Oct 9, 2026\", \"version\": \"v2.2\", \"title\": \"Deletes that stay deleted\", \"blocks\": [{\"kind\": \"p\", \"text\": \"Removing a record removes it from the index in the same call.\"}, {\"kind\": \"callout\", \"tone\": \"note\", \"text\": \"Nothing to change on your side.\"}]}]'\n    cta='{\"title\": \"See it on your own data.\", \"action\": {\"label\": \"Book a demo\", \"href\": \"#demo\"}}'\n  >\n    <span slot=\"logo\" class=\"font-heading text-heading-3 text-fg\">Acme</span>\n    <conare-button slot=\"actions\" href=\"#contact\">Contact us</conare-button>\n    <conare-pixel-button slot=\"actions\" href=\"#sign-in\">Sign in</conare-pixel-button>\n    <conare-button slot=\"sheet-actions\" href=\"#contact\">Contact us</conare-button>\n    <conare-pixel-button slot=\"sheet-actions\" href=\"#sign-in\">Sign in</conare-pixel-button>\n  </conare-changelog-page>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

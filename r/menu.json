@@ -1,0 +1,571 @@
+{
+  "name": "menu",
+  "title": "Menu",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "A button that opens a short list of choices or actions: a square panel in a hairline, rows with a red square marker, counts and a check. Arrows, Home, End, Escape and Tab are handled.",
+  "use_for": "Switching organization, account actions, picking a scope or a page.",
+  "never": [
+    "Writing your own outside-click or arrow handling",
+    "Two or three views of one thing (use Tabs)",
+    "Shadows: the border sets it apart"
+  ],
+  "source": "conare-web app/composables/useMenu.ts, app/components/console/WorkspaceMenu.vue, app/assets/css/console2.css (.v2-menu)",
+  "body": "",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Menu.vue",
+      "content": "<script setup lang=\"ts\">\nimport { provide, useId } from 'vue'\nimport { useMenu } from '@/composables/useMenu'\n\n// A button that opens a short list of choices or actions (console2.css .v2-menu): a square panel in a hairline, no\n// shadow, 4px inside; rows from MenuItem. It comes in over 160ms, a 4px drop (a rise when it opens upward), and not at\n// all when opened from the keyboard. Arrows, Home, End, Escape, Tab and a click outside are handled (useMenu).\n// `offset` moves the panel in from its edge. The trigger is the slot `trigger`, drawn as a secondary button unless `triggerClass` says otherwise.\nwithDefaults(defineProps<{ label: string, up?: boolean, align?: 'start' | 'end', width?: string, offset?: string, triggerClass?: string, triggerLabel?: string }>(), { align: 'start', width: '264px', offset: '0px' })\nconst { open, root, trigger, close, toggle, onTriggerKey, onMenuKey } = useMenu()\nprovide('ds-menu-close', () => close(true))\ndefineExpose({ open, close })\nconst id = `menu-${useId()}`\n</script>\n\n<template>\n  <div data-ds=\"menu\" ref=\"root\" class=\"relative inline-block\">\n    <button\n      ref=\"trigger\"\n      type=\"button\"\n      :class=\"triggerClass ?? 'inline-flex h-control-sm cursor-pointer items-center gap-1.5 border border-action-secondary-edge bg-surface px-2.5 text-meta leading-5 font-medium text-fg transition-[border-color,background-color] duration-120 ease-standard hover:border-action-secondary-edge-hover active:bg-surface-subtle aria-expanded:border-action-secondary-edge-hover max-md:h-control-touch max-md:text-ui'\"\n      aria-haspopup=\"menu\"\n      :aria-expanded=\"open\"\n      :aria-controls=\"id\"\n      :aria-label=\"triggerLabel\"\n      @click=\"toggle\"\n      @keydown=\"onTriggerKey\"\n    >\n      <slot name=\"trigger\" :open=\"open\" />\n    </button>\n    <div\n      v-if=\"open\"\n      :id=\"id\"\n      class=\"ds-menu\"\n      :data-up=\"up || undefined\"\n      :style=\"{ width, [align === 'end' ? 'right' : 'left']: offset, [up ? 'bottom' : 'top']: 'calc(100% + 4px)' }\"\n      role=\"menu\"\n      :aria-label=\"label\"\n      @keydown=\"onMenuKey\"\n    >\n      <slot />\n    </div>\n  </div>\n</template>\n\n<style>\n.ds-menu { position: absolute; z-index: 40; display: flex; flex-direction: column; padding: var(--ds-space-xs); border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface); animation: ds-menu-in var(--ds-duration-glide) var(--ds-easing-standard) both; scroll-margin: 8px; }\n.ds-menu[data-up] { animation-name: ds-menu-up; }\n/* Opened from the keyboard, focus lands on a row at once: no animation. */\n.ds-menu:has(:focus-visible) { animation: none; }\n.ds-menu > * { flex-shrink: 0; }\n@keyframes ds-menu-in { from { opacity: 0; transform: translateY(-4px); } }\n@keyframes ds-menu-up { from { opacity: 0; transform: translateY(4px); } }\n@media (prefers-reduced-motion: reduce) { .ds-menu { animation: none; } }\n</style>\n"
+    },
+    {
+      "path": "components/ui/MenuItem.vue",
+      "content": "<script setup lang=\"ts\">\nimport { inject } from 'vue'\n\n// One row of a Menu (console2.css .v2-menu-item): 32px (44px on phones), 13px, a 14px gutter that holds the 4px red\n// square marker of the row under the pointer or focus, which also takes the paper fill. `current` sets it in medium\n// weight; `danger` is Sign out's red. Put a 14px Lucide icon first (text-fg-muted), a count or a check last.\n// Choosing it emits `select` and closes the menu, unless `keepOpen`.\nconst props = defineProps<{ href?: string, current?: boolean, danger?: boolean, disabled?: boolean, keepOpen?: boolean }>()\nconst emit = defineEmits<{ select: [] }>()\nconst close = inject<() => void>('ds-menu-close', () => {})\nfunction choose() {\n  emit('select')\n  if (!props.keepOpen) close()\n}\n</script>\n\n<template>\n  <component data-ds=\"menu-item\"\n    :is=\"href ? 'a' : 'button'\"\n    :href=\"href\"\n    :type=\"href ? undefined : 'button'\"\n    role=\"menuitem\"\n    class=\"ds-menu-item\"\n    :aria-current=\"current ? 'true' : undefined\"\n    :data-danger=\"danger || undefined\"\n    :disabled=\"href ? undefined : disabled\"\n    @click=\"choose\"\n  >\n    <slot />\n  </component>\n</template>\n\n<style>\n.ds-menu-item { position: relative; display: flex; width: 100%; height: var(--ds-size-control-md); align-items: center; gap: var(--ds-space-md); padding: 0 10px 0 14px; color: var(--ds-color-fg); font-size: var(--ds-text-ui); text-align: left; outline: none; cursor: pointer; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-menu-item::before { position: absolute; top: 50%; left: 5px; width: 4px; height: 4px; margin-top: -2px; background: var(--ds-color-edge-accent); content: \"\"; opacity: 0; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-menu-item:focus-visible { background: var(--ds-color-surface-subtle); }\n.ds-menu-item:focus-visible::before { opacity: 1; }\n@media (hover: hover) and (pointer: fine) {\n  .ds-menu-item:hover { background: var(--ds-color-surface-subtle); }\n  .ds-menu-item:hover::before { opacity: 1; }\n  .ds-menu-item[data-danger]:hover { background: var(--ds-color-surface-danger); }\n}\n.ds-menu-item[aria-current=\"true\"] { font-weight: var(--ds-font-weight-medium); }\n.ds-menu-item:disabled { color: var(--ds-color-fg-muted); cursor: progress; }\n.ds-menu-item[data-danger] { color: var(--ds-color-fg-danger); }\n.ds-menu-item[data-danger]:focus-visible { background: var(--ds-color-surface-danger); }\n@media (pointer: coarse), (max-width: 767px) { .ds-menu-item { height: auto; min-height: 44px; } }\n</style>\n"
+    },
+    {
+      "path": "components/ui/MenuLabel.vue",
+      "content": "<template>\n  <!-- A group's name in a Menu (console2.css .v2-menu-label): 12px muted, an optional tag at the end. -->\n  <p data-ds=\"menu-label\" class=\"flex items-center justify-between gap-2 pt-1.5 pr-2.5 pb-1 pl-3.5 text-meta text-fg-muted\"><slot /></p>\n</template>\n"
+    },
+    {
+      "path": "components/ui/MenuSeparator.vue",
+      "content": "<template>\n  <!-- A hairline between a Menu's groups, edge to edge (console2.css .v2-menu-sep). -->\n  <div data-ds=\"menu-separator\" class=\"-mx-1 my-1 h-px bg-edge\" role=\"separator\" />\n</template>\n"
+    },
+    {
+      "path": "composables/useMenu.ts",
+      "content": "import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'\n\n/**\n * A menu button's behavior: it opens on click, arrows move between items (opening the menu on their end of it from the\n * button), Home and End jump, Escape closes and returns focus to the button, Tab and a click outside close it.\n */\nexport function useMenu() {\n  const open = ref(false)\n  const root = ref<HTMLElement | null>(null)\n  const trigger = ref<HTMLElement | null>(null)\n\n  const items = () => [...(root.value?.querySelectorAll<HTMLElement>('[role^=\"menuitem\"]:not([disabled])') ?? [])]\n\n  async function show(focus: 'first' | 'last' | 'none' = 'first') {\n    open.value = true\n    await nextTick()\n    // Opened at the fold it would land out of sight, and the button would seem to do nothing.\n    items()[0]?.closest('[role=\"menu\"]')?.scrollIntoView({ block: 'nearest' })\n    if (focus === 'none') return\n    const list = items()\n    ;(focus === 'last' ? list.at(-1) : list[0])?.focus()\n  }\n  function close(refocus = false) {\n    open.value = false\n    if (refocus) trigger.value?.focus()\n  }\n  function toggle() {\n    if (open.value) close()\n    else void show('none')\n  }\n  function onTriggerKey(event: KeyboardEvent) {\n    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {\n      event.preventDefault()\n      void show(event.key === 'ArrowDown' ? 'first' : 'last')\n    }\n    else if (event.key === 'Escape' && open.value) {\n      event.preventDefault()\n      close(true)\n    }\n  }\n  function onMenuKey(event: KeyboardEvent) {\n    const list = items()\n    const at = list.indexOf(document.activeElement as HTMLElement)\n    if (event.key === 'Escape') {\n      event.preventDefault()\n      close(true)\n    }\n    else if (event.key === 'Tab') {\n      close()\n    }\n    else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {\n      event.preventDefault()\n      const step = event.key === 'ArrowDown' ? 1 : -1\n      list[(at + step + list.length) % list.length]?.focus()\n    }\n    else if (event.key === 'Home' || event.key === 'End') {\n      event.preventDefault()\n      ;(event.key === 'Home' ? list[0] : list.at(-1))?.focus()\n    }\n  }\n  function outside(event: PointerEvent) {\n    if (open.value && root.value && !root.value.contains(event.target as Node)) close()\n  }\n  onMounted(() => document.addEventListener('pointerdown', outside))\n  onBeforeUnmount(() => document.removeEventListener('pointerdown', outside))\n\n  return { open, root, trigger, show, close, toggle, onTriggerKey, onMenuKey }\n}\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "The organization switcher",
+      "center": true,
+      "half": false,
+      "path": "examples/menu/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed, onMounted, ref } from 'vue'\nimport { Check, ChevronsUpDown, Plus, Settings, Users } from 'lucide-vue-next'\nimport Menu from '@/components/ui/Menu.vue'\nimport MenuItem from '@/components/ui/MenuItem.vue'\nimport MenuLabel from '@/components/ui/MenuLabel.vue'\nimport MenuSeparator from '@/components/ui/MenuSeparator.vue'\n// The sidebar's organization switcher, open to show its rows: the organizations under their customer, the current one\n// checked, then what goes with an organization. Sample data; wire `select` to your own switch.\nconst organizations = [\n  { id: 'prod', name: 'Acme production', default: true },\n  { id: 'staging', name: 'Acme staging' },\n  { id: 'research', name: 'Acme research' },\n]\nconst current = ref('prod')\nconst org = computed(() => organizations.find(o => o.id === current.value)!)\nconst menu = ref<InstanceType<typeof Menu> | null>(null)\nonMounted(() => { if (menu.value) menu.value.open = true })\n</script>\n\n<template>\n  <div class=\"h-80 w-sidebar\">\n    <div class=\"h-bar\">\n      <Menu\n        ref=\"menu\"\n        label=\"workspaces\"\n        offset=\"8px\"\n        class=\"!flex h-full w-full\"\n        trigger-class=\"relative isolate flex h-full w-full cursor-pointer items-center gap-2 px-3 text-left before:absolute before:inset-x-2 before:inset-y-1.5 before:-z-10 before:transition-colors before:duration-120 before:ease-standard hover:before:bg-edge/45 aria-expanded:before:bg-edge/45 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-focus\"\n      >\n        <template #trigger>\n          <span class=\"inline-flex size-5 shrink-0 items-center justify-center border border-edge bg-surface text-caption leading-none font-medium\" aria-hidden=\"true\">{{ org.name.charAt(0) }}</span>\n          <span class=\"min-w-0 flex-1\">\n            <span class=\"block truncate text-meta leading-3 font-medium\">{{ org.name }}</span>\n            <span class=\"mt-0.5 block truncate text-caption leading-3 text-fg-muted\">Acme · admin</span>\n          </span>\n          <ChevronsUpDown :size=\"14\" :stroke-width=\"1.5\" class=\"mr-0.75 shrink-0 text-fg-muted\" aria-hidden=\"true\" />\n        </template>\n        <MenuLabel><span class=\"truncate\">Acme</span><span class=\"shrink-0 border border-edge px-1 text-caption leading-4\">admin</span></MenuLabel>\n        <MenuItem v-for=\"o in organizations\" :key=\"o.id\" :current=\"o.id === current\" @select=\"current = o.id\">\n          <span class=\"inline-flex size-5 shrink-0 items-center justify-center border border-edge bg-surface text-caption leading-none font-medium\" aria-hidden=\"true\">{{ o.name.charAt(0) }}</span>\n          <span class=\"min-w-0 flex-1 truncate\">{{ o.name }}</span>\n          <span v-if=\"o.default\" class=\"type-meta text-fg-muted\">default</span>\n          <Check v-if=\"o.id === current\" :size=\"14\" :stroke-width=\"1.5\" class=\"shrink-0\" aria-label=\"current\" />\n        </MenuItem>\n        <MenuSeparator />\n        <MenuItem><Plus :size=\"14\" :stroke-width=\"1.5\" class=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />New organization</MenuItem>\n        <MenuItem><Settings :size=\"14\" :stroke-width=\"1.5\" class=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />Organization settings</MenuItem>\n        <MenuItem><Users :size=\"14\" :stroke-width=\"1.5\" class=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />Invite members</MenuItem>\n      </Menu>\n    </div>\n  </div>\n</template>\n",
+      "requires": [],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Menu.tsx",
+          "content": "'use client'\nimport { createContext, useEffect, useId, useImperativeHandle, useRef, type ReactNode, type Ref } from 'react'\nimport { useMenu } from '@/react/hooks/useMenu'\nimport { cn } from '@/react/lib/cn'\n\n// A button that opens a short list of choices or actions (console2.css .v2-menu): a square panel in a hairline, no\n// shadow, 4px inside; rows from MenuItem. It comes in over 160ms, a 4px drop (a rise when it opens upward), and not at\n// all when opened from the keyboard. Arrows, Home, End, Escape, Tab and a click outside are handled (useMenu).\n// `offset` moves the panel in from its edge. The trigger's content is `trigger` (a node, or a function of `open`),\n// drawn as a secondary button unless `triggerClass` says otherwise. `defaultOpen` opens it with the page; `ref` gets\n// { open, show, close } (Vue's exposed open and close); `onOpenChange` hears it open and close. `data-ds` names the\n// root for a component built on it (Vue's falls through: <Menu data-ds=\"account-menu\">).\nexport const MenuClose = createContext<() => void>(() => {})\n\nexport interface MenuHandle { open: boolean, show: (focus?: 'first' | 'last' | 'none') => void, close: (refocus?: boolean) => void }\nexport interface MenuProps {\n  label: string\n  up?: boolean\n  align?: 'start' | 'end'\n  width?: string\n  offset?: string\n  triggerClass?: string\n  triggerLabel?: string\n  trigger?: ReactNode | ((open: boolean) => ReactNode)\n  defaultOpen?: boolean\n  onOpenChange?: (open: boolean) => void\n  'data-ds'?: string\n  className?: string\n  children?: ReactNode\n  ref?: Ref<MenuHandle>\n}\n\nexport function Menu({ label, up, align = 'start', width = '264px', offset = '0px', triggerClass, triggerLabel, trigger: triggerContent, defaultOpen, onOpenChange, 'data-ds': ds = 'menu', className, children, ref }: MenuProps) {\n  const { open, root, trigger, show, close, toggle, onTriggerKey, onMenuKey } = useMenu(defaultOpen)\n  const report = useRef(onOpenChange)\n  report.current = onOpenChange\n  const was = useRef(open)\n  useEffect(() => {\n    if (was.current === open) return\n    was.current = open\n    report.current?.(open)\n  }, [open])\n  useImperativeHandle(ref, () => ({ open, show, close }), [open, show, close])\n  const id = `menu-${useId()}`\n  return (\n    <MenuClose.Provider value={() => close(true)}>\n      <style href=\"ds-menu\" precedence=\"ds\">{css}</style>\n      <div data-ds={ds} ref={root} className={cn('relative inline-block', className)}>\n        <button\n          ref={trigger}\n          type=\"button\"\n          className={triggerClass ?? 'inline-flex h-control-sm cursor-pointer items-center gap-1.5 border border-action-secondary-edge bg-surface px-2.5 text-meta leading-5 font-medium text-fg transition-[border-color,background-color] duration-120 ease-standard hover:border-action-secondary-edge-hover active:bg-surface-subtle aria-expanded:border-action-secondary-edge-hover max-md:h-control-touch max-md:text-ui'}\n          aria-haspopup=\"menu\"\n          aria-expanded={open}\n          aria-controls={id}\n          aria-label={triggerLabel}\n          onClick={toggle}\n          onKeyDown={onTriggerKey}\n        >\n          {typeof triggerContent === 'function' ? triggerContent(open) : triggerContent}\n        </button>\n        {open && (\n          <div\n            id={id}\n            className=\"ds-menu\"\n            data-up={up || undefined}\n            style={{ width, [align === 'end' ? 'right' : 'left']: offset, [up ? 'bottom' : 'top']: 'calc(100% + 4px)' }}\n            role=\"menu\"\n            aria-label={label}\n            onKeyDown={onMenuKey}\n          >\n            {children}\n          </div>\n        )}\n      </div>\n    </MenuClose.Provider>\n  )\n}\n\nexport default Menu\n\nconst css = `\n.ds-menu { position: absolute; z-index: 40; display: flex; flex-direction: column; padding: var(--ds-space-xs); border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface); animation: ds-menu-in var(--ds-duration-glide) var(--ds-easing-standard) both; scroll-margin: 8px; }\n.ds-menu[data-up] { animation-name: ds-menu-up; }\n/* Opened from the keyboard, focus lands on a row at once: no animation. */\n.ds-menu:has(:focus-visible) { animation: none; }\n.ds-menu > * { flex-shrink: 0; }\n@keyframes ds-menu-in { from { opacity: 0; transform: translateY(-4px); } }\n@keyframes ds-menu-up { from { opacity: 0; transform: translateY(4px); } }\n@media (prefers-reduced-motion: reduce) { .ds-menu { animation: none; } }\n`\n"
+        },
+        {
+          "path": "react/components/ui/MenuItem.tsx",
+          "content": "'use client'\nimport { useContext, type ReactNode } from 'react'\nimport { MenuClose } from '@/react/components/ui/Menu'\n\n// One row of a Menu (console2.css .v2-menu-item): 32px (44px on phones), 13px, a 14px gutter that holds the 4px red\n// square marker of the row under the pointer or focus, which also takes the paper fill. `current` sets it in medium\n// weight; `danger` is Sign out's red. Put a 14px Lucide icon first (text-fg-muted), a count or a check last.\n// Choosing it calls `onSelect` and closes the menu, unless `keepOpen`. `role` and `aria-checked` make it a radio or\n// checkbox row (role=\"menuitemradio\" aria-checked={picked}), as Vue's fall through to the button.\nexport interface MenuItemProps { href?: string, current?: boolean, danger?: boolean, disabled?: boolean, keepOpen?: boolean, onSelect?: () => void, role?: 'menuitem' | 'menuitemradio' | 'menuitemcheckbox', 'aria-checked'?: boolean, className?: string, children?: ReactNode }\n\nexport function MenuItem({ href, current, danger, disabled, keepOpen, onSelect, role = 'menuitem', 'aria-checked': checked, className, children }: MenuItemProps) {\n  const close = useContext(MenuClose)\n  function choose() {\n    onSelect?.()\n    if (!keepOpen) close()\n  }\n  const shared = { 'data-ds': 'menu-item', role, 'aria-checked': checked, className: className ? `ds-menu-item ${className}` : 'ds-menu-item', 'aria-current': current ? 'true' as const : undefined, 'data-danger': danger || undefined, onClick: choose }\n  return (\n    <>\n      <style href=\"ds-menu-item\" precedence=\"ds\">{css}</style>\n      {href ? <a href={href} {...shared}>{children}</a> : <button type=\"button\" disabled={disabled} {...shared}>{children}</button>}\n    </>\n  )\n}\n\nexport default MenuItem\n\nconst css = `\n.ds-menu-item { position: relative; display: flex; width: 100%; height: var(--ds-size-control-md); align-items: center; gap: var(--ds-space-md); padding: 0 10px 0 14px; color: var(--ds-color-fg); font-size: var(--ds-text-ui); text-align: left; outline: none; cursor: pointer; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-menu-item::before { position: absolute; top: 50%; left: 5px; width: 4px; height: 4px; margin-top: -2px; background: var(--ds-color-edge-accent); content: \"\"; opacity: 0; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-menu-item:focus-visible { background: var(--ds-color-surface-subtle); }\n.ds-menu-item:focus-visible::before { opacity: 1; }\n@media (hover: hover) and (pointer: fine) {\n  .ds-menu-item:hover { background: var(--ds-color-surface-subtle); }\n  .ds-menu-item:hover::before { opacity: 1; }\n  .ds-menu-item[data-danger]:hover { background: var(--ds-color-surface-danger); }\n}\n.ds-menu-item[aria-current=\"true\"] { font-weight: var(--ds-font-weight-medium); }\n.ds-menu-item:disabled { color: var(--ds-color-fg-muted); cursor: progress; }\n.ds-menu-item[data-danger] { color: var(--ds-color-fg-danger); }\n.ds-menu-item[data-danger]:focus-visible { background: var(--ds-color-surface-danger); }\n@media (pointer: coarse), (max-width: 767px) { .ds-menu-item { height: auto; min-height: 44px; } }\n`\n"
+        },
+        {
+          "path": "react/components/ui/MenuLabel.tsx",
+          "content": "import type { ReactNode } from 'react'\n\n// A group's name in a Menu (console2.css .v2-menu-label): 12px muted, an optional tag at the end.\nexport function MenuLabel({ children }: { children?: ReactNode }) {\n  return <p data-ds=\"menu-label\" className=\"flex items-center justify-between gap-2 pt-1.5 pr-2.5 pb-1 pl-3.5 text-meta text-fg-muted\">{children}</p>\n}\n\nexport default MenuLabel\n"
+        },
+        {
+          "path": "react/components/ui/MenuSeparator.tsx",
+          "content": "// A hairline between a Menu's groups, edge to edge (console2.css .v2-menu-sep).\nexport function MenuSeparator() {\n  return <div data-ds=\"menu-separator\" className=\"-mx-1 my-1 h-px bg-edge\" role=\"separator\" />\n}\n\nexport default MenuSeparator\n"
+        },
+        {
+          "path": "react/hooks/useMenu.ts",
+          "content": "'use client'\nimport { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react'\n\n/**\n * A menu button's behavior: it opens on click, arrows move between items (opening the menu on their end of it from the\n * button), Home and End jump, Escape closes and returns focus to the button, Tab and a click outside close it.\n */\nexport function useMenu(initial = false) {\n  const [open, setOpen] = useState(initial)\n  const root = useRef<HTMLDivElement | null>(null)\n  const trigger = useRef<HTMLButtonElement | null>(null)\n  const pending = useRef<'first' | 'last' | 'none' | null>(null)\n  // Each show() renders, so an arrow on the open menu's button still focuses a row (Vue's nextTick runs either way).\n  const [, setShown] = useState(0)\n\n  const items = () => [...(root.current?.querySelectorAll<HTMLElement>('[role^=\"menuitem\"]:not([disabled])') ?? [])]\n\n  // After the menu renders: scroll it into view and focus the row asked for (Vue's nextTick).\n  useEffect(() => {\n    if (!open || !pending.current) return\n    const focus = pending.current\n    pending.current = null\n    // Opened at the fold it would land out of sight, and the button would seem to do nothing.\n    items()[0]?.closest('[role=\"menu\"]')?.scrollIntoView({ block: 'nearest' })\n    if (focus === 'none') return\n    const list = items()\n    ;(focus === 'last' ? list.at(-1) : list[0])?.focus()\n  })\n\n  const show = useCallback((focus: 'first' | 'last' | 'none' = 'first') => {\n    pending.current = focus\n    setOpen(true)\n    setShown(n => n + 1)\n  }, [])\n  const close = useCallback((refocus = false) => {\n    setOpen(false)\n    if (refocus) trigger.current?.focus()\n  }, [])\n  function toggle() {\n    if (open) close()\n    else show('none')\n  }\n  function onTriggerKey(event: KeyboardEvent) {\n    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {\n      event.preventDefault()\n      show(event.key === 'ArrowDown' ? 'first' : 'last')\n    }\n    else if (event.key === 'Escape' && open) {\n      event.preventDefault()\n      close(true)\n    }\n  }\n  function onMenuKey(event: KeyboardEvent) {\n    const list = items()\n    const at = list.indexOf(document.activeElement as HTMLElement)\n    if (event.key === 'Escape') {\n      event.preventDefault()\n      close(true)\n    }\n    else if (event.key === 'Tab') {\n      close()\n    }\n    else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {\n      event.preventDefault()\n      const step = event.key === 'ArrowDown' ? 1 : -1\n      list[(at + step + list.length) % list.length]?.focus()\n    }\n    else if (event.key === 'Home' || event.key === 'End') {\n      event.preventDefault()\n      ;(event.key === 'Home' ? list[0] : list.at(-1))?.focus()\n    }\n  }\n  useEffect(() => {\n    function outside(event: PointerEvent) {\n      if (root.current && !root.current.contains(event.target as Node)) setOpen(false)\n    }\n    document.addEventListener('pointerdown', outside)\n    return () => document.removeEventListener('pointerdown', outside)\n  }, [])\n\n  return { open, root, trigger, show, close, toggle, onTriggerKey, onMenuKey }\n}\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "Menu",
+            "file": "react/components/ui/Menu.tsx",
+            "props": [
+              {
+                "name": "label",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "up",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "align",
+                "type": "'start' | 'end'",
+                "required": false,
+                "default": "'start'"
+              },
+              {
+                "name": "width",
+                "type": "string",
+                "required": false,
+                "default": "'264px'"
+              },
+              {
+                "name": "offset",
+                "type": "string",
+                "required": false,
+                "default": "'0px'"
+              },
+              {
+                "name": "triggerClass",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "triggerLabel",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "trigger",
+                "type": "ReactNode | ((open: boolean) => ReactNode)",
+                "required": false
+              },
+              {
+                "name": "defaultOpen",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "onOpenChange",
+                "type": "(open: boolean) => void",
+                "required": false
+              },
+              {
+                "name": "data-ds",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "MenuItem",
+            "file": "react/components/ui/MenuItem.tsx",
+            "props": [
+              {
+                "name": "href",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "current",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "danger",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "keepOpen",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "onSelect",
+                "type": "() => void",
+                "required": false
+              },
+              {
+                "name": "role",
+                "type": "'menuitem' | 'menuitemradio' | 'menuitemcheckbox'",
+                "required": false,
+                "default": "'menuitem'"
+              },
+              {
+                "name": "aria-checked",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "MenuLabel",
+            "file": "react/components/ui/MenuLabel.tsx",
+            "props": [
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "MenuSeparator",
+            "file": "react/components/ui/MenuSeparator.tsx",
+            "props": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "The organization switcher",
+          "center": true,
+          "half": false,
+          "path": "react/examples/menu/Product.tsx",
+          "content": "'use client'\nimport { useState } from 'react'\nimport { Check, ChevronsUpDown, Plus, Settings, Users } from 'lucide-react'\nimport { Menu } from '@/react/components/ui/Menu'\nimport { MenuItem } from '@/react/components/ui/MenuItem'\nimport { MenuLabel } from '@/react/components/ui/MenuLabel'\nimport { MenuSeparator } from '@/react/components/ui/MenuSeparator'\n// The sidebar's organization switcher, open to show its rows: the organizations under their customer, the current one\n// checked, then what goes with an organization. Sample data; wire `onSelect` to your own switch.\nconst organizations = [\n  { id: 'prod', name: 'Acme production', default: true },\n  { id: 'staging', name: 'Acme staging' },\n  { id: 'research', name: 'Acme research' },\n]\n\nexport default function Product() {\n  const [current, setCurrent] = useState('prod')\n  const org = organizations.find(o => o.id === current)!\n  return (\n    <div className=\"h-80 w-sidebar\">\n      <div className=\"h-bar\">\n        <Menu\n          label=\"workspaces\"\n          offset=\"8px\"\n          defaultOpen\n          className=\"!flex h-full w-full\"\n          triggerClass=\"relative isolate flex h-full w-full cursor-pointer items-center gap-2 px-3 text-left before:absolute before:inset-x-2 before:inset-y-1.5 before:-z-10 before:transition-colors before:duration-120 before:ease-standard hover:before:bg-edge/45 aria-expanded:before:bg-edge/45 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-focus\"\n          trigger={(\n            <>\n              <span className=\"inline-flex size-5 shrink-0 items-center justify-center border border-edge bg-surface text-caption leading-none font-medium\" aria-hidden=\"true\">{org.name.charAt(0)}</span>\n              <span className=\"min-w-0 flex-1\">\n                <span className=\"block truncate text-meta leading-3 font-medium\">{org.name}</span>\n                <span className=\"mt-0.5 block truncate text-caption leading-3 text-fg-muted\">Acme · admin</span>\n              </span>\n              <ChevronsUpDown size={14} strokeWidth={1.5} className=\"mr-0.75 shrink-0 text-fg-muted\" aria-hidden=\"true\" />\n            </>\n          )}\n        >\n          <MenuLabel><span className=\"truncate\">Acme</span><span className=\"shrink-0 border border-edge px-1 text-caption leading-4\">admin</span></MenuLabel>\n          {organizations.map(o => (\n            <MenuItem key={o.id} current={o.id === current} onSelect={() => setCurrent(o.id)}>\n              <span className=\"inline-flex size-5 shrink-0 items-center justify-center border border-edge bg-surface text-caption leading-none font-medium\" aria-hidden=\"true\">{o.name.charAt(0)}</span>\n              <span className=\"min-w-0 flex-1 truncate\">{o.name}</span>\n              {o.default && <span className=\"type-meta text-fg-muted\">default</span>}\n              {o.id === current && <Check size={14} strokeWidth={1.5} className=\"shrink-0\" aria-label=\"current\" />}\n            </MenuItem>\n          ))}\n          <MenuSeparator />\n          <MenuItem><Plus size={14} strokeWidth={1.5} className=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />New organization</MenuItem>\n          <MenuItem><Settings size={14} strokeWidth={1.5} className=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />Organization settings</MenuItem>\n          <MenuItem><Users size={14} strokeWidth={1.5} className=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />Invite members</MenuItem>\n        </Menu>\n      </div>\n    </div>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/menu.ts",
+          "content": "import { html, nothing, type PropertyValues } from 'lit'\nimport { styleMap } from 'lit/directives/style-map.js'\nimport { DsElement, define, uid } from '@/elements/lib/element'\nimport { CloseOnSelect, menuRows } from '@/elements/lib/menu'\nimport styles from 'virtual:tw'\n\n// Menu.vue as <conare-menu>: a button that opens a short list of choices or actions (console2.css .v2-menu): a square\n// panel in a hairline, no shadow, 4px inside; rows are <conare-menu-item>. It comes in over 160ms, a 4px drop (a rise\n// when it opens upward), and not at all when opened from the keyboard. Arrows, Home, End, Escape, Tab and a click\n// outside are handled (useMenu). The trigger: a <button slot=\"trigger\"> you style yourself (Vue's triggerClass), or\n// any other content in the `trigger` slot, drawn as a secondary button. `open` opens it (Vue's exposed open);\n// show() and close() are Vue's useMenu calls.\n\n/**\n * @summary A button that opens a short list of choices or actions.\n * @slot - The rows: <conare-menu-item>, <conare-menu-label>, <conare-menu-separator>.\n * @slot trigger - A <button> to use as the trigger, or the default trigger's content.\n * @fires open-change - It opened or closed (detail.value).\n */\nexport class Menu extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = {\n\t\tlabel: {},\n\t\tup: { type: Boolean },\n\t\t// Vue's `align`; an `align` attribute is also HTML's old alignment hint, which the browser draws as text-align.\n\t\tplacement: {},\n\t\twidth: {},\n\t\toffset: {},\n\t\ttriggerLabel: { attribute: 'trigger-label' },\n\t\topen: { type: Boolean, reflect: true },\n\t\tinstant: { state: true },\n\t}\n\n\t/** The menu's name for assistive tech. */\n\tlabel = ''\n\t/** Opens upward. */\n\tup = false\n\t/** The panel's edge: start, or end to open toward the start from the trigger's end (Vue's `align`). */\n\tplacement: 'start' | 'end' = 'start'\n\twidth = '264px'\n\t/** Moves the panel in from its edge. */\n\toffset = '0px'\n\t/** The default trigger's name, when its content has none. */\n\ttriggerLabel?: string\n\topen = false\n\tprivate instant = false\n\tprivate panelId = uid('menu')\n\tprivate pending: 'first' | 'last' | 'none' | null = null\n\n\t/** A <button slot=\"trigger\"> the page drew, or the default trigger in the shadow root. */\n\tconstructor() {\n\t\tsuper()\n\t\t// A chosen row closes the menu and returns focus to the trigger.\n\t\tnew CloseOnSelect(this, () => this.close(true))\n\t}\n\n\tprivate get trigger(): HTMLElement | null {\n\t\tconst own = this.querySelector<HTMLElement>(':scope > button[slot=\"trigger\"]')\n\t\treturn own ?? this.renderRoot.querySelector<HTMLElement>('button[data-trigger]')\n\t}\n\tprivate items() {\n\t\treturn menuRows(this)\n\t}\n\n\tshow(focus: 'first' | 'last' | 'none' = 'first') {\n\t\tthis.pending = focus\n\t\tthis.instant = focus !== 'none'\n\t\tthis.setOpen(true)\n\t\t// Already open (an arrow on the open menu's button), it still renders, and the row asked for takes focus.\n\t\tthis.requestUpdate()\n\t}\n\tclose(refocus = false) {\n\t\tthis.setOpen(false)\n\t\tif (refocus) this.trigger?.focus()\n\t}\n\tprivate setOpen(open: boolean) {\n\t\tif (this.open === open) return\n\t\tthis.open = open\n\t\tthis.emit('open-change', { value: open })\n\t}\n\tprivate toggle = () => {\n\t\tif (this.open) this.close()\n\t\telse this.show('none')\n\t}\n\tprivate onTriggerKey = (event: KeyboardEvent) => {\n\t\tif (event.key === 'ArrowDown' || event.key === 'ArrowUp') {\n\t\t\tevent.preventDefault()\n\t\t\tthis.show(event.key === 'ArrowDown' ? 'first' : 'last')\n\t\t} else if (event.key === 'Escape' && this.open) {\n\t\t\tevent.preventDefault()\n\t\t\tthis.close(true)\n\t\t}\n\t}\n\tprivate onMenuKey = (event: KeyboardEvent) => {\n\t\tconst list = this.items()\n\t\tconst at = list.findIndex((i) => i.matches(':focus-within'))\n\t\tif (event.key === 'Escape') {\n\t\t\tevent.preventDefault()\n\t\t\tthis.close(true)\n\t\t} else if (event.key === 'Tab') {\n\t\t\t// Vue and React take the panel out of the page before the browser moves focus, so Tab from a row lands on the\n\t\t\t// trigger; here the rows stay in the page (unslotted), so the element puts focus there itself.\n\t\t\tif (!event.shiftKey) {\n\t\t\t\tevent.preventDefault()\n\t\t\t\tthis.close(true)\n\t\t\t} else this.close()\n\t\t} else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {\n\t\t\tevent.preventDefault()\n\t\t\tconst step = event.key === 'ArrowDown' ? 1 : -1\n\t\t\tlist[(at + step + list.length) % list.length]?.focus()\n\t\t} else if (event.key === 'Home' || event.key === 'End') {\n\t\t\tevent.preventDefault()\n\t\t\t;(event.key === 'Home' ? list[0] : list.at(-1))?.focus()\n\t\t}\n\t}\n\tprivate outside = (event: PointerEvent) => {\n\t\tif (this.open && !event.composedPath().includes(this)) this.close()\n\t}\n\n\tconnectedCallback() {\n\t\tsuper.connectedCallback()\n\t\tdocument.addEventListener('pointerdown', this.outside)\n\t}\n\tdisconnectedCallback() {\n\t\tsuper.disconnectedCallback()\n\t\tdocument.removeEventListener('pointerdown', this.outside)\n\t\tthis.wire(null)\n\t}\n\n\t// The page's own trigger button gets the menu button's attributes and handlers.\n\tprivate wired: HTMLElement | null = null\n\tprivate wire(button: HTMLElement | null) {\n\t\tif (this.wired && this.wired !== button) {\n\t\t\tthis.wired.removeEventListener('click', this.toggle)\n\t\t\tthis.wired.removeEventListener('keydown', this.onTriggerKey)\n\t\t}\n\t\tif (button && this.wired !== button) {\n\t\t\tbutton.addEventListener('click', this.toggle)\n\t\t\tbutton.addEventListener('keydown', this.onTriggerKey)\n\t\t\tbutton.setAttribute('aria-haspopup', 'menu')\n\t\t}\n\t\tthis.wired = button\n\t\tif (button) {\n\t\t\tbutton.setAttribute('aria-expanded', String(this.open))\n\t\t\tif (this.triggerLabel) button.setAttribute('aria-label', this.triggerLabel)\n\t\t}\n\t}\n\n\tprotected updated(changed: PropertyValues<this>) {\n\t\tsuper.updated(changed)\n\t\tthis.wire(this.querySelector<HTMLElement>(':scope > button[slot=\"trigger\"]'))\n\t\tif (changed.has('open') && !this.open) this.instant = false\n\t\tconst focus = this.pending\n\t\tthis.pending = null\n\t\tif (!this.open || !focus) return\n\t\t// Opened at the fold it would land out of sight, and the button would seem to do nothing.\n\t\tthis.renderRoot.querySelector('[role=\"menu\"]')?.scrollIntoView({ block: 'nearest' })\n\t\tif (focus === 'none') return\n\t\tconst list = this.items()\n\t\t;(focus === 'last' ? list.at(-1) : list[0])?.focus()\n\t}\n\n\trender() {\n\t\tconst own = !!this.querySelector(':scope > button[slot=\"trigger\"]')\n\t\tconst panel = this.open\n\t\t\t? html`<div id=${this.panelId} class=\"ds-menu\" ?data-up=${this.up} ?data-instant=${this.instant} style=${styleMap({ width: this.width, [this.placement === 'end' ? 'right' : 'left']: this.offset, [this.up ? 'bottom' : 'top']: 'calc(100% + 4px)' })} role=\"menu\" aria-label=${this.label} @keydown=${this.onMenuKey}><slot></slot></div>`\n\t\t\t: nothing\n\t\tconst trigger = own\n\t\t\t? html`<slot name=\"trigger\"></slot>`\n\t\t\t: html`<button data-trigger type=\"button\" class=\"inline-flex h-control-sm cursor-pointer items-center gap-1.5 border border-action-secondary-edge bg-surface px-2.5 text-meta leading-5 font-medium text-fg transition-[border-color,background-color] duration-120 ease-standard hover:border-action-secondary-edge-hover active:bg-surface-subtle aria-expanded:border-action-secondary-edge-hover max-md:h-control-touch max-md:text-ui\" aria-haspopup=\"menu\" aria-expanded=${String(this.open)} aria-label=${this.triggerLabel ?? nothing} @click=${this.toggle} @keydown=${this.onTriggerKey}><slot name=\"trigger\"></slot></button>`\n\t\treturn html`${trigger}${panel}`\n\t}\n}\n\ndefine('menu', Menu)\n"
+        },
+        {
+          "path": "elements/components/ui/menu.css",
+          "content": "/* The host is the menu's box (Menu.vue's root div: relative inline-block), so a class on <conare-menu> lands on it as\n   a class on <Menu> does. */\n:host { @apply relative inline-block; }\n/* Menu.vue's <style>. Opened from the keyboard, focus lands on a row at once: no animation. Vue reads that from\n   :has(:focus-visible), which cannot see rows slotted from the page, so the element marks the panel data-instant. */\n.ds-menu { position: absolute; z-index: 40; display: flex; flex-direction: column; padding: var(--ds-space-xs); border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface); animation: ds-menu-in var(--ds-duration-glide) var(--ds-easing-standard) both; scroll-margin: 8px; }\n.ds-menu[data-up] { animation-name: ds-menu-up; }\n/* Opened from the keyboard, focus lands on a row at once: no animation. */\n.ds-menu:has(:focus-visible) { animation: none; }\n.ds-menu > * { flex-shrink: 0; }\n@keyframes ds-menu-in { from { opacity: 0; transform: translateY(-4px); } }\n@keyframes ds-menu-up { from { opacity: 0; transform: translateY(4px); } }\n@media (prefers-reduced-motion: reduce) { .ds-menu { animation: none; } }\n.ds-menu[data-instant] { animation: none; }\n"
+        },
+        {
+          "path": "elements/components/ui/menu-item.ts",
+          "content": "import { html, LitElement } from 'lit'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// MenuItem.vue as <conare-menu-item>: one row of a menu (console2.css .v2-menu-item): 32px (44px on phones), 13px, a\n// 14px gutter that holds the 4px red square marker of the row under the pointer or focus, which also takes the paper\n// fill. `current` sets it in medium weight; `danger` is Sign out's red. Put a 14px Lucide icon first, a count or a check\n// last. Choosing it fires `select` and closes the menu around it (any element with lib/menu's CloseOnSelect: menu,\n// context menu, menubar), unless `keep-open`. Vue's role and aria-checked fall through to the row's button; here\n// `role` and `aria-checked` on the element move to its button (role=\"menuitemradio\" aria-checked=\"true\" for a radio\n// row), or set the `itemRole` and `checked` properties.\n\n/**\n * @summary One row of a menu.\n * @slot - The row: an icon, the label, a count or a check.\n * @fires select - The row was chosen.\n */\nexport class MenuItem extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic shadowRootOptions = { ...LitElement.shadowRootOptions, delegatesFocus: true }\n\tstatic properties = { href: {}, current: { type: Boolean }, danger: { type: Boolean }, disabled: { type: Boolean, reflect: true }, keepOpen: { type: Boolean, attribute: 'keep-open' }, itemRole: { attribute: false }, checked: { attribute: false } }\n\t// role and aria-checked are read here and moved to the button, so the row is named once (a menuitemradio, checked or\n\t// not) and not twice.\n\tstatic get observedAttributes() {\n\t\treturn [...super.observedAttributes, 'role', 'aria-checked']\n\t}\n\n\thref?: string\n\t/** The current choice, in medium weight. */\n\tcurrent = false\n\t/** Sign out's red. */\n\tdanger = false\n\tdisabled = false\n\t/** Choosing it leaves the menu open. */\n\tkeepOpen = false\n\t/** The button's role: menuitem, or menuitemradio and menuitemcheckbox (the `role` attribute). */\n\titemRole = 'menuitem'\n\t/** A radio or checkbox row's state (the `aria-checked` attribute). */\n\tchecked?: boolean\n\n\tattributeChangedCallback(name: string, old: string | null, value: string | null) {\n\t\tif (name === 'role' || name === 'aria-checked') {\n\t\t\tif (value === null) return\n\t\t\tif (name === 'role') this.itemRole = value\n\t\t\telse this.checked = value === 'true'\n\t\t\tthis.removeAttribute(name)\n\t\t\treturn\n\t\t}\n\t\tsuper.attributeChangedCallback(name, old, value)\n\t}\n\n\tprivate choose = () => {\n\t\tthis.emit('select')\n\t}\n\n\trender() {\n\t\tconst current = this.current ? 'true' : undefined\n\t\tconst checked = this.checked === undefined ? undefined : String(this.checked)\n\t\treturn this.href\n\t\t\t? html`<a data-ds=\"menu-item\" href=${this.href} role=${this.itemRole} class=\"ds-menu-item\" aria-current=${ifDefined(current)} aria-checked=${ifDefined(checked)} ?data-danger=${this.danger} @click=${this.choose}><slot></slot></a>`\n\t\t\t: html`<button data-ds=\"menu-item\" type=\"button\" role=${this.itemRole} class=\"ds-menu-item\" aria-current=${ifDefined(current)} aria-checked=${ifDefined(checked)} ?data-danger=${this.danger} ?disabled=${this.disabled} @click=${this.choose}><slot></slot></button>`\n\t}\n}\n\ndefine('menu-item', MenuItem)\n"
+        },
+        {
+          "path": "elements/components/ui/menu-item.css",
+          "content": "/* MenuItem.vue's <style>. A row is a flex item of the panel that does not shrink (Menu.vue's .ds-menu > *). */\n.ds-menu-item { position: relative; display: flex; width: 100%; height: var(--ds-size-control-md); align-items: center; gap: var(--ds-space-md); padding: 0 10px 0 14px; color: var(--ds-color-fg); font-size: var(--ds-text-ui); text-align: left; outline: none; cursor: pointer; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-menu-item::before { position: absolute; top: 50%; left: 5px; width: 4px; height: 4px; margin-top: -2px; background: var(--ds-color-edge-accent); content: \"\"; opacity: 0; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-menu-item:focus-visible { background: var(--ds-color-surface-subtle); }\n.ds-menu-item:focus-visible::before { opacity: 1; }\n@media (hover: hover) and (pointer: fine) {\n  .ds-menu-item:hover { background: var(--ds-color-surface-subtle); }\n  .ds-menu-item:hover::before { opacity: 1; }\n  .ds-menu-item[data-danger]:hover { background: var(--ds-color-surface-danger); }\n}\n.ds-menu-item[aria-current=\"true\"] { font-weight: var(--ds-font-weight-medium); }\n.ds-menu-item:disabled { color: var(--ds-color-fg-muted); cursor: progress; }\n.ds-menu-item[data-danger] { color: var(--ds-color-fg-danger); }\n.ds-menu-item[data-danger]:focus-visible { background: var(--ds-color-surface-danger); }\n@media (pointer: coarse), (max-width: 767px) { .ds-menu-item { height: auto; min-height: 44px; } }\n.ds-menu-item { flex-shrink: 0; }\n"
+        },
+        {
+          "path": "elements/components/ui/menu-label.ts",
+          "content": "import { html } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// MenuLabel.vue as <conare-menu-label>: a group's name in a menu (console2.css .v2-menu-label): 12px muted, an\n// optional tag at the end.\n\n/**\n * @summary A group's name in a menu.\n * @slot - The name, and a tag if any.\n */\nexport class MenuLabel extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\trender() {\n\t\treturn html`<p data-ds=\"menu-label\" class=\"flex items-center justify-between gap-2 pt-1.5 pr-2.5 pb-1 pl-3.5 text-meta text-fg-muted\"><slot></slot></p>`\n\t}\n}\n\ndefine('menu-label', MenuLabel)\n"
+        },
+        {
+          "path": "elements/components/ui/menu-separator.ts",
+          "content": "import { html } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// MenuSeparator.vue as <conare-menu-separator>: a hairline between a menu's groups, edge to edge\n// (console2.css .v2-menu-sep).\n\n/** @summary A hairline between a menu's groups. */\nexport class MenuSeparator extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\trender() {\n\t\treturn html`<div data-ds=\"menu-separator\" class=\"-mx-1 my-1 h-px bg-edge\" role=\"separator\"></div>`\n\t}\n}\n\ndefine('menu-separator', MenuSeparator)\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/menu.js",
+        "elements/menu-item.js",
+        "elements/menu-label.js",
+        "elements/menu-separator.js"
+      ],
+      "tag": "conare-menu",
+      "tags": [
+        "conare-menu",
+        "conare-menu-item",
+        "conare-menu-label",
+        "conare-menu-separator"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-menu",
+            "name": "Menu",
+            "module": "elements/menu.js",
+            "description": "A button that opens a short list of choices or actions.",
+            "attributes": [
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string",
+                "default": "''",
+                "description": "The menu's name for assistive tech."
+              },
+              {
+                "name": "up",
+                "field": "up",
+                "type": "boolean",
+                "default": "false",
+                "description": "Opens upward."
+              },
+              {
+                "name": "placement",
+                "field": "placement",
+                "type": "\"start\" | \"end\"",
+                "default": "'start'",
+                "description": "The panel's edge: start, or end to open toward the start from the trigger's end (Vue's `align`)."
+              },
+              {
+                "name": "width",
+                "field": "width",
+                "type": "string",
+                "default": "'264px'"
+              },
+              {
+                "name": "offset",
+                "field": "offset",
+                "type": "string",
+                "default": "'0px'",
+                "description": "Moves the panel in from its edge."
+              },
+              {
+                "name": "trigger-label",
+                "field": "triggerLabel",
+                "type": "string | undefined",
+                "description": "The default trigger's name, when its content has none."
+              },
+              {
+                "name": "open",
+                "field": "open",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "instant",
+                "field": "instant",
+                "type": "boolean",
+                "default": "false"
+              }
+            ],
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "''",
+                "description": "The menu's name for assistive tech.",
+                "attribute": "label"
+              },
+              {
+                "name": "up",
+                "type": "boolean",
+                "default": "false",
+                "description": "Opens upward.",
+                "attribute": "up"
+              },
+              {
+                "name": "placement",
+                "type": "\"start\" | \"end\"",
+                "default": "'start'",
+                "description": "The panel's edge: start, or end to open toward the start from the trigger's end (Vue's `align`).",
+                "attribute": "placement"
+              },
+              {
+                "name": "width",
+                "type": "string",
+                "default": "'264px'",
+                "attribute": "width"
+              },
+              {
+                "name": "offset",
+                "type": "string",
+                "default": "'0px'",
+                "description": "Moves the panel in from its edge.",
+                "attribute": "offset"
+              },
+              {
+                "name": "triggerLabel",
+                "type": "string | undefined",
+                "description": "The default trigger's name, when its content has none.",
+                "attribute": "trigger-label"
+              },
+              {
+                "name": "open",
+                "type": "boolean",
+                "default": "false",
+                "attribute": "open"
+              }
+            ],
+            "events": [
+              {
+                "name": "open-change",
+                "description": "It opened or closed (detail.value)."
+              }
+            ],
+            "slots": [
+              {
+                "name": "",
+                "description": "The rows: <conare-menu-item>, <conare-menu-label>, <conare-menu-separator>."
+              },
+              {
+                "name": "trigger",
+                "description": "A <button> to use as the trigger, or the default trigger's content."
+              }
+            ],
+            "methods": [
+              {
+                "name": "show"
+              },
+              {
+                "name": "close"
+              }
+            ]
+          },
+          {
+            "tag": "conare-menu-item",
+            "name": "MenuItem",
+            "module": "elements/menu-item.js",
+            "description": "One row of a menu.",
+            "attributes": [
+              {
+                "name": "role"
+              },
+              {
+                "name": "aria-checked"
+              },
+              {
+                "name": "href",
+                "field": "href",
+                "type": "string | undefined"
+              },
+              {
+                "name": "current",
+                "field": "current",
+                "type": "boolean",
+                "default": "false",
+                "description": "The current choice, in medium weight."
+              },
+              {
+                "name": "danger",
+                "field": "danger",
+                "type": "boolean",
+                "default": "false",
+                "description": "Sign out's red."
+              },
+              {
+                "name": "disabled",
+                "field": "disabled",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "keep-open",
+                "field": "keepOpen",
+                "type": "boolean",
+                "default": "false",
+                "description": "Choosing it leaves the menu open."
+              }
+            ],
+            "properties": [
+              {
+                "name": "href",
+                "type": "string | undefined",
+                "attribute": "href"
+              },
+              {
+                "name": "current",
+                "type": "boolean",
+                "default": "false",
+                "description": "The current choice, in medium weight.",
+                "attribute": "current"
+              },
+              {
+                "name": "danger",
+                "type": "boolean",
+                "default": "false",
+                "description": "Sign out's red.",
+                "attribute": "danger"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "attribute": "disabled"
+              },
+              {
+                "name": "keepOpen",
+                "type": "boolean",
+                "default": "false",
+                "description": "Choosing it leaves the menu open.",
+                "attribute": "keep-open"
+              },
+              {
+                "name": "itemRole",
+                "type": "string",
+                "default": "'menuitem'",
+                "description": "The button's role: menuitem, or menuitemradio and menuitemcheckbox (the `role` attribute)."
+              },
+              {
+                "name": "checked",
+                "type": "boolean | undefined",
+                "description": "A radio or checkbox row's state (the `aria-checked` attribute)."
+              }
+            ],
+            "events": [
+              {
+                "name": "select",
+                "description": "The row was chosen."
+              }
+            ],
+            "slots": [
+              {
+                "name": "",
+                "description": "The row: an icon, the label, a count or a check."
+              }
+            ],
+            "methods": []
+          },
+          {
+            "tag": "conare-menu-label",
+            "name": "MenuLabel",
+            "module": "elements/menu-label.js",
+            "description": "A group's name in a menu.",
+            "attributes": [],
+            "properties": [],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "The name, and a tag if any."
+              }
+            ],
+            "methods": []
+          },
+          {
+            "tag": "conare-menu-separator",
+            "name": "MenuSeparator",
+            "module": "elements/menu-separator.js",
+            "description": "A hairline between a menu's groups.",
+            "attributes": [],
+            "properties": [],
+            "events": [],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "The organization switcher",
+          "center": true,
+          "half": false,
+          "path": "elements/examples/menu/Product.html",
+          "content": "<!-- The sidebar's organization switcher, open to show its rows: the organizations under their customer, the current\n     one checked, then what goes with an organization. Sample data; listen for `select` on a row to switch. -->\n<div class=\"h-80 w-sidebar\">\n  <div class=\"h-bar\">\n    <conare-menu label=\"workspaces\" offset=\"8px\" open class=\"!flex h-full w-full\" id=\"workspaces\">\n      <button slot=\"trigger\" type=\"button\" class=\"relative isolate flex h-full w-full cursor-pointer items-center gap-2 px-3 text-left before:absolute before:inset-x-2 before:inset-y-1.5 before:-z-10 before:transition-colors before:duration-120 before:ease-standard hover:before:bg-edge/45 aria-expanded:before:bg-edge/45 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-focus\">\n        <span class=\"inline-flex size-5 shrink-0 items-center justify-center border border-edge bg-surface text-caption leading-none font-medium\" aria-hidden=\"true\" data-initial>A</span>\n        <span class=\"min-w-0 flex-1\">\n          <span class=\"block truncate text-meta leading-3 font-medium\" data-name>Acme production</span>\n          <span class=\"mt-0.5 block truncate text-caption leading-3 text-fg-muted\">Acme · admin</span>\n        </span>\n        <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-chevrons-up-down mr-0.75 shrink-0 text-fg-muted\" aria-hidden=\"true\"><path d=\"m7 15 5 5 5-5\"></path><path d=\"m7 9 5-5 5 5\"></path></svg>\n      </button>\n      <conare-menu-label><span class=\"truncate\">Acme</span><span class=\"shrink-0 border border-edge px-1 text-caption leading-4\">admin</span></conare-menu-label>\n      <conare-menu-item data-org=\"Acme production\" current>\n        <span class=\"inline-flex size-5 shrink-0 items-center justify-center border border-edge bg-surface text-caption leading-none font-medium\" aria-hidden=\"true\">A</span>\n        <span class=\"min-w-0 flex-1 truncate\">Acme production</span>\n        <span class=\"type-meta text-fg-muted\">default</span>\n        <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-check shrink-0\" aria-label=\"current\"><path d=\"M20 6 9 17l-5-5\"></path></svg>\n      </conare-menu-item>\n      <conare-menu-item data-org=\"Acme staging\">\n        <span class=\"inline-flex size-5 shrink-0 items-center justify-center border border-edge bg-surface text-caption leading-none font-medium\" aria-hidden=\"true\">A</span>\n        <span class=\"min-w-0 flex-1 truncate\">Acme staging</span>\n        <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-check shrink-0\" aria-label=\"current\" hidden><path d=\"M20 6 9 17l-5-5\"></path></svg>\n      </conare-menu-item>\n      <conare-menu-item data-org=\"Acme research\">\n        <span class=\"inline-flex size-5 shrink-0 items-center justify-center border border-edge bg-surface text-caption leading-none font-medium\" aria-hidden=\"true\">A</span>\n        <span class=\"min-w-0 flex-1 truncate\">Acme research</span>\n        <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-check shrink-0\" aria-label=\"current\" hidden><path d=\"M20 6 9 17l-5-5\"></path></svg>\n      </conare-menu-item>\n      <conare-menu-separator></conare-menu-separator>\n      <conare-menu-item><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-plus shrink-0 text-fg-muted\" aria-hidden=\"true\"><path d=\"M5 12h14\"></path><path d=\"M12 5v14\"></path></svg>New organization</conare-menu-item>\n      <conare-menu-item><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-settings shrink-0 text-fg-muted\" aria-hidden=\"true\"><path d=\"M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z\"></path><circle cx=\"12\" cy=\"12\" r=\"3\"></circle></svg>Organization settings</conare-menu-item>\n      <conare-menu-item><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-users shrink-0 text-fg-muted\" aria-hidden=\"true\"><path d=\"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\"></path><circle cx=\"9\" cy=\"7\" r=\"4\"></circle><path d=\"M22 21v-2a4 4 0 0 0-3-3.87\"></path><path d=\"M16 3.13a4 4 0 0 1 0 7.75\"></path></svg>Invite members</conare-menu-item>\n    </conare-menu>\n  </div>\n</div>\n<script type=\"module\">\n  // Switching: the chosen organization becomes current, with its check, and the trigger shows it.\n  const menu = document.getElementById('workspaces')\n  for (const row of menu.querySelectorAll('[data-org]')) {\n    row.addEventListener('select', () => {\n      for (const other of menu.querySelectorAll('[data-org]')) {\n        other.current = other === row\n        other.querySelector('svg').toggleAttribute('hidden', other !== row)\n      }\n      menu.querySelector('[data-name]').textContent = row.dataset.org\n      menu.querySelector('[data-initial]').textContent = row.dataset.org.charAt(0)\n    })\n  }\n</script>\n"
+        }
+      ]
+    }
+  }
+}

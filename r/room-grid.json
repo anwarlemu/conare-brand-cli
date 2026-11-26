@@ -1,0 +1,126 @@
+{
+  "name": "room-grid",
+  "title": "Room grid",
+  "type": "registry:ui",
+  "group": "visuals",
+  "description": "The hero frame as a room in one-point perspective: orthogonals to the back wall and rings closing up as they recede. A tile lights under the pointer, and a few light on their own, trading places while the frame is on screen.",
+  "use_for": "Behind the hero's window, with the burst.",
+  "never": [
+    "Anywhere but the hero",
+    "Tiles lighting for reduced motion: they hold still"
+  ],
+  "source": "conare-web app/components/home/RoomGrid.vue, app/assets/css/home.css (.room-tiles)",
+  "body": "",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/visuals/RoomGrid.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed, onBeforeUnmount, onMounted, ref } from 'vue'\n\n// The hero's frame drawn as a room in one-point perspective (RoomGrid.vue): the frame its picture plane, the vanishing\n// point its centre, the same point Burst's slabs recede to. Orthogonals run from evenly spaced points on every edge to\n// the back wall; transversals are the frame scaled about the centre, an equal step deeper each time, so the rings close\n// up as floor tiles do. Each wall tile lights a shade above the red under the pointer, and a few light on their own,\n// trading places every 600ms while the frame is on screen and the tab visible (never for reduced motion). Lay it in a\n// `relative` red frame; the svg is click-through, only the tiles take the pointer.\nconst ACROSS = 12\nconst DOWN = 6\nconst DEPTH = 0.18\nconst INNER = 0.4\n\nconst orthogonals = computed(() => {\n  let d = ''\n  for (let i = 0; i <= ACROSS; i++) {\n    const x = -1 + (2 * i) / ACROSS\n    d += `M${x} -1L${x * INNER} ${-INNER}M${x} 1L${x * INNER} ${INNER}`\n  }\n  for (let j = 1; j < DOWN; j++) {\n    const y = -1 + (2 * j) / DOWN\n    d += `M-1 ${y}L${-INNER} ${y * INNER}M1 ${y}L${INNER} ${y * INNER}`\n  }\n  return d\n})\n\nconst rings = computed(() => {\n  const out: number[] = []\n  for (let k = 1; ; k++) {\n    const s = 1 / (1 + k * DEPTH)\n    if (s < INNER) break\n    out.push(Math.round(s * 1e4) / 1e4)\n  }\n  out.push(INNER)\n  return out\n})\n\n// Each cell of the four walls, between two neighbouring orthogonals and two neighbouring rings, as its own quad.\nconst tiles = computed(() => {\n  const depths = [1, ...rings.value]\n  const xs = Array.from({ length: ACROSS + 1 }, (_, i) => -1 + (2 * i) / ACROSS)\n  const ys = Array.from({ length: DOWN + 1 }, (_, j) => -1 + (2 * j) / DOWN)\n  type P = [number, number]\n  const out: { pts: string, k: number }[] = []\n  const r = (n: number) => Math.round(n * 1e4) / 1e4\n  const add = (q: P[], k: number) => out.push({ pts: q.map(p => `${r(p[0])},${r(p[1])}`).join(' '), k })\n  for (let k = 0; k < depths.length - 1; k++) {\n    const a = depths[k]!\n    const b = depths[k + 1]!\n    for (let i = 0; i < ACROSS; i++) {\n      for (const y of [-1, 1]) add([[xs[i]! * a, y * a], [xs[i + 1]! * a, y * a], [xs[i + 1]! * b, y * b], [xs[i]! * b, y * b]], k)\n    }\n    for (let j = 0; j < DOWN; j++) {\n      for (const x of [-1, 1]) add([[x * a, ys[j]! * a], [x * a, ys[j + 1]! * a], [x * b, ys[j + 1]! * b], [x * b, ys[j]! * b]], k)\n    }\n  }\n  return out\n})\n\n// Tile picks: a seeded source when check-parity defines __dsRandom for comparisons; real pages never do.\nconst random = () => ((globalThis as { __dsRandom?: () => number }).__dsRandom ?? Math.random)()\n// A few tiles lit at random from the outer rings (the slabs cover the deeper ones), one swapped every SWAP_MS.\nconst LIT = 6\nconst SWAP_MS = 600\nconst OUTER = 4\nconst lit = ref<number[]>([])\nconst litSet = computed(() => new Set(lit.value))\nconst root = ref<SVGSVGElement | null>(null)\nlet timer: number | undefined\nlet io: IntersectionObserver | undefined\n\nfunction pickTile() {\n  const pool = tiles.value.flatMap((t, i) => (t.k < OUTER && !lit.value.includes(i) ? [i] : []))\n  return pool[Math.floor(random() * pool.length)]!\n}\nfunction swap() {\n  const next = [...lit.value]\n  next.splice(Math.floor(random() * next.length), 1, pickTile())\n  lit.value = next\n}\nfunction play(on: boolean) {\n  window.clearInterval(timer)\n  if (on && !document.hidden) timer = window.setInterval(swap, SWAP_MS)\n}\nlet visible = false\nconst onVisibility = () => play(visible)\n\nonMounted(() => {\n  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return\n  for (let n = 0; n < LIT; n++) lit.value = [...lit.value, pickTile()]\n  io = new IntersectionObserver(([e]) => {\n    visible = !!e?.isIntersecting\n    play(visible)\n  })\n  if (root.value) io.observe(root.value)\n  document.addEventListener('visibilitychange', onVisibility)\n})\nonBeforeUnmount(() => {\n  window.clearInterval(timer)\n  io?.disconnect()\n  document.removeEventListener('visibilitychange', onVisibility)\n})\n</script>\n\n<template>\n  <svg data-ds=\"room-grid\" ref=\"root\" class=\"pointer-events-none absolute inset-0 h-full w-full\" viewBox=\"-1 -1 2 2\" preserveAspectRatio=\"none\" aria-hidden=\"true\">\n    <g class=\"ds-room-tiles\" pointer-events=\"fill\">\n      <polygon v-for=\"(t, i) in tiles\" :key=\"t.pts\" :points=\"t.pts\" :data-lit=\"litSet.has(i) || undefined\" />\n    </g>\n    <g fill=\"none\" stroke=\"var(--ds-color-off-white)\" stroke-width=\"0.5\" stroke-opacity=\"0.35\" vector-effect=\"non-scaling-stroke\">\n      <path :d=\"orthogonals\" vector-effect=\"non-scaling-stroke\" />\n      <rect v-for=\"s in rings\" :key=\"s\" :x=\"-s\" :y=\"-s\" :width=\"2 * s\" :height=\"2 * s\" vector-effect=\"non-scaling-stroke\" />\n    </g>\n  </svg>\n</template>\n\n<style>\n/* A tile fades out slowly, lights a little quicker on its own, and at once under the pointer (home.css .room-tiles). */\n.ds-room-tiles > polygon { fill: var(--ds-color-off-white); fill-opacity: 0; transition: fill-opacity var(--ds-duration-tile-fade) ease; }\n.ds-room-tiles > polygon[data-lit=\"true\"] { fill-opacity: 0.16; transition-duration: var(--ds-duration-tile-lit); }\n@media (hover: hover) and (pointer: fine) {\n  .ds-room-tiles > polygon:hover { fill-opacity: 0.22; transition-duration: var(--ds-duration-cell); }\n}\n@media (prefers-reduced-motion: reduce) { .ds-room-tiles > polygon { transition: none; } }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "On the site",
+      "center": false,
+      "half": false,
+      "path": "examples/room-grid/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport Grain from '@/components/visuals/Grain.vue'\nimport RoomGrid from '@/components/visuals/RoomGrid.vue'\n// The hero's red frame as a room: point at a tile and it lights.\n</script>\n\n<template>\n  <div class=\"relative flex aspect-[2/1] w-full justify-center overflow-hidden bg-home-red px-4 py-10 text-ds-neutral-300\">\n    <Grain />\n    <RoomGrid />\n  </div>\n</template>\n",
+      "requires": [
+        "cell-burst"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/visuals/RoomGrid.tsx",
+          "content": "'use client'\nimport { useEffect, useRef, useState } from 'react'\n\n// The hero's frame drawn as a room in one-point perspective (RoomGrid.vue): the frame its picture plane, the vanishing\n// point its centre, the same point Burst's slabs recede to. Orthogonals run from evenly spaced points on every edge to\n// the back wall; transversals are the frame scaled about the centre, an equal step deeper each time, so the rings close\n// up as floor tiles do. Each wall tile lights a shade above the red under the pointer, and a few light on their own,\n// trading places every 600ms while the frame is on screen and the tab visible (never for reduced motion). Lay it in a\n// `relative` red frame; the svg is click-through, only the tiles take the pointer.\nconst ACROSS = 12\nconst DOWN = 6\nconst DEPTH = 0.18\nconst INNER = 0.4\n\n// Paths are joined with + rather than template strings: the registry's class check reads a path command followed by\n// an interpolation as a class glued to one.\nconst orthogonals = (() => {\n  let d = ''\n  for (let i = 0; i <= ACROSS; i++) {\n    const x = -1 + (2 * i) / ACROSS\n    d += 'M' + x + ' -1L' + x * INNER + ' ' + -INNER + 'M' + x + ' 1L' + x * INNER + ' ' + INNER\n  }\n  for (let j = 1; j < DOWN; j++) {\n    const y = -1 + (2 * j) / DOWN\n    d += 'M-1 ' + y + 'L' + -INNER + ' ' + y * INNER + 'M1 ' + y + 'L' + INNER + ' ' + y * INNER\n  }\n  return d\n})()\n\nconst rings = (() => {\n  const out: number[] = []\n  for (let k = 1; ; k++) {\n    const s = 1 / (1 + k * DEPTH)\n    if (s < INNER) break\n    out.push(Math.round(s * 1e4) / 1e4)\n  }\n  out.push(INNER)\n  return out\n})()\n\n// Each cell of the four walls, between two neighbouring orthogonals and two neighbouring rings, as its own quad.\nconst tiles = (() => {\n  const depths = [1, ...rings]\n  const xs = Array.from({ length: ACROSS + 1 }, (_, i) => -1 + (2 * i) / ACROSS)\n  const ys = Array.from({ length: DOWN + 1 }, (_, j) => -1 + (2 * j) / DOWN)\n  type P = [number, number]\n  const out: { pts: string, k: number }[] = []\n  const r = (n: number) => Math.round(n * 1e4) / 1e4\n  const add = (q: P[], k: number) => out.push({ pts: q.map(p => r(p[0]) + ',' + r(p[1])).join(' '), k })\n  for (let k = 0; k < depths.length - 1; k++) {\n    const a = depths[k]!\n    const b = depths[k + 1]!\n    for (let i = 0; i < ACROSS; i++) {\n      for (const y of [-1, 1]) add([[xs[i]! * a, y * a], [xs[i + 1]! * a, y * a], [xs[i + 1]! * b, y * b], [xs[i]! * b, y * b]], k)\n    }\n    for (let j = 0; j < DOWN; j++) {\n      for (const x of [-1, 1]) add([[x * a, ys[j]! * a], [x * a, ys[j + 1]! * a], [x * b, ys[j + 1]! * b], [x * b, ys[j]! * b]], k)\n    }\n  }\n  return out\n})()\n\n// Tile picks: a seeded source when check-parity defines __dsRandom for comparisons; real pages never do.\nconst random = () => ((globalThis as { __dsRandom?: () => number }).__dsRandom ?? Math.random)()\n// A few tiles lit at random from the outer rings (the slabs cover the deeper ones), one swapped every SWAP_MS.\nconst LIT = 6\nconst SWAP_MS = 600\nconst OUTER = 4\n\nexport function RoomGrid() {\n  const [lit, setLit] = useState<number[]>([])\n  // What pickTile reads straight after a change, as Vue's ref gives it.\n  const litNow = useRef<number[]>([])\n  const root = useRef<SVGSVGElement | null>(null)\n\n  useEffect(() => {\n    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return\n    let timer: number | undefined\n    let visible = false\n    const show = (next: number[]) => {\n      litNow.current = next\n      setLit(next)\n    }\n    const pickTile = () => {\n      const pool = tiles.flatMap((t, i) => (t.k < OUTER && !litNow.current.includes(i) ? [i] : []))\n      return pool[Math.floor(random() * pool.length)]!\n    }\n    const swap = () => {\n      const next = [...litNow.current]\n      next.splice(Math.floor(random() * next.length), 1, pickTile())\n      show(next)\n    }\n    const play = (on: boolean) => {\n      window.clearInterval(timer)\n      if (on && !document.hidden) timer = window.setInterval(swap, SWAP_MS)\n    }\n    const onVisibility = () => play(visible)\n    for (let n = 0; n < LIT; n++) show([...litNow.current, pickTile()])\n    const io = new IntersectionObserver(([e]) => {\n      visible = !!e?.isIntersecting\n      play(visible)\n    })\n    if (root.current) io.observe(root.current)\n    document.addEventListener('visibilitychange', onVisibility)\n    return () => {\n      window.clearInterval(timer)\n      io.disconnect()\n      document.removeEventListener('visibilitychange', onVisibility)\n    }\n  }, [])\n\n  const litSet = new Set(lit)\n  return (\n    <>\n      <style href=\"ds-room-grid\" precedence=\"ds\">{css}</style>\n      <svg data-ds=\"room-grid\" ref={root} className=\"pointer-events-none absolute inset-0 h-full w-full\" viewBox=\"-1 -1 2 2\" preserveAspectRatio=\"none\" aria-hidden=\"true\">\n        <g className=\"ds-room-tiles\" pointerEvents=\"fill\">\n          {tiles.map((t, i) => <polygon key={t.pts} points={t.pts} data-lit={litSet.has(i) || undefined} />)}\n        </g>\n        <g fill=\"none\" stroke=\"var(--ds-color-off-white)\" strokeWidth=\"0.5\" strokeOpacity=\"0.35\" vectorEffect=\"non-scaling-stroke\">\n          <path d={orthogonals} vectorEffect=\"non-scaling-stroke\" />\n          {rings.map(s => <rect key={s} x={-s} y={-s} width={2 * s} height={2 * s} vectorEffect=\"non-scaling-stroke\" />)}\n        </g>\n      </svg>\n    </>\n  )\n}\n\nexport default RoomGrid\n\nconst css = `\n/* A tile fades out slowly, lights a little quicker on its own, and at once under the pointer (home.css .room-tiles). */\n.ds-room-tiles > polygon { fill: var(--ds-color-off-white); fill-opacity: 0; transition: fill-opacity var(--ds-duration-tile-fade) ease; }\n.ds-room-tiles > polygon[data-lit=\"true\"] { fill-opacity: 0.16; transition-duration: var(--ds-duration-tile-lit); }\n@media (hover: hover) and (pointer: fine) {\n  .ds-room-tiles > polygon:hover { fill-opacity: 0.22; transition-duration: var(--ds-duration-cell); }\n}\n@media (prefers-reduced-motion: reduce) { .ds-room-tiles > polygon { transition: none; } }\n`\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "RoomGrid",
+            "file": "react/components/visuals/RoomGrid.tsx",
+            "props": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "On the site",
+          "center": false,
+          "half": false,
+          "path": "react/examples/room-grid/Site.tsx",
+          "content": "import { Grain } from '@/react/components/visuals/Grain'\nimport { RoomGrid } from '@/react/components/visuals/RoomGrid'\n// The hero's red frame as a room: point at a tile and it lights.\n\nexport default function Site() {\n  return (\n    <div className=\"relative flex aspect-[2/1] w-full justify-center overflow-hidden bg-home-red px-4 py-10 text-ds-neutral-300\">\n      <Grain />\n      <RoomGrid />\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "cell-burst"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/visuals/room-grid.ts",
+          "content": "import { html, nothing, svg, type PropertyValues } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// RoomGrid.vue as <conare-room-grid>: the hero's frame drawn as a room in one-point perspective: the frame its picture plane, the vanishing\n// point its centre, the same point Burst's slabs recede to. Orthogonals run from evenly spaced points on every edge to\n// the back wall; transversals are the frame scaled about the centre, an equal step deeper each time, so the rings close\n// up as floor tiles do. Each wall tile lights a shade above the red under the pointer, and a few light on their own,\n// trading places every 600ms while the frame is on screen and the tab visible (never for reduced motion). Lay it in a\n// `relative` red frame; the svg is click-through, only the tiles take the pointer.\nconst ACROSS = 12\nconst DOWN = 6\nconst DEPTH = 0.18\nconst INNER = 0.4\n\n// Paths are joined with + rather than template strings: the registry's class check reads a path command followed by\n// an interpolation as a class glued to one.\nconst orthogonals = (() => {\n\tlet d = ''\n\tfor (let i = 0; i <= ACROSS; i++) {\n\t\tconst x = -1 + (2 * i) / ACROSS\n\t\td += 'M' + x + ' -1L' + x * INNER + ' ' + -INNER + 'M' + x + ' 1L' + x * INNER + ' ' + INNER\n\t}\n\tfor (let j = 1; j < DOWN; j++) {\n\t\tconst y = -1 + (2 * j) / DOWN\n\t\td += 'M-1 ' + y + 'L' + -INNER + ' ' + y * INNER + 'M1 ' + y + 'L' + INNER + ' ' + y * INNER\n\t}\n\treturn d\n})()\n\nconst rings = (() => {\n\tconst out: number[] = []\n\tfor (let k = 1; ; k++) {\n\t\tconst s = 1 / (1 + k * DEPTH)\n\t\tif (s < INNER) break\n\t\tout.push(Math.round(s * 1e4) / 1e4)\n\t}\n\tout.push(INNER)\n\treturn out\n})()\n\n// Each cell of the four walls, between two neighbouring orthogonals and two neighbouring rings, as its own quad.\nconst tiles = (() => {\n\tconst depths = [1, ...rings]\n\tconst xs = Array.from({ length: ACROSS + 1 }, (_, i) => -1 + (2 * i) / ACROSS)\n\tconst ys = Array.from({ length: DOWN + 1 }, (_, j) => -1 + (2 * j) / DOWN)\n\ttype P = [number, number]\n\tconst out: { pts: string, k: number }[] = []\n\tconst r = (n: number) => Math.round(n * 1e4) / 1e4\n\tconst add = (q: P[], k: number) => out.push({ pts: q.map(p => r(p[0]) + ',' + r(p[1])).join(' '), k })\n\tfor (let k = 0; k < depths.length - 1; k++) {\n\t\tconst a = depths[k]!\n\t\tconst b = depths[k + 1]!\n\t\tfor (let i = 0; i < ACROSS; i++) {\n\t\t\tfor (const y of [-1, 1]) add([[xs[i]! * a, y * a], [xs[i + 1]! * a, y * a], [xs[i + 1]! * b, y * b], [xs[i]! * b, y * b]], k)\n\t\t}\n\t\tfor (let j = 0; j < DOWN; j++) {\n\t\t\tfor (const x of [-1, 1]) add([[x * a, ys[j]! * a], [x * a, ys[j + 1]! * a], [x * b, ys[j + 1]! * b], [x * b, ys[j]! * b]], k)\n\t\t}\n\t}\n\treturn out\n})()\n\n// Tile picks: a seeded source when check-parity defines __dsRandom for comparisons; real pages never do.\nconst random = () => ((globalThis as { __dsRandom?: () => number }).__dsRandom ?? Math.random)()\n// A few tiles lit at random from the outer rings (the slabs cover the deeper ones), one swapped every SWAP_MS.\nconst LIT = 6\nconst SWAP_MS = 600\nconst OUTER = 4\n\n/**\n * @summary The hero's red frame as a room in one-point perspective, its tiles lighting.\n */\nexport class RoomGrid extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { lit: { state: true } }\n\n\tprivate lit: number[] = []\n\tprivate timer: number | undefined\n\tprivate io?: IntersectionObserver\n\tprivate visible = false\n\tprivate onVisibility = () => this.play(this.visible)\n\n\tprivate pickTile() {\n\t\tconst pool = tiles.flatMap((t, i) => (t.k < OUTER && !this.lit.includes(i) ? [i] : []))\n\t\treturn pool[Math.floor(random() * pool.length)]!\n\t}\n\tprivate swap = () => {\n\t\tconst next = [...this.lit]\n\t\tnext.splice(Math.floor(random() * next.length), 1, this.pickTile())\n\t\tthis.lit = next\n\t}\n\tprivate play(on: boolean) {\n\t\twindow.clearInterval(this.timer)\n\t\tif (on && !document.hidden) this.timer = window.setInterval(this.swap, SWAP_MS)\n\t}\n\n\tprotected firstUpdated(changed: PropertyValues) {\n\t\tsuper.firstUpdated(changed)\n\t\tif (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return\n\t\tfor (let n = 0; n < LIT; n++) this.lit = [...this.lit, this.pickTile()]\n\t\tthis.io = new IntersectionObserver(([e]) => {\n\t\t\tthis.visible = !!e?.isIntersecting\n\t\t\tthis.play(this.visible)\n\t\t})\n\t\tconst root = this.renderRoot.querySelector('svg')\n\t\tif (root) this.io.observe(root)\n\t\tdocument.addEventListener('visibilitychange', this.onVisibility)\n\t}\n\n\tdisconnectedCallback() {\n\t\tsuper.disconnectedCallback()\n\t\twindow.clearInterval(this.timer)\n\t\tthis.io?.disconnect()\n\t\tdocument.removeEventListener('visibilitychange', this.onVisibility)\n\t}\n\n\trender() {\n\t\tconst litSet = new Set(this.lit)\n\t\treturn html`<svg data-ds=\"room-grid\" class=\"pointer-events-none absolute inset-0 h-full w-full\" viewBox=\"-1 -1 2 2\" preserveAspectRatio=\"none\" aria-hidden=\"true\"><g class=\"ds-room-tiles\" pointer-events=\"fill\">${tiles.map((t, i) => svg`<polygon points=${t.pts} data-lit=${litSet.has(i) ? 'true' : nothing}></polygon>`)}</g><g fill=\"none\" stroke=\"var(--ds-color-off-white)\" stroke-width=\"0.5\" stroke-opacity=\"0.35\" vector-effect=\"non-scaling-stroke\"><path d=${orthogonals} vector-effect=\"non-scaling-stroke\"></path>${rings.map((s) => svg`<rect x=${-s} y=${-s} width=${2 * s} height=${2 * s} vector-effect=\"non-scaling-stroke\"></rect>`)}</g></svg>`\n\t}\n}\n\ndefine('room-grid', RoomGrid)\n"
+        },
+        {
+          "path": "elements/components/visuals/room-grid.css",
+          "content": "/* RoomGrid.vue's <style>, as it is. */\n/* A tile fades out slowly, lights a little quicker on its own, and at once under the pointer (home.css .room-tiles). */\n.ds-room-tiles > polygon { fill: var(--ds-color-off-white); fill-opacity: 0; transition: fill-opacity var(--ds-duration-tile-fade) ease; }\n.ds-room-tiles > polygon[data-lit=\"true\"] { fill-opacity: 0.16; transition-duration: var(--ds-duration-tile-lit); }\n@media (hover: hover) and (pointer: fine) {\n  .ds-room-tiles > polygon:hover { fill-opacity: 0.22; transition-duration: var(--ds-duration-cell); }\n}\n@media (prefers-reduced-motion: reduce) { .ds-room-tiles > polygon { transition: none; } }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/room-grid.js",
+        "elements/grain.js"
+      ],
+      "tag": "conare-room-grid",
+      "tags": [
+        "conare-room-grid"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-room-grid",
+            "name": "RoomGrid",
+            "module": "elements/room-grid.js",
+            "description": "The hero's red frame as a room in one-point perspective, its tiles lighting.",
+            "attributes": [
+              {
+                "name": "lit",
+                "field": "lit",
+                "type": "number[]",
+                "default": "[]"
+              }
+            ],
+            "properties": [],
+            "events": [],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "On the site",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/room-grid/Site.html",
+          "content": "<!-- The hero's red frame as a room: point at a tile and it lights. -->\n<div class=\"relative flex aspect-[2/1] w-full justify-center overflow-hidden bg-home-red px-4 py-10 text-ds-neutral-300\">\n  <conare-grain></conare-grain>\n  <conare-room-grid></conare-room-grid>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

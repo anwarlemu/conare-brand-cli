@@ -1,0 +1,227 @@
+{
+  "name": "switch",
+  "title": "Switch",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "On or off with no words: a square thumb in a square track. The row beside it says what the state means. Black when on, grey while it can't be changed.",
+  "use_for": "A setting that is on or off, such as email sign-in.",
+  "never": [
+    "On and Off written beside it",
+    "A switch with no line saying what it does"
+  ],
+  "source": "conare-web app/components/console/Switch.vue, app/assets/css/console2.css (.v2-switch)",
+  "body": "",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Switch.vue",
+      "content": "<script setup lang=\"ts\">\n// On or off, with no words (console2.css .v2-switch): a square thumb in a square track. The thumb slides on the\n// console's curve and the track turns black at once, so the end state lands straight away. The row beside it says\n// what the state means. Grey while it can't be changed.\nconst on = defineModel<boolean>({ default: false })\ndefineProps<{ label: string, disabled?: boolean }>()\n</script>\n\n<template>\n  <button data-ds=\"switch\" type=\"button\" role=\"switch\" class=\"ds-switch\" :aria-checked=\"on\" :aria-label=\"label\" :disabled=\"disabled\" @click=\"on = !on\"><span aria-hidden=\"true\" /></button>\n</template>\n\n<style>\n.ds-switch { --w: 36px; --h: 20px; position: relative; display: inline-flex; width: var(--w); height: var(--h); flex-shrink: 0; align-items: center; padding: var(--ds-space-2xs); border: var(--ds-border-hairline) solid var(--ds-color-edge-strong); background: var(--ds-color-surface-sunken); cursor: pointer; touch-action: manipulation; transition: border-color var(--ds-duration-micro) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-switch > span { width: calc(var(--h) - 6px); height: calc(var(--h) - 6px); background: var(--ds-color-fg-muted); transition: transform var(--ds-duration-swap) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-switch[aria-checked=\"true\"] { border-color: var(--ds-color-action-primary); background: var(--ds-color-action-primary); }\n.ds-switch[aria-checked=\"true\"] > span { background: var(--ds-color-action-primary-fg); transform: translateX(calc(var(--w) - var(--h))); }\n.ds-switch:disabled { border-color: var(--ds-color-edge-strong); background: var(--ds-color-surface-sunken); cursor: not-allowed; }\n.ds-switch:disabled > span { background: var(--ds-color-fg-muted); }\n.ds-switch:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: var(--ds-border-focus); }\n@media (hover: hover) and (pointer: fine) { .ds-switch:hover:not(:disabled, [aria-checked=\"true\"]) { border-color: var(--ds-color-edge-focus); } }\n/* A 44px place to land on phones, the switch keeping its size. */\n@media (pointer: coarse), (max-width: 767px) { .ds-switch::after { position: absolute; inset: -12px; content: \"\"; } }\n@media (prefers-reduced-motion: reduce) { .ds-switch, .ds-switch > span { transition: none; } }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "States",
+      "label": "On, off and locked",
+      "center": false,
+      "half": false,
+      "path": "examples/switch/States.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport Switch from '@/components/ui/Switch.vue'\n// A setting to press, on or off, and one that can't be changed.\nconst on = ref(true)\n</script>\n\n<template>\n  <div class=\"grid items-start gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8\">\n    <p class=\"type-meta leading-7 text-fg-muted\">A setting</p>\n    <div class=\"flex min-h-7 items-center\"><Switch v-model=\"on\" label=\"email sign-in\" /></div>\n    <p class=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">Can't be changed</p>\n    <div class=\"flex min-h-7 items-center\"><Switch :model-value=\"true\" label=\"on, can't be changed\" disabled /></div>\n  </div>\n</template>\n",
+      "requires": [],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Switch.tsx",
+          "content": "'use client'\nimport { useControllable } from '@/react/hooks/useControllable'\n\n// On or off, with no words (console2.css .v2-switch): a square thumb in a square track. The thumb slides on the\n// console's curve and the track turns black at once, so the end state lands straight away. The row beside it says\n// what the state means. Grey while it can't be changed. Vue's boolean v-model is `checked` with `onCheckedChange`\n// (or `defaultChecked` alone), as a checkbox's is.\nexport interface SwitchProps { label: string, disabled?: boolean, checked?: boolean, defaultChecked?: boolean, onCheckedChange?: (checked: boolean) => void, className?: string }\n\nexport function Switch({ label, disabled, checked, defaultChecked = false, onCheckedChange, className }: SwitchProps) {\n  const [on, setOn] = useControllable(checked, defaultChecked, onCheckedChange)\n  return (\n    <>\n      <style href=\"ds-switch\" precedence=\"ds\">{css}</style>\n      <button data-ds=\"switch\" type=\"button\" role=\"switch\" className={className ? `ds-switch ${className}` : 'ds-switch'} aria-checked={on} aria-label={label} disabled={disabled} onClick={() => setOn(!on)}><span aria-hidden=\"true\" /></button>\n    </>\n  )\n}\n\nexport default Switch\n\nconst css = `\n.ds-switch { --w: 36px; --h: 20px; position: relative; display: inline-flex; width: var(--w); height: var(--h); flex-shrink: 0; align-items: center; padding: var(--ds-space-2xs); border: var(--ds-border-hairline) solid var(--ds-color-edge-strong); background: var(--ds-color-surface-sunken); cursor: pointer; touch-action: manipulation; transition: border-color var(--ds-duration-micro) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-switch > span { width: calc(var(--h) - 6px); height: calc(var(--h) - 6px); background: var(--ds-color-fg-muted); transition: transform var(--ds-duration-swap) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-switch[aria-checked=\"true\"] { border-color: var(--ds-color-action-primary); background: var(--ds-color-action-primary); }\n.ds-switch[aria-checked=\"true\"] > span { background: var(--ds-color-action-primary-fg); transform: translateX(calc(var(--w) - var(--h))); }\n.ds-switch:disabled { border-color: var(--ds-color-edge-strong); background: var(--ds-color-surface-sunken); cursor: not-allowed; }\n.ds-switch:disabled > span { background: var(--ds-color-fg-muted); }\n.ds-switch:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: var(--ds-border-focus); }\n@media (hover: hover) and (pointer: fine) { .ds-switch:hover:not(:disabled, [aria-checked=\"true\"]) { border-color: var(--ds-color-edge-focus); } }\n/* A 44px place to land on phones, the switch keeping its size. */\n@media (pointer: coarse), (max-width: 767px) { .ds-switch::after { position: absolute; inset: -12px; content: \"\"; } }\n@media (prefers-reduced-motion: reduce) { .ds-switch, .ds-switch > span { transition: none; } }\n`\n"
+        },
+        {
+          "path": "react/hooks/useControllable.ts",
+          "content": "'use client'\nimport { useCallback, useRef, useState } from 'react'\n\n// Vue's defineModel in React: a value that is controlled when the caller passes it (value + onValueChange, as Radix\n// does) and kept inside otherwise (defaultValue). setValue calls onChange either way.\nexport function useControllable<T>(value: T | undefined, defaultValue: T, onChange?: (value: T) => void) {\n\tconst [inner, setInner] = useState<T>(defaultValue)\n\tconst controlled = value !== undefined\n\tconst current = controlled ? value : inner\n\tconst ref = useRef(onChange)\n\tref.current = onChange\n\tconst set = useCallback((next: T) => {\n\t\tif (!controlled) setInner(next)\n\t\tref.current?.(next)\n\t}, [controlled])\n\treturn [current, set] as const\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "Switch",
+            "file": "react/components/ui/Switch.tsx",
+            "props": [
+              {
+                "name": "label",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "checked",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "defaultChecked",
+                "type": "boolean",
+                "required": false,
+                "default": "false"
+              },
+              {
+                "name": "onCheckedChange",
+                "type": "(checked: boolean) => void",
+                "required": false
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "States",
+          "label": "On, off and locked",
+          "center": false,
+          "half": false,
+          "path": "react/examples/switch/States.tsx",
+          "content": "import { Switch } from '@/react/components/ui/Switch'\n// A setting to press, on or off, and one that can't be changed.\n\nexport default function States() {\n  return (\n    <div className=\"grid items-start gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8\">\n      <p className=\"type-meta leading-7 text-fg-muted\">A setting</p>\n      <div className=\"flex min-h-7 items-center\"><Switch defaultChecked label=\"email sign-in\" /></div>\n      <p className=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">Can't be changed</p>\n      <div className=\"flex min-h-7 items-center\"><Switch checked label=\"on, can't be changed\" disabled /></div>\n    </div>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/switch.ts",
+          "content": "import { html, LitElement, type PropertyValues } from 'lit'\nimport { DsFormElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// Switch.vue as <conare-switch>: on or off, with no words (console2.css .v2-switch): a square thumb in a square track.\n// The thumb slides on the console's curve and the track turns black at once. Grey while it can't be changed. Vue's\n// boolean v-model is `checked` (an attribute, as a checkbox's) with `input` and `change` events. Form-associated: its\n// `name` goes with the form as \"on\" while checked.\n\n/**\n * @summary On or off, with no words.\n * @fires input - It was turned (read `checked`).\n * @fires change - It was turned (read `checked`).\n */\nexport class Switch extends DsFormElement {\n\tstatic styles = [DsFormElement.styles, styles]\n\tstatic shadowRootOptions = { ...LitElement.shadowRootOptions, delegatesFocus: true }\n\tstatic properties = { checked: { type: Boolean, reflect: true }, label: {}, disabled: { type: Boolean, reflect: true }, name: {}, required: { type: Boolean } }\n\n\tchecked = false\n\t/** What it turns, for assistive tech (the row beside it says it for the eye). */\n\tlabel = ''\n\tdisabled = false\n\tname?: string\n\n\t/** It must be on for its form to send. */\n\trequired = false\n\n\t// No native control: a required switch that is off is missing its value, as a required checkbox is.\n\tsyncValidity() {\n\t\tthis.setMissing(this.required && !this.checked, 'checkbox', this.renderRoot.querySelector('button'))\n\t}\n\tprotected updated(changed: PropertyValues) {\n\t\tsuper.updated(changed)\n\t\tif (changed.has('checked')) this.internals.setFormValue(this.checked ? 'on' : null)\n\t}\n\trender() {\n\t\treturn html`<button data-ds=\"switch\" type=\"button\" role=\"switch\" class=\"ds-switch\" aria-checked=${String(this.checked)} aria-label=${this.label} ?disabled=${this.inactive} @click=${() => this.commit(!this.checked, 'checked')}><span aria-hidden=\"true\"></span></button>`\n\t}\n}\n\ndefine('switch', Switch)\n"
+        },
+        {
+          "path": "elements/components/ui/switch.css",
+          "content": "/* Switch.vue's <style>, as it is. */\n.ds-switch { --w: 36px; --h: 20px; position: relative; display: inline-flex; width: var(--w); height: var(--h); flex-shrink: 0; align-items: center; padding: var(--ds-space-2xs); border: var(--ds-border-hairline) solid var(--ds-color-edge-strong); background: var(--ds-color-surface-sunken); cursor: pointer; touch-action: manipulation; transition: border-color var(--ds-duration-micro) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-switch > span { width: calc(var(--h) - 6px); height: calc(var(--h) - 6px); background: var(--ds-color-fg-muted); transition: transform var(--ds-duration-swap) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-switch[aria-checked=\"true\"] { border-color: var(--ds-color-action-primary); background: var(--ds-color-action-primary); }\n.ds-switch[aria-checked=\"true\"] > span { background: var(--ds-color-action-primary-fg); transform: translateX(calc(var(--w) - var(--h))); }\n.ds-switch:disabled { border-color: var(--ds-color-edge-strong); background: var(--ds-color-surface-sunken); cursor: not-allowed; }\n.ds-switch:disabled > span { background: var(--ds-color-fg-muted); }\n.ds-switch:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: var(--ds-border-focus); }\n@media (hover: hover) and (pointer: fine) { .ds-switch:hover:not(:disabled, [aria-checked=\"true\"]) { border-color: var(--ds-color-edge-focus); } }\n/* A 44px place to land on phones, the switch keeping its size. */\n@media (pointer: coarse), (max-width: 767px) { .ds-switch::after { position: absolute; inset: -12px; content: \"\"; } }\n@media (prefers-reduced-motion: reduce) { .ds-switch, .ds-switch > span { transition: none; } }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/switch.js"
+      ],
+      "tag": "conare-switch",
+      "tags": [
+        "conare-switch"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-switch",
+            "name": "Switch",
+            "module": "elements/switch.js",
+            "description": "On or off, with no words.",
+            "attributes": [
+              {
+                "name": "checked",
+                "field": "checked",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string",
+                "default": "''",
+                "description": "What it turns, for assistive tech (the row beside it says it for the eye)."
+              },
+              {
+                "name": "disabled",
+                "field": "disabled",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "name",
+                "field": "name",
+                "type": "string | undefined"
+              },
+              {
+                "name": "required",
+                "field": "required",
+                "type": "boolean",
+                "default": "false",
+                "description": "It must be on for its form to send."
+              }
+            ],
+            "properties": [
+              {
+                "name": "checked",
+                "type": "boolean",
+                "default": "false",
+                "attribute": "checked"
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "default": "''",
+                "description": "What it turns, for assistive tech (the row beside it says it for the eye).",
+                "attribute": "label"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "attribute": "disabled"
+              },
+              {
+                "name": "name",
+                "type": "string | undefined",
+                "attribute": "name"
+              },
+              {
+                "name": "required",
+                "type": "boolean",
+                "default": "false",
+                "description": "It must be on for its form to send.",
+                "attribute": "required"
+              }
+            ],
+            "events": [
+              {
+                "name": "input",
+                "description": "It was turned (read `checked`)."
+              },
+              {
+                "name": "change",
+                "description": "It was turned (read `checked`)."
+              }
+            ],
+            "slots": [],
+            "methods": [
+              {
+                "name": "syncValidity"
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "States",
+          "label": "On, off and locked",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/switch/States.html",
+          "content": "<!-- A setting to press, on or off, and one that can't be changed. -->\n<div class=\"grid items-start gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8\">\n  <p class=\"type-meta leading-7 text-fg-muted\">A setting</p>\n  <div class=\"flex min-h-7 items-center\"><conare-switch checked label=\"email sign-in\"></conare-switch></div>\n  <p class=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">Can't be changed</p>\n  <div class=\"flex min-h-7 items-center\"><conare-switch checked label=\"on, can't be changed\" disabled></conare-switch></div>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

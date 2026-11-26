@@ -1,0 +1,318 @@
+{
+  "name": "data-table",
+  "title": "Data table",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "A table people narrow and order: filter chips over it (Label, or Label: pick, the menu's check on the choice), heads that sort, and five rows at a time with Show N more under them, each new row landing on the one above.",
+  "use_for": "Namespaces, sources, searches and logs long enough to filter.",
+  "never": [
+    "Paging a list read from the top: show more",
+    "Filters that hide that they are on: the button says the pick",
+    "Sorting a column of mixed kinds"
+  ],
+  "source": "conare-web app/components/console/search/FilterChip.vue, FilterMenu.vue, billing/Grants.vue (show more), app/assets/css/console2.css (.v2-scope, .v2-table, .v2-more, .v2-ledger li[data-new])",
+  "body": "",
+  "requires": [
+    "filter-chip",
+    "pagination",
+    "table"
+  ],
+  "dependencies": [
+    "lucide-vue-next@^0.479.0"
+  ],
+  "files": [
+    {
+      "path": "components/ui/DataTable.vue",
+      "content": "<script setup lang=\"ts\" generic=\"Row extends Record<string, unknown>\">\nimport { computed, ref, watch } from 'vue'\nimport { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-vue-next'\nimport FilterChip from '@/components/product/FilterChip.vue'\nimport ShowMore from '@/components/ui/ShowMore.vue'\nimport Table from '@/components/ui/Table.vue'\n\n// A table people narrow and order (Table with the search's filter chips and the credit history's foot): a filter-chip\n// per filter over it, heads that sort (aria-sort; the arrow shows the order, a faint pair where it could), and the first\n// `pageSize` rows with \"Show N more\" under them, each new row landing as the credit history's lines do. Filters and\n// sort reset what is shown. Cells render the value (numbers right, in tabular figures, en-US), or the slot\n// `cell-<key>` with { row, value }. Nothing matching shows one line with a way to clear the filters.\nexport type DataColumn = { key: string, label: string, align?: 'left' | 'right', sortable?: boolean, mono?: boolean, muted?: boolean }\nexport type DataFilter = { key: string, label: string, options: string[], any?: string }\n\nconst props = withDefaults(defineProps<{ columns: DataColumn[], rows: Row[], rowKey: string, label: string, filters?: DataFilter[], pageSize?: number }>(), { filters: () => [], pageSize: 5 })\n\nconst picked = ref<Record<string, string>>({})\nconst sort = ref<{ key: string, dir: 'ascending' | 'descending' } | null>(null)\nconst shown = ref(props.pageSize)\nconst fresh = ref<number | null>(null)\n\nconst filtered = computed(() => props.rows.filter(r => props.filters.every(f => !picked.value[f.key] || String(r[f.key]) === picked.value[f.key])))\nconst sorted = computed(() => {\n  const s = sort.value\n  if (!s) return filtered.value\n  const sign = s.dir === 'ascending' ? 1 : -1\n  return [...filtered.value].sort((a, b) => {\n    const x = a[s.key]\n    const y = b[s.key]\n    return sign * (typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y)))\n  })\n})\nconst visible = computed(() => sorted.value.slice(0, shown.value))\nconst more = computed(() => Math.min(props.pageSize, sorted.value.length - shown.value))\nconst anyOn = computed(() => Object.values(picked.value).some(Boolean))\n\nwatch([picked, sort], () => { shown.value = props.pageSize; fresh.value = null }, { deep: true })\n\nfunction toggleSort(key: string) {\n  const s = sort.value\n  sort.value = s?.key !== key ? { key, dir: 'ascending' } : s.dir === 'ascending' ? { key, dir: 'descending' } : null\n}\nfunction showMore() {\n  fresh.value = shown.value\n  shown.value += props.pageSize\n}\nconst display = (v: unknown) => (typeof v === 'number' ? v.toLocaleString('en-US') : String(v ?? ''))\n</script>\n\n<template>\n  <div data-ds=\"data-table\" class=\"ds-data-table flex min-w-0 flex-col gap-3\">\n    <div v-if=\"filters.length\" class=\"flex flex-wrap items-center gap-2\">\n      <FilterChip v-for=\"f in filters\" :key=\"f.key\" :model-value=\"picked[f.key] ?? ''\" @update:model-value=\"(v: string) => { picked[f.key] = v }\" :label=\"f.label\" :options=\"f.options.map(o => ({ value: o, label: o }))\" :any=\"f.any ?? 'Any'\" />\n      <button v-if=\"anyOn\" type=\"button\" class=\"ds-more relative ml-1 cursor-pointer text-meta font-medium text-fg-soft\" @click=\"picked = {}\">Clear filters</button>\n    </div>\n    <Table framed :label=\"label\">\n      <thead>\n        <tr>\n          <th v-for=\"c in columns\" :key=\"c.key\" :class=\"c.align === 'right' && 'text-right'\" :aria-sort=\"sort?.key === c.key ? sort.dir : c.sortable ? 'none' : undefined\">\n            <button v-if=\"c.sortable\" type=\"button\" class=\"ds-sort inline-flex cursor-pointer items-center gap-1\" :class=\"c.align === 'right' && 'flex-row-reverse'\" @click=\"toggleSort(c.key)\">\n              {{ c.label }}\n              <ArrowUp v-if=\"sort?.key === c.key && sort.dir === 'ascending'\" :size=\"12\" :stroke-width=\"1.5\" class=\"text-fg\" aria-hidden=\"true\" />\n              <ArrowDown v-else-if=\"sort?.key === c.key\" :size=\"12\" :stroke-width=\"1.5\" class=\"text-fg\" aria-hidden=\"true\" />\n              <ArrowUpDown v-else :size=\"12\" :stroke-width=\"1.5\" class=\"ds-sort-idle\" aria-hidden=\"true\" />\n            </button>\n            <template v-else>{{ c.label }}</template>\n          </th>\n        </tr>\n      </thead>\n      <tbody>\n        <tr v-for=\"(r, i) in visible\" :key=\"String(r[rowKey])\" :data-new=\"fresh !== null && i >= fresh ? '' : undefined\" :style=\"fresh !== null && i >= fresh ? { '--i': i - fresh } : undefined\">\n          <td v-for=\"c in columns\" :key=\"c.key\" :class=\"[c.align === 'right' && 'text-right tabular-nums', c.mono && 'type-code-sm', c.muted && 'type-meta whitespace-nowrap text-fg-muted']\">\n            <slot :name=\"`cell-${c.key}`\" :row=\"r\" :value=\"r[c.key]\">{{ display(r[c.key]) }}</slot>\n          </td>\n        </tr>\n        <tr v-if=\"!visible.length\">\n          <td :colspan=\"columns.length\" class=\"py-6 text-center type-meta text-fg-muted\">\n            <slot name=\"empty\">Nothing matches these filters. <button type=\"button\" class=\"ds-more relative ml-1 cursor-pointer font-medium text-fg-soft\" @click=\"picked = {}\">Clear filters</button></slot>\n          </td>\n        </tr>\n      </tbody>\n    </Table>\n    <div v-if=\"sorted.length > pageSize\" class=\"flex items-center justify-between gap-3\">\n      <ShowMore v-if=\"more > 0\" :count=\"more\" @click=\"showMore\" />\n      <span class=\"ml-auto type-meta text-fg-muted tabular-nums\">{{ visible.length }} of {{ sorted.length }}</span>\n    </div>\n  </div>\n</template>\n\n<style>\n.ds-sort { margin: 0 -4px; padding: 0 var(--ds-space-xs); color: inherit; font: inherit; transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-sort-idle { color: var(--ds-color-fg-faint); transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) {\n  .ds-sort:hover { color: var(--ds-color-fg); }\n  .ds-sort:hover .ds-sort-idle { color: var(--ds-color-fg-muted); }\n}\n.ds-sort:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: 0; }\n/* Five more: each new row lands on the one above, one after the other (.v2-ledger li[data-new]). */\n.ds-data-table tr[data-new] { animation: ds-row-in var(--ds-duration-rise) var(--ds-easing-out) both; animation-delay: calc(var(--i) * 30ms); }\n@keyframes ds-row-in { from { opacity: 0; transform: translateY(8px); } }\n@media (prefers-reduced-motion: reduce) { .ds-data-table tr[data-new] { animation-name: ds-row-fade; } }\n@keyframes ds-row-fade { from { opacity: 0; } }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "Filter, sort and show more",
+      "center": false,
+      "half": false,
+      "path": "examples/data-table/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport DataTable from '@/components/ui/DataTable.vue'\nimport StatusTag from '@/components/ui/StatusTag.vue'\n// Searches on sample data: filter by app and status, sort by documents or time, five at a time.\nconst apps = ['Google Drive', 'Slack', 'Notion', 'API']\nconst statuses = ['ready', 'syncing', 'error']\nconst rows = Array.from({ length: 17 }, (_, i) => ({\n  id: `ns-${i + 1}`,\n  name: ['contracts', 'support', 'sales-calls', 'wiki', 'crm', 'handbook'][i % 6] + (i > 5 ? `-${Math.floor(i / 6) + 1}` : ''),\n  app: apps[i % 4]!,\n  documents: ((i * 7919) % 90000) + 1200,\n  status: statuses[i % 7 === 3 ? 2 : i % 5 === 1 ? 1 : 0]!,\n  queried: `${(i % 9) + 1} h ago`,\n  hours: (i % 9) + 1,\n}))\nconst columns = [\n  { key: 'name', label: 'Namespace', sortable: true, mono: true },\n  { key: 'app', label: 'Source' },\n  { key: 'documents', label: 'Documents', align: 'right' as const, sortable: true },\n  { key: 'status', label: 'Health' },\n  { key: 'hours', label: 'Last query', sortable: true, muted: true },\n]\nconst filters = [{ key: 'app', label: 'App', options: apps }, { key: 'status', label: 'Health', options: statuses }]\n</script>\n\n<template>\n  <DataTable :columns=\"columns\" :rows=\"rows\" row-key=\"id\" label=\"namespaces\" :filters=\"filters\">\n    <template #cell-status=\"{ value }\"><StatusTag :status=\"String(value)\" /></template>\n    <template #cell-hours=\"{ row }\">{{ row.queried }}</template>\n  </DataTable>\n</template>\n",
+      "requires": [
+        "filter-chip",
+        "pagination",
+        "table",
+        "tag"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/DataTable.tsx",
+          "content": "'use client'\nimport { useState, type CSSProperties, type ReactNode } from 'react'\nimport { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'\nimport { FilterChip } from '@/react/components/product/FilterChip'\nimport { ShowMore } from '@/react/components/ui/ShowMore'\nimport { Table } from '@/react/components/ui/Table'\nimport { cn } from '@/react/lib/cn'\n\n// A table people narrow and order (Table with the search's filter chips and the credit history's foot): a filter-chip\n// per filter over it, heads that sort (aria-sort; the arrow shows the order, a faint pair where it could), and the first\n// `pageSize` rows with \"Show N more\" under them, each new row landing as the credit history's lines do. Filters and\n// sort reset what is shown. Cells render the value (numbers right, in tabular figures, en-US), or `cell[key]` with\n// { row, value } (Vue's `cell-<key>` slots). Nothing matching shows one line with a way to clear the filters (`empty`\n// replaces it).\nexport type DataColumn = { key: string, label: string, align?: 'left' | 'right', sortable?: boolean, mono?: boolean, muted?: boolean }\nexport type DataFilter = { key: string, label: string, options: string[], any?: string }\nexport interface DataTableProps<Row extends Record<string, unknown>> {\n  columns: DataColumn[]\n  rows: Row[]\n  rowKey: string\n  label: string\n  filters?: DataFilter[]\n  pageSize?: number\n  cell?: Partial<Record<string, (slot: { row: Row, value: unknown }) => ReactNode>>\n  empty?: ReactNode\n  className?: string\n}\n\nconst display = (v: unknown) => (typeof v === 'number' ? v.toLocaleString('en-US') : String(v ?? ''))\n\nexport function DataTable<Row extends Record<string, unknown>>({ columns, rows, rowKey, label, filters = [], pageSize = 5, cell = {}, empty, className }: DataTableProps<Row>) {\n  const [picked, setPicked] = useState<Record<string, string>>({})\n  const [sort, setSort] = useState<{ key: string, dir: 'ascending' | 'descending' } | null>(null)\n  const [shown, setShown] = useState(pageSize)\n  const [fresh, setFresh] = useState<number | null>(null)\n\n  const filtered = rows.filter(r => filters.every(f => !picked[f.key] || String(r[f.key]) === picked[f.key]))\n  const sorted = (() => {\n    if (!sort) return filtered\n    const sign = sort.dir === 'ascending' ? 1 : -1\n    return [...filtered].sort((a, b) => {\n      const x = a[sort.key]\n      const y = b[sort.key]\n      return sign * (typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y)))\n    })\n  })()\n  const visible = sorted.slice(0, shown)\n  const more = Math.min(pageSize, sorted.length - shown)\n  const anyOn = Object.values(picked).some(Boolean)\n\n  // Vue's watch on the filters and the sort: what is shown starts over.\n  const restart = () => {\n    setShown(pageSize)\n    setFresh(null)\n  }\n  function pick(next: Record<string, string>) {\n    setPicked(next)\n    restart()\n  }\n  function toggleSort(key: string) {\n    setSort(s => (s?.key !== key ? { key, dir: 'ascending' } : s.dir === 'ascending' ? { key, dir: 'descending' } : null))\n    restart()\n  }\n  function showMore() {\n    setFresh(shown)\n    setShown(shown + pageSize)\n  }\n\n  return (\n    <>\n      <style href=\"ds-data-table\" precedence=\"ds\">{css}</style>\n      <div data-ds=\"data-table\" className={cn('ds-data-table flex min-w-0 flex-col gap-3', className)}>\n        {filters.length > 0 && (\n          <div className=\"flex flex-wrap items-center gap-2\">\n            {filters.map(f => (\n              <FilterChip key={f.key} value={picked[f.key] ?? ''} onValueChange={(v: string) => pick({ ...picked, [f.key]: v })} label={f.label} options={f.options.map(o => ({ value: o, label: o }))} any={f.any ?? 'Any'} />\n            ))}\n            {anyOn && <button type=\"button\" className=\"ds-more relative ml-1 cursor-pointer text-meta font-medium text-fg-soft\" onClick={() => pick({})}>Clear filters</button>}\n          </div>\n        )}\n        <Table framed label={label}>\n          <thead>\n            <tr>\n              {columns.map(c => (\n                <th key={c.key} className={c.align === 'right' ? 'text-right' : undefined} aria-sort={sort?.key === c.key ? sort.dir : c.sortable ? 'none' : undefined}>\n                  {c.sortable\n                    ? (\n                        <button type=\"button\" className={cn('ds-sort inline-flex cursor-pointer items-center gap-1', c.align === 'right' && 'flex-row-reverse')} onClick={() => toggleSort(c.key)}>\n                          {c.label}\n                          {sort?.key === c.key && sort.dir === 'ascending'\n                            ? <ArrowUp size={12} strokeWidth={1.5} className=\"text-fg\" aria-hidden=\"true\" />\n                            : sort?.key === c.key\n                              ? <ArrowDown size={12} strokeWidth={1.5} className=\"text-fg\" aria-hidden=\"true\" />\n                              : <ArrowUpDown size={12} strokeWidth={1.5} className=\"ds-sort-idle\" aria-hidden=\"true\" />}\n                        </button>\n                      )\n                    : c.label}\n                </th>\n              ))}\n            </tr>\n          </thead>\n          <tbody>\n            {visible.map((r, i) => {\n              const isNew = fresh !== null && i >= fresh\n              return (\n                <tr key={String(r[rowKey])} data-new={isNew ? '' : undefined} style={isNew ? { '--i': i - fresh! } as CSSProperties : undefined}>\n                  {columns.map(c => (\n                    <td key={c.key} className={cn([c.align === 'right' && 'text-right tabular-nums', c.mono && 'type-code-sm', c.muted && 'type-meta whitespace-nowrap text-fg-muted']) || undefined}>\n                      {cell[c.key] ? cell[c.key]!({ row: r, value: r[c.key] }) : display(r[c.key])}\n                    </td>\n                  ))}\n                </tr>\n              )\n            })}\n            {!visible.length && (\n              <tr>\n                <td colSpan={columns.length} className=\"py-6 text-center type-meta text-fg-muted\">\n                  {empty ?? <>Nothing matches these filters. <button type=\"button\" className=\"ds-more relative ml-1 cursor-pointer font-medium text-fg-soft\" onClick={() => pick({})}>Clear filters</button></>}\n                </td>\n              </tr>\n            )}\n          </tbody>\n        </Table>\n        {sorted.length > pageSize && (\n          <div className=\"flex items-center justify-between gap-3\">\n            {more > 0 && <ShowMore count={more} onClick={showMore} />}\n            <span className=\"ml-auto type-meta text-fg-muted tabular-nums\">{visible.length} of {sorted.length}</span>\n          </div>\n        )}\n      </div>\n    </>\n  )\n}\n\nexport default DataTable\n\nconst css = `\n.ds-sort { margin: 0 -4px; padding: 0 var(--ds-space-xs); color: inherit; font: inherit; transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-sort-idle { color: var(--ds-color-fg-faint); transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) {\n  .ds-sort:hover { color: var(--ds-color-fg); }\n  .ds-sort:hover .ds-sort-idle { color: var(--ds-color-fg-muted); }\n}\n.ds-sort:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: 0; }\n/* Five more: each new row lands on the one above, one after the other (.v2-ledger li[data-new]). */\n.ds-data-table tr[data-new] { animation: ds-row-in var(--ds-duration-rise) var(--ds-easing-out) both; animation-delay: calc(var(--i) * 30ms); }\n@keyframes ds-row-in { from { opacity: 0; transform: translateY(8px); } }\n@media (prefers-reduced-motion: reduce) { .ds-data-table tr[data-new] { animation-name: ds-row-fade; } }\n@keyframes ds-row-fade { from { opacity: 0; } }\n`\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [
+        "lucide-react@0.479.0"
+      ],
+      "registryDependencies": [
+        "filter-chip",
+        "pagination",
+        "table"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "DataTable",
+            "file": "react/components/ui/DataTable.tsx",
+            "props": [
+              {
+                "name": "columns",
+                "type": "DataColumn[]",
+                "required": true
+              },
+              {
+                "name": "rows",
+                "type": "Row[]",
+                "required": true
+              },
+              {
+                "name": "rowKey",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "filters",
+                "type": "DataFilter[]",
+                "required": false,
+                "default": "[]"
+              },
+              {
+                "name": "pageSize",
+                "type": "number",
+                "required": false,
+                "default": "5"
+              },
+              {
+                "name": "cell",
+                "type": "Partial<Record<string, (slot: { row: Row, value: unknown }) => ReactNode>>",
+                "required": false,
+                "default": "{}"
+              },
+              {
+                "name": "empty",
+                "type": "ReactNode",
+                "required": false
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Filter, sort and show more",
+          "center": false,
+          "half": false,
+          "path": "react/examples/data-table/Product.tsx",
+          "content": "import { DataTable } from '@/react/components/ui/DataTable'\nimport { StatusTag } from '@/react/components/ui/StatusTag'\n// Searches on sample data: filter by app and status, sort by documents or time, five at a time.\n\nconst apps = ['Google Drive', 'Slack', 'Notion', 'API']\nconst statuses = ['ready', 'syncing', 'error']\nconst rows = Array.from({ length: 17 }, (_, i) => ({\n  id: `ns-${i + 1}`,\n  name: ['contracts', 'support', 'sales-calls', 'wiki', 'crm', 'handbook'][i % 6] + (i > 5 ? `-${Math.floor(i / 6) + 1}` : ''),\n  app: apps[i % 4]!,\n  documents: ((i * 7919) % 90000) + 1200,\n  status: statuses[i % 7 === 3 ? 2 : i % 5 === 1 ? 1 : 0]!,\n  queried: `${(i % 9) + 1} h ago`,\n  hours: (i % 9) + 1,\n}))\nconst columns = [\n  { key: 'name', label: 'Namespace', sortable: true, mono: true },\n  { key: 'app', label: 'Source' },\n  { key: 'documents', label: 'Documents', align: 'right' as const, sortable: true },\n  { key: 'status', label: 'Health' },\n  { key: 'hours', label: 'Last query', sortable: true, muted: true },\n]\nconst filters = [{ key: 'app', label: 'App', options: apps }, { key: 'status', label: 'Health', options: statuses }]\n\nexport default function Product() {\n  return (\n    <DataTable\n      columns={columns}\n      rows={rows}\n      rowKey=\"id\"\n      label=\"namespaces\"\n      filters={filters}\n      cell={{\n        status: ({ value }) => <StatusTag status={String(value)} />,\n        hours: ({ row }) => row.queried,\n      }}\n    />\n  )\n}\n",
+          "registryDependencies": [
+            "filter-chip",
+            "pagination",
+            "table",
+            "tag"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/data-table.ts",
+          "content": "import { html, nothing, type PropertyValues } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { repeat } from 'lit/directives/repeat.js'\nimport { styleMap } from 'lit/directives/style-map.js'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport '@/elements/components/product/filter-chip'\nimport '@/elements/components/ui/show-more'\nimport '@/elements/components/ui/table'\nimport styles from 'virtual:tw'\n\n// DataTable.vue as <conare-data-table>: a table people narrow and order (Table with the search's filter chips and the\n// credit history's foot): a filter-chip per filter over it, heads that sort (aria-sort; the arrow shows the order, a\n// faint pair where it could), and the first `page-size` rows with \"Show N more\" under them, each new row landing as\n// the credit history's lines do. Filters and sort reset what is shown. Cells render the value (numbers right, in\n// tabular figures, en-US), or what `cells[key]({ row, value })` returns (a node or text: Vue's `cell-<key>` slots).\n// Nothing matching shows one line with a way to clear the filters, or the `empty` slot. `columns`, `rows` and\n// `filters` are JSON attributes or properties.\n\nexport type DataColumn = { key: string, label: string, align?: 'left' | 'right', sortable?: boolean, mono?: boolean, muted?: boolean }\nexport type DataFilter = { key: string, label: string, options: string[], any?: string }\nexport type DataRow = Record<string, unknown>\nexport type DataCell = (slot: { row: DataRow, value: unknown }) => unknown\n\nconst display = (v: unknown) => (typeof v === 'number' ? v.toLocaleString('en-US') : String(v ?? ''))\n\n/**\n * @summary A table people filter, sort and open a few rows more of.\n * @slot empty - In place of the line shown when nothing matches the filters.\n */\nexport class DataTable extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = {\n\t\tcolumns: { type: Array },\n\t\trows: { type: Array },\n\t\trowKey: { attribute: 'row-key' },\n\t\tlabel: {},\n\t\tfilters: { type: Array },\n\t\tpageSize: { type: Number, attribute: 'page-size' },\n\t\tcells: { attribute: false },\n\t\tpicked: { state: true },\n\t\tsort: { state: true },\n\t\tshown: { state: true },\n\t\tfresh: { state: true },\n\t}\n\n\tcolumns: DataColumn[] = []\n\trows: DataRow[] = []\n\t/** The field that tells rows apart. */\n\trowKey = 'id'\n\t/** The table's name for assistive tech. */\n\tlabel = ''\n\tfilters: DataFilter[] = []\n\tpageSize = 5\n\t/** How a column's cells render, by key (a property): table.cells = { status: ({ value }) => node }. */\n\tcells: Partial<Record<string, DataCell>> = {}\n\tprivate picked: Record<string, string> = {}\n\tprivate sort: { key: string, dir: 'ascending' | 'descending' } | null = null\n\tprivate shown = 5\n\tprivate fresh: number | null = null\n\n\tprotected willUpdate(changed: PropertyValues) {\n\t\tsuper.willUpdate(changed)\n\t\tif (changed.has('pageSize') && changed.get('pageSize') === undefined) this.shown = this.pageSize\n\t}\n\n\tprivate get sorted() {\n\t\tconst filtered = this.rows.filter((r) => this.filters.every((f) => !this.picked[f.key] || String(r[f.key]) === this.picked[f.key]))\n\t\tconst s = this.sort\n\t\tif (!s) return filtered\n\t\tconst sign = s.dir === 'ascending' ? 1 : -1\n\t\treturn [...filtered].sort((a, b) => {\n\t\t\tconst x = a[s.key]\n\t\t\tconst y = b[s.key]\n\t\t\treturn sign * (typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y)))\n\t\t})\n\t}\n\t// Vue's watch on the filters and the sort: what is shown starts over.\n\tprivate restart() {\n\t\tthis.shown = this.pageSize\n\t\tthis.fresh = null\n\t}\n\tprivate pick(next: Record<string, string>) {\n\t\tthis.picked = next\n\t\tthis.restart()\n\t}\n\tprivate toggleSort(key: string) {\n\t\tconst s = this.sort\n\t\tthis.sort = s?.key !== key ? { key, dir: 'ascending' } : s.dir === 'ascending' ? { key, dir: 'descending' } : null\n\t\tthis.restart()\n\t}\n\tprivate showMore() {\n\t\tthis.fresh = this.shown\n\t\tthis.shown += this.pageSize\n\t}\n\n\trender() {\n\t\tconst sorted = this.sorted\n\t\tconst visible = sorted.slice(0, this.shown)\n\t\tconst more = Math.min(this.pageSize, sorted.length - this.shown)\n\t\tconst anyOn = Object.values(this.picked).some(Boolean)\n\t\tconst [chip, table, showMore] = [tag('filter-chip'), tag('table'), tag('show-more')]\n\t\tconst sortIcon = (c: DataColumn) => (this.sort?.key === c.key && this.sort.dir === 'ascending'\n\t\t\t? icon(ArrowUp, 'arrow-up', { size: 12, strokeWidth: 1.5, class: 'text-fg', attrs: { 'aria-hidden': 'true' } })\n\t\t\t: this.sort?.key === c.key\n\t\t\t\t? icon(ArrowDown, 'arrow-down', { size: 12, strokeWidth: 1.5, class: 'text-fg', attrs: { 'aria-hidden': 'true' } })\n\t\t\t\t: icon(ArrowUpDown, 'arrow-up-down', { size: 12, strokeWidth: 1.5, class: 'ds-sort-idle', attrs: { 'aria-hidden': 'true' } }))\n\t\tconst clear = (classes: string) => html`<button type=\"button\" class=${classes} @click=${() => this.pick({})}>Clear filters</button>`\n\t\treturn staticHtml`<div data-ds=\"data-table\" class=\"ds-data-table flex min-w-0 flex-col gap-3\">\n\t\t\t${this.filters.length\n\t\t\t\t? html`<div class=\"flex flex-wrap items-center gap-2\">${this.filters.map((f) => staticHtml`<${chip} .value=${this.picked[f.key] ?? ''} @change=${(e: Event) => this.pick({ ...this.picked, [f.key]: String((e.target as HTMLElement & { value: unknown }).value ?? '') })} label=${f.label} .options=${f.options.map((o) => ({ value: o, label: o }))} any=${f.any ?? 'Any'}></${chip}>`)}${anyOn ? clear('ds-more relative ml-1 cursor-pointer text-meta font-medium text-fg-soft') : nothing}</div>`\n\t\t\t\t: nothing}\n\t\t\t<${table} framed label=${this.label}>\n\t\t\t\t<table>\n\t\t\t\t\t<thead>\n\t\t\t\t\t\t<tr>${this.columns.map((c) => html`<th class=${c.align === 'right' ? 'text-right' : ''} aria-sort=${ifDefined(this.sort?.key === c.key ? this.sort.dir : c.sortable ? 'none' : undefined)}>${c.sortable\n\t\t\t\t\t\t\t? html`<button type=\"button\" class=${['ds-sort inline-flex cursor-pointer items-center gap-1', c.align === 'right' ? 'flex-row-reverse' : ''].join(' ')} @click=${() => this.toggleSort(c.key)}>${c.label}${sortIcon(c)}</button>`\n\t\t\t\t\t\t\t: c.label}</th>`)}</tr>\n\t\t\t\t\t</thead>\n\t\t\t\t\t<tbody>\n\t\t\t\t\t\t${repeat(visible, (r) => String(r[this.rowKey]), (r, i) => {\n\t\t\t\t\t\t\tconst isNew = this.fresh !== null && i >= this.fresh\n\t\t\t\t\t\t\treturn html`<tr data-new=${ifDefined(isNew ? '' : undefined)} style=${styleMap(isNew ? { '--i': String(i - this.fresh!) } : {})}>${this.columns.map((c) => html`<td class=${[c.align === 'right' ? 'text-right tabular-nums' : '', c.mono ? 'type-code-sm' : '', c.muted ? 'type-meta whitespace-nowrap text-fg-muted' : ''].join(' ').trim()}>${this.cells[c.key] ? this.cells[c.key]!({ row: r, value: r[c.key] }) : display(r[c.key])}</td>`)}</tr>`\n\t\t\t\t\t\t})}\n\t\t\t\t\t\t${visible.length ? nothing : html`<tr><td colspan=${this.columns.length} class=\"py-6 text-center type-meta text-fg-muted\"><slot name=\"empty\">Nothing matches these filters. ${clear('ds-more relative ml-1 cursor-pointer font-medium text-fg-soft')}</slot></td></tr>`}\n\t\t\t\t\t</tbody>\n\t\t\t\t</table>\n\t\t\t</${table}>\n\t\t\t${sorted.length > this.pageSize\n\t\t\t\t? staticHtml`<div class=\"flex items-center justify-between gap-3\">${more > 0 ? staticHtml`<${showMore} count=${more} @click=${this.showMore}></${showMore}>` : nothing}<span class=\"ml-auto type-meta text-fg-muted tabular-nums\">${visible.length} of ${sorted.length}</span></div>`\n\t\t\t\t: nothing}\n\t\t</div>`\n\t}\n}\n\ndefine('data-table', DataTable)\n"
+        },
+        {
+          "path": "elements/components/ui/data-table.css",
+          "content": "/* DataTable.vue's <style>, then ShowMore.vue's .ds-more for its Clear filters buttons (Vue's styles are the page's: here the shadow root holds its own). */\n.ds-sort { margin: 0 -4px; padding: 0 var(--ds-space-xs); color: inherit; font: inherit; transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-sort-idle { color: var(--ds-color-fg-faint); transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) {\n  .ds-sort:hover { color: var(--ds-color-fg); }\n  .ds-sort:hover .ds-sort-idle { color: var(--ds-color-fg-muted); }\n}\n.ds-sort:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: 0; }\n/* Five more: each new row lands on the one above, one after the other (.v2-ledger li[data-new]). */\n.ds-data-table tr[data-new] { animation: ds-row-in var(--ds-duration-rise) var(--ds-easing-out) both; animation-delay: calc(var(--i) * 30ms); }\n@keyframes ds-row-in { from { opacity: 0; transform: translateY(8px); } }\n@media (prefers-reduced-motion: reduce) { .ds-data-table tr[data-new] { animation-name: ds-row-fade; } }\n@keyframes ds-row-fade { from { opacity: 0; } }\n.ds-more { transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-more::after { position: absolute; inset: -12px; content: \"\"; }\n@media (hover: hover) and (pointer: fine) { .ds-more:hover { color: var(--ds-color-fg); } }\n.ds-more:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: var(--ds-border-focus); }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/data-table.js",
+        "elements/filter-chip.js",
+        "elements/show-more.js",
+        "elements/table.js",
+        "elements/menu.js",
+        "elements/menu-item.js",
+        "elements/status-tag.js"
+      ],
+      "tag": "conare-data-table",
+      "tags": [
+        "conare-data-table"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "filter-chip",
+        "menu",
+        "pagination",
+        "table"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-data-table",
+            "name": "DataTable",
+            "module": "elements/data-table.js",
+            "description": "A table people filter, sort and open a few rows more of.",
+            "attributes": [
+              {
+                "name": "columns",
+                "field": "columns",
+                "type": "DataColumn[]",
+                "default": "[]"
+              },
+              {
+                "name": "rows",
+                "field": "rows",
+                "type": "DataRow[]",
+                "default": "[]"
+              },
+              {
+                "name": "row-key",
+                "field": "rowKey",
+                "type": "string",
+                "default": "'id'",
+                "description": "The field that tells rows apart."
+              },
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string",
+                "default": "''",
+                "description": "The table's name for assistive tech."
+              },
+              {
+                "name": "filters",
+                "field": "filters",
+                "type": "DataFilter[]",
+                "default": "[]"
+              },
+              {
+                "name": "page-size",
+                "field": "pageSize",
+                "type": "number",
+                "default": "5"
+              },
+              {
+                "name": "picked",
+                "field": "picked",
+                "type": "Record<string, string>",
+                "default": "{}"
+              },
+              {
+                "name": "sort",
+                "field": "sort",
+                "type": "{ key: string, dir: 'ascending' | 'descending' } | null",
+                "default": "null"
+              },
+              {
+                "name": "shown",
+                "field": "shown",
+                "type": "number",
+                "default": "5"
+              },
+              {
+                "name": "fresh",
+                "field": "fresh",
+                "type": "number | null",
+                "default": "null"
+              }
+            ],
+            "properties": [
+              {
+                "name": "columns",
+                "type": "DataColumn[]",
+                "default": "[]",
+                "attribute": "columns"
+              },
+              {
+                "name": "rows",
+                "type": "DataRow[]",
+                "default": "[]",
+                "attribute": "rows"
+              },
+              {
+                "name": "rowKey",
+                "type": "string",
+                "default": "'id'",
+                "description": "The field that tells rows apart.",
+                "attribute": "row-key"
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "default": "''",
+                "description": "The table's name for assistive tech.",
+                "attribute": "label"
+              },
+              {
+                "name": "filters",
+                "type": "DataFilter[]",
+                "default": "[]",
+                "attribute": "filters"
+              },
+              {
+                "name": "pageSize",
+                "type": "number",
+                "default": "5",
+                "attribute": "page-size"
+              },
+              {
+                "name": "cells",
+                "type": "Partial<Record<string, DataCell>>",
+                "default": "{}",
+                "description": "How a column's cells render, by key (a property): table.cells = { status: ({ value }) => node }."
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "empty",
+                "description": "In place of the line shown when nothing matches the filters."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Filter, sort and show more",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/data-table/Product.html",
+          "content": "<!-- Searches on sample data: filter by app and status, sort by documents or time, five at a time. -->\n<conare-data-table id=\"namespaces\" row-key=\"id\" label=\"namespaces\"></conare-data-table>\n<!-- The health cell's markup, cloned for each row. -->\n<template id=\"health-cell\"><conare-status-tag></conare-status-tag></template>\n<script type=\"module\">\n  await customElements.whenDefined('conare-data-table')\n  const apps = ['Google Drive', 'Slack', 'Notion', 'API']\n  const statuses = ['ready', 'syncing', 'error']\n  const table = document.getElementById('namespaces')\n  table.rows = Array.from({ length: 17 }, (_, i) => ({\n    id: `ns-${i + 1}`,\n    name: ['contracts', 'support', 'sales-calls', 'wiki', 'crm', 'handbook'][i % 6] + (i > 5 ? `-${Math.floor(i / 6) + 1}` : ''),\n    app: apps[i % 4],\n    documents: ((i * 7919) % 90000) + 1200,\n    status: statuses[i % 7 === 3 ? 2 : i % 5 === 1 ? 1 : 0],\n    queried: `${(i % 9) + 1} h ago`,\n    hours: (i % 9) + 1,\n  }))\n  table.columns = [\n    { key: 'name', label: 'Namespace', sortable: true, mono: true },\n    { key: 'app', label: 'Source' },\n    { key: 'documents', label: 'Documents', align: 'right', sortable: true },\n    { key: 'status', label: 'Health' },\n    { key: 'hours', label: 'Last query', sortable: true, muted: true },\n  ]\n  table.filters = [{ key: 'app', label: 'App', options: apps }, { key: 'status', label: 'Health', options: statuses }]\n  // The health cell is a status tag; the last query reads as written.\n  table.cells = {\n    status: ({ value }) => {\n      const tag = document.importNode(document.getElementById('health-cell').content.firstElementChild, true)\n      tag.status = String(value)\n      return tag\n    },\n    hours: ({ row }) => row.queried,\n  }\n</script>\n"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "alert",
+  "type": "registry:ui",
+  "title": "Alert",
+  "description": "A red box for what broke: one box per problem, set apart, with the problem in words and the button that fixes it.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Alert.tsx",
+      "type": "registry:ui",
+      "content": "import type { ReactNode } from 'react'\nimport { cn } from '@/lib/cn'\n\n// A red box for what broke (console2.css .v2-banner-row): one box per problem, the problem in words (its subject in\n// ink, medium) and the button that fixes it. A 6px red square leads it. Stack several in a column 8px apart, one each.\n// The `action` slot is the `action` prop.\nexport interface AlertProps { title: string, action?: ReactNode, className?: string, children?: ReactNode }\n\nexport function Alert({ title, action, className, children }: AlertProps) {\n  return (\n    <div data-ds=\"alert\" className={cn('flex flex-wrap items-center gap-x-3 gap-y-2.5 border border-home-red-press bg-surface-danger py-2.5 pr-3 pl-4 text-fg-danger max-md:items-start max-md:p-3', className)} role=\"alert\">\n      <span className=\"size-1.5 shrink-0 bg-home-red-press max-md:mt-1.75\" aria-hidden=\"true\" />\n      <p className=\"min-w-0 flex-1 max-md:basis-[calc(100%-48px)]\"><span className=\"font-medium text-fg\">{title}</span> {children}</p>\n      {action && <div className=\"shrink-0\">{action}</div>}\n    </div>\n  )\n}\n\nexport default Alert\n"
+    },
+    {
+      "path": "lib/cn.ts",
+      "type": "registry:lib",
+      "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+    }
+  ]
+}

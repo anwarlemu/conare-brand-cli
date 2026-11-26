@@ -1,0 +1,16 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "count",
+  "type": "registry:ui",
+  "title": "Count",
+  "description": "The one counter: a number that counts to its new value when it changes, so a syncing source's documents visibly climb. Reduced motion shows the new value at once.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Count.tsx",
+      "type": "registry:ui",
+      "content": "'use client'\nimport { useEffect, useRef, useState } from 'react'\n\n// The one counter (Count.vue): a number that counts to its new value when it changes (700ms, easing out), so a syncing\n// source's documents visibly climb between polls. `rolls` also counts up from nothing as it lands, as the website's\n// figures do; `once` does that only the first time this key shows in the browser tab's session. `format` reads it as an\n// amount or a share; plain counts get thousands separators. Tabular figures, so the width holds. Reduced motion shows\n// the new value at once.\nexport interface CountProps {\n  value: number\n  rolls?: boolean\n  once?: string\n  format?: (n: number) => string\n}\n\nconst ROLL_MS = 700\nconst still = () => !globalThis.matchMedia || globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches\nconst plain = (n: number) => Math.round(n).toLocaleString('en-US')\n\n// True the first time a key is seen in this tab's session; storage blocked keeps the entrance.\nfunction firstTime(key: string) {\n  try {\n    const name = `ds-seen:${key}`\n    if (sessionStorage.getItem(name)) return false\n    sessionStorage.setItem(name, '1')\n  }\n  catch { /* storage blocked */ }\n  return true\n}\n\nexport function Count({ value, rolls, once, format }: CountProps) {\n  const [shown, setShown] = useState(value)\n  const current = useRef(value)\n  const raf = useRef(0)\n  const mounted = useRef(false)\n\n  function roll(to: number) {\n    cancelAnimationFrame(raf.current)\n    const show = (n: number) => {\n      current.current = n\n      setShown(n)\n    }\n    if (still()) return show(to)\n    const from = current.current\n    const start = performance.now()\n    const tick = (now: number) => {\n      const t = Math.min(1, (now - start) / ROLL_MS)\n      show(from + (to - from) * (1 - (1 - t) ** 3))\n      if (t < 1) raf.current = requestAnimationFrame(tick)\n    }\n    raf.current = requestAnimationFrame(tick)\n  }\n\n  // A new value counts to it (Vue's watch: not on the first render).\n  useEffect(() => {\n    if (!mounted.current) return\n    roll(value)\n  }, [value]) // eslint-disable-line react-hooks/exhaustive-deps\n\n  useEffect(() => {\n    mounted.current = true\n    if (!still() && (rolls || (once && firstTime(once)))) {\n      current.current = 0\n      setShown(0)\n      roll(value)\n    }\n    return () => cancelAnimationFrame(raf.current)\n  }, []) // eslint-disable-line react-hooks/exhaustive-deps\n\n  return <span data-ds=\"count\" className=\"tabular-nums\">{format ? format(shown) : plain(shown)}</span>\n}\n\nexport default Count\n"
+    }
+  ]
+}

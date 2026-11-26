@@ -1,0 +1,290 @@
+{
+  "name": "meter",
+  "title": "Meter",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "Progress as a 4px bar with an ink fill (the largest share red), or as one 6px square per step: done in ink, the next in red, the rest an empty hairline. It covers shadcn's progress.",
+  "use_for": "Credits left, setup's steps, a share in a table, a job's progress.",
+  "never": [
+    "Percentages with no label",
+    "A meter for something the person cannot change",
+    "A rounded or striped bar"
+  ],
+  "source": "conare-web app/assets/css/console2.css (.v2-meter, .v2-setupmeter), app/components/console/SetupMeter.vue",
+  "body": "",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Meter.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed } from 'vue'\n\n// Progress as a bar (console2.css .v2-meter): a 4px hairline-grey track with an ink fill. `tone=\"top\"` fills it red,\n// for the largest share in a list (the bill's amounts); `tone=\"rest\"` in neutral-500, for what the rest add up to.\n// `label` names it for screen readers (role meter); `decorative` hides it when the row's text already says it, such\n// as a share bar in a table. `live` eases the fill linearly as the value moves (a job's progress), on transform from the\n// left, still for reduced motion.\nconst props = withDefaults(defineProps<{ value: number, max?: number, label?: string, tone?: 'default' | 'top' | 'rest', decorative?: boolean, live?: boolean }>(), { max: 100, tone: 'default' })\nconst share = computed(() => Math.max(0, Math.min(1, props.value / (props.max || 1))))\nconst FILL = { default: 'bg-surface-inverse', top: 'bg-edge-accent', rest: 'bg-ds-neutral-500' }\n</script>\n\n<template>\n  <div data-ds=\"meter\"\n    class=\"block h-1 bg-edge\"\n    :role=\"decorative ? undefined : 'meter'\"\n    :aria-hidden=\"decorative || undefined\"\n    :aria-label=\"decorative ? undefined : label\"\n    :aria-valuemin=\"decorative ? undefined : 0\"\n    :aria-valuemax=\"decorative ? undefined : max\"\n    :aria-valuenow=\"decorative ? undefined : value\"\n  >\n    <span class=\"block h-full\" :class=\"[FILL[tone], live && 'ds-meter-live']\" :style=\"live ? { transform: `scaleX(${share})` } : { width: `${share * 100}%` }\" />\n  </div>\n</template>\n\n<style>\n/* A job's progress moves on its own clock, so it eases linearly (console2.css .v2-meter[data-state]). */\n.ds-meter-live { width: 100%; transform-origin: left; transition: transform var(--ds-duration-progress) linear; }\n@media (prefers-reduced-motion: reduce) { .ds-meter-live { transition: none; } }\n</style>\n"
+    },
+    {
+      "path": "components/ui/StepMeter.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed } from 'vue'\n\n// Steps as squares (SetupMeter.vue, after the overview's pixel meters): 6px squares 2px apart, done steps ink, the next\n// one red, the rest an empty hairline. A picture: put the words beside it (\"2 of 4 done\").\nconst props = defineProps<{ steps: boolean[] }>()\nconst next = computed(() => props.steps.findIndex(f => !f))\n</script>\n\n<template>\n  <span data-ds=\"step-meter\" class=\"inline-flex gap-0.5\" aria-hidden=\"true\">\n    <i\n      v-for=\"(done, i) in steps\"\n      :key=\"i\"\n      class=\"size-1.5 border\"\n      :class=\"done ? 'border-surface-inverse bg-surface-inverse' : i === next ? 'border-edge-accent bg-edge-accent' : 'border-edge-strong'\"\n    />\n  </span>\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "In the product",
+      "center": false,
+      "half": false,
+      "path": "examples/meter/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport Meter from '@/components/ui/Meter.vue'\nimport StepMeter from '@/components/ui/StepMeter.vue'\n// Credits left as a bar, and setup with two of four steps done.\n</script>\n\n<template>\n  <div class=\"grid items-start gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8\">\n    <p class=\"type-meta leading-7 text-fg-muted\">How much is left</p>\n    <div class=\"flex max-w-80 flex-col gap-2\">\n      <p class=\"flex justify-between type-meta\"><span class=\"text-fg-muted\">Credits left</span><span>$268.73</span></p>\n      <Meter :value=\"268.73\" :max=\"310\" label=\"credits left\" />\n    </div>\n    <p class=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">Steps done</p>\n    <div class=\"flex min-h-7 items-center gap-3\">\n      <StepMeter :steps=\"[true, true, false, false]\" />\n      <span class=\"type-meta text-fg-muted\">2 of 4 done</span>\n    </div>\n  </div>\n</template>\n",
+      "requires": [],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Meter.tsx",
+          "content": "import { cn } from '@/react/lib/cn'\n\n// Progress as a bar (console2.css .v2-meter): a 4px hairline-grey track with an ink fill. `tone=\"top\"` fills it red,\n// for the largest share in a list (the bill's amounts); `tone=\"rest\"` in neutral-500, for what the rest add up to.\n// `label` names it for screen readers (role meter); `decorative` hides it when the row's text already says it, such\n// as a share bar in a table. `live` eases the fill linearly as the value moves (a job's progress), on transform from the\n// left, still for reduced motion.\nexport interface MeterProps { value: number, max?: number, label?: string, tone?: 'default' | 'top' | 'rest', decorative?: boolean, live?: boolean, className?: string }\n\nconst FILL = { default: 'bg-surface-inverse', top: 'bg-edge-accent', rest: 'bg-ds-neutral-500' }\n\nexport function Meter({ value, max = 100, label, tone = 'default', decorative, live, className }: MeterProps) {\n  const share = Math.max(0, Math.min(1, value / (max || 1)))\n  return (\n    <>\n      <style href=\"ds-meter\" precedence=\"ds\">{css}</style>\n      <div\n        data-ds=\"meter\"\n        className={cn('block h-1 bg-edge', className)}\n        role={decorative ? undefined : 'meter'}\n        aria-hidden={decorative || undefined}\n        aria-label={decorative ? undefined : label}\n        aria-valuemin={decorative ? undefined : 0}\n        aria-valuemax={decorative ? undefined : max}\n        aria-valuenow={decorative ? undefined : value}\n      >\n        <span className={cn('block h-full', [FILL[tone], live && 'ds-meter-live'])} style={live ? { transform: `scaleX(${share})` } : { width: `${share * 100}%` }} />\n      </div>\n    </>\n  )\n}\n\nexport default Meter\n\nconst css = `\n/* A job's progress moves on its own clock, so it eases linearly (console2.css .v2-meter[data-state]). */\n.ds-meter-live { width: 100%; transform-origin: left; transition: transform var(--ds-duration-progress) linear; }\n@media (prefers-reduced-motion: reduce) { .ds-meter-live { transition: none; } }\n`\n"
+        },
+        {
+          "path": "react/components/ui/StepMeter.tsx",
+          "content": "import { cn } from '@/react/lib/cn'\n\n// Steps as squares (SetupMeter.vue, after the overview's pixel meters): 6px squares 2px apart, done steps ink, the next\n// one red, the rest an empty hairline. A picture: put the words beside it (\"2 of 4 done\").\nexport interface StepMeterProps { steps: boolean[], className?: string }\n\nexport function StepMeter({ steps, className }: StepMeterProps) {\n  const next = steps.findIndex(f => !f)\n  return (\n    <span data-ds=\"step-meter\" className={cn('inline-flex gap-0.5', className)} aria-hidden=\"true\">\n      {steps.map((done, i) => (\n        <i key={i} className={cn('size-1.5 border', done ? 'border-surface-inverse bg-surface-inverse' : i === next ? 'border-edge-accent bg-edge-accent' : 'border-edge-strong')} />\n      ))}\n    </span>\n  )\n}\n\nexport default StepMeter\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "Meter",
+            "file": "react/components/ui/Meter.tsx",
+            "props": [
+              {
+                "name": "value",
+                "type": "number",
+                "required": true
+              },
+              {
+                "name": "max",
+                "type": "number",
+                "required": false,
+                "default": "100"
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "tone",
+                "type": "'default' | 'top' | 'rest'",
+                "required": false,
+                "default": "'default'"
+              },
+              {
+                "name": "decorative",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "live",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "StepMeter",
+            "file": "react/components/ui/StepMeter.tsx",
+            "props": [
+              {
+                "name": "steps",
+                "type": "boolean[]",
+                "required": true
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "react/examples/meter/Product.tsx",
+          "content": "import { Meter } from '@/react/components/ui/Meter'\nimport { StepMeter } from '@/react/components/ui/StepMeter'\n// Credits left as a bar, and setup with two of four steps done.\n\nexport default function Product() {\n  return (\n    <div className=\"grid items-start gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8\">\n      <p className=\"type-meta leading-7 text-fg-muted\">How much is left</p>\n      <div className=\"flex max-w-80 flex-col gap-2\">\n        <p className=\"flex justify-between type-meta\"><span className=\"text-fg-muted\">Credits left</span><span>$268.73</span></p>\n        <Meter value={268.73} max={310} label=\"credits left\" />\n      </div>\n      <p className=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">Steps done</p>\n      <div className=\"flex min-h-7 items-center gap-3\">\n        <StepMeter steps={[true, true, false, false]} />\n        <span className=\"type-meta text-fg-muted\">2 of 4 done</span>\n      </div>\n    </div>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/meter.ts",
+          "content": "import { html } from 'lit'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { styleMap } from 'lit/directives/style-map.js'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// Meter.vue as <conare-meter>: progress as a bar (console2.css .v2-meter): a 4px hairline-grey track with an ink fill.\n// `tone=\"top\"` fills it red, for the largest share in a list (the bill's amounts); `tone=\"rest\"` in neutral-500, for\n// what the rest add up to. `label` names it for screen readers (role meter); `decorative` hides it when the row's text\n// already says it, such as a share bar in a table. `live` eases the fill linearly as the value moves (a job's\n// progress), on transform from the left, still for reduced motion.\n\nconst FILL = { default: 'bg-surface-inverse', top: 'bg-edge-accent', rest: 'bg-ds-neutral-500' }\n\n/** @summary Progress as a bar. */\nexport class Meter extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { value: { type: Number }, max: { type: Number }, label: {}, tone: {}, decorative: { type: Boolean }, live: { type: Boolean } }\n\n\tvalue = 0\n\tmax = 100\n\t/** The name for assistive tech. */\n\tlabel?: string\n\ttone: 'default' | 'top' | 'rest' = 'default'\n\t/** Hidden from assistive tech (the row's text says it). */\n\tdecorative = false\n\t/** Ease the fill as the value moves. */\n\tlive = false\n\n\trender() {\n\t\tconst share = Math.max(0, Math.min(1, this.value / (this.max || 1)))\n\t\tconst d = this.decorative\n\t\treturn html`<div data-ds=\"meter\" class=\"block h-1 bg-edge\" role=${ifDefined(d ? undefined : 'meter')} aria-hidden=${ifDefined(d ? 'true' : undefined)} aria-label=${ifDefined(d ? undefined : this.label)} aria-valuemin=${ifDefined(d ? undefined : '0')} aria-valuemax=${ifDefined(d ? undefined : String(this.max))} aria-valuenow=${ifDefined(d ? undefined : String(this.value))}><span class=${['block h-full', FILL[this.tone] ?? FILL.default, this.live ? 'ds-meter-live' : ''].join(' ')} style=${styleMap(this.live ? { transform: `scaleX(${share})` } : { width: `${share * 100}%` })}></span></div>`\n\t}\n}\n\ndefine('meter', Meter)\n"
+        },
+        {
+          "path": "elements/components/ui/meter.css",
+          "content": "/* Meter.vue's <style>, as it is. */\n/* A job's progress moves on its own clock, so it eases linearly (console2.css .v2-meter[data-state]). */\n.ds-meter-live { width: 100%; transform-origin: left; transition: transform var(--ds-duration-progress) linear; }\n@media (prefers-reduced-motion: reduce) { .ds-meter-live { transition: none; } }\n"
+        },
+        {
+          "path": "elements/components/ui/step-meter.ts",
+          "content": "import { html } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// StepMeter.vue as <conare-step-meter>: steps as squares (SetupMeter.vue, after the overview's pixel meters): 6px\n// squares 2px apart, done steps ink, the next one red, the rest an empty hairline. A picture: put the words beside it\n// (\"2 of 4 done\"). `steps` is a JSON attribute (steps='[true,true,false,false]') or a property.\n\n/** @summary Steps as squares. */\nexport class StepMeter extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { steps: { type: Array } }\n\n\tsteps: boolean[] = []\n\n\trender() {\n\t\tconst next = this.steps.findIndex((f) => !f)\n\t\treturn html`<span data-ds=\"step-meter\" class=\"inline-flex gap-0.5\" aria-hidden=\"true\">${this.steps.map((done, i) => html`<i class=${['size-1.5 border', done ? 'border-surface-inverse bg-surface-inverse' : i === next ? 'border-edge-accent bg-edge-accent' : 'border-edge-strong'].join(' ')}></i>`)}</span>`\n\t}\n}\n\ndefine('step-meter', StepMeter)\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/meter.js",
+        "elements/step-meter.js"
+      ],
+      "tag": "conare-meter",
+      "tags": [
+        "conare-meter",
+        "conare-step-meter"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-meter",
+            "name": "Meter",
+            "module": "elements/meter.js",
+            "description": "Progress as a bar.",
+            "attributes": [
+              {
+                "name": "value",
+                "field": "value",
+                "type": "number",
+                "default": "0"
+              },
+              {
+                "name": "max",
+                "field": "max",
+                "type": "number",
+                "default": "100"
+              },
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string | undefined",
+                "description": "The name for assistive tech."
+              },
+              {
+                "name": "tone",
+                "field": "tone",
+                "type": "\"top\" | \"default\" | \"rest\"",
+                "default": "'default'"
+              },
+              {
+                "name": "decorative",
+                "field": "decorative",
+                "type": "boolean",
+                "default": "false",
+                "description": "Hidden from assistive tech (the row's text says it)."
+              },
+              {
+                "name": "live",
+                "field": "live",
+                "type": "boolean",
+                "default": "false",
+                "description": "Ease the fill as the value moves."
+              }
+            ],
+            "properties": [
+              {
+                "name": "value",
+                "type": "number",
+                "default": "0",
+                "attribute": "value"
+              },
+              {
+                "name": "max",
+                "type": "number",
+                "default": "100",
+                "attribute": "max"
+              },
+              {
+                "name": "label",
+                "type": "string | undefined",
+                "description": "The name for assistive tech.",
+                "attribute": "label"
+              },
+              {
+                "name": "tone",
+                "type": "\"top\" | \"default\" | \"rest\"",
+                "default": "'default'",
+                "attribute": "tone"
+              },
+              {
+                "name": "decorative",
+                "type": "boolean",
+                "default": "false",
+                "description": "Hidden from assistive tech (the row's text says it).",
+                "attribute": "decorative"
+              },
+              {
+                "name": "live",
+                "type": "boolean",
+                "default": "false",
+                "description": "Ease the fill as the value moves.",
+                "attribute": "live"
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          },
+          {
+            "tag": "conare-step-meter",
+            "name": "StepMeter",
+            "module": "elements/step-meter.js",
+            "description": "Steps as squares.",
+            "attributes": [
+              {
+                "name": "steps",
+                "field": "steps",
+                "type": "boolean[]",
+                "default": "[]"
+              }
+            ],
+            "properties": [
+              {
+                "name": "steps",
+                "type": "boolean[]",
+                "default": "[]",
+                "attribute": "steps"
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/meter/Product.html",
+          "content": "<!-- Credits left as a bar, and setup with two of four steps done. -->\n<div class=\"grid items-start gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8\">\n  <p class=\"type-meta leading-7 text-fg-muted\">How much is left</p>\n  <div class=\"flex max-w-80 flex-col gap-2\">\n    <p class=\"flex justify-between type-meta\"><span class=\"text-fg-muted\">Credits left</span><span>$268.73</span></p>\n    <conare-meter value=\"268.73\" max=\"310\" label=\"credits left\"></conare-meter>\n  </div>\n  <p class=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">Steps done</p>\n  <div class=\"flex min-h-7 items-center gap-3\">\n    <conare-step-meter steps=\"[true, true, false, false]\"></conare-step-meter>\n    <span class=\"type-meta text-fg-muted\">2 of 4 done</span>\n  </div>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,165 @@
+{
+  "name": "subprocessor-table",
+  "title": "Subprocessor table",
+  "type": "registry:ui",
+  "group": "site",
+  "description": "The subprocessors as a policy page's ruled table in the double rule: who, what for, what data and where, each name linking to its data-processing terms in the red.",
+  "use_for": "The subprocessors page and the privacy policy's list.",
+  "never": [
+    "Vendors not on the signed list",
+    "How the product works (models, engines, which call goes where)"
+  ],
+  "source": "conare-web app/components/home/SubprocessorTable.vue, app/assets/css/home.css (.legal-table, .legal a)",
+  "body": "A wide table scrolls sideways under a fade (`fade-x`); its frame and outline stay whole.",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/site/SubprocessorTable.vue",
+      "content": "<script setup lang=\"ts\">\n// The subprocessors as a policy page's ruled table (SubprocessorTable.vue, home.css .legal-table): who, what for,\n// what data and where, each name linking to its data-processing terms. The double rule frames it; on a phone it\n// scrolls sideways inside its frame (a keyboard reaches it too), never the page.\nexport type Subprocessor = { name: string, terms: string, purpose: string, data: string, location: string }\nwithDefaults(defineProps<{ rows: readonly Subprocessor[], label?: string }>(), { label: 'subprocessors' })\n</script>\n\n<template>\n  <div data-ds=\"subprocessor-table\" class=\"ds-legal-table fade-x overflow-x-auto border border-edge outline outline-offset-4 outline-edge\" role=\"region\" :aria-label=\"label\" tabindex=\"0\">\n    <table class=\"w-full min-w-160 text-left type-body\">\n      <thead>\n        <tr>\n          <th>Subprocessor</th>\n          <th>Purpose of processing</th>\n          <th>Data categories</th>\n          <th>Processing location</th>\n        </tr>\n      </thead>\n      <tbody>\n        <tr v-for=\"p in rows\" :key=\"p.name\">\n          <td><a :href=\"p.terms\" target=\"_blank\" rel=\"noopener\">{{ p.name }}</a></td>\n          <td>{{ p.purpose }}</td>\n          <td>{{ p.data }}</td>\n          <td>{{ p.location }}</td>\n        </tr>\n      </tbody>\n    </table>\n  </div>\n</template>\n\n<style>\n.ds-legal-table th { padding: var(--ds-space-lg) var(--ds-space-xl); background: var(--ds-color-surface-subtle); font-family: var(--ds-font-text); font-size: var(--ds-text-meta); font-weight: var(--ds-font-weight-regular); color: var(--ds-color-fg-muted); white-space: nowrap; }\n.ds-legal-table td { padding: var(--ds-space-lg) var(--ds-space-xl); vertical-align: top; border-top: var(--ds-border-hairline) solid var(--ds-color-edge); }\n/* Links in the red, underlined at 40% that turns full under the pointer (home.css .legal a). */\n.ds-legal-table a { color: var(--ds-color-fg-accent-display); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--ds-color-fg-accent-display) 40%, transparent); text-underline-offset: 4px; transition: text-decoration-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-legal-table a:hover { text-decoration-color: var(--ds-color-fg-accent-display); } }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "On the site",
+      "center": false,
+      "half": false,
+      "path": "examples/subprocessor-table/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport SubprocessorTable from '@/components/site/SubprocessorTable.vue'\n// The subprocessors page's table, on sample vendors.\nconst rows = [\n  { name: 'Acme Cloud', terms: '#acme-cloud', purpose: 'Compute, storage and AI inference', data: 'Customer data', location: 'United States' },\n  { name: 'Acme Connectors', terms: '#acme-connectors', purpose: 'Data connectors', data: 'Data from apps the customer connects, and their credentials', location: 'United States' },\n  { name: 'Acme Mail', terms: '#acme-mail', purpose: 'Transactional email', data: 'Names and email addresses', location: 'United States; European Union' },\n  { name: 'Acme Billing', terms: '#acme-billing', purpose: 'Payments and invoices', data: 'Billing contacts and payment details', location: 'United States' },\n]\n</script>\n\n<template>\n  <SubprocessorTable :rows=\"rows\" />\n</template>\n",
+      "requires": [],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/site/SubprocessorTable.tsx",
+          "content": "// The subprocessors as a policy page's ruled table (SubprocessorTable.vue, home.css .legal-table): who, what for,\n// what data and where, each name linking to its data-processing terms. The double rule frames it; on a phone it\n// scrolls sideways inside its frame (a keyboard reaches it too), never the page.\nimport { cn } from '@/react/lib/cn'\n\nexport type Subprocessor = { name: string, terms: string, purpose: string, data: string, location: string }\n\nexport interface SubprocessorTableProps {\n  rows: readonly Subprocessor[]\n  label?: string\n  className?: string\n}\n\nexport function SubprocessorTable({ rows, label = 'subprocessors', className }: SubprocessorTableProps) {\n  return (\n    <>\n      <style href=\"ds-subprocessor-table\" precedence=\"ds\">{css}</style>\n      <div data-ds=\"subprocessor-table\" className={cn('ds-legal-table fade-x overflow-x-auto border border-edge outline outline-offset-4 outline-edge', className)} role=\"region\" aria-label={label} tabIndex={0}>\n        <table className=\"w-full min-w-160 text-left type-body\">\n          <thead>\n            <tr>\n              <th>Subprocessor</th>\n              <th>Purpose of processing</th>\n              <th>Data categories</th>\n              <th>Processing location</th>\n            </tr>\n          </thead>\n          <tbody>\n            {rows.map(p => (\n              <tr key={p.name}>\n                <td><a href={p.terms} target=\"_blank\" rel=\"noopener\">{p.name}</a></td>\n                <td>{p.purpose}</td>\n                <td>{p.data}</td>\n                <td>{p.location}</td>\n              </tr>\n            ))}\n          </tbody>\n        </table>\n      </div>\n    </>\n  )\n}\n\nexport default SubprocessorTable\n\nconst css = `\n.ds-legal-table th { padding: var(--ds-space-lg) var(--ds-space-xl); background: var(--ds-color-surface-subtle); font-family: var(--ds-font-text); font-size: var(--ds-text-meta); font-weight: var(--ds-font-weight-regular); color: var(--ds-color-fg-muted); white-space: nowrap; }\n.ds-legal-table td { padding: var(--ds-space-lg) var(--ds-space-xl); vertical-align: top; border-top: var(--ds-border-hairline) solid var(--ds-color-edge); }\n/* Links in the red, underlined at 40% that turns full under the pointer (home.css .legal a). */\n.ds-legal-table a { color: var(--ds-color-fg-accent-display); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--ds-color-fg-accent-display) 40%, transparent); text-underline-offset: 4px; transition: text-decoration-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-legal-table a:hover { text-decoration-color: var(--ds-color-fg-accent-display); } }\n`\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "SubprocessorTable",
+            "file": "react/components/site/SubprocessorTable.tsx",
+            "props": [
+              {
+                "name": "rows",
+                "type": "readonly Subprocessor[]",
+                "required": true
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "required": false,
+                "default": "'subprocessors'"
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "On the site",
+          "center": false,
+          "half": false,
+          "path": "react/examples/subprocessor-table/Site.tsx",
+          "content": "import { SubprocessorTable } from '@/react/components/site/SubprocessorTable'\n// The subprocessors page's table, on sample vendors.\nconst rows = [\n  { name: 'Acme Cloud', terms: '#acme-cloud', purpose: 'Compute, storage and AI inference', data: 'Customer data', location: 'United States' },\n  { name: 'Acme Connectors', terms: '#acme-connectors', purpose: 'Data connectors', data: 'Data from apps the customer connects, and their credentials', location: 'United States' },\n  { name: 'Acme Mail', terms: '#acme-mail', purpose: 'Transactional email', data: 'Names and email addresses', location: 'United States; European Union' },\n  { name: 'Acme Billing', terms: '#acme-billing', purpose: 'Payments and invoices', data: 'Billing contacts and payment details', location: 'United States' },\n]\n\nexport default function Site() {\n  return <SubprocessorTable rows={rows} />\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/site/subprocessor-table.ts",
+          "content": "import { html } from 'lit'\nimport { repeat } from 'lit/directives/repeat.js'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// SubprocessorTable.vue as <conare-subprocessor-table>: the subprocessors as a policy page's ruled table (home.css\n// .legal-table): who, what for, what data and where, each name linking to its data-processing terms. The double rule\n// frames it; on a phone it scrolls sideways inside its frame (a keyboard reaches it too), never the page.\nexport type Subprocessor = { name: string, terms: string, purpose: string, data: string, location: string }\n\n/** @summary The subprocessors as a policy page's ruled table. */\nexport class SubprocessorTable extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { rows: { type: Array }, label: {} }\n\n\t/** [{ name, terms, purpose, data, location }]. */\n\trows: Subprocessor[] = []\n\t/** The region's name. */\n\tlabel = 'subprocessors'\n\n\trender() {\n\t\treturn html`<div data-ds=\"subprocessor-table\" class=\"ds-legal-table fade-x overflow-x-auto border border-edge outline outline-offset-4 outline-edge\" role=\"region\" aria-label=${this.label} tabindex=\"0\">\n\t\t\t<table class=\"w-full min-w-160 text-left type-body\">\n\t\t\t\t<thead>\n\t\t\t\t\t<tr>\n\t\t\t\t\t\t<th>Subprocessor</th>\n\t\t\t\t\t\t<th>Purpose of processing</th>\n\t\t\t\t\t\t<th>Data categories</th>\n\t\t\t\t\t\t<th>Processing location</th>\n\t\t\t\t\t</tr>\n\t\t\t\t</thead>\n\t\t\t\t<tbody>\n\t\t\t\t\t${repeat(this.rows ?? [], (p) => p.name, (p) => html`<tr>\n\t\t\t\t\t\t<td><a href=${p.terms} target=\"_blank\" rel=\"noopener\">${p.name}</a></td>\n\t\t\t\t\t\t<td>${p.purpose}</td>\n\t\t\t\t\t\t<td>${p.data}</td>\n\t\t\t\t\t\t<td>${p.location}</td>\n\t\t\t\t\t</tr>`)}\n\t\t\t\t</tbody>\n\t\t\t</table>\n\t\t</div>`\n\t}\n}\n\ndefine('subprocessor-table', SubprocessorTable)\n"
+        },
+        {
+          "path": "elements/components/site/subprocessor-table.css",
+          "content": ".ds-legal-table th { padding: var(--ds-space-lg) var(--ds-space-xl); background: var(--ds-color-surface-subtle); font-family: var(--ds-font-text); font-size: var(--ds-text-meta); font-weight: var(--ds-font-weight-regular); color: var(--ds-color-fg-muted); white-space: nowrap; }\n.ds-legal-table td { padding: var(--ds-space-lg) var(--ds-space-xl); vertical-align: top; border-top: var(--ds-border-hairline) solid var(--ds-color-edge); }\n/* Links in the red, underlined at 40% that turns full under the pointer (home.css .legal a). */\n.ds-legal-table a { color: var(--ds-color-fg-accent-display); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--ds-color-fg-accent-display) 40%, transparent); text-underline-offset: 4px; transition: text-decoration-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-legal-table a:hover { text-decoration-color: var(--ds-color-fg-accent-display); } }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/subprocessor-table.js"
+      ],
+      "tag": "conare-subprocessor-table",
+      "tags": [
+        "conare-subprocessor-table"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-subprocessor-table",
+            "name": "SubprocessorTable",
+            "module": "elements/subprocessor-table.js",
+            "description": "The subprocessors as a policy page's ruled table.",
+            "attributes": [
+              {
+                "name": "rows",
+                "field": "rows",
+                "type": "Subprocessor[]",
+                "default": "[]",
+                "description": "[{ name, terms, purpose, data, location }]."
+              },
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string",
+                "default": "'subprocessors'",
+                "description": "The region's name."
+              }
+            ],
+            "properties": [
+              {
+                "name": "rows",
+                "type": "Subprocessor[]",
+                "default": "[]",
+                "description": "[{ name, terms, purpose, data, location }].",
+                "attribute": "rows"
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "default": "'subprocessors'",
+                "description": "The region's name.",
+                "attribute": "label"
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "On the site",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/subprocessor-table/Site.html",
+          "content": "<!-- The subprocessors page's table, on sample vendors. -->\n<conare-subprocessor-table rows='[\n  { \"name\": \"Acme Cloud\", \"terms\": \"#acme-cloud\", \"purpose\": \"Compute, storage and AI inference\", \"data\": \"Customer data\", \"location\": \"United States\" },\n  { \"name\": \"Acme Connectors\", \"terms\": \"#acme-connectors\", \"purpose\": \"Data connectors\", \"data\": \"Data from apps the customer connects, and their credentials\", \"location\": \"United States\" },\n  { \"name\": \"Acme Mail\", \"terms\": \"#acme-mail\", \"purpose\": \"Transactional email\", \"data\": \"Names and email addresses\", \"location\": \"United States; European Union\" },\n  { \"name\": \"Acme Billing\", \"terms\": \"#acme-billing\", \"purpose\": \"Payments and invoices\", \"data\": \"Billing contacts and payment details\", \"location\": \"United States\" }\n]'></conare-subprocessor-table>\n"
+        }
+      ]
+    }
+  }
+}

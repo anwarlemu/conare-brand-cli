@@ -1,0 +1,246 @@
+{
+  "name": "account-menu",
+  "title": "Account menu",
+  "type": "registry:ui",
+  "group": "product",
+  "description": "The sidebar's foot: a black square and the email; it opens upward with the credits left, sign-in and security, and Sign out in red.",
+  "use_for": "The signed-in person's own settings and signing out, in the Sidebar's foot slot.",
+  "never": [
+    "The person's name when the email says who it is",
+    "A round avatar: Conare's is square"
+  ],
+  "source": "conare-web app/components/console/AccountMenu.vue, app/assets/css/console2.css (.v2-trigger, .v2-menu, .v2-meter, .v2-menu-danger)",
+  "body": "Put it in `Sidebar`'s `foot` slot (48px). Listen for `open` to fetch the credits the first time it opens, and for\n`signOut` to end the session; set `signing-out` meanwhile.",
+  "requires": [
+    "menu"
+  ],
+  "dependencies": [
+    "lucide-vue-next@^0.479.0"
+  ],
+  "files": [
+    {
+      "path": "components/product/AccountMenu.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref, watch } from 'vue'\nimport { ChevronsUpDown, LogOut, ShieldCheck } from 'lucide-vue-next'\nimport Menu from '@/components/ui/Menu.vue'\nimport MenuItem from '@/components/ui/MenuItem.vue'\nimport MenuSeparator from '@/components/ui/MenuSeparator.vue'\n\n// The person, at the foot of the sidebar (AccountMenu.vue): a black square for the picture, their email, and a menu\n// that opens upward with sign-in settings and Sign out in red. Its top shows the credits left on a 4px meter\n// (.v2-meter) when `credits` is given; `open` fires each time it opens, so the app can fetch them then. `signingOut`\n// keeps the menu open on \"Signing out\" while the app ends the session. `up: false` opens it downward.\nconst props = withDefaults(defineProps<{\n  email: string\n  credits?: { left: string, share: number } | null\n  securityHref?: string\n  signingOut?: boolean\n  up?: boolean\n}>(), { securityHref: '#', up: true })\nconst emit = defineEmits<{ open: [], signOut: [] }>()\nconst menu = ref<InstanceType<typeof Menu> | null>(null)\nwatch(() => menu.value?.open, (now) => { if (now) emit('open') })\nconst share = () => `${Math.max(0, Math.min(1, props.credits?.share ?? 0)) * 100}%`\n</script>\n\n<template>\n  <Menu data-ds=\"account-menu\"\n    ref=\"menu\"\n    label=\"account\"\n    :up=\"up\"\n    offset=\"8px\"\n    width=\"calc(100% - 16px)\"\n    class=\"!flex h-full w-full\"\n    trigger-class=\"relative isolate flex h-full w-full cursor-pointer items-center gap-2 px-3 text-left text-meta before:absolute before:inset-x-2 before:inset-y-1.5 before:-z-10 before:transition-colors before:duration-120 before:ease-standard hover:before:bg-edge/45 aria-expanded:before:bg-edge/45 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-focus\"\n  >\n    <template #trigger>\n      <span class=\"size-5 shrink-0 bg-off-black\" aria-hidden=\"true\" />\n      <span class=\"min-w-0 flex-1 truncate text-left\">{{ email }}</span>\n      <ChevronsUpDown :size=\"14\" :stroke-width=\"1.5\" class=\"mr-0.75 shrink-0 text-fg-muted\" aria-hidden=\"true\" />\n    </template>\n    <template v-if=\"credits\">\n      <div class=\"flex flex-col gap-1.5 px-3.5 pt-2 pb-2.5\" role=\"none\">\n        <p class=\"flex items-baseline justify-between gap-2\"><span class=\"type-meta text-fg-muted\">Credits left</span><span class=\"font-medium tabular-nums\">{{ credits.left }}</span></p>\n        <div class=\"h-1 bg-edge\" aria-hidden=\"true\"><span class=\"block h-full bg-surface-inverse\" :style=\"{ width: share() }\" /></div>\n      </div>\n      <MenuSeparator />\n    </template>\n    <MenuItem :href=\"securityHref\"><ShieldCheck :size=\"14\" :stroke-width=\"1.5\" class=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />Sign-in and security</MenuItem>\n    <MenuSeparator />\n    <MenuItem danger keep-open :disabled=\"signingOut\" @select=\"emit('signOut')\"><LogOut :size=\"14\" :stroke-width=\"1.5\" class=\"shrink-0\" aria-hidden=\"true\" />{{ signingOut ? 'Signing out' : 'Sign out' }}</MenuItem>\n  </Menu>\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "The account row",
+      "center": true,
+      "half": false,
+      "path": "examples/account-menu/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport AccountMenu from '@/components/product/AccountMenu.vue'\n// The account row at the foot of the sidebar. Its row has its four edges here, where no sidebar frames it, and its\n// menu opens down, where the sidebar's foot would send it up. Sign out shows its pending label; nothing signs out.\nconst signingOut = ref(false)\n</script>\n\n<template>\n  <div class=\"h-80\">\n    <div class=\"h-bar w-sidebar border border-edge bg-surface-subtle\">\n      <AccountMenu email=\"you@acme.com\" :credits=\"{ left: '$184.20', share: 0.74 }\" :up=\"false\" :signing-out=\"signingOut\" @sign-out=\"signingOut = true\" />\n    </div>\n  </div>\n</template>\n",
+      "requires": [
+        "menu"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/product/AccountMenu.tsx",
+          "content": "'use client'\nimport { ChevronsUpDown, LogOut, ShieldCheck } from 'lucide-react'\nimport { Menu } from '@/react/components/ui/Menu'\nimport { MenuItem } from '@/react/components/ui/MenuItem'\nimport { MenuSeparator } from '@/react/components/ui/MenuSeparator'\n\n// The person, at the foot of the sidebar (AccountMenu.vue): a black square for the picture, their email, and a menu\n// that opens upward with sign-in settings and Sign out in red. Its top shows the credits left on a 4px meter\n// (.v2-meter) when `credits` is given; `onOpen` is called each time it opens, so the app can fetch them then.\n// `signingOut` keeps the menu open on \"Signing out\" while the app ends the session. `up: false` opens it downward.\nexport interface AccountMenuProps {\n  email: string\n  credits?: { left: string, share: number } | null\n  securityHref?: string\n  signingOut?: boolean\n  up?: boolean\n  onOpen?: () => void\n  onSignOut?: () => void\n}\n\nexport function AccountMenu({ email, credits, securityHref = '#', signingOut, up = true, onOpen, onSignOut }: AccountMenuProps) {\n  const share = () => `${Math.max(0, Math.min(1, credits?.share ?? 0)) * 100}%`\n  return (\n    <Menu\n      data-ds=\"account-menu\"\n      label=\"account\"\n      onOpenChange={(open) => { if (open) onOpen?.() }}\n      up={up}\n      offset=\"8px\"\n      width=\"calc(100% - 16px)\"\n      className=\"!flex h-full w-full\"\n      triggerClass=\"relative isolate flex h-full w-full cursor-pointer items-center gap-2 px-3 text-left text-meta before:absolute before:inset-x-2 before:inset-y-1.5 before:-z-10 before:transition-colors before:duration-120 before:ease-standard hover:before:bg-edge/45 aria-expanded:before:bg-edge/45 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-focus\"\n      trigger={(\n        <>\n          <span className=\"size-5 shrink-0 bg-off-black\" aria-hidden=\"true\" />\n          <span className=\"min-w-0 flex-1 truncate text-left\">{email}</span>\n          <ChevronsUpDown size={14} strokeWidth={1.5} className=\"mr-0.75 shrink-0 text-fg-muted\" aria-hidden=\"true\" />\n        </>\n      )}\n    >\n      {credits && (\n        <>\n          <div className=\"flex flex-col gap-1.5 px-3.5 pt-2 pb-2.5\" role=\"none\">\n            <p className=\"flex items-baseline justify-between gap-2\"><span className=\"type-meta text-fg-muted\">Credits left</span><span className=\"font-medium tabular-nums\">{credits.left}</span></p>\n            <div className=\"h-1 bg-edge\" aria-hidden=\"true\"><span className=\"block h-full bg-surface-inverse\" style={{ width: share() }} /></div>\n          </div>\n          <MenuSeparator />\n        </>\n      )}\n      <MenuItem href={securityHref}><ShieldCheck size={14} strokeWidth={1.5} className=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />Sign-in and security</MenuItem>\n      <MenuSeparator />\n      <MenuItem danger keepOpen disabled={signingOut} onSelect={() => onSignOut?.()}><LogOut size={14} strokeWidth={1.5} className=\"shrink-0\" aria-hidden=\"true\" />{signingOut ? 'Signing out' : 'Sign out'}</MenuItem>\n    </Menu>\n  )\n}\n\nexport default AccountMenu\n"
+        }
+      ],
+      "dependencies": [
+        "lucide-react@0.479.0"
+      ],
+      "registryDependencies": [
+        "menu"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "AccountMenu",
+            "file": "react/components/product/AccountMenu.tsx",
+            "props": [
+              {
+                "name": "email",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "credits",
+                "type": "{ left: string, share: number } | null",
+                "required": false
+              },
+              {
+                "name": "securityHref",
+                "type": "string",
+                "required": false,
+                "default": "'#'"
+              },
+              {
+                "name": "signingOut",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "up",
+                "type": "boolean",
+                "required": false,
+                "default": "true"
+              },
+              {
+                "name": "onOpen",
+                "type": "() => void",
+                "required": false
+              },
+              {
+                "name": "onSignOut",
+                "type": "() => void",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "The account row",
+          "center": true,
+          "half": false,
+          "path": "react/examples/account-menu/Product.tsx",
+          "content": "'use client'\nimport { useState } from 'react'\nimport { AccountMenu } from '@/react/components/product/AccountMenu'\n// The account row at the foot of the sidebar. Its row has its four edges here, where no sidebar frames it, and its\n// menu opens down, where the sidebar's foot would send it up. Sign out shows its pending label; nothing signs out.\n\nexport default function Product() {\n  const [signingOut, setSigningOut] = useState(false)\n  return (\n    <div className=\"h-80\">\n      <div className=\"h-bar w-sidebar border border-edge bg-surface-subtle\">\n        <AccountMenu email=\"you@acme.com\" credits={{ left: '$184.20', share: 0.74 }} up={false} signingOut={signingOut} onSignOut={() => setSigningOut(true)} />\n      </div>\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "menu"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/product/account-menu.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { styleMap } from 'lit/directives/style-map.js'\nimport { ChevronsUpDown, LogOut, ShieldCheck } from 'lucide'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport '@/elements/components/ui/menu'\nimport '@/elements/components/ui/menu-item'\nimport '@/elements/components/ui/menu-separator'\nimport styles from 'virtual:tw'\n\n// AccountMenu.vue as <conare-account-menu>: the person, at the foot of the sidebar (AccountMenu.vue): a black square\n// for the picture, their email, and a menu that opens upward with sign-in settings and Sign out in red. Its top shows\n// the credits left on a 4px meter (.v2-meter) when `credits` is given (a JSON attribute or the property); `open` fires\n// each time it opens, so the app can fetch them then. `signing-out` keeps the menu open on \"Signing out\" while the app\n// ends the session. `up=\"false\"` opens it downward.\n\n/**\n * @summary The person's email and account menu, at the foot of the sidebar.\n * @fires open - The menu opened.\n * @fires sign-out - Sign out was chosen.\n */\nexport class AccountMenu extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = {\n\t\temail: {},\n\t\tcredits: { type: Object },\n\t\tsecurityHref: { attribute: 'security-href' },\n\t\tsigningOut: { type: Boolean, attribute: 'signing-out' },\n\t\tup: { converter: { fromAttribute: (v: string | null) => v !== 'false' } },\n\t}\n\n\temail = ''\n\t/** The credits left and their share of the plan (0 to 1). */\n\tcredits: { left: string, share: number } | null = null\n\tsecurityHref = '#'\n\t/** The menu stays open on \"Signing out\". */\n\tsigningOut = false\n\t/** Opens upward (up=\"false\" for downward). */\n\tup = true\n\n\tprivate onOpenChange = (event: CustomEvent<{ value: boolean }>) => {\n\t\tif (event.target !== event.currentTarget) return\n\t\tif (event.detail.value) this.emit('open')\n\t}\n\n\trender() {\n\t\tconst menu = tag('menu')\n\t\tconst item = tag('menu-item')\n\t\tconst sep = tag('menu-separator')\n\t\tconst share = `${Math.max(0, Math.min(1, this.credits?.share ?? 0)) * 100}%`\n\t\tconst credits = this.credits\n\t\t\t? staticHtml`<div class=\"flex flex-col gap-1.5 px-3.5 pt-2 pb-2.5\" role=\"none\">\n\t\t\t\t\t<p class=\"flex items-baseline justify-between gap-2\"><span class=\"type-meta text-fg-muted\">Credits left</span><span class=\"font-medium tabular-nums\">${this.credits.left}</span></p>\n\t\t\t\t\t<div class=\"h-1 bg-edge\" aria-hidden=\"true\"><span class=\"block h-full bg-surface-inverse\" style=${styleMap({ width: share })}></span></div>\n\t\t\t\t</div>\n\t\t\t\t<${sep}></${sep}>`\n\t\t\t: nothing\n\t\treturn html`${staticHtml`<${menu} data-ds=\"account-menu\" label=\"account\" ?up=${this.up} offset=\"8px\" width=\"calc(100% - 16px)\" class=\"!flex h-full w-full\" @open-change=${this.onOpenChange}>\n\t\t\t<button slot=\"trigger\" type=\"button\" class=\"relative isolate flex h-full w-full cursor-pointer items-center gap-2 px-3 text-left text-meta before:absolute before:inset-x-2 before:inset-y-1.5 before:-z-10 before:transition-colors before:duration-120 before:ease-standard hover:before:bg-edge/45 aria-expanded:before:bg-edge/45 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-focus\">\n\t\t\t\t<span class=\"size-5 shrink-0 bg-off-black\" aria-hidden=\"true\"></span>\n\t\t\t\t<span class=\"min-w-0 flex-1 truncate text-left\">${this.email}</span>\n\t\t\t\t${icon(ChevronsUpDown, 'chevrons-up-down', { size: 14, strokeWidth: 1.5, class: 'mr-0.75 shrink-0 text-fg-muted', attrs: { 'aria-hidden': 'true' } })}\n\t\t\t</button>\n\t\t\t${credits}\n\t\t\t<${item} href=${this.securityHref}>${icon(ShieldCheck, 'shield-check', { size: 14, strokeWidth: 1.5, class: 'shrink-0 text-fg-muted', attrs: { 'aria-hidden': 'true' } })}Sign-in and security</${item}>\n\t\t\t<${sep}></${sep}>\n\t\t\t<${item} danger keep-open ?disabled=${this.signingOut} @select=${() => this.emit('sign-out')}>${icon(LogOut, 'log-out', { size: 14, strokeWidth: 1.5, class: 'shrink-0', attrs: { 'aria-hidden': 'true' } })}${this.signingOut ? 'Signing out' : 'Sign out'}</${item}>\n\t\t</${menu}>`}`\n\t}\n}\n\ndefine('account-menu', AccountMenu)\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/account-menu.js",
+        "elements/menu.js",
+        "elements/menu-item.js",
+        "elements/menu-separator.js"
+      ],
+      "tag": "conare-account-menu",
+      "tags": [
+        "conare-account-menu"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "menu"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-account-menu",
+            "name": "AccountMenu",
+            "module": "elements/account-menu.js",
+            "description": "The person's email and account menu, at the foot of the sidebar.",
+            "attributes": [
+              {
+                "name": "email",
+                "field": "email",
+                "type": "string",
+                "default": "''"
+              },
+              {
+                "name": "credits",
+                "field": "credits",
+                "type": "{ left: string; share: number; } | null",
+                "default": "null",
+                "description": "The credits left and their share of the plan (0 to 1)."
+              },
+              {
+                "name": "security-href",
+                "field": "securityHref",
+                "type": "string",
+                "default": "'#'"
+              },
+              {
+                "name": "signing-out",
+                "field": "signingOut",
+                "type": "boolean",
+                "default": "false",
+                "description": "The menu stays open on \"Signing out\"."
+              },
+              {
+                "name": "up",
+                "field": "up",
+                "type": "boolean",
+                "default": "true",
+                "description": "Opens upward (up=\"false\" for downward)."
+              }
+            ],
+            "properties": [
+              {
+                "name": "email",
+                "type": "string",
+                "default": "''",
+                "attribute": "email"
+              },
+              {
+                "name": "credits",
+                "type": "{ left: string; share: number; } | null",
+                "default": "null",
+                "description": "The credits left and their share of the plan (0 to 1).",
+                "attribute": "credits"
+              },
+              {
+                "name": "securityHref",
+                "type": "string",
+                "default": "'#'",
+                "attribute": "security-href"
+              },
+              {
+                "name": "signingOut",
+                "type": "boolean",
+                "default": "false",
+                "description": "The menu stays open on \"Signing out\".",
+                "attribute": "signing-out"
+              },
+              {
+                "name": "up",
+                "type": "boolean",
+                "default": "true",
+                "description": "Opens upward (up=\"false\" for downward).",
+                "attribute": "up"
+              }
+            ],
+            "events": [
+              {
+                "name": "open",
+                "description": "The menu opened."
+              },
+              {
+                "name": "sign-out",
+                "description": "Sign out was chosen."
+              }
+            ],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "The account row",
+          "center": true,
+          "half": false,
+          "path": "elements/examples/account-menu/Product.html",
+          "content": "<!-- The account row at the foot of the sidebar. Its row has its four edges here, where no sidebar frames it, and its\n     menu opens down, where the sidebar's foot would send it up. Sign out shows its pending label; nothing signs out. -->\n<div class=\"h-80\">\n  <div class=\"h-bar w-sidebar border border-edge bg-surface-subtle\">\n    <conare-account-menu id=\"account\" email=\"you@acme.com\" credits='{ \"left\": \"$184.20\", \"share\": 0.74 }' up=\"false\"></conare-account-menu>\n  </div>\n</div>\n<script type=\"module\">\n  const account = document.getElementById('account')\n  account.addEventListener('sign-out', () => { account.signingOut = true })\n</script>\n"
+        }
+      ]
+    }
+  }
+}

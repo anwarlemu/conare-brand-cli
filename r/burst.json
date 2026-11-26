@@ -1,0 +1,224 @@
+{
+  "name": "burst",
+  "title": "Burst",
+  "type": "registry:ui",
+  "group": "visuals",
+  "description": "The hero frame's infinite cells on red: level rectangles near the frame's edge, each redrawn as it recedes to the center, the copies' edges making the hatch. Corners adds a halftone square to each face, kept clear of the hero's window.",
+  "use_for": "Behind the hero's window, on the red, with the room grid.",
+  "never": [
+    "On any color but the red frame",
+    "Over text",
+    "Rotated: the cells stay level"
+  ],
+  "source": "conare-web app/components/home/Burst.vue, app/utils/cells.ts (halftone)",
+  "body": "",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/visuals/Burst.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed, onBeforeUnmount, onMounted, ref } from 'vue'\nimport { HALFTONE_BLOCK, HALFTONE_DOT, cellPaths, halftone, rng } from '@/composables/useCellBurst'\n\n// The brand pattern in the hero's frame, \"infinite cells\" (Burst.vue): every ray is one cell, a level rectangle out\n// near the frame's edge, redrawn over and over as it recedes to a vanishing point at the centre. The copies' edges make\n// the hatch; no outline is drawn and the cells are never rotated. A fixed seed keeps server and client identical.\n// `inner`: how far in the copies run (small and the slabs meet at the centre). `corners`: a halftone square in each\n// face's outer top corner, kept clear of the frame's edges and of a sibling marked `data-burst-clear` (the hero's\n// window). Lay it in a `relative` red frame (`text-ds-neutral-300` sets the hatch's colour); it is decorative.\nconst props = withDefaults(defineProps<{ seed?: number, rays?: number, inner?: number, corners?: boolean }>(), { seed: 7, rays: 14, inner: 0.42, corners: false })\n\n// Gap between copies at the face, in viewBox units (1px at full width), and the corner square's share of a face.\nconst PITCH = 2\nconst CORNER = 0.38\n\nconst faces = computed(() => {\n  const rand = rng(props.seed)\n  const out: { x0: number, y0: number, w: number, h: number }[] = []\n  for (let i = 0; i < props.rays; i++) {\n    // Even spread with a little jitter; the first ray leans off the horizontal so no face sits dead level.\n    const a = ((i + 0.3 + (rand() - 0.5) * 0.4) / props.rays) * Math.PI * 2\n    const ux = Math.cos(a)\n    const uy = Math.sin(a)\n    // Reach follows an ellipse the frame's shape, a step inside its border.\n    const reach = 1 / Math.hypot(ux / 560, uy / 282)\n    const w = reach * (0.1 + rand() * 0.2)\n    const h = reach * (0.1 + rand() * 0.2)\n    const dist = reach * (0.94 + rand() * 0.06) - Math.max(w, h) / 2\n    out.push({ x0: ux * dist - w / 2, y0: uy * dist - h / 2, w, h })\n  }\n  return out\n})\n\nconst cells = computed(() => faces.value.map(f => cellPaths(f.x0, f.y0, f.w, f.h, PITCH, props.inner)))\n\n// What the frame shows, in viewBox units, and the box the marked sibling covers; measured on the page.\ntype Box = { x0: number, y0: number, x1: number, y1: number }\nconst root = ref<SVGSVGElement | null>(null)\nconst view = ref<{ hw: number, hh: number, cover: Box | null }>({ hw: 600, hh: 303, cover: null })\nlet ro: ResizeObserver | undefined\n\nfunction measure() {\n  const el = root.value\n  if (!el?.clientWidth || !el.clientHeight) return\n  const scale = Math.max(el.clientWidth / 1200, el.clientHeight / 606)\n  const box = el.getBoundingClientRect()\n  const at = (px: number, py: number) => [(px - box.left - box.width / 2) / scale, (py - box.top - box.height / 2) / scale] as const\n  const clear = el.parentElement?.querySelector('[data-burst-clear]')?.getBoundingClientRect()\n  let cover: Box | null = null\n  if (clear) {\n    const [x0, y0] = at(clear.left, clear.top)\n    const [x1, y1] = at(clear.right, clear.bottom)\n    cover = { x0, y0, x1, y1 }\n  }\n  view.value = { hw: el.clientWidth / scale / 2, hh: el.clientHeight / scale / 2, cover }\n}\n\n// The slabs are drawn in the browser (thousands of hatch copies would fill the page's HTML), fading in.\nconst drawn = ref(false)\nonMounted(() => {\n  drawn.value = true\n  if (!props.corners) return\n  measure()\n  ro = new ResizeObserver(measure)\n  if (root.value) ro.observe(root.value)\n  const clear = root.value?.parentElement?.querySelector('[data-burst-clear]')\n  if (clear) ro.observe(clear)\n})\nonBeforeUnmount(() => ro?.disconnect())\n\n// Each face's square, snapped to whole dots; where the marked sibling covers it, it shrinks a dot at a time, then\n// tries the bottom corner; none if neither shows enough of the face.\nconst MIN_SIDE = HALFTONE_BLOCK * HALFTONE_DOT\nconst corners = computed(() => {\n  if (!props.corners) return []\n  const tones = rng(props.seed + 1)\n  const { hw, hh, cover } = view.value\n  const hidden = (x: number, y: number, side: number) => !!cover && x < cover.x1 && x + side > cover.x0 && y < cover.y1 && y + side > cover.y0\n  return faces.value.map(({ x0, y0, w, h }) => {\n    const left = x0 + w / 2 < 0\n    const fx0 = Math.max(x0, -hw)\n    const fx1 = Math.min(x0 + w, hw)\n    const fy0 = Math.max(y0, -hh)\n    const fy1 = Math.min(y0 + h, hh)\n    const full = Math.max(MIN_SIDE, Math.floor((Math.min(w, h) * CORNER) / HALFTONE_DOT) * HALFTONE_DOT)\n    for (const atTop of [true, false]) {\n      for (let side = full; side >= MIN_SIDE; side -= HALFTONE_DOT) {\n        const x = left ? fx0 : fx1 - side\n        const y = atTop ? fy0 : fy1 - side\n        if (x < fx0 || x + side > fx1 || y < fy0 || y + side > fy1 || hidden(x, y, side)) continue\n        return halftone(x, y, side, left, tones)\n      }\n    }\n    return undefined\n  })\n})\n</script>\n\n<template>\n  <svg data-ds=\"burst\" ref=\"root\" class=\"pointer-events-none absolute inset-0 h-full w-full\" viewBox=\"-600 -303 1200 606\" preserveAspectRatio=\"xMidYMid slice\" aria-hidden=\"true\">\n    <!-- Each cell is laid in solid off-white before its lines, so a ray in front hides the hairlines behind it. -->\n    <g v-for=\"(c, i) in (drawn ? cells : [])\" :key=\"c.fill\" class=\"ds-art-in\">\n      <path :d=\"c.fill\" fill=\"var(--ds-color-off-white)\" />\n      <path :d=\"c.lines\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"0.5\" stroke-opacity=\"0.55\" vector-effect=\"non-scaling-stroke\" />\n      <template v-if=\"corners[i]\">\n        <path :d=\"corners[i]!.square\" fill=\"var(--ds-color-red-wash)\" />\n        <path :d=\"corners[i]!.dots\" fill=\"var(--ds-color-home-red)\" />\n      </template>\n    </g>\n  </svg>\n</template>\n"
+    },
+    {
+      "path": "composables/useCellBurst.ts",
+      "content": "import { onBeforeUnmount, onMounted, ref, type Ref } from 'vue'\n\n// The \"infinite cells\" geometry behind the website's art (CellBurst, Burst): a level rectangle redrawn smaller and\n// smaller as it recedes to a vanishing point at the origin, plus the seeded random source that keeps server and client\n// drawing the same thing, and the two viewport helpers the art waits on.\n\n/** A seeded random source (mulberry32), so server and client paths match. */\nexport function rng(seed: number) {\n  let s = seed >>> 0\n  return () => {\n    s = (s + 0x6D2B79F5) >>> 0\n    let t = s\n    t = Math.imul(t ^ (t >>> 15), t | 1)\n    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)\n    return ((t ^ (t >>> 14)) >>> 0) / 4294967296\n  }\n}\n\nconst r1 = (n: number) => Math.round(n * 10) / 10\n\n/**\n * One cell: the face at (x0, y0), w by h, relative to the vanishing point, with its copies `pitch` apart on screen\n * until they reach `inner` of the face's distance. `fill` is the slab's ground, laid under it so it hides what lies\n * behind; `lines` is the hatch.\n */\nexport function cellPaths(x0: number, y0: number, w: number, h: number, pitch: number, inner: number) {\n  // The ground: copies stepping back by a constant fraction, which overlap into one solid shape.\n  const dist = Math.hypot(x0 + w / 2, y0 + h / 2)\n  const step = 1 - pitch / dist\n  let fill = ''\n  for (let s = 1; s > inner; s *= step) fill += `M${r1(x0 * s)} ${r1(y0 * s)}h${r1(w * s)}v${r1(h * s)}h${r1(-w * s)}z`\n  // The hatch: each edge redrawn as it recedes, at its own step, so its copies land `pitch` apart all the way in.\n  let lines = ''\n  const edges = [\n    { c: y0, a: x0, len: w, level: true },\n    { c: y0 + h, a: x0, len: w, level: true },\n    { c: x0, a: y0, len: h, level: false },\n    { c: x0 + w, a: y0, len: h, level: false },\n  ]\n  for (const e of edges) {\n    const ds = pitch / Math.abs(e.c)\n    for (let s = 1; s > inner; s -= ds) lines += e.level ? `M${r1(e.a * s)} ${r1(e.c * s)}h${r1(e.len * s)}` : `M${r1(e.c * s)} ${r1(e.a * s)}v${r1(e.len * s)}`\n  }\n  return { fill, lines }\n}\n\n/** Halftone squares: dots 4px apart in blocks of 3 by 3, each block one size, growing towards one top corner. */\nexport const HALFTONE_DOT = 4\nexport const HALFTONE_BLOCK = 3\nconst LEVELS = [0.25, 0.45, 0.7, 0.95]\nconst r2 = (n: number) => Math.round(n * 100) / 100\n\nexport function halftone(x: number, y: number, size: number, left: boolean, rand: () => number) {\n  const n = Math.max(HALFTONE_BLOCK, Math.floor(size / HALFTONE_DOT))\n  const blocks = Math.ceil(n / HALFTONE_BLOCK)\n  const tone = Array.from({ length: blocks * blocks }, () => rand())\n  let dots = ''\n  for (let row = 0; row < n; row++) {\n    for (let col = 0; col < n; col++) {\n      const across = left ? 1 - col / n : col / n\n      const lean = (across + (1 - row / n)) / 2\n      const t = tone[Math.floor(row / HALFTONE_BLOCK) * blocks + Math.floor(col / HALFTONE_BLOCK)]!\n      const level = LEVELS[Math.min(LEVELS.length - 1, Math.floor((lean * 0.6 + t * 0.4) * LEVELS.length))]!\n      const r = (HALFTONE_DOT / 2) * level\n      const cx = x + (col + 0.5) * HALFTONE_DOT\n      const cy = y + (row + 0.5) * HALFTONE_DOT\n      dots += `M${r2(cx - r)} ${r2(cy - r)}h${r2(2 * r)}v${r2(2 * r)}h${r2(-2 * r)}z`\n    }\n  }\n  const side = n * HALFTONE_DOT\n  return { square: `M${r2(x)} ${r2(y)}h${side}v${side}h${-side}z`, dots }\n}\n\n/** True once `el` comes within `margin` of the viewport, and from then on. Never on the server. */\nexport function useNearView(el: Ref<Element | null>, margin = '400px') {\n  const near = ref(false)\n  let io: IntersectionObserver | undefined\n  onMounted(() => {\n    if (!el.value || !('IntersectionObserver' in window)) {\n      near.value = true\n      return\n    }\n    io = new IntersectionObserver(([e]) => {\n      if (!e?.isIntersecting) return\n      near.value = true\n      io?.disconnect()\n    }, { rootMargin: margin })\n    io.observe(el.value)\n  })\n  onBeforeUnmount(() => io?.disconnect())\n  return near\n}\n\n/** True once `threshold` of `el` has been on screen, and from then on: a window that plays once. */\nexport function useSeen(el: Ref<Element | null>, threshold = 0.2) {\n  const seen = ref(false)\n  let io: IntersectionObserver | undefined\n  onMounted(() => {\n    if (!el.value || !('IntersectionObserver' in window)) {\n      seen.value = true\n      return\n    }\n    io = new IntersectionObserver(([e]) => {\n      if (!e?.isIntersecting) return\n      seen.value = true\n      io?.disconnect()\n    }, { threshold })\n    io.observe(el.value)\n  })\n  onBeforeUnmount(() => io?.disconnect())\n  return seen\n}\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "On the site",
+      "center": false,
+      "half": false,
+      "path": "examples/burst/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport Burst from '@/components/visuals/Burst.vue'\nimport Grain from '@/components/visuals/Grain.vue'\nimport RoomGrid from '@/components/visuals/RoomGrid.vue'\n// The hero's red frame, with what sits in it.\n</script>\n\n<template>\n  <div class=\"relative flex aspect-[2/1] w-full justify-center overflow-hidden bg-home-red px-4 py-10 text-ds-neutral-300\">\n    <Grain />\n    <RoomGrid />\n    <Burst :inner=\"0.01\" corners />\n  </div>\n</template>\n",
+      "requires": [
+        "cell-burst",
+        "room-grid"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/visuals/Burst.tsx",
+          "content": "'use client'\nimport { useEffect, useRef, useState } from 'react'\nimport { HALFTONE_BLOCK, HALFTONE_DOT, cellPaths, halftone, rng } from '@/react/hooks/useCellBurst'\n\n// The brand pattern in the hero's frame, \"infinite cells\" (Burst.vue): every ray is one cell, a level rectangle out\n// near the frame's edge, redrawn over and over as it recedes to a vanishing point at the centre. The copies' edges make\n// the hatch; no outline is drawn and the cells are never rotated. A fixed seed keeps server and client identical.\n// `inner`: how far in the copies run (small and the slabs meet at the centre). `corners`: a halftone square in each\n// face's outer top corner, kept clear of the frame's edges and of a sibling marked `data-burst-clear` (the hero's\n// window). Lay it in a `relative` red frame (`text-ds-neutral-300` sets the hatch's colour); it is decorative.\nexport interface BurstProps {\n  seed?: number\n  rays?: number\n  inner?: number\n  corners?: boolean\n}\n\n// Gap between copies at the face, in viewBox units (1px at full width), and the corner square's share of a face.\nconst PITCH = 2\nconst CORNER = 0.38\nconst MIN_SIDE = HALFTONE_BLOCK * HALFTONE_DOT\n\ntype Face = { x0: number, y0: number, w: number, h: number }\n// What the frame shows, in viewBox units, and the box the marked sibling covers; measured on the page.\ntype Box = { x0: number, y0: number, x1: number, y1: number }\ntype View = { hw: number, hh: number, cover: Box | null }\n\nfunction facesOf(seed: number, rays: number) {\n  const rand = rng(seed)\n  const out: Face[] = []\n  for (let i = 0; i < rays; i++) {\n    // Even spread with a little jitter; the first ray leans off the horizontal so no face sits dead level.\n    const a = ((i + 0.3 + (rand() - 0.5) * 0.4) / rays) * Math.PI * 2\n    const ux = Math.cos(a)\n    const uy = Math.sin(a)\n    // Reach follows an ellipse the frame's shape, a step inside its border.\n    const reach = 1 / Math.hypot(ux / 560, uy / 282)\n    const w = reach * (0.1 + rand() * 0.2)\n    const h = reach * (0.1 + rand() * 0.2)\n    const dist = reach * (0.94 + rand() * 0.06) - Math.max(w, h) / 2\n    out.push({ x0: ux * dist - w / 2, y0: uy * dist - h / 2, w, h })\n  }\n  return out\n  return out\n}\n\n// Each face's square, snapped to whole dots; where the marked sibling covers it, it shrinks a dot at a time, then\n// tries the bottom corner; none if neither shows enough of the face.\nfunction cornersOf(seed: number, faces: Face[], view: View) {\n  const tones = rng(seed + 1)\n  const { hw, hh, cover } = view\n  const hidden = (x: number, y: number, side: number) => !!cover && x < cover.x1 && x + side > cover.x0 && y < cover.y1 && y + side > cover.y0\n  return faces.map(({ x0, y0, w, h }) => {\n    const left = x0 + w / 2 < 0\n    const fx0 = Math.max(x0, -hw)\n    const fx1 = Math.min(x0 + w, hw)\n    const fy0 = Math.max(y0, -hh)\n    const fy1 = Math.min(y0 + h, hh)\n    const full = Math.max(MIN_SIDE, Math.floor((Math.min(w, h) * CORNER) / HALFTONE_DOT) * HALFTONE_DOT)\n    for (const atTop of [true, false]) {\n      for (let side = full; side >= MIN_SIDE; side -= HALFTONE_DOT) {\n        const x = left ? fx0 : fx1 - side\n        const y = atTop ? fy0 : fy1 - side\n        if (x < fx0 || x + side > fx1 || y < fy0 || y + side > fy1 || hidden(x, y, side)) continue\n        return halftone(x, y, side, left, tones)\n      }\n    }\n    return undefined\n  })\n}\n\n/** The view and cover, measured: `el` the svg, `clear` the marked sibling's box. */\nfunction measureView(el: Element, clear: DOMRect | undefined): View | null {\n  if (!el.clientWidth || !el.clientHeight) return null\n  const scale = Math.max(el.clientWidth / 1200, el.clientHeight / 606)\n  const box = el.getBoundingClientRect()\n  const at = (px: number, py: number) => [(px - box.left - box.width / 2) / scale, (py - box.top - box.height / 2) / scale] as const\n  let cover: Box | null = null\n  if (clear) {\n    const [x0, y0] = at(clear.left, clear.top)\n    const [x1, y1] = at(clear.right, clear.bottom)\n    cover = { x0, y0, x1, y1 }\n  }\n  return { hw: el.clientWidth / scale / 2, hh: el.clientHeight / scale / 2, cover }\n}\n\nexport function Burst({ seed = 7, rays = 14, inner = 0.42, corners = false }: BurstProps) {\n  const root = useRef<SVGSVGElement | null>(null)\n  const [view, setView] = useState<View>({ hw: 600, hh: 303, cover: null })\n  // The slabs are drawn in the browser (thousands of hatch copies would fill the page's HTML), fading in.\n  const [drawn, setDrawn] = useState(false)\n  useEffect(() => {\n    setDrawn(true)\n    if (!corners) return\n    const el = root.current\n    if (!el) return\n    const measure = () => {\n      const v = measureView(el, el.parentElement?.querySelector('[data-burst-clear]')?.getBoundingClientRect())\n      if (v) setView(v)\n    }\n    measure()\n    const ro = new ResizeObserver(measure)\n    ro.observe(el)\n    const clear = el.parentElement?.querySelector('[data-burst-clear]')\n    if (clear) ro.observe(clear)\n    return () => ro.disconnect()\n  }, []) // eslint-disable-line react-hooks/exhaustive-deps\n  const faces = facesOf(seed, rays)\n  const cells = faces.map(f => cellPaths(f.x0, f.y0, f.w, f.h, PITCH, inner))\n  const squares = corners ? cornersOf(seed, faces, view) : []\n  return (\n    <svg data-ds=\"burst\" ref={root} className=\"pointer-events-none absolute inset-0 h-full w-full\" viewBox=\"-600 -303 1200 606\" preserveAspectRatio=\"xMidYMid slice\" aria-hidden=\"true\">\n      {/* Each cell is laid in solid off-white before its lines, so a ray in front hides the hairlines behind it. */}\n      {(drawn ? cells : []).map((c, i) => (\n        <g key={c.fill} className=\"ds-art-in\">\n          <path d={c.fill} fill=\"var(--ds-color-off-white)\" />\n          <path d={c.lines} fill=\"none\" stroke=\"currentColor\" strokeWidth=\"0.5\" strokeOpacity=\"0.55\" vectorEffect=\"non-scaling-stroke\" />\n          {squares[i] && (\n            <>\n              <path d={squares[i]!.square} fill=\"var(--ds-color-red-wash)\" />\n              <path d={squares[i]!.dots} fill=\"var(--ds-color-home-red)\" />\n            </>\n          )}\n        </g>\n      ))}\n    </svg>\n  )\n}\n\nexport default Burst\n"
+        },
+        {
+          "path": "react/hooks/useCellBurst.ts",
+          "content": "'use client'\nimport { useEffect, useState, type RefObject } from 'react'\n\n// The \"infinite cells\" geometry behind the website's art (CellBurst, Burst): a level rectangle redrawn smaller and\n// smaller as it recedes to a vanishing point at the origin, plus the seeded random source that keeps server and client\n// drawing the same thing, and the two viewport helpers the art waits on.\n\n/** A seeded random source (mulberry32), so server and client paths match. */\nexport function rng(seed: number) {\n  let s = seed >>> 0\n  return () => {\n    s = (s + 0x6D2B79F5) >>> 0\n    let t = s\n    t = Math.imul(t ^ (t >>> 15), t | 1)\n    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)\n    return ((t ^ (t >>> 14)) >>> 0) / 4294967296\n  }\n}\n\n// Paths are joined with + rather than template strings: the registry's class check reads a path command followed by\n// an interpolation as a class glued to one.\nconst r1 = (n: number) => Math.round(n * 10) / 10\n\n/**\n * One cell: the face at (x0, y0), w by h, relative to the vanishing point, with its copies `pitch` apart on screen\n * until they reach `inner` of the face's distance. `fill` is the slab's ground, laid under it so it hides what lies\n * behind; `lines` is the hatch.\n */\nexport function cellPaths(x0: number, y0: number, w: number, h: number, pitch: number, inner: number) {\n  // The ground: copies stepping back by a constant fraction, which overlap into one solid shape.\n  const dist = Math.hypot(x0 + w / 2, y0 + h / 2)\n  const step = 1 - pitch / dist\n  let fill = ''\n  for (let s = 1; s > inner; s *= step) fill += 'M' + r1(x0 * s) + ' ' + r1(y0 * s) + 'h' + r1(w * s) + 'v' + r1(h * s) + 'h' + r1(-w * s) + 'z'\n  // The hatch: each edge redrawn as it recedes, at its own step, so its copies land `pitch` apart all the way in.\n  let lines = ''\n  const edges = [\n    { c: y0, a: x0, len: w, level: true },\n    { c: y0 + h, a: x0, len: w, level: true },\n    { c: x0, a: y0, len: h, level: false },\n    { c: x0 + w, a: y0, len: h, level: false },\n  ]\n  for (const e of edges) {\n    const ds = pitch / Math.abs(e.c)\n    for (let s = 1; s > inner; s -= ds) lines += e.level ? 'M' + r1(e.a * s) + ' ' + r1(e.c * s) + 'h' + r1(e.len * s) : 'M' + r1(e.c * s) + ' ' + r1(e.a * s) + 'v' + r1(e.len * s)\n  }\n  return { fill, lines }\n}\n\n/** Halftone squares: dots 4px apart in blocks of 3 by 3, each block one size, growing towards one top corner. */\nexport const HALFTONE_DOT = 4\nexport const HALFTONE_BLOCK = 3\nconst LEVELS = [0.25, 0.45, 0.7, 0.95]\nconst r2 = (n: number) => Math.round(n * 100) / 100\n\nexport function halftone(x: number, y: number, size: number, left: boolean, rand: () => number) {\n  const n = Math.max(HALFTONE_BLOCK, Math.floor(size / HALFTONE_DOT))\n  const blocks = Math.ceil(n / HALFTONE_BLOCK)\n  const tone = Array.from({ length: blocks * blocks }, () => rand())\n  let dots = ''\n  for (let row = 0; row < n; row++) {\n    for (let col = 0; col < n; col++) {\n      const across = left ? 1 - col / n : col / n\n      const lean = (across + (1 - row / n)) / 2\n      const t = tone[Math.floor(row / HALFTONE_BLOCK) * blocks + Math.floor(col / HALFTONE_BLOCK)]!\n      const level = LEVELS[Math.min(LEVELS.length - 1, Math.floor((lean * 0.6 + t * 0.4) * LEVELS.length))]!\n      const r = (HALFTONE_DOT / 2) * level\n      const cx = x + (col + 0.5) * HALFTONE_DOT\n      const cy = y + (row + 0.5) * HALFTONE_DOT\n      dots += 'M' + r2(cx - r) + ' ' + r2(cy - r) + 'h' + r2(2 * r) + 'v' + r2(2 * r) + 'h' + r2(-2 * r) + 'z'\n    }\n  }\n  const side = n * HALFTONE_DOT\n  return { square: 'M' + r2(x) + ' ' + r2(y) + 'h' + side + 'v' + side + 'h' + -side + 'z', dots }\n}\n\n/** True once `el` comes within `margin` of the viewport, and from then on. Never on the server. */\nexport function useNearView(el: RefObject<Element | null>, margin = '400px') {\n  const [near, setNear] = useState(false)\n  useEffect(() => {\n    if (!el.current || !('IntersectionObserver' in window)) {\n      setNear(true)\n      return\n    }\n    const io = new IntersectionObserver(([e]) => {\n      if (!e?.isIntersecting) return\n      setNear(true)\n      io.disconnect()\n    }, { rootMargin: margin })\n    io.observe(el.current)\n    return () => io.disconnect()\n  }, []) // eslint-disable-line react-hooks/exhaustive-deps\n  return near\n}\n\n/** True once `threshold` of `el` has been on screen, and from then on: a window that plays once. */\nexport function useSeen(el: RefObject<Element | null>, threshold = 0.2) {\n  const [seen, setSeen] = useState(false)\n  useEffect(() => {\n    if (!el.current || !('IntersectionObserver' in window)) {\n      setSeen(true)\n      return\n    }\n    const io = new IntersectionObserver(([e]) => {\n      if (!e?.isIntersecting) return\n      setSeen(true)\n      io.disconnect()\n    }, { threshold })\n    io.observe(el.current)\n    return () => io.disconnect()\n  }, []) // eslint-disable-line react-hooks/exhaustive-deps\n  return seen\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "Burst",
+            "file": "react/components/visuals/Burst.tsx",
+            "props": [
+              {
+                "name": "seed",
+                "type": "number",
+                "required": false,
+                "default": "7"
+              },
+              {
+                "name": "rays",
+                "type": "number",
+                "required": false,
+                "default": "14"
+              },
+              {
+                "name": "inner",
+                "type": "number",
+                "required": false,
+                "default": "0.42"
+              },
+              {
+                "name": "corners",
+                "type": "boolean",
+                "required": false,
+                "default": "false"
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "On the site",
+          "center": false,
+          "half": false,
+          "path": "react/examples/burst/Site.tsx",
+          "content": "import { Burst } from '@/react/components/visuals/Burst'\nimport { Grain } from '@/react/components/visuals/Grain'\nimport { RoomGrid } from '@/react/components/visuals/RoomGrid'\n// The hero's red frame, with what sits in it.\n\nexport default function Site() {\n  return (\n    <div className=\"relative flex aspect-[2/1] w-full justify-center overflow-hidden bg-home-red px-4 py-10 text-ds-neutral-300\">\n      <Grain />\n      <RoomGrid />\n      <Burst inner={0.01} corners />\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "cell-burst",
+            "room-grid"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/visuals/burst.ts",
+          "content": "import { html, nothing, svg, type PropertyValues } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport { HALFTONE_BLOCK, HALFTONE_DOT, cellPaths, halftone, rng } from '@/elements/controllers/cell-burst'\nimport styles from 'virtual:tw'\n\n// Burst.vue as <conare-burst>: the brand pattern in the hero's frame, \"infinite cells\" (Burst.vue): every ray is one cell, a level rectangle out\n// near the frame's edge, redrawn over and over as it recedes to a vanishing point at the centre. The copies' edges make\n// the hatch; no outline is drawn and the cells are never rotated. A fixed seed keeps server and client identical.\n// `inner`: how far in the copies run (small and the slabs meet at the centre). `corners`: a halftone square in each\n// face's outer top corner, kept clear of the frame's edges and of a sibling marked `data-burst-clear` (the hero's\n// window). Lay it in a `relative` red frame (`text-ds-neutral-300` sets the hatch's colour); it is decorative.\n// The marked sibling is looked for among the host's parent's descendants. Its fade-in class (ds-art-in) is styled only\n// where cell-burst's sheet is, as in Vue, so it draws at once.\n\n// Gap between copies at the face, in viewBox units (1px at full width), and the corner square's share of a face.\nconst PITCH = 2\nconst CORNER = 0.38\nconst MIN_SIDE = HALFTONE_BLOCK * HALFTONE_DOT\n\ntype Face = { x0: number, y0: number, w: number, h: number }\n// What the frame shows, in viewBox units, and the box the marked sibling covers; measured on the page.\ntype Box = { x0: number, y0: number, x1: number, y1: number }\ntype View = { hw: number, hh: number, cover: Box | null }\n\nfunction facesOf(seed: number, rays: number) {\n\tconst rand = rng(seed)\n\tconst out: Face[] = []\n\tfor (let i = 0; i < rays; i++) {\n\t\t// Even spread with a little jitter; the first ray leans off the horizontal so no face sits dead level.\n\t\tconst a = ((i + 0.3 + (rand() - 0.5) * 0.4) / rays) * Math.PI * 2\n\t\tconst ux = Math.cos(a)\n\t\tconst uy = Math.sin(a)\n\t\t// Reach follows an ellipse the frame's shape, a step inside its border.\n\t\tconst reach = 1 / Math.hypot(ux / 560, uy / 282)\n\t\tconst w = reach * (0.1 + rand() * 0.2)\n\t\tconst h = reach * (0.1 + rand() * 0.2)\n\t\tconst dist = reach * (0.94 + rand() * 0.06) - Math.max(w, h) / 2\n\t\tout.push({ x0: ux * dist - w / 2, y0: uy * dist - h / 2, w, h })\n\t}\n\treturn out\n\treturn out\n}\n\n// Each face's square, snapped to whole dots; where the marked sibling covers it, it shrinks a dot at a time, then\n// tries the bottom corner; none if neither shows enough of the face.\nfunction cornersOf(seed: number, faces: Face[], view: View) {\n\tconst tones = rng(seed + 1)\n\tconst { hw, hh, cover } = view\n\tconst hidden = (x: number, y: number, side: number) => !!cover && x < cover.x1 && x + side > cover.x0 && y < cover.y1 && y + side > cover.y0\n\treturn faces.map(({ x0, y0, w, h }) => {\n\t\tconst left = x0 + w / 2 < 0\n\t\tconst fx0 = Math.max(x0, -hw)\n\t\tconst fx1 = Math.min(x0 + w, hw)\n\t\tconst fy0 = Math.max(y0, -hh)\n\t\tconst fy1 = Math.min(y0 + h, hh)\n\t\tconst full = Math.max(MIN_SIDE, Math.floor((Math.min(w, h) * CORNER) / HALFTONE_DOT) * HALFTONE_DOT)\n\t\tfor (const atTop of [true, false]) {\n\t\t\tfor (let side = full; side >= MIN_SIDE; side -= HALFTONE_DOT) {\n\t\t\t\tconst x = left ? fx0 : fx1 - side\n\t\t\t\tconst y = atTop ? fy0 : fy1 - side\n\t\t\t\tif (x < fx0 || x + side > fx1 || y < fy0 || y + side > fy1 || hidden(x, y, side)) continue\n\t\t\t\treturn halftone(x, y, side, left, tones)\n\t\t\t}\n\t\t}\n\t\treturn undefined\n\t})\n}\n\n/** The view and cover, measured: `el` the svg, `clear` the marked sibling's box. */\nfunction measureView(el: Element, clear: DOMRect | undefined): View | null {\n\tif (!el.clientWidth || !el.clientHeight) return null\n\tconst scale = Math.max(el.clientWidth / 1200, el.clientHeight / 606)\n\tconst box = el.getBoundingClientRect()\n\tconst at = (px: number, py: number) => [(px - box.left - box.width / 2) / scale, (py - box.top - box.height / 2) / scale] as const\n\tlet cover: Box | null = null\n\tif (clear) {\n\t\tconst [x0, y0] = at(clear.left, clear.top)\n\t\tconst [x1, y1] = at(clear.right, clear.bottom)\n\t\tcover = { x0, y0, x1, y1 }\n\t}\n\treturn { hw: el.clientWidth / scale / 2, hh: el.clientHeight / scale / 2, cover }\n}\n\n/**\n * @summary The hero's infinite cells: slabs receding to a vanishing point.\n */\nexport class Burst extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { seed: { type: Number }, rays: { type: Number }, inner: { type: Number }, corners: { type: Boolean }, view: { state: true }, drawn: { state: true } }\n\n\t/** The same seed draws the same slabs. */\n\tseed = 7\n\trays = 14\n\t/** How far in the copies run (small and the slabs meet at the centre). */\n\tinner = 0.42\n\t/** A halftone square in each face's outer top corner, clear of a sibling marked data-burst-clear. */\n\tcorners = false\n\tprivate view: View = { hw: 600, hh: 303, cover: null }\n\tprivate drawn = false\n\tprivate ro?: ResizeObserver\n\n\tprivate measure = () => {\n\t\tconst el = this.renderRoot.querySelector('svg')\n\t\tif (!el) return\n\t\tconst v = measureView(el, this.parentElement?.querySelector('[data-burst-clear]')?.getBoundingClientRect())\n\t\tif (v) this.view = v\n\t}\n\n\tprotected firstUpdated(changed: PropertyValues) {\n\t\tsuper.firstUpdated(changed)\n\t\t// The slabs are drawn in the browser (thousands of hatch copies would fill the page's HTML).\n\t\tthis.drawn = true\n\t\tif (!this.corners) return\n\t\tthis.measure()\n\t\tthis.ro = new ResizeObserver(this.measure)\n\t\tconst el = this.renderRoot.querySelector('svg')\n\t\tif (el) this.ro.observe(el)\n\t\tconst clear = this.parentElement?.querySelector('[data-burst-clear]')\n\t\tif (clear) this.ro.observe(clear)\n\t}\n\n\tdisconnectedCallback() {\n\t\tsuper.disconnectedCallback()\n\t\tthis.ro?.disconnect()\n\t}\n\n\trender() {\n\t\tconst faces = facesOf(this.seed, this.rays)\n\t\tconst cells = faces.map((f) => cellPaths(f.x0, f.y0, f.w, f.h, PITCH, this.inner))\n\t\tconst squares = this.corners ? cornersOf(this.seed, faces, this.view) : []\n\t\treturn html`<svg data-ds=\"burst\" class=\"pointer-events-none absolute inset-0 h-full w-full\" viewBox=\"-600 -303 1200 606\" preserveAspectRatio=\"xMidYMid slice\" aria-hidden=\"true\">${(this.drawn ? cells : []).map((c, i) => svg`<g class=\"ds-art-in\"><path d=${c.fill} fill=\"var(--ds-color-off-white)\"></path><path d=${c.lines} fill=\"none\" stroke=\"currentColor\" stroke-width=\"0.5\" stroke-opacity=\"0.55\" vector-effect=\"non-scaling-stroke\"></path>${squares[i] ? svg`<path d=${squares[i]!.square} fill=\"var(--ds-color-red-wash)\"></path><path d=${squares[i]!.dots} fill=\"var(--ds-color-home-red)\"></path>` : nothing}</g>`)}</svg>`\n\t}\n}\n\ndefine('burst', Burst)\n"
+        },
+        {
+          "path": "elements/controllers/cell-burst.ts",
+          "content": "import type { ReactiveController, ReactiveControllerHost } from 'lit'\n\n// useCellBurst for elements: the \"infinite cells\" geometry behind the website's art (CellBurst, Burst): a level\n// rectangle redrawn smaller and smaller as it recedes to a vanishing point at the origin, plus the seeded random source\n// that keeps every flavor drawing the same thing, and the two viewport helpers the art waits on, as Lit controllers.\n// `el` returns the observed box (an element in the shadow root), read after the first render.\n\n/** A seeded random source (mulberry32), so server and client paths match. */\nexport function rng(seed: number) {\n  let s = seed >>> 0\n  return () => {\n    s = (s + 0x6D2B79F5) >>> 0\n    let t = s\n    t = Math.imul(t ^ (t >>> 15), t | 1)\n    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)\n    return ((t ^ (t >>> 14)) >>> 0) / 4294967296\n  }\n}\n\n// Paths are joined with + rather than template strings: the registry's class check reads a path command followed by\n// an interpolation as a class glued to one.\nconst r1 = (n: number) => Math.round(n * 10) / 10\n\n/**\n * One cell: the face at (x0, y0), w by h, relative to the vanishing point, with its copies `pitch` apart on screen\n * until they reach `inner` of the face's distance. `fill` is the slab's ground, laid under it so it hides what lies\n * behind; `lines` is the hatch.\n */\nexport function cellPaths(x0: number, y0: number, w: number, h: number, pitch: number, inner: number) {\n  // The ground: copies stepping back by a constant fraction, which overlap into one solid shape.\n  const dist = Math.hypot(x0 + w / 2, y0 + h / 2)\n  const step = 1 - pitch / dist\n  let fill = ''\n  for (let s = 1; s > inner; s *= step) fill += 'M' + r1(x0 * s) + ' ' + r1(y0 * s) + 'h' + r1(w * s) + 'v' + r1(h * s) + 'h' + r1(-w * s) + 'z'\n  // The hatch: each edge redrawn as it recedes, at its own step, so its copies land `pitch` apart all the way in.\n  let lines = ''\n  const edges = [\n    { c: y0, a: x0, len: w, level: true },\n    { c: y0 + h, a: x0, len: w, level: true },\n    { c: x0, a: y0, len: h, level: false },\n    { c: x0 + w, a: y0, len: h, level: false },\n  ]\n  for (const e of edges) {\n    const ds = pitch / Math.abs(e.c)\n    for (let s = 1; s > inner; s -= ds) lines += e.level ? 'M' + r1(e.a * s) + ' ' + r1(e.c * s) + 'h' + r1(e.len * s) : 'M' + r1(e.c * s) + ' ' + r1(e.a * s) + 'v' + r1(e.len * s)\n  }\n  return { fill, lines }\n}\n\n/** Halftone squares: dots 4px apart in blocks of 3 by 3, each block one size, growing towards one top corner. */\nexport const HALFTONE_DOT = 4\nexport const HALFTONE_BLOCK = 3\nconst LEVELS = [0.25, 0.45, 0.7, 0.95]\nconst r2 = (n: number) => Math.round(n * 100) / 100\n\nexport function halftone(x: number, y: number, size: number, left: boolean, rand: () => number) {\n  const n = Math.max(HALFTONE_BLOCK, Math.floor(size / HALFTONE_DOT))\n  const blocks = Math.ceil(n / HALFTONE_BLOCK)\n  const tone = Array.from({ length: blocks * blocks }, () => rand())\n  let dots = ''\n  for (let row = 0; row < n; row++) {\n    for (let col = 0; col < n; col++) {\n      const across = left ? 1 - col / n : col / n\n      const lean = (across + (1 - row / n)) / 2\n      const t = tone[Math.floor(row / HALFTONE_BLOCK) * blocks + Math.floor(col / HALFTONE_BLOCK)]!\n      const level = LEVELS[Math.min(LEVELS.length - 1, Math.floor((lean * 0.6 + t * 0.4) * LEVELS.length))]!\n      const r = (HALFTONE_DOT / 2) * level\n      const cx = x + (col + 0.5) * HALFTONE_DOT\n      const cy = y + (row + 0.5) * HALFTONE_DOT\n      dots += 'M' + r2(cx - r) + ' ' + r2(cy - r) + 'h' + r2(2 * r) + 'v' + r2(2 * r) + 'h' + r2(-2 * r) + 'z'\n    }\n  }\n  const side = n * HALFTONE_DOT\n  return { square: 'M' + r2(x) + ' ' + r2(y) + 'h' + side + 'v' + side + 'h' + -side + 'z', dots }\n}\n\n/** useNearView: `near` turns true once `el` comes within `margin` of the viewport, and stays. */\nexport class NearViewController implements ReactiveController {\n\tnear = false\n\tprivate io?: IntersectionObserver\n\tconstructor(private host: ReactiveControllerHost, private el: () => Element | null | undefined, private margin = '400px') {\n\t\thost.addController(this)\n\t}\n\thostConnected() {\n\t\tvoid this.host.updateComplete.then(() => {\n\t\t\tconst el = this.el()\n\t\t\tif (!el || !('IntersectionObserver' in window)) {\n\t\t\t\tthis.near = true\n\t\t\t\tthis.host.requestUpdate()\n\t\t\t\treturn\n\t\t\t}\n\t\t\tthis.io = new IntersectionObserver(([e]) => {\n\t\t\t\tif (!e?.isIntersecting) return\n\t\t\t\tthis.near = true\n\t\t\t\tthis.host.requestUpdate()\n\t\t\t\tthis.io?.disconnect()\n\t\t\t}, { rootMargin: this.margin })\n\t\t\tthis.io.observe(el)\n\t\t})\n\t}\n\thostDisconnected() {\n\t\tthis.io?.disconnect()\n\t}\n}\n\n/** useSeen: `seen` turns true once `threshold` of `el` has been on screen, and stays: a window that plays once. */\nexport class SeenController implements ReactiveController {\n\tseen = false\n\tprivate io?: IntersectionObserver\n\tconstructor(private host: ReactiveControllerHost, private el: () => Element | null | undefined, private threshold = 0.2) {\n\t\thost.addController(this)\n\t}\n\thostConnected() {\n\t\tvoid this.host.updateComplete.then(() => {\n\t\t\tconst el = this.el()\n\t\t\tif (!el || !('IntersectionObserver' in window)) {\n\t\t\t\tthis.seen = true\n\t\t\t\tthis.host.requestUpdate()\n\t\t\t\treturn\n\t\t\t}\n\t\t\tthis.io = new IntersectionObserver(([e]) => {\n\t\t\t\tif (!e?.isIntersecting) return\n\t\t\t\tthis.seen = true\n\t\t\t\tthis.host.requestUpdate()\n\t\t\t\tthis.io?.disconnect()\n\t\t\t}, { threshold: this.threshold })\n\t\t\tthis.io.observe(el)\n\t\t})\n\t}\n\thostDisconnected() {\n\t\tthis.io?.disconnect()\n\t}\n}\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/burst.js",
+        "elements/grain.js",
+        "elements/room-grid.js"
+      ],
+      "tag": "conare-burst",
+      "tags": [
+        "conare-burst"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-burst",
+            "name": "Burst",
+            "module": "elements/burst.js",
+            "description": "The hero's infinite cells: slabs receding to a vanishing point.",
+            "attributes": [
+              {
+                "name": "seed",
+                "field": "seed",
+                "type": "number",
+                "default": "7",
+                "description": "The same seed draws the same slabs."
+              },
+              {
+                "name": "rays",
+                "field": "rays",
+                "type": "number",
+                "default": "14"
+              },
+              {
+                "name": "inner",
+                "field": "inner",
+                "type": "number",
+                "default": "0.42",
+                "description": "How far in the copies run (small and the slabs meet at the centre)."
+              },
+              {
+                "name": "corners",
+                "field": "corners",
+                "type": "boolean",
+                "default": "false",
+                "description": "A halftone square in each face's outer top corner, clear of a sibling marked data-burst-clear."
+              },
+              {
+                "name": "view",
+                "field": "view",
+                "type": "View",
+                "default": "{ hw: 600, hh: 303, cover: null }"
+              },
+              {
+                "name": "drawn",
+                "field": "drawn",
+                "type": "boolean",
+                "default": "false"
+              }
+            ],
+            "properties": [
+              {
+                "name": "seed",
+                "type": "number",
+                "default": "7",
+                "description": "The same seed draws the same slabs.",
+                "attribute": "seed"
+              },
+              {
+                "name": "rays",
+                "type": "number",
+                "default": "14",
+                "attribute": "rays"
+              },
+              {
+                "name": "inner",
+                "type": "number",
+                "default": "0.42",
+                "description": "How far in the copies run (small and the slabs meet at the centre).",
+                "attribute": "inner"
+              },
+              {
+                "name": "corners",
+                "type": "boolean",
+                "default": "false",
+                "description": "A halftone square in each face's outer top corner, clear of a sibling marked data-burst-clear.",
+                "attribute": "corners"
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "On the site",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/burst/Site.html",
+          "content": "<!-- The hero's red frame, with what sits in it. -->\n<div class=\"relative flex aspect-[2/1] w-full justify-center overflow-hidden bg-home-red px-4 py-10 text-ds-neutral-300\">\n  <conare-grain></conare-grain>\n  <conare-room-grid></conare-room-grid>\n  <conare-burst inner=\"0.01\" corners></conare-burst>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,340 @@
+{
+  "name": "tag",
+  "title": "Tag",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "A short label for a state or a kind. In the console: ready in a hairline, syncing in black with the dot matrix, failed in the red wash with its square, quiet notes in grey. On the website: 10px capitals on the red.",
+  "use_for": "A source's status, an organization's \"default\", an invite's \"invited\"; the website's section labels.",
+  "never": [
+    "Colour alone: the word carries the state",
+    "Capitals in the console",
+    "A tag as a button"
+  ],
+  "source": "conare-web app/components/console/Status.vue, app/components/home/Tag.vue, app/assets/css/console2.css (.c-badge)",
+  "body": "",
+  "requires": [
+    "loader"
+  ],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Tag.vue",
+      "content": "<script setup lang=\"ts\">\n// A short label for a state or a kind (console2.css .c-badge under the console): 18px, square, 11px lowercase words.\n// default: a hairline in ink; working: black, for a source at work; failed: the red wash with a red square; quiet: a\n// hairline in the muted grey, for a note such as \"default\" or \"invited\". The word carries the state, never colour alone.\nwithDefaults(defineProps<{ tone?: 'default' | 'working' | 'failed' | 'quiet' }>(), { tone: 'default' })\nconst TONES = {\n  default: 'border-edge text-fg',\n  working: 'border-status-working bg-status-working text-status-working-fg',\n  failed: 'border-transparent bg-status-failed text-status-failed-fg',\n  quiet: 'border-edge text-fg-muted',\n}\n</script>\n\n<template>\n  <span data-ds=\"tag\" class=\"inline-flex h-4.5 items-center gap-1 border px-1.25 pb-0.5 text-caption leading-4 font-normal whitespace-nowrap\" :class=\"TONES[tone]\">\n    <slot name=\"mark\"><span v-if=\"tone === 'failed'\" class=\"mt-0.5 size-1 shrink-0 bg-edge-accent\" aria-hidden=\"true\" /></slot>\n    <slot />\n  </span>\n</template>\n"
+    },
+    {
+      "path": "components/ui/StatusTag.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed } from 'vue'\nimport DotMatrix from '@/components/ui/DotMatrix.vue'\nimport Tag from '@/components/ui/Tag.vue'\n\n// A source's state as a tag (the console's Status.vue): ready in a hairline, syncing and connecting in black with the\n// dot matrix at work, error in the red wash with its square. Red marks only a failure.\nconst props = defineProps<{ status: 'ready' | 'syncing' | 'connecting' | 'error' | (string & {}) }>()\nconst working = computed(() => props.status === 'syncing' || props.status === 'connecting')\nconst tone = computed(() => (props.status === 'error' ? 'failed' : working.value ? 'working' : 'default'))\n</script>\n\n<template>\n  <Tag data-ds=\"status-tag\" :tone=\"tone\">\n    <template v-if=\"working\" #mark><DotMatrix tone=\"inverse\" class=\"mt-0.5 mr-0.5\" /></template>\n    {{ status }}\n  </Tag>\n</template>\n"
+    },
+    {
+      "path": "components/ui/SiteTag.vue",
+      "content": "<script setup lang=\"ts\">\n// The website's tag (Tag.vue on conare.ai): 10px capitals on the red, tracked 0.06em, the system's only capitals.\n// `framed` adds a second rule 2px outside, as the cards' double rule (the hero's eyebrow).\ndefineProps<{ framed?: boolean }>()\n</script>\n\n<template>\n  <span data-ds=\"site-tag\"\n    class=\"inline-block bg-home-red py-0.75 pr-[calc(4px-0.06em)] pl-1 type-tag text-off-white [text-box:trim-both_cap_alphabetic]\"\n    :class=\"framed && 'outline outline-offset-2 outline-home-red'\"\n  ><slot /></span>\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "In the product",
+      "center": false,
+      "half": false,
+      "path": "examples/tag/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport StatusTag from '@/components/ui/StatusTag.vue'\nimport Tag from '@/components/ui/Tag.vue'\n// A source's states, and the quiet tags beside them.\n</script>\n\n<template>\n  <div class=\"grid items-start gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8\">\n    <p class=\"type-meta leading-7 text-fg-muted\">A state</p>\n    <div class=\"flex flex-wrap items-center gap-2\">\n      <StatusTag status=\"ready\" />\n      <StatusTag status=\"syncing\" />\n      <StatusTag status=\"connecting\" />\n      <StatusTag status=\"error\" />\n    </div>\n    <p class=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">A note</p>\n    <div class=\"flex flex-wrap items-center gap-2\">\n      <Tag tone=\"quiet\">default</Tag>\n      <Tag tone=\"quiet\">invited</Tag>\n    </div>\n  </div>\n</template>\n",
+      "requires": [
+        "loader"
+      ],
+      "packages": []
+    },
+    {
+      "name": "Site",
+      "label": "On the site",
+      "center": true,
+      "half": false,
+      "path": "examples/tag/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport SiteTag from '@/components/ui/SiteTag.vue'\n// The website's tag: 10px capitals on the red, or framed.\n</script>\n\n<template>\n  <div class=\"flex flex-wrap items-center gap-6\">\n    <SiteTag>New</SiteTag>\n    <SiteTag framed>SOC 2 Type I</SiteTag>\n    <SiteTag>Parse</SiteTag>\n  </div>\n</template>\n",
+      "requires": [],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Tag.tsx",
+          "content": "import type { HTMLAttributes, ReactNode } from 'react'\nimport { cn } from '@/react/lib/cn'\n\n// A short label for a state or a kind (console2.css .c-badge under the console): 18px, square, 11px lowercase words.\n// default: a hairline in ink; working: black, for a source at work; failed: the red wash with a red square; quiet: a\n// hairline in the muted grey, for a note such as \"default\" or \"invited\". The word carries the state, never colour alone.\nexport interface TagProps extends HTMLAttributes<HTMLSpanElement> {\n  tone?: 'default' | 'working' | 'failed' | 'quiet'\n  /** What leads the word (Vue's `mark` slot); by default a red square on `failed`. */\n  mark?: ReactNode\n  'data-ds'?: string\n}\n\nconst TONES = {\n  default: 'border-edge text-fg',\n  working: 'border-status-working bg-status-working text-status-working-fg',\n  failed: 'border-transparent bg-status-failed text-status-failed-fg',\n  quiet: 'border-edge text-fg-muted',\n}\n\nexport function Tag({ tone = 'default', mark, className, children, ...rest }: TagProps) {\n  return (\n    <span data-ds=\"tag\" className={cn('inline-flex h-4.5 items-center gap-1 border px-1.25 pb-0.5 text-caption leading-4 font-normal whitespace-nowrap', TONES[tone], className)} {...rest}>\n      {mark ?? (tone === 'failed' && <span className=\"mt-0.5 size-1 shrink-0 bg-edge-accent\" aria-hidden=\"true\" />)}\n      {children}\n    </span>\n  )\n}\n\nexport default Tag\n"
+        },
+        {
+          "path": "react/components/ui/StatusTag.tsx",
+          "content": "import { DotMatrix } from '@/react/components/ui/DotMatrix'\nimport { Tag } from '@/react/components/ui/Tag'\n\n// A source's state as a tag (the console's Status.vue): ready in a hairline, syncing and connecting in black with the\n// dot matrix at work, error in the red wash with its square. Red marks only a failure.\nexport interface StatusTagProps {\n  status: 'ready' | 'syncing' | 'connecting' | 'error' | (string & {})\n  className?: string\n}\n\nexport function StatusTag({ status, className }: StatusTagProps) {\n  const working = status === 'syncing' || status === 'connecting'\n  const tone = status === 'error' ? 'failed' : working ? 'working' : 'default'\n  return (\n    <Tag data-ds=\"status-tag\" tone={tone} className={className} mark={working ? <DotMatrix tone=\"inverse\" className=\"mt-0.5 mr-0.5\" /> : undefined}>\n      {status}\n    </Tag>\n  )\n}\n\nexport default StatusTag\n"
+        },
+        {
+          "path": "react/components/ui/SiteTag.tsx",
+          "content": "import type { HTMLAttributes } from 'react'\nimport { cn } from '@/react/lib/cn'\n\n// The website's tag (Tag.vue on conare.ai): 10px capitals on the red, tracked 0.06em, the system's only capitals.\n// `framed` adds a second rule 2px outside, as the cards' double rule (the hero's eyebrow).\nexport interface SiteTagProps extends HTMLAttributes<HTMLSpanElement> {\n  framed?: boolean\n}\n\nexport function SiteTag({ framed, className, children, ...rest }: SiteTagProps) {\n  return (\n    <span\n      data-ds=\"site-tag\"\n      className={cn('inline-block bg-home-red py-0.75 pr-[calc(4px-0.06em)] pl-1 type-tag text-off-white [text-box:trim-both_cap_alphabetic]', framed && 'outline outline-offset-2 outline-home-red', className)}\n      {...rest}\n    >{children}</span>\n  )\n}\n\nexport default SiteTag\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "loader"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "Tag",
+            "file": "react/components/ui/Tag.tsx",
+            "props": [
+              {
+                "name": "tone",
+                "type": "'default' | 'working' | 'failed' | 'quiet'",
+                "required": false,
+                "default": "'default'"
+              },
+              {
+                "name": "mark",
+                "type": "ReactNode",
+                "required": false,
+                "description": "What leads the word (Vue's `mark` slot); by default a red square on `failed`."
+              },
+              {
+                "name": "data-ds",
+                "type": "string",
+                "required": false
+              }
+            ],
+            "extends": [
+              "HTMLAttributes<HTMLSpanElement>"
+            ]
+          },
+          {
+            "name": "StatusTag",
+            "file": "react/components/ui/StatusTag.tsx",
+            "props": [
+              {
+                "name": "status",
+                "type": "'ready' | 'syncing' | 'connecting' | 'error' | (string & {})",
+                "required": true
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "SiteTag",
+            "file": "react/components/ui/SiteTag.tsx",
+            "props": [
+              {
+                "name": "framed",
+                "type": "boolean",
+                "required": false
+              }
+            ],
+            "extends": [
+              "HTMLAttributes<HTMLSpanElement>"
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "react/examples/tag/Product.tsx",
+          "content": "import { StatusTag } from '@/react/components/ui/StatusTag'\nimport { Tag } from '@/react/components/ui/Tag'\n// A source's states, and the quiet tags beside them.\n\nexport default function Product() {\n  return (\n    <div className=\"grid items-start gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8\">\n      <p className=\"type-meta leading-7 text-fg-muted\">A state</p>\n      <div className=\"flex flex-wrap items-center gap-2\">\n        <StatusTag status=\"ready\" />\n        <StatusTag status=\"syncing\" />\n        <StatusTag status=\"connecting\" />\n        <StatusTag status=\"error\" />\n      </div>\n      <p className=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">A note</p>\n      <div className=\"flex flex-wrap items-center gap-2\">\n        <Tag tone=\"quiet\">default</Tag>\n        <Tag tone=\"quiet\">invited</Tag>\n      </div>\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "loader"
+          ],
+          "dependencies": []
+        },
+        {
+          "name": "Site",
+          "label": "On the site",
+          "center": true,
+          "half": false,
+          "path": "react/examples/tag/Site.tsx",
+          "content": "import { SiteTag } from '@/react/components/ui/SiteTag'\n// The website's tag: 10px capitals on the red, or framed.\n\nexport default function Site() {\n  return (\n    <div className=\"flex flex-wrap items-center gap-6\">\n      <SiteTag>New</SiteTag>\n      <SiteTag framed>SOC 2 Type I</SiteTag>\n      <SiteTag>Parse</SiteTag>\n    </div>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/tag.ts",
+          "content": "import { html, nothing, type TemplateResult } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// Tag.vue as <conare-tag>: a short label for a state or a kind (console2.css .c-badge under the console): 18px,\n// square, 11px lowercase words. default: a hairline in ink; working: black, for a source at work; failed: the red wash\n// with a red square; quiet: a hairline in the muted grey, for a note such as \"default\" or \"invited\". The word carries\n// the state, never colour alone.\nexport type TagTone = 'default' | 'working' | 'failed' | 'quiet'\nconst TONES: Record<TagTone, string> = {\n\tdefault: 'border-edge text-fg',\n\tworking: 'border-status-working bg-status-working text-status-working-fg',\n\tfailed: 'border-transparent bg-status-failed text-status-failed-fg',\n\tquiet: 'border-edge text-fg-muted',\n}\n\n/**\n * @summary A short label for a state or a kind.\n * @slot - The word.\n * @slot mark - What leads the word; by default a red square on `failed`.\n */\nexport class Tag extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { tone: {} }\n\n\ttone: TagTone = 'default'\n\n\t/** What leads the word: the `mark` slot, a red square on `failed` by default. */\n\tprotected renderMark(): TemplateResult | typeof nothing {\n\t\treturn html`<slot name=\"mark\">${this.tone === 'failed' ? html`<span class=\"mt-0.5 size-1 shrink-0 bg-edge-accent\" aria-hidden=\"true\"></span>` : nothing}</slot>`\n\t}\n\t/** The word. */\n\tprotected renderLabel(): TemplateResult | string {\n\t\treturn html`<slot></slot>`\n\t}\n\n\trender() {\n\t\tconst name = (this.constructor as typeof DsElement).dsName\n\t\treturn html`<span data-ds=\"${name}\" class=${['inline-flex h-4.5 items-center gap-1 border px-1.25 pb-0.5 text-caption leading-4 font-normal whitespace-nowrap', TONES[this.tone] ?? TONES.default].join(' ')}>${this.renderMark()}${this.renderLabel()}</span>`\n\t}\n}\n\ndefine('tag', Tag)\n"
+        },
+        {
+          "path": "elements/components/ui/status-tag.ts",
+          "content": "import { html, nothing, type PropertyValues } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { define, tag } from '@/elements/lib/element'\nimport { Tag } from '@/elements/components/ui/tag'\nimport '@/elements/components/ui/dot-matrix'\nimport styles from 'virtual:tw'\n\n// StatusTag.vue as <conare-status-tag>: a source's state as a tag (the console's Status.vue): ready in a hairline,\n// syncing and connecting in black with the dot matrix at work, error in the red wash with its square. Red marks only a\n// failure. It is a <conare-tag> whose tone and word come from `status`.\n\n/**\n * @summary A source's state as a tag.\n */\nexport class StatusTag extends Tag {\n\tstatic styles = [Tag.styles, styles]\n\tstatic properties = { ...Tag.properties, status: {} }\n\n\t/** ready, syncing, connecting or error (any other word shows as it is, in a hairline). */\n\tstatus = ''\n\n\tget working() {\n\t\treturn this.status === 'syncing' || this.status === 'connecting'\n\t}\n\n\tprotected willUpdate(changed: PropertyValues) {\n\t\tsuper.willUpdate(changed)\n\t\tthis.tone = this.status === 'error' ? 'failed' : this.working ? 'working' : 'default'\n\t}\n\n\tprotected renderMark() {\n\t\tif (this.working) return staticHtml`<${tag('dot-matrix')} tone=\"inverse\" class=\"mt-0.5 mr-0.5\"></${tag('dot-matrix')}>`\n\t\treturn this.tone === 'failed' ? html`<span class=\"mt-0.5 size-1 shrink-0 bg-edge-accent\" aria-hidden=\"true\"></span>` : nothing\n\t}\n\tprotected renderLabel() {\n\t\treturn this.status\n\t}\n}\n\ndefine('status-tag', StatusTag)\n"
+        },
+        {
+          "path": "elements/components/ui/site-tag.ts",
+          "content": "import { html } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// SiteTag.vue as <conare-site-tag>: the website's tag (Tag.vue on conare.ai): 10px capitals on the red, tracked\n// 0.06em, the system's only capitals. `framed` adds a second rule 2px outside, as the cards' double rule (the hero's\n// eyebrow).\n\n/**\n * @summary The website's tag: small capitals on the red.\n * @slot - The word.\n */\nexport class SiteTag extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { framed: { type: Boolean } }\n\n\t/** A second rule 2px outside. */\n\tframed = false\n\n\trender() {\n\t\treturn html`<span data-ds=\"site-tag\" class=${['inline-block bg-home-red py-0.75 pr-[calc(4px-0.06em)] pl-1 type-tag text-off-white [text-box:trim-both_cap_alphabetic]', this.framed ? 'outline outline-offset-2 outline-home-red' : ''].join(' ')}><slot></slot></span>`\n\t}\n}\n\ndefine('site-tag', SiteTag)\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/tag.js",
+        "elements/status-tag.js",
+        "elements/site-tag.js",
+        "elements/dot-matrix.js"
+      ],
+      "tag": "conare-tag",
+      "tags": [
+        "conare-tag",
+        "conare-status-tag",
+        "conare-site-tag"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "loader"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-tag",
+            "name": "Tag",
+            "module": "elements/tag.js",
+            "description": "A short label for a state or a kind.",
+            "attributes": [
+              {
+                "name": "tone",
+                "field": "tone",
+                "type": "TagTone",
+                "default": "'default'"
+              }
+            ],
+            "properties": [
+              {
+                "name": "tone",
+                "type": "TagTone",
+                "default": "'default'",
+                "attribute": "tone"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "The word."
+              },
+              {
+                "name": "mark",
+                "description": "What leads the word; by default a red square on `failed`."
+              }
+            ],
+            "methods": []
+          },
+          {
+            "tag": "conare-status-tag",
+            "name": "StatusTag",
+            "module": "elements/status-tag.js",
+            "description": "A source's state as a tag.",
+            "attributes": [
+              {
+                "name": "status",
+                "field": "status",
+                "type": "string",
+                "default": "''",
+                "description": "ready, syncing, connecting or error (any other word shows as it is, in a hairline)."
+              },
+              {
+                "name": "tone",
+                "field": "tone",
+                "type": "TagTone",
+                "default": "'default'"
+              }
+            ],
+            "properties": [
+              {
+                "name": "status",
+                "type": "string",
+                "default": "''",
+                "description": "ready, syncing, connecting or error (any other word shows as it is, in a hairline).",
+                "attribute": "status"
+              },
+              {
+                "name": "working",
+                "type": "boolean"
+              },
+              {
+                "name": "tone",
+                "type": "TagTone",
+                "default": "'default'",
+                "attribute": "tone"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "The word."
+              },
+              {
+                "name": "mark",
+                "description": "What leads the word; by default a red square on `failed`."
+              }
+            ],
+            "methods": []
+          },
+          {
+            "tag": "conare-site-tag",
+            "name": "SiteTag",
+            "module": "elements/site-tag.js",
+            "description": "The website's tag: small capitals on the red.",
+            "attributes": [
+              {
+                "name": "framed",
+                "field": "framed",
+                "type": "boolean",
+                "default": "false",
+                "description": "A second rule 2px outside."
+              }
+            ],
+            "properties": [
+              {
+                "name": "framed",
+                "type": "boolean",
+                "default": "false",
+                "description": "A second rule 2px outside.",
+                "attribute": "framed"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "The word."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/tag/Product.html",
+          "content": "<!-- A source's states, and the quiet tags beside them. -->\n<div class=\"grid items-start gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8\">\n  <p class=\"type-meta leading-7 text-fg-muted\">A state</p>\n  <div class=\"flex flex-wrap items-center gap-2\">\n    <conare-status-tag status=\"ready\"></conare-status-tag>\n    <conare-status-tag status=\"syncing\"></conare-status-tag>\n    <conare-status-tag status=\"connecting\"></conare-status-tag>\n    <conare-status-tag status=\"error\"></conare-status-tag>\n  </div>\n  <p class=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">A note</p>\n  <div class=\"flex flex-wrap items-center gap-2\">\n    <conare-tag tone=\"quiet\">default</conare-tag>\n    <conare-tag tone=\"quiet\">invited</conare-tag>\n  </div>\n</div>\n"
+        },
+        {
+          "name": "Site",
+          "label": "On the site",
+          "center": true,
+          "half": false,
+          "path": "elements/examples/tag/Site.html",
+          "content": "<!-- The website's tag: 10px capitals on the red, or framed. -->\n<div class=\"flex flex-wrap items-center gap-6\">\n  <conare-site-tag>New</conare-site-tag>\n  <conare-site-tag framed>SOC 2 Type I</conare-site-tag>\n  <conare-site-tag>Parse</conare-site-tag>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

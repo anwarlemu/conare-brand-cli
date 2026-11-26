@@ -1,0 +1,21 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "site-page",
+  "type": "registry:block",
+  "title": "Site page",
+  "description": "Every website page's frame: the announcement bar if there is one, the header, the page in main on its own ground, and the footer pinned under it, uncovered as the page scrolls off it.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://conare-ds-registry.vercel.app/r/react/announcement-bar.json",
+    "https://conare-ds-registry.vercel.app/r/react/product-menu.json",
+    "https://conare-ds-registry.vercel.app/r/react/site-footer.json",
+    "https://conare-ds-registry.vercel.app/r/react/site-header.json"
+  ],
+  "files": [
+    {
+      "path": "components/site/SitePage.tsx",
+      "type": "registry:ui",
+      "content": "import type { ReactNode } from 'react'\nimport { AnnouncementBar } from '@/components/site/AnnouncementBar'\nimport { SiteFooter, type FooterLink } from '@/components/site/SiteFooter'\nimport { SiteHeader, type SiteLink } from '@/components/site/SiteHeader'\nimport type { ProductMenuItem } from '@/components/site/ProductMenu'\n\n// Every website page's frame (pages/index.vue, pricing.vue, blog): the announcement bar if there is one, the header,\n// then the page in <main> on its own off-white ground above the footer, which waits pinned under it from 768px and is\n// uncovered as the page scrolls off it. `header` is SiteHeader's props, `footer` SiteFooter's and `announcement`\n// AnnouncementBar's; `logo` and `actions` go to the header (`actions` renders for the bar and the sheet).\nexport interface SiteHeaderData { items: ProductMenuItem[], more?: ProductMenuItem[], links: SiteLink[], productCurrent?: boolean, homeHref?: string, homeLabel?: string }\nexport interface SiteFooterData { columns: { title: string, links: FooterLink[] }[], tagline?: string, legal?: string, legalLinks?: FooterLink[], name?: string }\nexport interface SiteAnnouncement { tag: string, text: string, cta?: string, href: string }\n/** A page's call to action: its words and where it goes. */\nexport type SiteAction = { label: string, href: string }\n/** What every page built on this one takes for its frame. */\nexport interface SiteFrameProps {\n  header: SiteHeaderData\n  footer: SiteFooterData\n  announcement?: SiteAnnouncement\n  /** The logo in the header's home link (Vue's `logo` slot). */\n  logo?: ReactNode\n  /** The header's buttons, drawn for the bar and again for the sheet (Vue's `#actions=\"{ place }\"`). */\n  actions?: (slot: { place: 'bar' | 'sheet' }) => ReactNode\n}\nexport interface SitePageProps extends SiteFrameProps {\n  children?: ReactNode\n  /** The root's data-ds (a page built on this one says its own, as Vue's fallthrough does). */\n  'data-ds'?: string\n}\n\nexport function SitePage({ header, footer, announcement, logo, actions, children, 'data-ds': ds = 'site-page' }: SitePageProps) {\n  return (\n    <div data-ds={ds} className=\"relative bg-surface text-fg\">\n      {announcement && <AnnouncementBar {...announcement} />}\n      <SiteHeader {...header} logo={logo} actions={actions} />\n      <main className=\"relative z-10 bg-surface\">{children}</main>\n      <SiteFooter {...footer} pinned />\n    </div>\n  )\n}\n\nexport default SitePage\n"
+    }
+  ]
+}

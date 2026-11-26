@@ -1,0 +1,30 @@
+{
+  "name": "conare-ds",
+  "version": "0.1.0",
+  "description": "Components, design tokens and checks for building Conare pages and interfaces in any web stack: Vue, React and web components.",
+  "type": "module",
+  "bin": {
+    "conare-ds": "./bin.js"
+  },
+  "files": [
+    "bin.js",
+    "dist",
+    "brand",
+    "build",
+    "r",
+    "elements"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@babel/parser": "7.29.3",
+    "@napi-rs/canvas": "1.1.0",
+    "@resvg/resvg-js": "^2.6.2",
+    "@vue/compiler-sfc": "3.5.43",
+    "jpeg-js": "0.4.4",
+    "opentype.js": "^2.0.0",
+    "tailwindcss": "4.3.4",
+    "wawoff2": "^2.0.1"
+  }
+}

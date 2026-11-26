@@ -1,0 +1,25 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "home-page",
+  "type": "registry:block",
+  "title": "Home page",
+  "description": "The website's home: the hero with the one dark call to action and the window in the red frame, who connects (logo strip), what it does (feature grid), one customer's words, the questions and the closing red band, in the site's frame.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://conare-ds-registry.vercel.app/r/react/button-link.json",
+    "https://conare-ds-registry.vercel.app/r/react/call-to-action.json",
+    "https://conare-ds-registry.vercel.app/r/react/faq.json",
+    "https://conare-ds-registry.vercel.app/r/react/feature-grid.json",
+    "https://conare-ds-registry.vercel.app/r/react/hero.json",
+    "https://conare-ds-registry.vercel.app/r/react/logo-strip.json",
+    "https://conare-ds-registry.vercel.app/r/react/site-page.json",
+    "https://conare-ds-registry.vercel.app/r/react/testimonial.json"
+  ],
+  "files": [
+    {
+      "path": "components/site/HomePage.tsx",
+      "type": "registry:ui",
+      "content": "import type { ReactNode } from 'react'\nimport { ButtonLink } from '@/components/site/ButtonLink'\nimport { CallToAction } from '@/components/site/CallToAction'\nimport { Faq } from '@/components/site/Faq'\nimport { FeatureGrid, type Feature } from '@/components/site/FeatureGrid'\nimport { Hero } from '@/components/site/Hero'\nimport { LogoStrip, type Logo } from '@/components/site/LogoStrip'\nimport { SitePage, type SiteAction, type SiteFrameProps } from '@/components/site/SitePage'\nimport { Testimonial } from '@/components/site/Testimonial'\n\n// The website's home (pages/index.vue), in its order: the hero with the one dark call to action and the window in the\n// red frame (`window`), who connects (logo-strip), what it does (feature-grid), one customer's words (testimonial),\n// the questions (faq) and the closing red band (call-to-action), in the site's frame (site-page).\nexport interface HomePageProps extends SiteFrameProps {\n  hero: { eyebrow?: string, title: string, body?: string, action: SiteAction }\n  logos: { title: string, tag?: string, logos: Logo[] }\n  features: { title: string, tag?: string, body?: string, features: Feature[] }\n  testimonial: { quote: string, role: string, company: string }\n  faq: { q: string, a: string }[]\n  cta: { title: string, action: SiteAction }\n  /** The window in the hero's red frame (Vue's `window` slot). */\n  window?: () => ReactNode\n}\n\nexport function HomePage({ header, footer, announcement, logo, actions, hero, logos, features, testimonial, faq, cta, window: win }: HomePageProps) {\n  return (\n    <SitePage data-ds=\"home-page\" header={header} footer={footer} announcement={announcement} logo={logo} actions={actions}>\n      <Hero eyebrow={hero.eyebrow} title={hero.title} body={hero.body} action={<ButtonLink href={hero.action.href} grain pixels arrow>{hero.action.label}</ButtonLink>} window={win} />\n      <LogoStrip {...logos} />\n      <FeatureGrid {...features} />\n      <Testimonial {...testimonial} />\n      <Faq items={faq} />\n      <CallToAction title={cta.title}>\n        <ButtonLink href={cta.action.href} variant=\"light\" fill=\"black\">{cta.action.label}</ButtonLink>\n      </CallToAction>\n    </SitePage>\n  )\n}\n\nexport default HomePage\n"
+    }
+  ]
+}

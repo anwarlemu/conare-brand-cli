@@ -1,0 +1,21 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "announcement-bar",
+  "type": "registry:ui",
+  "title": "Announcement bar",
+  "description": "One line above the header for news: the whole ribbon is the link, on the red wash, with a black capitals tag that turns red on hover and the call to action underlined in the same sentence.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "components/site/AnnouncementBar.tsx",
+      "type": "registry:ui",
+      "content": "// One line above the website's header (AnnouncementBar.vue): the whole ribbon is the link. The red wash, the only\n// ground approved under off-black text; a square black tag in the site tag's capitals that turns red as the ribbon is\n// hovered; the line, and the call to action running on in the same sentence, underlined close (from sm). The ribbon\n// deepens to the hover wash in 200ms. It sits at z-10 so a pinned footer never reaches over it.\nimport { cn } from '@/lib/cn'\n\nexport interface AnnouncementBarProps {\n  tag: string\n  text: string\n  cta?: string\n  href: string\n  className?: string\n}\n\nexport function AnnouncementBar({ tag, text, cta, href, className }: AnnouncementBarProps) {\n  return (\n    <a data-ds=\"announcement-bar\" href={href} className={cn('group relative z-10 block bg-red-wash text-off-black transition-colors duration-200 ease-standard hover:bg-home-wash-hover', className)}>\n      <span className=\"mx-auto flex h-9 max-w-[1440px] items-center justify-center gap-2 px-4 text-ui sm:px-6 lg:px-10\">\n        <span className=\"shrink-0 bg-off-black py-0.75 pr-[calc(4px-0.06em)] pl-1 type-tag text-off-white transition-colors duration-200 ease-standard [text-box:trim-both_cap_alphabetic] group-hover:bg-home-red\">{tag}</span>\n        <span className=\"truncate leading-4\">\n          {text}\n          {cta && <>{' '}<span className=\"hidden underline decoration-off-black/30 underline-offset-2 transition-colors duration-200 ease-standard group-hover:decoration-off-black sm:inline\">{cta}</span></>}\n        </span>\n      </span>\n    </a>\n  )\n}\n\nexport default AnnouncementBar\n"
+    },
+    {
+      "path": "lib/cn.ts",
+      "type": "registry:lib",
+      "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+    }
+  ]
+}

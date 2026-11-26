@@ -1,0 +1,215 @@
+{
+  "name": "feature-grid",
+  "title": "Feature grid",
+  "type": "registry:ui",
+  "group": "site",
+  "description": "What a product does, a card per feature in the website's double rule: a red pixel pattern, the name in Faculty Glyphic and its line. One across on phones, two from 640px, three from 1024px.",
+  "use_for": "The band on a home or product page that says what it does, three to six things.",
+  "never": [
+    "More than six features: say the six that matter",
+    "Icons from an icon set: the marks are the hero tabs' pixel patterns",
+    "A feature without its line"
+  ],
+  "source": "conare-web app/pages/pricing.vue (the Enterprise cards: off-white in the double rule, led by a pattern), app/components/home/Products.vue (the grid's double rule), app/content/patterns.ts",
+  "body": "The marks take the hero tabs' four pixel patterns in turn. An odd last card on two columns takes the whole row.",
+  "requires": [
+    "section-head"
+  ],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/site/FeatureGrid.vue",
+      "content": "<script setup lang=\"ts\">\nimport SectionHead from '@/components/site/SectionHead.vue'\n\n// What a product does, a card per feature (the pricing page's Enterprise cards and the Products grid, home.css): the\n// band's head, then the cards in the website's double rule (a hairline grid, an outline 4px out), one across on phones,\n// two from 640px and three from 1024px; an odd last card on two columns takes the row. Each card is off-white: a 16px\n// pixel pattern in red (the hero tabs' four, in turn), the name in Faculty Glyphic 20px and its line, muted.\nexport type Feature = { title: string, body: string }\nwithDefaults(defineProps<{ title: string, tag?: string, body?: string, features: Feature[], titleId?: string }>(), { titleId: 'features-title' })\n\n// The hero tabs' pixel patterns, each a path on a 16px square of 2px cells, centred (as DocsBlocks' link cards).\nconst pattern = (on: (x: number, y: number) => boolean) => {\n  const lit: [number, number][] = []\n  for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) if (on(x, y)) lit.push([x, y])\n  const ox = (16 - (Math.max(...lit.map(c => c[0])) + Math.min(...lit.map(c => c[0])) + 1) * 2) / 2\n  const oy = (16 - (Math.max(...lit.map(c => c[1])) + Math.min(...lit.map(c => c[1])) + 1) * 2) / 2\n  return lit.map(([x, y]) => `M${x * 2 + ox} ${y * 2 + oy}h2v2h-2Z`).join('')\n}\nconst PATTERNS = [\n  pattern((x, y) => x % 2 === 0 && y % 2 === 0),\n  pattern((x, y) => (x + y) % 3 === 0),\n  pattern((x, y) => (Math.floor(x / 2) + Math.floor(y / 2)) % 2 === 0),\n  pattern((_, y) => y % 2 === 0),\n]\n</script>\n\n<template>\n  <section data-ds=\"feature-grid\" :aria-labelledby=\"titleId\" class=\"mx-auto max-w-[1440px] px-4 pb-24 sm:px-6 lg:px-10 lg:pb-32\">\n    <SectionHead :title=\"title\" :tag=\"tag\" :body=\"body\" :title-id=\"titleId\" />\n    <ul class=\"mt-10 grid grid-cols-[minmax(0,1fr)] gap-px border border-edge bg-edge outline outline-offset-4 outline-edge sm:grid-cols-2 lg:grid-cols-3\">\n      <li v-for=\"(f, i) in features\" :key=\"f.title\" class=\"flex flex-col bg-surface px-5 py-6 sm:px-6\" :class=\"features.length % 2 && i === features.length - 1 ? 'sm:max-lg:col-span-2' : ''\">\n        <svg aria-hidden=\"true\" width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" shape-rendering=\"crispEdges\" class=\"size-4 shrink-0 text-home-red\"><path :d=\"PATTERNS[i % 4]\" class=\"fill-current\" /></svg>\n        <h3 class=\"mt-5 type-heading-3 text-fg\">{{ f.title }}</h3>\n        <p class=\"mt-2 text-body leading-5.5 text-fg-muted\">{{ f.body }}</p>\n      </li>\n    </ul>\n  </section>\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "Six features",
+      "center": false,
+      "half": false,
+      "path": "examples/feature-grid/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport FeatureGrid from '@/components/site/FeatureGrid.vue'\n// What a product does, six features in the double rule.\nconst features = [\n  {\n    \"title\": \"Search\",\n    \"body\": \"Ask in plain words and get the passages that answer, ranked, with where each came from.\"\n  },\n  {\n    \"title\": \"Sync\",\n    \"body\": \"Connect the apps your team uses. A changed record replaces the old one; a deleted one is deleted.\"\n  },\n  {\n    \"title\": \"Parse\",\n    \"body\": \"Read any file in full: every page, table, row and cell, scanned or typed.\"\n  },\n  {\n    \"title\": \"Embed\",\n    \"body\": \"Embeddings for any vector database, from the same models search runs on.\"\n  },\n  {\n    \"title\": \"Rerank\",\n    \"body\": \"Put the best passages first, in one call after the search you already run.\"\n  },\n  {\n    \"title\": \"Audit\",\n    \"body\": \"Every search, what it read and how long it took, kept for as long as you need.\"\n  }\n]\n</script>\n\n<template>\n  <FeatureGrid\n    tag=\"Product\"\n    title=\"Everything retrieval needs, behind one key.\"\n    :features=\"features\"\n  />\n</template>\n",
+      "requires": [
+        "section-head"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/site/FeatureGrid.tsx",
+          "content": "import { SectionHead } from '@/react/components/site/SectionHead'\n\n// What a product does, a card per feature (the pricing page's Enterprise cards and the Products grid, home.css): the\n// band's head, then the cards in the website's double rule (a hairline grid, an outline 4px out), one across on phones,\n// two from 640px and three from 1024px; an odd last card on two columns takes the row. Each card is off-white: a 16px\n// pixel pattern in red (the hero tabs' four, in turn), the name in Faculty Glyphic 20px and its line, muted.\nexport type Feature = { title: string, body: string }\nexport interface FeatureGridProps { title: string, tag?: string, body?: string, features: Feature[], titleId?: string }\n\n// The hero tabs' pixel patterns, each a path on a 16px square of 2px cells, centred (as DocsBlocks' link cards).\nconst pattern = (on: (x: number, y: number) => boolean) => {\n  const lit: [number, number][] = []\n  for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) if (on(x, y)) lit.push([x, y])\n  const ox = (16 - (Math.max(...lit.map(c => c[0])) + Math.min(...lit.map(c => c[0])) + 1) * 2) / 2\n  const oy = (16 - (Math.max(...lit.map(c => c[1])) + Math.min(...lit.map(c => c[1])) + 1) * 2) / 2\n  return lit.map(([x, y]) => `M${x * 2 + ox} ${y * 2 + oy}h2v2h-2Z`).join('')\n}\nconst PATTERNS = [\n  pattern((x, y) => x % 2 === 0 && y % 2 === 0),\n  pattern((x, y) => (x + y) % 3 === 0),\n  pattern((x, y) => (Math.floor(x / 2) + Math.floor(y / 2)) % 2 === 0),\n  pattern((_, y) => y % 2 === 0),\n]\n\nexport function FeatureGrid({ title, tag, body, features, titleId = 'features-title' }: FeatureGridProps) {\n  return (\n    <section data-ds=\"feature-grid\" aria-labelledby={titleId} className=\"mx-auto max-w-[1440px] px-4 pb-24 sm:px-6 lg:px-10 lg:pb-32\">\n      <SectionHead title={title} tag={tag} body={body} titleId={titleId} />\n      <ul className=\"mt-10 grid grid-cols-[minmax(0,1fr)] gap-px border border-edge bg-edge outline outline-offset-4 outline-edge sm:grid-cols-2 lg:grid-cols-3\">\n        {features.map((f, i) => (\n          <li key={f.title} className={['flex flex-col bg-surface px-5 py-6 sm:px-6', features.length % 2 && i === features.length - 1 ? 'sm:max-lg:col-span-2' : ''].join(' ')}>\n            <svg aria-hidden=\"true\" width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" shapeRendering=\"crispEdges\" className=\"size-4 shrink-0 text-home-red\"><path d={PATTERNS[i % 4]} className=\"fill-current\" /></svg>\n            <h3 className=\"mt-5 type-heading-3 text-fg\">{f.title}</h3>\n            <p className=\"mt-2 text-body leading-5.5 text-fg-muted\">{f.body}</p>\n          </li>\n        ))}\n      </ul>\n    </section>\n  )\n}\n\nexport default FeatureGrid\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "section-head"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "FeatureGrid",
+            "file": "react/components/site/FeatureGrid.tsx",
+            "props": [
+              {
+                "name": "title",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "tag",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "body",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "features",
+                "type": "Feature[]",
+                "required": true
+              },
+              {
+                "name": "titleId",
+                "type": "string",
+                "required": false,
+                "default": "'features-title'"
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "Six features",
+          "center": false,
+          "half": false,
+          "path": "react/examples/feature-grid/Site.tsx",
+          "content": "import { FeatureGrid } from '@/react/components/site/FeatureGrid'\n// What a product does, six features in the double rule.\nconst features = [\n  {\n    \"title\": \"Search\",\n    \"body\": \"Ask in plain words and get the passages that answer, ranked, with where each came from.\"\n  },\n  {\n    \"title\": \"Sync\",\n    \"body\": \"Connect the apps your team uses. A changed record replaces the old one; a deleted one is deleted.\"\n  },\n  {\n    \"title\": \"Parse\",\n    \"body\": \"Read any file in full: every page, table, row and cell, scanned or typed.\"\n  },\n  {\n    \"title\": \"Embed\",\n    \"body\": \"Embeddings for any vector database, from the same models search runs on.\"\n  },\n  {\n    \"title\": \"Rerank\",\n    \"body\": \"Put the best passages first, in one call after the search you already run.\"\n  },\n  {\n    \"title\": \"Audit\",\n    \"body\": \"Every search, what it read and how long it took, kept for as long as you need.\"\n  }\n]\nexport default function Site() {\n  return (\n    <FeatureGrid\n      tag=\"Product\"\n      title=\"Everything retrieval needs, behind one key.\"\n      features={features}\n    />\n  )\n}\n",
+          "registryDependencies": [
+            "section-head"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/site/feature-grid.ts",
+          "content": "import { html } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport '@/elements/components/site/section-head'\nimport styles from 'virtual:tw'\n\n// FeatureGrid.vue as <conare-feature-grid>: what a product does, a card per feature (the pricing page's Enterprise\n// cards and the Products grid, home.css): the band's head, then the cards in the website's double rule (a hairline\n// grid, an outline 4px out), one across on phones, two from 640px and three from 1024px; an odd last card on two\n// columns takes the row. Each card is off-white: a 16px pixel pattern in red (the hero tabs' four, in turn), the name\n// in Faculty Glyphic 20px and its line, muted. `heading` is Vue's `title`.\nexport type Feature = { title: string, body: string }\n\n// The hero tabs' pixel patterns, each a path on a 16px square of 2px cells, centred (as DocsBlocks' link cards).\nconst pattern = (on: (x: number, y: number) => boolean) => {\n\tconst lit: [number, number][] = []\n\tfor (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) if (on(x, y)) lit.push([x, y])\n\tconst ox = (16 - (Math.max(...lit.map((c) => c[0])) + Math.min(...lit.map((c) => c[0])) + 1) * 2) / 2\n\tconst oy = (16 - (Math.max(...lit.map((c) => c[1])) + Math.min(...lit.map((c) => c[1])) + 1) * 2) / 2\n\treturn lit.map(([x, y]) => `M${x * 2 + ox} ${y * 2 + oy}h2v2h-2Z`).join('')\n}\nconst PATTERNS = [\n\tpattern((x, y) => x % 2 === 0 && y % 2 === 0),\n\tpattern((x, y) => (x + y) % 3 === 0),\n\tpattern((x, y) => (Math.floor(x / 2) + Math.floor(y / 2)) % 2 === 0),\n\tpattern((_, y) => y % 2 === 0),\n]\n\n/** @summary What a product does: a card per feature in the website's double rule. */\nexport class FeatureGrid extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { heading: {}, tag: {}, body: {}, features: { type: Array }, titleId: { attribute: 'title-id' } }\n\n\t/** The band's line (Vue's `title`). */\n\theading = ''\n\ttag?: string\n\tbody?: string\n\t/** Each { title, body }. */\n\tfeatures: Feature[] = []\n\t/** The heading's id, which names the band. */\n\ttitleId = 'features-title'\n\n\trender() {\n\t\tconst head = tag('section-head')\n\t\tconst n = this.features.length\n\t\treturn html`<section data-ds=\"feature-grid\" aria-labelledby=${this.titleId} class=\"mx-auto max-w-[1440px] px-4 pb-24 sm:px-6 lg:px-10 lg:pb-32\">${staticHtml`<${head} .heading=${this.heading} .tag=${this.tag} .body=${this.body} .titleId=${this.titleId}></${head}>`}<ul class=\"mt-10 grid grid-cols-[minmax(0,1fr)] gap-px border border-edge bg-edge outline outline-offset-4 outline-edge sm:grid-cols-2 lg:grid-cols-3\">${this.features.map((f, i) => html`<li class=${['flex flex-col bg-surface px-5 py-6 sm:px-6', n % 2 && i === n - 1 ? 'sm:max-lg:col-span-2' : ''].join(' ')}><svg aria-hidden=\"true\" width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" shape-rendering=\"crispEdges\" class=\"size-4 shrink-0 text-home-red\"><path d=${PATTERNS[i % 4]!} class=\"fill-current\"></path></svg><h3 class=\"mt-5 type-heading-3 text-fg\">${f.title}</h3><p class=\"mt-2 text-body leading-5.5 text-fg-muted\">${f.body}</p></li>`)}</ul></section>`\n\t}\n}\n\ndefine('feature-grid', FeatureGrid)\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/feature-grid.js",
+        "elements/section-head.js",
+        "elements/site-tag.js"
+      ],
+      "tag": "conare-feature-grid",
+      "tags": [
+        "conare-feature-grid"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "section-head",
+        "tag"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-feature-grid",
+            "name": "FeatureGrid",
+            "module": "elements/feature-grid.js",
+            "description": "What a product does: a card per feature in the website's double rule.",
+            "attributes": [
+              {
+                "name": "heading",
+                "field": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The band's line (Vue's `title`)."
+              },
+              {
+                "name": "tag",
+                "field": "tag",
+                "type": "string | undefined"
+              },
+              {
+                "name": "body",
+                "field": "body",
+                "type": "string | undefined"
+              },
+              {
+                "name": "features",
+                "field": "features",
+                "type": "Feature[]",
+                "default": "[]",
+                "description": "Each { title, body }."
+              },
+              {
+                "name": "title-id",
+                "field": "titleId",
+                "type": "string",
+                "default": "'features-title'",
+                "description": "The heading's id, which names the band."
+              }
+            ],
+            "properties": [
+              {
+                "name": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The band's line (Vue's `title`).",
+                "attribute": "heading"
+              },
+              {
+                "name": "tag",
+                "type": "string | undefined",
+                "attribute": "tag"
+              },
+              {
+                "name": "body",
+                "type": "string | undefined",
+                "attribute": "body"
+              },
+              {
+                "name": "features",
+                "type": "Feature[]",
+                "default": "[]",
+                "description": "Each { title, body }.",
+                "attribute": "features"
+              },
+              {
+                "name": "titleId",
+                "type": "string",
+                "default": "'features-title'",
+                "description": "The heading's id, which names the band.",
+                "attribute": "title-id"
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "Six features",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/feature-grid/Site.html",
+          "content": "<!-- What a product does, six features in the double rule. -->\n<conare-feature-grid\n  tag=\"Product\"\n  heading=\"Everything retrieval needs, behind one key.\"\n  features='[{\"title\": \"Search\", \"body\": \"Ask in plain words and get the passages that answer, ranked, with where each came from.\"}, {\"title\": \"Sync\", \"body\": \"Connect the apps your team uses. A changed record replaces the old one; a deleted one is deleted.\"}, {\"title\": \"Parse\", \"body\": \"Read any file in full: every page, table, row and cell, scanned or typed.\"}, {\"title\": \"Embed\", \"body\": \"Embeddings for any vector database, from the same models search runs on.\"}, {\"title\": \"Rerank\", \"body\": \"Put the best passages first, in one call after the search you already run.\"}, {\"title\": \"Audit\", \"body\": \"Every search, what it read and how long it took, kept for as long as you need.\"}]'\n></conare-feature-grid>\n"
+        }
+      ]
+    }
+  }
+}

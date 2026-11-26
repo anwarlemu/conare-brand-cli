@@ -1,0 +1,301 @@
+{
+  "name": "workspace-switcher",
+  "title": "Workspace switcher",
+  "type": "registry:ui",
+  "group": "product",
+  "description": "The sidebar head's organization switcher: the brand mark, the organization over its customer and role, and a menu of every organization grouped by customer, the current one checked, then New organization, settings and members.",
+  "use_for": "Sidebar's head slot, wherever a person reaches more than one organization.",
+  "never": [
+    "Switching without saying which organization is opening",
+    "A round avatar: organizations are square tiles"
+  ],
+  "source": "conare-web app/components/console/WorkspaceMenu.vue, app/assets/css/console2.css (.v2-trigger, .v2-ws-name, .v2-ws-meta, .v2-tile, .v2-menu-tag)",
+  "body": "v-model is the current organization's id; set `switching` to the id while the app opens it (the row reads \"opening\"\nand the others wait), and `error` if that fails. Put the brand mark in the `mark` slot.",
+  "requires": [
+    "menu"
+  ],
+  "dependencies": [
+    "lucide-vue-next@^0.479.0"
+  ],
+  "files": [
+    {
+      "path": "components/product/WorkspaceSwitcher.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed } from 'vue'\nimport { Check, ChevronsUpDown, Plus, Settings, Users } from 'lucide-vue-next'\nimport Menu from '@/components/ui/Menu.vue'\nimport MenuItem from '@/components/ui/MenuItem.vue'\nimport MenuLabel from '@/components/ui/MenuLabel.vue'\nimport MenuSeparator from '@/components/ui/MenuSeparator.vue'\n\n// The organization switcher at the top of the sidebar (WorkspaceMenu.vue): the brand mark (slot `mark`, an initial\n// tile without it), the organization in 12px medium over its customer and role in 11px muted, and a 264px menu of\n// every organization the person reaches, grouped by customer under a label with the role tag, the current one\n// checked and in medium. Then what goes with an organization: New organization (admins), its settings, its members.\n// v-model is the current organization's id; `switching` marks the one opening while the others wait.\nexport interface WorkspaceGroup { id: string, name: string, role?: string, organizations: Array<{ id: string, name: string, default?: boolean }> }\nconst props = withDefaults(defineProps<{\n  groups: WorkspaceGroup[]\n  admin?: boolean\n  switching?: string\n  error?: string\n  settingsHref?: string\n  membersHref?: string\n}>(), { settingsHref: '#', membersHref: '#' })\nconst current = defineModel<string>({ required: true })\nconst emit = defineEmits<{ create: [] }>()\nconst where = computed(() => {\n  for (const g of props.groups) {\n    const o = g.organizations.find(x => x.id === current.value)\n    if (o) return { org: o, group: g }\n  }\n  return undefined\n})\nconst several = computed(() => props.groups.length > 1)\nconst initial = (name: string) => name.trim().charAt(0).toUpperCase() || '·'\nfunction choose(id: string) {\n  if (id !== current.value && !props.switching) current.value = id\n}\n</script>\n\n<template>\n  <Menu data-ds=\"workspace-switcher\"\n    label=\"workspaces\"\n    offset=\"8px\"\n    class=\"!flex h-full w-full\"\n    trigger-class=\"relative isolate flex h-full w-full cursor-pointer items-center gap-2 px-3 text-left before:absolute before:inset-x-2 before:inset-y-1.5 before:-z-10 before:transition-colors before:duration-120 before:ease-standard hover:before:bg-edge/45 aria-expanded:before:bg-edge/45 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-focus\"\n  >\n    <template #trigger>\n      <slot name=\"mark\"><span class=\"inline-flex size-5 shrink-0 items-center justify-center border border-edge bg-surface text-caption leading-none font-medium\" aria-hidden=\"true\">{{ initial(where?.org.name ?? '') }}</span></slot>\n      <span class=\"min-w-0 flex-1\">\n        <span class=\"block translate-y-[0.5px] truncate text-meta leading-3 font-medium\">{{ where?.org.name ?? '\\u00a0' }}</span>\n        <span class=\"mt-px block translate-y-[0.5px] truncate pb-0.75 -mb-0.75 text-caption leading-2.5 text-fg-muted\">{{ where?.group.name ?? '\\u00a0' }}<template v-if=\"where?.group.role\"> · {{ where.group.role }}</template></span>\n      </span>\n      <ChevronsUpDown :size=\"14\" :stroke-width=\"1.5\" class=\"mr-0.75 shrink-0 text-fg-muted\" aria-hidden=\"true\" />\n    </template>\n    <template v-for=\"g in groups\" :key=\"g.id\">\n      <MenuLabel>\n        <span class=\"truncate\">{{ g.name }}</span>\n        <span v-if=\"(several || g.role) && g.role\" class=\"shrink-0 border border-edge px-1 text-caption leading-4\">{{ g.role }}</span>\n      </MenuLabel>\n      <MenuItem v-for=\"o in g.organizations\" :key=\"o.id\" :current=\"o.id === current\" :disabled=\"!!switching && switching !== o.id\" @select=\"choose(o.id)\">\n        <span class=\"inline-flex size-5 shrink-0 items-center justify-center border border-edge bg-surface text-caption leading-none font-medium\" aria-hidden=\"true\">{{ initial(o.name) }}</span>\n        <span class=\"min-w-0 flex-1 truncate\">{{ o.name }}</span>\n        <span v-if=\"switching === o.id\" class=\"type-meta text-fg-muted\">opening</span>\n        <span v-else-if=\"o.default\" class=\"type-meta text-fg-muted\">default</span>\n        <Check v-if=\"o.id === current\" :size=\"14\" :stroke-width=\"1.5\" class=\"shrink-0\" aria-label=\"current\" />\n      </MenuItem>\n    </template>\n    <MenuSeparator />\n    <MenuItem v-if=\"admin\" @select=\"emit('create')\"><Plus :size=\"14\" :stroke-width=\"1.5\" class=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />New organization</MenuItem>\n    <MenuItem :href=\"settingsHref\"><Settings :size=\"14\" :stroke-width=\"1.5\" class=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />Organization settings</MenuItem>\n    <MenuItem :href=\"membersHref\"><Users :size=\"14\" :stroke-width=\"1.5\" class=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />{{ admin ? 'Invite members' : 'Members' }}</MenuItem>\n    <p v-if=\"error\" class=\"px-3 py-1 type-meta text-fg-danger\" role=\"alert\">{{ error }}</p>\n  </Menu>\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "The organization switcher",
+      "center": true,
+      "half": false,
+      "path": "examples/workspace-switcher/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport WorkspaceSwitcher, { type WorkspaceGroup } from '@/components/product/WorkspaceSwitcher.vue'\n// The switcher at the top of the sidebar, with sample organizations. Its row has its four edges here, where no\n// sidebar frames it. Picking one switches the sample; wire `update:modelValue` to your own switch.\nconst groups: WorkspaceGroup[] = [\n  { id: 'acme', name: 'Acme', role: 'admin', organizations: [{ id: 'prod', name: 'Acme production', default: true }, { id: 'staging', name: 'Acme staging' }] },\n  { id: 'acme-labs', name: 'Acme labs', role: 'member', organizations: [{ id: 'research', name: 'Acme research' }] },\n]\nconst current = ref('prod')\n</script>\n\n<template>\n  <div class=\"h-96\">\n    <div class=\"h-bar w-sidebar border border-edge bg-surface-subtle\">\n      <WorkspaceSwitcher v-model=\"current\" :groups=\"groups\" admin>\n        <template #mark><img src=\"/conare-ds/logo/svg/mark.svg\" alt=\"\" height=\"20\" class=\"h-5 w-auto shrink-0\"></template>\n      </WorkspaceSwitcher>\n    </div>\n  </div>\n</template>\n",
+      "requires": [
+        "menu"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/product/WorkspaceSwitcher.tsx",
+          "content": "'use client'\nimport { Fragment, type ReactNode } from 'react'\nimport { Check, ChevronsUpDown, Plus, Settings, Users } from 'lucide-react'\nimport { Menu } from '@/react/components/ui/Menu'\nimport { MenuItem } from '@/react/components/ui/MenuItem'\nimport { MenuLabel } from '@/react/components/ui/MenuLabel'\nimport { MenuSeparator } from '@/react/components/ui/MenuSeparator'\nimport { useControllable } from '@/react/hooks/useControllable'\n\n// The organization switcher at the top of the sidebar (WorkspaceMenu.vue): the brand mark (`mark`, an initial tile\n// without it), the organization in 12px medium over its customer and role in 11px muted, and a 264px menu of every\n// organization the person reaches, grouped by customer under a label with the role tag, the current one checked and in\n// medium. Then what goes with an organization: New organization (admins), its settings, its members. Vue's v-model is\n// `value` with `onValueChange` (or `defaultValue` alone): the current organization's id; `switching` marks the one\n// opening while the others wait.\nexport interface WorkspaceGroup { id: string, name: string, role?: string, organizations: Array<{ id: string, name: string, default?: boolean }> }\nexport interface WorkspaceSwitcherProps {\n  groups: WorkspaceGroup[]\n  admin?: boolean\n  switching?: string\n  error?: string\n  settingsHref?: string\n  membersHref?: string\n  value?: string\n  defaultValue?: string\n  onValueChange?: (value: string) => void\n  onCreate?: () => void\n  mark?: ReactNode\n}\n\nconst initial = (name: string) => name.trim().charAt(0).toUpperCase() || '·'\n\nexport function WorkspaceSwitcher({ groups, admin, switching, error, settingsHref = '#', membersHref = '#', value, defaultValue = '', onValueChange, onCreate, mark }: WorkspaceSwitcherProps) {\n  const [current, setCurrent] = useControllable(value, defaultValue, onValueChange)\n  let where: { org: WorkspaceGroup['organizations'][number], group: WorkspaceGroup } | undefined\n  for (const g of groups) {\n    const o = g.organizations.find(x => x.id === current)\n    if (o && !where) where = { org: o, group: g }\n  }\n  const several = groups.length > 1\n  function choose(id: string) {\n    if (id !== current && !switching) setCurrent(id)\n  }\n  return (\n    <Menu\n      data-ds=\"workspace-switcher\"\n      label=\"workspaces\"\n      offset=\"8px\"\n      className=\"!flex h-full w-full\"\n      triggerClass=\"relative isolate flex h-full w-full cursor-pointer items-center gap-2 px-3 text-left before:absolute before:inset-x-2 before:inset-y-1.5 before:-z-10 before:transition-colors before:duration-120 before:ease-standard hover:before:bg-edge/45 aria-expanded:before:bg-edge/45 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-focus\"\n      trigger={(\n        <>\n          {mark ?? <span className=\"inline-flex size-5 shrink-0 items-center justify-center border border-edge bg-surface text-caption leading-none font-medium\" aria-hidden=\"true\">{initial(where?.org.name ?? '')}</span>}\n          <span className=\"min-w-0 flex-1\">\n            <span className=\"block translate-y-[0.5px] truncate text-meta leading-3 font-medium\">{where?.org.name ?? ' '}</span>\n            <span className=\"mt-px block translate-y-[0.5px] truncate pb-0.75 -mb-0.75 text-caption leading-2.5 text-fg-muted\">{where?.group.name ?? ' '}{where?.group.role && ` · ${where.group.role}`}</span>\n          </span>\n          <ChevronsUpDown size={14} strokeWidth={1.5} className=\"mr-0.75 shrink-0 text-fg-muted\" aria-hidden=\"true\" />\n        </>\n      )}\n    >\n      {groups.map(g => (\n        <Fragment key={g.id}>\n          <MenuLabel>\n            <span className=\"truncate\">{g.name}</span>\n            {(several || g.role) && g.role && <span className=\"shrink-0 border border-edge px-1 text-caption leading-4\">{g.role}</span>}\n          </MenuLabel>\n          {g.organizations.map(o => (\n            <MenuItem key={o.id} current={o.id === current} disabled={!!switching && switching !== o.id} onSelect={() => choose(o.id)}>\n              <span className=\"inline-flex size-5 shrink-0 items-center justify-center border border-edge bg-surface text-caption leading-none font-medium\" aria-hidden=\"true\">{initial(o.name)}</span>\n              <span className=\"min-w-0 flex-1 truncate\">{o.name}</span>\n              {switching === o.id\n                ? <span className=\"type-meta text-fg-muted\">opening</span>\n                : o.default && <span className=\"type-meta text-fg-muted\">default</span>}\n              {o.id === current && <Check size={14} strokeWidth={1.5} className=\"shrink-0\" aria-label=\"current\" />}\n            </MenuItem>\n          ))}\n        </Fragment>\n      ))}\n      <MenuSeparator />\n      {admin && <MenuItem onSelect={() => onCreate?.()}><Plus size={14} strokeWidth={1.5} className=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />New organization</MenuItem>}\n      <MenuItem href={settingsHref}><Settings size={14} strokeWidth={1.5} className=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />Organization settings</MenuItem>\n      <MenuItem href={membersHref}><Users size={14} strokeWidth={1.5} className=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />{admin ? 'Invite members' : 'Members'}</MenuItem>\n      {error && <p className=\"px-3 py-1 type-meta text-fg-danger\" role=\"alert\">{error}</p>}\n    </Menu>\n  )\n}\n\nexport default WorkspaceSwitcher\n"
+        },
+        {
+          "path": "react/hooks/useControllable.ts",
+          "content": "'use client'\nimport { useCallback, useRef, useState } from 'react'\n\n// Vue's defineModel in React: a value that is controlled when the caller passes it (value + onValueChange, as Radix\n// does) and kept inside otherwise (defaultValue). setValue calls onChange either way.\nexport function useControllable<T>(value: T | undefined, defaultValue: T, onChange?: (value: T) => void) {\n\tconst [inner, setInner] = useState<T>(defaultValue)\n\tconst controlled = value !== undefined\n\tconst current = controlled ? value : inner\n\tconst ref = useRef(onChange)\n\tref.current = onChange\n\tconst set = useCallback((next: T) => {\n\t\tif (!controlled) setInner(next)\n\t\tref.current?.(next)\n\t}, [controlled])\n\treturn [current, set] as const\n}\n"
+        }
+      ],
+      "dependencies": [
+        "lucide-react@0.479.0"
+      ],
+      "registryDependencies": [
+        "menu"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "WorkspaceSwitcher",
+            "file": "react/components/product/WorkspaceSwitcher.tsx",
+            "props": [
+              {
+                "name": "groups",
+                "type": "WorkspaceGroup[]",
+                "required": true
+              },
+              {
+                "name": "admin",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "switching",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "error",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "settingsHref",
+                "type": "string",
+                "required": false,
+                "default": "'#'"
+              },
+              {
+                "name": "membersHref",
+                "type": "string",
+                "required": false,
+                "default": "'#'"
+              },
+              {
+                "name": "value",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "defaultValue",
+                "type": "string",
+                "required": false,
+                "default": "''"
+              },
+              {
+                "name": "onValueChange",
+                "type": "(value: string) => void",
+                "required": false
+              },
+              {
+                "name": "onCreate",
+                "type": "() => void",
+                "required": false
+              },
+              {
+                "name": "mark",
+                "type": "ReactNode",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "The organization switcher",
+          "center": true,
+          "half": false,
+          "path": "react/examples/workspace-switcher/Product.tsx",
+          "content": "'use client'\nimport { useState } from 'react'\nimport { WorkspaceSwitcher, type WorkspaceGroup } from '@/react/components/product/WorkspaceSwitcher'\n// The switcher at the top of the sidebar, with sample organizations. Its row has its four edges here, where no\n// sidebar frames it. Picking one switches the sample; wire `onValueChange` to your own switch.\nconst groups: WorkspaceGroup[] = [\n  { id: 'acme', name: 'Acme', role: 'admin', organizations: [{ id: 'prod', name: 'Acme production', default: true }, { id: 'staging', name: 'Acme staging' }] },\n  { id: 'acme-labs', name: 'Acme labs', role: 'member', organizations: [{ id: 'research', name: 'Acme research' }] },\n]\n\nexport default function Product() {\n  const [current, setCurrent] = useState('prod')\n  return (\n    <div className=\"h-96\">\n      <div className=\"h-bar w-sidebar border border-edge bg-surface-subtle\">\n        <WorkspaceSwitcher value={current} onValueChange={setCurrent} groups={groups} admin mark={<img src=\"/conare-ds/logo/svg/mark.svg\" alt=\"\" height={20} className=\"h-5 w-auto shrink-0\" />} />\n      </div>\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "menu"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/product/workspace-switcher.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { Check, ChevronsUpDown, Plus, Settings, Users } from 'lucide'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport '@/elements/components/ui/menu'\nimport '@/elements/components/ui/menu-item'\nimport '@/elements/components/ui/menu-label'\nimport '@/elements/components/ui/menu-separator'\nimport styles from 'virtual:tw'\n\n// WorkspaceSwitcher.vue as <conare-workspace-switcher>: the organization switcher at the top of the sidebar\n// (WorkspaceMenu.vue): the brand mark (slot `mark`, an initial tile without it), the organization in 12px medium over\n// its customer and role in 11px muted, and a 264px menu of every organization the person reaches, grouped by customer\n// under a label with the role tag, the current one checked and in medium. Then what goes with an organization: New\n// organization (admins), its settings, its members. v-model is `value` (the current organization's id) with `input`\n// and `change` events; `switching` marks the one opening while the others wait. `groups` is a JSON attribute or the\n// property.\nexport interface WorkspaceGroup { id: string, name: string, role?: string, organizations: Array<{ id: string, name: string, default?: boolean }> }\n\nconst initial = (name: string) => name.trim().charAt(0).toUpperCase() || '·'\n\n/**\n * @summary The organization switcher at the top of the sidebar.\n * @slot mark - The brand mark, in place of the initial tile.\n * @fires input - Another organization was picked (read `value`).\n * @fires change - Another organization was picked (read `value`).\n * @fires create - New organization was chosen.\n */\nexport class WorkspaceSwitcher extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = {\n\t\tgroups: { type: Array },\n\t\tadmin: { type: Boolean },\n\t\tswitching: {},\n\t\terror: {},\n\t\tsettingsHref: { attribute: 'settings-href' },\n\t\tmembersHref: { attribute: 'members-href' },\n\t\tvalue: {},\n\t}\n\n\tgroups: WorkspaceGroup[] = []\n\t/** Shows New organization and Invite members. */\n\tadmin = false\n\t/** The organization opening; the others wait. */\n\tswitching?: string\n\terror?: string\n\tsettingsHref = '#'\n\tmembersHref = '#'\n\t/** The current organization's id. */\n\tvalue = ''\n\n\tprivate choose(id: string) {\n\t\tif (id !== this.value && !this.switching) this.commit(id)\n\t}\n\n\trender() {\n\t\tconst menu = tag('menu')\n\t\tconst item = tag('menu-item')\n\t\tconst label = tag('menu-label')\n\t\tconst sep = tag('menu-separator')\n\t\tlet where: { org: WorkspaceGroup['organizations'][number], group: WorkspaceGroup } | undefined\n\t\tfor (const g of this.groups) {\n\t\t\tconst o = g.organizations.find((x) => x.id === this.value)\n\t\t\tif (o && !where) where = { org: o, group: g }\n\t\t}\n\t\tconst several = this.groups.length > 1\n\t\tconst muted = { size: 14, strokeWidth: 1.5, class: 'shrink-0 text-fg-muted', attrs: { 'aria-hidden': 'true' } }\n\t\treturn html`${staticHtml`<${menu} data-ds=\"workspace-switcher\" label=\"workspaces\" offset=\"8px\" class=\"!flex h-full w-full\">\n\t\t\t<button slot=\"trigger\" type=\"button\" class=\"relative isolate flex h-full w-full cursor-pointer items-center gap-2 px-3 text-left before:absolute before:inset-x-2 before:inset-y-1.5 before:-z-10 before:transition-colors before:duration-120 before:ease-standard hover:before:bg-edge/45 aria-expanded:before:bg-edge/45 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-focus\">\n\t\t\t\t<slot name=\"mark\"><span class=\"inline-flex size-5 shrink-0 items-center justify-center border border-edge bg-surface text-caption leading-none font-medium\" aria-hidden=\"true\">${initial(where?.org.name ?? '')}</span></slot>\n\t\t\t\t<span class=\"min-w-0 flex-1\">\n\t\t\t\t\t<span class=\"block translate-y-[0.5px] truncate text-meta leading-3 font-medium\">${where?.org.name ?? ' '}</span>\n\t\t\t\t\t<span class=\"mt-px block translate-y-[0.5px] truncate pb-0.75 -mb-0.75 text-caption leading-2.5 text-fg-muted\">${where?.group.name ?? ' '}${where?.group.role ? ` · ${where.group.role}` : nothing}</span>\n\t\t\t\t</span>\n\t\t\t\t${icon(ChevronsUpDown, 'chevrons-up-down', { size: 14, strokeWidth: 1.5, class: 'mr-0.75 shrink-0 text-fg-muted', attrs: { 'aria-hidden': 'true' } })}\n\t\t\t</button>\n\t\t\t${this.groups.map((g) => staticHtml`<${label}>\n\t\t\t\t<span class=\"truncate\">${g.name}</span>\n\t\t\t\t${(several || g.role) && g.role ? html`<span class=\"shrink-0 border border-edge px-1 text-caption leading-4\">${g.role}</span>` : nothing}\n\t\t\t</${label}>\n\t\t\t${g.organizations.map((o) => staticHtml`<${item} ?current=${o.id === this.value} ?disabled=${!!this.switching && this.switching !== o.id} @select=${() => this.choose(o.id)}>\n\t\t\t\t<span class=\"inline-flex size-5 shrink-0 items-center justify-center border border-edge bg-surface text-caption leading-none font-medium\" aria-hidden=\"true\">${initial(o.name)}</span>\n\t\t\t\t<span class=\"min-w-0 flex-1 truncate\">${o.name}</span>\n\t\t\t\t${this.switching === o.id ? html`<span class=\"type-meta text-fg-muted\">opening</span>` : o.default ? html`<span class=\"type-meta text-fg-muted\">default</span>` : nothing}\n\t\t\t\t${o.id === this.value ? icon(Check, 'check', { size: 14, strokeWidth: 1.5, class: 'shrink-0', attrs: { 'aria-label': 'current' } }) : nothing}\n\t\t\t</${item}>`)}`)}\n\t\t\t<${sep}></${sep}>\n\t\t\t${this.admin ? staticHtml`<${item} @select=${() => this.emit('create')}>${icon(Plus, 'plus', muted)}New organization</${item}>` : nothing}\n\t\t\t<${item} href=${this.settingsHref}>${icon(Settings, 'settings', muted)}Organization settings</${item}>\n\t\t\t<${item} href=${this.membersHref}>${icon(Users, 'users', muted)}${this.admin ? 'Invite members' : 'Members'}</${item}>\n\t\t\t${this.error ? html`<p class=\"px-3 py-1 type-meta text-fg-danger\" role=\"alert\">${this.error}</p>` : nothing}\n\t\t</${menu}>`}`\n\t}\n}\n\ndefine('workspace-switcher', WorkspaceSwitcher)\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/workspace-switcher.js",
+        "elements/menu.js",
+        "elements/menu-item.js",
+        "elements/menu-label.js",
+        "elements/menu-separator.js"
+      ],
+      "tag": "conare-workspace-switcher",
+      "tags": [
+        "conare-workspace-switcher"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "menu"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-workspace-switcher",
+            "name": "WorkspaceSwitcher",
+            "module": "elements/workspace-switcher.js",
+            "description": "The organization switcher at the top of the sidebar.",
+            "attributes": [
+              {
+                "name": "groups",
+                "field": "groups",
+                "type": "WorkspaceGroup[]",
+                "default": "[]"
+              },
+              {
+                "name": "admin",
+                "field": "admin",
+                "type": "boolean",
+                "default": "false",
+                "description": "Shows New organization and Invite members."
+              },
+              {
+                "name": "switching",
+                "field": "switching",
+                "type": "string | undefined",
+                "description": "The organization opening; the others wait."
+              },
+              {
+                "name": "error",
+                "field": "error",
+                "type": "string | undefined"
+              },
+              {
+                "name": "settings-href",
+                "field": "settingsHref",
+                "type": "string",
+                "default": "'#'"
+              },
+              {
+                "name": "members-href",
+                "field": "membersHref",
+                "type": "string",
+                "default": "'#'"
+              },
+              {
+                "name": "value",
+                "field": "value",
+                "type": "string",
+                "default": "''",
+                "description": "The current organization's id."
+              }
+            ],
+            "properties": [
+              {
+                "name": "groups",
+                "type": "WorkspaceGroup[]",
+                "default": "[]",
+                "attribute": "groups"
+              },
+              {
+                "name": "admin",
+                "type": "boolean",
+                "default": "false",
+                "description": "Shows New organization and Invite members.",
+                "attribute": "admin"
+              },
+              {
+                "name": "switching",
+                "type": "string | undefined",
+                "description": "The organization opening; the others wait.",
+                "attribute": "switching"
+              },
+              {
+                "name": "error",
+                "type": "string | undefined",
+                "attribute": "error"
+              },
+              {
+                "name": "settingsHref",
+                "type": "string",
+                "default": "'#'",
+                "attribute": "settings-href"
+              },
+              {
+                "name": "membersHref",
+                "type": "string",
+                "default": "'#'",
+                "attribute": "members-href"
+              },
+              {
+                "name": "value",
+                "type": "string",
+                "default": "''",
+                "description": "The current organization's id.",
+                "attribute": "value"
+              }
+            ],
+            "events": [
+              {
+                "name": "input",
+                "description": "Another organization was picked (read `value`)."
+              },
+              {
+                "name": "change",
+                "description": "Another organization was picked (read `value`)."
+              },
+              {
+                "name": "create",
+                "description": "New organization was chosen."
+              }
+            ],
+            "slots": [
+              {
+                "name": "mark",
+                "description": "The brand mark, in place of the initial tile."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "The organization switcher",
+          "center": true,
+          "half": false,
+          "path": "elements/examples/workspace-switcher/Product.html",
+          "content": "<!-- The switcher at the top of the sidebar, with sample organizations. Its row has its four edges here, where no\n     sidebar frames it. Picking one switches the sample; listen for `change` to switch for real. -->\n<div class=\"h-96\">\n  <div class=\"h-bar w-sidebar border border-edge bg-surface-subtle\">\n    <conare-workspace-switcher value=\"prod\" admin groups='[{ \"id\": \"acme\", \"name\": \"Acme\", \"role\": \"admin\", \"organizations\": [{ \"id\": \"prod\", \"name\": \"Acme production\", \"default\": true }, { \"id\": \"staging\", \"name\": \"Acme staging\" }] }, { \"id\": \"acme-labs\", \"name\": \"Acme labs\", \"role\": \"member\", \"organizations\": [{ \"id\": \"research\", \"name\": \"Acme research\" }] }]'>\n      <img slot=\"mark\" src=\"/conare-ds/logo/svg/mark.svg\" alt=\"\" height=\"20\" class=\"h-5 w-auto shrink-0\">\n    </conare-workspace-switcher>\n  </div>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

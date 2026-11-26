@@ -1,0 +1,13 @@
+/* Scroll edges fade, never cut content off (the fade-y and fade-x utilities in theme.css): an edge with more content
+   past it fades over 24px. The fade grows with the first and last 24px of scroll (tied to the scroll, not to time), so
+   a list at rest shows its first row in full and a list that does not scroll has no fade. These registrations sit at
+   the page level, where a shadow root's elements find them too. */
+@property --fade-start { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --fade-end { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@keyframes fade-start { from { --fade-start: 0px; } to { --fade-start: 24px; } }
+@keyframes fade-end { from { --fade-end: 24px; } to { --fade-end: 0px; } }
+/* fade-xy (a box that scrolls down and sideways) reads the two above for its vertical fade and these for its sideways one. */
+@property --fade-x-start { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --fade-x-end { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@keyframes fade-x-start { from { --fade-x-start: 0px; } to { --fade-x-start: 24px; } }
+@keyframes fade-x-end { from { --fade-x-end: 24px; } to { --fade-x-end: 0px; } }

@@ -1,0 +1,194 @@
+{
+  "name": "tooltip",
+  "title": "Tooltip",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "An icon button's name in the inverse fill, 11px, under its trigger: 300ms wait under the pointer, at once on keyboard focus, 125ms in. Right after another tooltip it shows at once.",
+  "use_for": "Naming icon buttons in rows and toolbars.",
+  "never": [
+    "Anything someone needs to read or act on: put it on the page",
+    "A tooltip on a button that already has a label",
+    "Showing on touch: a tap presses the button"
+  ],
+  "source": "conare-web app/components/console/Copy.vue (version 1's tip, .v2-copy1-tip). New in Conare's style: shadcn's tooltip, on usePopover so it flips and stays inside the viewport.",
+  "body": "",
+  "requires": [
+    "popover"
+  ],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Tooltip.vue",
+      "content": "<script lang=\"ts\">\n// When the last tooltip closed: one opened right after it shows at once, so moving along a toolbar reads fast.\nlet lastClosed = 0\n</script>\n\n<script setup lang=\"ts\">\nimport { onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'\nimport PopoverPanel from '@/components/ui/PopoverPanel.vue'\nimport { usePopover, type Align, type Side } from '@/composables/usePopover'\n\n// A control's name, for icon buttons (Copy.vue version 1's tip): the inverse fill, 11px, 2px by 6px, 2px under its\n// trigger. Under the pointer it waits 300ms, then fades and drops 2px in over 125ms; on keyboard focus it shows at\n// once, without motion; a press, Escape or leaving hides it. Right after another tooltip it shows at once. It never\n// shows on touch (a tap presses the button). Wrap one focusable trigger; it gets aria-describedby.\nconst props = withDefaults(defineProps<{ text: string, side?: Side, align?: Align }>(), { side: 'bottom', align: 'center' })\nconst WAIT = 300\nconst pop = usePopover({ side: props.side, align: props.align, gap: 2, sticky: true })\nconst id = `tip-${useId()}`\nconst root = ref<HTMLElement | null>(null)\nlet timer: ReturnType<typeof setTimeout> | undefined\n\nonMounted(() => {\n  const trigger = root.value?.firstElementChild as HTMLElement | null\n  pop.anchor.value = trigger\n  trigger?.setAttribute('aria-describedby', id)\n})\nwatch(pop.open, (now) => { if (!now) lastClosed = Date.now() })\nonBeforeUnmount(() => clearTimeout(timer))\n\nfunction enter(event: PointerEvent) {\n  if (event.pointerType !== 'mouse' || pop.open.value) return\n  clearTimeout(timer)\n  if (Date.now() - lastClosed < WAIT) return void pop.show({ keyboard: true })\n  // ds-latency: the wait is the point; a pass of the pointer shows nothing.\n  timer = setTimeout(() => void pop.show(), WAIT)\n}\nfunction leave() {\n  clearTimeout(timer)\n  pop.hide()\n}\nfunction focus(event: FocusEvent) {\n  if ((event.target as HTMLElement).matches(':focus-visible')) void pop.show({ keyboard: true })\n}\n</script>\n\n<template>\n  <span data-ds=\"tooltip\" ref=\"root\" class=\"inline-flex\" @pointerenter=\"enter\" @pointerleave=\"leave\" @pointerdown=\"leave\" @focusin=\"focus\" @focusout=\"leave\">\n    <slot />\n  </span>\n  <PopoverPanel data-ds=\"tooltip\" :id=\"id\" :pop=\"pop\" tip role=\"tooltip\">{{ text }}</PopoverPanel>\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "Icon buttons in a row",
+      "center": true,
+      "half": false,
+      "path": "examples/tooltip/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { Copy, Download, RefreshCw, Trash2 } from 'lucide-vue-next'\nimport Button from '@/components/ui/Button.vue'\nimport Tooltip from '@/components/ui/Tooltip.vue'\n// A row's tools as icon buttons, each named by its tooltip. Point at one and wait, then move along: the next shows at\n// once. Tab to one and its name shows without a wait.\nconst tools = [\n  { label: 'Copy ID', icon: Copy },\n  { label: 'Download', icon: Download },\n  { label: 'Sync again', icon: RefreshCw },\n  { label: 'Delete', icon: Trash2 },\n]\n</script>\n\n<template>\n  <div class=\"flex min-h-24 items-start justify-center gap-1\">\n    <Tooltip v-for=\"t in tools\" :key=\"t.label\" :text=\"t.label\">\n      <Button variant=\"ghost\" icon :aria-label=\"t.label.toLowerCase()\"><component :is=\"t.icon\" :size=\"14\" :stroke-width=\"1.5\" /></Button>\n    </Tooltip>\n  </div>\n</template>\n",
+      "requires": [
+        "button",
+        "popover"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Tooltip.tsx",
+          "content": "'use client'\nimport { useEffect, useId, useRef, type FocusEvent, type PointerEvent, type ReactNode } from 'react'\nimport { PopoverPanel } from '@/react/components/ui/PopoverPanel'\nimport { usePopover, type Align, type Side } from '@/react/hooks/usePopover'\n\n// When the last tooltip closed: one opened right after it shows at once, so moving along a toolbar reads fast.\nlet lastClosed = 0\n\n// A control's name, for icon buttons (Copy.vue version 1's tip): the inverse fill, 11px, 2px by 6px, 2px under its\n// trigger. Under the pointer it waits 300ms, then fades and drops 2px in over 125ms; on keyboard focus it shows at\n// once, without motion; a press, Escape or leaving hides it. Right after another tooltip it shows at once. It never\n// shows on touch (a tap presses the button). Wrap one focusable trigger; it gets aria-describedby.\nexport interface TooltipProps { text: string, side?: Side, align?: Align, children?: ReactNode }\n\nconst WAIT = 300\n\nexport function Tooltip({ text, side = 'bottom', align = 'center', children }: TooltipProps) {\n  const pop = usePopover({ side, align, gap: 2, sticky: true })\n  const id = `tip-${useId()}`\n  const root = useRef<HTMLSpanElement | null>(null)\n  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)\n\n  useEffect(() => {\n    const trigger = root.current?.firstElementChild as HTMLElement | null\n    pop.anchor.current = trigger\n    trigger?.setAttribute('aria-describedby', id)\n  }, [id]) // eslint-disable-line react-hooks/exhaustive-deps\n  const was = useRef(false)\n  useEffect(() => {\n    if (was.current && !pop.open) lastClosed = Date.now()\n    was.current = pop.open\n  }, [pop.open])\n  useEffect(() => () => clearTimeout(timer.current), [])\n\n  function enter(event: PointerEvent) {\n    if (event.pointerType !== 'mouse' || pop.open) return\n    clearTimeout(timer.current)\n    if (Date.now() - lastClosed < WAIT) return void pop.show({ keyboard: true })\n    // ds-latency: the wait is the point; a pass of the pointer shows nothing.\n    timer.current = setTimeout(() => void pop.show(), WAIT)\n  }\n  function leave() {\n    clearTimeout(timer.current)\n    // Closed now, not after the next render: the pointer entering the next button lands in the same moment.\n    if (pop.open) lastClosed = Date.now()\n    pop.hide()\n  }\n  function focus(event: FocusEvent) {\n    if ((event.target as HTMLElement).matches(':focus-visible')) void pop.show({ keyboard: true })\n  }\n  return (\n    <>\n      <span data-ds=\"tooltip\" ref={root} className=\"inline-flex\" onPointerEnter={enter} onPointerLeave={leave} onPointerDown={leave} onFocus={focus} onBlur={leave}>\n        {children}\n      </span>\n      <PopoverPanel data-ds=\"tooltip\" id={id} pop={pop} tip role=\"tooltip\">{text}</PopoverPanel>\n    </>\n  )\n}\n\nexport default Tooltip\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "popover"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "Tooltip",
+            "file": "react/components/ui/Tooltip.tsx",
+            "props": [
+              {
+                "name": "text",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "side",
+                "type": "Side",
+                "required": false,
+                "default": "'bottom'"
+              },
+              {
+                "name": "align",
+                "type": "Align",
+                "required": false,
+                "default": "'center'"
+              },
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Icon buttons in a row",
+          "center": true,
+          "half": false,
+          "path": "react/examples/tooltip/Product.tsx",
+          "content": "import { Copy, Download, RefreshCw, Trash2 } from 'lucide-react'\nimport { Button } from '@/react/components/ui/Button'\nimport { Tooltip } from '@/react/components/ui/Tooltip'\n// A row's tools as icon buttons, each named by its tooltip. Point at one and wait, then move along: the next shows at\n// once. Tab to one and its name shows without a wait.\nconst tools = [\n  { label: 'Copy ID', icon: Copy },\n  { label: 'Download', icon: Download },\n  { label: 'Sync again', icon: RefreshCw },\n  { label: 'Delete', icon: Trash2 },\n]\n\nexport default function Product() {\n  return (\n    <div className=\"flex min-h-24 items-start justify-center gap-1\">\n      {tools.map(t => (\n        <Tooltip key={t.label} text={t.label}>\n          <Button variant=\"ghost\" icon aria-label={t.label.toLowerCase()}><t.icon size={14} strokeWidth={1.5} /></Button>\n        </Tooltip>\n      ))}\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "button",
+            "popover"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/tooltip.ts",
+          "content": "import { html, nothing, type PropertyValues } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport { boxOf, PopoverController, popoverStyles, type Align, type Side } from '@/elements/lib/popover'\nimport styles from 'virtual:tw'\n\n// Tooltip.vue as <conare-tooltip>: a control's name, for icon buttons (Copy.vue version 1's tip): the inverse fill,\n// 11px, 2px by 6px, 2px under its trigger. Under the pointer it waits 300ms, then fades and drops 2px in over 125ms; on\n// keyboard focus it shows at once, without motion; a press, Escape or leaving hides it. Right after another tooltip it\n// shows at once. It never shows on touch (a tap presses the button). Wrap one focusable trigger; it gets\n// aria-description (an id cannot reach into the element's shadow root, as Vue's aria-describedby does).\n\n// When the last tooltip closed: one opened right after it shows at once, so moving along a toolbar reads fast.\nlet lastClosed = 0\nconst WAIT = 300\n\n/**\n * @summary A control's name, shown under it after a short wait.\n * @slot - One focusable trigger.\n */\nexport class Tooltip extends DsElement {\n\tstatic styles = [DsElement.styles, popoverStyles, styles]\n\tstatic properties = { text: {}, side: {}, align: {} }\n\n\t/** The control's name. */\n\ttext = ''\n\tside: Side = 'bottom'\n\talign: Align = 'center'\n\tprivate timer?: ReturnType<typeof setTimeout>\n\tprivate wasOpen = false\n\tprivate pop = new PopoverController(this, {\n\t\tgap: 2,\n\t\tsticky: true,\n\t\tanchor: () => boxOf(this.firstElementChild),\n\t\tpanel: () => this.renderRoot.querySelector<HTMLElement>('.ds-pop'),\n\t})\n\n\tprivate enter = (event: PointerEvent) => {\n\t\tif (event.pointerType !== 'mouse' || this.pop.open) return\n\t\tclearTimeout(this.timer)\n\t\tif (Date.now() - lastClosed < WAIT) return void this.pop.show({ keyboard: true })\n\t\t// ds-latency: the wait is the point; a pass of the pointer shows nothing.\n\t\tthis.timer = setTimeout(() => void this.pop.show(), WAIT)\n\t}\n\tprivate leave = () => {\n\t\tclearTimeout(this.timer)\n\t\tthis.pop.hide()\n\t}\n\tprivate onFocusIn = (event: FocusEvent) => {\n\t\tif ((event.composedPath()[0] as Element).matches(':focus-visible')) void this.pop.show({ keyboard: true })\n\t}\n\n\tdisconnectedCallback() {\n\t\tsuper.disconnectedCallback()\n\t\tclearTimeout(this.timer)\n\t}\n\tprotected willUpdate() {\n\t\tthis.pop.configure({ side: this.side, align: this.align })\n\t}\n\tprotected updated(changed: PropertyValues<this>) {\n\t\tsuper.updated(changed)\n\t\tif (this.wasOpen && !this.pop.open) lastClosed = Date.now()\n\t\tthis.wasOpen = this.pop.open\n\t\tthis.firstElementChild?.setAttribute('aria-description', this.text)\n\t}\n\n\trender() {\n\t\tconst panel = this.pop.rendered\n\t\t\t? html`<div data-ds=\"tooltip\" popover=\"manual\" class=\"ds-pop\" data-tip role=\"tooltip\" data-side=${this.pop.pos.side} ?data-instant=${this.pop.instant} ?data-placed=${this.pop.pos.placed} style=${this.pop.style()}>${this.text}</div>`\n\t\t\t: nothing\n\t\treturn html`<span data-ds=\"tooltip\" class=\"inline-flex\" @pointerenter=${this.enter} @pointerleave=${this.leave} @pointerdown=${this.leave} @focusin=${this.onFocusIn} @focusout=${this.leave}><slot></slot></span>${panel}`\n\t}\n}\n\ndefine('tooltip', Tooltip)\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/tooltip.js",
+        "elements/button.js"
+      ],
+      "tag": "conare-tooltip",
+      "tags": [
+        "conare-tooltip"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-tooltip",
+            "name": "Tooltip",
+            "module": "elements/tooltip.js",
+            "description": "A control's name, shown under it after a short wait.",
+            "attributes": [
+              {
+                "name": "text",
+                "field": "text",
+                "type": "string",
+                "default": "''",
+                "description": "The control's name."
+              },
+              {
+                "name": "side",
+                "field": "side",
+                "type": "Side",
+                "default": "'bottom'"
+              },
+              {
+                "name": "align",
+                "field": "align",
+                "type": "Align",
+                "default": "'center'"
+              }
+            ],
+            "properties": [
+              {
+                "name": "text",
+                "type": "string",
+                "default": "''",
+                "description": "The control's name.",
+                "attribute": "text"
+              },
+              {
+                "name": "side",
+                "type": "Side",
+                "default": "'bottom'",
+                "attribute": "side"
+              },
+              {
+                "name": "align",
+                "type": "Align",
+                "default": "'center'",
+                "attribute": "align"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "One focusable trigger."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Icon buttons in a row",
+          "center": true,
+          "half": false,
+          "path": "elements/examples/tooltip/Product.html",
+          "content": "<!-- A row's tools as icon buttons, each named by its tooltip. Point at one and wait, then move along: the next shows at\n     once. Tab to one and its name shows without a wait. -->\n<div class=\"flex min-h-24 items-start justify-center gap-1\">\n  <conare-tooltip text=\"Copy ID\"><conare-button variant=\"ghost\" icon aria-label=\"copy id\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-copy\"><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"></rect><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"></path></svg></conare-button></conare-tooltip>\n  <conare-tooltip text=\"Download\"><conare-button variant=\"ghost\" icon aria-label=\"download\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-download\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"></path><polyline points=\"7 10 12 15 17 10\"></polyline><line x1=\"12\" x2=\"12\" y1=\"15\" y2=\"3\"></line></svg></conare-button></conare-tooltip>\n  <conare-tooltip text=\"Sync again\"><conare-button variant=\"ghost\" icon aria-label=\"sync again\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-refresh-cw\"><path d=\"M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8\"></path><path d=\"M21 3v5h-5\"></path><path d=\"M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16\"></path><path d=\"M8 16H3v5\"></path></svg></conare-button></conare-tooltip>\n  <conare-tooltip text=\"Delete\"><conare-button variant=\"ghost\" icon aria-label=\"delete\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-trash-2\"><path d=\"M3 6h18\"></path><path d=\"M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6\"></path><path d=\"M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2\"></path><line x1=\"10\" x2=\"10\" y1=\"11\" y2=\"17\"></line><line x1=\"14\" x2=\"14\" y1=\"11\" y2=\"17\"></line></svg></conare-button></conare-tooltip>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

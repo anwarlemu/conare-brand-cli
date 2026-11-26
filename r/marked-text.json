@@ -1,0 +1,151 @@
+{
+  "name": "marked-text",
+  "title": "Marked text",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "A passage with the query's words in medium weight and ink, so the reader sees why it matched.",
+  "use_for": "Search results and passages shown for a query.",
+  "never": [
+    "Red or highlighted fills for matches",
+    "Marking words in text that was not searched"
+  ],
+  "source": "conare-web app/components/console/Marked.vue, app/utils/marks.ts",
+  "body": "Words of four letters or more in `query` are marked wherever they appear in `text`, ignoring case. Set the passage in the soft grey so the marked words in ink stand out. Each word carries its place as `--w` for a reveal that plays it in reading order.",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/MarkedText.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed } from 'vue'\n\n// A passage with the query's words in medium weight and ink (Marked.vue, utils/marks.ts), so the reader sees why it\n// matched. Words of three letters or fewer (\"a\", \"the\", \"to\") don't count. Never a fill or a colour for a match. Each\n// word is its own span with its place in `--w`, so a reveal can play the passage in reading order.\nconst props = defineProps<{ text: string, query: string }>()\n\nfunction marks(text: string, query: string): Array<{ text: string, hit: boolean }> {\n  const words = [...new Set(query.toLowerCase().match(/[\\p{L}\\p{N}]{4,}/gu) ?? [])]\n  if (!words.length) return [{ text, hit: false }]\n  const pattern = new RegExp(`(${words.map(w => w.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')).join('|')})`, 'giu')\n  return text.split(pattern).filter(Boolean).map(part => ({ text: part, hit: words.includes(part.toLowerCase()) }))\n}\n\nconst words = computed(() => {\n  let w = 0\n  return marks(props.text, props.query).flatMap(r => r.text.split(/(\\s+)/).filter(Boolean).map(t => ({ text: t, hit: r.hit, w: /\\s/.test(t) ? -1 : w++ })))\n})\n</script>\n\n<template>\n  <span data-ds=\"marked-text\" class=\"ds-words\"><template v-for=\"(t, i) in words\" :key=\"i\"><template v-if=\"t.w < 0\">{{ t.text }}</template><strong v-else-if=\"t.hit\" class=\"ds-word font-medium text-fg\" :style=\"{ '--w': t.w }\">{{ t.text }}</strong><span v-else class=\"ds-word\" :style=\"{ '--w': t.w }\">{{ t.text }}</span></template></span>\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "In the product",
+      "center": false,
+      "half": false,
+      "path": "examples/marked-text/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport MarkedText from '@/components/ui/MarkedText.vue'\n// A passage from a contract, marked for the question asked of it.\nconst text = 'Either party may terminate this agreement by giving ninety days written notice. The notice period starts on the day the other party receives it.'\n</script>\n\n<template>\n  <p class=\"max-w-140 type-ui text-fg-soft\"><MarkedText :text=\"text\" query=\"notice period to terminate\" /></p>\n</template>\n",
+      "requires": [],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/MarkedText.tsx",
+          "content": "import { Fragment, type CSSProperties } from 'react'\n\n// A passage with the query's words in medium weight and ink (Marked.vue, utils/marks.ts), so the reader sees why it\n// matched. Words of three letters or fewer (\"a\", \"the\", \"to\") don't count. Never a fill or a colour for a match. Each\n// word is its own span with its place in `--w`, so a reveal can play the passage in reading order.\nexport interface MarkedTextProps {\n  text: string\n  query: string\n}\n\nfunction marks(text: string, query: string): Array<{ text: string, hit: boolean }> {\n  const words = [...new Set(query.toLowerCase().match(/[\\p{L}\\p{N}]{4,}/gu) ?? [])]\n  if (!words.length) return [{ text, hit: false }]\n  const pattern = new RegExp(`(${words.map(w => w.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')).join('|')})`, 'giu')\n  return text.split(pattern).filter(Boolean).map(part => ({ text: part, hit: words.includes(part.toLowerCase()) }))\n}\n\nexport function MarkedText({ text, query }: MarkedTextProps) {\n  let w = 0\n  const words = marks(text, query).flatMap(r => r.text.split(/(\\s+)/).filter(Boolean).map(t => ({ text: t, hit: r.hit, w: /\\s/.test(t) ? -1 : w++ })))\n  return (\n    <span data-ds=\"marked-text\" className=\"ds-words\">\n      {words.map((t, i) => (\n        <Fragment key={i}>\n          {t.w < 0 ? t.text : t.hit\n            ? <strong className=\"ds-word font-medium text-fg\" style={{ '--w': t.w } as CSSProperties}>{t.text}</strong>\n            : <span className=\"ds-word\" style={{ '--w': t.w } as CSSProperties}>{t.text}</span>}\n        </Fragment>\n      ))}\n    </span>\n  )\n}\n\nexport default MarkedText\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "MarkedText",
+            "file": "react/components/ui/MarkedText.tsx",
+            "props": [
+              {
+                "name": "text",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "query",
+                "type": "string",
+                "required": true
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "react/examples/marked-text/Product.tsx",
+          "content": "import { MarkedText } from '@/react/components/ui/MarkedText'\n// A passage from a contract, marked for the question asked of it.\nconst text = 'Either party may terminate this agreement by giving ninety days written notice. The notice period starts on the day the other party receives it.'\n\nexport default function Product() {\n  return (\n    <p className=\"max-w-140 type-ui text-fg-soft\"><MarkedText text={text} query=\"notice period to terminate\" /></p>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/marked-text.ts",
+          "content": "import { html } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// MarkedText.vue as <conare-marked-text>: a passage with the query's words in medium weight and ink (Marked.vue,\n// utils/marks.ts), so the reader sees why it matched. Words of three letters or fewer (\"a\", \"the\", \"to\") don't count.\n// Never a fill or a colour for a match. Each word is its own span with its place in `--w`, so a reveal can play the\n// passage in reading order.\nfunction marks(text: string, query: string): Array<{ text: string, hit: boolean }> {\n\tconst words = [...new Set(query.toLowerCase().match(/[\\p{L}\\p{N}]{4,}/gu) ?? [])]\n\tif (!words.length) return [{ text, hit: false }]\n\tconst pattern = new RegExp(`(${words.map((w) => w.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')).join('|')})`, 'giu')\n\treturn text.split(pattern).filter(Boolean).map((part) => ({ text: part, hit: words.includes(part.toLowerCase()) }))\n}\n\n/**\n * @summary A passage with the query's words marked in medium weight and ink.\n */\nexport class MarkedText extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { text: {}, query: {} }\n\n\t/** The passage. */\n\ttext = ''\n\t/** The question asked of it: its words of four letters or more are marked. */\n\tquery = ''\n\n\trender() {\n\t\tlet w = 0\n\t\tconst words = marks(this.text, this.query).flatMap((r) => r.text.split(/(\\s+)/).filter(Boolean).map((t) => ({ text: t, hit: r.hit, w: /\\s/.test(t) ? -1 : w++ })))\n\t\treturn html`<span data-ds=\"marked-text\" class=\"ds-words\">${words.map((t) => (t.w < 0 ? t.text : t.hit ? html`<strong class=\"ds-word font-medium text-fg\" style=\"--w: ${t.w}\">${t.text}</strong>` : html`<span class=\"ds-word\" style=\"--w: ${t.w}\">${t.text}</span>`))}</span>`\n\t}\n}\n\ndefine('marked-text', MarkedText)\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/marked-text.js"
+      ],
+      "tag": "conare-marked-text",
+      "tags": [
+        "conare-marked-text"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-marked-text",
+            "name": "MarkedText",
+            "module": "elements/marked-text.js",
+            "description": "A passage with the query's words marked in medium weight and ink.",
+            "attributes": [
+              {
+                "name": "text",
+                "field": "text",
+                "type": "string",
+                "default": "''",
+                "description": "The passage."
+              },
+              {
+                "name": "query",
+                "field": "query",
+                "type": "string",
+                "default": "''",
+                "description": "The question asked of it: its words of four letters or more are marked."
+              }
+            ],
+            "properties": [
+              {
+                "name": "text",
+                "type": "string",
+                "default": "''",
+                "description": "The passage.",
+                "attribute": "text"
+              },
+              {
+                "name": "query",
+                "type": "string",
+                "default": "''",
+                "description": "The question asked of it: its words of four letters or more are marked.",
+                "attribute": "query"
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/marked-text/Product.html",
+          "content": "<!-- A passage from a contract, marked for the question asked of it. -->\n<p class=\"max-w-140 type-ui text-fg-soft\"><conare-marked-text text=\"Either party may terminate this agreement by giving ninety days written notice. The notice period starts on the day the other party receives it.\" query=\"notice period to terminate\"></conare-marked-text></p>\n"
+        }
+      ]
+    }
+  }
+}

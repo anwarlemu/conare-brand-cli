@@ -1,0 +1,28 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "card",
+  "type": "registry:ui",
+  "title": "Card",
+  "description": "A bordered box for one subject: a head with its title and actions over a hairline, then the body. Square, no shadow. Framed adds the website's double rule; a door is a whole card that opens something.",
+  "dependencies": [
+    "lucide-react@0.479.0"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Card.tsx",
+      "type": "registry:ui",
+      "content": "import { useId, type HTMLAttributes, type ReactNode } from 'react'\nimport { cn } from '@/lib/cn'\n\n// A bordered box for one subject (console2.css .v2-card): a head with its title and actions over a hairline, then the\n// body. Square, no shadow. `framed` adds the website's double rule, a second hairline 4px outside, for the one block a\n// page leads with. `flush` drops the body's padding, for a table that runs to the edges.\nexport interface CardProps extends Omit<HTMLAttributes<HTMLElement>, 'title'> {\n  title?: string\n  framed?: boolean\n  flush?: boolean\n  /** The head's actions (Vue's `actions` slot): links or buttons at its end. */\n  actions?: ReactNode\n}\n\nexport function Card({ title, framed, flush, actions, className, children, ...rest }: CardProps) {\n  const titleId = `card-${useId()}`\n  return (\n    <section data-ds=\"card\" className={cn('border border-edge bg-surface', framed && 'outline outline-offset-4 outline-edge', className)} aria-labelledby={title ? titleId : undefined} {...rest}>\n      {(title || actions) && (\n        <div className=\"flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-edge px-4 py-3\">\n          {title && <h3 id={titleId} className=\"type-ui-strong\">{title}</h3>}\n          {actions && <div className=\"flex items-center gap-2 type-meta text-fg-muted\">{actions}</div>}\n        </div>\n      )}\n      <div className={flush ? undefined : 'p-4'}>{children}</div>\n    </section>\n  )\n}\n\nexport default Card\n"
+    },
+    {
+      "path": "components/ui/Door.tsx",
+      "type": "registry:ui",
+      "content": "import type { ComponentType, ReactNode } from 'react'\nimport { ArrowRight } from 'lucide-react'\nimport { cn } from '@/lib/cn'\n\n// A whole card that opens something (console2.css .v2-door): a way in, such as Connect an app or Send by API. Its\n// border turns ink under the pointer and while what it opens is open (`expanded`). One link or one button, never a\n// clickable div.\nexport interface DoorProps {\n  title: string\n  description?: string\n  /** A Lucide icon component, drawn at 14px. */\n  icon?: ComponentType<{ size?: number, strokeWidth?: number, 'aria-hidden'?: boolean | 'true' }>\n  href?: string\n  arrow?: boolean\n  expanded?: boolean\n  className?: string\n  onClick?: () => void\n  /** Replaces the description (Vue's default slot). */\n  children?: ReactNode\n}\n\nexport function Door({ title, description, icon: Icon, href, arrow, expanded, className, onClick, children }: DoorProps) {\n  const classes = cn('flex cursor-pointer flex-col gap-1 border border-edge bg-surface p-3 text-left transition-[border-color,background-color] duration-120 ease-standard hover:border-edge-focus active:bg-surface-subtle aria-expanded:border-edge-focus', className)\n  const content = (\n    <>\n      <span className=\"flex items-center gap-2 type-ui-strong\">\n        {Icon && <Icon size={14} strokeWidth={1.5} aria-hidden=\"true\" />}{title}\n        {arrow && <ArrowRight size={12} strokeWidth={1.5} className=\"ml-auto text-fg-muted\" aria-hidden=\"true\" />}\n      </span>\n      {(description || children) && <span className=\"type-meta text-fg-muted\">{children ?? description}</span>}\n    </>\n  )\n  return href\n    ? <a data-ds=\"door\" href={href} className={classes} onClick={onClick}>{content}</a>\n    : <button data-ds=\"door\" type=\"button\" aria-expanded={expanded} className={classes} onClick={onClick}>{content}</button>\n}\n\nexport default Door\n"
+    },
+    {
+      "path": "lib/cn.ts",
+      "type": "registry:lib",
+      "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+    }
+  ]
+}

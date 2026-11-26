@@ -1,0 +1,292 @@
+{
+  "name": "drawer",
+  "title": "Drawer",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "A panel that slides in from an edge over the page dimmed to 16%: the console's sidebar on a phone (left, 300px at most), or a choice from the bottom edge. In over 240ms on the strong ease-out, out in 180ms; Escape closes it at once.",
+  "use_for": "The console's navigation on a phone, and short choices on a phone where a menu would be cramped.",
+  "never": [
+    "Wide screens for navigation: the sidebar stays open there",
+    "Long forms: give them a page"
+  ],
+  "source": "conare-web app/assets/css/console2.css (.v2-side and .v2-side-scrim under 768px, .v2-sheet-backdrop), app/layouts/console.vue (the menu button). New in Conare's style: shadcn's drawer.",
+  "body": "Drawer shares Sheet's behavior (`useSheet`): a native modal dialog, the exit played before it closes, focus back to\nthe trigger. The default slot gets `close`.\n\nThe body scrolls under a fade (`fade-y`) at the edge with more past it.",
+  "requires": [
+    "sheet"
+  ],
+  "dependencies": [
+    "lucide-vue-next@^0.479.0"
+  ],
+  "files": [
+    {
+      "path": "components/ui/Drawer.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport { X } from 'lucide-vue-next'\nimport { useSheet } from '@/composables/useSheet'\n\n// A panel that slides in from an edge over a dimmed page (the console's phone sidebar, console2.css .v2-side on a\n// phone): `left` (the default) and `right` are min(300px, 84vw) and full height, `bottom` is the screen's width and\n// up to 85% of its height. It slides its own size in over 240ms on the strong ease-out and out in 180ms; the scrim is\n// the page at 16%. A tap on the scrim or Escape (at once) closes it, and focus returns to what opened it. The title\n// is for screen readers unless `bar` shows it in a 48px bar with a close button.\nwithDefaults(defineProps<{ title: string, side?: 'left' | 'right' | 'bottom', bar?: boolean }>(), { side: 'left' })\nconst open = defineModel<boolean>('open', { default: false })\nconst dialog = ref<HTMLDialogElement | null>(null)\nconst { shown, onCancel, onClick } = useSheet(dialog, open)\n</script>\n\n<template>\n  <dialog data-ds=\"drawer\" ref=\"dialog\" class=\"ds-drawer\" :data-side=\"side\" :data-shown=\"shown || undefined\" :aria-label=\"title\" tabindex=\"-1\" @cancel=\"onCancel\" @click=\"onClick\">\n    <div v-if=\"bar\" class=\"flex h-bar shrink-0 items-center gap-1 border-b border-edge pr-2 pl-4\">\n      <h2 class=\"min-w-0 flex-1 truncate type-ui-strong\">{{ title }}</h2>\n      <button type=\"button\" class=\"inline-flex size-control-touch shrink-0 cursor-pointer items-center justify-center border border-transparent text-fg-soft transition-[color,border-color] duration-120 ease-standard hover:border-edge-strong hover:text-fg focus-visible:outline-2 focus-visible:outline-edge-focus\" aria-label=\"close\" @click=\"open = false\"><X :size=\"14\" :stroke-width=\"1.5\" /></button>\n    </div>\n    <div class=\"fade-y flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain\" data-sheet-body>\n      <slot :close=\"() => (open = false)\" />\n    </div>\n  </dialog>\n</template>\n\n<style>\n.ds-drawer { position: fixed; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; background: var(--ds-color-surface-subtle); color: var(--ds-color-fg); font-size: var(--ds-text-ui); line-height: var(--ds-text-ui-leading); transition: transform var(--ds-duration-slide) var(--ds-easing-out); }\n.ds-drawer[open] { display: flex; flex-direction: column; }\n.ds-drawer:focus { outline: none; }\n.ds-drawer[data-side=\"left\"] { inset: 0 auto 0 0; width: min(300px, 84vw); height: 100dvh; border-right: var(--ds-border-hairline) solid var(--ds-color-edge); transform: translateX(-100%); }\n.ds-drawer[data-side=\"right\"] { inset: 0 0 0 auto; width: min(300px, 84vw); height: 100dvh; border-left: var(--ds-border-hairline) solid var(--ds-color-edge); transform: translateX(100%); }\n.ds-drawer[data-side=\"bottom\"] { inset: auto 0 0; width: 100vw; max-height: 85dvh; border-top: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface); transform: translateY(100%); padding-bottom: env(safe-area-inset-bottom); }\n.ds-drawer[data-shown] { transform: none; transition-duration: var(--ds-duration-drawer); }\n.ds-drawer::backdrop { background: var(--ds-color-scrim-light); opacity: 0; transition: opacity var(--ds-duration-slide) var(--ds-easing-out); }\n.ds-drawer[data-shown]::backdrop { opacity: 1; transition-duration: var(--ds-duration-drawer); }\n@media (prefers-reduced-motion: reduce) {\n  .ds-drawer, .ds-drawer[data-side] { transform: none; opacity: 0; transition: opacity var(--ds-duration-slide) var(--ds-easing-out); }\n  .ds-drawer[data-shown] { opacity: 1; }\n}\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Navigation",
+      "label": "The console's phone navigation",
+      "center": true,
+      "half": false,
+      "path": "examples/drawer/Navigation.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport { Activity, House, KeyRound, Layers, Menu as MenuIcon, Network, Settings } from 'lucide-vue-next'\nimport Button from '@/components/ui/Button.vue'\nimport Drawer from '@/components/ui/Drawer.vue'\nimport SidebarLabel from '@/components/ui/SidebarLabel.vue'\nimport SidebarLink from '@/components/ui/SidebarLink.vue'\n// The console's navigation on a phone: the bar's menu button slides the sidebar in from the left over the dimmed page.\n// Pick a page, tap the page or press Escape to close it.\nconst open = ref(false)\nconst picked = ref('Namespaces')\nconst groups = [\n  { label: 'Platform', links: [{ label: 'Overview', icon: House }, { label: 'Namespaces', icon: Layers, status: '11' }, { label: 'Sources', icon: Network, status: '1 failed', alert: true }] },\n  { label: 'Manage', links: [{ label: 'API keys', icon: KeyRound, status: '4' }, { label: 'Usage', icon: Activity }, { label: 'Settings', icon: Settings }] },\n]\nfunction go(label: string) {\n  picked.value = label\n  open.value = false\n}\n</script>\n\n<template>\n  <div class=\"flex min-h-40 items-center justify-center\">\n    <Button icon aria-label=\"open menu\" :aria-expanded=\"open\" @click=\"open = true\"><MenuIcon :size=\"14\" :stroke-width=\"1.5\" /></Button>\n    <Drawer v-model:open=\"open\" title=\"console\">\n      <nav class=\"flex flex-col pb-4\" aria-label=\"console\">\n        <template v-for=\"group in groups\" :key=\"group.label\">\n          <SidebarLabel>{{ group.label }}</SidebarLabel>\n          <SidebarLink v-for=\"link in group.links\" :key=\"link.label\" href=\"#\" :icon=\"link.icon\" :status=\"link.status\" :alert=\"link.alert\" :active=\"picked === link.label\" @click.prevent=\"go(link.label)\">{{ link.label }}</SidebarLink>\n        </template>\n      </nav>\n    </Drawer>\n  </div>\n</template>\n",
+      "requires": [
+        "button",
+        "sheet",
+        "sidebar"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    },
+    {
+      "name": "Bottom",
+      "label": "A choice from the bottom edge",
+      "center": true,
+      "half": false,
+      "path": "examples/drawer/Bottom.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport { Check } from 'lucide-vue-next'\nimport Button from '@/components/ui/Button.vue'\nimport Drawer from '@/components/ui/Drawer.vue'\n// A choice on a phone, from the bottom edge: which searches to show. The rows are 44px to land a thumb on.\nconst open = ref(false)\nconst shows = ['All searches', 'Weak match', 'Nothing found', 'Failed']\nconst show = ref('All searches')\n</script>\n\n<template>\n  <div class=\"flex min-h-40 items-center justify-center\">\n    <Button @click=\"open = true\">{{ show }}</Button>\n    <Drawer v-model:open=\"open\" title=\"Show\" side=\"bottom\" bar>\n      <template #default=\"{ close }\">\n        <ul class=\"flex flex-col p-2\">\n          <li v-for=\"s in shows\" :key=\"s\">\n            <button type=\"button\" :aria-pressed=\"show === s\" class=\"flex h-11 w-full cursor-pointer items-center gap-2 px-3 text-left type-body transition-colors duration-120 ease-standard hover:bg-surface-subtle focus-visible:bg-surface-subtle focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-focus\" @click=\"show = s; close()\">\n              <span class=\"min-w-0 flex-1\">{{ s }}</span>\n              <Check v-if=\"show === s\" :size=\"14\" :stroke-width=\"1.5\" aria-hidden=\"true\" />\n            </button>\n          </li>\n        </ul>\n      </template>\n    </Drawer>\n  </div>\n</template>\n",
+      "requires": [
+        "button",
+        "sheet"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Drawer.tsx",
+          "content": "'use client'\nimport { X } from 'lucide-react'\nimport { useRef, type ReactNode } from 'react'\nimport { useControllable } from '@/react/hooks/useControllable'\nimport { useSheet } from '@/react/hooks/useSheet'\n\n// A panel that slides in from an edge over a dimmed page (the console's phone sidebar, console2.css .v2-side on a\n// phone): `left` (the default) and `right` are min(300px, 84vw) and full height, `bottom` is the screen's width and\n// up to 85% of its height. It slides its own size in over 240ms on the strong ease-out and out in 180ms; the scrim is\n// the page at 16%. A tap on the scrim or Escape (at once) closes it, and focus returns to what opened it. The title\n// is for screen readers unless `bar` shows it in a 48px bar with a close button. Vue's v-model:open is `open` with\n// `onOpenChange`; the slot's `close` is children as a function: {(close) => ...}.\nexport interface DrawerProps {\n  title: string\n  side?: 'left' | 'right' | 'bottom'\n  bar?: boolean\n  open?: boolean\n  defaultOpen?: boolean\n  onOpenChange?: (open: boolean) => void\n  children?: ReactNode | ((close: () => void) => ReactNode)\n}\n\nexport function Drawer({ title, side = 'left', bar, open: given, defaultOpen = false, onOpenChange, children }: DrawerProps) {\n  const [open, setOpen] = useControllable(given, defaultOpen, onOpenChange)\n  const dialog = useRef<HTMLDialogElement | null>(null)\n  const { shown, onCancel, onClick } = useSheet(dialog, open, setOpen)\n  const close = () => setOpen(false)\n  return (\n    <dialog data-ds=\"drawer\" ref={dialog} className=\"ds-drawer\" data-side={side} data-shown={shown || undefined} aria-label={title} tabIndex={-1} onCancel={onCancel} onClick={onClick}>\n      <style href=\"ds-drawer\" precedence=\"ds\">{css}</style>\n      {bar && (\n        <div className=\"flex h-bar shrink-0 items-center gap-1 border-b border-edge pr-2 pl-4\">\n          <h2 className=\"min-w-0 flex-1 truncate type-ui-strong\">{title}</h2>\n          <button type=\"button\" className=\"inline-flex size-control-touch shrink-0 cursor-pointer items-center justify-center border border-transparent text-fg-soft transition-[color,border-color] duration-120 ease-standard hover:border-edge-strong hover:text-fg focus-visible:outline-2 focus-visible:outline-edge-focus\" aria-label=\"close\" onClick={close}><X size={14} strokeWidth={1.5} /></button>\n        </div>\n      )}\n      <div className=\"fade-y flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain\" data-sheet-body=\"\">\n        {typeof children === 'function' ? children(close) : children}\n      </div>\n    </dialog>\n  )\n}\n\nexport default Drawer\n\nconst css = `\n.ds-drawer { position: fixed; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; background: var(--ds-color-surface-subtle); color: var(--ds-color-fg); font-size: var(--ds-text-ui); line-height: var(--ds-text-ui-leading); transition: transform var(--ds-duration-slide) var(--ds-easing-out); }\n.ds-drawer[open] { display: flex; flex-direction: column; }\n.ds-drawer:focus { outline: none; }\n.ds-drawer[data-side=\"left\"] { inset: 0 auto 0 0; width: min(300px, 84vw); height: 100dvh; border-right: var(--ds-border-hairline) solid var(--ds-color-edge); transform: translateX(-100%); }\n.ds-drawer[data-side=\"right\"] { inset: 0 0 0 auto; width: min(300px, 84vw); height: 100dvh; border-left: var(--ds-border-hairline) solid var(--ds-color-edge); transform: translateX(100%); }\n.ds-drawer[data-side=\"bottom\"] { inset: auto 0 0; width: 100vw; max-height: 85dvh; border-top: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface); transform: translateY(100%); padding-bottom: env(safe-area-inset-bottom); }\n.ds-drawer[data-shown] { transform: none; transition-duration: var(--ds-duration-drawer); }\n.ds-drawer::backdrop { background: var(--ds-color-scrim-light); opacity: 0; transition: opacity var(--ds-duration-slide) var(--ds-easing-out); }\n.ds-drawer[data-shown]::backdrop { opacity: 1; transition-duration: var(--ds-duration-drawer); }\n@media (prefers-reduced-motion: reduce) {\n  .ds-drawer, .ds-drawer[data-side] { transform: none; opacity: 0; transition: opacity var(--ds-duration-slide) var(--ds-easing-out); }\n  .ds-drawer[data-shown] { opacity: 1; }\n}\n`\n"
+        },
+        {
+          "path": "react/hooks/useControllable.ts",
+          "content": "'use client'\nimport { useCallback, useRef, useState } from 'react'\n\n// Vue's defineModel in React: a value that is controlled when the caller passes it (value + onValueChange, as Radix\n// does) and kept inside otherwise (defaultValue). setValue calls onChange either way.\nexport function useControllable<T>(value: T | undefined, defaultValue: T, onChange?: (value: T) => void) {\n\tconst [inner, setInner] = useState<T>(defaultValue)\n\tconst controlled = value !== undefined\n\tconst current = controlled ? value : inner\n\tconst ref = useRef(onChange)\n\tref.current = onChange\n\tconst set = useCallback((next: T) => {\n\t\tif (!controlled) setInner(next)\n\t\tref.current?.(next)\n\t}, [controlled])\n\treturn [current, set] as const\n}\n"
+        }
+      ],
+      "dependencies": [
+        "lucide-react@0.479.0"
+      ],
+      "registryDependencies": [
+        "sheet"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "Drawer",
+            "file": "react/components/ui/Drawer.tsx",
+            "props": [
+              {
+                "name": "title",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "side",
+                "type": "'left' | 'right' | 'bottom'",
+                "required": false,
+                "default": "'left'"
+              },
+              {
+                "name": "bar",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "open",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "defaultOpen",
+                "type": "boolean",
+                "required": false,
+                "default": "false"
+              },
+              {
+                "name": "onOpenChange",
+                "type": "(open: boolean) => void",
+                "required": false
+              },
+              {
+                "name": "children",
+                "type": "ReactNode | ((close: () => void) => ReactNode)",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Navigation",
+          "label": "The console's phone navigation",
+          "center": true,
+          "half": false,
+          "path": "react/examples/drawer/Navigation.tsx",
+          "content": "'use client'\nimport { Fragment, useState } from 'react'\nimport { Activity, House, KeyRound, Layers, Menu as MenuIcon, Network, Settings } from 'lucide-react'\nimport { Button } from '@/react/components/ui/Button'\nimport { Drawer } from '@/react/components/ui/Drawer'\nimport { SidebarLabel } from '@/react/components/ui/SidebarLabel'\nimport { SidebarLink } from '@/react/components/ui/SidebarLink'\n// The console's navigation on a phone: the bar's menu button slides the sidebar in from the left over the dimmed page.\n// Pick a page, tap the page or press Escape to close it.\n\nconst groups = [\n  { label: 'Platform', links: [{ label: 'Overview', icon: House }, { label: 'Namespaces', icon: Layers, status: '11' }, { label: 'Sources', icon: Network, status: '1 failed', alert: true }] },\n  { label: 'Manage', links: [{ label: 'API keys', icon: KeyRound, status: '4' }, { label: 'Usage', icon: Activity }, { label: 'Settings', icon: Settings }] },\n]\n\nexport default function Navigation() {\n  const [open, setOpen] = useState(false)\n  const [picked, setPicked] = useState('Namespaces')\n  function go(label: string) {\n    setPicked(label)\n    setOpen(false)\n  }\n  return (\n    <div className=\"flex min-h-40 items-center justify-center\">\n      <Button icon aria-label=\"open menu\" aria-expanded={open} onClick={() => setOpen(true)}><MenuIcon size={14} strokeWidth={1.5} /></Button>\n      <Drawer open={open} onOpenChange={setOpen} title=\"console\">\n        <nav className=\"flex flex-col pb-4\" aria-label=\"console\">\n          {groups.map(group => (\n            <Fragment key={group.label}>\n              <SidebarLabel>{group.label}</SidebarLabel>\n              {group.links.map(link => (\n                <SidebarLink key={link.label} href=\"#\" icon={link.icon} status={link.status} alert={link.alert} active={picked === link.label} onClick={(e) => { e.preventDefault(); go(link.label) }}>{link.label}</SidebarLink>\n              ))}\n            </Fragment>\n          ))}\n        </nav>\n      </Drawer>\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "button",
+            "sheet",
+            "sidebar"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        },
+        {
+          "name": "Bottom",
+          "label": "A choice from the bottom edge",
+          "center": true,
+          "half": false,
+          "path": "react/examples/drawer/Bottom.tsx",
+          "content": "'use client'\nimport { useState } from 'react'\nimport { Check } from 'lucide-react'\nimport { Button } from '@/react/components/ui/Button'\nimport { Drawer } from '@/react/components/ui/Drawer'\n// A choice on a phone, from the bottom edge: which searches to show. The rows are 44px to land a thumb on.\n\nconst shows = ['All searches', 'Weak match', 'Nothing found', 'Failed']\n\nexport default function Bottom() {\n  const [open, setOpen] = useState(false)\n  const [show, setShow] = useState('All searches')\n  return (\n    <div className=\"flex min-h-40 items-center justify-center\">\n      <Button onClick={() => setOpen(true)}>{show}</Button>\n      <Drawer open={open} onOpenChange={setOpen} title=\"Show\" side=\"bottom\" bar>\n        {close => (\n          <ul className=\"flex flex-col p-2\">\n            {shows.map(s => (\n              <li key={s}>\n                <button type=\"button\" aria-pressed={show === s} className=\"flex h-11 w-full cursor-pointer items-center gap-2 px-3 text-left type-body transition-colors duration-120 ease-standard hover:bg-surface-subtle focus-visible:bg-surface-subtle focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-focus\" onClick={() => { setShow(s); close() }}>\n                  <span className=\"min-w-0 flex-1\">{s}</span>\n                  {show === s && <Check size={14} strokeWidth={1.5} aria-hidden=\"true\" />}\n                </button>\n              </li>\n            ))}\n          </ul>\n        )}\n      </Drawer>\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "button",
+            "sheet"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/drawer.ts",
+          "content": "import { html, nothing, type PropertyValues } from 'lit'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { X } from 'lucide'\nimport { DsElement, define } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport { SheetController } from '@/elements/controllers/sheet'\nimport styles from 'virtual:tw'\n\n// Drawer.vue as <conare-drawer>: a panel that slides in from an edge over a dimmed page (the console's phone sidebar,\n// console2.css .v2-side on a phone): `left` (the default) and `right` are min(300px, 84vw) and full height, `bottom` is\n// the screen's width and up to 85% of its height. It slides its own size in over 240ms on the strong ease-out and out\n// in 180ms; the scrim is the page at 16%. A tap on the scrim or Escape (at once) closes it, and focus returns to what\n// opened it. The heading is for screen readers unless `bar` shows it in a 48px bar with a close button. Vue's\n// v-model:open is the reflected `open` attribute with an `open-change` event; Vue's `title` is `heading`; the slot's\n// `close` is the element's close().\n\n/**\n * @summary A panel that slides in from an edge over a dimmed page.\n * @slot - The panel's content.\n * @fires open-change - It opened or closed (detail.value; read `open`).\n */\nexport class Drawer extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { heading: {}, side: { reflect: true }, bar: { type: Boolean }, open: { type: Boolean, reflect: true } }\n\n\t/** The panel's name, shown in the bar with `bar`. */\n\theading = ''\n\tside: 'left' | 'right' | 'bottom' = 'left'\n\t/** The 48px bar with the heading and a close button. */\n\tbar = false\n\t/** Whether it is showing. */\n\topen = false\n\n\tprivate sheet = new SheetController(this, () => this.renderRoot.querySelector('dialog'), (open) => this.setOpen(open))\n\n\t/** Closes it, with its exit (the Vue slot's close). */\n\tclose() {\n\t\tthis.setOpen(false)\n\t}\n\tprivate setOpen(open: boolean) {\n\t\tif (this.open === open) return\n\t\tthis.open = open\n\t\tthis.emit('open-change', { value: open })\n\t}\n\n\t// Vue's watch(open) and onMounted: show when it opens (or starts open), hide when it closes.\n\tprotected updated(changed: PropertyValues) {\n\t\tsuper.updated(changed)\n\t\tif (!changed.has('open')) return\n\t\tif (this.open) void this.sheet.show()\n\t\telse if (changed.get('open') !== undefined) void this.sheet.hide()\n\t}\n\n\trender() {\n\t\treturn html`<dialog data-ds=\"drawer\" class=\"ds-drawer\" data-side=${this.side} data-shown=${ifDefined(this.sheet.shown ? 'true' : undefined)} aria-label=${this.heading} tabindex=\"-1\" @cancel=${this.sheet.onCancel} @click=${this.sheet.onClick}>\n\t\t\t${this.bar\n\t\t\t\t? html`<div class=\"flex h-bar shrink-0 items-center gap-1 border-b border-edge pr-2 pl-4\">\n\t\t\t\t\t\t<h2 class=\"min-w-0 flex-1 truncate type-ui-strong\">${this.heading}</h2>\n\t\t\t\t\t\t<button type=\"button\" class=\"inline-flex size-control-touch shrink-0 cursor-pointer items-center justify-center border border-transparent text-fg-soft transition-[color,border-color] duration-120 ease-standard hover:border-edge-strong hover:text-fg focus-visible:outline-2 focus-visible:outline-edge-focus\" aria-label=\"close\" @click=${() => this.close()}>${icon(X, 'x', { size: 14, strokeWidth: 1.5 })}</button>\n\t\t\t\t\t</div>`\n\t\t\t\t: nothing}\n\t\t\t<div class=\"fade-y flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain\" data-sheet-body><slot></slot></div>\n\t\t</dialog>`\n\t}\n}\n\ndefine('drawer', Drawer)\n"
+        },
+        {
+          "path": "elements/components/ui/drawer.css",
+          "content": "/* Drawer.vue's <style>, as it is. */\n.ds-drawer { position: fixed; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; background: var(--ds-color-surface-subtle); color: var(--ds-color-fg); font-size: var(--ds-text-ui); line-height: var(--ds-text-ui-leading); transition: transform var(--ds-duration-slide) var(--ds-easing-out); }\n.ds-drawer[open] { display: flex; flex-direction: column; }\n.ds-drawer:focus { outline: none; }\n.ds-drawer[data-side=\"left\"] { inset: 0 auto 0 0; width: min(300px, 84vw); height: 100dvh; border-right: var(--ds-border-hairline) solid var(--ds-color-edge); transform: translateX(-100%); }\n.ds-drawer[data-side=\"right\"] { inset: 0 0 0 auto; width: min(300px, 84vw); height: 100dvh; border-left: var(--ds-border-hairline) solid var(--ds-color-edge); transform: translateX(100%); }\n.ds-drawer[data-side=\"bottom\"] { inset: auto 0 0; width: 100vw; max-height: 85dvh; border-top: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface); transform: translateY(100%); padding-bottom: env(safe-area-inset-bottom); }\n.ds-drawer[data-shown] { transform: none; transition-duration: var(--ds-duration-drawer); }\n.ds-drawer::backdrop { background: var(--ds-color-scrim-light); opacity: 0; transition: opacity var(--ds-duration-slide) var(--ds-easing-out); }\n.ds-drawer[data-shown]::backdrop { opacity: 1; transition-duration: var(--ds-duration-drawer); }\n@media (prefers-reduced-motion: reduce) {\n  .ds-drawer, .ds-drawer[data-side] { transform: none; opacity: 0; transition: opacity var(--ds-duration-slide) var(--ds-easing-out); }\n  .ds-drawer[data-shown] { opacity: 1; }\n}\n"
+        },
+        {
+          "path": "elements/controllers/sheet.ts",
+          "content": "import type { ReactiveController, ReactiveControllerHost } from 'lit'\nimport { firstFocusable } from '@/elements/lib/popover'\n\n/**\n * useSheet as a Lit controller: a native modal dialog that slides (Sheet, Drawer): showModal keeps focus inside and\n * the page inert; the panel and its scrim come in on `data-shown` and leave on its removal, closing once the exit\n * transition has run (read from CSS, so reduced motion and the tokens decide). Escape closes at once (keyboard actions\n * don't animate); the scrim closes it; focus returns to what opened it, through shadow roots. Focus starts on the first\n * control in `[data-autofocus]` (in the page's content or the panel) or the body, else the panel. The element calls\n * show() and hide() when its `open` changes and passes `setOpen` for Escape and the scrim.\n */\nexport class SheetController implements ReactiveController {\n\tshown = false\n\tprivate returnTo: HTMLElement | null = null\n\tprivate timer?: ReturnType<typeof setTimeout>\n\n\tconstructor(\n\t\tprivate host: ReactiveControllerHost & HTMLElement,\n\t\tprivate dialog: () => HTMLDialogElement | null,\n\t\tprivate setOpen: (open: boolean) => void,\n\t\tprivate options: { dismissable?: () => boolean } = {},\n\t) {\n\t\thost.addController(this)\n\t}\n\thostDisconnected() {\n\t\tclearTimeout(this.timer)\n\t}\n\n\tprivate exitMs(el: HTMLElement) {\n\t\tconst parts = getComputedStyle(el).transitionDuration.split(',').map((s) => Number.parseFloat(s) * (s.trim().endsWith('ms') ? 1 : 1000))\n\t\treturn Math.max(0, ...parts.filter((n) => !Number.isNaN(n)))\n\t}\n\tprivate setShown(v: boolean) {\n\t\tthis.shown = v\n\t\tthis.host.requestUpdate()\n\t}\n\n\tasync show() {\n\t\tconst d = this.dialog()\n\t\tif (!d || d.open) return\n\t\tclearTimeout(this.timer)\n\t\t// The focused element itself, inside shadow roots, not the host it sits in.\n\t\tlet active = document.activeElement as HTMLElement | null\n\t\twhile (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement as HTMLElement\n\t\tthis.returnTo = active\n\t\td.showModal()\n\t\tconst start = this.host.querySelector<HTMLElement>('[data-autofocus]') ?? d.querySelector<HTMLElement>('[data-autofocus]') ?? firstFocusable(d.querySelector<HTMLElement>('[data-sheet-body]'))\n\t\t;(start ?? d).focus({ preventScroll: true })\n\t\t// One frame at the closed state, so the transition has somewhere to start.\n\t\tawait new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))\n\t\tthis.setShown(true)\n\t}\n\tprivate finish() {\n\t\tthis.dialog()?.close()\n\t\tthis.returnTo?.focus({ preventScroll: true })\n\t\tthis.returnTo = null\n\t}\n\tasync hide(instant = false) {\n\t\tconst d = this.dialog()\n\t\tif (!d?.open) return\n\t\tthis.setShown(false)\n\t\tif (instant) return this.finish()\n\t\tawait this.host.updateComplete\n\t\t// ds-latency: the dialog stays in the top layer until its exit has played.\n\t\tthis.timer = setTimeout(() => this.finish(), this.exitMs(d))\n\t}\n\n\t/** Escape: at once, no exit motion. */\n\tonCancel = (event: Event) => {\n\t\tevent.preventDefault()\n\t\tif (this.options.dismissable && !this.options.dismissable()) return\n\t\tthis.setOpen(false)\n\t\tvoid this.hide(true)\n\t}\n\t/** A press on the scrim lands on the dialog element itself. */\n\tonClick = (event: MouseEvent) => {\n\t\tif (event.target === this.dialog() && (!this.options.dismissable || this.options.dismissable())) this.setOpen(false)\n\t}\n}\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/drawer.js",
+        "elements/button.js",
+        "elements/sidebar-label.js",
+        "elements/sidebar-link.js"
+      ],
+      "tag": "conare-drawer",
+      "tags": [
+        "conare-drawer"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-drawer",
+            "name": "Drawer",
+            "module": "elements/drawer.js",
+            "description": "A panel that slides in from an edge over a dimmed page.",
+            "attributes": [
+              {
+                "name": "heading",
+                "field": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The panel's name, shown in the bar with `bar`."
+              },
+              {
+                "name": "side",
+                "field": "side",
+                "type": "\"right\" | \"bottom\" | \"left\"",
+                "default": "'left'"
+              },
+              {
+                "name": "bar",
+                "field": "bar",
+                "type": "boolean",
+                "default": "false",
+                "description": "The 48px bar with the heading and a close button."
+              },
+              {
+                "name": "open",
+                "field": "open",
+                "type": "boolean",
+                "default": "false",
+                "description": "Whether it is showing."
+              }
+            ],
+            "properties": [
+              {
+                "name": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The panel's name, shown in the bar with `bar`.",
+                "attribute": "heading"
+              },
+              {
+                "name": "side",
+                "type": "\"right\" | \"bottom\" | \"left\"",
+                "default": "'left'",
+                "attribute": "side"
+              },
+              {
+                "name": "bar",
+                "type": "boolean",
+                "default": "false",
+                "description": "The 48px bar with the heading and a close button.",
+                "attribute": "bar"
+              },
+              {
+                "name": "open",
+                "type": "boolean",
+                "default": "false",
+                "description": "Whether it is showing.",
+                "attribute": "open"
+              }
+            ],
+            "events": [
+              {
+                "name": "open-change",
+                "description": "It opened or closed (detail.value; read `open`)."
+              }
+            ],
+            "slots": [
+              {
+                "name": "",
+                "description": "The panel's content."
+              }
+            ],
+            "methods": [
+              {
+                "name": "close",
+                "description": "Closes it, with its exit (the Vue slot's close)."
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Navigation",
+          "label": "The console's phone navigation",
+          "center": true,
+          "half": false,
+          "path": "elements/examples/drawer/Navigation.html",
+          "content": "<!-- The console's navigation on a phone: the bar's menu button slides the sidebar in from the left over the dimmed page.\n     Pick a page, tap the page or press Escape to close it. -->\n<div class=\"flex min-h-40 items-center justify-center\">\n  <conare-button id=\"open-nav\" icon aria-label=\"open menu\" aria-expanded=\"false\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-menu\"><line x1=\"4\" x2=\"20\" y1=\"12\" y2=\"12\"></line><line x1=\"4\" x2=\"20\" y1=\"6\" y2=\"6\"></line><line x1=\"4\" x2=\"20\" y1=\"18\" y2=\"18\"></line></svg></conare-button>\n  <conare-drawer id=\"nav-drawer\" heading=\"console\">\n    <nav class=\"flex flex-col pb-4\" aria-label=\"console\">\n      <conare-sidebar-label>Platform</conare-sidebar-label>\n      <conare-sidebar-link href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-house\" aria-hidden=\"true\" slot=\"icon\"><path d=\"M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8\"></path><path d=\"M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z\"></path></svg>Overview</conare-sidebar-link>\n      <conare-sidebar-link href=\"#\" status=\"11\" active><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-layers\" aria-hidden=\"true\" slot=\"icon\"><path d=\"M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z\"></path><path d=\"M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12\"></path><path d=\"M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17\"></path></svg>Namespaces</conare-sidebar-link>\n      <conare-sidebar-link href=\"#\" status=\"1 failed\" alert><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-network\" aria-hidden=\"true\" slot=\"icon\"><rect x=\"16\" y=\"16\" width=\"6\" height=\"6\" rx=\"1\"></rect><rect x=\"2\" y=\"16\" width=\"6\" height=\"6\" rx=\"1\"></rect><rect x=\"9\" y=\"2\" width=\"6\" height=\"6\" rx=\"1\"></rect><path d=\"M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3\"></path><path d=\"M12 12V8\"></path></svg>Sources</conare-sidebar-link>\n      <conare-sidebar-label>Manage</conare-sidebar-label>\n      <conare-sidebar-link href=\"#\" status=\"4\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-key-round\" aria-hidden=\"true\" slot=\"icon\"><path d=\"M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z\"></path><circle cx=\"16.5\" cy=\"7.5\" r=\".5\" fill=\"currentColor\"></circle></svg>API keys</conare-sidebar-link>\n      <conare-sidebar-link href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-activity\" aria-hidden=\"true\" slot=\"icon\"><path d=\"M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2\"></path></svg>Usage</conare-sidebar-link>\n      <conare-sidebar-link href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-settings\" aria-hidden=\"true\" slot=\"icon\"><path d=\"M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z\"></path><circle cx=\"12\" cy=\"12\" r=\"3\"></circle></svg>Settings</conare-sidebar-link>\n    </nav>\n  </conare-drawer>\n</div>\n<script type=\"module\">\n  const button = document.getElementById('open-nav')\n  const drawer = document.getElementById('nav-drawer')\n  button.addEventListener('click', () => {\n    drawer.open = true\n    button.expanded = 'true'\n  })\n  drawer.addEventListener('open-change', () => { button.expanded = String(drawer.open) })\n  // Picking a page makes it the one you are on and closes the drawer.\n  const links = [...drawer.querySelectorAll('conare-sidebar-link')]\n  for (const link of links) {\n    link.addEventListener('click', (e) => {\n      e.preventDefault()\n      for (const l of links) l.active = l === link\n      drawer.open = false\n      button.expanded = 'false'\n    })\n  }\n</script>\n"
+        },
+        {
+          "name": "Bottom",
+          "label": "A choice from the bottom edge",
+          "center": true,
+          "half": false,
+          "path": "elements/examples/drawer/Bottom.html",
+          "content": "<!-- A choice on a phone, from the bottom edge: which searches to show. The rows are 44px to land a thumb on. -->\n<div class=\"flex min-h-40 items-center justify-center\">\n  <conare-button id=\"open-shows\">All searches</conare-button>\n  <conare-drawer id=\"shows\" heading=\"Show\" side=\"bottom\" bar>\n    <ul class=\"flex flex-col p-2\">\n      <li><button type=\"button\" aria-pressed=\"true\" class=\"flex h-11 w-full cursor-pointer items-center gap-2 px-3 text-left type-body transition-colors duration-120 ease-standard hover:bg-surface-subtle focus-visible:bg-surface-subtle focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-focus\"><span class=\"min-w-0 flex-1\">All searches</span><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-check\" aria-hidden=\"true\"><path d=\"M20 6 9 17l-5-5\"></path></svg></button></li>\n      <li><button type=\"button\" aria-pressed=\"false\" class=\"flex h-11 w-full cursor-pointer items-center gap-2 px-3 text-left type-body transition-colors duration-120 ease-standard hover:bg-surface-subtle focus-visible:bg-surface-subtle focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-focus\"><span class=\"min-w-0 flex-1\">Weak match</span><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-check\" aria-hidden=\"true\" hidden><path d=\"M20 6 9 17l-5-5\"></path></svg></button></li>\n      <li><button type=\"button\" aria-pressed=\"false\" class=\"flex h-11 w-full cursor-pointer items-center gap-2 px-3 text-left type-body transition-colors duration-120 ease-standard hover:bg-surface-subtle focus-visible:bg-surface-subtle focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-focus\"><span class=\"min-w-0 flex-1\">Nothing found</span><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-check\" aria-hidden=\"true\" hidden><path d=\"M20 6 9 17l-5-5\"></path></svg></button></li>\n      <li><button type=\"button\" aria-pressed=\"false\" class=\"flex h-11 w-full cursor-pointer items-center gap-2 px-3 text-left type-body transition-colors duration-120 ease-standard hover:bg-surface-subtle focus-visible:bg-surface-subtle focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-focus\"><span class=\"min-w-0 flex-1\">Failed</span><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-check\" aria-hidden=\"true\" hidden><path d=\"M20 6 9 17l-5-5\"></path></svg></button></li>\n    </ul>\n  </conare-drawer>\n</div>\n<script type=\"module\">\n  const open = document.getElementById('open-shows')\n  const drawer = document.getElementById('shows')\n  open.addEventListener('click', () => { drawer.open = true })\n  // A row picks what to show (its check moves to it) and closes the drawer.\n  const rows = [...drawer.querySelectorAll('button')]\n  for (const row of rows) {\n    row.addEventListener('click', () => {\n      for (const r of rows) {\n        r.setAttribute('aria-pressed', String(r === row))\n        r.lastElementChild.hidden = r !== row\n      }\n      open.textContent = row.textContent.trim()\n      drawer.close()\n    })\n  }\n</script>\n"
+        }
+      ]
+    }
+  }
+}

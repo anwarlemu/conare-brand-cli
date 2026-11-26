@@ -1,0 +1,229 @@
+{
+  "name": "copy-button",
+  "title": "Copy button",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "The copy button beside a value: the label swaps from Copy to Copied in place, the width of the longer word, so nothing moves, and the check draws its stroke.",
+  "use_for": "Copying a secret or an endpoint next to it.",
+  "never": [
+    "Lowercase labels",
+    "A copy button whose width changes when it says Copied"
+  ],
+  "source": "conare-web app/components/console/Copy.vue (version 2, Copy to Copied)",
+  "body": "",
+  "requires": [],
+  "dependencies": [
+    "lucide-vue-next@^0.479.0"
+  ],
+  "files": [
+    {
+      "path": "components/ui/CopyButton.vue",
+      "content": "<script setup lang=\"ts\">\nimport { Copy } from 'lucide-vue-next'\nimport { useCopy } from '@/composables/useCopy'\n\n// The copy button beside a value, a new key or an endpoint (the console's Copy.vue, version 2 \"Copy to Copied\", the\n// one picked): the console's secondary button. The label swaps in place, Copy leaving up and Copied coming up from\n// below, and the check draws its stroke; the width is the longer word's, so nothing moves.\nconst props = withDefaults(defineProps<{ text: string, label?: string }>(), { label: 'Copy' })\nconst emit = defineEmits<{ copied: [] }>()\nconst { copied, copy } = useCopy()\nasync function run() {\n  if (await copy(props.text)) emit('copied')\n}\n</script>\n\n<template>\n  <button data-ds=\"copy-button\" type=\"button\" class=\"ds-copy\" :data-done=\"copied || undefined\" @click=\"run\">\n    <span class=\"ds-copy-icon\" :data-state=\"copied ? 'b' : 'a'\" aria-hidden=\"true\">\n      <Copy class=\"ds-copy-a\" :size=\"12\" :stroke-width=\"1.5\" />\n      <svg class=\"ds-copy-b ds-copy-check\" viewBox=\"0 0 24 24\" width=\"12\" height=\"12\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 12 9 17 20 6\" pathLength=\"1\" /></svg>\n    </span>\n    <span class=\"ds-copy-word\"><span :data-on=\"!copied || undefined\" :aria-hidden=\"copied\">{{ label }}</span><span :data-on=\"copied || undefined\" :aria-hidden=\"!copied\">Copied</span></span>\n  </button>\n</template>\n\n<style>\n.ds-copy { display: inline-flex; height: var(--ds-size-control-sm); flex-shrink: 0; align-items: center; justify-content: center; gap: var(--ds-space-sm); padding: 0 10px; border: var(--ds-border-hairline) solid var(--ds-color-action-secondary-edge); background: var(--ds-color-surface); color: var(--ds-color-fg); font-size: var(--ds-text-meta); font-weight: var(--ds-font-weight-medium); white-space: nowrap; cursor: pointer; transition: border-color var(--ds-duration-micro) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard), color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-copy:hover { border-color: var(--ds-color-action-secondary-edge-hover); } }\n.ds-copy:active { background: var(--ds-color-surface-subtle); }\n.ds-copy:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: var(--ds-border-focus); }\n.ds-copy-icon { display: inline-grid; }\n.ds-copy-icon > * { grid-area: 1 / 1; transition: opacity var(--ds-duration-morph) ease-in-out, filter var(--ds-duration-morph) ease-in-out, transform var(--ds-duration-morph) ease-in-out; }\n.ds-copy-icon[data-state=\"a\"] .ds-copy-b, .ds-copy-icon[data-state=\"b\"] .ds-copy-a { opacity: 0; filter: blur(4px); transform: scale(0.25); }\n.ds-copy-word { display: inline-grid; }\n.ds-copy-word > * { grid-area: 1 / 1; transition: opacity var(--ds-duration-swap) ease-in-out, filter var(--ds-duration-swap) ease-in-out, transform var(--ds-duration-swap) ease-in-out; }\n.ds-copy-word > :not([data-on]) { opacity: 0; filter: blur(2px); }\n.ds-copy-word > :first-child:not([data-on]) { transform: translateY(-4px); }\n.ds-copy-word > :last-child:not([data-on]) { transform: translateY(4px); }\n.ds-copy-check path { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset var(--ds-duration-draw) var(--ds-easing-out) 60ms; }\n.ds-copy[data-done] .ds-copy-check path { stroke-dashoffset: 0; }\n@media (pointer: coarse), (max-width: 767px) { .ds-copy { height: var(--ds-size-control-touch); font-size: var(--ds-text-ui); } }\n@media (prefers-reduced-motion: reduce) {\n  .ds-copy-icon > *, .ds-copy-word > * { filter: none; transform: none; transition: opacity var(--ds-duration-micro) ease; }\n  .ds-copy-check path { transition: none; }\n}\n</style>\n"
+    },
+    {
+      "path": "composables/useCopy.ts",
+      "content": "import { ref } from 'vue'\n\n/**\n * A copy button's state: copy(text) writes the clipboard, and copied is true for 1.5s after. Where the Clipboard API is\n * refused (a browser or a frame that denies it), the older copy command still works inside the click. Only if both are\n * refused does it answer false, and the text stays selectable.\n */\nexport function useCopy(ms = 1500) {\n  const copied = ref(false)\n  let timer: ReturnType<typeof setTimeout> | undefined\n  async function copy(text: string): Promise<boolean> {\n    try {\n      await navigator.clipboard.writeText(text)\n    }\n    catch {\n      if (!copyByCommand(text)) return false\n    }\n    copied.value = true\n    clearTimeout(timer)\n    // ds-latency: the Copied label stays 1.5s after the copy, which has already happened.\n    timer = setTimeout(() => { copied.value = false }, ms)\n    return true\n  }\n  return { copied, copy }\n}\n\n// The older way: select the text in an unseen field, run the copy command, hand focus back.\nfunction copyByCommand(text: string) {\n  const back = document.activeElement as HTMLElement | null\n  const field = document.createElement('textarea')\n  field.value = text\n  field.setAttribute('readonly', '')\n  field.style.position = 'fixed'\n  field.style.opacity = '0'\n  document.body.appendChild(field)\n  field.select()\n  let ok = false\n  try { ok = document.execCommand('copy') }\n  catch { ok = false }\n  field.remove()\n  back?.focus()\n  return ok\n}\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Key",
+      "label": "Beside a new key",
+      "center": true,
+      "half": true,
+      "path": "examples/copy-button/Key.vue",
+      "content": "<script setup lang=\"ts\">\nimport CopyButton from '@/components/ui/CopyButton.vue'\n// Beside a new key, which shows once.\n</script>\n\n<template>\n  <div class=\"flex flex-wrap items-center justify-center gap-2\">\n    <code class=\"bg-surface-subtle px-3 py-1 type-code-sm\">sk_live_4f9a2b7d0c21e8b1</code>\n    <CopyButton text=\"sk_live_4f9a2b7d0c21e8b1\" />\n  </div>\n</template>\n",
+      "requires": [],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    },
+    {
+      "name": "Endpoint",
+      "label": "Beside an endpoint",
+      "center": true,
+      "half": true,
+      "path": "examples/copy-button/Endpoint.vue",
+      "content": "<script setup lang=\"ts\">\nimport CopyButton from '@/components/ui/CopyButton.vue'\n// Beside an endpoint.\n</script>\n\n<template>\n  <div class=\"flex min-w-0 items-center gap-2\">\n    <span class=\"truncate type-code-sm\">https://api.conare.ai/mcp</span>\n    <CopyButton text=\"https://api.conare.ai/mcp\" class=\"shrink-0\" />\n  </div>\n</template>\n",
+      "requires": [],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/CopyButton.tsx",
+          "content": "'use client'\nimport { Copy } from 'lucide-react'\nimport { useCopy } from '@/react/hooks/useCopy'\n\n// The copy button beside a value, a new key or an endpoint (the console's Copy.vue, version 2 \"Copy to Copied\", the\n// one picked): the console's secondary button. The label swaps in place, Copy leaving up and Copied coming up from\n// below, and the check draws its stroke; the width is the longer word's, so nothing moves.\nexport interface CopyButtonProps {\n  text: string\n  label?: string\n  onCopied?: () => void\n  className?: string\n}\n\nexport function CopyButton({ text, label = 'Copy', onCopied, className }: CopyButtonProps) {\n  const { copied, copy } = useCopy()\n  async function run() {\n    if (await copy(text)) onCopied?.()\n  }\n  return (\n    <>\n      <style href=\"ds-copy-button\" precedence=\"ds\">{css}</style>\n      <button data-ds=\"copy-button\" type=\"button\" className={className ? `ds-copy ${className}` : 'ds-copy'} data-done={copied || undefined} onClick={run}>\n        <span className=\"ds-copy-icon\" data-state={copied ? 'b' : 'a'} aria-hidden=\"true\">\n          <Copy className=\"ds-copy-a\" size={12} strokeWidth={1.5} />\n          <svg className=\"ds-copy-b ds-copy-check\" viewBox=\"0 0 24 24\" width=\"12\" height=\"12\" fill=\"none\" stroke=\"currentColor\" strokeWidth=\"2\" strokeLinecap=\"round\" strokeLinejoin=\"round\"><path d=\"M4 12 9 17 20 6\" pathLength=\"1\" /></svg>\n        </span>\n        <span className=\"ds-copy-word\"><span data-on={!copied || undefined} aria-hidden={copied}>{label}</span><span data-on={copied || undefined} aria-hidden={!copied}>Copied</span></span>\n      </button>\n    </>\n  )\n}\n\nexport default CopyButton\n\nconst css = `\n.ds-copy { display: inline-flex; height: var(--ds-size-control-sm); flex-shrink: 0; align-items: center; justify-content: center; gap: var(--ds-space-sm); padding: 0 10px; border: var(--ds-border-hairline) solid var(--ds-color-action-secondary-edge); background: var(--ds-color-surface); color: var(--ds-color-fg); font-size: var(--ds-text-meta); font-weight: var(--ds-font-weight-medium); white-space: nowrap; cursor: pointer; transition: border-color var(--ds-duration-micro) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard), color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-copy:hover { border-color: var(--ds-color-action-secondary-edge-hover); } }\n.ds-copy:active { background: var(--ds-color-surface-subtle); }\n.ds-copy:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: var(--ds-border-focus); }\n.ds-copy-icon { display: inline-grid; }\n.ds-copy-icon > * { grid-area: 1 / 1; transition: opacity var(--ds-duration-morph) ease-in-out, filter var(--ds-duration-morph) ease-in-out, transform var(--ds-duration-morph) ease-in-out; }\n.ds-copy-icon[data-state=\"a\"] .ds-copy-b, .ds-copy-icon[data-state=\"b\"] .ds-copy-a { opacity: 0; filter: blur(4px); transform: scale(0.25); }\n.ds-copy-word { display: inline-grid; }\n.ds-copy-word > * { grid-area: 1 / 1; transition: opacity var(--ds-duration-swap) ease-in-out, filter var(--ds-duration-swap) ease-in-out, transform var(--ds-duration-swap) ease-in-out; }\n.ds-copy-word > :not([data-on]) { opacity: 0; filter: blur(2px); }\n.ds-copy-word > :first-child:not([data-on]) { transform: translateY(-4px); }\n.ds-copy-word > :last-child:not([data-on]) { transform: translateY(4px); }\n.ds-copy-check path { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset var(--ds-duration-draw) var(--ds-easing-out) 60ms; }\n.ds-copy[data-done] .ds-copy-check path { stroke-dashoffset: 0; }\n@media (pointer: coarse), (max-width: 767px) { .ds-copy { height: var(--ds-size-control-touch); font-size: var(--ds-text-ui); } }\n@media (prefers-reduced-motion: reduce) {\n  .ds-copy-icon > *, .ds-copy-word > * { filter: none; transform: none; transition: opacity var(--ds-duration-micro) ease; }\n  .ds-copy-check path { transition: none; }\n}\n`\n"
+        },
+        {
+          "path": "react/hooks/useCopy.ts",
+          "content": "'use client'\nimport { useCallback, useEffect, useRef, useState } from 'react'\n\n/**\n * A copy button's state: copy(text) writes the clipboard, and copied is true for 1.5s after. Where the Clipboard API is\n * refused (a browser or a frame that denies it), the older copy command still works inside the click. Only if both are\n * refused does it answer false, and the text stays selectable.\n */\nexport function useCopy(ms = 1500) {\n  const [copied, setCopied] = useState(false)\n  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)\n  useEffect(() => () => clearTimeout(timer.current), [])\n  const copy = useCallback(async (text: string): Promise<boolean> => {\n    try {\n      await navigator.clipboard.writeText(text)\n    }\n    catch {\n      if (!copyByCommand(text)) return false\n    }\n    setCopied(true)\n    clearTimeout(timer.current)\n    // ds-latency: the Copied label stays 1.5s after the copy, which has already happened.\n    timer.current = setTimeout(() => setCopied(false), ms)\n    return true\n  }, [ms])\n  return { copied, copy }\n}\n\n// The older way: select the text in an unseen field, run the copy command, hand focus back.\nfunction copyByCommand(text: string) {\n  const back = document.activeElement as HTMLElement | null\n  const field = document.createElement('textarea')\n  field.value = text\n  field.setAttribute('readonly', '')\n  field.style.position = 'fixed'\n  field.style.opacity = '0'\n  document.body.appendChild(field)\n  field.select()\n  let ok = false\n  try { ok = document.execCommand('copy') }\n  catch { ok = false }\n  field.remove()\n  back?.focus()\n  return ok\n}\n"
+        }
+      ],
+      "dependencies": [
+        "lucide-react@0.479.0"
+      ],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "CopyButton",
+            "file": "react/components/ui/CopyButton.tsx",
+            "props": [
+              {
+                "name": "text",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "required": false,
+                "default": "'Copy'"
+              },
+              {
+                "name": "onCopied",
+                "type": "() => void",
+                "required": false
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Key",
+          "label": "Beside a new key",
+          "center": true,
+          "half": true,
+          "path": "react/examples/copy-button/Key.tsx",
+          "content": "import { CopyButton } from '@/react/components/ui/CopyButton'\n// Beside a new key, which shows once.\n\nexport default function Key() {\n  return (\n    <div className=\"flex flex-wrap items-center justify-center gap-2\">\n      <code className=\"bg-surface-subtle px-3 py-1 type-code-sm\">sk_live_4f9a2b7d0c21e8b1</code>\n      <CopyButton text=\"sk_live_4f9a2b7d0c21e8b1\" />\n    </div>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        },
+        {
+          "name": "Endpoint",
+          "label": "Beside an endpoint",
+          "center": true,
+          "half": true,
+          "path": "react/examples/copy-button/Endpoint.tsx",
+          "content": "import { CopyButton } from '@/react/components/ui/CopyButton'\n// Beside an endpoint.\n\nexport default function Endpoint() {\n  return (\n    <div className=\"flex min-w-0 items-center gap-2\">\n      <span className=\"truncate type-code-sm\">https://api.conare.ai/mcp</span>\n      <CopyButton text=\"https://api.conare.ai/mcp\" className=\"shrink-0\" />\n    </div>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/copy-button.ts",
+          "content": "import { html } from 'lit'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { Copy } from 'lucide'\nimport { DsElement, define, HostLayoutController } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport { CopyController } from '@/elements/controllers/copy'\nimport styles from 'virtual:tw'\n\n// CopyButton.vue as <conare-copy-button>: the copy button beside a value, a new key or an endpoint (the console's\n// Copy.vue, version 2 \"Copy to Copied\", the one picked): the console's secondary button. The label swaps in place, Copy\n// leaving up and Copied coming up from below, and the check draws its stroke; the width is the longer word's, so\n// nothing moves.\n\n/**\n * @summary Copies a value; its label swaps to Copied in place.\n * @fires copied - The text is on the clipboard.\n */\nexport class CopyButton extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\t// Layout classes on the element (mt-2, ml-auto, w-full) land on the box it draws, as on Vue's root.\n\tprotected readonly layout = new HostLayoutController(this, () => this.renderRoot.querySelector<HTMLElement>('[part~=\"control\"]'))\n\tstatic properties = { text: {}, label: {}, rootName: { attribute: false } }\n\n\t/** What it copies. */\n\ttext = ''\n\t/** The word at rest. */\n\tlabel = 'Copy'\n\t/** The data-ds its box says: copy-button, or the name of an item drawn as one (Vue's data-ds falls through). */\n\trootName = 'copy-button'\n\tprivate copier = new CopyController(this)\n\n\tprivate async run() {\n\t\tif (await this.copier.copy(this.text)) this.emit('copied')\n\t}\n\n\trender() {\n\t\tconst copied = this.copier.copied\n\t\treturn html`<button data-ds=\"${this.rootName}\" part=\"control\" type=\"button\" class=\"ds-copy\" data-done=${ifDefined(copied ? 'true' : undefined)} @click=${() => this.run()}>\n\t\t\t<span class=\"ds-copy-icon\" data-state=${copied ? 'b' : 'a'} aria-hidden=\"true\">\n\t\t\t\t${icon(Copy, 'copy', { size: 12, strokeWidth: 1.5, class: 'ds-copy-a' })}\n\t\t\t\t<svg class=\"ds-copy-b ds-copy-check\" viewBox=\"0 0 24 24\" width=\"12\" height=\"12\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 12 9 17 20 6\" pathLength=\"1\"></path></svg>\n\t\t\t</span>\n\t\t\t<span class=\"ds-copy-word\"><span data-on=${ifDefined(copied ? undefined : 'true')} aria-hidden=${String(copied)}>${this.label}</span><span data-on=${ifDefined(copied ? 'true' : undefined)} aria-hidden=${String(!copied)}>Copied</span></span>\n\t\t</button>`\n\t}\n}\n\ndefine('copy-button', CopyButton)\n"
+        },
+        {
+          "path": "elements/components/ui/copy-button.css",
+          "content": ".ds-copy { display: inline-flex; height: var(--ds-size-control-sm); flex-shrink: 0; align-items: center; justify-content: center; gap: var(--ds-space-sm); padding: 0 10px; border: var(--ds-border-hairline) solid var(--ds-color-action-secondary-edge); background: var(--ds-color-surface); color: var(--ds-color-fg); font-size: var(--ds-text-meta); font-weight: var(--ds-font-weight-medium); white-space: nowrap; cursor: pointer; transition: border-color var(--ds-duration-micro) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard), color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-copy:hover { border-color: var(--ds-color-action-secondary-edge-hover); } }\n.ds-copy:active { background: var(--ds-color-surface-subtle); }\n.ds-copy:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: var(--ds-border-focus); }\n.ds-copy-icon { display: inline-grid; }\n.ds-copy-icon > * { grid-area: 1 / 1; transition: opacity var(--ds-duration-morph) ease-in-out, filter var(--ds-duration-morph) ease-in-out, transform var(--ds-duration-morph) ease-in-out; }\n.ds-copy-icon[data-state=\"a\"] .ds-copy-b, .ds-copy-icon[data-state=\"b\"] .ds-copy-a { opacity: 0; filter: blur(4px); transform: scale(0.25); }\n.ds-copy-word { display: inline-grid; }\n.ds-copy-word > * { grid-area: 1 / 1; transition: opacity var(--ds-duration-swap) ease-in-out, filter var(--ds-duration-swap) ease-in-out, transform var(--ds-duration-swap) ease-in-out; }\n.ds-copy-word > :not([data-on]) { opacity: 0; filter: blur(2px); }\n.ds-copy-word > :first-child:not([data-on]) { transform: translateY(-4px); }\n.ds-copy-word > :last-child:not([data-on]) { transform: translateY(4px); }\n.ds-copy-check path { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset var(--ds-duration-draw) var(--ds-easing-out) 60ms; }\n.ds-copy[data-done] .ds-copy-check path { stroke-dashoffset: 0; }\n@media (pointer: coarse), (max-width: 767px) { .ds-copy { height: var(--ds-size-control-touch); font-size: var(--ds-text-ui); } }\n@media (prefers-reduced-motion: reduce) {\n  .ds-copy-icon > *, .ds-copy-word > * { filter: none; transform: none; transition: opacity var(--ds-duration-micro) ease; }\n  .ds-copy-check path { transition: none; }\n}\n"
+        },
+        {
+          "path": "elements/controllers/copy.ts",
+          "content": "import type { ReactiveController, ReactiveControllerHost } from 'lit'\n\n/**\n * useCopy as a Lit controller: copy(text) writes the clipboard, and `copied` is true for 1.5s after. Where the Clipboard\n * API is refused, the older copy command still works inside the click. Only if both are refused does it answer false.\n */\nexport class CopyController implements ReactiveController {\n\tcopied = false\n\tprivate timer?: ReturnType<typeof setTimeout>\n\tconstructor(private host: ReactiveControllerHost, private ms = 1500) {\n\t\thost.addController(this)\n\t}\n\thostDisconnected() {\n\t\tclearTimeout(this.timer)\n\t}\n\tasync copy(text: string): Promise<boolean> {\n\t\ttry {\n\t\t\tawait navigator.clipboard.writeText(text)\n\t\t} catch {\n\t\t\tif (!copyByCommand(text)) return false\n\t\t}\n\t\tthis.copied = true\n\t\tthis.host.requestUpdate()\n\t\tclearTimeout(this.timer)\n\t\t// ds-latency: the Copied label stays 1.5s after the copy, which has already happened.\n\t\tthis.timer = setTimeout(() => {\n\t\t\tthis.copied = false\n\t\t\tthis.host.requestUpdate()\n\t\t}, this.ms)\n\t\treturn true\n\t}\n}\n\n/** copy(text) without an element, for example scripts: the clipboard, or the copy command where it is refused. */\nexport async function copyText(text: string) {\n\ttry {\n\t\tawait navigator.clipboard.writeText(text)\n\t\treturn true\n\t} catch {\n\t\treturn copyByCommand(text)\n\t}\n}\n\nfunction copyByCommand(text: string) {\n\t// The focused element inside shadow roots, not the host, so focus goes back to the button that copied.\n\tlet back = document.activeElement as HTMLElement | null\n\twhile (back?.shadowRoot?.activeElement) back = back.shadowRoot.activeElement as HTMLElement\n\tconst field = document.createElement('textarea')\n\tfield.value = text\n\tfield.setAttribute('readonly', '')\n\tfield.style.position = 'fixed'\n\tfield.style.opacity = '0'\n\tdocument.body.appendChild(field)\n\tfield.select()\n\tlet ok = false\n\ttry {\n\t\tok = document.execCommand('copy')\n\t} catch {\n\t\tok = false\n\t}\n\tfield.remove()\n\tback?.focus()\n\treturn ok\n}\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/copy-button.js"
+      ],
+      "tag": "conare-copy-button",
+      "tags": [
+        "conare-copy-button"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-copy-button",
+            "name": "CopyButton",
+            "module": "elements/copy-button.js",
+            "description": "Copies a value; its label swaps to Copied in place.",
+            "attributes": [
+              {
+                "name": "text",
+                "field": "text",
+                "type": "string",
+                "default": "''",
+                "description": "What it copies."
+              },
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string",
+                "default": "'Copy'",
+                "description": "The word at rest."
+              }
+            ],
+            "properties": [
+              {
+                "name": "text",
+                "type": "string",
+                "default": "''",
+                "description": "What it copies.",
+                "attribute": "text"
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "default": "'Copy'",
+                "description": "The word at rest.",
+                "attribute": "label"
+              },
+              {
+                "name": "rootName",
+                "type": "string",
+                "default": "'copy-button'",
+                "description": "The data-ds its box says: copy-button, or the name of an item drawn as one (Vue's data-ds falls through)."
+              }
+            ],
+            "events": [
+              {
+                "name": "copied",
+                "description": "The text is on the clipboard."
+              }
+            ],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Key",
+          "label": "Beside a new key",
+          "center": true,
+          "half": true,
+          "path": "elements/examples/copy-button/Key.html",
+          "content": "<!-- Beside a new key, which shows once. -->\n<div class=\"flex flex-wrap items-center justify-center gap-2\">\n  <code class=\"bg-surface-subtle px-3 py-1 type-code-sm\">sk_live_4f9a2b7d0c21e8b1</code>\n  <conare-copy-button text=\"sk_live_4f9a2b7d0c21e8b1\"></conare-copy-button>\n</div>\n"
+        },
+        {
+          "name": "Endpoint",
+          "label": "Beside an endpoint",
+          "center": true,
+          "half": true,
+          "path": "elements/examples/copy-button/Endpoint.html",
+          "content": "<!-- Beside an endpoint. -->\n<div class=\"flex min-w-0 items-center gap-2\">\n  <span class=\"truncate type-code-sm\">https://api.conare.ai/mcp</span>\n  <conare-copy-button text=\"https://api.conare.ai/mcp\" class=\"shrink-0\"></conare-copy-button>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,197 @@
+{
+  "name": "context-menu",
+  "title": "Context menu",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "Menu's square panel and rows opened where the pointer right-clicks, or under the focused row with Shift+F10 or the menu key. Arrows, Home, End and Escape are handled; focus returns to what was clicked.",
+  "use_for": "Shortcuts for a row in a dense list (open, copy an ID, download, delete), alongside a visible way to do the same.",
+  "never": [
+    "The only way to an action: right-clicks are hidden; keep a Menu or a button in the row",
+    "Destructive actions that don't confirm: hold them where they are, or confirm with AlertDialog"
+  ],
+  "source": "conare-web app/assets/css/console2.css (.v2-menu, .v2-menu-item), app/composables/useMenu.ts. New in Conare's style: shadcn's context menu, on Menu's rows opened at the pointer.",
+  "body": "Put `data-context=\"<id>\"` on each row; `open` emits the id of the row that was clicked, so one menu serves the list.",
+  "requires": [
+    "popover"
+  ],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/ContextMenu.vue",
+      "content": "<script setup lang=\"ts\">\nimport { nextTick, provide } from 'vue'\nimport PopoverPanel from '@/components/ui/PopoverPanel.vue'\nimport { onMenuRows, usePopover } from '@/composables/usePopover'\n\n// Menu's panel and rows (MenuItem, MenuLabel, MenuSeparator) opened at the pointer: a right-click (or a long press on\n// Android) on the default slot opens the `menu` slot where it landed, flipped and kept inside the viewport. From the\n// keyboard, Shift+F10 or the context menu key opens it under the focused element, at once, on its first row. Arrows,\n// Home and End move; Escape closes and returns focus; choosing a row closes it. `context` is what was clicked\n// (the closest [data-context] value), so one menu serves a list.\ndefineProps<{ label: string, width?: string }>()\nconst emit = defineEmits<{ open: [context: string | undefined] }>()\nconst pop = usePopover({ side: 'bottom', align: 'start', gap: 0 })\nprovide('ds-menu-close', () => pop.hide(true))\n\nfunction context(target: EventTarget | null) {\n  return (target as HTMLElement | null)?.closest<HTMLElement>('[data-context]')?.dataset.context\n}\nasync function onContextMenu(event: MouseEvent) {\n  event.preventDefault()\n  emit('open', context(event.target))\n  await pop.show({ at: { x: event.clientX, y: event.clientY } })\n  pop.panel.value?.focus({ preventScroll: true })\n}\nasync function onKey(event: KeyboardEvent) {\n  if (event.key !== 'ContextMenu' && !(event.shiftKey && event.key === 'F10')) return\n  event.preventDefault()\n  const r = (event.target as HTMLElement).getBoundingClientRect()\n  emit('open', context(event.target))\n  await pop.show({ keyboard: true, at: { x: r.left + 8, y: r.bottom } })\n  await nextTick()\n  pop.panel.value?.querySelector<HTMLElement>('[role^=\"menuitem\"]:not([disabled])')?.focus()\n}\n</script>\n\n<template>\n  <div data-ds=\"context-menu\" @contextmenu=\"onContextMenu\" @keydown=\"onKey\">\n    <slot />\n  </div>\n  <PopoverPanel data-ds=\"context-menu\" :pop=\"pop\" role=\"menu\" :aria-label=\"label\" tabindex=\"-1\" class=\"flex flex-col p-1\" :style=\"{ width: width ?? '224px' }\" @keydown=\"onMenuRows($event, pop.panel.value, pop.hide)\">\n    <slot name=\"menu\" />\n  </PopoverPanel>\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "A namespace's documents",
+      "center": false,
+      "half": false,
+      "path": "examples/context-menu/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport { Copy, Download, ExternalLink, FileText, Trash2 } from 'lucide-vue-next'\nimport ContextMenu from '@/components/ui/ContextMenu.vue'\nimport MenuItem from '@/components/ui/MenuItem.vue'\nimport MenuLabel from '@/components/ui/MenuLabel.vue'\nimport MenuSeparator from '@/components/ui/MenuSeparator.vue'\nimport { useToast } from '@/composables/useToast'\nimport Toaster from '@/components/ui/Toaster.vue'\n// A namespace's documents: right-click a row, or focus it and press Shift+F10, for what you can do with it.\nconst documents = [\n  { id: 'doc_8f2k1', title: 'Master services agreement', size: '412 KB' },\n  { id: 'doc_3m9q7', title: 'Order form, 2026 renewal', size: '96 KB' },\n  { id: 'doc_5t0x2', title: 'Data processing addendum', size: '184 KB' },\n]\nconst picked = ref<string>()\nconst toast = useToast()\nconst doc = () => documents.find(d => d.id === picked.value)\n</script>\n\n<template>\n  <div class=\"min-h-80 max-w-120\">\n    <ContextMenu label=\"document\" @open=\"picked = $event\">\n      <ul class=\"border border-edge\">\n        <li v-for=\"d in documents\" :key=\"d.id\" :data-context=\"d.id\" tabindex=\"0\" class=\"flex h-row items-center gap-2 border-b border-edge px-3 last:border-b-0 transition-colors duration-120 ease-standard hover:bg-surface-subtle focus-visible:bg-surface-subtle focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-focus\">\n          <FileText :size=\"14\" :stroke-width=\"1.5\" class=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />\n          <span class=\"min-w-0 flex-1 truncate\">{{ d.title }}</span>\n          <span class=\"type-code-sm text-fg-muted max-md:hidden\">{{ d.id }}</span>\n          <span class=\"w-14 text-right type-meta text-fg-muted tabular-nums\">{{ d.size }}</span>\n        </li>\n      </ul>\n      <template #menu>\n        <MenuLabel><span class=\"truncate\">{{ doc()?.title }}</span></MenuLabel>\n        <MenuItem @select=\"toast('Opened', doc()?.id)\"><ExternalLink :size=\"14\" :stroke-width=\"1.5\" class=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />Open</MenuItem>\n        <MenuItem @select=\"toast('Copied', doc()?.id)\"><Copy :size=\"14\" :stroke-width=\"1.5\" class=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />Copy ID</MenuItem>\n        <MenuItem @select=\"toast('Downloading', doc()?.title)\"><Download :size=\"14\" :stroke-width=\"1.5\" class=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />Download</MenuItem>\n        <MenuSeparator />\n        <MenuItem danger @select=\"toast('Deleted', doc()?.id)\"><Trash2 :size=\"14\" :stroke-width=\"1.5\" class=\"shrink-0\" aria-hidden=\"true\" />Delete</MenuItem>\n      </template>\n    </ContextMenu>\n    <p class=\"mt-3 type-meta text-fg-muted\">Right-click a document, or focus it and press Shift+F10.</p>\n    <Toaster />\n  </div>\n</template>\n",
+      "requires": [
+        "menu",
+        "popover",
+        "toast"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/ContextMenu.tsx",
+          "content": "'use client'\nimport type { KeyboardEvent, MouseEvent, ReactNode } from 'react'\nimport { MenuClose } from '@/react/components/ui/Menu'\nimport { PopoverPanel } from '@/react/components/ui/PopoverPanel'\nimport { onMenuRows, usePopover } from '@/react/hooks/usePopover'\n\n// Menu's panel and rows (MenuItem, MenuLabel, MenuSeparator) opened at the pointer: a right-click (or a long press on\n// Android) on children opens `menu` where it landed, flipped and kept inside the viewport. From the keyboard,\n// Shift+F10 or the context menu key opens it under the focused element, at once, on its first row. Arrows, Home and\n// End move; Escape closes and returns focus; choosing a row closes it. `onOpen` gets what was clicked (the closest\n// [data-context] value), so one menu serves a list.\nexport interface ContextMenuProps { label: string, width?: string, menu?: ReactNode, onOpen?: (context: string | undefined) => void, children?: ReactNode }\n\nfunction context(target: EventTarget | null) {\n  return (target as HTMLElement | null)?.closest<HTMLElement>('[data-context]')?.dataset.context\n}\n\nexport function ContextMenu({ label, width, menu, onOpen, children }: ContextMenuProps) {\n  const pop = usePopover({ side: 'bottom', align: 'start', gap: 0 })\n\n  async function onContextMenu(event: MouseEvent) {\n    event.preventDefault()\n    onOpen?.(context(event.target))\n    await pop.show({ at: { x: event.clientX, y: event.clientY } })\n    pop.panel.current?.focus({ preventScroll: true })\n  }\n  async function onKey(event: KeyboardEvent) {\n    if (event.key !== 'ContextMenu' && !(event.shiftKey && event.key === 'F10')) return\n    event.preventDefault()\n    const r = (event.target as HTMLElement).getBoundingClientRect()\n    onOpen?.(context(event.target))\n    await pop.show({ keyboard: true, at: { x: r.left + 8, y: r.bottom } })\n    pop.panel.current?.querySelector<HTMLElement>('[role^=\"menuitem\"]:not([disabled])')?.focus()\n  }\n  return (\n    <MenuClose.Provider value={() => pop.hide(true)}>\n      <div data-ds=\"context-menu\" onContextMenu={onContextMenu} onKeyDown={onKey}>\n        {children}\n      </div>\n      <PopoverPanel data-ds=\"context-menu\" pop={pop} role=\"menu\" aria-label={label} tabIndex={-1} className=\"flex flex-col p-1\" style={{ width: width ?? '224px' }} onKeyDown={event => onMenuRows(event, pop.panel.current, pop.hide)}>\n        {menu}\n      </PopoverPanel>\n    </MenuClose.Provider>\n  )\n}\n\nexport default ContextMenu\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "menu",
+        "popover"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "ContextMenu",
+            "file": "react/components/ui/ContextMenu.tsx",
+            "props": [
+              {
+                "name": "label",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "width",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "menu",
+                "type": "ReactNode",
+                "required": false
+              },
+              {
+                "name": "onOpen",
+                "type": "(context: string | undefined) => void",
+                "required": false
+              },
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "A namespace's documents",
+          "center": false,
+          "half": false,
+          "path": "react/examples/context-menu/Product.tsx",
+          "content": "'use client'\nimport { useState } from 'react'\nimport { Copy, Download, ExternalLink, FileText, Trash2 } from 'lucide-react'\nimport { ContextMenu } from '@/react/components/ui/ContextMenu'\nimport { MenuItem } from '@/react/components/ui/MenuItem'\nimport { MenuLabel } from '@/react/components/ui/MenuLabel'\nimport { MenuSeparator } from '@/react/components/ui/MenuSeparator'\nimport { Toaster } from '@/react/components/ui/Toaster'\nimport { useToast } from '@/react/hooks/useToast'\n// A namespace's documents: right-click a row, or focus it and press Shift+F10, for what you can do with it.\nconst documents = [\n  { id: 'doc_8f2k1', title: 'Master services agreement', size: '412 KB' },\n  { id: 'doc_3m9q7', title: 'Order form, 2026 renewal', size: '96 KB' },\n  { id: 'doc_5t0x2', title: 'Data processing addendum', size: '184 KB' },\n]\n\nexport default function Product() {\n  const [picked, setPicked] = useState<string>()\n  const toast = useToast()\n  const doc = () => documents.find(d => d.id === picked)\n  return (\n    <div className=\"min-h-80 max-w-120\">\n      <ContextMenu\n        label=\"document\"\n        onOpen={setPicked}\n        menu={(\n          <>\n            <MenuLabel><span className=\"truncate\">{doc()?.title}</span></MenuLabel>\n            <MenuItem onSelect={() => toast('Opened', doc()?.id)}><ExternalLink size={14} strokeWidth={1.5} className=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />Open</MenuItem>\n            <MenuItem onSelect={() => toast('Copied', doc()?.id)}><Copy size={14} strokeWidth={1.5} className=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />Copy ID</MenuItem>\n            <MenuItem onSelect={() => toast('Downloading', doc()?.title)}><Download size={14} strokeWidth={1.5} className=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />Download</MenuItem>\n            <MenuSeparator />\n            <MenuItem danger onSelect={() => toast('Deleted', doc()?.id)}><Trash2 size={14} strokeWidth={1.5} className=\"shrink-0\" aria-hidden=\"true\" />Delete</MenuItem>\n          </>\n        )}\n      >\n        <ul className=\"border border-edge\">\n          {documents.map(d => (\n            <li key={d.id} data-context={d.id} tabIndex={0} className=\"flex h-row items-center gap-2 border-b border-edge px-3 last:border-b-0 transition-colors duration-120 ease-standard hover:bg-surface-subtle focus-visible:bg-surface-subtle focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-focus\">\n              <FileText size={14} strokeWidth={1.5} className=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />\n              <span className=\"min-w-0 flex-1 truncate\">{d.title}</span>\n              <span className=\"type-code-sm text-fg-muted max-md:hidden\">{d.id}</span>\n              <span className=\"w-14 text-right type-meta text-fg-muted tabular-nums\">{d.size}</span>\n            </li>\n          ))}\n        </ul>\n      </ContextMenu>\n      <p className=\"mt-3 type-meta text-fg-muted\">Right-click a document, or focus it and press Shift+F10.</p>\n      <Toaster />\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "menu",
+            "popover",
+            "toast"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/context-menu.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport { CloseOnSelect, menuRows, onMenuRows } from '@/elements/lib/menu'\nimport { PopoverController, popoverStyles } from '@/elements/lib/popover'\nimport styles from 'virtual:tw'\n\n// ContextMenu.vue as <conare-context-menu>: a menu's panel and rows (<conare-menu-item>, <conare-menu-label>,\n// <conare-menu-separator>, each with slot=\"menu\") opened at the pointer: a right-click (or a long press on Android) on\n// the default slot opens the `menu` slot where it landed, flipped and kept inside the viewport, in the top layer. From\n// the keyboard, Shift+F10 or the context menu key opens it under the focused element, at once, on its first row.\n// Arrows, Home and End move; Escape closes and returns focus; choosing a row closes it. `open` fires with what was\n// clicked (detail.context: the closest [data-context] value), so one menu serves a list.\n\n/**\n * @summary A menu opened at the pointer by a right-click or Shift+F10.\n * @slot - What the menu is for (a list whose rows carry data-context).\n * @slot menu - The rows: <conare-menu-item slot=\"menu\">, labels and separators.\n * @fires open - It is opening (detail.context: the closest [data-context] value).\n */\nexport class ContextMenu extends DsElement {\n\tstatic styles = [DsElement.styles, popoverStyles, styles]\n\tstatic properties = { label: {}, width: {} }\n\n\t/** The menu's name for assistive tech. */\n\tlabel = ''\n\twidth?: string\n\tprivate pop = new PopoverController(this, {\n\t\tside: 'bottom',\n\t\talign: 'start',\n\t\tgap: 0,\n\t\tanchor: () => null,\n\t\tpanel: () => this.renderRoot.querySelector<HTMLElement>('.ds-pop'),\n\t})\n\n\tconstructor() {\n\t\tsuper()\n\t\t// A chosen row closes the menu, focus back where it was.\n\t\tnew CloseOnSelect(this, () => this.pop.hide(true))\n\t}\n\n\tprivate rows() {\n\t\treturn menuRows(this, 'menu')\n\t}\n\tprivate context(event: Event) {\n\t\treturn (event.composedPath()[0] as HTMLElement | null)?.closest?.<HTMLElement>('[data-context]')?.dataset.context\n\t}\n\tprivate onContextMenu = async (event: MouseEvent) => {\n\t\tevent.preventDefault()\n\t\tthis.emit('open', { context: this.context(event) })\n\t\tawait this.pop.show({ at: { x: event.clientX, y: event.clientY } })\n\t\tthis.renderRoot.querySelector<HTMLElement>('.ds-pop')?.focus({ preventScroll: true })\n\t}\n\tprivate onKey = async (event: KeyboardEvent) => {\n\t\tif (event.key !== 'ContextMenu' && !(event.shiftKey && event.key === 'F10')) return\n\t\tevent.preventDefault()\n\t\tconst r = (event.composedPath()[0] as HTMLElement).getBoundingClientRect()\n\t\tthis.emit('open', { context: this.context(event) })\n\t\tawait this.pop.show({ keyboard: true, at: { x: r.left + 8, y: r.bottom } })\n\t\tawait this.updateComplete\n\t\tthis.rows()[0]?.focus()\n\t}\n\tprivate onMenuKey = (event: KeyboardEvent) => {\n\t\tonMenuRows(event, this.rows(), (refocus) => this.pop.hide(refocus))\n\t}\n\n\trender() {\n\t\tconst panel = this.pop.rendered\n\t\t\t? html`<div data-ds=\"context-menu\" popover=\"manual\" class=\"ds-pop flex flex-col p-1\" role=\"menu\" aria-label=${this.label} tabindex=\"-1\" data-side=${this.pop.pos.side} ?data-instant=${this.pop.instant} ?data-placed=${this.pop.pos.placed} style=${this.pop.style(`width: ${this.width ?? '224px'}`)} @keydown=${this.onMenuKey} @focusout=${this.pop.onFocusOut}><slot name=\"menu\"></slot></div>`\n\t\t\t: nothing\n\t\treturn html`<div data-ds=\"context-menu\" @contextmenu=${this.onContextMenu} @keydown=${this.onKey}><slot></slot></div>${panel}`\n\t}\n}\n\ndefine('context-menu', ContextMenu)\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/context-menu.js",
+        "elements/menu-label.js",
+        "elements/menu-item.js",
+        "elements/menu-separator.js",
+        "elements/toaster.js"
+      ],
+      "tag": "conare-context-menu",
+      "tags": [
+        "conare-context-menu"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-context-menu",
+            "name": "ContextMenu",
+            "module": "elements/context-menu.js",
+            "description": "A menu opened at the pointer by a right-click or Shift+F10.",
+            "attributes": [
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string",
+                "default": "''",
+                "description": "The menu's name for assistive tech."
+              },
+              {
+                "name": "width",
+                "field": "width",
+                "type": "string | undefined"
+              }
+            ],
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "''",
+                "description": "The menu's name for assistive tech.",
+                "attribute": "label"
+              },
+              {
+                "name": "width",
+                "type": "string | undefined",
+                "attribute": "width"
+              }
+            ],
+            "events": [
+              {
+                "name": "open",
+                "description": "It is opening (detail.context: the closest [data-context] value)."
+              }
+            ],
+            "slots": [
+              {
+                "name": "",
+                "description": "What the menu is for (a list whose rows carry data-context)."
+              },
+              {
+                "name": "menu",
+                "description": "The rows: <conare-menu-item slot=\"menu\">, labels and separators."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "A namespace's documents",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/context-menu/Product.html",
+          "content": "<!-- A namespace's documents: right-click a row, or focus it and press Shift+F10, for what you can do with it. -->\n<div class=\"min-h-80 max-w-120\">\n  <conare-context-menu label=\"document\" id=\"document-menu\">\n    <ul class=\"border border-edge\">\n      <li data-context=\"doc_8f2k1\" tabindex=\"0\" class=\"flex h-row items-center gap-2 border-b border-edge px-3 last:border-b-0 transition-colors duration-120 ease-standard hover:bg-surface-subtle focus-visible:bg-surface-subtle focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-focus\">\n        <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-file-text shrink-0 text-fg-muted\" aria-hidden=\"true\"><path d=\"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z\"></path><path d=\"M14 2v4a2 2 0 0 0 2 2h4\"></path><path d=\"M10 9H8\"></path><path d=\"M16 13H8\"></path><path d=\"M16 17H8\"></path></svg>\n        <span class=\"min-w-0 flex-1 truncate\">Master services agreement</span>\n        <span class=\"type-code-sm text-fg-muted max-md:hidden\">doc_8f2k1</span>\n        <span class=\"w-14 text-right type-meta text-fg-muted tabular-nums\">412 KB</span>\n      </li>\n      <li data-context=\"doc_3m9q7\" tabindex=\"0\" class=\"flex h-row items-center gap-2 border-b border-edge px-3 last:border-b-0 transition-colors duration-120 ease-standard hover:bg-surface-subtle focus-visible:bg-surface-subtle focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-focus\">\n        <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-file-text shrink-0 text-fg-muted\" aria-hidden=\"true\"><path d=\"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z\"></path><path d=\"M14 2v4a2 2 0 0 0 2 2h4\"></path><path d=\"M10 9H8\"></path><path d=\"M16 13H8\"></path><path d=\"M16 17H8\"></path></svg>\n        <span class=\"min-w-0 flex-1 truncate\">Order form, 2026 renewal</span>\n        <span class=\"type-code-sm text-fg-muted max-md:hidden\">doc_3m9q7</span>\n        <span class=\"w-14 text-right type-meta text-fg-muted tabular-nums\">96 KB</span>\n      </li>\n      <li data-context=\"doc_5t0x2\" tabindex=\"0\" class=\"flex h-row items-center gap-2 border-b border-edge px-3 last:border-b-0 transition-colors duration-120 ease-standard hover:bg-surface-subtle focus-visible:bg-surface-subtle focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-edge-focus\">\n        <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-file-text shrink-0 text-fg-muted\" aria-hidden=\"true\"><path d=\"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z\"></path><path d=\"M14 2v4a2 2 0 0 0 2 2h4\"></path><path d=\"M10 9H8\"></path><path d=\"M16 13H8\"></path><path d=\"M16 17H8\"></path></svg>\n        <span class=\"min-w-0 flex-1 truncate\">Data processing addendum</span>\n        <span class=\"type-code-sm text-fg-muted max-md:hidden\">doc_5t0x2</span>\n        <span class=\"w-14 text-right type-meta text-fg-muted tabular-nums\">184 KB</span>\n      </li>\n    </ul>\n    <conare-menu-label slot=\"menu\"><span class=\"truncate\" data-title></span></conare-menu-label>\n    <conare-menu-item slot=\"menu\" data-note=\"Opened\" data-show=\"id\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-external-link shrink-0 text-fg-muted\" aria-hidden=\"true\"><path d=\"M15 3h6v6\"></path><path d=\"M10 14 21 3\"></path><path d=\"M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6\"></path></svg>Open</conare-menu-item>\n    <conare-menu-item slot=\"menu\" data-note=\"Copied\" data-show=\"id\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-copy shrink-0 text-fg-muted\" aria-hidden=\"true\"><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"></rect><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"></path></svg>Copy ID</conare-menu-item>\n    <conare-menu-item slot=\"menu\" data-note=\"Downloading\" data-show=\"title\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-download shrink-0 text-fg-muted\" aria-hidden=\"true\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"></path><polyline points=\"7 10 12 15 17 10\"></polyline><line x1=\"12\" x2=\"12\" y1=\"15\" y2=\"3\"></line></svg>Download</conare-menu-item>\n    <conare-menu-separator slot=\"menu\"></conare-menu-separator>\n    <conare-menu-item slot=\"menu\" danger data-note=\"Deleted\" data-show=\"id\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-trash-2 shrink-0\" aria-hidden=\"true\"><path d=\"M3 6h18\"></path><path d=\"M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6\"></path><path d=\"M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2\"></path><line x1=\"10\" x2=\"10\" y1=\"11\" y2=\"17\"></line><line x1=\"14\" x2=\"14\" y1=\"11\" y2=\"17\"></line></svg>Delete</conare-menu-item>\n  </conare-context-menu>\n  <p class=\"mt-3 type-meta text-fg-muted\">Right-click a document, or focus it and press Shift+F10.</p>\n  <conare-toaster></conare-toaster>\n</div>\n<script type=\"module\">\n  // The menu names the document it opened for; each row says what it did in a toast.\n  const menu = document.getElementById('document-menu')\n  let doc\n  menu.addEventListener('open', (event) => {\n    const row = menu.querySelector(`[data-context=\"${event.detail.context}\"]`)\n    doc = { id: event.detail.context, title: row?.querySelector('.truncate')?.textContent }\n    menu.querySelector('[data-title]').textContent = doc.title ?? ''\n  })\n  for (const item of menu.querySelectorAll('[data-note]')) {\n    item.addEventListener('select', () => document.querySelector('conare-toaster').toast(item.dataset.note, doc?.[item.dataset.show]))\n  }\n</script>\n"
+        }
+      ]
+    }
+  }
+}

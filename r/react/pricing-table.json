@@ -1,0 +1,18 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "pricing-table",
+  "type": "registry:ui",
+  "title": "Pricing table",
+  "description": "One group of prices: its case on the left, its cards on the right in the double rule. Each card's price large in tabular figures with its unit, one line, and what it includes led by the red square.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://conare-ds-registry.vercel.app/r/react/section-head.json"
+  ],
+  "files": [
+    {
+      "path": "components/site/PricingTable.tsx",
+      "type": "registry:ui",
+      "content": "import { SectionHead } from '@/components/site/SectionHead'\n\n// One group of prices (pricing.vue): its case on the left, its cards on the right in the website's double rule, side by\n// side from 1024px. Each card: the name in Faculty Glyphic 20px, the price large in tabular figures with its unit, one\n// line, and what it includes under a hairline, each led by the red square. Two across from 640px; an odd last card\n// takes the row.\nexport type PriceCard = { name: string, amount: string, unit?: string, line?: string, facts?: string[] }\nexport interface PricingTableProps { title: string, body?: string, cards: PriceCard[], titleId?: string, id?: string }\n\nexport function PricingTable({ title, body, cards, titleId = 'pricing-title', id }: PricingTableProps) {\n  return (\n    <section id={id} data-ds=\"pricing-table\" aria-labelledby={titleId} className=\"mx-auto grid max-w-[1440px] scroll-mt-16 grid-cols-[minmax(0,1fr)] gap-8 px-4 pb-24 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2.4fr)] lg:gap-16 lg:px-10 lg:pb-32\">\n      <SectionHead title={title} body={body} titleId={titleId} align=\"start\" />\n      <ul className=\"grid grid-cols-[minmax(0,1fr)] gap-px border border-edge bg-edge outline outline-offset-4 outline-edge sm:grid-cols-2\">\n        {cards.map((c, i) => (\n          <li key={c.name} className={['flex flex-col bg-surface px-5 py-6 sm:px-6', cards.length % 2 && i === cards.length - 1 ? 'sm:col-span-2' : ''].join(' ')}>\n            <h3 className=\"type-heading-3 text-fg\">{c.name}</h3>\n            <p className=\"mt-4 flex flex-wrap items-baseline gap-x-2 gap-y-1\">\n              <span className=\"text-viz-score tracking-display text-fg tabular-nums\">{c.amount}</span>\n              {c.unit && <span className=\"text-body text-fg-muted\">{c.unit}</span>}\n            </p>\n            {c.line && <p className=\"mt-3 text-body leading-5.5 text-fg-muted\">{c.line}</p>}\n            {!!c.facts?.length && (\n              <ul className=\"mt-5 flex flex-col gap-2 border-t border-edge pt-5\">\n                {c.facts.map(f => (\n                  <li key={f} className=\"flex items-center gap-3 text-body text-fg\">\n                    <span aria-hidden=\"true\" className=\"size-1.5 shrink-0 bg-home-red\" />\n                    {f}\n                  </li>\n                ))}\n              </ul>\n            )}\n          </li>\n        ))}\n      </ul>\n    </section>\n  )\n}\n\nexport default PricingTable\n"
+    }
+  ]
+}

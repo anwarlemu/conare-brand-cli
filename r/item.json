@@ -1,0 +1,327 @@
+{
+  "name": "item",
+  "title": "Item",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "One row of a card's list: 12px, its title on the left and what it is on the right, a hairline between rows. A row that opens something is one link that fills to the card's edges with the paper under the pointer, its chevron darkening; a row can carry a tool at its end.",
+  "use_for": "What a namespace or a key is, settings that open their page, sources as getting started lists them.",
+  "never": [
+    "Buttons inside a row that is a link",
+    "An arrow that moves on hover",
+    "A row of rows: a table for many columns"
+  ],
+  "source": "conare-web app/assets/css/console2.css (.v2-rows, .v2-row, .v2-row-link), app/components/console/Source.vue (source-row)",
+  "body": "",
+  "requires": [],
+  "dependencies": [
+    "lucide-vue-next@^0.479.0"
+  ],
+  "files": [
+    {
+      "path": "components/ui/Item.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ChevronRight } from 'lucide-vue-next'\n\n// One row of a card's list (console2.css .v2-row, .v2-row-link): 12px, its title on the left and what it is on the\n// right, 8px above and below. With `href` the whole row is one link that fills to the card's edges with the paper\n// under the pointer (it runs 16px past its box, a card's inset); `arrow` adds a chevron that darkens with it. Rows in\n// a list share a hairline: put them in ItemGroup. Slots: `media` before the title (a logo, a tile), `meta` beside\n// it (a tag, a time), and `actions` at the end, on a row without `href` only (a link holds no buttons).\ndefineProps<{ title?: string, description?: string, href?: string, arrow?: boolean }>()\n</script>\n\n<template>\n  <a data-ds=\"item\" v-if=\"href\" :href=\"href\" class=\"ds-item-link group/item -mx-4 flex items-center justify-between gap-3 px-4 py-2 text-meta\">\n    <span class=\"flex min-w-0 items-center gap-2\">\n      <slot name=\"media\" />\n      <span class=\"min-w-0\">\n        <span class=\"block truncate text-fg\"><slot>{{ title }}</slot></span>\n        <span v-if=\"description\" class=\"block truncate text-fg-muted\">{{ description }}</span>\n      </span>\n    </span>\n    <span class=\"flex shrink-0 items-center gap-2 text-fg-muted\">\n      <slot name=\"meta\" />\n      <ChevronRight v-if=\"arrow\" :size=\"12\" :stroke-width=\"1.5\" class=\"transition-colors duration-120 ease-standard group-hover/item:text-fg\" aria-hidden=\"true\" />\n    </span>\n  </a>\n  <div data-ds=\"item\" v-else class=\"flex items-center justify-between gap-3 py-2 text-meta\">\n    <span class=\"flex min-w-0 items-center gap-2\">\n      <slot name=\"media\" />\n      <span class=\"min-w-0\">\n        <span class=\"block truncate text-fg\"><slot>{{ title }}</slot></span>\n        <span v-if=\"description\" class=\"block truncate text-fg-muted\">{{ description }}</span>\n      </span>\n    </span>\n    <span v-if=\"$slots.meta || $slots.actions\" class=\"flex shrink-0 items-center gap-2 text-fg-muted\">\n      <slot name=\"meta\" />\n      <slot name=\"actions\" />\n    </span>\n  </div>\n</template>\n\n<style>\n.ds-item-link { transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-item-link:hover { background: var(--ds-color-surface-subtle); } }\n.ds-item-link:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }\n</style>\n"
+    },
+    {
+      "path": "components/ui/ItemGroup.vue",
+      "content": "<template>\n  <!-- Rows of one list, a hairline between each (console2.css .v2-rows). Put Item rows in it, one per <li>. -->\n  <ul data-ds=\"item-group\" class=\"flex flex-col [&>*+*]:border-t [&>*+*]:border-edge\"><slot /></ul>\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "In a card",
+      "center": false,
+      "half": false,
+      "path": "examples/item/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport Button from '@/components/ui/Button.vue'\nimport Card from '@/components/ui/Card.vue'\nimport Item from '@/components/ui/Item.vue'\nimport ItemGroup from '@/components/ui/ItemGroup.vue'\n// A card's rows: what a namespace is, a row with its tool, and rows that open something, filling to the card's edge\n// under the pointer.\n</script>\n\n<template>\n  <div class=\"grid gap-6 md:grid-cols-2\">\n    <Card title=\"contracts\">\n      <ItemGroup class=\"-my-2\">\n        <li><Item title=\"Documents\"><template #meta><span class=\"tabular-nums\">412,830</span></template></Item></li>\n        <li><Item title=\"Region\"><template #meta>United States</template></Item></li>\n        <li><Item title=\"Embedding model\" description=\"Used for every document in it\"><template #meta><span class=\"type-code-sm\">acme-embed-1</span></template></Item></li>\n        <li><Item title=\"API key\" description=\"Last used 2 min ago\"><template #actions><Button>Rotate</Button></template></Item></li>\n      </ItemGroup>\n    </Card>\n    <Card title=\"Settings\">\n      <ItemGroup class=\"-my-2\">\n        <li><Item href=\"#members\" title=\"Members\" arrow><template #meta>4 of 10 seats</template></Item></li>\n        <li><Item href=\"#billing\" title=\"Billing\" arrow><template #meta>Pro</template></Item></li>\n        <li><Item href=\"#keys\" title=\"API keys\" description=\"Create and revoke keys\" arrow /></li>\n      </ItemGroup>\n    </Card>\n  </div>\n</template>\n",
+      "requires": [
+        "button",
+        "card"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    },
+    {
+      "name": "Sources",
+      "label": "Sources",
+      "center": false,
+      "half": false,
+      "path": "examples/item/Sources.vue",
+      "content": "<script setup lang=\"ts\">\nimport { FileText, Hash, Users } from 'lucide-vue-next'\nimport Item from '@/components/ui/Item.vue'\nimport StatusTag from '@/components/ui/StatusTag.vue'\n// Sources as getting started lists them (source-row): the app's mark and the source's name, its sync's state, then\n// when it last synced and syncs next. Each row opens its source.\nconst sources = [\n  { id: 'drive', name: 'Contracts drive', icon: FileText, status: 'ready', last: 'synced 2 min ago', next: 'next in 58 min' },\n  { id: 'slack', name: 'Acme Slack', icon: Hash, status: 'syncing', last: 'synced 1 h ago', next: '' },\n  { id: 'crm', name: 'Accounts', icon: Users, status: 'error', last: 'synced yesterday', next: '' },\n]\n</script>\n\n<template>\n  <ul class=\"flex max-w-140 flex-col gap-3\">\n    <li v-for=\"s in sources\" :key=\"s.id\" class=\"border border-edge px-4\">\n      <Item :href=\"`#${s.id}`\" :title=\"s.name\" :description=\"[s.last, s.next].filter(Boolean).join(' · ')\" arrow>\n        <template #media><span class=\"inline-flex size-5 shrink-0 items-center justify-center border border-edge bg-surface-subtle\" aria-hidden=\"true\"><component :is=\"s.icon\" :size=\"12\" :stroke-width=\"1.5\" /></span></template>\n        <template #meta><StatusTag :status=\"s.status\" /></template>\n      </Item>\n    </li>\n  </ul>\n</template>\n",
+      "requires": [
+        "tag"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Item.tsx",
+          "content": "import { ChevronRight } from 'lucide-react'\nimport type { ReactNode } from 'react'\nimport { cn } from '@/react/lib/cn'\n\n// One row of a card's list (console2.css .v2-row, .v2-row-link): 12px, its title on the left and what it is on the\n// right, 8px above and below. With `href` the whole row is one link that fills to the card's edges with the paper\n// under the pointer (it runs 16px past its box, a card's inset); `arrow` adds a chevron that darkens with it. Rows in\n// a list share a hairline: put them in ItemGroup. Props for Vue's slots: `media` before the title (a logo, a tile),\n// `meta` beside it (a tag, a time), and `actions` at the end, on a row without `href` only (a link holds no buttons).\nexport interface ItemProps {\n  title?: string\n  description?: string\n  href?: string\n  arrow?: boolean\n  media?: ReactNode\n  meta?: ReactNode\n  actions?: ReactNode\n  className?: string\n  /** The title, in place of `title`. */\n  children?: ReactNode\n}\n\nexport function Item({ title, description, href, arrow, media, meta, actions, className, children }: ItemProps) {\n  const body = (\n    <span className=\"flex min-w-0 items-center gap-2\">\n      {media}\n      <span className=\"min-w-0\">\n        <span className=\"block truncate text-fg\">{children ?? title}</span>\n        {description && <span className=\"block truncate text-fg-muted\">{description}</span>}\n      </span>\n    </span>\n  )\n  if (href) {\n    return (\n      <>\n        <style href=\"ds-item\" precedence=\"ds\">{css}</style>\n        <a data-ds=\"item\" href={href} className={cn('ds-item-link group/item -mx-4 flex items-center justify-between gap-3 px-4 py-2 text-meta', className)}>\n          {body}\n          <span className=\"flex shrink-0 items-center gap-2 text-fg-muted\">\n            {meta}\n            {arrow && <ChevronRight size={12} strokeWidth={1.5} className=\"transition-colors duration-120 ease-standard group-hover/item:text-fg\" aria-hidden=\"true\" />}\n          </span>\n        </a>\n      </>\n    )\n  }\n  return (\n    <div data-ds=\"item\" className={cn('flex items-center justify-between gap-3 py-2 text-meta', className)}>\n      {body}\n      {(meta || actions) && (\n        <span className=\"flex shrink-0 items-center gap-2 text-fg-muted\">\n          {meta}\n          {actions}\n        </span>\n      )}\n    </div>\n  )\n}\n\nexport default Item\n\nconst css = `\n.ds-item-link { transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-item-link:hover { background: var(--ds-color-surface-subtle); } }\n.ds-item-link:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }\n`\n"
+        },
+        {
+          "path": "react/components/ui/ItemGroup.tsx",
+          "content": "import type { HTMLAttributes } from 'react'\nimport { cn } from '@/react/lib/cn'\n\n// Rows of one list, a hairline between each (console2.css .v2-rows). Put Item rows in it, one per <li>.\nexport type ItemGroupProps = HTMLAttributes<HTMLUListElement>\n\nexport function ItemGroup({ className, children, ...rest }: ItemGroupProps) {\n  return <ul data-ds=\"item-group\" className={cn('flex flex-col [&>*+*]:border-t [&>*+*]:border-edge', className)} {...rest}>{children}</ul>\n}\n\nexport default ItemGroup\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [
+        "lucide-react@0.479.0"
+      ],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "Item",
+            "file": "react/components/ui/Item.tsx",
+            "props": [
+              {
+                "name": "title",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "description",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "href",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "arrow",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "media",
+                "type": "ReactNode",
+                "required": false
+              },
+              {
+                "name": "meta",
+                "type": "ReactNode",
+                "required": false
+              },
+              {
+                "name": "actions",
+                "type": "ReactNode",
+                "required": false
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false,
+                "description": "The title, in place of `title`."
+              }
+            ]
+          },
+          {
+            "name": "ItemGroup",
+            "file": "react/components/ui/ItemGroup.tsx",
+            "props": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In a card",
+          "center": false,
+          "half": false,
+          "path": "react/examples/item/Product.tsx",
+          "content": "import { Button } from '@/react/components/ui/Button'\nimport { Card } from '@/react/components/ui/Card'\nimport { Item } from '@/react/components/ui/Item'\nimport { ItemGroup } from '@/react/components/ui/ItemGroup'\n// A card's rows: what a namespace is, a row with its tool, and rows that open something, filling to the card's edge\n// under the pointer.\n\nexport default function Product() {\n  return (\n    <div className=\"grid gap-6 md:grid-cols-2\">\n      <Card title=\"contracts\">\n        <ItemGroup className=\"-my-2\">\n          <li><Item title=\"Documents\" meta={<span className=\"tabular-nums\">412,830</span>} /></li>\n          <li><Item title=\"Region\" meta=\"United States\" /></li>\n          <li><Item title=\"Embedding model\" description=\"Used for every document in it\" meta={<span className=\"type-code-sm\">acme-embed-1</span>} /></li>\n          <li><Item title=\"API key\" description=\"Last used 2 min ago\" actions={<Button>Rotate</Button>} /></li>\n        </ItemGroup>\n      </Card>\n      <Card title=\"Settings\">\n        <ItemGroup className=\"-my-2\">\n          <li><Item href=\"#members\" title=\"Members\" arrow meta=\"4 of 10 seats\" /></li>\n          <li><Item href=\"#billing\" title=\"Billing\" arrow meta=\"Pro\" /></li>\n          <li><Item href=\"#keys\" title=\"API keys\" description=\"Create and revoke keys\" arrow /></li>\n        </ItemGroup>\n      </Card>\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "button",
+            "card"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        },
+        {
+          "name": "Sources",
+          "label": "Sources",
+          "center": false,
+          "half": false,
+          "path": "react/examples/item/Sources.tsx",
+          "content": "import { FileText, Hash, Users } from 'lucide-react'\nimport { Item } from '@/react/components/ui/Item'\nimport { StatusTag } from '@/react/components/ui/StatusTag'\n// Sources as getting started lists them (source-row): the app's mark and the source's name, its sync's state, then\n// when it last synced and syncs next. Each row opens its source.\nconst sources = [\n  { id: 'drive', name: 'Contracts drive', icon: FileText, status: 'ready', last: 'synced 2 min ago', next: 'next in 58 min' },\n  { id: 'slack', name: 'Acme Slack', icon: Hash, status: 'syncing', last: 'synced 1 h ago', next: '' },\n  { id: 'crm', name: 'Accounts', icon: Users, status: 'error', last: 'synced yesterday', next: '' },\n]\n\nexport default function Sources() {\n  return (\n    <ul className=\"flex max-w-140 flex-col gap-3\">\n      {sources.map(s => (\n        <li key={s.id} className=\"border border-edge px-4\">\n          <Item\n            href={`#${s.id}`}\n            title={s.name}\n            description={[s.last, s.next].filter(Boolean).join(' · ')}\n            arrow\n            media={<span className=\"inline-flex size-5 shrink-0 items-center justify-center border border-edge bg-surface-subtle\" aria-hidden=\"true\"><s.icon size={12} strokeWidth={1.5} /></span>}\n            meta={<StatusTag status={s.status} />}\n          />\n        </li>\n      ))}\n    </ul>\n  )\n}\n",
+          "registryDependencies": [
+            "tag"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/item.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { ChevronRight } from 'lucide'\nimport { DsElement, define } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport styles from 'virtual:tw'\n\n// Item.vue as <conare-item>: one row of a card's list (console2.css .v2-row, .v2-row-link): 12px, its title on the\n// left and what it is on the right, 8px above and below. With `href` the whole row is one link that fills to the card's\n// edges with the paper under the pointer (it runs 16px past its box, a card's inset); `arrow` adds a chevron that\n// darkens with it. Rows in a list share a hairline: put them in <conare-item-group>. Vue's `title` is `heading`.\n\n/**\n * @summary One row of a card's list; with href, the whole row is a link.\n * @slot - The title, in place of `heading`.\n * @slot media - Before the title (a logo, a tile).\n * @slot meta - Beside it (a tag, a time).\n * @slot actions - At the end, on a row without href only (a link holds no buttons).\n */\nexport class Item extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { heading: {}, description: {}, href: {}, arrow: { type: Boolean } }\n\n\t/** The title (Vue's `title`; `title` is HTML's tooltip attribute). */\n\theading?: string\n\t/** A muted second line. */\n\tdescription?: string\n\t/** The whole row opens this. */\n\thref?: string\n\t/** A chevron that darkens under the pointer. */\n\tarrow = false\n\n\t// The whitespace between named-slot children is assigned to the default slot, so a slot fallback would never show:\n\t// the title shows when the default slot holds nothing but whitespace.\n\trender() {\n\t\tconst body = html`<span class=\"flex min-w-0 items-center gap-2\">\n\t\t\t<slot name=\"media\"></slot>\n\t\t\t<span class=\"min-w-0\">\n\t\t\t\t<span class=\"block truncate text-fg\"><slot></slot>${this.hasSlot() ? nothing : this.heading}</span>\n\t\t\t\t${this.description ? html`<span class=\"block truncate text-fg-muted\">${this.description}</span>` : nothing}\n\t\t\t</span>\n\t\t</span>`\n\t\tif (this.href) {\n\t\t\treturn html`<a data-ds=\"item\" href=${this.href} class=\"ds-item-link group/item -mx-4 flex items-center justify-between gap-3 px-4 py-2 text-meta\">\n\t\t\t\t${body}\n\t\t\t\t<span class=\"flex shrink-0 items-center gap-2 text-fg-muted\">\n\t\t\t\t\t<slot name=\"meta\"></slot>\n\t\t\t\t\t${this.arrow ? icon(ChevronRight, 'chevron-right', { size: 12, strokeWidth: 1.5, class: 'transition-colors duration-120 ease-standard group-hover/item:text-fg', attrs: { 'aria-hidden': 'true' } }) : nothing}\n\t\t\t\t</span>\n\t\t\t</a>`\n\t\t}\n\t\tconst end = this.hasSlot('meta') || this.hasSlot('actions')\n\t\treturn html`<div data-ds=\"item\" class=\"flex items-center justify-between gap-3 py-2 text-meta\">\n\t\t\t${body}\n\t\t\t${end ? html`<span class=\"flex shrink-0 items-center gap-2 text-fg-muted\"><slot name=\"meta\"></slot><slot name=\"actions\"></slot></span>` : nothing}\n\t\t</div>`\n\t}\n}\n\ndefine('item', Item)\n"
+        },
+        {
+          "path": "elements/components/ui/item.css",
+          "content": ".ds-item-link { transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-item-link:hover { background: var(--ds-color-surface-subtle); } }\n.ds-item-link:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }\n"
+        },
+        {
+          "path": "elements/components/ui/item-group.ts",
+          "content": "import { html } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// ItemGroup.vue as <conare-item-group>: rows of one list, a hairline between each (console2.css .v2-rows). Put\n// <conare-item> rows in it, one per <li>.\n\n/**\n * @summary Rows of one list, a hairline between each.\n * @slot - <li> elements, each holding a <conare-item>.\n */\nexport class ItemGroup extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\n\trender() {\n\t\treturn html`<ul class=\"contents\"><slot></slot></ul>`\n\t}\n}\n\ndefine('item-group', ItemGroup)\n"
+        },
+        {
+          "path": "elements/components/ui/item-group.css",
+          "content": "/* The host is the list's box (ItemGroup.vue's <ul>), so a class on <conare-item-group> (-my-2) lands on it; the <ul>\n   inside keeps the list's meaning and lays out nothing. The rows are the page's <li>s: the hairline between them is\n   set on them as slotted elements, important because the page's reset (no border on any element) outranks ::slotted. */\n:host { display: flex; flex-direction: column; }\n::slotted(:not(:first-child)) { border-top: var(--ds-border-hairline) solid var(--ds-color-edge) !important; }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/item.js",
+        "elements/item-group.js",
+        "elements/card.js",
+        "elements/button.js",
+        "elements/status-tag.js"
+      ],
+      "tag": "conare-item",
+      "tags": [
+        "conare-item",
+        "conare-item-group"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-item",
+            "name": "Item",
+            "module": "elements/item.js",
+            "description": "One row of a card's list; with href, the whole row is a link.",
+            "attributes": [
+              {
+                "name": "heading",
+                "field": "heading",
+                "type": "string | undefined",
+                "description": "The title (Vue's `title`; `title` is HTML's tooltip attribute)."
+              },
+              {
+                "name": "description",
+                "field": "description",
+                "type": "string | undefined",
+                "description": "A muted second line."
+              },
+              {
+                "name": "href",
+                "field": "href",
+                "type": "string | undefined",
+                "description": "The whole row opens this."
+              },
+              {
+                "name": "arrow",
+                "field": "arrow",
+                "type": "boolean",
+                "default": "false",
+                "description": "A chevron that darkens under the pointer."
+              }
+            ],
+            "properties": [
+              {
+                "name": "heading",
+                "type": "string | undefined",
+                "description": "The title (Vue's `title`; `title` is HTML's tooltip attribute).",
+                "attribute": "heading"
+              },
+              {
+                "name": "description",
+                "type": "string | undefined",
+                "description": "A muted second line.",
+                "attribute": "description"
+              },
+              {
+                "name": "href",
+                "type": "string | undefined",
+                "description": "The whole row opens this.",
+                "attribute": "href"
+              },
+              {
+                "name": "arrow",
+                "type": "boolean",
+                "default": "false",
+                "description": "A chevron that darkens under the pointer.",
+                "attribute": "arrow"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "The title, in place of `heading`."
+              },
+              {
+                "name": "media",
+                "description": "Before the title (a logo, a tile)."
+              },
+              {
+                "name": "meta",
+                "description": "Beside it (a tag, a time)."
+              },
+              {
+                "name": "actions",
+                "description": "At the end, on a row without href only (a link holds no buttons)."
+              }
+            ],
+            "methods": []
+          },
+          {
+            "tag": "conare-item-group",
+            "name": "ItemGroup",
+            "module": "elements/item-group.js",
+            "description": "Rows of one list, a hairline between each.",
+            "attributes": [],
+            "properties": [],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "<li> elements, each holding a <conare-item>."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In a card",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/item/Product.html",
+          "content": "<!-- A card's rows: what a namespace is, a row with its tool, and rows that open something, filling to the card's edge\n     under the pointer. -->\n<div class=\"grid gap-6 md:grid-cols-2\">\n  <conare-card heading=\"contracts\">\n    <conare-item-group class=\"-my-2\">\n      <li><conare-item heading=\"Documents\"><span slot=\"meta\" class=\"tabular-nums\">412,830</span></conare-item></li>\n      <li><conare-item heading=\"Region\"><span slot=\"meta\" class=\"contents\">United States</span></conare-item></li>\n      <li><conare-item heading=\"Embedding model\" description=\"Used for every document in it\"><span slot=\"meta\" class=\"type-code-sm\">acme-embed-1</span></conare-item></li>\n      <li><conare-item heading=\"API key\" description=\"Last used 2 min ago\"><conare-button slot=\"actions\">Rotate</conare-button></conare-item></li>\n    </conare-item-group>\n  </conare-card>\n  <conare-card heading=\"Settings\">\n    <conare-item-group class=\"-my-2\">\n      <li><conare-item href=\"#members\" heading=\"Members\" arrow><span slot=\"meta\" class=\"contents\">4 of 10 seats</span></conare-item></li>\n      <li><conare-item href=\"#billing\" heading=\"Billing\" arrow><span slot=\"meta\" class=\"contents\">Pro</span></conare-item></li>\n      <li><conare-item href=\"#keys\" heading=\"API keys\" description=\"Create and revoke keys\" arrow></conare-item></li>\n    </conare-item-group>\n  </conare-card>\n</div>\n"
+        },
+        {
+          "name": "Sources",
+          "label": "Sources",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/item/Sources.html",
+          "content": "<!-- Sources as getting started lists them (source-row): the app's mark and the source's name, its sync's state, then\n     when it last synced and syncs next. Each row opens its source. -->\n<ul class=\"flex max-w-140 flex-col gap-3\">\n  <li class=\"border border-edge px-4\">\n    <conare-item href=\"#drive\" heading=\"Contracts drive\" description=\"synced 2 min ago · next in 58 min\" arrow>\n      <span slot=\"media\" class=\"inline-flex size-5 shrink-0 items-center justify-center border border-edge bg-surface-subtle\" aria-hidden=\"true\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-file-text\"><path d=\"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z\"></path><path d=\"M14 2v4a2 2 0 0 0 2 2h4\"></path><path d=\"M10 9H8\"></path><path d=\"M16 13H8\"></path><path d=\"M16 17H8\"></path></svg></span>\n      <conare-status-tag slot=\"meta\" status=\"ready\"></conare-status-tag>\n    </conare-item>\n  </li>\n  <li class=\"border border-edge px-4\">\n    <conare-item href=\"#slack\" heading=\"Acme Slack\" description=\"synced 1 h ago\" arrow>\n      <span slot=\"media\" class=\"inline-flex size-5 shrink-0 items-center justify-center border border-edge bg-surface-subtle\" aria-hidden=\"true\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-hash\"><line x1=\"4\" x2=\"20\" y1=\"9\" y2=\"9\"></line><line x1=\"4\" x2=\"20\" y1=\"15\" y2=\"15\"></line><line x1=\"10\" x2=\"8\" y1=\"3\" y2=\"21\"></line><line x1=\"16\" x2=\"14\" y1=\"3\" y2=\"21\"></line></svg></span>\n      <conare-status-tag slot=\"meta\" status=\"syncing\"></conare-status-tag>\n    </conare-item>\n  </li>\n  <li class=\"border border-edge px-4\">\n    <conare-item href=\"#crm\" heading=\"Accounts\" description=\"synced yesterday\" arrow>\n      <span slot=\"media\" class=\"inline-flex size-5 shrink-0 items-center justify-center border border-edge bg-surface-subtle\" aria-hidden=\"true\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-users\"><path d=\"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\"></path><circle cx=\"9\" cy=\"7\" r=\"4\"></circle><path d=\"M22 21v-2a4 4 0 0 0-3-3.87\"></path><path d=\"M16 3.13a4 4 0 0 1 0 7.75\"></path></svg></span>\n      <conare-status-tag slot=\"meta\" status=\"error\"></conare-status-tag>\n    </conare-item>\n  </li>\n</ul>\n"
+        }
+      ]
+    }
+  }
+}

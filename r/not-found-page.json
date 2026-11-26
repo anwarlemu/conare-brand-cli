@@ -1,0 +1,350 @@
+{
+  "name": "not-found-page",
+  "title": "Not found page",
+  "type": "registry:block",
+  "group": "site",
+  "description": "The page for an address that leads nowhere: the code in the tag, one line on what happened, the one dark way home, then where people usually meant to go, in the site's frame.",
+  "use_for": "The website's 404 page, and its 500 page (code 500 with its own line).",
+  "never": [
+    "A joke in place of the way home",
+    "A page without the header and footer"
+  ],
+  "source": "No 404 page in conare-web; set from its pages' heads (pricing.vue), the dark button link and the double rule",
+  "body": "Built on `site-page`: `header`, `footer` and `announcement` are its props, and the `logo` and `actions` slots go to the header (`sheet-actions` too, in web components).",
+  "requires": [
+    "button-link",
+    "section-head",
+    "site-page"
+  ],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/site/NotFoundPage.vue",
+      "content": "<script setup lang=\"ts\">\nimport ButtonLink from '@/components/site/ButtonLink.vue'\nimport SectionHead from '@/components/site/SectionHead.vue'\nimport SitePage, { type SiteAction, type SiteAnnouncement, type SiteFooterData, type SiteHeaderData } from '@/components/site/SitePage.vue'\n\n// The page for an address that leads nowhere: the tag with the code, one line on what happened, the one dark way home,\n// then where people usually meant to go, as cells in the double rule that take the paper under the pointer. In the\n// site's frame, so the header and the footer still lead on.\nwithDefaults(defineProps<{\n  header: SiteHeaderData, footer: SiteFooterData, announcement?: SiteAnnouncement\n  code?: string\n  title?: string\n  body?: string\n  home: SiteAction\n  links?: SiteAction[]\n}>(), { code: '404', title: 'This page is not here.', body: 'It moved, or the address has a typo. Start again from the home page.', links: () => [] })\n</script>\n\n<template>\n  <SitePage data-ds=\"not-found-page\" :header=\"header\" :footer=\"footer\" :announcement=\"announcement\">\n      <template #logo><slot name=\"logo\" /></template>\n      <template #actions=\"{ place }\"><slot name=\"actions\" :place=\"place\" /></template>\n    <section aria-labelledby=\"not-found-title\" class=\"mx-auto max-w-[1440px] px-4 pt-24 pb-32 sm:px-6 lg:px-10 lg:pt-32 lg:pb-40\">\n      <SectionHead as=\"h1\" title-id=\"not-found-title\" :tag=\"code\" :title=\"title\" :body=\"body\">\n        <template #action><ButtonLink :href=\"home.href\" grain pixels arrow>{{ home.label }}</ButtonLink></template>\n      </SectionHead>\n      <ul v-if=\"links.length\" aria-label=\"Pages people look for\" class=\"mx-auto mt-16 grid max-w-[880px] grid-cols-2 gap-px border border-edge bg-edge outline outline-offset-4 outline-edge sm:grid-cols-4\">\n        <li v-for=\"l in links\" :key=\"l.href\" class=\"flex bg-surface\">\n          <a :href=\"l.href\" class=\"ds-lost-link flex h-16 w-full items-center justify-center px-3 text-body text-fg\">{{ l.label }}</a>\n        </li>\n      </ul>\n    </section>\n  </SitePage>\n</template>\n\n<style>\n.ds-lost-link { transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-lost-link:hover { background-color: var(--ds-color-surface-subtle); } }\n.ds-lost-link:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "Not found, on sample data",
+      "center": false,
+      "half": false,
+      "path": "examples/not-found-page/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport NotFoundPage from '@/components/site/NotFoundPage.vue'\nimport Button from '@/components/ui/Button.vue'\nimport PixelButton from '@/components/ui/PixelButton.vue'\n// The 404 page on sample data, with the pages people usually look for.\nconst header = {\n  \"items\": [\n    {\n      \"label\": \"Search\",\n      \"desc\": \"Find the answer in any file.\",\n      \"href\": \"#search\"\n    },\n    {\n      \"label\": \"Sync\",\n      \"desc\": \"Keep your apps in step.\",\n      \"href\": \"#sync\"\n    },\n    {\n      \"label\": \"Parse\",\n      \"desc\": \"Read every row and cell.\",\n      \"href\": \"#parse\"\n    }\n  ],\n  \"links\": [\n    {\n      \"label\": \"Pricing\",\n      \"href\": \"#pricing\"\n    },\n    {\n      \"label\": \"Blog\",\n      \"href\": \"#blog\"\n    },\n    {\n      \"label\": \"Docs\",\n      \"href\": \"#docs\"\n    }\n  ],\n  \"homeLabel\": \"Acme home\"\n}\nconst footer = {\n  \"columns\": [\n    {\n      \"title\": \"Product\",\n      \"links\": [\n        {\n          \"label\": \"Search\",\n          \"href\": \"#search\"\n        },\n        {\n          \"label\": \"Sync\",\n          \"href\": \"#sync\"\n        },\n        {\n          \"label\": \"Parse\",\n          \"href\": \"#parse\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Company\",\n      \"links\": [\n        {\n          \"label\": \"About\",\n          \"href\": \"#about\"\n        },\n        {\n          \"label\": \"Blog\",\n          \"href\": \"#blog\"\n        },\n        {\n          \"label\": \"Changelog\",\n          \"href\": \"#changelog\"\n        },\n        {\n          \"label\": \"Contact\",\n          \"href\": \"#contact\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Resources\",\n      \"links\": [\n        {\n          \"label\": \"Docs\",\n          \"href\": \"#docs\"\n        },\n        {\n          \"label\": \"Pricing\",\n          \"href\": \"#pricing\"\n        },\n        {\n          \"label\": \"Status\",\n          \"href\": \"#status\"\n        }\n      ]\n    }\n  ],\n  \"tagline\": \"Search any data you bring. Get the right answer.\",\n  \"legal\": \"© 2026 Acme, Inc.\",\n  \"legalLinks\": [\n    {\n      \"label\": \"Privacy\",\n      \"href\": \"#privacy\"\n    },\n    {\n      \"label\": \"Terms\",\n      \"href\": \"#terms\"\n    }\n  ],\n  \"name\": \"Acme\"\n}\nconst home = {\n  \"label\": \"Back to the home page\",\n  \"href\": \"#home\"\n}\nconst links = [\n  {\n    \"label\": \"Pricing\",\n    \"href\": \"#pricing\"\n  },\n  {\n    \"label\": \"Docs\",\n    \"href\": \"#docs\"\n  },\n  {\n    \"label\": \"Blog\",\n    \"href\": \"#blog\"\n  },\n  {\n    \"label\": \"Contact\",\n    \"href\": \"#contact\"\n  }\n]\n</script>\n\n<template>\n  <div class=\"-m-8\">\n    <NotFoundPage\n      :header=\"header\"\n      :footer=\"footer\"\n      :home=\"home\"\n      :links=\"links\"\n    >\n      <template #logo><span class=\"font-heading text-heading-3 text-fg\">Acme</span></template>\n      <template #actions><Button href=\"#contact\">Contact us</Button><PixelButton href=\"#sign-in\">Sign in</PixelButton></template>\n    </NotFoundPage>\n  </div>\n</template>\n",
+      "requires": [
+        "button",
+        "button-link",
+        "section-head",
+        "site-page"
+      ],
+      "packages": []
+    },
+    {
+      "name": "ServerError",
+      "label": "Server error (500)",
+      "center": false,
+      "half": false,
+      "path": "examples/not-found-page/ServerError.vue",
+      "content": "<script setup lang=\"ts\">\nimport NotFoundPage from '@/components/site/NotFoundPage.vue'\nimport Button from '@/components/ui/Button.vue'\nimport PixelButton from '@/components/ui/PixelButton.vue'\n// The same page for a server error: the code 500 and its own line, the way home kept.\nconst header = {\n  \"items\": [\n    {\n      \"label\": \"Search\",\n      \"desc\": \"Find the answer in any file.\",\n      \"href\": \"#search\"\n    },\n    {\n      \"label\": \"Sync\",\n      \"desc\": \"Keep your apps in step.\",\n      \"href\": \"#sync\"\n    },\n    {\n      \"label\": \"Parse\",\n      \"desc\": \"Read every row and cell.\",\n      \"href\": \"#parse\"\n    }\n  ],\n  \"links\": [\n    {\n      \"label\": \"Pricing\",\n      \"href\": \"#pricing\"\n    },\n    {\n      \"label\": \"Blog\",\n      \"href\": \"#blog\"\n    },\n    {\n      \"label\": \"Docs\",\n      \"href\": \"#docs\"\n    }\n  ],\n  \"homeLabel\": \"Acme home\"\n}\nconst footer = {\n  \"columns\": [\n    {\n      \"title\": \"Product\",\n      \"links\": [\n        {\n          \"label\": \"Search\",\n          \"href\": \"#search\"\n        },\n        {\n          \"label\": \"Sync\",\n          \"href\": \"#sync\"\n        },\n        {\n          \"label\": \"Parse\",\n          \"href\": \"#parse\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Company\",\n      \"links\": [\n        {\n          \"label\": \"About\",\n          \"href\": \"#about\"\n        },\n        {\n          \"label\": \"Blog\",\n          \"href\": \"#blog\"\n        },\n        {\n          \"label\": \"Changelog\",\n          \"href\": \"#changelog\"\n        },\n        {\n          \"label\": \"Contact\",\n          \"href\": \"#contact\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Resources\",\n      \"links\": [\n        {\n          \"label\": \"Docs\",\n          \"href\": \"#docs\"\n        },\n        {\n          \"label\": \"Pricing\",\n          \"href\": \"#pricing\"\n        },\n        {\n          \"label\": \"Status\",\n          \"href\": \"#status\"\n        }\n      ]\n    }\n  ],\n  \"tagline\": \"Search any data you bring. Get the right answer.\",\n  \"legal\": \"© 2026 Acme, Inc.\",\n  \"legalLinks\": [\n    {\n      \"label\": \"Privacy\",\n      \"href\": \"#privacy\"\n    },\n    {\n      \"label\": \"Terms\",\n      \"href\": \"#terms\"\n    }\n  ],\n  \"name\": \"Acme\"\n}\nconst home = {\n  \"label\": \"Back to the home page\",\n  \"href\": \"#home\"\n}\nconst links = [\n  {\n    \"label\": \"Pricing\",\n    \"href\": \"#pricing\"\n  },\n  {\n    \"label\": \"Docs\",\n    \"href\": \"#docs\"\n  },\n  {\n    \"label\": \"Blog\",\n    \"href\": \"#blog\"\n  },\n  {\n    \"label\": \"Contact\",\n    \"href\": \"#contact\"\n  }\n]\n</script>\n\n<template>\n  <div class=\"-m-8\">\n    <NotFoundPage\n      code=\"500\"\n      title=\"Something broke on our side.\"\n      body=\"It is not your address. Try again in a minute, or start from the home page.\"\n      :header=\"header\"\n      :footer=\"footer\"\n      :home=\"home\"\n      :links=\"links\"\n    >\n      <template #logo><span class=\"font-heading text-heading-3 text-fg\">Acme</span></template>\n      <template #actions><Button href=\"#contact\">Contact us</Button><PixelButton href=\"#sign-in\">Sign in</PixelButton></template>\n    </NotFoundPage>\n  </div>\n</template>\n",
+      "requires": [
+        "button",
+        "button-link",
+        "section-head",
+        "site-page"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/site/NotFoundPage.tsx",
+          "content": "import { ButtonLink } from '@/react/components/site/ButtonLink'\nimport { SectionHead } from '@/react/components/site/SectionHead'\nimport { SitePage, type SiteAction, type SiteFrameProps } from '@/react/components/site/SitePage'\n\n// The page for an address that leads nowhere: the tag with the code, one line on what happened, the one dark way home,\n// then where people usually meant to go, as cells in the double rule that take the paper under the pointer. In the\n// site's frame, so the header and the footer still lead on.\nexport interface NotFoundPageProps extends SiteFrameProps {\n  code?: string\n  title?: string\n  body?: string\n  home: SiteAction\n  links?: SiteAction[]\n}\n\nexport function NotFoundPage({ header, footer, announcement, logo, actions, code = '404', title = 'This page is not here.', body = 'It moved, or the address has a typo. Start again from the home page.', home, links = [] }: NotFoundPageProps) {\n  return (\n    <>\n      <style href=\"ds-not-found-page\" precedence=\"ds\">{css}</style>\n      <SitePage data-ds=\"not-found-page\" header={header} footer={footer} announcement={announcement} logo={logo} actions={actions}>\n        <section aria-labelledby=\"not-found-title\" className=\"mx-auto max-w-[1440px] px-4 pt-24 pb-32 sm:px-6 lg:px-10 lg:pt-32 lg:pb-40\">\n          <SectionHead as=\"h1\" titleId=\"not-found-title\" tag={code} title={title} body={body} action={<ButtonLink href={home.href} grain pixels arrow>{home.label}</ButtonLink>} />\n          {!!links.length && (\n            <ul aria-label=\"Pages people look for\" className=\"mx-auto mt-16 grid max-w-[880px] grid-cols-2 gap-px border border-edge bg-edge outline outline-offset-4 outline-edge sm:grid-cols-4\">\n              {links.map(l => (\n                <li key={l.href} className=\"flex bg-surface\">\n                  <a href={l.href} className=\"ds-lost-link flex h-16 w-full items-center justify-center px-3 text-body text-fg\">{l.label}</a>\n                </li>\n              ))}\n            </ul>\n          )}\n        </section>\n      </SitePage>\n    </>\n  )\n}\n\nexport default NotFoundPage\n\nconst css = `\n.ds-lost-link { transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-lost-link:hover { background-color: var(--ds-color-surface-subtle); } }\n.ds-lost-link:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }\n`\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "button-link",
+        "section-head",
+        "site-page"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "NotFoundPage",
+            "file": "react/components/site/NotFoundPage.tsx",
+            "props": [
+              {
+                "name": "code",
+                "type": "string",
+                "required": false,
+                "default": "'404'"
+              },
+              {
+                "name": "title",
+                "type": "string",
+                "required": false,
+                "default": "'This page is not here.'"
+              },
+              {
+                "name": "body",
+                "type": "string",
+                "required": false,
+                "default": "'It moved, or the address has a typo. Start again from the home page.'"
+              },
+              {
+                "name": "home",
+                "type": "SiteAction",
+                "required": true
+              },
+              {
+                "name": "links",
+                "type": "SiteAction[]",
+                "required": false,
+                "default": "[]"
+              }
+            ],
+            "extends": [
+              "SiteFrameProps"
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "Not found, on sample data",
+          "center": false,
+          "half": false,
+          "path": "react/examples/not-found-page/Site.tsx",
+          "content": "import { NotFoundPage } from '@/react/components/site/NotFoundPage'\nimport { Button } from '@/react/components/ui/Button'\nimport { PixelButton } from '@/react/components/ui/PixelButton'\n// The 404 page on sample data, with the pages people usually look for.\nconst header = {\n  \"items\": [\n    {\n      \"label\": \"Search\",\n      \"desc\": \"Find the answer in any file.\",\n      \"href\": \"#search\"\n    },\n    {\n      \"label\": \"Sync\",\n      \"desc\": \"Keep your apps in step.\",\n      \"href\": \"#sync\"\n    },\n    {\n      \"label\": \"Parse\",\n      \"desc\": \"Read every row and cell.\",\n      \"href\": \"#parse\"\n    }\n  ],\n  \"links\": [\n    {\n      \"label\": \"Pricing\",\n      \"href\": \"#pricing\"\n    },\n    {\n      \"label\": \"Blog\",\n      \"href\": \"#blog\"\n    },\n    {\n      \"label\": \"Docs\",\n      \"href\": \"#docs\"\n    }\n  ],\n  \"homeLabel\": \"Acme home\"\n}\nconst footer = {\n  \"columns\": [\n    {\n      \"title\": \"Product\",\n      \"links\": [\n        {\n          \"label\": \"Search\",\n          \"href\": \"#search\"\n        },\n        {\n          \"label\": \"Sync\",\n          \"href\": \"#sync\"\n        },\n        {\n          \"label\": \"Parse\",\n          \"href\": \"#parse\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Company\",\n      \"links\": [\n        {\n          \"label\": \"About\",\n          \"href\": \"#about\"\n        },\n        {\n          \"label\": \"Blog\",\n          \"href\": \"#blog\"\n        },\n        {\n          \"label\": \"Changelog\",\n          \"href\": \"#changelog\"\n        },\n        {\n          \"label\": \"Contact\",\n          \"href\": \"#contact\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Resources\",\n      \"links\": [\n        {\n          \"label\": \"Docs\",\n          \"href\": \"#docs\"\n        },\n        {\n          \"label\": \"Pricing\",\n          \"href\": \"#pricing\"\n        },\n        {\n          \"label\": \"Status\",\n          \"href\": \"#status\"\n        }\n      ]\n    }\n  ],\n  \"tagline\": \"Search any data you bring. Get the right answer.\",\n  \"legal\": \"© 2026 Acme, Inc.\",\n  \"legalLinks\": [\n    {\n      \"label\": \"Privacy\",\n      \"href\": \"#privacy\"\n    },\n    {\n      \"label\": \"Terms\",\n      \"href\": \"#terms\"\n    }\n  ],\n  \"name\": \"Acme\"\n}\nconst home = {\n  \"label\": \"Back to the home page\",\n  \"href\": \"#home\"\n}\nconst links = [\n  {\n    \"label\": \"Pricing\",\n    \"href\": \"#pricing\"\n  },\n  {\n    \"label\": \"Docs\",\n    \"href\": \"#docs\"\n  },\n  {\n    \"label\": \"Blog\",\n    \"href\": \"#blog\"\n  },\n  {\n    \"label\": \"Contact\",\n    \"href\": \"#contact\"\n  }\n]\nexport default function Site() {\n  return (\n    <div className=\"-m-8\">\n      <NotFoundPage\n        header={header}\n        footer={footer}\n        home={home}\n        links={links}\n        logo={<span className=\"font-heading text-heading-3 text-fg\">Acme</span>}\n        actions={() => (<><Button href=\"#contact\">Contact us</Button><PixelButton href=\"#sign-in\">Sign in</PixelButton></>)}\n      />\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "button",
+            "button-link",
+            "section-head",
+            "site-page"
+          ],
+          "dependencies": []
+        },
+        {
+          "name": "ServerError",
+          "label": "Server error (500)",
+          "center": false,
+          "half": false,
+          "path": "react/examples/not-found-page/ServerError.tsx",
+          "content": "import { NotFoundPage } from '@/react/components/site/NotFoundPage'\nimport { Button } from '@/react/components/ui/Button'\nimport { PixelButton } from '@/react/components/ui/PixelButton'\n// The same page for a server error: the code 500 and its own line, the way home kept.\nconst header = {\n  \"items\": [\n    {\n      \"label\": \"Search\",\n      \"desc\": \"Find the answer in any file.\",\n      \"href\": \"#search\"\n    },\n    {\n      \"label\": \"Sync\",\n      \"desc\": \"Keep your apps in step.\",\n      \"href\": \"#sync\"\n    },\n    {\n      \"label\": \"Parse\",\n      \"desc\": \"Read every row and cell.\",\n      \"href\": \"#parse\"\n    }\n  ],\n  \"links\": [\n    {\n      \"label\": \"Pricing\",\n      \"href\": \"#pricing\"\n    },\n    {\n      \"label\": \"Blog\",\n      \"href\": \"#blog\"\n    },\n    {\n      \"label\": \"Docs\",\n      \"href\": \"#docs\"\n    }\n  ],\n  \"homeLabel\": \"Acme home\"\n}\nconst footer = {\n  \"columns\": [\n    {\n      \"title\": \"Product\",\n      \"links\": [\n        {\n          \"label\": \"Search\",\n          \"href\": \"#search\"\n        },\n        {\n          \"label\": \"Sync\",\n          \"href\": \"#sync\"\n        },\n        {\n          \"label\": \"Parse\",\n          \"href\": \"#parse\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Company\",\n      \"links\": [\n        {\n          \"label\": \"About\",\n          \"href\": \"#about\"\n        },\n        {\n          \"label\": \"Blog\",\n          \"href\": \"#blog\"\n        },\n        {\n          \"label\": \"Changelog\",\n          \"href\": \"#changelog\"\n        },\n        {\n          \"label\": \"Contact\",\n          \"href\": \"#contact\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Resources\",\n      \"links\": [\n        {\n          \"label\": \"Docs\",\n          \"href\": \"#docs\"\n        },\n        {\n          \"label\": \"Pricing\",\n          \"href\": \"#pricing\"\n        },\n        {\n          \"label\": \"Status\",\n          \"href\": \"#status\"\n        }\n      ]\n    }\n  ],\n  \"tagline\": \"Search any data you bring. Get the right answer.\",\n  \"legal\": \"© 2026 Acme, Inc.\",\n  \"legalLinks\": [\n    {\n      \"label\": \"Privacy\",\n      \"href\": \"#privacy\"\n    },\n    {\n      \"label\": \"Terms\",\n      \"href\": \"#terms\"\n    }\n  ],\n  \"name\": \"Acme\"\n}\nconst home = {\n  \"label\": \"Back to the home page\",\n  \"href\": \"#home\"\n}\nconst links = [\n  {\n    \"label\": \"Pricing\",\n    \"href\": \"#pricing\"\n  },\n  {\n    \"label\": \"Docs\",\n    \"href\": \"#docs\"\n  },\n  {\n    \"label\": \"Blog\",\n    \"href\": \"#blog\"\n  },\n  {\n    \"label\": \"Contact\",\n    \"href\": \"#contact\"\n  }\n]\nexport default function Site() {\n  return (\n    <div className=\"-m-8\">\n      <NotFoundPage\n        code=\"500\"\n        title=\"Something broke on our side.\"\n        body=\"It is not your address. Try again in a minute, or start from the home page.\"\n        header={header}\n        footer={footer}\n        home={home}\n        links={links}\n        logo={<span className=\"font-heading text-heading-3 text-fg\">Acme</span>}\n        actions={() => (<><Button href=\"#contact\">Contact us</Button><PixelButton href=\"#sign-in\">Sign in</PixelButton></>)}\n      />\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "button",
+            "button-link",
+            "section-head",
+            "site-page"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/site/not-found-page.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { define, tag } from '@/elements/lib/element'\nimport { SiteFrameElement, type SiteAction } from '@/elements/components/site/site-page'\nimport '@/elements/components/site/button-link'\nimport '@/elements/components/site/section-head'\nimport styles from 'virtual:tw'\n\n// NotFoundPage.vue as <conare-not-found-page>: the page for an address that leads nowhere: the tag with the code, one\n// line on what happened, the one dark way home, then where people usually meant to go, as cells in the double rule\n// that take the paper under the pointer. In the site's frame (site-page), so the header and the footer still lead on.\n// `heading` is Vue's `title`.\n\n/**\n * @summary The 404 page: what happened, the way home and the pages people look for.\n * @slot logo - The logo in the header's home link.\n * @slot actions - The header's buttons.\n * @slot sheet-actions - The same buttons again, for the header's sheet on phones.\n */\nexport class NotFoundPage extends SiteFrameElement {\n\tstatic styles = [SiteFrameElement.styles, styles]\n\tstatic properties = { code: {}, heading: {}, body: {}, home: { type: Object }, links: { type: Array } }\n\n\tcode = '404'\n\t/** The line (Vue's `title`). */\n\theading = 'This page is not here.'\n\tbody = 'It moved, or the address has a typo. Start again from the home page.'\n\t/** The one way home: label and href. */\n\thome: SiteAction = { label: '', href: '' }\n\t/** The pages people usually look for. */\n\tlinks: SiteAction[] = []\n\n\trender() {\n\t\tconst [sectionHead, button] = [tag('section-head'), tag('button-link')]\n\t\treturn this.frame('not-found-page', staticHtml`<section aria-labelledby=\"not-found-title\" class=\"mx-auto max-w-[1440px] px-4 pt-24 pb-32 sm:px-6 lg:px-10 lg:pt-32 lg:pb-40\"><${sectionHead} as=\"h1\" title-id=\"not-found-title\" .tag=${this.code} .heading=${this.heading} .body=${this.body}><${button} slot=\"action\" href=${this.home.href} grain pixels arrow>${this.home.label}</${button}></${sectionHead}>${this.links.length ? html`<ul aria-label=\"Pages people look for\" class=\"mx-auto mt-16 grid max-w-[880px] grid-cols-2 gap-px border border-edge bg-edge outline outline-offset-4 outline-edge sm:grid-cols-4\">${this.links.map((l) => html`<li class=\"flex bg-surface\"><a href=${l.href} class=\"ds-lost-link flex h-16 w-full items-center justify-center px-3 text-body text-fg\">${l.label}</a></li>`)}</ul>` : nothing}</section>`)\n\t}\n}\n\ndefine('not-found-page', NotFoundPage)\n"
+        },
+        {
+          "path": "elements/components/site/not-found-page.css",
+          "content": "/* NotFoundPage.vue's <style>, as it is. */\n.ds-lost-link { transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-lost-link:hover { background-color: var(--ds-color-surface-subtle); } }\n.ds-lost-link:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/not-found-page.js",
+        "elements/site-page.js",
+        "elements/button-link.js",
+        "elements/section-head.js",
+        "elements/site-footer.js",
+        "elements/site-header.js",
+        "elements/product-menu.js",
+        "elements/announcement-bar.js",
+        "elements/call-to-action.js",
+        "elements/site-tag.js",
+        "elements/grain.js",
+        "elements/roll-text.js",
+        "elements/cell-burst.js",
+        "elements/button.js",
+        "elements/pixel-button.js"
+      ],
+      "tag": "conare-not-found-page",
+      "tags": [
+        "conare-not-found-page"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "announcement-bar",
+        "button-link",
+        "call-to-action",
+        "cell-burst",
+        "product-menu",
+        "roll-text",
+        "section-head",
+        "site-footer",
+        "site-header",
+        "site-page",
+        "tag"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-not-found-page",
+            "name": "NotFoundPage",
+            "module": "elements/not-found-page.js",
+            "description": "The 404 page: what happened, the way home and the pages people look for.",
+            "attributes": [
+              {
+                "name": "code",
+                "field": "code",
+                "type": "string",
+                "default": "'404'"
+              },
+              {
+                "name": "heading",
+                "field": "heading",
+                "type": "string",
+                "default": "'This page is not here.'",
+                "description": "The line (Vue's `title`)."
+              },
+              {
+                "name": "body",
+                "field": "body",
+                "type": "string",
+                "default": "'It moved, or the address has a typo. Start again from the home page.'"
+              },
+              {
+                "name": "home",
+                "field": "home",
+                "type": "SiteAction",
+                "default": "{ label: '', href: '' }",
+                "description": "The one way home: label and href."
+              },
+              {
+                "name": "links",
+                "field": "links",
+                "type": "SiteAction[]",
+                "default": "[]",
+                "description": "The pages people usually look for."
+              },
+              {
+                "name": "header",
+                "field": "header",
+                "type": "SiteHeaderData",
+                "default": "{ items: [], links: [] }",
+                "description": "The header: items, more, links, productCurrent, homeHref, homeLabel."
+              },
+              {
+                "name": "footer",
+                "field": "footer",
+                "type": "SiteFooterData",
+                "default": "{ columns: [] }",
+                "description": "The footer: columns, tagline, legal, legalLinks, name."
+              },
+              {
+                "name": "announcement",
+                "field": "announcement",
+                "type": "SiteAnnouncement | undefined",
+                "description": "The bar above the header: tag, text, cta, href."
+              }
+            ],
+            "properties": [
+              {
+                "name": "code",
+                "type": "string",
+                "default": "'404'",
+                "attribute": "code"
+              },
+              {
+                "name": "heading",
+                "type": "string",
+                "default": "'This page is not here.'",
+                "description": "The line (Vue's `title`).",
+                "attribute": "heading"
+              },
+              {
+                "name": "body",
+                "type": "string",
+                "default": "'It moved, or the address has a typo. Start again from the home page.'",
+                "attribute": "body"
+              },
+              {
+                "name": "home",
+                "type": "SiteAction",
+                "default": "{ label: '', href: '' }",
+                "description": "The one way home: label and href.",
+                "attribute": "home"
+              },
+              {
+                "name": "links",
+                "type": "SiteAction[]",
+                "default": "[]",
+                "description": "The pages people usually look for.",
+                "attribute": "links"
+              },
+              {
+                "name": "header",
+                "type": "SiteHeaderData",
+                "default": "{ items: [], links: [] }",
+                "description": "The header: items, more, links, productCurrent, homeHref, homeLabel.",
+                "attribute": "header"
+              },
+              {
+                "name": "footer",
+                "type": "SiteFooterData",
+                "default": "{ columns: [] }",
+                "description": "The footer: columns, tagline, legal, legalLinks, name.",
+                "attribute": "footer"
+              },
+              {
+                "name": "announcement",
+                "type": "SiteAnnouncement | undefined",
+                "description": "The bar above the header: tag, text, cta, href.",
+                "attribute": "announcement"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "logo",
+                "description": "The logo in the header's home link."
+              },
+              {
+                "name": "actions",
+                "description": "The header's buttons."
+              },
+              {
+                "name": "sheet-actions",
+                "description": "The same buttons again, for the header's sheet on phones."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "Not found, on sample data",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/not-found-page/Site.html",
+          "content": "<!-- The 404 page on sample data, with the pages people usually look for. -->\n<div class=\"-m-8\">\n  <conare-not-found-page\n    header='{\"items\": [{\"label\": \"Search\", \"desc\": \"Find the answer in any file.\", \"href\": \"#search\"}, {\"label\": \"Sync\", \"desc\": \"Keep your apps in step.\", \"href\": \"#sync\"}, {\"label\": \"Parse\", \"desc\": \"Read every row and cell.\", \"href\": \"#parse\"}], \"links\": [{\"label\": \"Pricing\", \"href\": \"#pricing\"}, {\"label\": \"Blog\", \"href\": \"#blog\"}, {\"label\": \"Docs\", \"href\": \"#docs\"}], \"homeLabel\": \"Acme home\"}'\n    footer='{\"columns\": [{\"title\": \"Product\", \"links\": [{\"label\": \"Search\", \"href\": \"#search\"}, {\"label\": \"Sync\", \"href\": \"#sync\"}, {\"label\": \"Parse\", \"href\": \"#parse\"}]}, {\"title\": \"Company\", \"links\": [{\"label\": \"About\", \"href\": \"#about\"}, {\"label\": \"Blog\", \"href\": \"#blog\"}, {\"label\": \"Changelog\", \"href\": \"#changelog\"}, {\"label\": \"Contact\", \"href\": \"#contact\"}]}, {\"title\": \"Resources\", \"links\": [{\"label\": \"Docs\", \"href\": \"#docs\"}, {\"label\": \"Pricing\", \"href\": \"#pricing\"}, {\"label\": \"Status\", \"href\": \"#status\"}]}], \"tagline\": \"Search any data you bring. Get the right answer.\", \"legal\": \"© 2026 Acme, Inc.\", \"legalLinks\": [{\"label\": \"Privacy\", \"href\": \"#privacy\"}, {\"label\": \"Terms\", \"href\": \"#terms\"}], \"name\": \"Acme\"}'\n    home='{\"label\": \"Back to the home page\", \"href\": \"#home\"}'\n    links='[{\"label\": \"Pricing\", \"href\": \"#pricing\"}, {\"label\": \"Docs\", \"href\": \"#docs\"}, {\"label\": \"Blog\", \"href\": \"#blog\"}, {\"label\": \"Contact\", \"href\": \"#contact\"}]'\n  >\n    <span slot=\"logo\" class=\"font-heading text-heading-3 text-fg\">Acme</span>\n    <conare-button slot=\"actions\" href=\"#contact\">Contact us</conare-button>\n    <conare-pixel-button slot=\"actions\" href=\"#sign-in\">Sign in</conare-pixel-button>\n    <conare-button slot=\"sheet-actions\" href=\"#contact\">Contact us</conare-button>\n    <conare-pixel-button slot=\"sheet-actions\" href=\"#sign-in\">Sign in</conare-pixel-button>\n  </conare-not-found-page>\n</div>\n"
+        },
+        {
+          "name": "ServerError",
+          "label": "Server error (500)",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/not-found-page/ServerError.html",
+          "content": "<!-- The same page for a server error: the code 500 and its own line, the way home kept. -->\n<div class=\"-m-8\">\n  <conare-not-found-page\n    code=\"500\"\n    heading=\"Something broke on our side.\"\n    body=\"It is not your address. Try again in a minute, or start from the home page.\"\n    header='{\"items\": [{\"label\": \"Search\", \"desc\": \"Find the answer in any file.\", \"href\": \"#search\"}, {\"label\": \"Sync\", \"desc\": \"Keep your apps in step.\", \"href\": \"#sync\"}, {\"label\": \"Parse\", \"desc\": \"Read every row and cell.\", \"href\": \"#parse\"}], \"links\": [{\"label\": \"Pricing\", \"href\": \"#pricing\"}, {\"label\": \"Blog\", \"href\": \"#blog\"}, {\"label\": \"Docs\", \"href\": \"#docs\"}], \"homeLabel\": \"Acme home\"}'\n    footer='{\"columns\": [{\"title\": \"Product\", \"links\": [{\"label\": \"Search\", \"href\": \"#search\"}, {\"label\": \"Sync\", \"href\": \"#sync\"}, {\"label\": \"Parse\", \"href\": \"#parse\"}]}, {\"title\": \"Company\", \"links\": [{\"label\": \"About\", \"href\": \"#about\"}, {\"label\": \"Blog\", \"href\": \"#blog\"}, {\"label\": \"Changelog\", \"href\": \"#changelog\"}, {\"label\": \"Contact\", \"href\": \"#contact\"}]}, {\"title\": \"Resources\", \"links\": [{\"label\": \"Docs\", \"href\": \"#docs\"}, {\"label\": \"Pricing\", \"href\": \"#pricing\"}, {\"label\": \"Status\", \"href\": \"#status\"}]}], \"tagline\": \"Search any data you bring. Get the right answer.\", \"legal\": \"© 2026 Acme, Inc.\", \"legalLinks\": [{\"label\": \"Privacy\", \"href\": \"#privacy\"}, {\"label\": \"Terms\", \"href\": \"#terms\"}], \"name\": \"Acme\"}'\n    home='{\"label\": \"Back to the home page\", \"href\": \"#home\"}'\n    links='[{\"label\": \"Pricing\", \"href\": \"#pricing\"}, {\"label\": \"Docs\", \"href\": \"#docs\"}, {\"label\": \"Blog\", \"href\": \"#blog\"}, {\"label\": \"Contact\", \"href\": \"#contact\"}]'\n  >\n    <span slot=\"logo\" class=\"font-heading text-heading-3 text-fg\">Acme</span>\n    <conare-button slot=\"actions\" href=\"#contact\">Contact us</conare-button>\n    <conare-pixel-button slot=\"actions\" href=\"#sign-in\">Sign in</conare-pixel-button>\n    <conare-button slot=\"sheet-actions\" href=\"#contact\">Contact us</conare-button>\n    <conare-pixel-button slot=\"sheet-actions\" href=\"#sign-in\">Sign in</conare-pixel-button>\n  </conare-not-found-page>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

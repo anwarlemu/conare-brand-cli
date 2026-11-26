@@ -1,0 +1,165 @@
+{
+  "name": "alert",
+  "title": "Alert",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "A red box for what broke: one box per problem, set apart, with the problem in words and the button that fixes it.",
+  "use_for": "Something the person must act on now, such as a source that stopped syncing.",
+  "never": [
+    "Information that needs no action",
+    "Several problems in one box: one box each, however many there are"
+  ],
+  "source": "conare-web app/assets/css/console2.css (.v2-banner, .v2-banner-row, .v2-banner-mark)",
+  "body": "",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Alert.vue",
+      "content": "<script setup lang=\"ts\">\n// A red box for what broke (console2.css .v2-banner-row): one box per problem, the problem in words (its subject in\n// ink, medium) and the button that fixes it. A 6px red square leads it. Stack several in a column 8px apart, one each.\ndefineProps<{ title: string }>()\n</script>\n\n<template>\n  <div data-ds=\"alert\" class=\"flex flex-wrap items-center gap-x-3 gap-y-2.5 border border-home-red-press bg-surface-danger py-2.5 pr-3 pl-4 text-fg-danger max-md:items-start max-md:p-3\" role=\"alert\">\n    <span class=\"size-1.5 shrink-0 bg-home-red-press max-md:mt-1.75\" aria-hidden=\"true\" />\n    <p class=\"min-w-0 flex-1 max-md:basis-[calc(100%-48px)]\"><span class=\"font-medium text-fg\">{{ title }}</span> <slot /></p>\n    <div v-if=\"$slots.action\" class=\"shrink-0\"><slot name=\"action\" /></div>\n  </div>\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "Sources that failed",
+      "center": false,
+      "half": false,
+      "path": "examples/alert/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport Alert from '@/components/ui/Alert.vue'\nimport Button from '@/components/ui/Button.vue'\n// Two sources that stopped syncing, each with the button that fixes it.\nconst failed = [\n  { name: 'HubSpot', error: 'The token expired on Oct 29.' },\n  { name: 'Google Drive', error: 'Conare lost access to the shared drive.' },\n]\n</script>\n\n<template>\n  <section class=\"flex flex-col gap-2\" aria-label=\"sources that failed\">\n    <Alert v-for=\"s in failed\" :key=\"s.name\" :title=\"`${s.name} stopped syncing.`\">\n      {{ s.error }}\n      <template #action><Button variant=\"brand\">Reconnect {{ s.name }}</Button></template>\n    </Alert>\n  </section>\n</template>\n",
+      "requires": [
+        "button"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Alert.tsx",
+          "content": "import type { ReactNode } from 'react'\nimport { cn } from '@/react/lib/cn'\n\n// A red box for what broke (console2.css .v2-banner-row): one box per problem, the problem in words (its subject in\n// ink, medium) and the button that fixes it. A 6px red square leads it. Stack several in a column 8px apart, one each.\n// The `action` slot is the `action` prop.\nexport interface AlertProps { title: string, action?: ReactNode, className?: string, children?: ReactNode }\n\nexport function Alert({ title, action, className, children }: AlertProps) {\n  return (\n    <div data-ds=\"alert\" className={cn('flex flex-wrap items-center gap-x-3 gap-y-2.5 border border-home-red-press bg-surface-danger py-2.5 pr-3 pl-4 text-fg-danger max-md:items-start max-md:p-3', className)} role=\"alert\">\n      <span className=\"size-1.5 shrink-0 bg-home-red-press max-md:mt-1.75\" aria-hidden=\"true\" />\n      <p className=\"min-w-0 flex-1 max-md:basis-[calc(100%-48px)]\"><span className=\"font-medium text-fg\">{title}</span> {children}</p>\n      {action && <div className=\"shrink-0\">{action}</div>}\n    </div>\n  )\n}\n\nexport default Alert\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "Alert",
+            "file": "react/components/ui/Alert.tsx",
+            "props": [
+              {
+                "name": "title",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "action",
+                "type": "ReactNode",
+                "required": false
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Sources that failed",
+          "center": false,
+          "half": false,
+          "path": "react/examples/alert/Product.tsx",
+          "content": "import { Alert } from '@/react/components/ui/Alert'\nimport { Button } from '@/react/components/ui/Button'\n// Two sources that stopped syncing, each with the button that fixes it.\nconst failed = [\n  { name: 'HubSpot', error: 'The token expired on Oct 29.' },\n  { name: 'Google Drive', error: 'Conare lost access to the shared drive.' },\n]\n\nexport default function Product() {\n  return (\n    <section className=\"flex flex-col gap-2\" aria-label=\"sources that failed\">\n      {failed.map(s => (\n        <Alert key={s.name} title={`${s.name} stopped syncing.`} action={<Button variant=\"brand\">{`Reconnect ${s.name}`}</Button>}>\n          {s.error}\n        </Alert>\n      ))}\n    </section>\n  )\n}\n",
+          "registryDependencies": [
+            "button"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/alert.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// Alert.vue as <conare-alert>: a red box for what broke (console2.css .v2-banner-row): one box per problem, the problem\n// in words (its subject in ink, medium) and the button that fixes it. A 6px red square leads it. Stack several in a\n// column 8px apart, one each. Vue's `title` is `heading` (title is HTML's tooltip attribute).\n\n/**\n * @summary A red box for what broke, with the button that fixes it.\n * @slot - What went wrong, after the subject.\n * @slot action - The button that fixes it.\n */\nexport class Alert extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { heading: {} }\n\n\t/** The problem's subject, in ink (Vue's `title`). */\n\theading = ''\n\n\trender() {\n\t\treturn html`<div data-ds=\"alert\" class=\"flex flex-wrap items-center gap-x-3 gap-y-2.5 border border-home-red-press bg-surface-danger py-2.5 pr-3 pl-4 text-fg-danger max-md:items-start max-md:p-3\" role=\"alert\">\n\t\t\t<span class=\"size-1.5 shrink-0 bg-home-red-press max-md:mt-1.75\" aria-hidden=\"true\"></span>\n\t\t\t<p class=\"min-w-0 flex-1 max-md:basis-[calc(100%-48px)]\"><span class=\"font-medium text-fg\">${this.heading}</span> <slot></slot></p>\n\t\t\t${this.hasSlot('action') ? html`<div class=\"shrink-0\"><slot name=\"action\"></slot></div>` : nothing}\n\t\t</div>`\n\t}\n}\n\ndefine('alert', Alert)\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/alert.js",
+        "elements/button.js"
+      ],
+      "tag": "conare-alert",
+      "tags": [
+        "conare-alert"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-alert",
+            "name": "Alert",
+            "module": "elements/alert.js",
+            "description": "A red box for what broke, with the button that fixes it.",
+            "attributes": [
+              {
+                "name": "heading",
+                "field": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The problem's subject, in ink (Vue's `title`)."
+              }
+            ],
+            "properties": [
+              {
+                "name": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The problem's subject, in ink (Vue's `title`).",
+                "attribute": "heading"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "What went wrong, after the subject."
+              },
+              {
+                "name": "action",
+                "description": "The button that fixes it."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Sources that failed",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/alert/Product.html",
+          "content": "<!-- Two sources that stopped syncing, each with the button that fixes it. -->\n<section class=\"flex flex-col gap-2\" aria-label=\"sources that failed\">\n  <conare-alert heading=\"HubSpot stopped syncing.\">The token expired on Oct 29.<conare-button slot=\"action\" variant=\"brand\">Reconnect HubSpot</conare-button></conare-alert>\n  <conare-alert heading=\"Google Drive stopped syncing.\">Conare lost access to the shared drive.<conare-button slot=\"action\" variant=\"brand\">Reconnect Google Drive</conare-button></conare-alert>\n</section>\n"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,277 @@
+{
+  "name": "textarea",
+  "title": "Textarea",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "Several lines of text: 13px on 20px lines, the hairline that darkens on hover and turns to a 2px ink edge on focus, red when invalid.",
+  "use_for": "Pasted text, a note, a description. Put it in a Field.",
+  "never": [
+    "A question to search (use the search box)",
+    "A red border at rest",
+    "Under 16px on phones"
+  ],
+  "source": "conare-web app/assets/css/main.css (textarea.c-input), console2.css (.cv2 .c-input: square), app/components/console/AddDocuments.vue",
+  "body": "`v-model` is the text, `rows` the height (4), `invalid` the red edge. Focus thickens the edge to 2px while the padding gives a pixel back, so the text does not move. It grows by hand downward only.",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Textarea.vue",
+      "content": "<script setup lang=\"ts\">\n// Several lines of text (main.css textarea.c-input, square under the console): 13px on 20px lines, 6px 12px inside, a\n// #C3C1BF hairline that darkens on hover and turns to a 2px ink edge on focus (the text does not move), a red edge when\n// invalid. Grows by hand downward only. 16px on phones, so iOS does not zoom. Put it in a Field for its label and hint.\ndefineOptions({ inheritAttrs: false })\nconst model = defineModel<string>()\ndefineProps<{ invalid?: boolean, rows?: number }>()\n</script>\n\n<template>\n  <textarea data-ds=\"textarea\" v-model=\"model\" v-bind=\"$attrs\" :rows=\"rows ?? 4\" :aria-invalid=\"invalid || undefined\" class=\"ds-textarea\" />\n</template>\n\n<style>\n.ds-textarea { display: block; width: 100%; min-height: var(--ds-size-control-md); padding: 6px 12px; border: var(--ds-border-hairline) solid var(--ds-color-edge-strong); background: var(--ds-color-surface); color: var(--ds-color-fg); font-size: var(--ds-text-ui); line-height: var(--ds-text-ui-leading); resize: vertical; transition: border-color var(--ds-duration-enter) var(--ds-easing-standard); }\n.ds-textarea::placeholder { color: var(--ds-color-fg-muted); }\n@media (hover: hover) and (pointer: fine) { .ds-textarea:hover:not(:disabled, :focus) { border-color: var(--ds-color-neutral-500); } }\n.ds-textarea:focus { padding: calc(6px - 1px) calc(12px - 1px); border: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline: none; }\n.ds-textarea[aria-invalid=\"true\"] { border-color: var(--ds-color-action-danger); }\n.ds-textarea:disabled { border-color: var(--ds-color-edge); color: var(--ds-color-fg-muted); cursor: not-allowed; }\n@media (pointer: coarse), (max-width: 767px) { .ds-textarea { font-size: var(--ds-text-input); line-height: var(--ds-text-input-leading); } }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "In the product",
+      "center": false,
+      "half": false,
+      "path": "examples/textarea/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed, ref } from 'vue'\nimport Field from '@/components/ui/Field.vue'\nimport Textarea from '@/components/ui/Textarea.vue'\n// Pasting text into a namespace, with a count under it, and the same field when it is too long.\nconst text = ref('')\nconst long = ref('Refunds are available for 30 days after purchase. '.repeat(3))\nconst tooLong = computed(() => long.value.length > 120)\n</script>\n\n<template>\n  <div class=\"flex w-120 max-w-full flex-col gap-6\">\n    <Field v-slot=\"{ id, hintId }\" label=\"Text\" :hint=\"`${text.length} of 20,000 characters`\">\n      <Textarea :id=\"id\" v-model=\"text\" :aria-describedby=\"hintId\" placeholder=\"Refunds are available for 30 days after purchase.\" />\n    </Field>\n    <Field v-slot=\"{ id, hintId }\" label=\"Summary\" :error=\"tooLong ? `Keep it under 120 characters (${long.length} now).` : undefined\" hint=\"Shown under the namespace's name.\">\n      <Textarea :id=\"id\" v-model=\"long\" :rows=\"3\" :invalid=\"tooLong\" :aria-describedby=\"hintId\" />\n    </Field>\n  </div>\n</template>\n",
+      "requires": [
+        "field"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Textarea.tsx",
+          "content": "import type { Ref, TextareaHTMLAttributes } from 'react'\n\n// Several lines of text (main.css textarea.c-input, square under the console): 13px on 20px lines, 6px 12px inside, a\n// #C3C1BF hairline that darkens on hover and turns to a 2px ink edge on focus (the text does not move), a red edge when\n// invalid. Grows by hand downward only. 16px on phones, so iOS does not zoom. Put it in a Field for its label and hint.\n// Every other prop lands on the <textarea> (value and onChange as React's own), as Vue's attributes do.\nexport interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {\n  invalid?: boolean\n  rows?: number\n  ref?: Ref<HTMLTextAreaElement>\n}\n\nexport function Textarea({ invalid, rows, className, ...rest }: TextareaProps) {\n  return (\n    <>\n      <style href=\"ds-textarea\" precedence=\"ds\">{css}</style>\n      <textarea data-ds=\"textarea\" {...rest} rows={rows ?? 4} aria-invalid={invalid || undefined} className={className ? `ds-textarea ${className}` : 'ds-textarea'} />\n    </>\n  )\n}\n\nexport default Textarea\n\nconst css = `\n.ds-textarea { display: block; width: 100%; min-height: var(--ds-size-control-md); padding: 6px 12px; border: var(--ds-border-hairline) solid var(--ds-color-edge-strong); background: var(--ds-color-surface); color: var(--ds-color-fg); font-size: var(--ds-text-ui); line-height: var(--ds-text-ui-leading); resize: vertical; transition: border-color var(--ds-duration-enter) var(--ds-easing-standard); }\n.ds-textarea::placeholder { color: var(--ds-color-fg-muted); }\n@media (hover: hover) and (pointer: fine) { .ds-textarea:hover:not(:disabled, :focus) { border-color: var(--ds-color-neutral-500); } }\n.ds-textarea:focus { padding: calc(6px - 1px) calc(12px - 1px); border: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline: none; }\n.ds-textarea[aria-invalid=\"true\"] { border-color: var(--ds-color-action-danger); }\n.ds-textarea:disabled { border-color: var(--ds-color-edge); color: var(--ds-color-fg-muted); cursor: not-allowed; }\n@media (pointer: coarse), (max-width: 767px) { .ds-textarea { font-size: var(--ds-text-input); line-height: var(--ds-text-input-leading); } }\n`\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "Textarea",
+            "file": "react/components/ui/Textarea.tsx",
+            "props": [
+              {
+                "name": "invalid",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "rows",
+                "type": "number",
+                "required": false
+              }
+            ],
+            "extends": [
+              "TextareaHTMLAttributes<HTMLTextAreaElement>"
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "react/examples/textarea/Product.tsx",
+          "content": "'use client'\nimport { useState } from 'react'\nimport { Field } from '@/react/components/ui/Field'\nimport { Textarea } from '@/react/components/ui/Textarea'\n// Pasting text into a namespace, with a count under it, and the same field when it is too long.\n\nexport default function Product() {\n  const [text, setText] = useState('')\n  const [long, setLong] = useState('Refunds are available for 30 days after purchase. '.repeat(3))\n  const tooLong = long.length > 120\n  return (\n    <div className=\"flex w-120 max-w-full flex-col gap-6\">\n      <Field label=\"Text\" hint={`${text.length} of 20,000 characters`}>\n        {({ id, hintId }) => <Textarea id={id} value={text} onChange={e => setText(e.target.value)} aria-describedby={hintId} placeholder=\"Refunds are available for 30 days after purchase.\" />}\n      </Field>\n      <Field label=\"Summary\" error={tooLong ? `Keep it under 120 characters (${long.length} now).` : undefined} hint=\"Shown under the namespace's name.\">\n        {({ id, hintId }) => <Textarea id={id} value={long} onChange={e => setLong(e.target.value)} rows={3} invalid={tooLong} aria-describedby={hintId} />}\n      </Field>\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "field"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/textarea.ts",
+          "content": "import { html, LitElement, type PropertyValues } from 'lit'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { live } from 'lit/directives/live.js'\nimport { DsFormElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// Textarea.vue as <conare-textarea>: several lines of text (main.css textarea.c-input, square under the console): 13px on\n// 20px lines, 6px 12px inside, a #C3C1BF hairline that darkens on hover and turns to a 2px ink edge on focus (the text\n// does not move), a red edge when invalid. Grows by hand downward only. 16px on phones, so iOS does not zoom. Put it in\n// a <conare-field> for its label and hint. Form-associated (its `name` and `value` go with its form, a <label for> names\n// it); v-model is `value` with the native `input` and `change` events. aria-label and aria-description pass to the\n// inner <textarea>.\n\n/**\n * @summary Several lines of text.\n * @fires input - On every keystroke (read `value`).\n * @fires change - When the value is committed.\n */\nexport class Textarea extends DsFormElement {\n\tstatic styles = [DsFormElement.styles, styles]\n\tstatic shadowRootOptions = { ...LitElement.shadowRootOptions, delegatesFocus: true }\n\t/** A field: a dialog starts in the first one. */\n\tstatic dsField = true\n\tstatic properties = {\n\t\tvalue: {},\n\t\trows: { type: Number },\n\t\tname: {},\n\t\tplaceholder: {},\n\t\tmaxlength: { type: Number },\n\t\tdisabled: { type: Boolean, reflect: true },\n\t\treadonly: { type: Boolean },\n\t\trequired: { type: Boolean },\n\t\tinvalid: { type: Boolean, reflect: true },\n\t\tlabel: { attribute: 'aria-label' },\n\t\tdescription: { attribute: 'aria-description' },\n\t}\n\n\tvalue = ''\n\trows = 4\n\tname?: string\n\tplaceholder?: string\n\tmaxlength?: number\n\tdisabled = false\n\treadonly = false\n\trequired = false\n\t/** A red edge (with the message under it in a field). */\n\tinvalid = false\n\t/** The name for assistive tech, passed to the inner textarea. */\n\tlabel?: string\n\t/** The hint or error, passed to the inner textarea (a field sets it). */\n\tdescription?: string\n\n\tprotected updated(changed: PropertyValues) {\n\t\tsuper.updated(changed)\n\t\tif (changed.has('value')) this.internals.setFormValue(this.value)\n\t}\n\t// Setting the value as a property puts the caret (and the scroll) at the end; a native textarea starts at the top.\n\tprotected firstUpdated(changed: PropertyValues) {\n\t\tsuper.firstUpdated(changed)\n\t\tconst area = this.validityControl()\n\t\tif (!area) return\n\t\tarea.setSelectionRange(0, 0)\n\t\tarea.scrollTop = 0\n\t}\n\tprotected validityControl() {\n\t\treturn this.renderRoot.querySelector<HTMLTextAreaElement>('textarea')\n\t}\n\tformResetCallback() {\n\t\tthis.value = this.getAttribute('value') ?? ''\n\t}\n\tprivate onInput(event: Event) {\n\t\tthis.value = (event.target as HTMLTextAreaElement).value\n\t}\n\t// The inner change does not leave the shadow root: the element sends its own.\n\tprivate onChange() {\n\t\tthis.dispatchEvent(new Event('change', { bubbles: true, composed: true }))\n\t}\n\n\trender() {\n\t\treturn html`<textarea data-ds=\"textarea\" .value=${live(this.value)} rows=${this.rows} name=${ifDefined(this.name)} placeholder=${ifDefined(this.placeholder)} maxlength=${ifDefined(this.maxlength)} ?disabled=${this.inactive} ?readonly=${this.readonly} ?required=${this.required} aria-invalid=${ifDefined(this.invalid ? 'true' : undefined)} aria-label=${ifDefined(this.label)} aria-description=${ifDefined(this.description)} class=\"ds-textarea\" @input=${this.onInput} @change=${this.onChange}></textarea>`\n\t}\n}\n\ndefine('textarea', Textarea)\n"
+        },
+        {
+          "path": "elements/components/ui/textarea.css",
+          "content": "/* Textarea.vue's <style>, as it is. */\n.ds-textarea { display: block; width: 100%; min-height: var(--ds-size-control-md); padding: 6px 12px; border: var(--ds-border-hairline) solid var(--ds-color-edge-strong); background: var(--ds-color-surface); color: var(--ds-color-fg); font-size: var(--ds-text-ui); line-height: var(--ds-text-ui-leading); resize: vertical; transition: border-color var(--ds-duration-enter) var(--ds-easing-standard); }\n.ds-textarea::placeholder { color: var(--ds-color-fg-muted); }\n@media (hover: hover) and (pointer: fine) { .ds-textarea:hover:not(:disabled, :focus) { border-color: var(--ds-color-neutral-500); } }\n.ds-textarea:focus { padding: calc(6px - 1px) calc(12px - 1px); border: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline: none; }\n.ds-textarea[aria-invalid=\"true\"] { border-color: var(--ds-color-action-danger); }\n.ds-textarea:disabled { border-color: var(--ds-color-edge); color: var(--ds-color-fg-muted); cursor: not-allowed; }\n@media (pointer: coarse), (max-width: 767px) { .ds-textarea { font-size: var(--ds-text-input); line-height: var(--ds-text-input-leading); } }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/textarea.js",
+        "elements/field.js"
+      ],
+      "tag": "conare-textarea",
+      "tags": [
+        "conare-textarea"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-textarea",
+            "name": "Textarea",
+            "module": "elements/textarea.js",
+            "description": "Several lines of text.",
+            "attributes": [
+              {
+                "name": "value",
+                "field": "value",
+                "type": "string",
+                "default": "''"
+              },
+              {
+                "name": "rows",
+                "field": "rows",
+                "type": "number",
+                "default": "4"
+              },
+              {
+                "name": "name",
+                "field": "name",
+                "type": "string | undefined"
+              },
+              {
+                "name": "placeholder",
+                "field": "placeholder",
+                "type": "string | undefined"
+              },
+              {
+                "name": "maxlength",
+                "field": "maxlength",
+                "type": "number | undefined"
+              },
+              {
+                "name": "disabled",
+                "field": "disabled",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "readonly",
+                "field": "readonly",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "required",
+                "field": "required",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "invalid",
+                "field": "invalid",
+                "type": "boolean",
+                "default": "false",
+                "description": "A red edge (with the message under it in a field)."
+              },
+              {
+                "name": "aria-label",
+                "field": "label",
+                "type": "string | undefined",
+                "description": "The name for assistive tech, passed to the inner textarea."
+              },
+              {
+                "name": "aria-description",
+                "field": "description",
+                "type": "string | undefined",
+                "description": "The hint or error, passed to the inner textarea (a field sets it)."
+              }
+            ],
+            "properties": [
+              {
+                "name": "value",
+                "type": "string",
+                "default": "''",
+                "attribute": "value"
+              },
+              {
+                "name": "rows",
+                "type": "number",
+                "default": "4",
+                "attribute": "rows"
+              },
+              {
+                "name": "name",
+                "type": "string | undefined",
+                "attribute": "name"
+              },
+              {
+                "name": "placeholder",
+                "type": "string | undefined",
+                "attribute": "placeholder"
+              },
+              {
+                "name": "maxlength",
+                "type": "number | undefined",
+                "attribute": "maxlength"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "attribute": "disabled"
+              },
+              {
+                "name": "readonly",
+                "type": "boolean",
+                "default": "false",
+                "attribute": "readonly"
+              },
+              {
+                "name": "required",
+                "type": "boolean",
+                "default": "false",
+                "attribute": "required"
+              },
+              {
+                "name": "invalid",
+                "type": "boolean",
+                "default": "false",
+                "description": "A red edge (with the message under it in a field).",
+                "attribute": "invalid"
+              },
+              {
+                "name": "label",
+                "type": "string | undefined",
+                "description": "The name for assistive tech, passed to the inner textarea.",
+                "attribute": "aria-label"
+              },
+              {
+                "name": "description",
+                "type": "string | undefined",
+                "description": "The hint or error, passed to the inner textarea (a field sets it).",
+                "attribute": "aria-description"
+              }
+            ],
+            "events": [
+              {
+                "name": "change",
+                "description": "When the value is committed."
+              },
+              {
+                "name": "input",
+                "description": "On every keystroke (read `value`)."
+              }
+            ],
+            "slots": [],
+            "methods": [
+              {
+                "name": "formResetCallback"
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/textarea/Product.html",
+          "content": "<!-- Pasting text into a namespace, with a count under it, and the same field when it is too long. -->\n<div class=\"flex w-120 max-w-full flex-col gap-6\">\n  <conare-field id=\"text-field\" label=\"Text\" hint=\"0 of 20,000 characters\">\n    <conare-textarea placeholder=\"Refunds are available for 30 days after purchase.\"></conare-textarea>\n  </conare-field>\n  <conare-field id=\"summary-field\" label=\"Summary\" hint=\"Shown under the namespace's name.\">\n    <conare-textarea rows=\"3\" value=\"Refunds are available for 30 days after purchase. Refunds are available for 30 days after purchase. Refunds are available for 30 days after purchase. \"></conare-textarea>\n  </conare-field>\n</div>\n<script type=\"module\">\n  await customElements.whenDefined('conare-textarea')\n  const textField = document.getElementById('text-field')\n  const text = textField.querySelector('conare-textarea')\n  text.addEventListener('input', () => { textField.hint = `${text.value.length} of 20,000 characters` })\n  const summaryField = document.getElementById('summary-field')\n  const summary = summaryField.querySelector('conare-textarea')\n  const check = () => {\n    const tooLong = summary.value.length > 120\n    summaryField.error = tooLong ? `Keep it under 120 characters (${summary.value.length} now).` : undefined\n  }\n  summary.addEventListener('input', check)\n  check()\n</script>\n"
+        }
+      ]
+    }
+  }
+}

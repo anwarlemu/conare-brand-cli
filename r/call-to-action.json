@@ -1,0 +1,201 @@
+{
+  "name": "call-to-action",
+  "title": "Call to action",
+  "type": "registry:ui",
+  "group": "site",
+  "description": "The band before the footer: the closing line and one action on the red, over a jumbled sheet of cells whose grid keeps redrawing itself, in a triple rule.",
+  "use_for": "The end of the home and the product pages.",
+  "never": [
+    "Two calls to action in one band",
+    "A second red band on the page"
+  ],
+  "source": "conare-web app/components/home/Cta.vue",
+  "body": "",
+  "requires": [
+    "cell-burst"
+  ],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/site/CallToAction.vue",
+      "content": "<script setup lang=\"ts\">\nimport CellBurst from '@/components/visuals/CellBurst.vue'\nimport Grain from '@/components/visuals/Grain.vue'\n\n// The band before the website's footer (Cta.vue): the closing line and one action, centred on the red under the grain\n// and a jumbled sheet of cells whose grid keeps redrawing itself (CellBurst jumble strong trace). A triple rule, the\n// FAQ's width: the panel's border, an outline 4px out, and the frame's border 4px beyond that. Put the one action in\n// the default slot: a light button-link with fill=\"black\", so its squares come in black on the red.\nwithDefaults(defineProps<{ title: string, seed?: number, titleId?: string }>(), { seed: 53, titleId: 'cta-title' })\n</script>\n\n<template>\n  <section data-ds=\"call-to-action\" :aria-labelledby=\"titleId\" class=\"mx-auto max-w-[1440px] px-4 pb-32 sm:px-6 lg:px-10 lg:pb-40\">\n    <div class=\"mx-auto max-w-[1220px] border border-edge p-2.25\">\n      <div class=\"relative overflow-hidden border border-edge bg-home-red outline outline-offset-4 outline-edge\">\n        <Grain />\n        <CellBurst :seed=\"seed\" jumble strong trace />\n        <div class=\"relative flex flex-col items-center px-4 py-24 text-center sm:py-32\">\n          <h2 :id=\"titleId\" class=\"ds-cta-title font-heading text-heading-1 font-normal tracking-display text-off-white sm:text-display\">{{ title }}</h2>\n          <div v-if=\"$slots.default\" class=\"mt-8\"><slot /></div>\n        </div>\n      </div>\n    </div>\n  </section>\n</template>\n\n<style>\n.ds-cta-title { line-height: 1.1; text-wrap: balance; }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "On the site",
+      "center": false,
+      "half": false,
+      "path": "examples/call-to-action/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport ButtonLink from '@/components/site/ButtonLink.vue'\nimport CallToAction from '@/components/site/CallToAction.vue'\n// The closing band, before the footer: the light button link, its squares coming in black on the red.\n</script>\n\n<template>\n  <CallToAction title=\"See it on your own data.\">\n    <ButtonLink href=\"#\" variant=\"light\" fill=\"black\">Book a demo</ButtonLink>\n  </CallToAction>\n</template>\n",
+      "requires": [
+        "button-link",
+        "cell-burst"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/site/CallToAction.tsx",
+          "content": "import type { ReactNode } from 'react'\nimport { CellBurst } from '@/react/components/visuals/CellBurst'\nimport { Grain } from '@/react/components/visuals/Grain'\n\n// The band before the website's footer (Cta.vue): the closing line and one action, centred on the red under the grain\n// and a jumbled sheet of cells whose grid keeps redrawing itself (CellBurst jumble strong trace). A triple rule, the\n// FAQ's width: the panel's border, an outline 4px out, and the frame's border 4px beyond that. Put the one action in\n// children: a light button-link with fill=\"black\", so its squares come in black on the red.\nexport interface CallToActionProps {\n  title: string\n  seed?: number\n  titleId?: string\n  children?: ReactNode\n}\n\nexport function CallToAction({ title, seed = 53, titleId = 'cta-title', children }: CallToActionProps) {\n  return (\n    <>\n      <style href=\"ds-call-to-action\" precedence=\"ds\">{css}</style>\n      <section data-ds=\"call-to-action\" aria-labelledby={titleId} className=\"mx-auto max-w-[1440px] px-4 pb-32 sm:px-6 lg:px-10 lg:pb-40\">\n        <div className=\"mx-auto max-w-[1220px] border border-edge p-2.25\">\n          <div className=\"relative overflow-hidden border border-edge bg-home-red outline outline-offset-4 outline-edge\">\n            <Grain />\n            <CellBurst seed={seed} jumble strong trace />\n            <div className=\"relative flex flex-col items-center px-4 py-24 text-center sm:py-32\">\n              <h2 id={titleId} className=\"ds-cta-title font-heading text-heading-1 font-normal tracking-display text-off-white sm:text-display\">{title}</h2>\n              {children && <div className=\"mt-8\">{children}</div>}\n            </div>\n          </div>\n        </div>\n      </section>\n    </>\n  )\n}\n\nexport default CallToAction\n\nconst css = `\n.ds-cta-title { line-height: 1.1; text-wrap: balance; }\n`\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "cell-burst"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "CallToAction",
+            "file": "react/components/site/CallToAction.tsx",
+            "props": [
+              {
+                "name": "title",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "seed",
+                "type": "number",
+                "required": false,
+                "default": "53"
+              },
+              {
+                "name": "titleId",
+                "type": "string",
+                "required": false,
+                "default": "'cta-title'"
+              },
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "On the site",
+          "center": false,
+          "half": false,
+          "path": "react/examples/call-to-action/Site.tsx",
+          "content": "import { ButtonLink } from '@/react/components/site/ButtonLink'\nimport { CallToAction } from '@/react/components/site/CallToAction'\n// The closing band, before the footer: the light button link, its squares coming in black on the red.\n\nexport default function Site() {\n  return (\n    <CallToAction title=\"See it on your own data.\">\n      <ButtonLink href=\"#\" variant=\"light\" fill=\"black\">Book a demo</ButtonLink>\n    </CallToAction>\n  )\n}\n",
+          "registryDependencies": [
+            "button-link",
+            "cell-burst"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/site/call-to-action.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport '@/elements/components/visuals/grain'\nimport '@/elements/components/visuals/cell-burst'\nimport styles from 'virtual:tw'\n\n// CallToAction.vue as <conare-call-to-action>: the band before the website's footer (Cta.vue): the closing line and one\n// action, centred on the red under the grain and a jumbled sheet of cells whose grid keeps redrawing itself (cell-burst\n// jumble strong trace). A triple rule, the FAQ's width: the panel's border, an outline 4px out, and the frame's border\n// 4px beyond that. Put the one action in the default slot: a light button-link with fill=\"black\", so its squares come\n// in black on the red.\n\n/**\n * @summary The closing band before the footer: one line and one action on the red.\n * @slot - The one action.\n */\nexport class CallToAction extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { heading: {}, seed: { type: Number }, titleId: { attribute: 'title-id' } }\n\n\t/** The closing line (Vue's `title`). */\n\theading = ''\n\t/** Which cells the burst lights. */\n\tseed = 53\n\t/** The heading's id, which names the band. */\n\ttitleId = 'cta-title'\n\n\trender() {\n\t\treturn html`<section data-ds=\"call-to-action\" aria-labelledby=${this.titleId} class=\"mx-auto max-w-[1440px] px-4 pb-32 sm:px-6 lg:px-10 lg:pb-40\"><div class=\"mx-auto max-w-[1220px] border border-edge p-2.25\"><div class=\"relative overflow-hidden border border-edge bg-home-red outline outline-offset-4 outline-edge\">${staticHtml`<${tag('grain')}></${tag('grain')}><${tag('cell-burst')} seed=${this.seed} jumble strong trace></${tag('cell-burst')}>`}<div class=\"relative flex flex-col items-center px-4 py-24 text-center sm:py-32\"><h2 id=${this.titleId} class=\"ds-cta-title font-heading text-heading-1 font-normal tracking-display text-off-white sm:text-display\">${this.heading}</h2>${this.hasSlot() ? html`<div class=\"mt-8\"><slot></slot></div>` : nothing}</div></div></div></section>`\n\t}\n}\n\ndefine('call-to-action', CallToAction)\n"
+        },
+        {
+          "path": "elements/components/site/call-to-action.css",
+          "content": "/* CallToAction.vue's <style>, as it is. */\n.ds-cta-title { line-height: 1.1; text-wrap: balance; }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/call-to-action.js",
+        "elements/grain.js",
+        "elements/cell-burst.js",
+        "elements/button-link.js"
+      ],
+      "tag": "conare-call-to-action",
+      "tags": [
+        "conare-call-to-action"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "cell-burst"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-call-to-action",
+            "name": "CallToAction",
+            "module": "elements/call-to-action.js",
+            "description": "The closing band before the footer: one line and one action on the red.",
+            "attributes": [
+              {
+                "name": "heading",
+                "field": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The closing line (Vue's `title`)."
+              },
+              {
+                "name": "seed",
+                "field": "seed",
+                "type": "number",
+                "default": "53",
+                "description": "Which cells the burst lights."
+              },
+              {
+                "name": "title-id",
+                "field": "titleId",
+                "type": "string",
+                "default": "'cta-title'",
+                "description": "The heading's id, which names the band."
+              }
+            ],
+            "properties": [
+              {
+                "name": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The closing line (Vue's `title`).",
+                "attribute": "heading"
+              },
+              {
+                "name": "seed",
+                "type": "number",
+                "default": "53",
+                "description": "Which cells the burst lights.",
+                "attribute": "seed"
+              },
+              {
+                "name": "titleId",
+                "type": "string",
+                "default": "'cta-title'",
+                "description": "The heading's id, which names the band.",
+                "attribute": "title-id"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "The one action."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "On the site",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/call-to-action/Site.html",
+          "content": "<!-- The closing band, before the footer: the light button link, its squares coming in black on the red. -->\n<conare-call-to-action heading=\"See it on your own data.\">\n  <conare-button-link href=\"#\" variant=\"light\" fill=\"black\">Book a demo</conare-button-link>\n</conare-call-to-action>\n"
+        }
+      ]
+    }
+  }
+}

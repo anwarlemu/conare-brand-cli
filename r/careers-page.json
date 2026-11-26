@@ -1,0 +1,301 @@
+{
+  "name": "careers-page",
+  "title": "Careers page",
+  "type": "registry:block",
+  "group": "site",
+  "description": "The open roles, a row each in the double rule (the name, the team and the place, the whole row a link), or a line when there are none, in the site's frame.",
+  "use_for": "The website's careers or jobs page.",
+  "never": [
+    "Photos of real people",
+    "Perks lists in place of the roles"
+  ],
+  "source": "No careers page in conare-web; set from its 404 cells (the double rule rows that take the paper) and the pages' heads",
+  "body": "Built on `site-page`: `header`, `footer` and `announcement` are its props, and the `logo` and `actions` slots go to the header (`sheet-actions` too, in web components). `roles` are `{ title, team?, place?, href }`; `empty` shows when there are none.",
+  "requires": [
+    "section-head",
+    "site-page"
+  ],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/site/CareersPage.vue",
+      "content": "<script setup lang=\"ts\">\nimport SectionHead from '@/components/site/SectionHead.vue'\nimport SitePage, { type SiteAnnouncement, type SiteFooterData, type SiteHeaderData } from '@/components/site/SitePage.vue'\n\n// The open roles: the page's head, then a row per role in the website's double rule (its name in Faculty Glyphic, the\n// team and the place under it, the whole row a link that takes the paper under the pointer), or the line the page gives\n// when there are none. In the site's frame. The site has no careers page: set from the 404's cells and the pages' heads.\nexport type CareersRole = { title: string, team?: string, place?: string, href: string }\nwithDefaults(defineProps<{\n  header: SiteHeaderData, footer: SiteFooterData, announcement?: SiteAnnouncement\n  tag?: string, title: string, body?: string, roles: CareersRole[], empty?: string\n}>(), { empty: '' })\n</script>\n\n<template>\n  <SitePage data-ds=\"careers-page\" :header=\"header\" :footer=\"footer\" :announcement=\"announcement\">\n      <template #logo><slot name=\"logo\" /></template>\n      <template #actions=\"{ place }\"><slot name=\"actions\" :place=\"place\" /></template>\n    <section aria-labelledby=\"careers-title\" class=\"mx-auto max-w-[1440px] px-4 pt-14 pb-32 sm:px-6 lg:px-10 lg:pt-20 lg:pb-40\">\n      <SectionHead as=\"h1\" title-id=\"careers-title\" :tag=\"tag\" :title=\"title\" :body=\"body\" />\n      <ul v-if=\"roles.length\" aria-label=\"Open roles\" class=\"mx-auto mt-14 grid max-w-[1008px] gap-px border border-edge bg-edge outline outline-offset-4 outline-edge\">\n        <li v-for=\"r in roles\" :key=\"r.href\" class=\"flex bg-surface\">\n          <a :href=\"r.href\" class=\"ds-role-link flex w-full flex-col gap-1 px-5 py-5 sm:flex-row sm:items-baseline sm:justify-between sm:px-6\">\n            <span class=\"type-heading-3 text-fg\">{{ r.title }}</span>\n            <span v-if=\"r.team || r.place\" class=\"type-meta text-fg-muted\">{{ [r.team, r.place].filter(Boolean).join(' · ') }}</span>\n          </a>\n        </li>\n      </ul>\n      <p v-else-if=\"empty\" class=\"mx-auto mt-14 max-w-[1008px] border border-edge px-5 py-6 text-center type-ui text-fg-muted outline outline-offset-4 outline-edge\">{{ empty }}</p>\n    </section>\n  </SitePage>\n</template>\n\n<style>\n.ds-role-link { transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-role-link:hover { background-color: var(--ds-color-surface-subtle); } }\n.ds-role-link:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "Careers, on sample data",
+      "center": false,
+      "half": false,
+      "path": "examples/careers-page/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport CareersPage from '@/components/site/CareersPage.vue'\nimport Button from '@/components/ui/Button.vue'\nimport PixelButton from '@/components/ui/PixelButton.vue'\n// The careers page on sample data: four open roles.\nconst header = {\n  \"items\": [\n    {\n      \"label\": \"Search\",\n      \"desc\": \"Find the answer in any file.\",\n      \"href\": \"#search\"\n    },\n    {\n      \"label\": \"Sync\",\n      \"desc\": \"Keep your apps in step.\",\n      \"href\": \"#sync\"\n    },\n    {\n      \"label\": \"Parse\",\n      \"desc\": \"Read every row and cell.\",\n      \"href\": \"#parse\"\n    }\n  ],\n  \"links\": [\n    {\n      \"label\": \"Pricing\",\n      \"href\": \"#pricing\"\n    },\n    {\n      \"label\": \"Blog\",\n      \"href\": \"#blog\"\n    },\n    {\n      \"label\": \"Docs\",\n      \"href\": \"#docs\"\n    }\n  ],\n  \"homeLabel\": \"Acme home\"\n}\nconst footer = {\n  \"columns\": [\n    {\n      \"title\": \"Product\",\n      \"links\": [\n        {\n          \"label\": \"Search\",\n          \"href\": \"#search\"\n        },\n        {\n          \"label\": \"Sync\",\n          \"href\": \"#sync\"\n        },\n        {\n          \"label\": \"Parse\",\n          \"href\": \"#parse\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Company\",\n      \"links\": [\n        {\n          \"label\": \"About\",\n          \"href\": \"#about\"\n        },\n        {\n          \"label\": \"Blog\",\n          \"href\": \"#blog\"\n        },\n        {\n          \"label\": \"Changelog\",\n          \"href\": \"#changelog\"\n        },\n        {\n          \"label\": \"Contact\",\n          \"href\": \"#contact\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Resources\",\n      \"links\": [\n        {\n          \"label\": \"Docs\",\n          \"href\": \"#docs\"\n        },\n        {\n          \"label\": \"Pricing\",\n          \"href\": \"#pricing\"\n        },\n        {\n          \"label\": \"Status\",\n          \"href\": \"#status\"\n        }\n      ]\n    }\n  ],\n  \"tagline\": \"Search any data you bring. Get the right answer.\",\n  \"legal\": \"© 2026 Acme, Inc.\",\n  \"legalLinks\": [\n    {\n      \"label\": \"Privacy\",\n      \"href\": \"#privacy\"\n    },\n    {\n      \"label\": \"Terms\",\n      \"href\": \"#terms\"\n    }\n  ],\n  \"name\": \"Acme\"\n}\nconst roles = [\n  {\n    \"title\": \"Product engineer\",\n    \"team\": \"Engineering\",\n    \"place\": \"Remote\",\n    \"href\": \"#product-engineer\"\n  },\n  {\n    \"title\": \"Search engineer\",\n    \"team\": \"Engineering\",\n    \"place\": \"San Francisco\",\n    \"href\": \"#search-engineer\"\n  },\n  {\n    \"title\": \"Designer\",\n    \"team\": \"Design\",\n    \"place\": \"Remote\",\n    \"href\": \"#designer\"\n  },\n  {\n    \"title\": \"Support engineer\",\n    \"team\": \"Customers\",\n    \"place\": \"London\",\n    \"href\": \"#support-engineer\"\n  }\n]\n</script>\n\n<template>\n  <div class=\"-m-8\">\n    <CareersPage :header=\"header\" :footer=\"footer\" tag=\"Careers\" title=\"Build search people trust.\" body=\"A small team that ships every week. These are the roles open now.\" :roles=\"roles\" empty=\"No roles are open right now. Write to us anyway.\">\n      <template #logo><span class=\"font-heading text-heading-3 text-fg\">Acme</span></template>\n      <template #actions><Button href=\"#contact\">Contact us</Button><PixelButton href=\"#sign-in\">Sign in</PixelButton></template>\n    </CareersPage>\n  </div>\n</template>\n",
+      "requires": [
+        "button",
+        "section-head",
+        "site-page"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/site/CareersPage.tsx",
+          "content": "import { SectionHead } from '@/react/components/site/SectionHead'\nimport { SitePage, type SiteFrameProps } from '@/react/components/site/SitePage'\n\n// The open roles: the page's head, then a row per role in the website's double rule (its name in Faculty Glyphic, the\n// team and the place under it, the whole row a link that takes the paper under the pointer), or the line the page gives\n// when there are none. In the site's frame. The site has no careers page: set from the 404's cells and the pages' heads.\nexport type CareersRole = { title: string, team?: string, place?: string, href: string }\nexport interface CareersPageProps extends SiteFrameProps { tag?: string, title: string, body?: string, roles: CareersRole[], empty?: string }\n\nconst css = `.ds-role-link { transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-role-link:hover { background-color: var(--ds-color-surface-subtle); } }\n.ds-role-link:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }`\n\nexport function CareersPage({ header, footer, announcement, logo, actions, tag, title, body, roles, empty = '' }: CareersPageProps) {\n  return (\n    <>\n      <style href=\"ds-careers-page\" precedence=\"ds\">{css}</style>\n      <SitePage data-ds=\"careers-page\" header={header} footer={footer} announcement={announcement} logo={logo} actions={actions}>\n        <section aria-labelledby=\"careers-title\" className=\"mx-auto max-w-[1440px] px-4 pt-14 pb-32 sm:px-6 lg:px-10 lg:pt-20 lg:pb-40\">\n          <SectionHead as=\"h1\" titleId=\"careers-title\" tag={tag} title={title} body={body} />\n          {roles.length\n            ? (\n                <ul aria-label=\"Open roles\" className=\"mx-auto mt-14 grid max-w-[1008px] gap-px border border-edge bg-edge outline outline-offset-4 outline-edge\">\n                  {roles.map(r => (\n                    <li key={r.href} className=\"flex bg-surface\">\n                      <a href={r.href} className=\"ds-role-link flex w-full flex-col gap-1 px-5 py-5 sm:flex-row sm:items-baseline sm:justify-between sm:px-6\">\n                        <span className=\"type-heading-3 text-fg\">{r.title}</span>\n                        {(r.team || r.place) && <span className=\"type-meta text-fg-muted\">{[r.team, r.place].filter(Boolean).join(' · ')}</span>}\n                      </a>\n                    </li>\n                  ))}\n                </ul>\n              )\n            : empty && <p className=\"mx-auto mt-14 max-w-[1008px] border border-edge px-5 py-6 text-center type-ui text-fg-muted outline outline-offset-4 outline-edge\">{empty}</p>}\n        </section>\n      </SitePage>\n    </>\n  )\n}\n\nexport default CareersPage\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "section-head",
+        "site-page"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "CareersPage",
+            "file": "react/components/site/CareersPage.tsx",
+            "props": [
+              {
+                "name": "tag",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "title",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "body",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "roles",
+                "type": "CareersRole[]",
+                "required": true
+              },
+              {
+                "name": "empty",
+                "type": "string",
+                "required": false,
+                "default": "''"
+              }
+            ],
+            "extends": [
+              "SiteFrameProps"
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "Careers, on sample data",
+          "center": false,
+          "half": false,
+          "path": "react/examples/careers-page/Site.tsx",
+          "content": "import { CareersPage, type CareersRole } from '@/react/components/site/CareersPage'\nimport { Button } from '@/react/components/ui/Button'\nimport { PixelButton } from '@/react/components/ui/PixelButton'\n// The careers page on sample data: four open roles.\nconst header = {\n  \"items\": [\n    {\n      \"label\": \"Search\",\n      \"desc\": \"Find the answer in any file.\",\n      \"href\": \"#search\"\n    },\n    {\n      \"label\": \"Sync\",\n      \"desc\": \"Keep your apps in step.\",\n      \"href\": \"#sync\"\n    },\n    {\n      \"label\": \"Parse\",\n      \"desc\": \"Read every row and cell.\",\n      \"href\": \"#parse\"\n    }\n  ],\n  \"links\": [\n    {\n      \"label\": \"Pricing\",\n      \"href\": \"#pricing\"\n    },\n    {\n      \"label\": \"Blog\",\n      \"href\": \"#blog\"\n    },\n    {\n      \"label\": \"Docs\",\n      \"href\": \"#docs\"\n    }\n  ],\n  \"homeLabel\": \"Acme home\"\n}\nconst footer = {\n  \"columns\": [\n    {\n      \"title\": \"Product\",\n      \"links\": [\n        {\n          \"label\": \"Search\",\n          \"href\": \"#search\"\n        },\n        {\n          \"label\": \"Sync\",\n          \"href\": \"#sync\"\n        },\n        {\n          \"label\": \"Parse\",\n          \"href\": \"#parse\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Company\",\n      \"links\": [\n        {\n          \"label\": \"About\",\n          \"href\": \"#about\"\n        },\n        {\n          \"label\": \"Blog\",\n          \"href\": \"#blog\"\n        },\n        {\n          \"label\": \"Changelog\",\n          \"href\": \"#changelog\"\n        },\n        {\n          \"label\": \"Contact\",\n          \"href\": \"#contact\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Resources\",\n      \"links\": [\n        {\n          \"label\": \"Docs\",\n          \"href\": \"#docs\"\n        },\n        {\n          \"label\": \"Pricing\",\n          \"href\": \"#pricing\"\n        },\n        {\n          \"label\": \"Status\",\n          \"href\": \"#status\"\n        }\n      ]\n    }\n  ],\n  \"tagline\": \"Search any data you bring. Get the right answer.\",\n  \"legal\": \"© 2026 Acme, Inc.\",\n  \"legalLinks\": [\n    {\n      \"label\": \"Privacy\",\n      \"href\": \"#privacy\"\n    },\n    {\n      \"label\": \"Terms\",\n      \"href\": \"#terms\"\n    }\n  ],\n  \"name\": \"Acme\"\n}\nconst roles: CareersRole[] = [\n  {\n    \"title\": \"Product engineer\",\n    \"team\": \"Engineering\",\n    \"place\": \"Remote\",\n    \"href\": \"#product-engineer\"\n  },\n  {\n    \"title\": \"Search engineer\",\n    \"team\": \"Engineering\",\n    \"place\": \"San Francisco\",\n    \"href\": \"#search-engineer\"\n  },\n  {\n    \"title\": \"Designer\",\n    \"team\": \"Design\",\n    \"place\": \"Remote\",\n    \"href\": \"#designer\"\n  },\n  {\n    \"title\": \"Support engineer\",\n    \"team\": \"Customers\",\n    \"place\": \"London\",\n    \"href\": \"#support-engineer\"\n  }\n]\nexport default function Site() {\n  return (\n    <div className=\"-m-8\">\n      <CareersPage\n        header={header}\n        footer={footer}\n        tag=\"Careers\"\n        title=\"Build search people trust.\"\n        body=\"A small team that ships every week. These are the roles open now.\"\n        roles={roles}\n        empty=\"No roles are open right now. Write to us anyway.\"\n        logo={<span className=\"font-heading text-heading-3 text-fg\">Acme</span>}\n        actions={() => (<><Button href=\"#contact\">Contact us</Button><PixelButton href=\"#sign-in\">Sign in</PixelButton></>)}\n      />\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "button",
+            "section-head",
+            "site-page"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/site/careers-page.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { define, tag } from '@/elements/lib/element'\nimport { SiteFrameElement } from '@/elements/components/site/site-page'\nimport '@/elements/components/site/section-head'\nimport styles from 'virtual:tw'\n\n// CareersPage.vue as <conare-careers-page>: the open roles: the page's head, then a row per role in the website's double\n// rule (its name in Faculty Glyphic, the team and the place under it, the whole row a link that takes the paper under\n// the pointer), or the line the page gives when there are none. In the site's frame (site-page). `heading` is Vue's\n// `title`.\nexport type CareersRole = { title: string, team?: string, place?: string, href: string }\n\n/**\n * @summary The open roles, a row each in the double rule.\n * @slot logo - The logo in the header's home link.\n * @slot actions - The header's buttons.\n * @slot sheet-actions - The same buttons again, for the header's sheet on phones.\n */\nexport class CareersPage extends SiteFrameElement {\n\tstatic styles = [SiteFrameElement.styles, styles]\n\tstatic properties = { tag: {}, heading: {}, body: {}, roles: { type: Array }, empty: {} }\n\n\ttag?: string\n\t/** The page's line (Vue's `title`). */\n\theading = ''\n\tbody?: string\n\t/** Each { title, team?, place?, href }. */\n\troles: CareersRole[] = []\n\t/** The line shown when there are no roles. */\n\tempty = ''\n\n\trender() {\n\t\tconst head = tag('section-head')\n\t\treturn this.frame('careers-page', staticHtml`<section aria-labelledby=\"careers-title\" class=\"mx-auto max-w-[1440px] px-4 pt-14 pb-32 sm:px-6 lg:px-10 lg:pt-20 lg:pb-40\"><${head} as=\"h1\" title-id=\"careers-title\" .tag=${this.tag} .heading=${this.heading} .body=${this.body}></${head}>${this.roles.length ? html`<ul aria-label=\"Open roles\" class=\"mx-auto mt-14 grid max-w-[1008px] gap-px border border-edge bg-edge outline outline-offset-4 outline-edge\">${this.roles.map((r) => html`<li class=\"flex bg-surface\"><a href=${r.href} class=\"ds-role-link flex w-full flex-col gap-1 px-5 py-5 sm:flex-row sm:items-baseline sm:justify-between sm:px-6\"><span class=\"type-heading-3 text-fg\">${r.title}</span>${r.team || r.place ? html`<span class=\"type-meta text-fg-muted\">${[r.team, r.place].filter(Boolean).join(' · ')}</span>` : nothing}</a></li>`)}</ul>` : this.empty ? html`<p class=\"mx-auto mt-14 max-w-[1008px] border border-edge px-5 py-6 text-center type-ui text-fg-muted outline outline-offset-4 outline-edge\">${this.empty}</p>` : nothing}</section>`)\n\t}\n}\n\ndefine('careers-page', CareersPage)\n"
+        },
+        {
+          "path": "elements/components/site/careers-page.css",
+          "content": "/* CareersPage.vue's <style>, as it is. */\n.ds-role-link { transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-role-link:hover { background-color: var(--ds-color-surface-subtle); } }\n.ds-role-link:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/careers-page.js",
+        "elements/site-page.js",
+        "elements/section-head.js",
+        "elements/site-footer.js",
+        "elements/site-header.js",
+        "elements/product-menu.js",
+        "elements/announcement-bar.js",
+        "elements/button-link.js",
+        "elements/call-to-action.js",
+        "elements/site-tag.js",
+        "elements/grain.js",
+        "elements/roll-text.js",
+        "elements/cell-burst.js",
+        "elements/button.js",
+        "elements/pixel-button.js"
+      ],
+      "tag": "conare-careers-page",
+      "tags": [
+        "conare-careers-page"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "announcement-bar",
+        "button-link",
+        "call-to-action",
+        "cell-burst",
+        "product-menu",
+        "roll-text",
+        "section-head",
+        "site-footer",
+        "site-header",
+        "site-page",
+        "tag"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-careers-page",
+            "name": "CareersPage",
+            "module": "elements/careers-page.js",
+            "description": "The open roles, a row each in the double rule.",
+            "attributes": [
+              {
+                "name": "tag",
+                "field": "tag",
+                "type": "string | undefined"
+              },
+              {
+                "name": "heading",
+                "field": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The page's line (Vue's `title`)."
+              },
+              {
+                "name": "body",
+                "field": "body",
+                "type": "string | undefined"
+              },
+              {
+                "name": "roles",
+                "field": "roles",
+                "type": "CareersRole[]",
+                "default": "[]",
+                "description": "Each { title, team?, place?, href }."
+              },
+              {
+                "name": "empty",
+                "field": "empty",
+                "type": "string",
+                "default": "''",
+                "description": "The line shown when there are no roles."
+              },
+              {
+                "name": "header",
+                "field": "header",
+                "type": "SiteHeaderData",
+                "default": "{ items: [], links: [] }",
+                "description": "The header: items, more, links, productCurrent, homeHref, homeLabel."
+              },
+              {
+                "name": "footer",
+                "field": "footer",
+                "type": "SiteFooterData",
+                "default": "{ columns: [] }",
+                "description": "The footer: columns, tagline, legal, legalLinks, name."
+              },
+              {
+                "name": "announcement",
+                "field": "announcement",
+                "type": "SiteAnnouncement | undefined",
+                "description": "The bar above the header: tag, text, cta, href."
+              }
+            ],
+            "properties": [
+              {
+                "name": "tag",
+                "type": "string | undefined",
+                "attribute": "tag"
+              },
+              {
+                "name": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The page's line (Vue's `title`).",
+                "attribute": "heading"
+              },
+              {
+                "name": "body",
+                "type": "string | undefined",
+                "attribute": "body"
+              },
+              {
+                "name": "roles",
+                "type": "CareersRole[]",
+                "default": "[]",
+                "description": "Each { title, team?, place?, href }.",
+                "attribute": "roles"
+              },
+              {
+                "name": "empty",
+                "type": "string",
+                "default": "''",
+                "description": "The line shown when there are no roles.",
+                "attribute": "empty"
+              },
+              {
+                "name": "header",
+                "type": "SiteHeaderData",
+                "default": "{ items: [], links: [] }",
+                "description": "The header: items, more, links, productCurrent, homeHref, homeLabel.",
+                "attribute": "header"
+              },
+              {
+                "name": "footer",
+                "type": "SiteFooterData",
+                "default": "{ columns: [] }",
+                "description": "The footer: columns, tagline, legal, legalLinks, name.",
+                "attribute": "footer"
+              },
+              {
+                "name": "announcement",
+                "type": "SiteAnnouncement | undefined",
+                "description": "The bar above the header: tag, text, cta, href.",
+                "attribute": "announcement"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "logo",
+                "description": "The logo in the header's home link."
+              },
+              {
+                "name": "actions",
+                "description": "The header's buttons."
+              },
+              {
+                "name": "sheet-actions",
+                "description": "The same buttons again, for the header's sheet on phones."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "Careers, on sample data",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/careers-page/Site.html",
+          "content": "<!-- The careers page on sample data: four open roles. -->\n<div class=\"-m-8\">\n  <conare-careers-page\n    header='{\"items\": [{\"label\": \"Search\", \"desc\": \"Find the answer in any file.\", \"href\": \"#search\"}, {\"label\": \"Sync\", \"desc\": \"Keep your apps in step.\", \"href\": \"#sync\"}, {\"label\": \"Parse\", \"desc\": \"Read every row and cell.\", \"href\": \"#parse\"}], \"links\": [{\"label\": \"Pricing\", \"href\": \"#pricing\"}, {\"label\": \"Blog\", \"href\": \"#blog\"}, {\"label\": \"Docs\", \"href\": \"#docs\"}], \"homeLabel\": \"Acme home\"}'\n    footer='{\"columns\": [{\"title\": \"Product\", \"links\": [{\"label\": \"Search\", \"href\": \"#search\"}, {\"label\": \"Sync\", \"href\": \"#sync\"}, {\"label\": \"Parse\", \"href\": \"#parse\"}]}, {\"title\": \"Company\", \"links\": [{\"label\": \"About\", \"href\": \"#about\"}, {\"label\": \"Blog\", \"href\": \"#blog\"}, {\"label\": \"Changelog\", \"href\": \"#changelog\"}, {\"label\": \"Contact\", \"href\": \"#contact\"}]}, {\"title\": \"Resources\", \"links\": [{\"label\": \"Docs\", \"href\": \"#docs\"}, {\"label\": \"Pricing\", \"href\": \"#pricing\"}, {\"label\": \"Status\", \"href\": \"#status\"}]}], \"tagline\": \"Search any data you bring. Get the right answer.\", \"legal\": \"© 2026 Acme, Inc.\", \"legalLinks\": [{\"label\": \"Privacy\", \"href\": \"#privacy\"}, {\"label\": \"Terms\", \"href\": \"#terms\"}], \"name\": \"Acme\"}'\n    tag=\"Careers\"\n    heading=\"Build search people trust.\"\n    body=\"A small team that ships every week. These are the roles open now.\"\n    roles='[{\"title\": \"Product engineer\", \"team\": \"Engineering\", \"place\": \"Remote\", \"href\": \"#product-engineer\"}, {\"title\": \"Search engineer\", \"team\": \"Engineering\", \"place\": \"San Francisco\", \"href\": \"#search-engineer\"}, {\"title\": \"Designer\", \"team\": \"Design\", \"place\": \"Remote\", \"href\": \"#designer\"}, {\"title\": \"Support engineer\", \"team\": \"Customers\", \"place\": \"London\", \"href\": \"#support-engineer\"}]'\n    empty=\"No roles are open right now. Write to us anyway.\"\n  >\n    <span slot=\"logo\" class=\"font-heading text-heading-3 text-fg\">Acme</span>\n    <conare-button slot=\"actions\" href=\"#contact\">Contact us</conare-button>\n    <conare-pixel-button slot=\"actions\" href=\"#sign-in\">Sign in</conare-pixel-button>\n    <conare-button slot=\"sheet-actions\" href=\"#contact\">Contact us</conare-button>\n    <conare-pixel-button slot=\"sheet-actions\" href=\"#sign-in\">Sign in</conare-pixel-button>\n  </conare-careers-page>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

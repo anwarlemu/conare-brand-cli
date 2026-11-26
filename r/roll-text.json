@@ -1,0 +1,204 @@
+{
+  "name": "roll-text",
+  "title": "Roll text",
+  "type": "registry:ui",
+  "group": "visuals",
+  "description": "A label that rolls up to a copy of itself on hover or focus: the console's pace for its lists, the website's for its footer.",
+  "use_for": "Short links: the website footer, the console's source list and the docs panel's links.",
+  "never": [
+    "Long labels that wrap",
+    "Buttons whose label changes, such as Copy and Copied (use TextSwap)",
+    "Touch screens: it rolls only where a pointer can rest"
+  ],
+  "source": "conare-web app/components/home/RollText.vue, app/assets/css/console2.css and home.css (.roll, .roll-a, .roll-b, .roll-host)",
+  "body": "Put the class `ds-roll-host` on the link or button that holds it: hovering it (where a pointer can rest) or reaching it with Tab rolls the label in 160ms on the console's curve. `pace=\"console\"` moves the label 110% so no sliver shows; `pace=\"site\"` moves it one line, as the website's footer does. Reduced motion holds it still.",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/visuals/RollText.vue",
+      "content": "<script setup lang=\"ts\">\n// A label that rolls up to a copy of itself (RollText.vue, console2.css and home.css .roll): the label sits in a\n// clipped box with a copy parked just below; hovering or keyboard focus on the nearest `.ds-roll-host` slides the label\n// up and out as the copy slides in, in 160ms on the console's curve. `pace=\"site\"` moves one line (the website's\n// footer), the console's moves 110% so no sliver shows. Only where a pointer can rest: a tap would leave it rolled.\n// Reduced motion holds it still.\nwithDefaults(defineProps<{ text: string, pace?: 'console' | 'site' }>(), { pace: 'console' })\n</script>\n\n<template>\n  <span data-ds=\"roll-text\" class=\"ds-roll\" :data-pace=\"pace\">\n    <span class=\"ds-roll-a\">{{ text }}</span>\n    <span class=\"ds-roll-b\" aria-hidden=\"true\">{{ text }}</span>\n  </span>\n</template>\n\n<style>\n.ds-roll { --roll-out: -110%; position: relative; display: block; overflow: hidden; line-height: 1.4; }\n.ds-roll[data-pace=\"site\"] { --roll-out: -100%; }\n.ds-roll-a, .ds-roll-b { display: block; transition: transform var(--ds-duration-glide) var(--ds-easing-standard); }\n.ds-roll-b { position: absolute; inset-inline: 0; top: 0; transform: translateY(110%); }\n.ds-roll-host:focus-visible .ds-roll-a { transform: translateY(var(--roll-out)); }\n.ds-roll-host:focus-visible .ds-roll-b { transform: none; }\n@media (hover: hover) and (pointer: fine) {\n  .ds-roll-host:hover .ds-roll-a { transform: translateY(var(--roll-out)); }\n  .ds-roll-host:hover .ds-roll-b { transform: none; }\n}\n@media (prefers-reduced-motion: reduce) {\n  .ds-roll-a, .ds-roll-b { transition: none; }\n  .ds-roll-host:is(:hover, :focus-visible) .ds-roll-a { transform: none; }\n  .ds-roll-host:is(:hover, :focus-visible) .ds-roll-b { transform: translateY(110%); }\n}\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "In the product",
+      "center": false,
+      "half": false,
+      "path": "examples/roll-text/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport RollText from '@/components/visuals/RollText.vue'\n// The docs panel's links: hover one, or reach it with Tab, and its label rolls at the console's pace.\nconst links = ['Quickstart', 'Namespaces', 'Search', 'Connect an agent']\nconst current = ref('Quickstart')\n</script>\n\n<template>\n  <nav class=\"flex w-58 flex-col\" aria-label=\"docs\">\n    <button\n      v-for=\"l in links\"\n      :key=\"l\"\n      type=\"button\"\n      class=\"ds-roll-host relative flex h-control-sm gap-2 cursor-pointer items-center px-2 text-ui text-fg-soft transition-[background-color,color] duration-120 ease-standard hover:bg-surface-subtle hover:text-fg focus-visible:-outline-offset-2 aria-[current=page]:bg-surface aria-[current=page]:font-medium aria-[current=page]:text-fg aria-[current=page]:outline aria-[current=page]:-outline-offset-1 aria-[current=page]:outline-edge max-md:h-11 max-md:text-body\"\n      :aria-current=\"current === l ? 'page' : undefined\"\n      @click=\"current = l\"\n    >\n      <RollText :text=\"l\" class=\"min-w-0 flex-1 text-left\" />\n    </button>\n  </nav>\n</template>\n",
+      "requires": [],
+      "packages": []
+    },
+    {
+      "name": "Site",
+      "label": "On the site",
+      "center": false,
+      "half": false,
+      "path": "examples/roll-text/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport RollText from '@/components/visuals/RollText.vue'\n// The website footer's legal line: hover a link and its label rolls up to a copy of itself, one line at the site's pace.\n</script>\n\n<template>\n  <div data-theme=\"dark\" class=\"-m-8 flex flex-wrap items-center gap-x-6 gap-y-2 bg-surface p-8 text-ui text-fg/80\">\n    <span>© 2026 Acme, Inc.</span>\n    <a href=\"#privacy\" class=\"ds-roll-host transition-colors duration-200 ease-standard hover:text-fg\"><RollText text=\"Privacy\" pace=\"site\" /></a>\n    <a href=\"#terms\" class=\"ds-roll-host transition-colors duration-200 ease-standard hover:text-fg\"><RollText text=\"Terms\" pace=\"site\" /></a>\n  </div>\n</template>\n",
+      "requires": [],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/visuals/RollText.tsx",
+          "content": "import { cn } from '@/react/lib/cn'\n\n// A label that rolls up to a copy of itself (RollText.vue, console2.css and home.css .roll): the label sits in a\n// clipped box with a copy parked just below; hovering or keyboard focus on the nearest `.ds-roll-host` slides the label\n// up and out as the copy slides in, in 160ms on the console's curve. `pace=\"site\"` moves one line (the website's\n// footer), the console's moves 110% so no sliver shows. Only where a pointer can rest: a tap would leave it rolled.\n// Reduced motion holds it still.\nexport interface RollTextProps {\n  text: string\n  pace?: 'console' | 'site'\n  className?: string\n}\n\nexport function RollText({ text, pace = 'console', className }: RollTextProps) {\n  return (\n    <>\n      <style href=\"ds-roll-text\" precedence=\"ds\">{css}</style>\n      <span data-ds=\"roll-text\" className={cn('ds-roll', className)} data-pace={pace}>\n        <span className=\"ds-roll-a\">{text}</span>\n        <span className=\"ds-roll-b\" aria-hidden=\"true\">{text}</span>\n      </span>\n    </>\n  )\n}\n\nexport default RollText\n\nconst css = `\n.ds-roll { --roll-out: -110%; position: relative; display: block; overflow: hidden; line-height: 1.4; }\n.ds-roll[data-pace=\"site\"] { --roll-out: -100%; }\n.ds-roll-a, .ds-roll-b { display: block; transition: transform var(--ds-duration-glide) var(--ds-easing-standard); }\n.ds-roll-b { position: absolute; inset-inline: 0; top: 0; transform: translateY(110%); }\n.ds-roll-host:focus-visible .ds-roll-a { transform: translateY(var(--roll-out)); }\n.ds-roll-host:focus-visible .ds-roll-b { transform: none; }\n@media (hover: hover) and (pointer: fine) {\n  .ds-roll-host:hover .ds-roll-a { transform: translateY(var(--roll-out)); }\n  .ds-roll-host:hover .ds-roll-b { transform: none; }\n}\n@media (prefers-reduced-motion: reduce) {\n  .ds-roll-a, .ds-roll-b { transition: none; }\n  .ds-roll-host:is(:hover, :focus-visible) .ds-roll-a { transform: none; }\n  .ds-roll-host:is(:hover, :focus-visible) .ds-roll-b { transform: translateY(110%); }\n}\n`\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "RollText",
+            "file": "react/components/visuals/RollText.tsx",
+            "props": [
+              {
+                "name": "text",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "pace",
+                "type": "'console' | 'site'",
+                "required": false,
+                "default": "'console'"
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "react/examples/roll-text/Product.tsx",
+          "content": "'use client'\nimport { useState } from 'react'\nimport { RollText } from '@/react/components/visuals/RollText'\n// The docs panel's links: hover one, or reach it with Tab, and its label rolls at the console's pace.\nconst links = ['Quickstart', 'Namespaces', 'Search', 'Connect an agent']\n\nexport default function Product() {\n  const [current, setCurrent] = useState('Quickstart')\n  return (\n    <nav className=\"flex w-58 flex-col\" aria-label=\"docs\">\n      {links.map(l => (\n        <button\n          key={l}\n          type=\"button\"\n          className=\"ds-roll-host relative flex h-control-sm gap-2 cursor-pointer items-center px-2 text-ui text-fg-soft transition-[background-color,color] duration-120 ease-standard hover:bg-surface-subtle hover:text-fg focus-visible:-outline-offset-2 aria-[current=page]:bg-surface aria-[current=page]:font-medium aria-[current=page]:text-fg aria-[current=page]:outline aria-[current=page]:-outline-offset-1 aria-[current=page]:outline-edge max-md:h-11 max-md:text-body\"\n          aria-current={current === l ? 'page' : undefined}\n          onClick={() => setCurrent(l)}\n        >\n          <RollText text={l} className=\"min-w-0 flex-1 text-left\" />\n        </button>\n      ))}\n    </nav>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        },
+        {
+          "name": "Site",
+          "label": "On the site",
+          "center": false,
+          "half": false,
+          "path": "react/examples/roll-text/Site.tsx",
+          "content": "import { RollText } from '@/react/components/visuals/RollText'\n// The website footer's legal line: hover a link and its label rolls up to a copy of itself, one line at the site's pace.\n\nexport default function Site() {\n  return (\n    <div data-theme=\"dark\" className=\"-m-8 flex flex-wrap items-center gap-x-6 gap-y-2 bg-surface p-8 text-ui text-fg/80\">\n      <span>© 2026 Acme, Inc.</span>\n      <a href=\"#privacy\" className=\"ds-roll-host transition-colors duration-200 ease-standard hover:text-fg\"><RollText text=\"Privacy\" pace=\"site\" /></a>\n      <a href=\"#terms\" className=\"ds-roll-host transition-colors duration-200 ease-standard hover:text-fg\"><RollText text=\"Terms\" pace=\"site\" /></a>\n    </div>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/visuals/roll-text.ts",
+          "content": "import { html } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// RollText.vue as <conare-roll-text>: a label that rolls up to a copy of itself (console2.css and home.css .roll): the\n// label sits in a clipped box with a copy parked just below; hovering or keyboard focus on the nearest `.ds-roll-host`\n// slides the label up and out as the copy slides in, in 160ms on the console's curve. `pace=\"site\"` moves one line\n// (the website's footer), the console's moves 110% so no sliver shows. Only where a pointer can rest: a tap would leave\n// it rolled. Reduced motion holds it still.\n//\n// The host is the clipped box (roll-text.css), so a class on it lands as one on <RollText> does. A page's\n// `.ds-roll-host:hover` cannot reach into the shadow root, so the element watches its nearest `.ds-roll-host` (the\n// pointer resting on it, keyboard focus in it) and marks the two labels, which roll by the same rules.\n\n/**\n * @summary A label that rolls up to a copy of itself on hover or keyboard focus.\n */\nexport class RollText extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { text: {}, pace: { reflect: true }, hovered: { state: true }, focused: { state: true } }\n\n\ttext = ''\n\t/** `site` moves one line, the console's 110%. */\n\tpace: 'console' | 'site' = 'console'\n\tprivate hovered = false\n\tprivate focused = false\n\tprivate rollHost: Element | null = null\n\n\tprivate onEnter = () => { this.hovered = true }\n\tprivate onLeave = () => { this.hovered = false }\n\tprivate onFocus = () => { this.focused = !!this.rollHost?.matches(':focus-visible') }\n\tprivate onBlur = () => { this.focused = false }\n\n\tconnectedCallback() {\n\t\tsuper.connectedCallback()\n\t\tif (!this.hasAttribute('pace')) this.setAttribute('pace', this.pace)\n\t\tconst host = this.closest('.ds-roll-host')\n\t\tthis.rollHost = host\n\t\tif (!host) return\n\t\thost.addEventListener('pointerenter', this.onEnter)\n\t\thost.addEventListener('pointerleave', this.onLeave)\n\t\thost.addEventListener('focus', this.onFocus)\n\t\thost.addEventListener('blur', this.onBlur)\n\t\tthis.hovered = host.matches(':hover')\n\t\tthis.focused = host.matches(':focus-visible')\n\t}\n\n\tdisconnectedCallback() {\n\t\tsuper.disconnectedCallback()\n\t\tconst host = this.rollHost\n\t\tif (!host) return\n\t\thost.removeEventListener('pointerenter', this.onEnter)\n\t\thost.removeEventListener('pointerleave', this.onLeave)\n\t\thost.removeEventListener('focus', this.onFocus)\n\t\thost.removeEventListener('blur', this.onBlur)\n\t\tthis.rollHost = null\n\t}\n\n\trender() {\n\t\treturn html`<span class=\"ds-roll-a\" ?data-hover=${this.hovered} ?data-focus=${this.focused}>${this.text}</span><span class=\"ds-roll-b\" aria-hidden=\"true\" ?data-hover=${this.hovered} ?data-focus=${this.focused}>${this.text}</span>`\n\t}\n}\n\ndefine('roll-text', RollText)\n"
+        },
+        {
+          "path": "elements/components/visuals/roll-text.css",
+          "content": "/* RollText.vue's <style>, with the host as .ds-roll (the clipped box) and the host link's :hover and :focus-visible\n   as the labels' data-hover and data-focus. */\n/* !important: as Vue's unlayered .ds-roll, it beats the page's scoped [data-ds] base (its line height). */\n:host { --roll-out: -110%; position: relative !important; display: block !important; overflow: hidden !important; line-height: 1.4 !important; }\n:host([pace=\"site\"]) { --roll-out: -100%; }\n.ds-roll-a, .ds-roll-b { display: block; transition: transform var(--ds-duration-glide) var(--ds-easing-standard); }\n.ds-roll-b { position: absolute; inset-inline: 0; top: 0; transform: translateY(110%); }\n.ds-roll-a[data-focus] { transform: translateY(var(--roll-out)); }\n.ds-roll-b[data-focus] { transform: none; }\n@media (hover: hover) and (pointer: fine) {\n  .ds-roll-a[data-hover] { transform: translateY(var(--roll-out)); }\n  .ds-roll-b[data-hover] { transform: none; }\n}\n@media (prefers-reduced-motion: reduce) {\n  .ds-roll-a, .ds-roll-b { transition: none; }\n  .ds-roll-a:is([data-hover], [data-focus]) { transform: none; }\n  .ds-roll-b:is([data-hover], [data-focus]) { transform: translateY(110%); }\n}\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/roll-text.js"
+      ],
+      "tag": "conare-roll-text",
+      "tags": [
+        "conare-roll-text"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-roll-text",
+            "name": "RollText",
+            "module": "elements/roll-text.js",
+            "description": "A label that rolls up to a copy of itself on hover or keyboard focus.",
+            "attributes": [
+              {
+                "name": "text",
+                "field": "text",
+                "type": "string",
+                "default": "''"
+              },
+              {
+                "name": "pace",
+                "field": "pace",
+                "type": "\"console\" | \"site\"",
+                "default": "'console'",
+                "description": "`site` moves one line, the console's 110%."
+              },
+              {
+                "name": "hovered",
+                "field": "hovered",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "focused",
+                "field": "focused",
+                "type": "boolean",
+                "default": "false"
+              }
+            ],
+            "properties": [
+              {
+                "name": "text",
+                "type": "string",
+                "default": "''",
+                "attribute": "text"
+              },
+              {
+                "name": "pace",
+                "type": "\"console\" | \"site\"",
+                "default": "'console'",
+                "description": "`site` moves one line, the console's 110%.",
+                "attribute": "pace"
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/roll-text/Product.html",
+          "content": "<!-- The docs panel's links: hover one, or reach it with Tab, and its label rolls at the console's pace. -->\n<nav class=\"flex w-58 flex-col\" aria-label=\"docs\" id=\"docs\">\n  <button type=\"button\" class=\"ds-roll-host relative flex h-control-sm gap-2 cursor-pointer items-center px-2 text-ui text-fg-soft transition-[background-color,color] duration-120 ease-standard hover:bg-surface-subtle hover:text-fg focus-visible:-outline-offset-2 aria-[current=page]:bg-surface aria-[current=page]:font-medium aria-[current=page]:text-fg aria-[current=page]:outline aria-[current=page]:-outline-offset-1 aria-[current=page]:outline-edge max-md:h-11 max-md:text-body\" aria-current=\"page\"><conare-roll-text text=\"Quickstart\" class=\"min-w-0 flex-1 text-left\"></conare-roll-text></button>\n  <button type=\"button\" class=\"ds-roll-host relative flex h-control-sm gap-2 cursor-pointer items-center px-2 text-ui text-fg-soft transition-[background-color,color] duration-120 ease-standard hover:bg-surface-subtle hover:text-fg focus-visible:-outline-offset-2 aria-[current=page]:bg-surface aria-[current=page]:font-medium aria-[current=page]:text-fg aria-[current=page]:outline aria-[current=page]:-outline-offset-1 aria-[current=page]:outline-edge max-md:h-11 max-md:text-body\"><conare-roll-text text=\"Namespaces\" class=\"min-w-0 flex-1 text-left\"></conare-roll-text></button>\n  <button type=\"button\" class=\"ds-roll-host relative flex h-control-sm gap-2 cursor-pointer items-center px-2 text-ui text-fg-soft transition-[background-color,color] duration-120 ease-standard hover:bg-surface-subtle hover:text-fg focus-visible:-outline-offset-2 aria-[current=page]:bg-surface aria-[current=page]:font-medium aria-[current=page]:text-fg aria-[current=page]:outline aria-[current=page]:-outline-offset-1 aria-[current=page]:outline-edge max-md:h-11 max-md:text-body\"><conare-roll-text text=\"Search\" class=\"min-w-0 flex-1 text-left\"></conare-roll-text></button>\n  <button type=\"button\" class=\"ds-roll-host relative flex h-control-sm gap-2 cursor-pointer items-center px-2 text-ui text-fg-soft transition-[background-color,color] duration-120 ease-standard hover:bg-surface-subtle hover:text-fg focus-visible:-outline-offset-2 aria-[current=page]:bg-surface aria-[current=page]:font-medium aria-[current=page]:text-fg aria-[current=page]:outline aria-[current=page]:-outline-offset-1 aria-[current=page]:outline-edge max-md:h-11 max-md:text-body\"><conare-roll-text text=\"Connect an agent\" class=\"min-w-0 flex-1 text-left\"></conare-roll-text></button>\n</nav>\n<script type=\"module\">\n  const links = document.querySelectorAll('#docs button')\n  for (const link of links) {\n    link.addEventListener('click', () => {\n      for (const other of links) other.removeAttribute('aria-current')\n      link.setAttribute('aria-current', 'page')\n    })\n  }\n</script>\n"
+        },
+        {
+          "name": "Site",
+          "label": "On the site",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/roll-text/Site.html",
+          "content": "<!-- The website footer's legal line: hover a link and its label rolls up to a copy of itself, one line at the site's\n     pace. -->\n<div data-theme=\"dark\" class=\"-m-8 flex flex-wrap items-center gap-x-6 gap-y-2 bg-surface p-8 text-ui text-fg/80\">\n  <span>© 2026 Acme, Inc.</span>\n  <a href=\"#privacy\" class=\"ds-roll-host transition-colors duration-200 ease-standard hover:text-fg\"><conare-roll-text text=\"Privacy\" pace=\"site\"></conare-roll-text></a>\n  <a href=\"#terms\" class=\"ds-roll-host transition-colors duration-200 ease-standard hover:text-fg\"><conare-roll-text text=\"Terms\" pace=\"site\"></conare-roll-text></a>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

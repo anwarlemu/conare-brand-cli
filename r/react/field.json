@@ -1,0 +1,26 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "field",
+  "type": "registry:ui",
+  "title": "Field",
+  "description": "Text input: 32px, a hairline that goes ink on focus, an optional leading icon at the 28px filter size, and a red border with its message when invalid. Field puts the label over it and the hint or error under it.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Input.tsx",
+      "type": "registry:ui",
+      "content": "import type { ComponentType, InputHTMLAttributes, Ref } from 'react'\nimport { cn } from '@/lib/cn'\n\n// A text field (console2.css .v2-input): 32px, a #C3C1BF hairline that turns ink on focus, 13px text and a muted\n// placeholder. `icon` puts a 12px Lucide glyph at the start and makes it the 28px filter size. `invalid` turns the\n// border red; Field shows the message. 40px and 16px on phones, so iOS does not zoom. Every other prop lands on the\n// <input> (value and onChange as React's own), as Vue's attributes do.\nexport interface InputProps extends InputHTMLAttributes<HTMLInputElement> {\n  icon?: ComponentType<{ size?: number, strokeWidth?: number, className?: string, 'aria-hidden'?: boolean | 'true' }>\n  invalid?: boolean\n  ref?: Ref<HTMLInputElement>\n}\n\nexport function Input({ icon: Icon, invalid, className, ...rest }: InputProps) {\n  if (Icon) {\n    return (\n      <span data-ds=\"input\" className=\"relative block w-full\">\n        <Icon size={12} strokeWidth={1.5} className=\"pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-fg-muted\" aria-hidden=\"true\" />\n        <input\n          {...rest}\n          aria-invalid={invalid || undefined}\n          className={cn('h-control-sm w-full border border-edge-strong bg-surface pr-2.5 pl-7 text-meta leading-5 text-fg outline-none transition-[border-color] duration-120 ease-standard placeholder:text-fg-muted focus:border-edge-focus aria-invalid:border-action-danger disabled:cursor-not-allowed disabled:text-fg-muted max-md:h-control-touch max-md:text-input pointer-coarse:h-control-touch pointer-coarse:text-input', className)}\n        />\n      </span>\n    )\n  }\n  return (\n    <input\n      data-ds=\"input\"\n      {...rest}\n      aria-invalid={invalid || undefined}\n      className={cn('h-control-md w-full border border-edge-strong bg-surface px-2.5 text-ui text-fg outline-none transition-[border-color] duration-120 ease-standard placeholder:text-fg-muted focus:border-edge-focus aria-invalid:border-action-danger disabled:cursor-not-allowed disabled:text-fg-muted max-md:h-control-touch max-md:text-input pointer-coarse:h-control-touch pointer-coarse:text-input', className)}\n    />\n  )\n}\n\nexport default Input\n"
+    },
+    {
+      "path": "components/ui/Field.tsx",
+      "type": "registry:ui",
+      "content": "import { useId, type HTMLAttributes, type ReactNode } from 'react'\nimport { cn } from '@/lib/cn'\n\n// A label over one control, with a hint or an error under it (the console's forms): the label 12px soft, the hint\n// 12px muted, the error in the danger red. Vue's scoped slot is a render function: children receives the ids to wire,\n// <Field label=\"Name\">{({ id, hintId }) => <Input id={id} aria-describedby={hintId} />}</Field>; plain children work too.\nexport interface FieldSlot { id: string, hintId?: string, invalid: boolean }\nexport interface FieldProps extends Omit<HTMLAttributes<HTMLDivElement>, 'children'> {\n  label: string\n  hint?: string\n  error?: string\n  id?: string\n  children?: ReactNode | ((slot: FieldSlot) => ReactNode)\n}\n\nexport function Field({ label, hint, error, id: given, className, children, ...rest }: FieldProps) {\n  const auto = useId()\n  const id = given ?? `field-${auto}`\n  const hintId = hint || error ? `${id}-hint` : undefined\n  return (\n    <div data-ds=\"field\" className={cn('flex flex-col gap-1.5', className)} {...rest}>\n      <label htmlFor={id} className=\"type-meta text-fg-soft\">{label}</label>\n      {typeof children === 'function' ? children({ id, hintId, invalid: !!error }) : children}\n      {(error || hint) && <p id={hintId} className={cn('type-meta', error ? 'text-fg-danger' : 'text-fg-muted')} role={error ? 'alert' : undefined}>{error || hint}</p>}\n    </div>\n  )\n}\n\nexport default Field\n"
+    },
+    {
+      "path": "lib/cn.ts",
+      "type": "registry:lib",
+      "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+    }
+  ]
+}

@@ -1,0 +1,326 @@
+{
+  "name": "pricing-page",
+  "title": "Pricing page",
+  "type": "registry:block",
+  "group": "site",
+  "description": "Pricing: the head with the one dark call to action, each group of prices (pricing table), Enterprise as the page's one red block with what its terms cover, the questions and the closing band.",
+  "use_for": "A website's pricing page.",
+  "never": [
+    "A second red block: Enterprise is the one",
+    "Prices hidden behind a contact form, except Enterprise"
+  ],
+  "source": "conare-web app/pages/pricing.vue, app/content/pricing.ts",
+  "body": "Built on `site-page`: `header`, `footer` and `announcement` are its props, and the `logo` and `actions` slots go to the header (`sheet-actions` too, in web components). Each of `groups` is one `pricing-table`; its `key` is the anchor. Leave out `enterprise` and the red block goes with it.",
+  "requires": [
+    "button-link",
+    "call-to-action",
+    "cell-burst",
+    "faq",
+    "pricing-table",
+    "room-grid",
+    "section-head",
+    "site-page"
+  ],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/site/PricingPage.vue",
+      "content": "<script setup lang=\"ts\">\nimport ButtonLink from '@/components/site/ButtonLink.vue'\nimport CallToAction from '@/components/site/CallToAction.vue'\nimport Faq from '@/components/site/Faq.vue'\nimport PricingTable, { type PriceCard } from '@/components/site/PricingTable.vue'\nimport SectionHead from '@/components/site/SectionHead.vue'\nimport SitePage, { type SiteAction, type SiteAnnouncement, type SiteFooterData, type SiteHeaderData } from '@/components/site/SitePage.vue'\nimport Grain from '@/components/visuals/Grain.vue'\nimport RoomGrid from '@/components/visuals/RoomGrid.vue'\n\n// Pricing (pages/pricing.vue): the head with the one dark call to action, then each group of prices (pricing-table),\n// then Enterprise, the page's one red block (the hero's frame: the grain and the room grid), what its terms cover as\n// off-white cards in the double rule with the light button, its squares coming in black; then the questions and the\n// closing band.\ndefineProps<{\n  header: SiteHeaderData, footer: SiteFooterData, announcement?: SiteAnnouncement\n  head: { tag?: string, title: string, body?: string, action: SiteAction }\n  groups: { key: string, title: string, body?: string, cards: PriceCard[] }[]\n  enterprise?: { title: string, body: string, action: SiteAction, items: { name: string, line: string }[] }\n  faq: { q: string, a: string }[]\n  cta: { title: string, action: SiteAction }\n}>()\n</script>\n\n<template>\n  <SitePage data-ds=\"pricing-page\" :header=\"header\" :footer=\"footer\" :announcement=\"announcement\">\n      <template #logo><slot name=\"logo\" /></template>\n      <template #actions=\"{ place }\"><slot name=\"actions\" :place=\"place\" /></template>\n    <section aria-labelledby=\"pricing-page-title\" class=\"mx-auto max-w-[1440px] px-4 pt-14 pb-20 sm:px-6 lg:px-10 lg:pt-20 lg:pb-28\">\n      <SectionHead as=\"h1\" title-id=\"pricing-page-title\" :tag=\"head.tag\" :title=\"head.title\" :body=\"head.body\">\n        <template #action><ButtonLink :href=\"head.action.href\" grain pixels arrow>{{ head.action.label }}</ButtonLink></template>\n      </SectionHead>\n    </section>\n    <PricingTable v-for=\"g in groups\" :id=\"g.key\" :key=\"g.key\" :title-id=\"`pricing-${g.key}`\" :title=\"g.title\" :body=\"g.body\" :cards=\"g.cards\" />\n    <section v-if=\"enterprise\" aria-labelledby=\"pricing-enterprise\" class=\"mx-auto max-w-[1440px] px-4 pb-24 sm:px-6 lg:px-10 lg:pb-32\">\n      <div class=\"relative overflow-hidden bg-home-red px-4 py-12 sm:px-8 sm:py-16 lg:px-16 lg:py-20\">\n        <Grain />\n        <RoomGrid />\n        <!-- Click-through but for the button and the cards, so the room's tiles light under the pointer around them. -->\n        <div class=\"pointer-events-none relative grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,2.4fr)] lg:gap-16\">\n          <div class=\"flex flex-col items-start\">\n            <h2 id=\"pricing-enterprise\" class=\"ds-enterprise-title font-heading text-heading-2 font-normal tracking-tight text-off-white sm:text-heading-1\">{{ enterprise.title }}</h2>\n            <p class=\"mt-4 max-w-[360px] text-input text-off-white/80\">{{ enterprise.body }}</p>\n            <div class=\"pointer-events-auto mt-8\"><ButtonLink :href=\"enterprise.action.href\" variant=\"light\" fill=\"black\">{{ enterprise.action.label }}</ButtonLink></div>\n          </div>\n          <ul class=\"pointer-events-auto grid grid-cols-[minmax(0,1fr)] gap-px border border-edge bg-edge outline outline-offset-4 outline-off-white/40 sm:grid-cols-2 xl:grid-cols-3\">\n            <li v-for=\"e in enterprise.items\" :key=\"e.name\" class=\"flex flex-col bg-surface px-5 py-6 sm:px-6\">\n              <span aria-hidden=\"true\" class=\"size-1.5 shrink-0 bg-home-red\" />\n              <p class=\"mt-5 type-heading-3 text-fg\">{{ e.name }}</p>\n              <p class=\"mt-2 text-body leading-5.5 text-fg-muted\">{{ e.line }}</p>\n            </li>\n          </ul>\n        </div>\n      </div>\n    </section>\n    <Faq :items=\"faq\" />\n    <CallToAction :title=\"cta.title\">\n      <ButtonLink :href=\"cta.action.href\" variant=\"light\" fill=\"black\">{{ cta.action.label }}</ButtonLink>\n    </CallToAction>\n  </SitePage>\n</template>\n\n<style>\n.ds-enterprise-title { line-height: 1.15; text-wrap: balance; }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "Pricing, on sample data",
+      "center": false,
+      "half": false,
+      "path": "examples/pricing-page/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport PricingPage from '@/components/site/PricingPage.vue'\nimport Button from '@/components/ui/Button.vue'\nimport PixelButton from '@/components/ui/PixelButton.vue'\n// Pricing on sample data, in the site's frame.\nconst header = {\n  \"items\": [\n    {\n      \"label\": \"Search\",\n      \"desc\": \"Find the answer in any file.\",\n      \"href\": \"#search\"\n    },\n    {\n      \"label\": \"Sync\",\n      \"desc\": \"Keep your apps in step.\",\n      \"href\": \"#sync\"\n    },\n    {\n      \"label\": \"Parse\",\n      \"desc\": \"Read every row and cell.\",\n      \"href\": \"#parse\"\n    }\n  ],\n  \"links\": [\n    {\n      \"label\": \"Pricing\",\n      \"href\": \"#pricing\"\n    },\n    {\n      \"label\": \"Blog\",\n      \"href\": \"#blog\"\n    },\n    {\n      \"label\": \"Docs\",\n      \"href\": \"#docs\"\n    }\n  ],\n  \"homeLabel\": \"Acme home\"\n}\nconst footer = {\n  \"columns\": [\n    {\n      \"title\": \"Product\",\n      \"links\": [\n        {\n          \"label\": \"Search\",\n          \"href\": \"#search\"\n        },\n        {\n          \"label\": \"Sync\",\n          \"href\": \"#sync\"\n        },\n        {\n          \"label\": \"Parse\",\n          \"href\": \"#parse\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Company\",\n      \"links\": [\n        {\n          \"label\": \"About\",\n          \"href\": \"#about\"\n        },\n        {\n          \"label\": \"Blog\",\n          \"href\": \"#blog\"\n        },\n        {\n          \"label\": \"Changelog\",\n          \"href\": \"#changelog\"\n        },\n        {\n          \"label\": \"Contact\",\n          \"href\": \"#contact\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Resources\",\n      \"links\": [\n        {\n          \"label\": \"Docs\",\n          \"href\": \"#docs\"\n        },\n        {\n          \"label\": \"Pricing\",\n          \"href\": \"#pricing\"\n        },\n        {\n          \"label\": \"Status\",\n          \"href\": \"#status\"\n        }\n      ]\n    }\n  ],\n  \"tagline\": \"Search any data you bring. Get the right answer.\",\n  \"legal\": \"© 2026 Acme, Inc.\",\n  \"legalLinks\": [\n    {\n      \"label\": \"Privacy\",\n      \"href\": \"#privacy\"\n    },\n    {\n      \"label\": \"Terms\",\n      \"href\": \"#terms\"\n    }\n  ],\n  \"name\": \"Acme\"\n}\nconst head = {\n  \"tag\": \"Pricing\",\n  \"title\": \"Pay for what you use.\",\n  \"body\": \"Usage pricing for every layer, with no monthly minimum. Volume rates and enterprise terms are a conversation away.\",\n  \"action\": {\n    \"label\": \"Book a demo\",\n    \"href\": \"#demo\"\n  }\n}\nconst groups = [\n  {\n    \"key\": \"search\",\n    \"title\": \"Search\",\n    \"body\": \"Store documents and query them. You pay for what you store and what you ask.\",\n    \"cards\": [\n      {\n        \"name\": \"Queries\",\n        \"amount\": \"$1\",\n        \"unit\": \"per 1,000\",\n        \"line\": \"Every search, ranked and with its sources.\",\n        \"facts\": [\n          \"Hybrid search\",\n          \"Reranking included\",\n          \"Filters on any field\"\n        ]\n      },\n      {\n        \"name\": \"Storage\",\n        \"amount\": \"$0.10\",\n        \"unit\": \"per GB a month\",\n        \"line\": \"Documents and their index.\",\n        \"facts\": [\n          \"Encrypted at rest\",\n          \"Kept in your region\"\n        ]\n      }\n    ]\n  },\n  {\n    \"key\": \"sync\",\n    \"title\": \"Sync\",\n    \"body\": \"Keep your apps in a namespace, in step as they change.\",\n    \"cards\": [\n      {\n        \"name\": \"Connected apps\",\n        \"amount\": \"$20\",\n        \"unit\": \"per app a month\",\n        \"line\": \"Each app you connect, synced as it changes.\",\n        \"facts\": [\n          \"Changes in minutes\",\n          \"Deletes carried over\"\n        ]\n      },\n      {\n        \"name\": \"Parsing\",\n        \"amount\": \"$3\",\n        \"unit\": \"per 1,000 pages\",\n        \"line\": \"Every page read in full, tables included.\",\n        \"facts\": [\n          \"Scanned and typed pages\",\n          \"Tables kept as tables\"\n        ]\n      },\n      {\n        \"name\": \"Embeddings\",\n        \"amount\": \"$0.02\",\n        \"unit\": \"per 1M tokens\",\n        \"line\": \"For any vector database you run.\",\n        \"facts\": []\n      }\n    ]\n  }\n]\nconst enterprise = {\n  \"title\": \"Enterprise\",\n  \"body\": \"Built around your traffic, your cloud and your contracts. Scoped and priced with each customer.\",\n  \"action\": {\n    \"label\": \"Book a call\",\n    \"href\": \"#demo\"\n  },\n  \"items\": [\n    {\n      \"name\": \"Your cloud\",\n      \"line\": \"Run it in your own account, in the region you choose.\"\n    },\n    {\n      \"name\": \"Reserved capacity\",\n      \"line\": \"Throughput held for you, at a rate set for the year.\"\n    },\n    {\n      \"name\": \"Single sign-on\",\n      \"line\": \"Your identity provider, with roles mapped from it.\"\n    },\n    {\n      \"name\": \"Support\",\n      \"line\": \"A named engineer and an answer within the hour.\"\n    },\n    {\n      \"name\": \"Terms\",\n      \"line\": \"Your paper, your security review, your subprocessors list.\"\n    },\n    {\n      \"name\": \"Custom models\",\n      \"line\": \"Models tuned on your data, serving your organization alone.\"\n    }\n  ]\n}\nconst faq = [\n  {\n    \"q\": \"How do I get started?\",\n    \"a\": \"Book a demo. We set up your organization with you, and your team then creates API keys in the console.\"\n  },\n  {\n    \"q\": \"Is my data used to train models?\",\n    \"a\": \"No. Your content serves your organization alone.\"\n  },\n  {\n    \"q\": \"What happens when a record changes?\",\n    \"a\": \"A changed record replaces its old version. A deleted one is deleted.\"\n  },\n  {\n    \"q\": \"What do I have to run?\",\n    \"a\": \"Nothing. The servers, the index and the sync jobs are ours to run.\"\n  }\n]\nconst cta = {\n  \"title\": \"See it on your own data.\",\n  \"action\": {\n    \"label\": \"Book a demo\",\n    \"href\": \"#demo\"\n  }\n}\n</script>\n\n<template>\n  <div class=\"-m-8\">\n    <PricingPage\n      :header=\"header\"\n      :footer=\"footer\"\n      :head=\"head\"\n      :groups=\"groups\"\n      :enterprise=\"enterprise\"\n      :faq=\"faq\"\n      :cta=\"cta\"\n    >\n      <template #logo><span class=\"font-heading text-heading-3 text-fg\">Acme</span></template>\n      <template #actions><Button href=\"#contact\">Contact us</Button><PixelButton href=\"#sign-in\">Sign in</PixelButton></template>\n    </PricingPage>\n  </div>\n</template>\n",
+      "requires": [
+        "button",
+        "button-link",
+        "call-to-action",
+        "cell-burst",
+        "faq",
+        "pricing-table",
+        "room-grid",
+        "section-head",
+        "site-page"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/site/PricingPage.tsx",
+          "content": "import { ButtonLink } from '@/react/components/site/ButtonLink'\nimport { CallToAction } from '@/react/components/site/CallToAction'\nimport { Faq } from '@/react/components/site/Faq'\nimport { PricingTable, type PriceCard } from '@/react/components/site/PricingTable'\nimport { SectionHead } from '@/react/components/site/SectionHead'\nimport { SitePage, type SiteAction, type SiteFrameProps } from '@/react/components/site/SitePage'\nimport { Grain } from '@/react/components/visuals/Grain'\nimport { RoomGrid } from '@/react/components/visuals/RoomGrid'\n\n// Pricing (pages/pricing.vue): the head with the one dark call to action, then each group of prices (pricing-table),\n// then Enterprise, the page's one red block (the hero's frame: the grain and the room grid), what its terms cover as\n// off-white cards in the double rule with the light button, its squares coming in black; then the questions and the\n// closing band.\nexport interface PricingPageProps extends SiteFrameProps {\n  head: { tag?: string, title: string, body?: string, action: SiteAction }\n  groups: { key: string, title: string, body?: string, cards: PriceCard[] }[]\n  enterprise?: { title: string, body: string, action: SiteAction, items: { name: string, line: string }[] }\n  faq: { q: string, a: string }[]\n  cta: { title: string, action: SiteAction }\n}\n\nexport function PricingPage({ header, footer, announcement, logo, actions, head, groups, enterprise, faq, cta }: PricingPageProps) {\n  return (\n    <>\n      <style href=\"ds-pricing-page\" precedence=\"ds\">{css}</style>\n      <SitePage data-ds=\"pricing-page\" header={header} footer={footer} announcement={announcement} logo={logo} actions={actions}>\n        <section aria-labelledby=\"pricing-page-title\" className=\"mx-auto max-w-[1440px] px-4 pt-14 pb-20 sm:px-6 lg:px-10 lg:pt-20 lg:pb-28\">\n          <SectionHead as=\"h1\" titleId=\"pricing-page-title\" tag={head.tag} title={head.title} body={head.body} action={<ButtonLink href={head.action.href} grain pixels arrow>{head.action.label}</ButtonLink>} />\n        </section>\n        {groups.map(g => <PricingTable key={g.key} id={g.key} titleId={`pricing-${g.key}`} title={g.title} body={g.body} cards={g.cards} />)}\n        {enterprise && (\n          <section aria-labelledby=\"pricing-enterprise\" className=\"mx-auto max-w-[1440px] px-4 pb-24 sm:px-6 lg:px-10 lg:pb-32\">\n            <div className=\"relative overflow-hidden bg-home-red px-4 py-12 sm:px-8 sm:py-16 lg:px-16 lg:py-20\">\n              <Grain />\n              <RoomGrid />\n              {/* Click-through but for the button and the cards, so the room's tiles light under the pointer around them. */}\n              <div className=\"pointer-events-none relative grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,2.4fr)] lg:gap-16\">\n                <div className=\"flex flex-col items-start\">\n                  <h2 id=\"pricing-enterprise\" className=\"ds-enterprise-title font-heading text-heading-2 font-normal tracking-tight text-off-white sm:text-heading-1\">{enterprise.title}</h2>\n                  <p className=\"mt-4 max-w-[360px] text-input text-off-white/80\">{enterprise.body}</p>\n                  <div className=\"pointer-events-auto mt-8\"><ButtonLink href={enterprise.action.href} variant=\"light\" fill=\"black\">{enterprise.action.label}</ButtonLink></div>\n                </div>\n                <ul className=\"pointer-events-auto grid grid-cols-[minmax(0,1fr)] gap-px border border-edge bg-edge outline outline-offset-4 outline-off-white/40 sm:grid-cols-2 xl:grid-cols-3\">\n                  {enterprise.items.map(e => (\n                    <li key={e.name} className=\"flex flex-col bg-surface px-5 py-6 sm:px-6\">\n                      <span aria-hidden=\"true\" className=\"size-1.5 shrink-0 bg-home-red\" />\n                      <p className=\"mt-5 type-heading-3 text-fg\">{e.name}</p>\n                      <p className=\"mt-2 text-body leading-5.5 text-fg-muted\">{e.line}</p>\n                    </li>\n                  ))}\n                </ul>\n              </div>\n            </div>\n          </section>\n        )}\n        <Faq items={faq} />\n        <CallToAction title={cta.title}>\n          <ButtonLink href={cta.action.href} variant=\"light\" fill=\"black\">{cta.action.label}</ButtonLink>\n        </CallToAction>\n      </SitePage>\n    </>\n  )\n}\n\nexport default PricingPage\n\nconst css = `\n.ds-enterprise-title { line-height: 1.15; text-wrap: balance; }\n`\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "button-link",
+        "call-to-action",
+        "cell-burst",
+        "faq",
+        "pricing-table",
+        "room-grid",
+        "section-head",
+        "site-page"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "PricingPage",
+            "file": "react/components/site/PricingPage.tsx",
+            "props": [
+              {
+                "name": "head",
+                "type": "{ tag?: string, title: string, body?: string, action: SiteAction }",
+                "required": true
+              },
+              {
+                "name": "groups",
+                "type": "{ key: string, title: string, body?: string, cards: PriceCard[] }[]",
+                "required": true
+              },
+              {
+                "name": "enterprise",
+                "type": "{ title: string, body: string, action: SiteAction, items: { name: string, line: string }[] }",
+                "required": false
+              },
+              {
+                "name": "faq",
+                "type": "{ q: string, a: string }[]",
+                "required": true
+              },
+              {
+                "name": "cta",
+                "type": "{ title: string, action: SiteAction }",
+                "required": true
+              }
+            ],
+            "extends": [
+              "SiteFrameProps"
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "Pricing, on sample data",
+          "center": false,
+          "half": false,
+          "path": "react/examples/pricing-page/Site.tsx",
+          "content": "import { PricingPage } from '@/react/components/site/PricingPage'\nimport { Button } from '@/react/components/ui/Button'\nimport { PixelButton } from '@/react/components/ui/PixelButton'\n// Pricing on sample data, in the site's frame.\nconst header = {\n  \"items\": [\n    {\n      \"label\": \"Search\",\n      \"desc\": \"Find the answer in any file.\",\n      \"href\": \"#search\"\n    },\n    {\n      \"label\": \"Sync\",\n      \"desc\": \"Keep your apps in step.\",\n      \"href\": \"#sync\"\n    },\n    {\n      \"label\": \"Parse\",\n      \"desc\": \"Read every row and cell.\",\n      \"href\": \"#parse\"\n    }\n  ],\n  \"links\": [\n    {\n      \"label\": \"Pricing\",\n      \"href\": \"#pricing\"\n    },\n    {\n      \"label\": \"Blog\",\n      \"href\": \"#blog\"\n    },\n    {\n      \"label\": \"Docs\",\n      \"href\": \"#docs\"\n    }\n  ],\n  \"homeLabel\": \"Acme home\"\n}\nconst footer = {\n  \"columns\": [\n    {\n      \"title\": \"Product\",\n      \"links\": [\n        {\n          \"label\": \"Search\",\n          \"href\": \"#search\"\n        },\n        {\n          \"label\": \"Sync\",\n          \"href\": \"#sync\"\n        },\n        {\n          \"label\": \"Parse\",\n          \"href\": \"#parse\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Company\",\n      \"links\": [\n        {\n          \"label\": \"About\",\n          \"href\": \"#about\"\n        },\n        {\n          \"label\": \"Blog\",\n          \"href\": \"#blog\"\n        },\n        {\n          \"label\": \"Changelog\",\n          \"href\": \"#changelog\"\n        },\n        {\n          \"label\": \"Contact\",\n          \"href\": \"#contact\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Resources\",\n      \"links\": [\n        {\n          \"label\": \"Docs\",\n          \"href\": \"#docs\"\n        },\n        {\n          \"label\": \"Pricing\",\n          \"href\": \"#pricing\"\n        },\n        {\n          \"label\": \"Status\",\n          \"href\": \"#status\"\n        }\n      ]\n    }\n  ],\n  \"tagline\": \"Search any data you bring. Get the right answer.\",\n  \"legal\": \"© 2026 Acme, Inc.\",\n  \"legalLinks\": [\n    {\n      \"label\": \"Privacy\",\n      \"href\": \"#privacy\"\n    },\n    {\n      \"label\": \"Terms\",\n      \"href\": \"#terms\"\n    }\n  ],\n  \"name\": \"Acme\"\n}\nconst head = {\n  \"tag\": \"Pricing\",\n  \"title\": \"Pay for what you use.\",\n  \"body\": \"Usage pricing for every layer, with no monthly minimum. Volume rates and enterprise terms are a conversation away.\",\n  \"action\": {\n    \"label\": \"Book a demo\",\n    \"href\": \"#demo\"\n  }\n}\nconst groups = [\n  {\n    \"key\": \"search\",\n    \"title\": \"Search\",\n    \"body\": \"Store documents and query them. You pay for what you store and what you ask.\",\n    \"cards\": [\n      {\n        \"name\": \"Queries\",\n        \"amount\": \"$1\",\n        \"unit\": \"per 1,000\",\n        \"line\": \"Every search, ranked and with its sources.\",\n        \"facts\": [\n          \"Hybrid search\",\n          \"Reranking included\",\n          \"Filters on any field\"\n        ]\n      },\n      {\n        \"name\": \"Storage\",\n        \"amount\": \"$0.10\",\n        \"unit\": \"per GB a month\",\n        \"line\": \"Documents and their index.\",\n        \"facts\": [\n          \"Encrypted at rest\",\n          \"Kept in your region\"\n        ]\n      }\n    ]\n  },\n  {\n    \"key\": \"sync\",\n    \"title\": \"Sync\",\n    \"body\": \"Keep your apps in a namespace, in step as they change.\",\n    \"cards\": [\n      {\n        \"name\": \"Connected apps\",\n        \"amount\": \"$20\",\n        \"unit\": \"per app a month\",\n        \"line\": \"Each app you connect, synced as it changes.\",\n        \"facts\": [\n          \"Changes in minutes\",\n          \"Deletes carried over\"\n        ]\n      },\n      {\n        \"name\": \"Parsing\",\n        \"amount\": \"$3\",\n        \"unit\": \"per 1,000 pages\",\n        \"line\": \"Every page read in full, tables included.\",\n        \"facts\": [\n          \"Scanned and typed pages\",\n          \"Tables kept as tables\"\n        ]\n      },\n      {\n        \"name\": \"Embeddings\",\n        \"amount\": \"$0.02\",\n        \"unit\": \"per 1M tokens\",\n        \"line\": \"For any vector database you run.\",\n        \"facts\": []\n      }\n    ]\n  }\n]\nconst enterprise = {\n  \"title\": \"Enterprise\",\n  \"body\": \"Built around your traffic, your cloud and your contracts. Scoped and priced with each customer.\",\n  \"action\": {\n    \"label\": \"Book a call\",\n    \"href\": \"#demo\"\n  },\n  \"items\": [\n    {\n      \"name\": \"Your cloud\",\n      \"line\": \"Run it in your own account, in the region you choose.\"\n    },\n    {\n      \"name\": \"Reserved capacity\",\n      \"line\": \"Throughput held for you, at a rate set for the year.\"\n    },\n    {\n      \"name\": \"Single sign-on\",\n      \"line\": \"Your identity provider, with roles mapped from it.\"\n    },\n    {\n      \"name\": \"Support\",\n      \"line\": \"A named engineer and an answer within the hour.\"\n    },\n    {\n      \"name\": \"Terms\",\n      \"line\": \"Your paper, your security review, your subprocessors list.\"\n    },\n    {\n      \"name\": \"Custom models\",\n      \"line\": \"Models tuned on your data, serving your organization alone.\"\n    }\n  ]\n}\nconst faq = [\n  {\n    \"q\": \"How do I get started?\",\n    \"a\": \"Book a demo. We set up your organization with you, and your team then creates API keys in the console.\"\n  },\n  {\n    \"q\": \"Is my data used to train models?\",\n    \"a\": \"No. Your content serves your organization alone.\"\n  },\n  {\n    \"q\": \"What happens when a record changes?\",\n    \"a\": \"A changed record replaces its old version. A deleted one is deleted.\"\n  },\n  {\n    \"q\": \"What do I have to run?\",\n    \"a\": \"Nothing. The servers, the index and the sync jobs are ours to run.\"\n  }\n]\nconst cta = {\n  \"title\": \"See it on your own data.\",\n  \"action\": {\n    \"label\": \"Book a demo\",\n    \"href\": \"#demo\"\n  }\n}\nexport default function Site() {\n  return (\n    <div className=\"-m-8\">\n      <PricingPage\n        header={header}\n        footer={footer}\n        head={head}\n        groups={groups}\n        enterprise={enterprise}\n        faq={faq}\n        cta={cta}\n        logo={<span className=\"font-heading text-heading-3 text-fg\">Acme</span>}\n        actions={() => (<><Button href=\"#contact\">Contact us</Button><PixelButton href=\"#sign-in\">Sign in</PixelButton></>)}\n      />\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "button",
+            "button-link",
+            "call-to-action",
+            "cell-burst",
+            "faq",
+            "pricing-table",
+            "room-grid",
+            "section-head",
+            "site-page"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/site/pricing-page.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { define, tag } from '@/elements/lib/element'\nimport { SiteFrameElement, closing, type SiteAction } from '@/elements/components/site/site-page'\nimport type { PriceCard } from '@/elements/components/site/pricing-table'\nimport '@/elements/components/site/button-link'\nimport '@/elements/components/site/faq'\nimport '@/elements/components/site/pricing-table'\nimport '@/elements/components/site/section-head'\nimport '@/elements/components/visuals/grain'\nimport '@/elements/components/visuals/room-grid'\nimport styles from 'virtual:tw'\n\n// PricingPage.vue as <conare-pricing-page>: pricing (pages/pricing.vue): the head with the one dark call to action,\n// then each group of prices (pricing-table), then Enterprise, the page's one red block (the hero's frame: the grain\n// and the room grid), what its terms cover as off-white cards in the double rule with the light button, its squares\n// coming in black; then the questions and the closing band. In the site's frame (site-page).\n\n/**\n * @summary Pricing: the head, each group of prices, Enterprise in red, the questions and the closing band.\n * @slot logo - The logo in the header's home link.\n * @slot actions - The header's buttons.\n * @slot sheet-actions - The same buttons again, for the header's sheet on phones.\n */\nexport class PricingPage extends SiteFrameElement {\n\tstatic styles = [SiteFrameElement.styles, styles]\n\tstatic properties = { head: { type: Object }, groups: { type: Array }, enterprise: { type: Object }, faq: { type: Array }, cta: { type: Object } }\n\n\thead: { tag?: string, title: string, body?: string, action: SiteAction } = { title: '', action: { label: '', href: '' } }\n\tgroups: { key: string, title: string, body?: string, cards: PriceCard[] }[] = []\n\tenterprise?: { title: string, body: string, action: SiteAction, items: { name: string, line: string }[] }\n\tfaq: { q: string, a: string }[] = []\n\tcta = { title: '', action: { label: '', href: '' } }\n\n\trender() {\n\t\tconst [sectionHead, button, table, faq, grain, room] = [tag('section-head'), tag('button-link'), tag('pricing-table'), tag('faq'), tag('grain'), tag('room-grid')]\n\t\tconst h = this.head\n\t\tconst e = this.enterprise\n\t\treturn this.frame('pricing-page', staticHtml`<section aria-labelledby=\"pricing-page-title\" class=\"mx-auto max-w-[1440px] px-4 pt-14 pb-20 sm:px-6 lg:px-10 lg:pt-20 lg:pb-28\"><${sectionHead} as=\"h1\" title-id=\"pricing-page-title\" .tag=${h.tag} .heading=${h.title} .body=${h.body}><${button} slot=\"action\" href=${h.action.href} grain pixels arrow>${h.action.label}</${button}></${sectionHead}></section>${this.groups.map((g) => staticHtml`<${table} .anchor=${g.key} .titleId=${`pricing-${g.key}`} .heading=${g.title} .body=${g.body} .cards=${g.cards}></${table}>`)}${e ? staticHtml`<section aria-labelledby=\"pricing-enterprise\" class=\"mx-auto max-w-[1440px] px-4 pb-24 sm:px-6 lg:px-10 lg:pb-32\"><div class=\"relative overflow-hidden bg-home-red px-4 py-12 sm:px-8 sm:py-16 lg:px-16 lg:py-20\"><${grain}></${grain}><${room}></${room}><div class=\"pointer-events-none relative grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,2.4fr)] lg:gap-16\"><div class=\"flex flex-col items-start\"><h2 id=\"pricing-enterprise\" class=\"ds-enterprise-title font-heading text-heading-2 font-normal tracking-tight text-off-white sm:text-heading-1\">${e.title}</h2><p class=\"mt-4 max-w-[360px] text-input text-off-white/80\">${e.body}</p><div class=\"pointer-events-auto mt-8\"><${button} href=${e.action.href} variant=\"light\" fill=\"black\">${e.action.label}</${button}></div></div><ul class=\"pointer-events-auto grid grid-cols-[minmax(0,1fr)] gap-px border border-edge bg-edge outline outline-offset-4 outline-off-white/40 sm:grid-cols-2 xl:grid-cols-3\">${e.items.map((i) => html`<li class=\"flex flex-col bg-surface px-5 py-6 sm:px-6\"><span aria-hidden=\"true\" class=\"size-1.5 shrink-0 bg-home-red\"></span><p class=\"mt-5 type-heading-3 text-fg\">${i.name}</p><p class=\"mt-2 text-body leading-5.5 text-fg-muted\">${i.line}</p></li>`)}</ul></div></div></section>` : nothing}<${faq} .items=${this.faq}></${faq}>${closing(this.cta)}`)\n\t}\n}\n\ndefine('pricing-page', PricingPage)\n"
+        },
+        {
+          "path": "elements/components/site/pricing-page.css",
+          "content": "/* PricingPage.vue's <style>, as it is. */\n.ds-enterprise-title { line-height: 1.15; text-wrap: balance; }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/pricing-page.js",
+        "elements/site-page.js",
+        "elements/pricing-table.js",
+        "elements/button-link.js",
+        "elements/faq.js",
+        "elements/section-head.js",
+        "elements/grain.js",
+        "elements/room-grid.js",
+        "elements/site-footer.js",
+        "elements/site-header.js",
+        "elements/product-menu.js",
+        "elements/announcement-bar.js",
+        "elements/call-to-action.js",
+        "elements/site-tag.js",
+        "elements/roll-text.js",
+        "elements/cell-burst.js",
+        "elements/button.js",
+        "elements/pixel-button.js"
+      ],
+      "tag": "conare-pricing-page",
+      "tags": [
+        "conare-pricing-page"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "announcement-bar",
+        "button-link",
+        "call-to-action",
+        "cell-burst",
+        "faq",
+        "pricing-table",
+        "product-menu",
+        "roll-text",
+        "room-grid",
+        "section-head",
+        "site-footer",
+        "site-header",
+        "site-page",
+        "tag"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-pricing-page",
+            "name": "PricingPage",
+            "module": "elements/pricing-page.js",
+            "description": "Pricing: the head, each group of prices, Enterprise in red, the questions and the closing band.",
+            "attributes": [
+              {
+                "name": "head",
+                "field": "head",
+                "type": "{ tag?: string; title: string; body?: string; action: SiteAction; }",
+                "default": "{ title: '', action: { label: '', href: '' } }"
+              },
+              {
+                "name": "groups",
+                "field": "groups",
+                "type": "{ key: string; title: string; body?: string; cards: PriceCard[]; }[]",
+                "default": "[]"
+              },
+              {
+                "name": "enterprise",
+                "field": "enterprise",
+                "type": "{ title: string; body: string; action: SiteAction; items: { name: string; line: string; }[]; } | undefined"
+              },
+              {
+                "name": "faq",
+                "field": "faq",
+                "type": "{ q: string; a: string; }[]",
+                "default": "[]"
+              },
+              {
+                "name": "cta",
+                "field": "cta",
+                "type": "{ title: string; action: { label: string; href: string; }; }",
+                "default": "{ title: '', action: { label: '', href: '' } }"
+              },
+              {
+                "name": "header",
+                "field": "header",
+                "type": "SiteHeaderData",
+                "default": "{ items: [], links: [] }",
+                "description": "The header: items, more, links, productCurrent, homeHref, homeLabel."
+              },
+              {
+                "name": "footer",
+                "field": "footer",
+                "type": "SiteFooterData",
+                "default": "{ columns: [] }",
+                "description": "The footer: columns, tagline, legal, legalLinks, name."
+              },
+              {
+                "name": "announcement",
+                "field": "announcement",
+                "type": "SiteAnnouncement | undefined",
+                "description": "The bar above the header: tag, text, cta, href."
+              }
+            ],
+            "properties": [
+              {
+                "name": "head",
+                "type": "{ tag?: string; title: string; body?: string; action: SiteAction; }",
+                "default": "{ title: '', action: { label: '', href: '' } }",
+                "attribute": "head"
+              },
+              {
+                "name": "groups",
+                "type": "{ key: string; title: string; body?: string; cards: PriceCard[]; }[]",
+                "default": "[]",
+                "attribute": "groups"
+              },
+              {
+                "name": "enterprise",
+                "type": "{ title: string; body: string; action: SiteAction; items: { name: string; line: string; }[]; } | undefined",
+                "attribute": "enterprise"
+              },
+              {
+                "name": "faq",
+                "type": "{ q: string; a: string; }[]",
+                "default": "[]",
+                "attribute": "faq"
+              },
+              {
+                "name": "cta",
+                "type": "{ title: string; action: { label: string; href: string; }; }",
+                "default": "{ title: '', action: { label: '', href: '' } }",
+                "attribute": "cta"
+              },
+              {
+                "name": "header",
+                "type": "SiteHeaderData",
+                "default": "{ items: [], links: [] }",
+                "description": "The header: items, more, links, productCurrent, homeHref, homeLabel.",
+                "attribute": "header"
+              },
+              {
+                "name": "footer",
+                "type": "SiteFooterData",
+                "default": "{ columns: [] }",
+                "description": "The footer: columns, tagline, legal, legalLinks, name.",
+                "attribute": "footer"
+              },
+              {
+                "name": "announcement",
+                "type": "SiteAnnouncement | undefined",
+                "description": "The bar above the header: tag, text, cta, href.",
+                "attribute": "announcement"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "logo",
+                "description": "The logo in the header's home link."
+              },
+              {
+                "name": "actions",
+                "description": "The header's buttons."
+              },
+              {
+                "name": "sheet-actions",
+                "description": "The same buttons again, for the header's sheet on phones."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "Pricing, on sample data",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/pricing-page/Site.html",
+          "content": "<!-- Pricing on sample data, in the site's frame. -->\n<div class=\"-m-8\">\n  <conare-pricing-page\n    header='{\"items\": [{\"label\": \"Search\", \"desc\": \"Find the answer in any file.\", \"href\": \"#search\"}, {\"label\": \"Sync\", \"desc\": \"Keep your apps in step.\", \"href\": \"#sync\"}, {\"label\": \"Parse\", \"desc\": \"Read every row and cell.\", \"href\": \"#parse\"}], \"links\": [{\"label\": \"Pricing\", \"href\": \"#pricing\"}, {\"label\": \"Blog\", \"href\": \"#blog\"}, {\"label\": \"Docs\", \"href\": \"#docs\"}], \"homeLabel\": \"Acme home\"}'\n    footer='{\"columns\": [{\"title\": \"Product\", \"links\": [{\"label\": \"Search\", \"href\": \"#search\"}, {\"label\": \"Sync\", \"href\": \"#sync\"}, {\"label\": \"Parse\", \"href\": \"#parse\"}]}, {\"title\": \"Company\", \"links\": [{\"label\": \"About\", \"href\": \"#about\"}, {\"label\": \"Blog\", \"href\": \"#blog\"}, {\"label\": \"Changelog\", \"href\": \"#changelog\"}, {\"label\": \"Contact\", \"href\": \"#contact\"}]}, {\"title\": \"Resources\", \"links\": [{\"label\": \"Docs\", \"href\": \"#docs\"}, {\"label\": \"Pricing\", \"href\": \"#pricing\"}, {\"label\": \"Status\", \"href\": \"#status\"}]}], \"tagline\": \"Search any data you bring. Get the right answer.\", \"legal\": \"© 2026 Acme, Inc.\", \"legalLinks\": [{\"label\": \"Privacy\", \"href\": \"#privacy\"}, {\"label\": \"Terms\", \"href\": \"#terms\"}], \"name\": \"Acme\"}'\n    head='{\"tag\": \"Pricing\", \"title\": \"Pay for what you use.\", \"body\": \"Usage pricing for every layer, with no monthly minimum. Volume rates and enterprise terms are a conversation away.\", \"action\": {\"label\": \"Book a demo\", \"href\": \"#demo\"}}'\n    groups='[{\"key\": \"search\", \"title\": \"Search\", \"body\": \"Store documents and query them. You pay for what you store and what you ask.\", \"cards\": [{\"name\": \"Queries\", \"amount\": \"$1\", \"unit\": \"per 1,000\", \"line\": \"Every search, ranked and with its sources.\", \"facts\": [\"Hybrid search\", \"Reranking included\", \"Filters on any field\"]}, {\"name\": \"Storage\", \"amount\": \"$0.10\", \"unit\": \"per GB a month\", \"line\": \"Documents and their index.\", \"facts\": [\"Encrypted at rest\", \"Kept in your region\"]}]}, {\"key\": \"sync\", \"title\": \"Sync\", \"body\": \"Keep your apps in a namespace, in step as they change.\", \"cards\": [{\"name\": \"Connected apps\", \"amount\": \"$20\", \"unit\": \"per app a month\", \"line\": \"Each app you connect, synced as it changes.\", \"facts\": [\"Changes in minutes\", \"Deletes carried over\"]}, {\"name\": \"Parsing\", \"amount\": \"$3\", \"unit\": \"per 1,000 pages\", \"line\": \"Every page read in full, tables included.\", \"facts\": [\"Scanned and typed pages\", \"Tables kept as tables\"]}, {\"name\": \"Embeddings\", \"amount\": \"$0.02\", \"unit\": \"per 1M tokens\", \"line\": \"For any vector database you run.\", \"facts\": []}]}]'\n    enterprise='{\"title\": \"Enterprise\", \"body\": \"Built around your traffic, your cloud and your contracts. Scoped and priced with each customer.\", \"action\": {\"label\": \"Book a call\", \"href\": \"#demo\"}, \"items\": [{\"name\": \"Your cloud\", \"line\": \"Run it in your own account, in the region you choose.\"}, {\"name\": \"Reserved capacity\", \"line\": \"Throughput held for you, at a rate set for the year.\"}, {\"name\": \"Single sign-on\", \"line\": \"Your identity provider, with roles mapped from it.\"}, {\"name\": \"Support\", \"line\": \"A named engineer and an answer within the hour.\"}, {\"name\": \"Terms\", \"line\": \"Your paper, your security review, your subprocessors list.\"}, {\"name\": \"Custom models\", \"line\": \"Models tuned on your data, serving your organization alone.\"}]}'\n    faq='[{\"q\": \"How do I get started?\", \"a\": \"Book a demo. We set up your organization with you, and your team then creates API keys in the console.\"}, {\"q\": \"Is my data used to train models?\", \"a\": \"No. Your content serves your organization alone.\"}, {\"q\": \"What happens when a record changes?\", \"a\": \"A changed record replaces its old version. A deleted one is deleted.\"}, {\"q\": \"What do I have to run?\", \"a\": \"Nothing. The servers, the index and the sync jobs are ours to run.\"}]'\n    cta='{\"title\": \"See it on your own data.\", \"action\": {\"label\": \"Book a demo\", \"href\": \"#demo\"}}'\n  >\n    <span slot=\"logo\" class=\"font-heading text-heading-3 text-fg\">Acme</span>\n    <conare-button slot=\"actions\" href=\"#contact\">Contact us</conare-button>\n    <conare-pixel-button slot=\"actions\" href=\"#sign-in\">Sign in</conare-pixel-button>\n    <conare-button slot=\"sheet-actions\" href=\"#contact\">Contact us</conare-button>\n    <conare-pixel-button slot=\"sheet-actions\" href=\"#sign-in\">Sign in</conare-pixel-button>\n  </conare-pricing-page>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

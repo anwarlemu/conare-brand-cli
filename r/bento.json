@@ -1,0 +1,212 @@
+{
+  "name": "bento",
+  "title": "Bento",
+  "type": "registry:block",
+  "group": "site",
+  "description": "What a product does as cells of different sizes in the double rule: large, wide, tall or plain, each led by a red pixel pattern.",
+  "use_for": "A features band where one or two things lead and the rest support them.",
+  "never": [
+    "Pictures stretched to fill a cell",
+    "More than one large cell in a row"
+  ],
+  "source": "No bento in conare-web; set from its feature grid (home.css Products cells, the hero tabs' pixel patterns) with spans on the same hairline grid",
+  "body": "Each cell is `{ title, body, size? }`; `size` is `large` (two columns and two rows), `wide` (two columns) or `tall` (two rows). The grid packs densely, so order the cells by importance.",
+  "requires": [
+    "section-head"
+  ],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/site/Bento.vue",
+      "content": "<script setup lang=\"ts\">\nimport SectionHead from '@/components/site/SectionHead.vue'\n\n// What a product does as a bento: the band's head, then cells of different sizes in the website's double rule (a\n// hairline grid, an outline 4px out). A large cell takes two columns and two rows from 1024px (two columns from 640px),\n// a wide one two columns, a tall one two rows. Each cell is off-white, led by a red pixel pattern (the hero tabs' four,\n// in turn), its name in Faculty Glyphic and its line, muted. The site has no bento: set from the feature grid's cells.\nexport type BentoCell = { title: string, body: string, size?: 'large' | 'wide' | 'tall' }\nwithDefaults(defineProps<{ title: string, tag?: string, body?: string, cells: BentoCell[], titleId?: string }>(), { titleId: 'bento-title' })\n\nconst span = (c: BentoCell) => (c.size === 'large' ? 'sm:col-span-2 lg:row-span-2' : c.size === 'wide' ? 'sm:col-span-2' : c.size === 'tall' ? 'lg:row-span-2' : '')\nconst pattern = (on: (x: number, y: number) => boolean) => {\n  const lit: [number, number][] = []\n  for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) if (on(x, y)) lit.push([x, y])\n  const ox = (16 - (Math.max(...lit.map(c => c[0])) + Math.min(...lit.map(c => c[0])) + 1) * 2) / 2\n  const oy = (16 - (Math.max(...lit.map(c => c[1])) + Math.min(...lit.map(c => c[1])) + 1) * 2) / 2\n  return lit.map(([x, y]) => `M${x * 2 + ox} ${y * 2 + oy}h2v2h-2Z`).join('')\n}\nconst PATTERNS = [\n  pattern((x, y) => x % 2 === 0 && y % 2 === 0),\n  pattern((x, y) => (x + y) % 3 === 0),\n  pattern((x, y) => (Math.floor(x / 2) + Math.floor(y / 2)) % 2 === 0),\n  pattern((_, y) => y % 2 === 0),\n]\n</script>\n\n<template>\n  <section data-ds=\"bento\" :aria-labelledby=\"titleId\" class=\"mx-auto max-w-[1440px] px-4 pb-24 sm:px-6 lg:px-10 lg:pb-32\">\n    <SectionHead :title=\"title\" :tag=\"tag\" :body=\"body\" :title-id=\"titleId\" />\n    <ul class=\"mt-10 grid grid-flow-dense grid-cols-[minmax(0,1fr)] gap-px border border-edge bg-edge outline outline-offset-4 outline-edge sm:grid-cols-2 lg:auto-rows-[minmax(200px,auto)] lg:grid-cols-3\">\n      <li v-for=\"(c, i) in cells\" :key=\"c.title\" class=\"flex flex-col justify-between gap-8 bg-surface px-5 py-6 sm:px-6\" :class=\"span(c)\">\n        <svg aria-hidden=\"true\" width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" shape-rendering=\"crispEdges\" class=\"size-4 shrink-0 text-home-red\"><path :d=\"PATTERNS[i % 4]\" class=\"fill-current\" /></svg>\n        <div>\n          <h3 class=\"text-fg\" :class=\"c.size === 'large' ? 'type-heading-2' : 'type-heading-3'\">{{ c.title }}</h3>\n          <p class=\"mt-2 text-body leading-5.5 text-fg-muted\">{{ c.body }}</p>\n        </div>\n      </li>\n    </ul>\n  </section>\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "Bento, on sample data",
+      "center": false,
+      "half": false,
+      "path": "examples/bento/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport Bento, { type BentoCell } from '@/components/site/Bento.vue'\n// The bento on sample data: a large cell, a tall one, a wide one and two plain ones.\nconst cells: BentoCell[] = [\n  {\n    \"title\": \"Search every file\",\n    \"body\": \"Ask in plain words and get the passage that answers, with the file it came from.\",\n    \"size\": \"large\"\n  },\n  {\n    \"title\": \"Keep apps in step\",\n    \"body\": \"New and changed files are read as they arrive.\"\n  },\n  {\n    \"title\": \"Read every row\",\n    \"body\": \"Tables, cells and scans become text you can search.\",\n    \"size\": \"tall\"\n  },\n  {\n    \"title\": \"Answers you can check\",\n    \"body\": \"Every answer links to its source.\"\n  },\n  {\n    \"title\": \"One API\",\n    \"body\": \"Search, sync and parse from the same key, in any language you use.\",\n    \"size\": \"wide\"\n  }\n]\n</script>\n\n<template>\n  <div class=\"-mx-8 pt-8\">\n    <Bento tag=\"Features\" title=\"One place for everything you search.\" body=\"Bring any data. The rest is set up for you.\" :cells=\"cells\" />\n  </div>\n</template>\n",
+      "requires": [
+        "section-head"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/site/Bento.tsx",
+          "content": "import { SectionHead } from '@/react/components/site/SectionHead'\n\n// What a product does as a bento: the band's head, then cells of different sizes in the website's double rule (a\n// hairline grid, an outline 4px out). A large cell takes two columns and two rows from 1024px (two columns from 640px),\n// a wide one two columns, a tall one two rows. Each cell is off-white, led by a red pixel pattern (the hero tabs' four,\n// in turn), its name in Faculty Glyphic and its line, muted. The site has no bento: set from the feature grid's cells.\nexport type BentoCell = { title: string, body: string, size?: 'large' | 'wide' | 'tall' }\nexport interface BentoProps { title: string, tag?: string, body?: string, cells: BentoCell[], titleId?: string }\n\nconst span = (c: BentoCell) => (c.size === 'large' ? 'sm:col-span-2 lg:row-span-2' : c.size === 'wide' ? 'sm:col-span-2' : c.size === 'tall' ? 'lg:row-span-2' : '')\nconst pattern = (on: (x: number, y: number) => boolean) => {\n  const lit: [number, number][] = []\n  for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) if (on(x, y)) lit.push([x, y])\n  const ox = (16 - (Math.max(...lit.map(c => c[0])) + Math.min(...lit.map(c => c[0])) + 1) * 2) / 2\n  const oy = (16 - (Math.max(...lit.map(c => c[1])) + Math.min(...lit.map(c => c[1])) + 1) * 2) / 2\n  return lit.map(([x, y]) => `M${x * 2 + ox} ${y * 2 + oy}h2v2h-2Z`).join('')\n}\nconst PATTERNS = [\n  pattern((x, y) => x % 2 === 0 && y % 2 === 0),\n  pattern((x, y) => (x + y) % 3 === 0),\n  pattern((x, y) => (Math.floor(x / 2) + Math.floor(y / 2)) % 2 === 0),\n  pattern((_, y) => y % 2 === 0),\n]\n\nexport function Bento({ title, tag, body, cells, titleId = 'bento-title' }: BentoProps) {\n  return (\n    <section data-ds=\"bento\" aria-labelledby={titleId} className=\"mx-auto max-w-[1440px] px-4 pb-24 sm:px-6 lg:px-10 lg:pb-32\">\n      <SectionHead title={title} tag={tag} body={body} titleId={titleId} />\n      <ul className=\"mt-10 grid grid-flow-dense grid-cols-[minmax(0,1fr)] gap-px border border-edge bg-edge outline outline-offset-4 outline-edge sm:grid-cols-2 lg:auto-rows-[minmax(200px,auto)] lg:grid-cols-3\">\n        {cells.map((c, i) => (\n          <li key={c.title} className={['flex flex-col justify-between gap-8 bg-surface px-5 py-6 sm:px-6', span(c)].join(' ')}>\n            <svg aria-hidden=\"true\" width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" shapeRendering=\"crispEdges\" className=\"size-4 shrink-0 text-home-red\"><path d={PATTERNS[i % 4]} className=\"fill-current\" /></svg>\n            <div>\n              <h3 className={['text-fg', c.size === 'large' ? 'type-heading-2' : 'type-heading-3'].join(' ')}>{c.title}</h3>\n              <p className=\"mt-2 text-body leading-5.5 text-fg-muted\">{c.body}</p>\n            </div>\n          </li>\n        ))}\n      </ul>\n    </section>\n  )\n}\n\nexport default Bento\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "section-head"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "Bento",
+            "file": "react/components/site/Bento.tsx",
+            "props": [
+              {
+                "name": "title",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "tag",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "body",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "cells",
+                "type": "BentoCell[]",
+                "required": true
+              },
+              {
+                "name": "titleId",
+                "type": "string",
+                "required": false,
+                "default": "'bento-title'"
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "Bento, on sample data",
+          "center": false,
+          "half": false,
+          "path": "react/examples/bento/Site.tsx",
+          "content": "import { Bento, type BentoCell } from '@/react/components/site/Bento'\n// The bento on sample data: a large cell, a tall one, a wide one and two plain ones.\nconst cells: BentoCell[] = [\n  {\n    \"title\": \"Search every file\",\n    \"body\": \"Ask in plain words and get the passage that answers, with the file it came from.\",\n    \"size\": \"large\"\n  },\n  {\n    \"title\": \"Keep apps in step\",\n    \"body\": \"New and changed files are read as they arrive.\"\n  },\n  {\n    \"title\": \"Read every row\",\n    \"body\": \"Tables, cells and scans become text you can search.\",\n    \"size\": \"tall\"\n  },\n  {\n    \"title\": \"Answers you can check\",\n    \"body\": \"Every answer links to its source.\"\n  },\n  {\n    \"title\": \"One API\",\n    \"body\": \"Search, sync and parse from the same key, in any language you use.\",\n    \"size\": \"wide\"\n  }\n]\nexport default function Site() {\n  return (\n    <div className=\"-mx-8 pt-8\">\n      <Bento tag=\"Features\" title=\"One place for everything you search.\" body=\"Bring any data. The rest is set up for you.\" cells={cells} />\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "section-head"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/site/bento.ts",
+          "content": "import { html } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport '@/elements/components/site/section-head'\nimport styles from 'virtual:tw'\n\n// Bento.vue as <conare-bento>: what a product does as a bento: the band's head, then cells of different sizes in the\n// website's double rule. A large cell takes two columns and two rows from 1024px (two columns from 640px), a wide one\n// two columns, a tall one two rows. Each cell is off-white, led by a red pixel pattern, its name in Faculty Glyphic and\n// its line, muted. `heading` is Vue's `title`.\nexport type BentoCell = { title: string, body: string, size?: 'large' | 'wide' | 'tall' }\n\nconst span = (c: BentoCell) => (c.size === 'large' ? 'sm:col-span-2 lg:row-span-2' : c.size === 'wide' ? 'sm:col-span-2' : c.size === 'tall' ? 'lg:row-span-2' : '')\nconst pattern = (on: (x: number, y: number) => boolean) => {\n\tconst lit: [number, number][] = []\n\tfor (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) if (on(x, y)) lit.push([x, y])\n\tconst ox = (16 - (Math.max(...lit.map(c => c[0])) + Math.min(...lit.map(c => c[0])) + 1) * 2) / 2\n\tconst oy = (16 - (Math.max(...lit.map(c => c[1])) + Math.min(...lit.map(c => c[1])) + 1) * 2) / 2\n\treturn lit.map(([x, y]) => `M${x * 2 + ox} ${y * 2 + oy}h2v2h-2Z`).join('')\n}\nconst PATTERNS = [\n\tpattern((x, y) => x % 2 === 0 && y % 2 === 0),\n\tpattern((x, y) => (x + y) % 3 === 0),\n\tpattern((x, y) => (Math.floor(x / 2) + Math.floor(y / 2)) % 2 === 0),\n\tpattern((_, y) => y % 2 === 0),\n]\n\n/** @summary What a product does: cells of different sizes in the double rule. */\nexport class Bento extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { heading: {}, tag: {}, body: {}, cells: { type: Array }, titleId: { attribute: 'title-id' } }\n\n\t/** The band's line (Vue's `title`). */\n\theading = ''\n\ttag?: string\n\tbody?: string\n\t/** Each { title, body, size? } with size large, wide or tall. */\n\tcells: BentoCell[] = []\n\ttitleId = 'bento-title'\n\n\trender() {\n\t\tconst head = tag('section-head')\n\t\treturn html`<section data-ds=\"bento\" aria-labelledby=${this.titleId} class=\"mx-auto max-w-[1440px] px-4 pb-24 sm:px-6 lg:px-10 lg:pb-32\">${staticHtml`<${head} .heading=${this.heading} .tag=${this.tag} .body=${this.body} .titleId=${this.titleId}></${head}>`}<ul class=\"mt-10 grid grid-flow-dense grid-cols-[minmax(0,1fr)] gap-px border border-edge bg-edge outline outline-offset-4 outline-edge sm:grid-cols-2 lg:auto-rows-[minmax(200px,auto)] lg:grid-cols-3\">${this.cells.map((c, i) => html`<li class=${['flex flex-col justify-between gap-8 bg-surface px-5 py-6 sm:px-6', span(c)].join(' ')}><svg aria-hidden=\"true\" width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" shape-rendering=\"crispEdges\" class=\"size-4 shrink-0 text-home-red\"><path d=${PATTERNS[i % 4]!} class=\"fill-current\"></path></svg><div><h3 class=${['text-fg', c.size === 'large' ? 'type-heading-2' : 'type-heading-3'].join(' ')}>${c.title}</h3><p class=\"mt-2 text-body leading-5.5 text-fg-muted\">${c.body}</p></div></li>`)}</ul></section>`\n\t}\n}\n\ndefine('bento', Bento)\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/bento.js",
+        "elements/section-head.js",
+        "elements/site-tag.js"
+      ],
+      "tag": "conare-bento",
+      "tags": [
+        "conare-bento"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "section-head",
+        "tag"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-bento",
+            "name": "Bento",
+            "module": "elements/bento.js",
+            "description": "What a product does: cells of different sizes in the double rule.",
+            "attributes": [
+              {
+                "name": "heading",
+                "field": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The band's line (Vue's `title`)."
+              },
+              {
+                "name": "tag",
+                "field": "tag",
+                "type": "string | undefined"
+              },
+              {
+                "name": "body",
+                "field": "body",
+                "type": "string | undefined"
+              },
+              {
+                "name": "cells",
+                "field": "cells",
+                "type": "BentoCell[]",
+                "default": "[]",
+                "description": "Each { title, body, size? } with size large, wide or tall."
+              },
+              {
+                "name": "title-id",
+                "field": "titleId",
+                "type": "string",
+                "default": "'bento-title'"
+              }
+            ],
+            "properties": [
+              {
+                "name": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The band's line (Vue's `title`).",
+                "attribute": "heading"
+              },
+              {
+                "name": "tag",
+                "type": "string | undefined",
+                "attribute": "tag"
+              },
+              {
+                "name": "body",
+                "type": "string | undefined",
+                "attribute": "body"
+              },
+              {
+                "name": "cells",
+                "type": "BentoCell[]",
+                "default": "[]",
+                "description": "Each { title, body, size? } with size large, wide or tall.",
+                "attribute": "cells"
+              },
+              {
+                "name": "titleId",
+                "type": "string",
+                "default": "'bento-title'",
+                "attribute": "title-id"
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "Bento, on sample data",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/bento/Site.html",
+          "content": "<!-- The bento on sample data: a large cell, a tall one, a wide one and two plain ones. -->\n<div class=\"-mx-8 pt-8\">\n  <conare-bento tag=\"Features\" heading=\"One place for everything you search.\" body=\"Bring any data. The rest is set up for you.\" cells='[{\"title\": \"Search every file\", \"body\": \"Ask in plain words and get the passage that answers, with the file it came from.\", \"size\": \"large\"}, {\"title\": \"Keep apps in step\", \"body\": \"New and changed files are read as they arrive.\"}, {\"title\": \"Read every row\", \"body\": \"Tables, cells and scans become text you can search.\", \"size\": \"tall\"}, {\"title\": \"Answers you can check\", \"body\": \"Every answer links to its source.\"}, {\"title\": \"One API\", \"body\": \"Search, sync and parse from the same key, in any language you use.\", \"size\": \"wide\"}]'></conare-bento>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

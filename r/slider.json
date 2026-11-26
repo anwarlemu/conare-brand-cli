@@ -1,0 +1,285 @@
+{
+  "name": "slider",
+  "title": "Slider",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "A value on a range: the meter's 4px track with ink up to the value and a square 12px ink thumb.",
+  "use_for": "A number where the range matters more than the exact figure: passages per search, a minimum score.",
+  "never": [
+    "Exact values a person would rather type (use Input)",
+    "A round or growing thumb",
+    "Animating the thumb: it follows the hand"
+  ],
+  "source": "New in Conare's style: the meter's track (console2.css .v2-meter), the switch's square thumb and red focus (.v2-switch)",
+  "body": "A native range input, so arrows, Page Up and Down, Home and End work. `v-model` is the number; `min`, `max` and `step` as usual; `label` names it and `valueText` reads a formatted value. Show the value beside it in tabular figures. The row is 28px (40px on phones) and takes the pointer anywhere along it.",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Slider.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed } from 'vue'\n\n// A value on a range (new, in the console's grammar): the meter's 4px track (console2.css .v2-meter: a hairline-grey\n// track, ink up to the value) and a square 12px ink thumb, with the switch's red focus outline. It follows the pointer\n// with no easing, since the hand is moving it; arrows step it, Page Up and Down by tens, Home and End to the ends. The\n// whole 28px row takes the pointer (40px on phones). Show the value beside it in tabular figures.\nconst value = defineModel<number>({ default: 0 })\nconst props = withDefaults(defineProps<{ label: string, min?: number, max?: number, step?: number, disabled?: boolean, valueText?: string }>(), { min: 0, max: 100, step: 1 })\nconst share = computed(() => (props.max > props.min ? ((value.value - props.min) / (props.max - props.min)) * 100 : 0))\n</script>\n\n<template>\n  <span data-ds=\"slider\" class=\"ds-slider\" :style=\"{ '--p': `${share}%` }\" :data-disabled=\"disabled || undefined\">\n    <span class=\"ds-slider-track\" aria-hidden=\"true\"><span /></span>\n    <input v-model.number=\"value\" type=\"range\" :min=\"min\" :max=\"max\" :step=\"step\" :disabled=\"disabled\" :aria-label=\"label\" :aria-valuetext=\"valueText\">\n  </span>\n</template>\n\n<style>\n.ds-slider { position: relative; display: flex; width: 100%; height: var(--ds-size-control-sm); align-items: center; }\n.ds-slider-track { position: absolute; right: 0; left: 0; height: 4px; background: var(--ds-color-edge); pointer-events: none; }\n.ds-slider-track > span { display: block; width: var(--p); height: 100%; background: var(--ds-color-surface-inverse); }\n.ds-slider[data-disabled] .ds-slider-track > span { background: var(--ds-color-fg-faint); }\n.ds-slider > input { position: relative; width: 100%; height: 100%; margin: 0; background: transparent; appearance: none; cursor: pointer; }\n.ds-slider > input:disabled { cursor: not-allowed; }\n.ds-slider > input:focus-visible { outline: none; }\n.ds-slider > input::-webkit-slider-runnable-track { height: 4px; background: transparent; }\n.ds-slider > input::-moz-range-track { height: 4px; background: transparent; }\n.ds-slider > input::-webkit-slider-thumb { width: 12px; height: 12px; margin-top: -4px; border: 0; border-radius: 0; background: var(--ds-color-surface-inverse); appearance: none; }\n.ds-slider > input::-moz-range-thumb { width: 12px; height: 12px; border: 0; border-radius: 0; background: var(--ds-color-surface-inverse); }\n.ds-slider > input:disabled::-webkit-slider-thumb { background: var(--ds-color-fg-faint); }\n.ds-slider > input:disabled::-moz-range-thumb { background: var(--ds-color-fg-faint); }\n.ds-slider > input:focus-visible::-webkit-slider-thumb { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: var(--ds-border-focus); }\n.ds-slider > input:focus-visible::-moz-range-thumb { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: var(--ds-border-focus); }\n@media (pointer: coarse), (max-width: 767px) { .ds-slider { height: var(--ds-size-control-touch); } }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "In the product",
+      "center": false,
+      "half": false,
+      "path": "examples/slider/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport Slider from '@/components/ui/Slider.vue'\n// How many passages a search returns, and a minimum score: the value beside each in tabular figures.\nconst topK = ref(8)\nconst score = ref(40)\n</script>\n\n<template>\n  <div class=\"flex w-90 max-w-full flex-col gap-4\">\n    <div class=\"flex flex-col gap-1\">\n      <div class=\"flex items-baseline justify-between type-meta\"><span class=\"text-fg-soft\">Passages per search</span><span class=\"tabular-nums\">{{ topK }}</span></div>\n      <Slider v-model=\"topK\" label=\"passages per search\" :min=\"1\" :max=\"20\" />\n    </div>\n    <div class=\"flex flex-col gap-1\">\n      <div class=\"flex items-baseline justify-between type-meta\"><span class=\"text-fg-soft\">Minimum score</span><span class=\"tabular-nums\">{{ (score / 100).toFixed(2) }}</span></div>\n      <Slider v-model=\"score\" label=\"minimum score\" :value-text=\"(score / 100).toFixed(2)\" :step=\"5\" />\n    </div>\n    <div class=\"flex flex-col gap-1\">\n      <div class=\"flex items-baseline justify-between type-meta\"><span class=\"text-fg-muted\">Rerank depth (on the Scale plan)</span><span class=\"tabular-nums text-fg-muted\">50</span></div>\n      <Slider :model-value=\"50\" label=\"rerank depth\" disabled />\n    </div>\n  </div>\n</template>\n",
+      "requires": [],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Slider.tsx",
+          "content": "'use client'\nimport type { CSSProperties } from 'react'\nimport { useControllable } from '@/react/hooks/useControllable'\n\n// A value on a range (new, in the console's grammar): the meter's 4px track (console2.css .v2-meter: a hairline-grey\n// track, ink up to the value) and a square 12px ink thumb, with the switch's red focus outline. It follows the pointer\n// with no easing, since the hand is moving it; arrows step it, Page Up and Down by tens, Home and End to the ends. The\n// whole 28px row takes the pointer (40px on phones). Show the value beside it in tabular figures. Vue's v-model is\n// `value` with `onValueChange` (or `defaultValue` alone).\nexport interface SliderProps {\n  label: string\n  min?: number\n  max?: number\n  step?: number\n  disabled?: boolean\n  valueText?: string\n  value?: number\n  defaultValue?: number\n  onValueChange?: (value: number) => void\n  className?: string\n}\n\nexport function Slider({ label, min = 0, max = 100, step = 1, disabled, valueText, value, defaultValue = 0, onValueChange, className }: SliderProps) {\n  const [current, setCurrent] = useControllable(value, defaultValue, onValueChange)\n  const share = max > min ? ((current - min) / (max - min)) * 100 : 0\n  return (\n    <>\n      <style href=\"ds-slider\" precedence=\"ds\">{css}</style>\n      <span data-ds=\"slider\" className={className ? `ds-slider ${className}` : 'ds-slider'} style={{ '--p': `${share}%` } as CSSProperties} data-disabled={disabled || undefined}>\n        <span className=\"ds-slider-track\" aria-hidden=\"true\"><span /></span>\n        <input type=\"range\" value={current} onChange={e => setCurrent(Number(e.target.value))} min={min} max={max} step={step} disabled={disabled} aria-label={label} aria-valuetext={valueText} />\n      </span>\n    </>\n  )\n}\n\nexport default Slider\n\nconst css = `\n.ds-slider { position: relative; display: flex; width: 100%; height: var(--ds-size-control-sm); align-items: center; }\n.ds-slider-track { position: absolute; right: 0; left: 0; height: 4px; background: var(--ds-color-edge); pointer-events: none; }\n.ds-slider-track > span { display: block; width: var(--p); height: 100%; background: var(--ds-color-surface-inverse); }\n.ds-slider[data-disabled] .ds-slider-track > span { background: var(--ds-color-fg-faint); }\n.ds-slider > input { position: relative; width: 100%; height: 100%; margin: 0; background: transparent; appearance: none; cursor: pointer; }\n.ds-slider > input:disabled { cursor: not-allowed; }\n.ds-slider > input:focus-visible { outline: none; }\n.ds-slider > input::-webkit-slider-runnable-track { height: 4px; background: transparent; }\n.ds-slider > input::-moz-range-track { height: 4px; background: transparent; }\n.ds-slider > input::-webkit-slider-thumb { width: 12px; height: 12px; margin-top: -4px; border: 0; border-radius: 0; background: var(--ds-color-surface-inverse); appearance: none; }\n.ds-slider > input::-moz-range-thumb { width: 12px; height: 12px; border: 0; border-radius: 0; background: var(--ds-color-surface-inverse); }\n.ds-slider > input:disabled::-webkit-slider-thumb { background: var(--ds-color-fg-faint); }\n.ds-slider > input:disabled::-moz-range-thumb { background: var(--ds-color-fg-faint); }\n.ds-slider > input:focus-visible::-webkit-slider-thumb { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: var(--ds-border-focus); }\n.ds-slider > input:focus-visible::-moz-range-thumb { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: var(--ds-border-focus); }\n@media (pointer: coarse), (max-width: 767px) { .ds-slider { height: var(--ds-size-control-touch); } }\n`\n"
+        },
+        {
+          "path": "react/hooks/useControllable.ts",
+          "content": "'use client'\nimport { useCallback, useRef, useState } from 'react'\n\n// Vue's defineModel in React: a value that is controlled when the caller passes it (value + onValueChange, as Radix\n// does) and kept inside otherwise (defaultValue). setValue calls onChange either way.\nexport function useControllable<T>(value: T | undefined, defaultValue: T, onChange?: (value: T) => void) {\n\tconst [inner, setInner] = useState<T>(defaultValue)\n\tconst controlled = value !== undefined\n\tconst current = controlled ? value : inner\n\tconst ref = useRef(onChange)\n\tref.current = onChange\n\tconst set = useCallback((next: T) => {\n\t\tif (!controlled) setInner(next)\n\t\tref.current?.(next)\n\t}, [controlled])\n\treturn [current, set] as const\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "Slider",
+            "file": "react/components/ui/Slider.tsx",
+            "props": [
+              {
+                "name": "label",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "min",
+                "type": "number",
+                "required": false,
+                "default": "0"
+              },
+              {
+                "name": "max",
+                "type": "number",
+                "required": false,
+                "default": "100"
+              },
+              {
+                "name": "step",
+                "type": "number",
+                "required": false,
+                "default": "1"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "valueText",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "value",
+                "type": "number",
+                "required": false
+              },
+              {
+                "name": "defaultValue",
+                "type": "number",
+                "required": false,
+                "default": "0"
+              },
+              {
+                "name": "onValueChange",
+                "type": "(value: number) => void",
+                "required": false
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "react/examples/slider/Product.tsx",
+          "content": "'use client'\nimport { useState } from 'react'\nimport { Slider } from '@/react/components/ui/Slider'\n// How many passages a search returns, and a minimum score: the value beside each in tabular figures.\n\nexport default function Product() {\n  const [topK, setTopK] = useState(8)\n  const [score, setScore] = useState(40)\n  return (\n    <div className=\"flex w-90 max-w-full flex-col gap-4\">\n      <div className=\"flex flex-col gap-1\">\n        <div className=\"flex items-baseline justify-between type-meta\"><span className=\"text-fg-soft\">Passages per search</span><span className=\"tabular-nums\">{topK}</span></div>\n        <Slider value={topK} onValueChange={setTopK} label=\"passages per search\" min={1} max={20} />\n      </div>\n      <div className=\"flex flex-col gap-1\">\n        <div className=\"flex items-baseline justify-between type-meta\"><span className=\"text-fg-soft\">Minimum score</span><span className=\"tabular-nums\">{(score / 100).toFixed(2)}</span></div>\n        <Slider value={score} onValueChange={setScore} label=\"minimum score\" valueText={(score / 100).toFixed(2)} step={5} />\n      </div>\n      <div className=\"flex flex-col gap-1\">\n        <div className=\"flex items-baseline justify-between type-meta\"><span className=\"text-fg-muted\">Rerank depth (on the Scale plan)</span><span className=\"tabular-nums text-fg-muted\">50</span></div>\n        <Slider value={50} label=\"rerank depth\" disabled />\n      </div>\n    </div>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/slider.ts",
+          "content": "import { html, LitElement, type PropertyValues } from 'lit'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { live } from 'lit/directives/live.js'\nimport { styleMap } from 'lit/directives/style-map.js'\nimport { DsFormElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// Slider.vue as <conare-slider>: a value on a range (new, in the console's grammar): the meter's 4px track (console2.css\n// .v2-meter: a hairline-grey track, ink up to the value) and a square 12px ink thumb, with the switch's red focus\n// outline. It follows the pointer with no easing, since the hand is moving it; arrows step it, Page Up and Down by tens,\n// Home and End to the ends. The whole 28px row takes the pointer (40px on phones). Show the value beside it in tabular\n// figures. v-model is a numeric `value` with `input` (while it moves) and `change` (when it is let go), as a native\n// range's. Form-associated: its `name` goes with the form.\n\n/**\n * @summary A value on a range.\n * @fires input - While it moves (read `value`).\n * @fires change - When it is let go (read `value`).\n */\nexport class Slider extends DsFormElement {\n\tstatic styles = [DsFormElement.styles, styles]\n\tstatic shadowRootOptions = { ...LitElement.shadowRootOptions, delegatesFocus: true }\n\tstatic dsField = true\n\tstatic properties = {\n\t\tvalue: { type: Number },\n\t\tlabel: {},\n\t\tmin: { type: Number },\n\t\tmax: { type: Number },\n\t\tstep: { type: Number },\n\t\tdisabled: { type: Boolean, reflect: true },\n\t\tvalueText: { attribute: 'value-text' },\n\t\tname: {},\n\t}\n\n\tvalue = 0\n\t/** The name for assistive tech. */\n\tlabel = ''\n\tmin = 0\n\tmax = 100\n\tstep = 1\n\tdisabled = false\n\t/** What a screen reader says for the value (0.40 for 40). */\n\tvalueText?: string\n\tname?: string\n\n\tprotected updated(changed: PropertyValues) {\n\t\tsuper.updated(changed)\n\t\tif (changed.has('value')) this.internals.setFormValue(String(this.value))\n\t}\n\tprotected validityControl() {\n\t\treturn this.renderRoot.querySelector<HTMLInputElement>('input')\n\t}\n\tformResetCallback() {\n\t\tthis.value = Number(this.getAttribute('value') ?? 0)\n\t}\n\tprivate onInput(event: Event) {\n\t\tthis.value = Number((event.target as HTMLInputElement).value)\n\t}\n\t// The inner change does not leave the shadow root: the element sends its own.\n\tprivate onChange() {\n\t\tthis.dispatchEvent(new Event('change', { bubbles: true, composed: true }))\n\t}\n\n\trender() {\n\t\tconst share = this.max > this.min ? ((this.value - this.min) / (this.max - this.min)) * 100 : 0\n\t\treturn html`<span data-ds=\"slider\" class=\"ds-slider\" style=${styleMap({ '--p': `${share}%` })} data-disabled=${ifDefined(this.inactive ? 'true' : undefined)}>\n\t\t\t<span class=\"ds-slider-track\" aria-hidden=\"true\"><span></span></span>\n\t\t\t<input type=\"range\" min=${this.min} max=${this.max} step=${this.step} .value=${live(String(this.value))} ?disabled=${this.inactive} aria-label=${this.label} aria-valuetext=${ifDefined(this.valueText)} @input=${this.onInput} @change=${this.onChange}>\n\t\t</span>`\n\t}\n}\n\ndefine('slider', Slider)\n"
+        },
+        {
+          "path": "elements/components/ui/slider.css",
+          "content": "/* Slider.vue's <style>, as it is. */\n.ds-slider { position: relative; display: flex; width: 100%; height: var(--ds-size-control-sm); align-items: center; }\n.ds-slider-track { position: absolute; right: 0; left: 0; height: 4px; background: var(--ds-color-edge); pointer-events: none; }\n.ds-slider-track > span { display: block; width: var(--p); height: 100%; background: var(--ds-color-surface-inverse); }\n.ds-slider[data-disabled] .ds-slider-track > span { background: var(--ds-color-fg-faint); }\n.ds-slider > input { position: relative; width: 100%; height: 100%; margin: 0; background: transparent; appearance: none; cursor: pointer; }\n.ds-slider > input:disabled { cursor: not-allowed; }\n.ds-slider > input:focus-visible { outline: none; }\n.ds-slider > input::-webkit-slider-runnable-track { height: 4px; background: transparent; }\n.ds-slider > input::-moz-range-track { height: 4px; background: transparent; }\n.ds-slider > input::-webkit-slider-thumb { width: 12px; height: 12px; margin-top: -4px; border: 0; border-radius: 0; background: var(--ds-color-surface-inverse); appearance: none; }\n.ds-slider > input::-moz-range-thumb { width: 12px; height: 12px; border: 0; border-radius: 0; background: var(--ds-color-surface-inverse); }\n.ds-slider > input:disabled::-webkit-slider-thumb { background: var(--ds-color-fg-faint); }\n.ds-slider > input:disabled::-moz-range-thumb { background: var(--ds-color-fg-faint); }\n.ds-slider > input:focus-visible::-webkit-slider-thumb { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: var(--ds-border-focus); }\n.ds-slider > input:focus-visible::-moz-range-thumb { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: var(--ds-border-focus); }\n@media (pointer: coarse), (max-width: 767px) { .ds-slider { height: var(--ds-size-control-touch); } }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/slider.js"
+      ],
+      "tag": "conare-slider",
+      "tags": [
+        "conare-slider"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-slider",
+            "name": "Slider",
+            "module": "elements/slider.js",
+            "description": "A value on a range.",
+            "attributes": [
+              {
+                "name": "value",
+                "field": "value",
+                "type": "number",
+                "default": "0"
+              },
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string",
+                "default": "''",
+                "description": "The name for assistive tech."
+              },
+              {
+                "name": "min",
+                "field": "min",
+                "type": "number",
+                "default": "0"
+              },
+              {
+                "name": "max",
+                "field": "max",
+                "type": "number",
+                "default": "100"
+              },
+              {
+                "name": "step",
+                "field": "step",
+                "type": "number",
+                "default": "1"
+              },
+              {
+                "name": "disabled",
+                "field": "disabled",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "value-text",
+                "field": "valueText",
+                "type": "string | undefined",
+                "description": "What a screen reader says for the value (0.40 for 40)."
+              },
+              {
+                "name": "name",
+                "field": "name",
+                "type": "string | undefined"
+              }
+            ],
+            "properties": [
+              {
+                "name": "value",
+                "type": "number",
+                "default": "0",
+                "attribute": "value"
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "default": "''",
+                "description": "The name for assistive tech.",
+                "attribute": "label"
+              },
+              {
+                "name": "min",
+                "type": "number",
+                "default": "0",
+                "attribute": "min"
+              },
+              {
+                "name": "max",
+                "type": "number",
+                "default": "100",
+                "attribute": "max"
+              },
+              {
+                "name": "step",
+                "type": "number",
+                "default": "1",
+                "attribute": "step"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "attribute": "disabled"
+              },
+              {
+                "name": "valueText",
+                "type": "string | undefined",
+                "description": "What a screen reader says for the value (0.40 for 40).",
+                "attribute": "value-text"
+              },
+              {
+                "name": "name",
+                "type": "string | undefined",
+                "attribute": "name"
+              }
+            ],
+            "events": [
+              {
+                "name": "change",
+                "description": "When it is let go (read `value`)."
+              },
+              {
+                "name": "input",
+                "description": "While it moves (read `value`)."
+              }
+            ],
+            "slots": [],
+            "methods": [
+              {
+                "name": "formResetCallback"
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/slider/Product.html",
+          "content": "<!-- How many passages a search returns, and a minimum score: the value beside each in tabular figures. -->\n<div class=\"flex w-90 max-w-full flex-col gap-4\">\n  <div class=\"flex flex-col gap-1\">\n    <div class=\"flex items-baseline justify-between type-meta\"><span class=\"text-fg-soft\">Passages per search</span><span class=\"tabular-nums\" id=\"top-k-value\">8</span></div>\n    <conare-slider id=\"top-k\" value=\"8\" label=\"passages per search\" min=\"1\" max=\"20\"></conare-slider>\n  </div>\n  <div class=\"flex flex-col gap-1\">\n    <div class=\"flex items-baseline justify-between type-meta\"><span class=\"text-fg-soft\">Minimum score</span><span class=\"tabular-nums\" id=\"score-value\">0.40</span></div>\n    <conare-slider id=\"score\" value=\"40\" label=\"minimum score\" value-text=\"0.40\" step=\"5\"></conare-slider>\n  </div>\n  <div class=\"flex flex-col gap-1\">\n    <div class=\"flex items-baseline justify-between type-meta\"><span class=\"text-fg-muted\">Rerank depth (on the Scale plan)</span><span class=\"tabular-nums text-fg-muted\">50</span></div>\n    <conare-slider value=\"50\" label=\"rerank depth\" disabled></conare-slider>\n  </div>\n</div>\n<script type=\"module\">\n  const topK = document.getElementById('top-k')\n  const score = document.getElementById('score')\n  topK.addEventListener('input', () => { document.getElementById('top-k-value').textContent = topK.value })\n  score.addEventListener('input', () => {\n    const text = (score.value / 100).toFixed(2)\n    document.getElementById('score-value').textContent = text\n    score.valueText = text\n  })\n</script>\n"
+        }
+      ]
+    }
+  }
+}

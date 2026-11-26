@@ -1,0 +1,201 @@
+{
+  "name": "collapsible",
+  "title": "Collapsible",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "A part that opens in place and pushes what follows: the row grows to its content over 260ms and closes in 180ms, the content fading up from a slight blur, the chevron turning. From the keyboard it opens at once.",
+  "use_for": "Folding away what most people skip: advanced settings, the request behind a result, a long prompt.",
+  "never": [
+    "The main content of a page",
+    "Several that should open one at a time: that is an accordion"
+  ],
+  "source": "conare-web app/assets/css/console2.css (.v2-collapse, .v2-prompt-text, .v2-chev), app/components/console/CodePop.vue (opens in place). New in Conare's style: shadcn's collapsible.",
+  "body": "",
+  "requires": [],
+  "dependencies": [
+    "lucide-vue-next@^0.479.0"
+  ],
+  "files": [
+    {
+      "path": "components/ui/Collapsible.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref, useId } from 'vue'\nimport { ChevronDown } from 'lucide-vue-next'\n\n// A part that opens in place and pushes what follows (console2.css .v2-collapse, CodePop's open-in-place): the row\n// grows to its content's height (0fr to 1fr) over 260ms on the strong ease-out and closes in 180ms; the content fades\n// up 6px from a 2px blur, a beat after the row starts. The chevron turns 180 degrees (180ms, 120ms back). Toggled from\n// the keyboard it opens at once. The trigger is the slot `trigger`, drawn as a quiet row unless `triggerClass` says\n// otherwise; it is a real button with aria-expanded and aria-controls.\ndefineProps<{ triggerClass?: string }>()\nconst open = defineModel<boolean>('open', { default: false })\nconst instant = ref(false)\nconst id = `collapse-${useId()}`\nfunction toggle(event: MouseEvent) {\n  instant.value = event.detail === 0\n  open.value = !open.value\n}\n</script>\n\n<template>\n  <div data-ds=\"collapsible\" class=\"ds-collapsible\" :data-open=\"open || undefined\" :data-instant=\"instant || undefined\">\n    <button\n      type=\"button\"\n      :class=\"triggerClass ?? 'flex w-full cursor-pointer items-center gap-2 py-2 text-left type-ui text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-edge-focus max-md:min-h-11'\"\n      :aria-expanded=\"open\"\n      :aria-controls=\"id\"\n      @click=\"toggle\"\n    >\n      <slot name=\"trigger\" :open=\"open\" />\n      <ChevronDown :size=\"14\" :stroke-width=\"1.5\" class=\"ds-collapsible-chev ml-auto shrink-0 text-fg-muted\" aria-hidden=\"true\" />\n    </button>\n    <div :id=\"id\" class=\"ds-collapsible-region\" :inert=\"!open || undefined\">\n      <div><div class=\"ds-collapsible-content\"><slot /></div></div>\n    </div>\n  </div>\n</template>\n\n<style>\n.ds-collapsible-region { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--ds-duration-slide) var(--ds-easing-out); }\n.ds-collapsible[data-open] > .ds-collapsible-region { grid-template-rows: 1fr; transition-duration: var(--ds-duration-collapse); }\n.ds-collapsible-region > div { min-height: 0; overflow: hidden; }\n.ds-collapsible-content { opacity: 0; filter: blur(2px); transform: translateY(-6px); transition: opacity var(--ds-duration-micro) var(--ds-easing-standard), filter var(--ds-duration-micro) var(--ds-easing-standard), transform var(--ds-duration-slide) var(--ds-easing-out); }\n.ds-collapsible[data-open] > .ds-collapsible-region .ds-collapsible-content { opacity: 1; filter: none; transform: none; transition-delay: 40ms; transition-duration: var(--ds-duration-settle), var(--ds-duration-settle), var(--ds-duration-collapse); }\n.ds-collapsible-chev { transition: rotate var(--ds-duration-micro) var(--ds-easing-out); }\n.ds-collapsible[data-open] > button .ds-collapsible-chev { rotate: 180deg; transition-duration: var(--ds-duration-slide); }\n.ds-collapsible[data-instant] :is(.ds-collapsible-region, .ds-collapsible-content, .ds-collapsible-chev) { transition: none; }\n@media (prefers-reduced-motion: reduce) {\n  .ds-collapsible-region, .ds-collapsible-chev { transition: none; }\n  .ds-collapsible-content, .ds-collapsible[data-open] > .ds-collapsible-region .ds-collapsible-content { filter: none; transform: none; }\n}\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "Advanced settings",
+      "center": false,
+      "half": false,
+      "path": "examples/collapsible/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport Collapsible from '@/components/ui/Collapsible.vue'\nimport Field from '@/components/ui/Field.vue'\nimport Input from '@/components/ui/Input.vue'\nimport Switch from '@/components/ui/Switch.vue'\n// A new source's form with its advanced settings folded away: open them and the form below moves down to make room.\nconst name = ref('Acme drive')\nconst open = ref(false)\nconst ocr = ref(true)\nconst every = ref('60')\n</script>\n\n<template>\n  <form class=\"flex max-w-100 flex-col gap-4\" @submit.prevent>\n    <Field v-slot=\"{ id }\" label=\"Name\">\n      <Input :id=\"id\" v-model=\"name\" />\n    </Field>\n    <div class=\"border-y border-edge\">\n      <Collapsible v-model:open=\"open\">\n        <template #trigger>Advanced settings</template>\n        <div class=\"flex flex-col gap-4 pt-1 pb-4\">\n          <Field v-slot=\"{ id, hintId }\" label=\"Sync every\" hint=\"In minutes, 15 at least.\">\n            <Input :id=\"id\" v-model=\"every\" inputmode=\"numeric\" :aria-describedby=\"hintId\" />\n          </Field>\n          <div class=\"flex items-center justify-between gap-4\">\n            <span class=\"type-meta text-fg-soft\">Read text in scanned pages</span>\n            <Switch v-model=\"ocr\" label=\"read text in scanned pages\" />\n          </div>\n        </div>\n      </Collapsible>\n    </div>\n    <p class=\"type-meta text-fg-muted\">Documents start syncing as soon as you connect.</p>\n  </form>\n</template>\n",
+      "requires": [
+        "field",
+        "switch"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Collapsible.tsx",
+          "content": "'use client'\nimport { useId, useState, type MouseEvent, type ReactNode } from 'react'\nimport { ChevronDown } from 'lucide-react'\nimport { useControllable } from '@/react/hooks/useControllable'\n\n// A part that opens in place and pushes what follows (console2.css .v2-collapse, CodePop's open-in-place): the row\n// grows to its content's height (0fr to 1fr) over 260ms on the strong ease-out and closes in 180ms; the content fades\n// up 6px from a 2px blur, a beat after the row starts. The chevron turns 180 degrees (180ms, 120ms back). Toggled from\n// the keyboard it opens at once. The trigger's content is `trigger` (a node, or a function of `open`), drawn as a\n// quiet row unless `triggerClass` says otherwise; it is a real button with aria-expanded and aria-controls. Vue's\n// v-model:open is `open` with `onOpenChange` (or `defaultOpen` alone).\nexport interface CollapsibleProps {\n  triggerClass?: string\n  trigger?: ReactNode | ((open: boolean) => ReactNode)\n  open?: boolean\n  defaultOpen?: boolean\n  onOpenChange?: (open: boolean) => void\n  children?: ReactNode\n}\n\nexport function Collapsible({ triggerClass, trigger, open: openProp, defaultOpen = false, onOpenChange, children }: CollapsibleProps) {\n  const [open, setOpen] = useControllable(openProp, defaultOpen, onOpenChange)\n  const [instant, setInstant] = useState(false)\n  const id = `collapse-${useId()}`\n  function toggle(event: MouseEvent) {\n    setInstant(event.detail === 0)\n    setOpen(!open)\n  }\n  return (\n    <>\n      <style href=\"ds-collapsible\" precedence=\"ds\">{css}</style>\n      <div data-ds=\"collapsible\" className=\"ds-collapsible\" data-open={open || undefined} data-instant={instant || undefined}>\n        <button\n          type=\"button\"\n          className={triggerClass ?? 'flex w-full cursor-pointer items-center gap-2 py-2 text-left type-ui text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-edge-focus max-md:min-h-11'}\n          aria-expanded={open}\n          aria-controls={id}\n          onClick={toggle}\n        >\n          {typeof trigger === 'function' ? trigger(open) : trigger}\n          <ChevronDown size={14} strokeWidth={1.5} className=\"ds-collapsible-chev ml-auto shrink-0 text-fg-muted\" aria-hidden=\"true\" />\n        </button>\n        <div id={id} className=\"ds-collapsible-region\" inert={!open || undefined}>\n          <div><div className=\"ds-collapsible-content\">{children}</div></div>\n        </div>\n      </div>\n    </>\n  )\n}\n\nexport default Collapsible\n\nconst css = `\n.ds-collapsible-region { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--ds-duration-slide) var(--ds-easing-out); }\n.ds-collapsible[data-open] > .ds-collapsible-region { grid-template-rows: 1fr; transition-duration: var(--ds-duration-collapse); }\n.ds-collapsible-region > div { min-height: 0; overflow: hidden; }\n.ds-collapsible-content { opacity: 0; filter: blur(2px); transform: translateY(-6px); transition: opacity var(--ds-duration-micro) var(--ds-easing-standard), filter var(--ds-duration-micro) var(--ds-easing-standard), transform var(--ds-duration-slide) var(--ds-easing-out); }\n.ds-collapsible[data-open] > .ds-collapsible-region .ds-collapsible-content { opacity: 1; filter: none; transform: none; transition-delay: 40ms; transition-duration: var(--ds-duration-settle), var(--ds-duration-settle), var(--ds-duration-collapse); }\n.ds-collapsible-chev { transition: rotate var(--ds-duration-micro) var(--ds-easing-out); }\n.ds-collapsible[data-open] > button .ds-collapsible-chev { rotate: 180deg; transition-duration: var(--ds-duration-slide); }\n.ds-collapsible[data-instant] :is(.ds-collapsible-region, .ds-collapsible-content, .ds-collapsible-chev) { transition: none; }\n@media (prefers-reduced-motion: reduce) {\n  .ds-collapsible-region, .ds-collapsible-chev { transition: none; }\n  .ds-collapsible-content, .ds-collapsible[data-open] > .ds-collapsible-region .ds-collapsible-content { filter: none; transform: none; }\n}\n`\n"
+        },
+        {
+          "path": "react/hooks/useControllable.ts",
+          "content": "'use client'\nimport { useCallback, useRef, useState } from 'react'\n\n// Vue's defineModel in React: a value that is controlled when the caller passes it (value + onValueChange, as Radix\n// does) and kept inside otherwise (defaultValue). setValue calls onChange either way.\nexport function useControllable<T>(value: T | undefined, defaultValue: T, onChange?: (value: T) => void) {\n\tconst [inner, setInner] = useState<T>(defaultValue)\n\tconst controlled = value !== undefined\n\tconst current = controlled ? value : inner\n\tconst ref = useRef(onChange)\n\tref.current = onChange\n\tconst set = useCallback((next: T) => {\n\t\tif (!controlled) setInner(next)\n\t\tref.current?.(next)\n\t}, [controlled])\n\treturn [current, set] as const\n}\n"
+        }
+      ],
+      "dependencies": [
+        "lucide-react@0.479.0"
+      ],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "Collapsible",
+            "file": "react/components/ui/Collapsible.tsx",
+            "props": [
+              {
+                "name": "triggerClass",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "trigger",
+                "type": "ReactNode | ((open: boolean) => ReactNode)",
+                "required": false
+              },
+              {
+                "name": "open",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "defaultOpen",
+                "type": "boolean",
+                "required": false,
+                "default": "false"
+              },
+              {
+                "name": "onOpenChange",
+                "type": "(open: boolean) => void",
+                "required": false
+              },
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Advanced settings",
+          "center": false,
+          "half": false,
+          "path": "react/examples/collapsible/Product.tsx",
+          "content": "'use client'\nimport { useState } from 'react'\nimport { Collapsible } from '@/react/components/ui/Collapsible'\nimport { Field } from '@/react/components/ui/Field'\nimport { Input } from '@/react/components/ui/Input'\nimport { Switch } from '@/react/components/ui/Switch'\n// A new source's form with its advanced settings folded away: open them and the form below moves down to make room.\n\nexport default function Product() {\n  const [name, setName] = useState('Acme drive')\n  const [open, setOpen] = useState(false)\n  const [ocr, setOcr] = useState(true)\n  const [every, setEvery] = useState('60')\n  return (\n    <form className=\"flex max-w-100 flex-col gap-4\" onSubmit={e => e.preventDefault()}>\n      <Field label=\"Name\">\n        {({ id }) => <Input id={id} value={name} onChange={e => setName(e.target.value)} />}\n      </Field>\n      <div className=\"border-y border-edge\">\n        <Collapsible open={open} onOpenChange={setOpen} trigger=\"Advanced settings\">\n          <div className=\"flex flex-col gap-4 pt-1 pb-4\">\n            <Field label=\"Sync every\" hint=\"In minutes, 15 at least.\">\n              {({ id, hintId }) => <Input id={id} value={every} onChange={e => setEvery(e.target.value)} inputMode=\"numeric\" aria-describedby={hintId} />}\n            </Field>\n            <div className=\"flex items-center justify-between gap-4\">\n              <span className=\"type-meta text-fg-soft\">Read text in scanned pages</span>\n              <Switch checked={ocr} onCheckedChange={setOcr} label=\"read text in scanned pages\" />\n            </div>\n          </div>\n        </Collapsible>\n      </div>\n      <p className=\"type-meta text-fg-muted\">Documents start syncing as soon as you connect.</p>\n    </form>\n  )\n}\n",
+          "registryDependencies": [
+            "field",
+            "switch"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/collapsible.ts",
+          "content": "import { html, type PropertyValues } from 'lit'\nimport { ChevronDown } from 'lucide'\nimport { DsElement, define, uid } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport styles from 'virtual:tw'\n\n// Collapsible.vue as <conare-collapsible>: a part that opens in place and pushes what follows (console2.css\n// .v2-collapse, CodePop's open-in-place): the row grows to its content's height (0fr to 1fr) over 260ms on the strong\n// ease-out and closes in 180ms; the content fades up 6px from a 2px blur, a beat after the row starts. The chevron\n// turns 180 degrees (180ms, 120ms back). Toggled from the keyboard it opens at once. The trigger: content in the\n// `trigger` slot, drawn as a quiet row with the chevron, or a <button slot=\"trigger\"> you style yourself (Vue's\n// triggerClass; draw your own chevron in it). Vue's v-model:open is the `open` attribute with `open-change`.\n\n/**\n * @summary A part that opens in place and pushes what follows.\n * @slot - What opens.\n * @slot trigger - The trigger's content, or a <button> to use as the trigger.\n * @fires open-change - It opened or closed (detail.value).\n */\nexport class Collapsible extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { open: { type: Boolean, reflect: true }, instant: { state: true } }\n\n\topen = false\n\tprivate instant = false\n\tprivate regionId = uid('collapse')\n\n\tprivate toggle = (event: MouseEvent) => {\n\t\tthis.instant = event.detail === 0\n\t\tthis.commit(!this.open, 'open')\n\t}\n\n\t// The page's own trigger button gets the button's attributes and the press.\n\tprivate wired: HTMLElement | null = null\n\tprotected updated(changed: PropertyValues<this>) {\n\t\tsuper.updated(changed)\n\t\tconst own = this.querySelector<HTMLElement>(':scope > button[slot=\"trigger\"]')\n\t\tif (own !== this.wired) {\n\t\t\tthis.wired?.removeEventListener('click', this.toggle)\n\t\t\town?.addEventListener('click', this.toggle)\n\t\t\tthis.wired = own\n\t\t}\n\t\town?.setAttribute('aria-expanded', String(this.open))\n\t}\n\tdisconnectedCallback() {\n\t\tsuper.disconnectedCallback()\n\t\tthis.wired?.removeEventListener('click', this.toggle)\n\t\tthis.wired = null\n\t}\n\n\trender() {\n\t\tconst own = !!this.querySelector(':scope > button[slot=\"trigger\"]')\n\t\tconst trigger = own\n\t\t\t? html`<slot name=\"trigger\"></slot>`\n\t\t\t: html`<button type=\"button\" class=\"flex w-full cursor-pointer items-center gap-2 py-2 text-left type-ui text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-edge-focus max-md:min-h-11\" aria-expanded=${String(this.open)} aria-controls=${this.regionId} @click=${this.toggle}><slot name=\"trigger\"></slot>${icon(ChevronDown, 'chevron-down', { size: 14, strokeWidth: 1.5, class: 'ds-collapsible-chev ml-auto shrink-0 text-fg-muted', attrs: { 'aria-hidden': 'true' } })}</button>`\n\t\treturn html`<div data-ds=\"collapsible\" class=\"ds-collapsible\" ?data-open=${this.open} ?data-instant=${this.instant}>\n\t\t\t${trigger}\n\t\t\t<div id=${this.regionId} class=\"ds-collapsible-region\" ?inert=${!this.open}>\n\t\t\t\t<div><div class=\"ds-collapsible-content\"><slot></slot></div></div>\n\t\t\t</div>\n\t\t</div>`\n\t}\n}\n\ndefine('collapsible', Collapsible)\n"
+        },
+        {
+          "path": "elements/components/ui/collapsible.css",
+          "content": "/* Collapsible.vue's <style>, as it is. */\n.ds-collapsible-region { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--ds-duration-slide) var(--ds-easing-out); }\n.ds-collapsible[data-open] > .ds-collapsible-region { grid-template-rows: 1fr; transition-duration: var(--ds-duration-collapse); }\n.ds-collapsible-region > div { min-height: 0; overflow: hidden; }\n.ds-collapsible-content { opacity: 0; filter: blur(2px); transform: translateY(-6px); transition: opacity var(--ds-duration-micro) var(--ds-easing-standard), filter var(--ds-duration-micro) var(--ds-easing-standard), transform var(--ds-duration-slide) var(--ds-easing-out); }\n.ds-collapsible[data-open] > .ds-collapsible-region .ds-collapsible-content { opacity: 1; filter: none; transform: none; transition-delay: 40ms; transition-duration: var(--ds-duration-settle), var(--ds-duration-settle), var(--ds-duration-collapse); }\n.ds-collapsible-chev { transition: rotate var(--ds-duration-micro) var(--ds-easing-out); }\n.ds-collapsible[data-open] > button .ds-collapsible-chev { rotate: 180deg; transition-duration: var(--ds-duration-slide); }\n.ds-collapsible[data-instant] :is(.ds-collapsible-region, .ds-collapsible-content, .ds-collapsible-chev) { transition: none; }\n@media (prefers-reduced-motion: reduce) {\n  .ds-collapsible-region, .ds-collapsible-chev { transition: none; }\n  .ds-collapsible-content, .ds-collapsible[data-open] > .ds-collapsible-region .ds-collapsible-content { filter: none; transform: none; }\n}\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/collapsible.js",
+        "elements/field.js",
+        "elements/input.js",
+        "elements/switch.js"
+      ],
+      "tag": "conare-collapsible",
+      "tags": [
+        "conare-collapsible"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-collapsible",
+            "name": "Collapsible",
+            "module": "elements/collapsible.js",
+            "description": "A part that opens in place and pushes what follows.",
+            "attributes": [
+              {
+                "name": "open",
+                "field": "open",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "instant",
+                "field": "instant",
+                "type": "boolean",
+                "default": "false"
+              }
+            ],
+            "properties": [
+              {
+                "name": "open",
+                "type": "boolean",
+                "default": "false",
+                "attribute": "open"
+              }
+            ],
+            "events": [
+              {
+                "name": "open-change",
+                "description": "It opened or closed (detail.value)."
+              }
+            ],
+            "slots": [
+              {
+                "name": "",
+                "description": "What opens."
+              },
+              {
+                "name": "trigger",
+                "description": "The trigger's content, or a <button> to use as the trigger."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Advanced settings",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/collapsible/Product.html",
+          "content": "<!-- A new source's form with its advanced settings folded away: open them and the form below moves down to make room. -->\n<form class=\"flex max-w-100 flex-col gap-4\" id=\"new-source\">\n  <conare-field label=\"Name\">\n    <conare-input value=\"Acme drive\"></conare-input>\n  </conare-field>\n  <div class=\"border-y border-edge\">\n    <conare-collapsible>\n      <span slot=\"trigger\" class=\"contents\">Advanced settings</span>\n      <div class=\"flex flex-col gap-4 pt-1 pb-4\">\n        <conare-field label=\"Sync every\" hint=\"In minutes, 15 at least.\">\n          <conare-input value=\"60\" inputmode=\"numeric\"></conare-input>\n        </conare-field>\n        <div class=\"flex items-center justify-between gap-4\">\n          <span class=\"type-meta text-fg-soft\">Read text in scanned pages</span>\n          <conare-switch checked label=\"read text in scanned pages\"></conare-switch>\n        </div>\n      </div>\n    </conare-collapsible>\n  </div>\n  <p class=\"type-meta text-fg-muted\">Documents start syncing as soon as you connect.</p>\n</form>\n<script type=\"module\">\n  document.getElementById('new-source').addEventListener('submit', (event) => event.preventDefault())\n</script>\n"
+        }
+      ]
+    }
+  }
+}

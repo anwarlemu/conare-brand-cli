@@ -1,0 +1,424 @@
+{
+  "name": "accuracy-page",
+  "title": "Accuracy page",
+  "type": "registry:block",
+  "group": "product",
+  "description": "Accuracy as it ships: Performance's second view, its bar with the two views and the test's actions (Add questions opening in place, Copy link, Run again as the one dark button), then the Test at work view.",
+  "use_for": "The console's Performance page, Accuracy tab: a team's own test, run now and then.",
+  "never": [
+    "A page of its own in the sidebar: it runs now and then, so it sits under Performance",
+    "A second dark button: Run again is the page's one"
+  ],
+  "source": "conare-web app/components/console/accuracy/Panel.vue, Add.vue, app/components/console/performance/Tabs.vue, app/pages/dashboard/performance.vue (the branch's accuracy page redirects there)",
+  "body": "`AccuracyPanel` takes the run (`view`), `version` (4, Test at work, by default), the link Copy link copies and the\nquestions agents ask most (`asked`); it emits `run`, `add`, `fix`, `search`, `remove` and `update:tab`. Put it in a\n`ConsolePage` titled Performance.",
+  "requires": [
+    "accuracy-views",
+    "button",
+    "tabs"
+  ],
+  "dependencies": [
+    "lucide-vue-next@^0.479.0"
+  ],
+  "files": [
+    {
+      "path": "components/product/AccuracyPanel.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport { Check, Link2, Plus, RotateCw } from 'lucide-vue-next'\nimport AccuracyAdd from '@/components/product/AccuracyAdd.vue'\nimport AccuracyAtWork from '@/components/product/AccuracyAtWork.vue'\nimport type { AccuracyRow, AccuracyView } from '@/components/product/AccuracyDetail.vue'\nimport AccuracyOpens from '@/components/product/AccuracyOpens.vue'\nimport AccuracySheet from '@/components/product/AccuracySheet.vue'\nimport AccuracyTwo from '@/components/product/AccuracyTwo.vue'\nimport AccuracyVerdict from '@/components/product/AccuracyVerdict.vue'\nimport Button from '@/components/ui/Button.vue'\nimport PixelButton from '@/components/ui/PixelButton.vue'\nimport Tabs from '@/components/ui/Tabs.vue'\nimport { useCopy } from '@/composables/useCopy'\n\n// Accuracy, Performance's second view (accuracy/Panel.vue): a team's own questions and whether Conare reached the\n// right page. The bar holds Performance's two views and the test's actions: Add questions (opening in place; the\n// question sheet takes them in its first row instead), Copy link, and Run again as the page's one dark button. Under it,\n// one of the four views: 4 \"Test at work\" ships; 1 \"Verdict first\", 2 \"Two searches\" and 3 \"Question sheet\" are the\n// takes beside it. The app owns the test: it answers `run`, `add`, `fix`, `search`, `remove` and the tab.\nconst props = withDefaults(defineProps<{ view: AccuracyView, version?: 1 | 2 | 3 | 4, link?: string, asked?: string[], busy?: boolean }>(), { version: 4, link: '', asked: () => [] })\nconst emit = defineEmits<{ run: [], add: [questions: string[]], fix: [row: AccuracyRow], search: [row: AccuracyRow], remove: [row: AccuracyRow] }>()\nconst tab = defineModel<'searches' | 'accuracy'>('tab', { default: 'accuracy' })\nconst adding = ref(false)\nconst { copied, copy } = useCopy()\nfunction more(questions: string[]) {\n  adding.value = false\n  emit('add', questions)\n  emit('run')\n}\nconst pass = { onFix: (r: AccuracyRow) => emit('fix', r), onSearch: (r: AccuracyRow) => emit('search', r), onRemove: (r: AccuracyRow) => emit('remove', r) }\n</script>\n\n<template>\n  <div data-ds=\"accuracy-panel\" class=\"flex flex-wrap items-center justify-between gap-x-4 gap-y-2\">\n    <Tabs v-model=\"tab\" :options=\"[{ value: 'searches', label: 'Searches' }, { value: 'accuracy', label: 'Accuracy' }]\" label=\"performance\" />\n    <div class=\"flex flex-wrap items-center gap-2\">\n      <Button v-if=\"version !== 3\" press :aria-expanded=\"adding\" @click=\"adding = !adding\"><Plus :size=\"12\" :stroke-width=\"1.5\" aria-hidden=\"true\" />Add questions</Button>\n      <Button press @click=\"copy(props.link)\">\n        <Check v-if=\"copied\" :size=\"12\" :stroke-width=\"2\" aria-hidden=\"true\" /><Link2 v-else :size=\"12\" :stroke-width=\"1.5\" aria-hidden=\"true\" />{{ copied ? 'Link copied' : 'Copy link' }}\n      </Button>\n      <PixelButton :disabled=\"view.state === 'running' || busy\" @click=\"emit('run')\">\n        <RotateCw :size=\"12\" :stroke-width=\"1.5\" aria-hidden=\"true\" />{{ view.state === 'running' ? 'Running' : 'Run again' }}\n      </PixelButton>\n    </div>\n  </div>\n  <AccuracyOpens data-ds=\"accuracy-panel\" :open=\"adding && version !== 3\"><AccuracyAdd :asked=\"asked\" @add=\"more\" @close=\"adding = false\" /></AccuracyOpens>\n  <AccuracyVerdict data-ds=\"accuracy-panel\" v-if=\"version === 1\" :view=\"view\" v-bind=\"pass\" />\n  <AccuracyTwo data-ds=\"accuracy-panel\" v-else-if=\"version === 2\" :view=\"view\" v-bind=\"pass\" />\n  <AccuracySheet data-ds=\"accuracy-panel\" v-else-if=\"version === 3\" :view=\"view\" v-bind=\"pass\" @add=\"emit('add', $event)\" />\n  <AccuracyAtWork data-ds=\"accuracy-panel\" v-else :view=\"view\" v-bind=\"pass\" />\n</template>\n"
+    },
+    {
+      "path": "components/product/AccuracyAdd.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed, ref } from 'vue'\nimport { FileUp, X } from 'lucide-vue-next'\nimport Button from '@/components/ui/Button.vue'\nimport PixelButton from '@/components/ui/PixelButton.vue'\n\n// More questions, opened in place (accuracy/Add.vue), on the paper in a hairline. Three ways in: paste a list (one a\n// line), upload a CSV (its first column), or take what agents already ask, which needs no typing and is the truest\n// test. Adding runs them, since a question only helps answered: `add` gets the questions, `close` the close button.\nwithDefaults(defineProps<{ asked?: string[] }>(), { asked: () => [] })\nconst emit = defineEmits<{ add: [questions: string[]], close: [] }>()\nconst text = ref('')\nconst lines = computed(() => text.value.split('\\n').map(l => l.trim()).filter(Boolean))\nconst input = ref<HTMLInputElement | null>(null)\nasync function file(list: FileList | null) {\n  const f = list?.[0]\n  if (!f) return\n  text.value = (await f.text()).split('\\n').map(l => l.split(',')[0]!.replace(/^\"|\"$/g, '').trim()).filter(Boolean).join('\\n')\n}\nconst count = (n: number) => `${n} ${n === 1 ? 'question' : 'questions'}`\n</script>\n\n<template>\n  <section data-ds=\"accuracy-add\" class=\"grid grid-cols-[minmax(0,1fr)_minmax(0,320px)] gap-6 border border-edge bg-surface-subtle p-4 max-lg:grid-cols-1\" aria-label=\"add questions\">\n    <div class=\"min-w-0 flex-1\">\n      <label class=\"sr-only\" for=\"eval-more\">questions, one a line</label>\n      <textarea id=\"eval-more\" v-model=\"text\" class=\"block w-full resize-y border border-edge-strong bg-surface p-3 text-ui outline-none transition-[border-color] duration-120 ease-standard placeholder:text-fg-muted focus:border-edge-focus max-md:text-input\" rows=\"5\" placeholder=\"One question a line\" />\n      <div class=\"mt-2 flex flex-wrap items-center gap-2\">\n        <PixelButton :disabled=\"!lines.length\" @click=\"emit('add', lines)\">{{ lines.length ? `Add ${count(lines.length)} and run` : 'Add and run' }}</PixelButton>\n        <Button press @click=\"input?.click()\"><FileUp :size=\"12\" :stroke-width=\"1.5\" aria-hidden=\"true\" />Upload a CSV</Button>\n        <input ref=\"input\" type=\"file\" accept=\".csv,.txt\" class=\"sr-only\" tabindex=\"-1\" aria-label=\"choose a CSV of questions\" @change=\"file(($event.target as HTMLInputElement).files)\">\n        <Button variant=\"ghost\" icon press class=\"ml-auto\" aria-label=\"close\" @click=\"emit('close')\"><X :size=\"14\" :stroke-width=\"1.5\" /></Button>\n      </div>\n    </div>\n    <div v-if=\"asked.length\">\n      <p class=\"mb-1 type-meta text-fg-muted\">What your agents ask most</p>\n      <button v-for=\"q in asked\" :key=\"q\" type=\"button\" class=\"ds-askedq\" @click=\"text = text ? `${text}\\n${q}` : q\">{{ q }}</button>\n    </div>\n  </section>\n</template>\n\n<style>\n.ds-askedq { display: block; width: 100%; overflow: hidden; padding: 6px 4px; border-top: var(--ds-border-hairline) solid var(--ds-color-edge); text-align: left; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-askedq:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: -2px; }\n.ds-askedq:active { background: color-mix(in srgb, var(--ds-color-fg) 8%, var(--ds-color-surface-subtle)); }\n@media (hover: hover) and (pointer: fine) { .ds-askedq:hover { background: color-mix(in srgb, var(--ds-color-fg) 5%, var(--ds-color-surface-subtle)); } }\n@media (pointer: coarse), (max-width: 767px) { .ds-askedq { min-height: 40px; } }\n</style>\n"
+    },
+    {
+      "path": "composables/useCopy.ts",
+      "content": "import { ref } from 'vue'\n\n/**\n * A copy button's state: copy(text) writes the clipboard, and copied is true for 1.5s after. Where the Clipboard API is\n * refused (a browser or a frame that denies it), the older copy command still works inside the click. Only if both are\n * refused does it answer false, and the text stays selectable.\n */\nexport function useCopy(ms = 1500) {\n  const copied = ref(false)\n  let timer: ReturnType<typeof setTimeout> | undefined\n  async function copy(text: string): Promise<boolean> {\n    try {\n      await navigator.clipboard.writeText(text)\n    }\n    catch {\n      if (!copyByCommand(text)) return false\n    }\n    copied.value = true\n    clearTimeout(timer)\n    // ds-latency: the Copied label stays 1.5s after the copy, which has already happened.\n    timer = setTimeout(() => { copied.value = false }, ms)\n    return true\n  }\n  return { copied, copy }\n}\n\n// The older way: select the text in an unseen field, run the copy command, hand focus back.\nfunction copyByCommand(text: string) {\n  const back = document.activeElement as HTMLElement | null\n  const field = document.createElement('textarea')\n  field.value = text\n  field.setAttribute('readonly', '')\n  field.style.position = 'fixed'\n  field.style.opacity = '0'\n  document.body.appendChild(field)\n  field.select()\n  let ok = false\n  try { ok = document.execCommand('copy') }\n  catch { ok = false }\n  field.remove()\n  back?.focus()\n  return ok\n}\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "Accuracy in the console",
+      "center": false,
+      "half": false,
+      "path": "examples/accuracy-page/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport AccuracyPanel from '@/components/product/AccuracyPanel.vue'\nimport ConsoleFrame from '@/components/product/ConsoleFrame.vue'\nimport ConsolePage from '@/components/product/ConsolePage.vue'\nimport { ASKED, consoleGroups, useSampleTest } from '@/examples/accuracy-views/sample'\n// Accuracy as it ships: Performance's second view in the console's frame, on the \"Test at work\" view. Run again plays\n// a sample run; Add questions opens in place. Sample data for Acme; wire the events to your own test.\nconst { view, run, add, remove } = useSampleTest()\n</script>\n\n<template>\n  <ConsoleFrame :groups=\"consoleGroups('Performance')\" :crumbs=\"[{ label: 'Overview', href: '#' }, { label: 'Performance' }]\">\n    <ConsolePage title=\"Performance\">\n      <AccuracyPanel :view=\"view\" link=\"https://console.acme.com/performance?view=accuracy\" :asked=\"ASKED\" @run=\"run\" @add=\"add\" @remove=\"remove\" />\n    </ConsolePage>\n  </ConsoleFrame>\n</template>\n",
+      "requires": [
+        "accuracy-views",
+        "button",
+        "overview-page",
+        "tabs"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/product/AccuracyPanel.tsx",
+          "content": "'use client'\nimport { useState } from 'react'\nimport { Check, Link2, Plus, RotateCw } from 'lucide-react'\nimport { AccuracyAdd } from '@/react/components/product/AccuracyAdd'\nimport { AccuracyAtWork } from '@/react/components/product/AccuracyAtWork'\nimport type { AccuracyRow, AccuracyView } from '@/react/components/product/AccuracyDetail'\nimport { AccuracyOpens } from '@/react/components/product/AccuracyOpens'\nimport { AccuracySheet } from '@/react/components/product/AccuracySheet'\nimport { AccuracyTwo } from '@/react/components/product/AccuracyTwo'\nimport { AccuracyVerdict } from '@/react/components/product/AccuracyVerdict'\nimport { Button } from '@/react/components/ui/Button'\nimport { PixelButton } from '@/react/components/ui/PixelButton'\nimport { Tabs } from '@/react/components/ui/Tabs'\nimport { useCopy } from '@/react/hooks/useCopy'\nimport { useControllable } from '@/react/hooks/useControllable'\n\n// Accuracy, Performance's second view (accuracy/Panel.vue): a team's own questions and whether Conare reached the\n// right page. The bar holds Performance's two views and the test's actions: Add questions (opening in place; the\n// question sheet takes them in its first row instead), Copy link, and Run again as the page's one dark button. Under it,\n// one of the four views: 4 \"Test at work\" ships; 1 \"Verdict first\", 2 \"Two searches\" and 3 \"Question sheet\" are the\n// takes beside it. The app owns the test: it answers `onRun`, `onAdd`, `onFix`, `onSearch`, `onRemove` and the tab (`tab` with\n// `onTabChange`, Vue's v-model:tab).\ntype Tab = 'searches' | 'accuracy'\nexport interface AccuracyPanelProps {\n  view: AccuracyView\n  version?: 1 | 2 | 3 | 4\n  link?: string\n  asked?: string[]\n  busy?: boolean\n  tab?: Tab\n  defaultTab?: Tab\n  onTabChange?: (tab: Tab) => void\n  onRun?: () => void\n  onAdd?: (questions: string[]) => void\n  onFix?: (row: AccuracyRow) => void\n  onSearch?: (row: AccuracyRow) => void\n  onRemove?: (row: AccuracyRow) => void\n}\n\nexport function AccuracyPanel({ view, version = 4, link = '', asked = [], busy, tab: tabValue, defaultTab = 'accuracy', onTabChange, onRun, onAdd, onFix, onSearch, onRemove }: AccuracyPanelProps) {\n  const [tab, setTab] = useControllable(tabValue, defaultTab, onTabChange)\n  const [adding, setAdding] = useState(false)\n  const { copied, copy } = useCopy()\n  function more(questions: string[]) {\n    setAdding(false)\n    onAdd?.(questions)\n    onRun?.()\n  }\n  const pass = { onFix, onSearch, onRemove }\n  return (\n    <>\n      <div data-ds=\"accuracy-panel\" className=\"flex flex-wrap items-center justify-between gap-x-4 gap-y-2\">\n        <Tabs value={tab} onValueChange={setTab} options={[{ value: 'searches', label: 'Searches' }, { value: 'accuracy', label: 'Accuracy' }]} label=\"performance\" />\n        <div className=\"flex flex-wrap items-center gap-2\">\n          {version !== 3 && <Button press aria-expanded={adding} onClick={() => setAdding(a => !a)}><Plus size={12} strokeWidth={1.5} aria-hidden=\"true\" />Add questions</Button>}\n          <Button press onClick={() => copy(link)}>\n            {copied ? <Check size={12} strokeWidth={2} aria-hidden=\"true\" /> : <Link2 size={12} strokeWidth={1.5} aria-hidden=\"true\" />}{copied ? 'Link copied' : 'Copy link'}\n          </Button>\n          <PixelButton disabled={view.state === 'running' || busy} onClick={() => onRun?.()}>\n            <RotateCw size={12} strokeWidth={1.5} aria-hidden=\"true\" />{view.state === 'running' ? 'Running' : 'Run again'}\n          </PixelButton>\n        </div>\n      </div>\n      <AccuracyOpens data-ds=\"accuracy-panel\" open={adding && version !== 3}><AccuracyAdd asked={asked} onAdd={more} onClose={() => setAdding(false)} /></AccuracyOpens>\n      {version === 1\n        ? <AccuracyVerdict view={view} {...pass} />\n        : version === 2\n          ? <AccuracyTwo view={view} {...pass} />\n          : version === 3\n            ? <AccuracySheet view={view} {...pass} onAdd={q => onAdd?.(q)} />\n            : <AccuracyAtWork view={view} {...pass} />}\n    </>\n  )\n}\n\nexport default AccuracyPanel\n"
+        },
+        {
+          "path": "react/components/product/AccuracyAdd.tsx",
+          "content": "'use client'\nimport { useRef, useState } from 'react'\nimport { FileUp, X } from 'lucide-react'\nimport { Button } from '@/react/components/ui/Button'\nimport { PixelButton } from '@/react/components/ui/PixelButton'\n\n// More questions, opened in place (accuracy/Add.vue), on the paper in a hairline. Three ways in: paste a list (one a\n// line), upload a CSV (its first column), or take what agents already ask, which needs no typing and is the truest\n// test. Adding runs them, since a question only helps answered: `onAdd` gets the questions, `onClose` the close button.\nexport interface AccuracyAddProps {\n  asked?: string[]\n  onAdd?: (questions: string[]) => void\n  onClose?: () => void\n}\n\nconst count = (n: number) => `${n} ${n === 1 ? 'question' : 'questions'}`\n\nexport function AccuracyAdd({ asked = [], onAdd, onClose }: AccuracyAddProps) {\n  const [text, setText] = useState('')\n  const lines = text.split('\\n').map(l => l.trim()).filter(Boolean)\n  const input = useRef<HTMLInputElement | null>(null)\n  async function file(list: FileList | null) {\n    const f = list?.[0]\n    if (!f) return\n    setText((await f.text()).split('\\n').map(l => l.split(',')[0]!.replace(/^\"|\"$/g, '').trim()).filter(Boolean).join('\\n'))\n  }\n  return (\n    <>\n      <style href=\"ds-accuracy-add\" precedence=\"ds\">{css}</style>\n      <section data-ds=\"accuracy-add\" className=\"grid grid-cols-[minmax(0,1fr)_minmax(0,320px)] gap-6 border border-edge bg-surface-subtle p-4 max-lg:grid-cols-1\" aria-label=\"add questions\">\n        <div className=\"min-w-0 flex-1\">\n          <label className=\"sr-only\" htmlFor=\"eval-more\">questions, one a line</label>\n          <textarea id=\"eval-more\" value={text} onChange={e => setText(e.target.value)} className=\"block w-full resize-y border border-edge-strong bg-surface p-3 text-ui outline-none transition-[border-color] duration-120 ease-standard placeholder:text-fg-muted focus:border-edge-focus max-md:text-input\" rows={5} placeholder=\"One question a line\" />\n          <div className=\"mt-2 flex flex-wrap items-center gap-2\">\n            <PixelButton disabled={!lines.length} onClick={() => onAdd?.(lines)}>{lines.length ? `Add ${count(lines.length)} and run` : 'Add and run'}</PixelButton>\n            <Button press onClick={() => input.current?.click()}><FileUp size={12} strokeWidth={1.5} aria-hidden=\"true\" />Upload a CSV</Button>\n            <input ref={input} type=\"file\" accept=\".csv,.txt\" className=\"sr-only\" tabIndex={-1} aria-label=\"choose a CSV of questions\" onChange={e => void file(e.target.files)} />\n            <Button variant=\"ghost\" icon press className=\"ml-auto\" aria-label=\"close\" onClick={() => onClose?.()}><X size={14} strokeWidth={1.5} /></Button>\n          </div>\n        </div>\n        {asked.length > 0 && (\n          <div>\n            <p className=\"mb-1 type-meta text-fg-muted\">What your agents ask most</p>\n            {asked.map(q => <button key={q} type=\"button\" className=\"ds-askedq\" onClick={() => setText(text ? text + '\\n' + q : q)}>{q}</button>)}\n          </div>\n        )}\n      </section>\n    </>\n  )\n}\n\nexport default AccuracyAdd\n\nconst css = `\n.ds-askedq { display: block; width: 100%; overflow: hidden; padding: 6px 4px; border-top: var(--ds-border-hairline) solid var(--ds-color-edge); text-align: left; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-askedq:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: -2px; }\n.ds-askedq:active { background: color-mix(in srgb, var(--ds-color-fg) 8%, var(--ds-color-surface-subtle)); }\n@media (hover: hover) and (pointer: fine) { .ds-askedq:hover { background: color-mix(in srgb, var(--ds-color-fg) 5%, var(--ds-color-surface-subtle)); } }\n@media (pointer: coarse), (max-width: 767px) { .ds-askedq { min-height: 40px; } }\n`\n"
+        },
+        {
+          "path": "react/hooks/useCopy.ts",
+          "content": "'use client'\nimport { useCallback, useEffect, useRef, useState } from 'react'\n\n/**\n * A copy button's state: copy(text) writes the clipboard, and copied is true for 1.5s after. Where the Clipboard API is\n * refused (a browser or a frame that denies it), the older copy command still works inside the click. Only if both are\n * refused does it answer false, and the text stays selectable.\n */\nexport function useCopy(ms = 1500) {\n  const [copied, setCopied] = useState(false)\n  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)\n  useEffect(() => () => clearTimeout(timer.current), [])\n  const copy = useCallback(async (text: string): Promise<boolean> => {\n    try {\n      await navigator.clipboard.writeText(text)\n    }\n    catch {\n      if (!copyByCommand(text)) return false\n    }\n    setCopied(true)\n    clearTimeout(timer.current)\n    // ds-latency: the Copied label stays 1.5s after the copy, which has already happened.\n    timer.current = setTimeout(() => setCopied(false), ms)\n    return true\n  }, [ms])\n  return { copied, copy }\n}\n\n// The older way: select the text in an unseen field, run the copy command, hand focus back.\nfunction copyByCommand(text: string) {\n  const back = document.activeElement as HTMLElement | null\n  const field = document.createElement('textarea')\n  field.value = text\n  field.setAttribute('readonly', '')\n  field.style.position = 'fixed'\n  field.style.opacity = '0'\n  document.body.appendChild(field)\n  field.select()\n  let ok = false\n  try { ok = document.execCommand('copy') }\n  catch { ok = false }\n  field.remove()\n  back?.focus()\n  return ok\n}\n"
+        },
+        {
+          "path": "react/hooks/useControllable.ts",
+          "content": "'use client'\nimport { useCallback, useRef, useState } from 'react'\n\n// Vue's defineModel in React: a value that is controlled when the caller passes it (value + onValueChange, as Radix\n// does) and kept inside otherwise (defaultValue). setValue calls onChange either way.\nexport function useControllable<T>(value: T | undefined, defaultValue: T, onChange?: (value: T) => void) {\n\tconst [inner, setInner] = useState<T>(defaultValue)\n\tconst controlled = value !== undefined\n\tconst current = controlled ? value : inner\n\tconst ref = useRef(onChange)\n\tref.current = onChange\n\tconst set = useCallback((next: T) => {\n\t\tif (!controlled) setInner(next)\n\t\tref.current?.(next)\n\t}, [controlled])\n\treturn [current, set] as const\n}\n"
+        }
+      ],
+      "dependencies": [
+        "lucide-react@0.479.0"
+      ],
+      "registryDependencies": [
+        "accuracy-views",
+        "button",
+        "tabs"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "AccuracyPanel",
+            "file": "react/components/product/AccuracyPanel.tsx",
+            "props": [
+              {
+                "name": "view",
+                "type": "AccuracyView",
+                "required": true
+              },
+              {
+                "name": "version",
+                "type": "1 | 2 | 3 | 4",
+                "required": false,
+                "default": "4"
+              },
+              {
+                "name": "link",
+                "type": "string",
+                "required": false,
+                "default": "''"
+              },
+              {
+                "name": "asked",
+                "type": "string[]",
+                "required": false,
+                "default": "[]"
+              },
+              {
+                "name": "busy",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "tab",
+                "type": "Tab",
+                "required": false
+              },
+              {
+                "name": "defaultTab",
+                "type": "Tab",
+                "required": false,
+                "default": "'accuracy'"
+              },
+              {
+                "name": "onTabChange",
+                "type": "(tab: Tab) => void",
+                "required": false
+              },
+              {
+                "name": "onRun",
+                "type": "() => void",
+                "required": false
+              },
+              {
+                "name": "onAdd",
+                "type": "(questions: string[]) => void",
+                "required": false
+              },
+              {
+                "name": "onFix",
+                "type": "(row: AccuracyRow) => void",
+                "required": false
+              },
+              {
+                "name": "onSearch",
+                "type": "(row: AccuracyRow) => void",
+                "required": false
+              },
+              {
+                "name": "onRemove",
+                "type": "(row: AccuracyRow) => void",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "AccuracyAdd",
+            "file": "react/components/product/AccuracyAdd.tsx",
+            "props": [
+              {
+                "name": "asked",
+                "type": "string[]",
+                "required": false,
+                "default": "[]"
+              },
+              {
+                "name": "onAdd",
+                "type": "(questions: string[]) => void",
+                "required": false
+              },
+              {
+                "name": "onClose",
+                "type": "() => void",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Accuracy in the console",
+          "center": false,
+          "half": false,
+          "path": "react/examples/accuracy-page/Product.tsx",
+          "content": "'use client'\nimport { useEffect, useRef, useState } from 'react'\nimport { Activity, Atom, CreditCard, Gauge, House, KeyRound, Layers, Network, Settings, SquareTerminal } from 'lucide-react'\nimport { AccuracyPanel } from '@/react/components/product/AccuracyPanel'\nimport type { AccuracyHit, AccuracyRow, AccuracyView } from '@/react/components/product/AccuracyDetail'\nimport { ConsoleFrame, type FrameGroup } from '@/react/components/product/ConsoleFrame'\nimport { ConsolePage } from '@/react/components/product/ConsolePage'\n// Accuracy as it ships: Performance's second view in the console's frame, on the \"Test at work\" view. Run again plays\n// a sample run; Add questions opens in place. Sample data for Acme; wire the events to your own test.\n\n// Sample data for the accuracy examples: Acme's own test, a hundred questions run through Conare and through the search\n// the team uses today. Every name and number is made up.\nconst hit = (id: string, number: number, count: number, text: string, key: string, ok: boolean): AccuracyHit => ({ id, number, count, top: 0.2 + ((number * 7) % 50) / 100, text, key, ok })\n\nconst WRITTEN: AccuracyRow[] = [\n  { id: 'q1', question: 'Does the Acme reseller agreement cap liability?', namespace: 'contracts', conare: hit('acme-reseller-agreement', 14, 31, 'Yes: liability is capped at 12 months of revenue share.', 'capped at 12 months of revenue share', true), current: hit('reseller-terms-2023', 3, 9, 'No monetary cap on liability.', 'No monetary cap', false) },\n  { id: 'q2', question: 'How long is the breach notification window in the data processing addendum?', namespace: 'contracts', conare: hit('dpa-amendment-2', 2, 4, 'Breach notification is reduced to 48 hours from the 72 hours in the original addendum.', '48 hours', true), current: hit('dpa-2024', 4, 12, 'The processor notifies the controller within 72 hours of a personal data breach.', '72 hours', false) },\n  { id: 'q3', question: 'What cash did we hold on 30 June?', namespace: 'sec-filings', conare: hit('10-q-q2-2026-liquidity', 31, 68, 'Cash, cash equivalents and marketable securities were $412.6 million as of June 30.', '$412.6 million', true), current: hit('10-k-2025-liquidity', 44, 142, 'Cash, cash equivalents and marketable securities were $388.1 million as of December 31.', '$388.1 million', false) },\n  { id: 'q4', question: 'What is the notice to end the hosting MSA for convenience?', namespace: 'contracts', conare: hit('msa-hosting-2025', 7, 22, 'Either party may terminate for convenience with 90 days\\' written notice.', '90 days\\' written notice', true), current: hit('nda-mutual-template', 2, 5, 'Obligations survive termination for three years.', 'three years', false) },\n  { id: 'q5', question: 'Which section of the hosting MSA caps fees on renewal?', namespace: 'contracts', conare: hit('msa-hosting-2025', 11, 22, 'On renewal, fees may rise by no more than 5% a year.', 'no more than 5%', true), current: hit('order-form-hosting', 1, 3, 'Fees are set out in the order form.', 'order form', false) },\n  { id: 'q6', question: 'What did the 8-K say about the analytics acquisition price?', namespace: 'sec-filings', conare: hit('8-k-2026-03-acquisition', 2, 9, 'On March 4 Acme completed the acquisition of an analytics company for $96 million in cash and stock.', '$96 million', true), current: hit('board-2026-q2', 3, 8, 'Approved the analytics acquisition at up to $100 million.', 'up to $100 million', false) },\n  { id: 'q7', question: 'What is the refund rule for EU customers?', namespace: 'support', conare: hit('ticket-48211', 1, 2, 'Refunds are available within 30 days of purchase; after that, unused months convert to account credit.', 'within 30 days', false), current: hit('ticket-48211', 1, 2, 'Refunds are available within 30 days of purchase; after that, unused months convert to account credit.', 'within 30 days', false), fix: { why: 'The EU refund policy isn\\'t in support.', action: 'Add documents' } },\n  { id: 'q8', question: 'What did the board approve about the Lisbon office in Q3?', namespace: 'board-minutes', conare: hit('board-2026-q2', 3, 8, 'Q2 board meeting: approved the analytics acquisition at up to $100 million.', 'Q2 board meeting', false), current: hit('board-2026-q2', 3, 8, 'Q2 board meeting: approved the analytics acquisition at up to $100 million.', 'Q2 board meeting', false), fix: { why: 'The Q3 minutes aren\\'t in board-minutes yet.', action: 'Add documents' } },\n  { id: 'q9', question: 'Who owns the CRM record for the finance team expansion?', namespace: 'crm', conare: hit('deal-renewal-300-seats', 1, 1, 'Renewal: 300 seats, $412k ARR. Champion: the finance lead.', 'the finance lead', false), current: hit('deal-finance-expansion', 1, 1, 'Expansion: 120 more seats for the finance team. Owner: account team west.', 'Owner: account team west', true), fix: { why: 'The CRM stopped syncing, so crm is two days behind.', action: 'Reconnect the CRM' } },\n  { id: 'q10', question: 'Which clause sets the sub-processor notice in the addendum?', namespace: 'contracts', conare: hit('dpa-2024', 6, 12, 'Sub-processors require 30 days\\' notice and a right to object.', '30 days\\' notice', true), current: hit('dpa-2024', 6, 12, 'Sub-processors require 30 days\\' notice and a right to object.', '30 days\\' notice', true) },\n  { id: 'q11', question: 'What is the renewal option on the San Francisco lease?', namespace: 'contracts', conare: hit('lease-amendment-sf', 2, 6, 'The renewal option extends the term by 36 months at 95% of fair market rent.', '36 months at 95%', true), current: hit('lease-amendment-sf', 2, 6, 'The renewal option extends the term by 36 months at 95% of fair market rent.', '36 months at 95%', true) },\n  { id: 'q12', question: 'How long do NDA obligations last after termination?', namespace: 'contracts', conare: hit('nda-mutual-template', 2, 5, 'Obligations survive termination for three years.', 'three years', true), current: hit('nda-mutual-template', 2, 5, 'Obligations survive termination for three years.', 'three years', true) },\n  { id: 'q13', question: 'Which customers are named as a revenue risk in the 10-K?', namespace: 'sec-filings', conare: hit('10-k-2025-item-1a', 19, 142, 'Our revenue depends on a limited number of enterprise customers.', 'limited number of enterprise customers', true), current: hit('10-k-2025-item-1a', 19, 142, 'Our revenue depends on a limited number of enterprise customers.', 'limited number of enterprise customers', true) },\n  { id: 'q14', question: 'When do renewal conversations start?', namespace: 'wiki', conare: hit('playbook-renewals', 1, 3, 'Start the renewal conversation 120 days before the contract end date.', '120 days', true), current: hit('playbook-renewals', 1, 3, 'Start the renewal conversation 120 days before the contract end date.', '120 days', true) },\n  { id: 'q15', question: 'How long are support tickets kept?', namespace: 'wiki', conare: hit('handbook-retention', 4, 11, 'Support tickets are kept for 3 years, then deleted.', '3 years', true), current: hit('handbook-retention', 4, 11, 'Support tickets are kept for 3 years, then deleted.', '3 years', true) },\n  { id: 'q16', question: 'What is the rate limit on the public search endpoint?', namespace: 'engineering', conare: hit('acme-api-2214', 1, 2, '600 requests per minute per key; 429 with a Retry-After header beyond it.', '600 requests per minute', true), current: hit('acme-api-2214', 1, 2, '600 requests per minute per key; 429 with a Retry-After header beyond it.', '600 requests per minute', true) },\n]\n\n// The rest of the hundred: the same questions over more of Acme's vendor contracts.\nconst VENDORS = ['cloud hosting', 'payroll', 'analytics', 'security audit', 'office lease', 'logistics', 'translation', 'catering', 'legal research', 'design', 'data labeling', 'travel', 'insurance', 'recruiting', 'printing', 'telephony', 'facilities', 'events', 'training', 'backup']\nconst ASKS: Array<[string, string, string]> = [\n  ['What is the notice period in the {v} MSA?', 'Either party may end this agreement on 60 days\\' written notice.', '60 days\\' written notice'],\n  ['Does the {v} agreement cap liability?', 'Total liability is capped at the fees paid in the previous 12 months.', 'capped at the fees paid'],\n  ['Which law governs the {v} contract?', 'This agreement is governed by the laws of the State of New York.', 'laws of the State of New York'],\n  ['When does the {v} contract renew?', 'The term renews for one year unless either party gives 90 days\\' notice.', 'renews for one year'],\n]\nconst ONLY_CONARE = new Set([3, 11, 17, 22, 29, 34, 41, 47, 52, 58, 63, 69, 74, 80])\nconst generated: AccuracyRow[] = Array.from({ length: 100 - WRITTEN.length }, (_, i) => {\n  const v = VENDORS[i % VENDORS.length]!\n  const [q, text, key] = ASKS[i % ASKS.length]!\n  const id = `msa-${v.replace(/ /g, '-')}-2024`\n  const page = 3 + ((i * 5) % 19)\n  const other = `msa-${VENDORS[(i + 3) % VENDORS.length]!.replace(/ /g, '-')}-2024`\n  return { id: \"g\" + i, question: q.replace('{v}', v), namespace: 'contracts', conare: hit(id, page, 24, text, key, true), current: ONLY_CONARE.has(i) ? hit(other, page, 24, text, key, false) : hit(id, page, 24, text, key, true) }\n})\n\nconst ACCURACY_ROWS: AccuracyRow[] = [...WRITTEN, ...generated]\n\n/** A finished run over `rows`, as the page reads it. */\nfunction accuracyView(rows: AccuracyRow[] = ACCURACY_ROWS): AccuracyView {\n  return {\n    state: 'done',\n    ran: '3 hours ago',\n    by: 'admin@acme.com',\n    seconds: 12.4,\n    cost: Math.round(rows.length * 0.003 * 100) / 100,\n    questions: rows.length,\n    done: rows.length,\n    right: rows.filter(r => r.conare.ok).length,\n    current_right: rows.filter(r => r.current.ok).length,\n    current_name: 'Your current search',\n    rows,\n    queued: [],\n  }\n}\n\n/** What Acme's agents ask most, offered when adding questions. */\nconst ASKED = ['What is the refund rule for annual plans?', 'When does the hosting MSA notice window open?', 'What did the finance team ask for on the September call?', 'Which vendors need a signed DPA?', 'What is the support SLA in Lisbon?']\n\n/** The console's sidebar with one page current, for page compositions. */\nfunction consoleGroups(current: string): FrameGroup[] {\n  const at = (label: string, icon: FrameGroup['links'][number]['icon'], extra: Partial<FrameGroup['links'][number]> = {}) => ({ label, icon, active: label === current, ...extra })\n  return [\n    { label: 'Platform', links: [at('Overview', House), at('Namespaces', Layers, { status: '11' }), at('Sources', Network, { status: '1 failed', alert: true }), at('Agents', SquareTerminal), at('Custom models', Atom)] },\n    { label: 'Manage', links: [at('API keys', KeyRound, { status: '4' }), at('Performance', Gauge), at('Usage', Activity), at('Billing', CreditCard), at('Settings', Settings)] },\n  ]\n}\n\n/** The test as an app would hold it: removing a question, adding some (answered on the next run) and running again. */\nfunction useSampleTest() {\n  const [rows, setRows] = useState<AccuracyRow[]>(() => [...ACCURACY_ROWS])\n  const [running, setRunning] = useState(false)\n  const view: AccuracyView = { ...accuracyView(rows), state: running ? 'running' : 'done', ran: running ? 'now' : '3 hours ago' }\n  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)\n  function run() {\n    setRunning(true)\n    clearTimeout(timer.current)\n    // ds-latency: a sample run's length, standing in for the real one.\n    timer.current = setTimeout(() => setRunning(false), 1200)\n  }\n  function add(questions: string[]) {\n    setRows(rs => [...questions.map((q, i) => ({ id: \"own\" + Date.now() + i, question: q, namespace: 'contracts', conare: hit('msa-hosting-2025', 7, 22, 'Either party may terminate for convenience with 90 days\\' written notice.', '90 days\\' written notice', true), current: hit('nda-mutual-template', 2, 5, 'Obligations survive termination for three years.', 'three years', i % 2 === 0) })), ...rs])\n  }\n  function remove(row: AccuracyRow) { setRows(rs => rs.filter(r => r.id !== row.id)) }\n  useEffect(() => () => clearTimeout(timer.current), [])\n  return { view, run, add, remove }\n}\n\nexport default function Product() {\n  const { view, run, add, remove } = useSampleTest()\n  return (\n    <ConsoleFrame groups={consoleGroups('Performance')} crumbs={[{ label: 'Overview', href: '#' }, { label: 'Performance' }]}>\n      <ConsolePage title=\"Performance\">\n        <AccuracyPanel view={view} link=\"https://console.acme.com/performance?view=accuracy\" asked={ASKED} onRun={run} onAdd={add} onRemove={remove} />\n      </ConsolePage>\n    </ConsoleFrame>\n  )\n}\n",
+          "registryDependencies": [
+            "accuracy-views",
+            "button",
+            "overview-page",
+            "tabs"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/product/accuracy-panel.ts",
+          "content": "import { html, type PropertyValues } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport { CopyController } from '@/elements/controllers/copy'\nimport { Check, Link2, Plus, RotateCw } from 'lucide'\nimport type { AccuracyView } from '@/elements/components/product/accuracy-detail'\nimport '@/elements/components/product/accuracy-add'\nimport '@/elements/components/product/accuracy-at-work'\nimport '@/elements/components/product/accuracy-opens'\nimport '@/elements/components/product/accuracy-sheet'\nimport '@/elements/components/product/accuracy-two'\nimport '@/elements/components/product/accuracy-verdict'\nimport '@/elements/components/ui/button'\nimport '@/elements/components/ui/pixel-button'\nimport '@/elements/components/ui/tabs'\nimport styles from 'virtual:tw'\n\n// AccuracyPanel.vue as <conare-accuracy-panel>: Accuracy, Performance's second view (accuracy/Panel.vue): a team's own questions and whether Conare reached the\n// right page. The bar holds Performance's two views and the test's actions: Add questions (opening in place; the\n// question sheet takes them in its first row instead), Copy link, and Run again as the page's one dark button. Under it,\n// one of the four views: 4 \"Test at work\" ships; 1 \"Verdict first\", 2 \"Two searches\" and 3 \"Question sheet\" are the\n// takes beside it. The app owns the test: it listens for `run`, `add` ({{ questions }}), `fix`, `search`, `remove` ({{ row }}) and\n// the tab (`tab` with `tab-change`, Vue's v-model:tab). The views' and the add form's events pass on out of it.\n\n/**\n * @summary Accuracy, Performance's second view: the bar with the test's actions over one of four views.\n * @fires run - Run again was pressed (and after questions were added).\n * @fires tab-change - The tab changed (read `tab`).\n */\nexport class AccuracyPanel extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { view: { type: Object }, version: { type: Number }, link: {}, asked: { type: Array }, busy: { type: Boolean }, tab: { reflect: true }, adding: { state: true } }\n\n\tview?: AccuracyView\n\t/** 4 test at work (ships), 1 verdict first, 2 two searches, 3 question sheet. */\n\tversion: 1 | 2 | 3 | 4 = 4\n\t/** The page's link, for Copy link. */\n\tlink = ''\n\t/** What agents ask most, offered when adding questions. */\n\tasked: string[] = []\n\tbusy = false\n\ttab: 'searches' | 'accuracy' = 'accuracy'\n\tprivate adding = false\n\tprivate copy = new CopyController(this)\n\n\t// The add form's `add` passes on out; then the run.\n\tprivate more = () => {\n\t\tthis.adding = false\n\t\tthis.emit('run')\n\t}\n\n\trender() {\n\t\tconst view = this.view\n\t\tif (!view) return html``\n\t\tconst b = tag('button')\n\t\tconst v = this.version\n\t\tconst views = v === 1 ? staticHtml`<${tag('accuracy-verdict')} .view=${view}></${tag('accuracy-verdict')}>`\n\t\t\t: v === 2 ? staticHtml`<${tag('accuracy-two')} .view=${view}></${tag('accuracy-two')}>`\n\t\t\t\t: v === 3 ? staticHtml`<${tag('accuracy-sheet')} .view=${view}></${tag('accuracy-sheet')}>`\n\t\t\t\t\t: staticHtml`<${tag('accuracy-at-work')} .view=${view}></${tag('accuracy-at-work')}>`\n\t\treturn html`<div data-ds=\"accuracy-panel\" class=\"flex flex-wrap items-center justify-between gap-x-4 gap-y-2\">${staticHtml`<${tag('tabs')} .value=${this.tab} .options=${[{ value: 'searches', label: 'Searches' }, { value: 'accuracy', label: 'Accuracy' }]} label=\"performance\" @change=${(e: Event) => { this.tab = (e.currentTarget as HTMLElement & { value: 'searches' | 'accuracy' }).value; this.emit('tab-change', { value: this.tab }) }}></${tag('tabs')}>`}<div class=\"flex flex-wrap items-center gap-2\">${v !== 3 ? staticHtml`<${b} press aria-expanded=${String(this.adding)} @click=${() => { this.adding = !this.adding }}>${icon(Plus, 'plus', { size: 12, strokeWidth: 1.5, attrs: { 'aria-hidden': 'true' } })}Add questions</${b}>` : ''}${staticHtml`<${b} press @click=${() => void this.copy.copy(this.link)}>${this.copy.copied ? icon(Check, 'check', { size: 12, strokeWidth: 2, attrs: { 'aria-hidden': 'true' } }) : icon(Link2, 'link-2', { size: 12, strokeWidth: 1.5, attrs: { 'aria-hidden': 'true' } })}${this.copy.copied ? 'Link copied' : 'Copy link'}</${b}><${tag('pixel-button')} ?disabled=${view.state === 'running' || this.busy} @click=${() => this.emit('run')}>${icon(RotateCw, 'rotate-cw', { size: 12, strokeWidth: 1.5, attrs: { 'aria-hidden': 'true' } })}${view.state === 'running' ? 'Running' : 'Run again'}</${tag('pixel-button')}>`}</div></div>${staticHtml`<${tag('accuracy-opens')} .rootName=${'accuracy-panel'} ?open=${this.adding && v !== 3}><${tag('accuracy-add')} .asked=${this.asked} @add=${this.more} @close=${() => { this.adding = false }}></${tag('accuracy-add')}></${tag('accuracy-opens')}>`}${views}`\n\t}\n}\n\ndefine('accuracy-panel', AccuracyPanel)\n"
+        },
+        {
+          "path": "elements/components/product/accuracy-add.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport { FileUp, X } from 'lucide'\nimport '@/elements/components/ui/button'\nimport '@/elements/components/ui/pixel-button'\nimport styles from 'virtual:tw'\n\n// AccuracyAdd.vue as <conare-accuracy-add>: More questions, opened in place (accuracy/Add.vue), on the paper in a hairline. Three ways in: paste a list (one a\n// line), upload a CSV (its first column), or take what agents already ask, which needs no typing and is the truest\n// test. Adding runs them, since a question only helps answered: `add` carries the questions ({{ questions }}), `close` the close button.\nconst count = (n: number) => `${n} ${n === 1 ? 'question' : 'questions'}`\n\n/**\n * @summary More questions, opened in place: paste, upload a CSV, or take what agents ask.\n * @fires add - Add and run was pressed ({ questions }).\n * @fires close - The close button was pressed.\n */\nexport class AccuracyAdd extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { asked: { type: Array }, text: { state: true } }\n\n\t/** What agents already ask, offered to take. */\n\tasked: string[] = []\n\tprivate text = ''\n\n\tprivate async file(list: FileList | null) {\n\t\tconst f = list?.[0]\n\t\tif (!f) return\n\t\tthis.text = (await f.text()).split('\\n').map((l) => l.split(',')[0]!.replace(/^\"|\"$/g, '').trim()).filter(Boolean).join('\\n')\n\t}\n\n\trender() {\n\t\tconst lines = this.text.split('\\n').map((l) => l.trim()).filter(Boolean)\n\t\tconst b = tag('button')\n\t\treturn html`<section data-ds=\"accuracy-add\" class=\"grid grid-cols-[minmax(0,1fr)_minmax(0,320px)] gap-6 border border-edge bg-surface-subtle p-4 max-lg:grid-cols-1\" aria-label=\"add questions\"><div class=\"min-w-0 flex-1\"><label class=\"sr-only\" for=\"eval-more\">questions, one a line</label><textarea id=\"eval-more\" .value=${this.text} @input=${(e: Event) => { this.text = (e.target as HTMLTextAreaElement).value }} class=\"block w-full resize-y border border-edge-strong bg-surface p-3 text-ui outline-none transition-[border-color] duration-120 ease-standard placeholder:text-fg-muted focus:border-edge-focus max-md:text-input\" rows=\"5\" placeholder=\"One question a line\"></textarea><div class=\"mt-2 flex flex-wrap items-center gap-2\">${staticHtml`<${tag('pixel-button')} ?disabled=${!lines.length} @click=${() => this.emit('add', { questions: lines })}>${lines.length ? `Add ${count(lines.length)} and run` : 'Add and run'}</${tag('pixel-button')}><${b} press @click=${() => this.renderRoot.querySelector<HTMLInputElement>('input[type=file]')?.click()}>${icon(FileUp, 'file-up', { size: 12, strokeWidth: 1.5, attrs: { 'aria-hidden': 'true' } })}Upload a CSV</${b}>`}<input type=\"file\" accept=\".csv,.txt\" class=\"sr-only\" tabindex=\"-1\" aria-label=\"choose a CSV of questions\" @change=${(e: Event) => void this.file((e.target as HTMLInputElement).files)}><span class=\"ml-auto inline-flex\">${staticHtml`<${b} variant=\"ghost\" icon press aria-label=\"close\" @click=${() => this.emit('close')}>${icon(X, 'x', { size: 14, strokeWidth: 1.5 })}</${b}>`}</span></div></div>${this.asked.length ? html`<div><p class=\"mb-1 type-meta text-fg-muted\">What your agents ask most</p>${this.asked.map((q) => html`<button type=\"button\" class=\"ds-askedq\" @click=${() => { this.text = this.text ? this.text + '\\n' + q : q }}>${q}</button>`)}</div>` : nothing}</section>`\n\t}\n}\n\ndefine('accuracy-add', AccuracyAdd)\n"
+        },
+        {
+          "path": "elements/components/product/accuracy-add.css",
+          "content": "/* AccuracyAdd.vue's <style>, as it is. */\n.ds-askedq { display: block; width: 100%; overflow: hidden; padding: 6px 4px; border-top: var(--ds-border-hairline) solid var(--ds-color-edge); text-align: left; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-askedq:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: -2px; }\n.ds-askedq:active { background: color-mix(in srgb, var(--ds-color-fg) 8%, var(--ds-color-surface-subtle)); }\n@media (hover: hover) and (pointer: fine) { .ds-askedq:hover { background: color-mix(in srgb, var(--ds-color-fg) 5%, var(--ds-color-surface-subtle)); } }\n@media (pointer: coarse), (max-width: 767px) { .ds-askedq { min-height: 40px; } }\n"
+        },
+        {
+          "path": "elements/controllers/copy.ts",
+          "content": "import type { ReactiveController, ReactiveControllerHost } from 'lit'\n\n/**\n * useCopy as a Lit controller: copy(text) writes the clipboard, and `copied` is true for 1.5s after. Where the Clipboard\n * API is refused, the older copy command still works inside the click. Only if both are refused does it answer false.\n */\nexport class CopyController implements ReactiveController {\n\tcopied = false\n\tprivate timer?: ReturnType<typeof setTimeout>\n\tconstructor(private host: ReactiveControllerHost, private ms = 1500) {\n\t\thost.addController(this)\n\t}\n\thostDisconnected() {\n\t\tclearTimeout(this.timer)\n\t}\n\tasync copy(text: string): Promise<boolean> {\n\t\ttry {\n\t\t\tawait navigator.clipboard.writeText(text)\n\t\t} catch {\n\t\t\tif (!copyByCommand(text)) return false\n\t\t}\n\t\tthis.copied = true\n\t\tthis.host.requestUpdate()\n\t\tclearTimeout(this.timer)\n\t\t// ds-latency: the Copied label stays 1.5s after the copy, which has already happened.\n\t\tthis.timer = setTimeout(() => {\n\t\t\tthis.copied = false\n\t\t\tthis.host.requestUpdate()\n\t\t}, this.ms)\n\t\treturn true\n\t}\n}\n\n/** copy(text) without an element, for example scripts: the clipboard, or the copy command where it is refused. */\nexport async function copyText(text: string) {\n\ttry {\n\t\tawait navigator.clipboard.writeText(text)\n\t\treturn true\n\t} catch {\n\t\treturn copyByCommand(text)\n\t}\n}\n\nfunction copyByCommand(text: string) {\n\t// The focused element inside shadow roots, not the host, so focus goes back to the button that copied.\n\tlet back = document.activeElement as HTMLElement | null\n\twhile (back?.shadowRoot?.activeElement) back = back.shadowRoot.activeElement as HTMLElement\n\tconst field = document.createElement('textarea')\n\tfield.value = text\n\tfield.setAttribute('readonly', '')\n\tfield.style.position = 'fixed'\n\tfield.style.opacity = '0'\n\tdocument.body.appendChild(field)\n\tfield.select()\n\tlet ok = false\n\ttry {\n\t\tok = document.execCommand('copy')\n\t} catch {\n\t\tok = false\n\t}\n\tfield.remove()\n\tback?.focus()\n\treturn ok\n}\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/accuracy-panel.js",
+        "elements/accuracy-add.js",
+        "elements/accuracy-detail.js",
+        "elements/accuracy-at-work.js",
+        "elements/accuracy-opens.js",
+        "elements/accuracy-sheet.js",
+        "elements/accuracy-two.js",
+        "elements/accuracy-verdict.js",
+        "elements/button.js",
+        "elements/pixel-button.js",
+        "elements/tabs.js",
+        "elements/accuracy-thumb.js",
+        "elements/dot-matrix.js",
+        "elements/count.js",
+        "elements/cell-burst.js",
+        "elements/grain.js",
+        "elements/table.js",
+        "elements/console-frame.js",
+        "elements/sidebar-label.js",
+        "elements/sidebar-link.js",
+        "elements/console-page.js"
+      ],
+      "tag": "conare-accuracy-panel",
+      "tags": [
+        "conare-accuracy-panel",
+        "conare-accuracy-add"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "accuracy-views",
+        "button",
+        "cell-burst",
+        "count",
+        "loader",
+        "table",
+        "tabs"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-accuracy-panel",
+            "name": "AccuracyPanel",
+            "module": "elements/accuracy-panel.js",
+            "description": "Accuracy, Performance's second view: the bar with the test's actions over one of four views.",
+            "attributes": [
+              {
+                "name": "view",
+                "field": "view",
+                "type": "AccuracyView | undefined"
+              },
+              {
+                "name": "version",
+                "field": "version",
+                "type": "1 | 2 | 3 | 4",
+                "default": "4",
+                "description": "4 test at work (ships), 1 verdict first, 2 two searches, 3 question sheet."
+              },
+              {
+                "name": "link",
+                "field": "link",
+                "type": "string",
+                "default": "''",
+                "description": "The page's link, for Copy link."
+              },
+              {
+                "name": "asked",
+                "field": "asked",
+                "type": "string[]",
+                "default": "[]",
+                "description": "What agents ask most, offered when adding questions."
+              },
+              {
+                "name": "busy",
+                "field": "busy",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "tab",
+                "field": "tab",
+                "type": "\"searches\" | \"accuracy\"",
+                "default": "'accuracy'"
+              },
+              {
+                "name": "adding",
+                "field": "adding",
+                "type": "boolean",
+                "default": "false"
+              }
+            ],
+            "properties": [
+              {
+                "name": "view",
+                "type": "AccuracyView | undefined",
+                "attribute": "view"
+              },
+              {
+                "name": "version",
+                "type": "1 | 2 | 3 | 4",
+                "default": "4",
+                "description": "4 test at work (ships), 1 verdict first, 2 two searches, 3 question sheet.",
+                "attribute": "version"
+              },
+              {
+                "name": "link",
+                "type": "string",
+                "default": "''",
+                "description": "The page's link, for Copy link.",
+                "attribute": "link"
+              },
+              {
+                "name": "asked",
+                "type": "string[]",
+                "default": "[]",
+                "description": "What agents ask most, offered when adding questions.",
+                "attribute": "asked"
+              },
+              {
+                "name": "busy",
+                "type": "boolean",
+                "default": "false",
+                "attribute": "busy"
+              },
+              {
+                "name": "tab",
+                "type": "\"searches\" | \"accuracy\"",
+                "default": "'accuracy'",
+                "attribute": "tab"
+              }
+            ],
+            "events": [
+              {
+                "name": "run",
+                "description": "Run again was pressed (and after questions were added)."
+              },
+              {
+                "name": "tab-change",
+                "description": "The tab changed (read `tab`)."
+              }
+            ],
+            "slots": [],
+            "methods": []
+          },
+          {
+            "tag": "conare-accuracy-add",
+            "name": "AccuracyAdd",
+            "module": "elements/accuracy-add.js",
+            "description": "More questions, opened in place: paste, upload a CSV, or take what agents ask.",
+            "attributes": [
+              {
+                "name": "asked",
+                "field": "asked",
+                "type": "string[]",
+                "default": "[]",
+                "description": "What agents already ask, offered to take."
+              },
+              {
+                "name": "text",
+                "field": "text",
+                "type": "string",
+                "default": "''"
+              }
+            ],
+            "properties": [
+              {
+                "name": "asked",
+                "type": "string[]",
+                "default": "[]",
+                "description": "What agents already ask, offered to take.",
+                "attribute": "asked"
+              }
+            ],
+            "events": [
+              {
+                "name": "add",
+                "description": "Add and run was pressed ({ questions })."
+              },
+              {
+                "name": "close",
+                "description": "The close button was pressed."
+              }
+            ],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Accuracy in the console",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/accuracy-page/Product.html",
+          "content": "<!-- Accuracy as it ships: Performance's second view in the console's frame, on the \"Test at work\" view. Run again\n     plays a sample run; Add questions opens in place. Sample data for Acme; listen for the events to wire your own test. -->\n<conare-console-frame crumbs='[{ \"label\": \"Overview\", \"href\": \"#\" }, { \"label\": \"Performance\" }]'>\n  <conare-sidebar-label slot=\"nav\">Platform</conare-sidebar-label>\n  <conare-sidebar-link slot=\"nav\" href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-house\" aria-hidden=\"true\" slot=\"icon\"><path d=\"M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8\"></path><path d=\"M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z\"></path></svg>Overview</conare-sidebar-link>\n  <conare-sidebar-link slot=\"nav\" href=\"#\" status=\"11\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-layers\" aria-hidden=\"true\" slot=\"icon\"><path d=\"M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z\"></path><path d=\"M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12\"></path><path d=\"M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17\"></path></svg>Namespaces</conare-sidebar-link>\n  <conare-sidebar-link slot=\"nav\" href=\"#\" status=\"1 failed\" alert><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-network\" aria-hidden=\"true\" slot=\"icon\"><rect x=\"16\" y=\"16\" width=\"6\" height=\"6\" rx=\"1\"></rect><rect x=\"2\" y=\"16\" width=\"6\" height=\"6\" rx=\"1\"></rect><rect x=\"9\" y=\"2\" width=\"6\" height=\"6\" rx=\"1\"></rect><path d=\"M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3\"></path><path d=\"M12 12V8\"></path></svg>Sources</conare-sidebar-link>\n  <conare-sidebar-link slot=\"nav\" href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-square-terminal\" aria-hidden=\"true\" slot=\"icon\"><path d=\"m7 11 2-2-2-2\"></path><path d=\"M11 13h4\"></path><rect width=\"18\" height=\"18\" x=\"3\" y=\"3\" rx=\"2\" ry=\"2\"></rect></svg>Agents</conare-sidebar-link>\n  <conare-sidebar-link slot=\"nav\" href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-atom\" aria-hidden=\"true\" slot=\"icon\"><circle cx=\"12\" cy=\"12\" r=\"1\"></circle><path d=\"M20.2 20.2c2.04-2.03.02-7.36-4.5-11.9-4.54-4.52-9.87-6.54-11.9-4.5-2.04 2.03-.02 7.36 4.5 11.9 4.54 4.52 9.87 6.54 11.9 4.5Z\"></path><path d=\"M15.7 15.7c4.52-4.54 6.54-9.87 4.5-11.9-2.03-2.04-7.36-.02-11.9 4.5-4.52 4.54-6.54 9.87-4.5 11.9 2.03 2.04 7.36.02 11.9-4.5Z\"></path></svg>Custom models</conare-sidebar-link>\n  <conare-sidebar-label slot=\"nav\">Manage</conare-sidebar-label>\n  <conare-sidebar-link slot=\"nav\" href=\"#\" status=\"4\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-key-round\" aria-hidden=\"true\" slot=\"icon\"><path d=\"M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z\"></path><circle cx=\"16.5\" cy=\"7.5\" r=\".5\" fill=\"currentColor\"></circle></svg>API keys</conare-sidebar-link>\n  <conare-sidebar-link slot=\"nav\" href=\"#\" active><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-gauge\" aria-hidden=\"true\" slot=\"icon\"><path d=\"m12 14 4-4\"></path><path d=\"M3.34 19a10 10 0 1 1 17.32 0\"></path></svg>Performance</conare-sidebar-link>\n  <conare-sidebar-link slot=\"nav\" href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-activity\" aria-hidden=\"true\" slot=\"icon\"><path d=\"M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2\"></path></svg>Usage</conare-sidebar-link>\n  <conare-sidebar-link slot=\"nav\" href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-credit-card\" aria-hidden=\"true\" slot=\"icon\"><rect width=\"20\" height=\"14\" x=\"2\" y=\"5\" rx=\"2\"></rect><line x1=\"2\" x2=\"22\" y1=\"10\" y2=\"10\"></line></svg>Billing</conare-sidebar-link>\n  <conare-sidebar-link slot=\"nav\" href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-settings\" aria-hidden=\"true\" slot=\"icon\"><path d=\"M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z\"></path><circle cx=\"12\" cy=\"12\" r=\"3\"></circle></svg>Settings</conare-sidebar-link>\n  <conare-console-page heading=\"Performance\">\n    <conare-accuracy-panel id=\"accuracy\" link=\"https://console.acme.com/performance?view=accuracy\"\n      asked='[\"What is the refund rule for annual plans?\", \"When does the hosting MSA notice window open?\", \"What did the finance team ask for on the September call?\", \"Which vendors need a signed DPA?\", \"What is the support SLA in Lisbon?\"]'></conare-accuracy-panel>\n  </conare-console-page>\n</conare-console-frame>\n<script type=\"module\">\n  // Sample data: Acme's own test, a hundred questions run through Conare and through the search the team uses today.\n  // Every name and number is made up.\n  const hit = (id, number, count, text, key, ok) => ({ id, number, count, top: 0.2 + number * 7 % 50 / 100, text, key, ok });\n  const WRITTEN = [\n    { id: \"q1\", question: \"Does the Acme reseller agreement cap liability?\", namespace: \"contracts\", conare: hit(\"acme-reseller-agreement\", 14, 31, \"Yes: liability is capped at 12 months of revenue share.\", \"capped at 12 months of revenue share\", true), current: hit(\"reseller-terms-2023\", 3, 9, \"No monetary cap on liability.\", \"No monetary cap\", false) },\n    { id: \"q2\", question: \"How long is the breach notification window in the data processing addendum?\", namespace: \"contracts\", conare: hit(\"dpa-amendment-2\", 2, 4, \"Breach notification is reduced to 48 hours from the 72 hours in the original addendum.\", \"48 hours\", true), current: hit(\"dpa-2024\", 4, 12, \"The processor notifies the controller within 72 hours of a personal data breach.\", \"72 hours\", false) },\n    { id: \"q3\", question: \"What cash did we hold on 30 June?\", namespace: \"sec-filings\", conare: hit(\"10-q-q2-2026-liquidity\", 31, 68, \"Cash, cash equivalents and marketable securities were $412.6 million as of June 30.\", \"$412.6 million\", true), current: hit(\"10-k-2025-liquidity\", 44, 142, \"Cash, cash equivalents and marketable securities were $388.1 million as of December 31.\", \"$388.1 million\", false) },\n    { id: \"q4\", question: \"What is the notice to end the hosting MSA for convenience?\", namespace: \"contracts\", conare: hit(\"msa-hosting-2025\", 7, 22, \"Either party may terminate for convenience with 90 days' written notice.\", \"90 days' written notice\", true), current: hit(\"nda-mutual-template\", 2, 5, \"Obligations survive termination for three years.\", \"three years\", false) },\n    { id: \"q5\", question: \"Which section of the hosting MSA caps fees on renewal?\", namespace: \"contracts\", conare: hit(\"msa-hosting-2025\", 11, 22, \"On renewal, fees may rise by no more than 5% a year.\", \"no more than 5%\", true), current: hit(\"order-form-hosting\", 1, 3, \"Fees are set out in the order form.\", \"order form\", false) },\n    { id: \"q6\", question: \"What did the 8-K say about the analytics acquisition price?\", namespace: \"sec-filings\", conare: hit(\"8-k-2026-03-acquisition\", 2, 9, \"On March 4 Acme completed the acquisition of an analytics company for $96 million in cash and stock.\", \"$96 million\", true), current: hit(\"board-2026-q2\", 3, 8, \"Approved the analytics acquisition at up to $100 million.\", \"up to $100 million\", false) },\n    { id: \"q7\", question: \"What is the refund rule for EU customers?\", namespace: \"support\", conare: hit(\"ticket-48211\", 1, 2, \"Refunds are available within 30 days of purchase; after that, unused months convert to account credit.\", \"within 30 days\", false), current: hit(\"ticket-48211\", 1, 2, \"Refunds are available within 30 days of purchase; after that, unused months convert to account credit.\", \"within 30 days\", false), fix: { why: \"The EU refund policy isn't in support.\", action: \"Add documents\" } },\n    { id: \"q8\", question: \"What did the board approve about the Lisbon office in Q3?\", namespace: \"board-minutes\", conare: hit(\"board-2026-q2\", 3, 8, \"Q2 board meeting: approved the analytics acquisition at up to $100 million.\", \"Q2 board meeting\", false), current: hit(\"board-2026-q2\", 3, 8, \"Q2 board meeting: approved the analytics acquisition at up to $100 million.\", \"Q2 board meeting\", false), fix: { why: \"The Q3 minutes aren't in board-minutes yet.\", action: \"Add documents\" } },\n    { id: \"q9\", question: \"Who owns the CRM record for the finance team expansion?\", namespace: \"crm\", conare: hit(\"deal-renewal-300-seats\", 1, 1, \"Renewal: 300 seats, $412k ARR. Champion: the finance lead.\", \"the finance lead\", false), current: hit(\"deal-finance-expansion\", 1, 1, \"Expansion: 120 more seats for the finance team. Owner: account team west.\", \"Owner: account team west\", true), fix: { why: \"The CRM stopped syncing, so crm is two days behind.\", action: \"Reconnect the CRM\" } },\n    { id: \"q10\", question: \"Which clause sets the sub-processor notice in the addendum?\", namespace: \"contracts\", conare: hit(\"dpa-2024\", 6, 12, \"Sub-processors require 30 days' notice and a right to object.\", \"30 days' notice\", true), current: hit(\"dpa-2024\", 6, 12, \"Sub-processors require 30 days' notice and a right to object.\", \"30 days' notice\", true) },\n    { id: \"q11\", question: \"What is the renewal option on the San Francisco lease?\", namespace: \"contracts\", conare: hit(\"lease-amendment-sf\", 2, 6, \"The renewal option extends the term by 36 months at 95% of fair market rent.\", \"36 months at 95%\", true), current: hit(\"lease-amendment-sf\", 2, 6, \"The renewal option extends the term by 36 months at 95% of fair market rent.\", \"36 months at 95%\", true) },\n    { id: \"q12\", question: \"How long do NDA obligations last after termination?\", namespace: \"contracts\", conare: hit(\"nda-mutual-template\", 2, 5, \"Obligations survive termination for three years.\", \"three years\", true), current: hit(\"nda-mutual-template\", 2, 5, \"Obligations survive termination for three years.\", \"three years\", true) },\n    { id: \"q13\", question: \"Which customers are named as a revenue risk in the 10-K?\", namespace: \"sec-filings\", conare: hit(\"10-k-2025-item-1a\", 19, 142, \"Our revenue depends on a limited number of enterprise customers.\", \"limited number of enterprise customers\", true), current: hit(\"10-k-2025-item-1a\", 19, 142, \"Our revenue depends on a limited number of enterprise customers.\", \"limited number of enterprise customers\", true) },\n    { id: \"q14\", question: \"When do renewal conversations start?\", namespace: \"wiki\", conare: hit(\"playbook-renewals\", 1, 3, \"Start the renewal conversation 120 days before the contract end date.\", \"120 days\", true), current: hit(\"playbook-renewals\", 1, 3, \"Start the renewal conversation 120 days before the contract end date.\", \"120 days\", true) },\n    { id: \"q15\", question: \"How long are support tickets kept?\", namespace: \"wiki\", conare: hit(\"handbook-retention\", 4, 11, \"Support tickets are kept for 3 years, then deleted.\", \"3 years\", true), current: hit(\"handbook-retention\", 4, 11, \"Support tickets are kept for 3 years, then deleted.\", \"3 years\", true) },\n    { id: \"q16\", question: \"What is the rate limit on the public search endpoint?\", namespace: \"engineering\", conare: hit(\"acme-api-2214\", 1, 2, \"600 requests per minute per key; 429 with a Retry-After header beyond it.\", \"600 requests per minute\", true), current: hit(\"acme-api-2214\", 1, 2, \"600 requests per minute per key; 429 with a Retry-After header beyond it.\", \"600 requests per minute\", true) }\n  ];\n  const VENDORS = [\"cloud hosting\", \"payroll\", \"analytics\", \"security audit\", \"office lease\", \"logistics\", \"translation\", \"catering\", \"legal research\", \"design\", \"data labeling\", \"travel\", \"insurance\", \"recruiting\", \"printing\", \"telephony\", \"facilities\", \"events\", \"training\", \"backup\"];\n  const ASKS = [\n    [\"What is the notice period in the {v} MSA?\", \"Either party may end this agreement on 60 days' written notice.\", \"60 days' written notice\"],\n    [\"Does the {v} agreement cap liability?\", \"Total liability is capped at the fees paid in the previous 12 months.\", \"capped at the fees paid\"],\n    [\"Which law governs the {v} contract?\", \"This agreement is governed by the laws of the State of New York.\", \"laws of the State of New York\"],\n    [\"When does the {v} contract renew?\", \"The term renews for one year unless either party gives 90 days' notice.\", \"renews for one year\"]\n  ];\n  const ONLY_CONARE = /* @__PURE__ */ new Set([3, 11, 17, 22, 29, 34, 41, 47, 52, 58, 63, 69, 74, 80]);\n  const generated = Array.from({ length: 100 - WRITTEN.length }, (_, i) => {\n    const v = VENDORS[i % VENDORS.length];\n    const [q, text, key] = ASKS[i % ASKS.length];\n    const id = `msa-${v.replace(/ /g, \"-\")}-2024`;\n    const page = 3 + i * 5 % 19;\n    const other = `msa-${VENDORS[(i + 3) % VENDORS.length].replace(/ /g, \"-\")}-2024`;\n    return { id: `g${i}`, question: q.replace(\"{v}\", v), namespace: \"contracts\", conare: hit(id, page, 24, text, key, true), current: ONLY_CONARE.has(i) ? hit(other, page, 24, text, key, false) : hit(id, page, 24, text, key, true) };\n  });\n  const ACCURACY_ROWS = [...WRITTEN, ...generated];\n  function accuracyView(rows = ACCURACY_ROWS) {\n    return {\n      state: \"done\",\n      ran: \"3 hours ago\",\n      by: \"admin@acme.com\",\n      seconds: 12.4,\n      cost: Math.round(rows.length * 3e-3 * 100) / 100,\n      questions: rows.length,\n      done: rows.length,\n      right: rows.filter((r) => r.conare.ok).length,\n      current_right: rows.filter((r) => r.current.ok).length,\n      current_name: \"Your current search\",\n      rows,\n      queued: []\n    };\n  }\n  // The test as an app would hold it: removing a question, adding some (answered on the next run) and running again.\n  await customElements.whenDefined('conare-accuracy-panel')\n  const panel = document.getElementById('accuracy')\n  let rows = [...ACCURACY_ROWS]\n  let running = false\n  let timer\n  const show = () => { panel.view = { ...accuracyView(rows), state: running ? 'running' : 'done', ran: running ? 'now' : '3 hours ago' } }\n  panel.addEventListener('run', () => {\n    running = true\n    show()\n    clearTimeout(timer)\n    // ds-latency: a sample run's length, standing in for the real one.\n    timer = setTimeout(() => { running = false; show() }, 1200)\n  })\n  panel.addEventListener('add', (e) => {\n    rows = [...e.detail.questions.map((q, i) => ({ id: 'own' + Date.now() + i, question: q, namespace: 'contracts', conare: hit('msa-hosting-2025', 7, 22, 'Either party may terminate for convenience with 90 days\\' written notice.', '90 days\\' written notice', true), current: hit('nda-mutual-template', 2, 5, 'Obligations survive termination for three years.', 'three years', i % 2 === 0) })), ...rows]\n    show()\n  })\n  panel.addEventListener('remove', (e) => {\n    rows = rows.filter((r) => r.id !== e.detail.row.id)\n    show()\n  })\n  show()\n</script>\n"
+        }
+      ]
+    }
+  }
+}

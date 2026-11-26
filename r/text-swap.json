@@ -1,0 +1,170 @@
+{
+  "name": "text-swap",
+  "title": "Text swap",
+  "type": "registry:ui",
+  "group": "visuals",
+  "description": "Two labels in one cell, so nothing around them moves: the first leaves up, the next arrives from below with a touch of blur, and a check draws its stroke.",
+  "use_for": "A button or a status that changes its words in place: Copy prompt to Copied, Connect to Connected.",
+  "never": [
+    "Labels of very different lengths: the cell takes the longer and the button would look loose",
+    "More than two states (use FixButton's stacked states)"
+  ],
+  "source": "conare-web app/assets/css/console2.css (.v2-swap), app/design-system/examples/text-swap/Product.vue (example-only in the branch)",
+  "body": "`on` picks the label: the `a` slot when false, `b` when true. The leaving label fades and blurs over 160ms while it moves 5px in 220ms on the strong ease-out; a Lucide check in `b` draws its stroke after 40ms. The hidden label is `aria-hidden`, so a screen reader reads the current one. Reduced motion keeps the cross-fade only.",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/visuals/TextSwap.vue",
+      "content": "<script setup lang=\"ts\">\n// Two labels in one cell, so nothing around them moves (console2.css .v2-swap): when `on` turns true the first leaves\n// up and the second arrives from below, each with a touch of blur (160ms fade, 220ms move on the strong ease-out), and\n// a check in the second label draws its stroke. Put the labels in the `a` and `b` slots, an icon first in each. Reduced\n// motion keeps the cross-fade only.\ndefineProps<{ on: boolean }>()\n</script>\n\n<template>\n  <span data-ds=\"text-swap\" class=\"ds-swap\" :data-on=\"on\">\n    <span class=\"ds-swap-a\" :aria-hidden=\"on || undefined\"><slot name=\"a\" /></span>\n    <span class=\"ds-swap-b\" :aria-hidden=\"!on || undefined\"><slot name=\"b\" /></span>\n  </span>\n</template>\n\n<style>\n.ds-swap { display: inline-grid; }\n.ds-swap > span { display: inline-flex; grid-area: 1 / 1; align-items: center; justify-content: center; gap: var(--ds-space-sm); transition: opacity var(--ds-duration-glide) ease, filter var(--ds-duration-glide) ease, transform var(--ds-duration-settle) var(--ds-easing-out); }\n.ds-swap-b { opacity: 0; filter: blur(2px); transform: translateY(5px) scale(0.96); }\n.ds-swap[data-on=\"true\"] .ds-swap-a { opacity: 0; filter: blur(2px); transform: translateY(-5px) scale(0.96); }\n.ds-swap[data-on=\"true\"] .ds-swap-b { opacity: 1; filter: none; transform: none; }\n.ds-swap-b svg path { stroke-dasharray: 24; stroke-dashoffset: 24; transition: stroke-dashoffset var(--ds-duration-micro) ease; }\n.ds-swap[data-on=\"true\"] .ds-swap-b svg path { stroke-dashoffset: 0; transition: stroke-dashoffset var(--ds-duration-enter) var(--ds-easing-out) 40ms; }\n@media (prefers-reduced-motion: reduce) {\n  .ds-swap > span { filter: none !important; transform: none !important; transition: opacity var(--ds-duration-micro) ease; }\n  .ds-swap-b svg path { stroke-dashoffset: 0; transition: none; }\n}\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "In the product",
+      "center": true,
+      "half": true,
+      "path": "examples/text-swap/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { onBeforeUnmount, onMounted, ref } from 'vue'\nimport { Check, Copy } from 'lucide-vue-next'\nimport TextSwap from '@/components/visuals/TextSwap.vue'\n// Two labels in one cell, so nothing around them moves: the first leaves up, the next arrives from below, each with a\n// touch of blur, and a check draws itself. Here it swaps by itself.\nconst on = ref(false)\nlet timer: ReturnType<typeof setInterval> | undefined\nonMounted(() => { timer = setInterval(() => { on.value = !on.value }, 1800) })\nonBeforeUnmount(() => clearInterval(timer))\n</script>\n\n<template>\n  <TextSwap :on=\"on\" class=\"text-ui\">\n    <template #a><Copy :size=\"12\" :stroke-width=\"1.5\" aria-hidden=\"true\" />Copy prompt</template>\n    <template #b><Check :size=\"12\" :stroke-width=\"2\" aria-hidden=\"true\" />Copied</template>\n  </TextSwap>\n</template>\n",
+      "requires": [],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/visuals/TextSwap.tsx",
+          "content": "import type { ReactNode } from 'react'\nimport { cn } from '@/react/lib/cn'\n\n// Two labels in one cell, so nothing around them moves (console2.css .v2-swap): when `on` turns true the first leaves\n// up and the second arrives from below, each with a touch of blur (160ms fade, 220ms move on the strong ease-out), and\n// a check in the second label draws its stroke. Put the labels in `a` and `b` (Vue's slots), an icon first in each.\n// Reduced motion keeps the cross-fade only.\nexport interface TextSwapProps {\n  on: boolean\n  /** The first label, shown while `on` is false. */\n  a?: ReactNode\n  /** The second label, shown once `on` is true. */\n  b?: ReactNode\n  className?: string\n}\n\nexport function TextSwap({ on, a, b, className }: TextSwapProps) {\n  return (\n    <>\n      <style href=\"ds-text-swap\" precedence=\"ds\">{css}</style>\n      <span data-ds=\"text-swap\" className={cn('ds-swap', className)} data-on={on}>\n        <span className=\"ds-swap-a\" aria-hidden={on || undefined}>{a}</span>\n        <span className=\"ds-swap-b\" aria-hidden={!on || undefined}>{b}</span>\n      </span>\n    </>\n  )\n}\n\nexport default TextSwap\n\nconst css = `\n.ds-swap { display: inline-grid; }\n.ds-swap > span { display: inline-flex; grid-area: 1 / 1; align-items: center; justify-content: center; gap: var(--ds-space-sm); transition: opacity var(--ds-duration-glide) ease, filter var(--ds-duration-glide) ease, transform var(--ds-duration-settle) var(--ds-easing-out); }\n.ds-swap-b { opacity: 0; filter: blur(2px); transform: translateY(5px) scale(0.96); }\n.ds-swap[data-on=\"true\"] .ds-swap-a { opacity: 0; filter: blur(2px); transform: translateY(-5px) scale(0.96); }\n.ds-swap[data-on=\"true\"] .ds-swap-b { opacity: 1; filter: none; transform: none; }\n.ds-swap-b svg path { stroke-dasharray: 24; stroke-dashoffset: 24; transition: stroke-dashoffset var(--ds-duration-micro) ease; }\n.ds-swap[data-on=\"true\"] .ds-swap-b svg path { stroke-dashoffset: 0; transition: stroke-dashoffset var(--ds-duration-enter) var(--ds-easing-out) 40ms; }\n@media (prefers-reduced-motion: reduce) {\n  .ds-swap > span { filter: none !important; transform: none !important; transition: opacity var(--ds-duration-micro) ease; }\n  .ds-swap-b svg path { stroke-dashoffset: 0; transition: none; }\n}\n`\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "TextSwap",
+            "file": "react/components/visuals/TextSwap.tsx",
+            "props": [
+              {
+                "name": "on",
+                "type": "boolean",
+                "required": true
+              },
+              {
+                "name": "a",
+                "type": "ReactNode",
+                "required": false,
+                "description": "The first label, shown while `on` is false."
+              },
+              {
+                "name": "b",
+                "type": "ReactNode",
+                "required": false,
+                "description": "The second label, shown once `on` is true."
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": true,
+          "half": true,
+          "path": "react/examples/text-swap/Product.tsx",
+          "content": "'use client'\nimport { useEffect, useState } from 'react'\nimport { Check, Copy } from 'lucide-react'\nimport { TextSwap } from '@/react/components/visuals/TextSwap'\n// Two labels in one cell, so nothing around them moves: the first leaves up, the next arrives from below, each with a\n// touch of blur, and a check draws itself. Here it swaps by itself.\n\nexport default function Product() {\n  const [on, setOn] = useState(false)\n  useEffect(() => {\n    const timer = setInterval(() => setOn(v => !v), 1800)\n    return () => clearInterval(timer)\n  }, [])\n  return (\n    <TextSwap\n      on={on}\n      className=\"text-ui\"\n      a={<><Copy size={12} strokeWidth={1.5} aria-hidden=\"true\" />Copy prompt</>}\n      b={<><Check size={12} strokeWidth={2} aria-hidden=\"true\" />Copied</>}\n    />\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/visuals/text-swap.ts",
+          "content": "import { html } from 'lit'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// TextSwap.vue as <conare-text-swap>: two labels in one cell, so nothing around them moves (console2.css .v2-swap):\n// when `on` turns true the first leaves up and the second arrives from below, each with a touch of blur (160ms fade,\n// 220ms move on the strong ease-out), and a check in the second label draws its stroke. Put the labels in the `a` and\n// `b` slots, an icon first in each (`<span slot=\"b\" class=\"contents\"><svg ...></svg>Copied</span>`). Reduced motion\n// keeps the cross-fade only. The host is the cell (text-swap.css), so a class on it lands as one on <TextSwap> does.\n\n/**\n * @summary Two labels in one cell that swap with a touch of blur.\n * @slot a - The first label, shown while `on` is false.\n * @slot b - The second label, shown once `on` is true.\n */\nexport class TextSwap extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { on: { type: Boolean, reflect: true } }\n\n\t/** Shows the second label. */\n\ton = false\n\n\trender() {\n\t\treturn html`<span class=\"ds-swap-a\" aria-hidden=${ifDefined(this.on ? 'true' : undefined)}><slot name=\"a\"></slot></span><span class=\"ds-swap-b\" aria-hidden=${ifDefined(!this.on ? 'true' : undefined)}><slot name=\"b\"></slot></span>`\n\t}\n}\n\ndefine('text-swap', TextSwap)\n"
+        },
+        {
+          "path": "elements/components/visuals/text-swap.css",
+          "content": "/* TextSwap.vue's <style>, with the host as .ds-swap (the cell) and `on` as its data-on=\"true\". The check's stroke is\n   drawn on the slotted label: stroke-dasharray and stroke-dashoffset are inherited, so its paths take them from it. */\n:host { display: inline-grid; }\n.ds-swap-a, .ds-swap-b { display: inline-flex; grid-area: 1 / 1; align-items: center; justify-content: center; gap: var(--ds-space-sm); transition: opacity var(--ds-duration-glide) ease, filter var(--ds-duration-glide) ease, transform var(--ds-duration-settle) var(--ds-easing-out); }\n.ds-swap-b { opacity: 0; filter: blur(2px); transform: translateY(5px) scale(0.96); }\n:host([on]) .ds-swap-a { opacity: 0; filter: blur(2px); transform: translateY(-5px) scale(0.96); }\n:host([on]) .ds-swap-b { opacity: 1; filter: none; transform: none; }\nslot[name=\"b\"]::slotted(*) { stroke-dasharray: 24; stroke-dashoffset: 24; transition: stroke-dashoffset var(--ds-duration-micro) ease; }\n:host([on]) slot[name=\"b\"]::slotted(*) { stroke-dashoffset: 0; transition: stroke-dashoffset var(--ds-duration-enter) var(--ds-easing-out) 40ms; }\n@media (prefers-reduced-motion: reduce) {\n  .ds-swap-a, .ds-swap-b { filter: none !important; transform: none !important; transition: opacity var(--ds-duration-micro) ease; }\n  slot[name=\"b\"]::slotted(*) { stroke-dashoffset: 0; transition: none; }\n}\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/text-swap.js"
+      ],
+      "tag": "conare-text-swap",
+      "tags": [
+        "conare-text-swap"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-text-swap",
+            "name": "TextSwap",
+            "module": "elements/text-swap.js",
+            "description": "Two labels in one cell that swap with a touch of blur.",
+            "attributes": [
+              {
+                "name": "on",
+                "field": "on",
+                "type": "boolean",
+                "default": "false",
+                "description": "Shows the second label."
+              }
+            ],
+            "properties": [
+              {
+                "name": "on",
+                "type": "boolean",
+                "default": "false",
+                "description": "Shows the second label.",
+                "attribute": "on"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "a",
+                "description": "The first label, shown while `on` is false."
+              },
+              {
+                "name": "b",
+                "description": "The second label, shown once `on` is true."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": true,
+          "half": true,
+          "path": "elements/examples/text-swap/Product.html",
+          "content": "<!-- Two labels in one cell, so nothing around them moves: the first leaves up, the next arrives from below, each with\n     a touch of blur, and a check draws itself. Here it swaps by itself. -->\n<conare-text-swap id=\"swap\" class=\"text-ui\">\n  <span slot=\"a\" class=\"contents\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-copy\" aria-hidden=\"true\"><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"></rect><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"></path></svg>Copy prompt</span>\n  <span slot=\"b\" class=\"contents\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-check\" aria-hidden=\"true\"><path d=\"M20 6 9 17l-5-5\"></path></svg>Copied</span>\n</conare-text-swap>\n<script type=\"module\">\n  await customElements.whenDefined('conare-text-swap')\n  const swap = document.getElementById('swap')\n  const timer = setInterval(() => {\n    if (!swap.isConnected) return clearInterval(timer)\n    swap.on = !swap.on\n  }, 1800)\n</script>\n"
+        }
+      ]
+    }
+  }
+}

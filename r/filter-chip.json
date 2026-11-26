@@ -1,0 +1,256 @@
+{
+  "name": "filter-chip",
+  "title": "Filter chip",
+  "type": "registry:ui",
+  "group": "product",
+  "description": "One filter as a menu button under the search box: its name, or the name and the pick once chosen, opening a radio list with Any first.",
+  "use_for": "The search's filters: app, type, author. A few side by side.",
+  "never": [
+    "A long list without a filter (use the scope menu)",
+    "Several picks in one chip"
+  ],
+  "source": "conare-web app/components/console/search/FilterChip.vue, app/assets/css/console2.css (.v2-scope, .v2-chev), app/design-system/examples/filter-chip/Product.vue (example-only in the branch)",
+  "body": "`label` names the filter, `any` the first row (its value is `''`, or `0` for numeric options), `options` the rest. The chip is 28px on the paper with a hairline; it takes an ink edge and the white ground while something is chosen or the menu is open, and its chevron turns. The menu is Menu's panel with `menuitemradio` rows and a check on the pick; arrows, Home, End and Escape work as in every Menu.\n\nIts list scrolls under a fade (`fade-y`) at the edge with more past it.",
+  "requires": [
+    "menu"
+  ],
+  "dependencies": [
+    "lucide-vue-next@^0.479.0"
+  ],
+  "files": [
+    {
+      "path": "components/product/FilterChip.vue",
+      "content": "<script setup lang=\"ts\" generic=\"T extends string | number\">\nimport { computed } from 'vue'\nimport { Check, ChevronDown } from 'lucide-vue-next'\nimport Menu from '@/components/ui/Menu.vue'\nimport MenuItem from '@/components/ui/MenuItem.vue'\n\n// One filter as a menu button under the search box (search/FilterChip.vue, console2.css .v2-scope): \"App\", or\n// \"App: Slack\" once chosen, with an ink edge while something is chosen or the menu is open. The menu is a radio list on\n// Menu's panel, \"Any\" first (the empty value: '' or 0), a check on the pick. 28px, 40px on phones.\nconst props = withDefaults(defineProps<{ label: string, any: string, options: Array<{ value: T, label: string }>, width?: string }>(), { width: '200px' })\nconst model = defineModel<T>({ required: true })\nconst empty = computed(() => (typeof props.options[0]?.value === 'number' ? 0 : '') as T)\nconst all = computed(() => [{ value: empty.value, label: props.any }, ...props.options])\nconst chosen = computed(() => props.options.find(o => o.value === model.value)?.label ?? '')\nconst trigger = computed(() => [\n  'inline-flex h-control-sm cursor-pointer items-center gap-1.5 border px-2 text-meta text-fg whitespace-nowrap transition-[border-color,background-color] duration-120 ease-standard',\n  'hover:border-edge-focus active:bg-surface-subtle aria-expanded:border-edge-focus aria-expanded:bg-surface focus-visible:outline-offset-1',\n  'max-md:h-control-touch max-md:text-ui pointer-coarse:h-control-touch pointer-coarse:text-ui',\n  chosen.value ? 'border-edge-focus bg-surface' : 'border-edge bg-surface-subtle',\n].join(' '))\n</script>\n\n<template>\n  <Menu data-ds=\"filter-chip\" :label=\"label\" :width=\"width\" :trigger-class=\"trigger\">\n    <template #trigger=\"{ open }\">\n      {{ label }}<template v-if=\"chosen\">: <span class=\"font-medium\">{{ chosen }}</span></template>\n      <ChevronDown :size=\"12\" :stroke-width=\"1.5\" class=\"text-fg-muted transition-[rotate] duration-120 ease-out motion-reduce:transition-none\" :class=\"open && 'rotate-180'\" aria-hidden=\"true\" />\n    </template>\n    <div class=\"fade-y flex max-h-75 flex-col overflow-y-auto\">\n      <MenuItem v-for=\"o in all\" :key=\"o.value\" role=\"menuitemradio\" :aria-checked=\"model === o.value\" @select=\"model = o.value\">\n        <span class=\"min-w-0 flex-1 truncate\">{{ o.label }}</span>\n        <Check :size=\"14\" :stroke-width=\"1.5\" class=\"shrink-0\" :class=\"model === o.value ? '' : 'invisible'\" aria-hidden=\"true\" />\n      </MenuItem>\n    </div>\n  </Menu>\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "In the product",
+      "center": false,
+      "half": false,
+      "path": "examples/filter-chip/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport FilterChip from '@/components/product/FilterChip.vue'\n// The search's filters, as they sit under the box: pick one and the chip names it.\nconst app = ref('')\nconst type = ref('')\nconst apps = ['Slack', 'Notion', 'Gmail', 'HubSpot']\nconst types = ['Message', 'Page', 'Email', 'File']\n</script>\n\n<template>\n  <div class=\"flex h-65 flex-wrap items-start gap-2\">\n    <FilterChip v-model=\"app\" label=\"App\" any=\"Any app\" :options=\"apps.map(a => ({ value: a, label: a }))\" />\n    <FilterChip v-model=\"type\" label=\"Type\" any=\"Any type\" :options=\"types.map(t => ({ value: t, label: t }))\" />\n  </div>\n</template>\n",
+      "requires": [
+        "menu"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/product/FilterChip.tsx",
+          "content": "'use client'\nimport { Check, ChevronDown } from 'lucide-react'\nimport { Menu } from '@/react/components/ui/Menu'\nimport { MenuItem } from '@/react/components/ui/MenuItem'\nimport { useControllable } from '@/react/hooks/useControllable'\nimport { cn } from '@/react/lib/cn'\n\n// One filter as a menu button under the search box (search/FilterChip.vue, console2.css .v2-scope): \"App\", or\n// \"App: Slack\" once chosen, with an ink edge while something is chosen or the menu is open. The menu is a radio list on\n// Menu's panel, \"Any\" first (the empty value: '' or 0), a check on the pick. 28px, 40px on phones. Vue's v-model is\n// `value` with `onValueChange` (or `defaultValue` alone).\nexport interface FilterChipProps<T extends string | number> {\n  label: string\n  any: string\n  options: Array<{ value: T, label: string }>\n  width?: string\n  value?: T\n  defaultValue?: T\n  onValueChange?: (value: T) => void\n}\n\nexport function FilterChip<T extends string | number>({ label, any, options, width = '200px', value, defaultValue, onValueChange }: FilterChipProps<T>) {\n  const empty = (typeof options[0]?.value === 'number' ? 0 : '') as T\n  const [model, setModel] = useControllable<T>(value, defaultValue ?? empty, onValueChange)\n  const all = [{ value: empty, label: any }, ...options]\n  const chosen = options.find(o => o.value === model)?.label ?? ''\n  const trigger = [\n    'inline-flex h-control-sm cursor-pointer items-center gap-1.5 border px-2 text-meta text-fg whitespace-nowrap transition-[border-color,background-color] duration-120 ease-standard',\n    'hover:border-edge-focus active:bg-surface-subtle aria-expanded:border-edge-focus aria-expanded:bg-surface focus-visible:outline-offset-1',\n    'max-md:h-control-touch max-md:text-ui pointer-coarse:h-control-touch pointer-coarse:text-ui',\n    chosen ? 'border-edge-focus bg-surface' : 'border-edge bg-surface-subtle',\n  ].join(' ')\n\n  return (\n    <Menu\n      data-ds=\"filter-chip\"\n      label={label}\n      width={width}\n      triggerClass={trigger}\n      trigger={open => (\n        <>\n          {label}{chosen && <>{': '}<span className=\"font-medium\">{chosen}</span></>}\n          <ChevronDown size={12} strokeWidth={1.5} className={cn('text-fg-muted transition-[rotate] duration-120 ease-out motion-reduce:transition-none', open && 'rotate-180')} aria-hidden=\"true\" />\n        </>\n      )}\n    >\n      <div className=\"fade-y flex max-h-75 flex-col overflow-y-auto\">\n        {all.map(o => (\n          <MenuItem key={o.value} role=\"menuitemradio\" aria-checked={model === o.value} onSelect={() => setModel(o.value)}>\n            <span className=\"min-w-0 flex-1 truncate\">{o.label}</span>\n            <Check size={14} strokeWidth={1.5} className={cn('shrink-0', model === o.value ? '' : 'invisible')} aria-hidden=\"true\" />\n          </MenuItem>\n        ))}\n      </div>\n    </Menu>\n  )\n}\n\nexport default FilterChip\n"
+        },
+        {
+          "path": "react/hooks/useControllable.ts",
+          "content": "'use client'\nimport { useCallback, useRef, useState } from 'react'\n\n// Vue's defineModel in React: a value that is controlled when the caller passes it (value + onValueChange, as Radix\n// does) and kept inside otherwise (defaultValue). setValue calls onChange either way.\nexport function useControllable<T>(value: T | undefined, defaultValue: T, onChange?: (value: T) => void) {\n\tconst [inner, setInner] = useState<T>(defaultValue)\n\tconst controlled = value !== undefined\n\tconst current = controlled ? value : inner\n\tconst ref = useRef(onChange)\n\tref.current = onChange\n\tconst set = useCallback((next: T) => {\n\t\tif (!controlled) setInner(next)\n\t\tref.current?.(next)\n\t}, [controlled])\n\treturn [current, set] as const\n}\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [
+        "lucide-react@0.479.0"
+      ],
+      "registryDependencies": [
+        "menu"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "FilterChip",
+            "file": "react/components/product/FilterChip.tsx",
+            "props": [
+              {
+                "name": "label",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "any",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "options",
+                "type": "Array<{ value: T, label: string }>",
+                "required": true
+              },
+              {
+                "name": "width",
+                "type": "string",
+                "required": false,
+                "default": "'200px'"
+              },
+              {
+                "name": "value",
+                "type": "T",
+                "required": false
+              },
+              {
+                "name": "defaultValue",
+                "type": "T",
+                "required": false
+              },
+              {
+                "name": "onValueChange",
+                "type": "(value: T) => void",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "react/examples/filter-chip/Product.tsx",
+          "content": "'use client'\nimport { useState } from 'react'\nimport { FilterChip } from '@/react/components/product/FilterChip'\n// The search's filters, as they sit under the box: pick one and the chip names it.\nconst apps = ['Slack', 'Notion', 'Gmail', 'HubSpot']\nconst types = ['Message', 'Page', 'Email', 'File']\n\nexport default function Product() {\n  const [app, setApp] = useState('')\n  const [type, setType] = useState('')\n  return (\n    <div className=\"flex h-65 flex-wrap items-start gap-2\">\n      <FilterChip value={app} onValueChange={setApp} label=\"App\" any=\"Any app\" options={apps.map(a => ({ value: a, label: a }))} />\n      <FilterChip value={type} onValueChange={setType} label=\"Type\" any=\"Any type\" options={types.map(t => ({ value: t, label: t }))} />\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "menu"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/product/filter-chip.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { Check, ChevronDown } from 'lucide'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport '@/elements/components/ui/menu'\nimport '@/elements/components/ui/menu-item'\nimport styles from 'virtual:tw'\n\n// FilterChip.vue as <conare-filter-chip>: one filter as a menu button under the search box (search/FilterChip.vue,\n// console2.css .v2-scope): \"App\", or \"App: Slack\" once chosen, with an ink edge while something is chosen or the menu\n// is open. The menu is a radio list on a menu's panel, \"Any\" first (the empty value: '' or 0), a check on the pick.\n// 28px, 40px on phones. v-model is `value` with `input` and `change` events; `options` is a JSON attribute or the\n// property.\nexport type FilterValue = string | number\n\n/**\n * @summary One filter as a menu button.\n * @fires input - The pick changed (read `value`).\n * @fires change - The pick changed (read `value`).\n */\nexport class FilterChip extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { label: {}, any: {}, options: { type: Array }, width: {}, value: {} }\n\n\t/** The filter's name: App, Type. */\n\tlabel = ''\n\t/** The empty choice's label: Any app. */\n\tany = ''\n\toptions: Array<{ value: FilterValue, label: string }> = []\n\twidth = '200px'\n\t/** The pick ('' or 0 for any). */\n\tvalue: FilterValue = ''\n\n\tprivate get empty(): FilterValue {\n\t\treturn typeof this.options[0]?.value === 'number' ? 0 : ''\n\t}\n\tprivate is(a: FilterValue, b: FilterValue) {\n\t\treturn String(a) === String(b)\n\t}\n\n\trender() {\n\t\tconst menu = tag('menu')\n\t\tconst item = tag('menu-item')\n\t\tconst all = [{ value: this.empty, label: this.any }, ...this.options]\n\t\tconst chosen = this.options.find((o) => this.is(o.value, this.value))?.label ?? ''\n\t\tconst trigger = [\n\t\t\t'inline-flex h-control-sm cursor-pointer items-center gap-1.5 border px-2 text-meta text-fg whitespace-nowrap transition-[border-color,background-color] duration-120 ease-standard',\n\t\t\t'hover:border-edge-focus active:bg-surface-subtle aria-expanded:border-edge-focus aria-expanded:bg-surface focus-visible:outline-offset-1',\n\t\t\t'max-md:h-control-touch max-md:text-ui pointer-coarse:h-control-touch pointer-coarse:text-ui',\n\t\t\tchosen ? 'border-edge-focus bg-surface' : 'border-edge bg-surface-subtle',\n\t\t].join(' ')\n\t\treturn html`${staticHtml`<${menu} data-ds=\"filter-chip\" label=${this.label} width=${this.width}>\n\t\t\t<button slot=\"trigger\" type=\"button\" class=${trigger}>${this.label}${chosen ? html`: <span class=\"font-medium\">${chosen}</span>` : nothing}${icon(ChevronDown, 'chevron-down', { size: 12, strokeWidth: 1.5, class: 'text-fg-muted transition-[rotate] duration-120 ease-out motion-reduce:transition-none', attrs: { 'aria-hidden': 'true' } })}</button>\n\t\t\t<div class=\"fade-y flex max-h-75 flex-col overflow-y-auto\">\n\t\t\t\t${all.map((o) => staticHtml`<${item} role=\"menuitemradio\" aria-checked=${String(this.is(this.value, o.value))} @select=${() => this.commit(o.value)}>\n\t\t\t\t\t<span class=\"min-w-0 flex-1 truncate\">${o.label}</span>\n\t\t\t\t\t${icon(Check, 'check', { size: 14, strokeWidth: 1.5, class: this.is(this.value, o.value) ? 'shrink-0' : 'shrink-0 invisible', attrs: { 'aria-hidden': 'true' } })}\n\t\t\t\t</${item}>`)}\n\t\t\t</div>\n\t\t</${menu}>`}`\n\t}\n}\n\ndefine('filter-chip', FilterChip)\n"
+        },
+        {
+          "path": "elements/components/product/filter-chip.css",
+          "content": "/* Vue turns the chevron with rotate-180 while the menu is open; here the icon's markup stays the same from one render\n   to the next (so its transition runs) and the open trigger turns it. */\nbutton[aria-expanded=\"true\"] > .lucide-chevron-down { @apply rotate-180; }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/filter-chip.js",
+        "elements/menu.js",
+        "elements/menu-item.js"
+      ],
+      "tag": "conare-filter-chip",
+      "tags": [
+        "conare-filter-chip"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "menu"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-filter-chip",
+            "name": "FilterChip",
+            "module": "elements/filter-chip.js",
+            "description": "One filter as a menu button.",
+            "attributes": [
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string",
+                "default": "''",
+                "description": "The filter's name: App, Type."
+              },
+              {
+                "name": "any",
+                "field": "any",
+                "type": "string",
+                "default": "''",
+                "description": "The empty choice's label: Any app."
+              },
+              {
+                "name": "options",
+                "field": "options",
+                "type": "{ value: FilterValue; label: string; }[]",
+                "default": "[]"
+              },
+              {
+                "name": "width",
+                "field": "width",
+                "type": "string",
+                "default": "'200px'"
+              },
+              {
+                "name": "value",
+                "field": "value",
+                "type": "FilterValue",
+                "default": "''",
+                "description": "The pick ('' or 0 for any)."
+              }
+            ],
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "''",
+                "description": "The filter's name: App, Type.",
+                "attribute": "label"
+              },
+              {
+                "name": "any",
+                "type": "string",
+                "default": "''",
+                "description": "The empty choice's label: Any app.",
+                "attribute": "any"
+              },
+              {
+                "name": "options",
+                "type": "{ value: FilterValue; label: string; }[]",
+                "default": "[]",
+                "attribute": "options"
+              },
+              {
+                "name": "width",
+                "type": "string",
+                "default": "'200px'",
+                "attribute": "width"
+              },
+              {
+                "name": "value",
+                "type": "FilterValue",
+                "default": "''",
+                "description": "The pick ('' or 0 for any).",
+                "attribute": "value"
+              }
+            ],
+            "events": [
+              {
+                "name": "input",
+                "description": "The pick changed (read `value`)."
+              },
+              {
+                "name": "change",
+                "description": "The pick changed (read `value`)."
+              }
+            ],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/filter-chip/Product.html",
+          "content": "<!-- The search's filters, as they sit under the box: pick one and the chip names it. -->\n<div class=\"flex h-65 flex-wrap items-start gap-2\">\n  <conare-filter-chip value=\"\" label=\"App\" any=\"Any app\" options='[{ \"value\": \"Slack\", \"label\": \"Slack\" }, { \"value\": \"Notion\", \"label\": \"Notion\" }, { \"value\": \"Gmail\", \"label\": \"Gmail\" }, { \"value\": \"HubSpot\", \"label\": \"HubSpot\" }]'></conare-filter-chip>\n  <conare-filter-chip value=\"\" label=\"Type\" any=\"Any type\" options='[{ \"value\": \"Message\", \"label\": \"Message\" }, { \"value\": \"Page\", \"label\": \"Page\" }, { \"value\": \"Email\", \"label\": \"Email\" }, { \"value\": \"File\", \"label\": \"File\" }]'></conare-filter-chip>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

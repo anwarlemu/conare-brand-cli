@@ -1,0 +1,281 @@
+{
+  "name": "search-run",
+  "title": "Search run",
+  "type": "registry:ui",
+  "group": "product",
+  "description": "A search on the request's clock: Searching shimmers over the namespaces it reads while cells of the index flicker; then Found in, the namespaces with results keep a red square, each document found is a red square that names itself, and the footer gives the count, when it finished, the API's time and Show code.",
+  "use_for": "Home and the command palette, while a search runs and after, under the results.",
+  "never": [
+    "Fake delays: it follows the request",
+    "Running when nothing was asked",
+    "Red beyond the found squares and the count"
+  ],
+  "source": "conare-web app/components/console/SearchRun.vue, app/assets/css/console2.css (.v2-run, .v2-runchip, .v2-index, .v2-flick, .v2-hit, .v2-hitbtn, .v2-shimmer)",
+  "body": "Pass `code`, the request as your app sends it, and the footer ends on Show code (`code-pop`): the request opens under\nthe footer in the dark code window. Without it the footer stops at the API's time.",
+  "requires": [
+    "code-pop"
+  ],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/product/SearchRun.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed, ref, watch } from 'vue'\nimport CodePop from '@/components/ui/CodePop.vue'\nimport type { SearchResult } from '@/composables/useSearchResults'\n\n// A search on the request's clock (SearchRun.vue), the website's demo window in the console's light colours:\n// \"Searching\" shimmers over the namespaces it reads while cells of the index flicker. When the answer is in, \"Found in\"\n// takes its place, the namespaces that held a result keep a red square and the rest step back, each document found\n// lights as a red square on the index, and the count reads \"4 of 2,749,690 documents\", with when it finished and the\n// API's time. Each square names its document when pointed at or focused, and a press emits `reveal` with its key (for\n// SearchResults to show it). `nsHref` makes each namespace a link once the answer is in; `code` (the request as the\n// app would send it) puts Show code (code-pop) at the end of the footer, opening under it. It follows the request:\n// never fake a delay.\nconst props = defineProps<{\n  searching: boolean\n  answer: { results: SearchResult[], took_ms: number } | null\n  namespaces: Array<{ name: string, documents: number }>\n  ns?: string\n  logoOf?: (namespace: string) => string | null | undefined\n  nsHref?: (namespace: string) => string\n  code?: string\n}>()\nconst emit = defineEmits<{ reveal: [key: string] }>()\n\nconst fmt = (n: number) => n.toLocaleString('en-US')\nconst logo = (ns: string) => props.logoOf?.(ns) ?? null\nconst read = computed(() => {\n  const all = props.namespaces.filter(n => n.documents > 0).sort((a, b) => b.documents - a.documents)\n  return props.ns ? all.filter(n => n.name === props.ns) : all\n})\nconst shown = computed(() => read.value.slice(0, 4))\nconst more = computed(() => read.value.length - shown.value.length)\nconst total = computed(() => read.value.reduce((a, n) => a + n.documents, 0))\nconst hitNs = computed(() => new Set((props.answer?.results ?? []).map(r => r.namespace)))\nconst found = computed(() => !props.searching && !!props.answer)\n\n// Where a cell lights: a small hash, so a document keeps its place.\nfunction hash(text: string) {\n  let h = 2166136261\n  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619)\n  return (h >>> 0) / 4294967296\n}\nconst cell = (x: number, y: number) => ({ left: `round(down, ${(x * 100).toFixed(2)}%, 5px)`, top: `${Math.floor(y * 3) * 5}px` })\nconst sparks = Array.from({ length: 36 }, (_, k) => ({ id: k, style: { ...cell(hash(`s${k}x`), hash(`s${k}y`)), '--s': Math.floor(hash(`s${k}t`) * 900) } }))\n// Each found document takes a slot of its own across the field, at a height its id picks, so their 24px targets\n// never overlap.\nconst hits = computed(() => {\n  const results = props.answer?.results ?? []\n  const n = Math.max(1, results.length)\n  const order = results.map((r, k) => ({ r, k })).sort((a, b) => hash(a.r.id) - hash(b.r.id))\n  return order.map(({ r, k }, slot) => {\n    const x = 0.04 + ((slot + 0.25 + hash(`${r.id}x`) * 0.5) / n) * 0.9\n    return { key: `${r.namespace}/${r.id}`, id: r.id, ns: r.namespace ?? props.ns, x, style: { ...cell(x, hash(`${r.id}y`) * 0.8), '--s': 80 + k * 70 } }\n  })\n})\nconst tip = ref<(typeof hits.value)[number] | null>(null)\n\nconst doneAt = ref('')\nwatch(found, (f) => {\n  if (f) doneAt.value = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })\n}, { immediate: true })\n</script>\n\n<template>\n  <section data-ds=\"search-run\" class=\"ds-run flex flex-col gap-2\" :data-found=\"found || undefined\" aria-label=\"search progress\">\n    <div class=\"flex flex-wrap items-center gap-x-3 gap-y-2\">\n      <span class=\"grid type-meta\" role=\"status\">\n        <span v-if=\"!found\" class=\"ds-run-shimmer [grid-area:1/1]\">Searching</span>\n        <span v-else class=\"ds-run-in text-fg-muted [grid-area:1/1]\">Found in</span>\n      </span>\n      <span class=\"flex flex-wrap items-center gap-x-3 gap-y-2\">\n        <component :is=\"found && nsHref ? 'a' : 'span'\" v-for=\"n in shown\" :key=\"n.name\" :href=\"found && nsHref ? nsHref(n.name) : undefined\" class=\"ds-runchip\" :class=\"{ 'ds-runchip-link': found && nsHref }\" :data-hit=\"found && hitNs.has(n.name) ? 'true' : found ? 'false' : undefined\">\n          <img v-if=\"logo(n.name)\" :src=\"logo(n.name)!\" alt=\"\" width=\"12\" height=\"12\" class=\"size-2.5 shrink-0 object-contain\">\n          <span class=\"type-code-sm\">{{ n.name }}</span>\n          <span v-if=\"found && hitNs.has(n.name)\" class=\"ds-runchip-mark\" aria-hidden=\"true\" /><span v-if=\"found && hitNs.has(n.name)\" class=\"sr-only\">, has results</span>\n        </component>\n        <span v-if=\"more > 0\" class=\"ds-runchip\" :data-hit=\"found ? 'false' : undefined\">+{{ more }} more</span>\n      </span>\n    </div>\n    <div class=\"relative mt-1\">\n      <div class=\"ds-index\">\n        <template v-if=\"!found\"><i v-for=\"s in sparks\" :key=\"s.id\" class=\"ds-flick\" :style=\"s.style\" aria-hidden=\"true\" /></template>\n        <button\n          v-for=\"h in hits\"\n          v-else\n          :key=\"h.key\"\n          type=\"button\"\n          class=\"ds-hitbtn\"\n          :style=\"h.style\"\n          :aria-label=\"`${h.id} in ${h.ns}, show it`\"\n          @pointerenter=\"tip = h\"\n          @pointerleave=\"tip = null\"\n          @focus=\"tip = h\"\n          @blur=\"tip = null\"\n          @click=\"emit('reveal', h.key)\"\n        ><i class=\"ds-hit\" aria-hidden=\"true\" /></button>\n      </div>\n      <p v-if=\"tip\" class=\"ds-hit-tip\" :style=\"{ left: `clamp(0px, calc(${(tip.x * 100).toFixed(2)}% - 12px), calc(100% - 220px))` }\" aria-hidden=\"true\"><span class=\"type-code-sm truncate\">{{ tip.id }}</span><span class=\"text-ds-neutral-500\">{{ tip.ns }}</span></p>\n    </div>\n    <div class=\"flex flex-wrap items-center gap-x-3 gap-y-1 type-meta text-fg-muted tabular-nums\">\n      <template v-if=\"!found\">Searching<template v-if=\"total\"> {{ fmt(total) }}</template> documents</template>\n      <template v-else>\n        <span class=\"ds-run-in\"><span class=\"text-home-red-press\">{{ answer!.results.length }}</span><template v-if=\"total\"> of {{ fmt(total) }}</template> documents</span>\n        <span class=\"ds-run-in\">Done {{ doneAt }}</span>\n        <span class=\"ds-run-in\">{{ answer!.took_ms }} ms</span>\n        <CodePop v-if=\"code && answer!.results.length\" :code=\"code\" />\n      </template>\n    </div>\n  </section>\n</template>\n\n<style>\n/* The namespaces read, as quiet words: those that held a result keep a red square, the rest step back. */\n.ds-runchip { display: inline-flex; align-items: center; gap: var(--ds-space-xs); color: var(--ds-color-fg-soft); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); white-space: nowrap; transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-runchip img { transition: opacity var(--ds-duration-enter) var(--ds-easing-standard); }\n.ds-runchip[data-hit=\"false\"] { color: var(--ds-color-fg-muted); }\n.ds-runchip[data-hit=\"false\"] img { opacity: 0.5; }\n.ds-runchip-mark { width: 4px; height: 4px; flex-shrink: 0; background: var(--ds-color-edge-accent); }\n/* Small to the eye, 24px to the pointer. */\n.ds-runchip-link { margin-block: -4px; padding-block: 4px; }\n@media (hover: hover) and (pointer: fine) { .ds-runchip-link:hover { color: var(--ds-color-fg); } }\n.ds-runchip-link:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: 1px; }\n/* Searching: light running across the word (.v2-shimmer). */\n.ds-run-shimmer { background: linear-gradient(90deg, var(--ds-color-neutral-400) 30%, var(--ds-color-neutral-700) 50%, var(--ds-color-neutral-400) 70%) 0 0 / 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: ds-run-shimmer 1400ms linear infinite; }\n@keyframes ds-run-shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }\n/* The index: a field of 3px cells on a 5px pitch drawn by a mask over one fill. Cells flicker while it searches;\n   each document found is a 2 by 2 block of them, in red, so it sits on the field's grid. */\n.ds-index { position: relative; height: 19px; overflow: hidden; }\n.ds-run[data-found] .ds-index { overflow: visible; }\n.ds-index::before, .ds-hit {\n  -webkit-mask-image: linear-gradient(90deg, var(--ds-color-off-black) 3px, transparent 3px), linear-gradient(var(--ds-color-off-black) 3px, transparent 3px);\n  mask-image: linear-gradient(90deg, var(--ds-color-off-black) 3px, transparent 3px), linear-gradient(var(--ds-color-off-black) 3px, transparent 3px);\n  -webkit-mask-size: 5px 5px;\n  mask-size: 5px 5px;\n  -webkit-mask-composite: source-in;\n  mask-composite: intersect;\n}\n.ds-index::before { position: absolute; inset: 0; background: var(--ds-color-neutral-700); content: \"\"; opacity: 0.6; }\n.ds-flick { position: absolute; z-index: 1; width: 3px; height: 3px; background: var(--ds-color-neutral-400); opacity: 0; animation: ds-flick 900ms var(--ds-easing-standard) infinite; animation-delay: calc(var(--s) * 1ms); }\n@keyframes ds-flick { 0%, 18%, 100% { opacity: 0; } 6% { opacity: 1; } }\n.ds-hitbtn { position: absolute; z-index: 2; display: grid; width: 24px; height: 24px; margin: -8px 0 0 -8px; padding: 0; place-items: center; cursor: pointer; }\n.ds-hit { position: static; display: block; width: 8px; height: 8px; background: var(--ds-color-edge-accent); animation: ds-hit-in var(--ds-duration-glide) steps(1, end) calc(var(--s) * 1ms) both; transition: transform var(--ds-duration-micro) var(--ds-easing-standard); }\n@keyframes ds-hit-in { from { opacity: 0; } }\n@media (hover: hover) and (pointer: fine) { .ds-hitbtn:hover .ds-hit { transform: scale(1.25); } }\n.ds-hitbtn:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-off-black); outline-offset: 2px; }\n.ds-hit-tip { position: absolute; top: calc(100% + 6px); z-index: 5; display: flex; max-width: 240px; flex-direction: column; gap: var(--ds-space-2xs); padding: var(--ds-space-sm) var(--ds-space-md); background: var(--ds-color-surface-inverse); color: var(--ds-color-off-white); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); pointer-events: none; }\n/* What the answer brings in. */\n.ds-run-in { animation: ds-run-in var(--ds-duration-enter) var(--ds-easing-out) both; }\n@keyframes ds-run-in { from { opacity: 0; transform: translateY(4px); } }\n@media (prefers-reduced-motion: reduce) {\n  .ds-flick, .ds-hit, .ds-run-in, .ds-run-shimmer { animation: none; }\n  .ds-run-shimmer { color: var(--ds-color-fg-muted); }\n  .ds-flick { opacity: 0.6; }\n  .ds-hit { transition: none; }\n}\n</style>\n"
+    },
+    {
+      "path": "composables/useSearchResults.ts",
+      "content": "// What the search's parts share (SearchResults, SearchRun, WrittenAnswer): the result's shape and a written answer\n// split at its citations. The query's words are marked by MarkedText.\n\n/** The page a passage stands on, for results from PDF and Word documents: `top` is where on the page (0 to 1). */\nexport type ResultPage = { number: number, count: number, top: number, file: string }\n\n/** One passage a search found. */\nexport type SearchResult = { namespace: string, id: string, score: number, text: string, page?: ResultPage }\n\n/** A written answer that marks its sources [1], [2], as words and citation numbers. */\nexport function citeParts(text: string): Array<{ words: string } | { cite: number }> {\n  return text.split(/(\\[\\d+\\])/).filter(Boolean).map(p => (/^\\[\\d+\\]$/.test(p) ? { cite: Number(p.slice(1, -1)) } : { words: p }))\n}\n\n/** A result's key, unique across namespaces. */\nexport const resultKey = (r: SearchResult) => `${r.namespace}/${r.id}`\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "In the product",
+      "center": false,
+      "half": false,
+      "path": "examples/search-run/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { onBeforeUnmount, onMounted, ref, computed, watch } from 'vue'\nimport SearchRun from '@/components/product/SearchRun.vue'\nimport type { SearchResult } from '@/composables/useSearchResults'\n// The run alone, on a loop: \"Searching\" over the namespaces while the index flickers, then where the answer was found,\n// each document a red square to point at. In the product it follows the request's real clock. It keeps the taller\n// state's height, so nothing under it moves, and holds still while the pointer or focus is in it. Once the answer is in,\n// Show code opens the request under the footer.\nconst results: SearchResult[] = [\n  { namespace: 'contracts', id: 'acme-msa-2026', score: 0.94, text: 'Acme may renew for twelve months with 60 days written notice.' },\n  { namespace: 'slack', id: 'legal-thread-1182', score: 0.81, text: 'Legal confirmed that Acme needs EU data residency in the renewal.' },\n  { namespace: 'sales-calls', id: 'acme-oct-review', score: 0.76, text: 'Acme asked what happens to their data at renewal.' },\n  { namespace: 'crm', id: 'acme-renewal-2026', score: 0.71, text: 'Renewal open. Blocker: data processing addendum for the EU region.' },\n]\nconst namespaces = [\n  { name: 'sec-filings', documents: 2184920 },\n  { name: 'contracts', documents: 412830 },\n  { name: 'slack', documents: 96410 },\n  { name: 'crm', documents: 52660 },\n  { name: 'sales-calls', documents: 2870 },\n]\nconst code = `curl https://api.conare.ai/v1/query \\\\\n  -H \"Authorization: Bearer $CONARE_API_KEY\" \\\\\n  -H \"Content-Type: application/json\" \\\\\n  -d '{\"query\": \"Acme renewal EU data\", \"top_k\": 10}'`\n\nconst searching = ref(true)\nconst answer = computed(() => (searching.value ? null : { results, took_ms: 312 }))\nlet timer: ReturnType<typeof setTimeout> | undefined\nconst pointed = ref(false)\nconst focused = ref(false)\nfunction wait() {\n  clearTimeout(timer)\n  if (!pointed.value && !focused.value) timer = setTimeout(next, searching.value ? 600 : 5000)\n}\nfunction next() {\n  searching.value = !searching.value\n  wait()\n}\nwatch([pointed, focused], wait)\nconst root = ref<HTMLElement | null>(null)\nfunction leave(e: FocusEvent) {\n  focused.value = !!root.value?.contains(e.relatedTarget as Node | null)\n}\nconst tallest = ref(0)\nlet sizer: ResizeObserver | undefined\nonMounted(() => {\n  wait()\n  const box = root.value?.firstElementChild\n  if (!box) return\n  sizer = new ResizeObserver(() => { tallest.value = Math.max(tallest.value, box.getBoundingClientRect().height) })\n  sizer.observe(box)\n})\nonBeforeUnmount(() => { clearTimeout(timer); sizer?.disconnect() })\n</script>\n\n<template>\n  <div ref=\"root\" :style=\"tallest ? { minHeight: `${tallest}px` } : undefined\" @pointerenter=\"pointed = true\" @pointerleave=\"pointed = false\" @focusin=\"focused = true\" @focusout=\"leave\">\n    <SearchRun :searching=\"searching\" :answer=\"answer\" :namespaces=\"namespaces\" :code=\"code\" />\n  </div>\n</template>\n",
+      "requires": [
+        "code-pop"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/product/SearchRun.tsx",
+          "content": "'use client'\nimport { useEffect, useState, type CSSProperties } from 'react'\nimport { CodePop } from '@/react/components/ui/CodePop'\nimport type { SearchResult } from '@/react/hooks/useSearchResults'\nimport { cn } from '@/react/lib/cn'\n\n// A search on the request's clock (SearchRun.vue), the website's demo window in the console's light colours:\n// \"Searching\" shimmers over the namespaces it reads while cells of the index flicker. When the answer is in, \"Found in\"\n// takes its place, the namespaces that held a result keep a red square and the rest step back, each document found\n// lights as a red square on the index, and the count reads \"4 of 2,749,690 documents\", with when it finished and the\n// API's time. Each square names its document when pointed at or focused, and a press calls `onReveal` with its key (for\n// SearchResults to show it). `nsHref` makes each namespace a link once the answer is in; `code` (the request as the\n// app would send it) puts Show code (code-pop) at the end of the footer, opening under it. It follows the request:\n// never fake a delay.\nexport interface SearchRunProps {\n  searching: boolean\n  answer: { results: SearchResult[], took_ms: number } | null\n  namespaces: Array<{ name: string, documents: number }>\n  ns?: string\n  logoOf?: (namespace: string) => string | null | undefined\n  nsHref?: (namespace: string) => string\n  code?: string\n  onReveal?: (key: string) => void\n}\n\nconst fmt = (n: number) => n.toLocaleString('en-US')\n// Where a cell lights: a small hash, so a document keeps its place.\nfunction hash(text: string) {\n  let h = 2166136261\n  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619)\n  return (h >>> 0) / 4294967296\n}\nconst cell = (x: number, y: number) => ({ left: `round(down, ${(x * 100).toFixed(2)}%, 5px)`, top: `${Math.floor(y * 3) * 5}px` })\nconst sparks = Array.from({ length: 36 }, (_, k) => ({ id: k, style: { ...cell(hash('s' + k + 'x'), hash('s' + k + 'y')), '--s': Math.floor(hash('s' + k + 't') * 900) } as CSSProperties }))\n\nexport function SearchRun({ searching, answer, namespaces, ns, logoOf, nsHref, code, onReveal }: SearchRunProps) {\n  const logo = (name: string) => logoOf?.(name) ?? null\n  const all = namespaces.filter(n => n.documents > 0).sort((a, b) => b.documents - a.documents)\n  const read = ns ? all.filter(n => n.name === ns) : all\n  const shown = read.slice(0, 4)\n  const more = read.length - shown.length\n  const total = read.reduce((a, n) => a + n.documents, 0)\n  const hitNs = new Set((answer?.results ?? []).map(r => r.namespace))\n  const found = !searching && !!answer\n  // Each found document takes a slot of its own across the field, at a height its id picks, so their 24px targets\n  // never overlap.\n  const results = answer?.results ?? []\n  const n = Math.max(1, results.length)\n  const hits = results.map((r, k) => ({ r, k })).sort((a, b) => hash(a.r.id) - hash(b.r.id)).map(({ r, k }, slot) => {\n    const x = 0.04 + ((slot + 0.25 + hash(`${r.id}x`) * 0.5) / n) * 0.9\n    return { key: `${r.namespace}/${r.id}`, id: r.id, ns: r.namespace ?? ns, x, style: { ...cell(x, hash(`${r.id}y`) * 0.8), '--s': 80 + k * 70 } as CSSProperties }\n  })\n  const [tip, setTip] = useState<(typeof hits)[number] | null>(null)\n  const [doneAt, setDoneAt] = useState('')\n  useEffect(() => {\n    if (found) setDoneAt(new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }))\n  }, [found])\n\n  return (\n    <section data-ds=\"search-run\" className=\"ds-run flex flex-col gap-2\" data-found={found || undefined} aria-label=\"search progress\">\n      <style href=\"ds-search-run\" precedence=\"ds\">{css}</style>\n      <div className=\"flex flex-wrap items-center gap-x-3 gap-y-2\">\n        <span className=\"grid type-meta\" role=\"status\">\n          {!found ? <span className=\"ds-run-shimmer [grid-area:1/1]\">Searching</span> : <span className=\"ds-run-in text-fg-muted [grid-area:1/1]\">Found in</span>}\n        </span>\n        <span className=\"flex flex-wrap items-center gap-x-3 gap-y-2\">\n          {shown.map((s) => {\n            const link = found && nsHref\n            const Tag = link ? 'a' : 'span'\n            return (\n              <Tag key={s.name} href={link ? nsHref(s.name) : undefined} className={cn('ds-runchip', link && 'ds-runchip-link')} data-hit={found && hitNs.has(s.name) ? 'true' : found ? 'false' : undefined}>\n                {logo(s.name) && <img src={logo(s.name)!} alt=\"\" width=\"12\" height=\"12\" className=\"size-2.5 shrink-0 object-contain\" />}\n                <span className=\"type-code-sm\">{s.name}</span>\n                {found && hitNs.has(s.name) && <><span className=\"ds-runchip-mark\" aria-hidden=\"true\" /><span className=\"sr-only\">, has results</span></>}\n              </Tag>\n            )\n          })}\n          {more > 0 && <span className=\"ds-runchip\" data-hit={found ? 'false' : undefined}>{`+${more} more`}</span>}\n        </span>\n      </div>\n      <div className=\"relative mt-1\">\n        <div className=\"ds-index\">\n          {!found\n            ? sparks.map(s => <i key={s.id} className=\"ds-flick\" style={s.style} aria-hidden=\"true\" />)\n            : hits.map(h => (\n                <button\n                  key={h.key}\n                  type=\"button\"\n                  className=\"ds-hitbtn\"\n                  style={h.style}\n                  aria-label={`${h.id} in ${h.ns}, show it`}\n                  onPointerEnter={() => setTip(h)}\n                  onPointerLeave={() => setTip(null)}\n                  onFocus={() => setTip(h)}\n                  onBlur={() => setTip(null)}\n                  onClick={() => onReveal?.(h.key)}\n                ><i className=\"ds-hit\" aria-hidden=\"true\" /></button>\n              ))}\n        </div>\n        {tip && <p className=\"ds-hit-tip\" style={{ left: `clamp(0px, calc(${(tip.x * 100).toFixed(2)}% - 12px), calc(100% - 220px))` }} aria-hidden=\"true\"><span className=\"type-code-sm truncate\">{tip.id}</span><span className=\"text-ds-neutral-500\">{tip.ns}</span></p>}\n      </div>\n      <div className=\"flex flex-wrap items-center gap-x-3 gap-y-1 type-meta text-fg-muted tabular-nums\">\n        {!found\n          ? <>Searching{total ? ` ${fmt(total)}` : null} documents</>\n          : (\n              <>\n                <span className=\"ds-run-in\"><span className=\"text-home-red-press\">{answer!.results.length}</span>{total ? ` of ${fmt(total)}` : null} documents</span>\n                <span className=\"ds-run-in\">{`Done ${doneAt}`}</span>\n                <span className=\"ds-run-in\">{`${answer!.took_ms} ms`}</span>\n                {code && answer!.results.length > 0 && <CodePop code={code} />}\n              </>\n            )}\n      </div>\n    </section>\n  )\n}\n\nexport default SearchRun\n\nconst css = `\n/* The namespaces read, as quiet words: those that held a result keep a red square, the rest step back. */\n.ds-runchip { display: inline-flex; align-items: center; gap: var(--ds-space-xs); color: var(--ds-color-fg-soft); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); white-space: nowrap; transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-runchip img { transition: opacity var(--ds-duration-enter) var(--ds-easing-standard); }\n.ds-runchip[data-hit=\"false\"] { color: var(--ds-color-fg-muted); }\n.ds-runchip[data-hit=\"false\"] img { opacity: 0.5; }\n.ds-runchip-mark { width: 4px; height: 4px; flex-shrink: 0; background: var(--ds-color-edge-accent); }\n/* Small to the eye, 24px to the pointer. */\n.ds-runchip-link { margin-block: -4px; padding-block: 4px; }\n@media (hover: hover) and (pointer: fine) { .ds-runchip-link:hover { color: var(--ds-color-fg); } }\n.ds-runchip-link:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: 1px; }\n/* Searching: light running across the word (.v2-shimmer). */\n.ds-run-shimmer { background: linear-gradient(90deg, var(--ds-color-neutral-400) 30%, var(--ds-color-neutral-700) 50%, var(--ds-color-neutral-400) 70%) 0 0 / 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: ds-run-shimmer 1400ms linear infinite; }\n@keyframes ds-run-shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }\n/* The index: a field of 3px cells on a 5px pitch drawn by a mask over one fill. Cells flicker while it searches;\n   each document found is a 2 by 2 block of them, in red, so it sits on the field's grid. */\n.ds-index { position: relative; height: 19px; overflow: hidden; }\n.ds-run[data-found] .ds-index { overflow: visible; }\n.ds-index::before, .ds-hit {\n  -webkit-mask-image: linear-gradient(90deg, var(--ds-color-off-black) 3px, transparent 3px), linear-gradient(var(--ds-color-off-black) 3px, transparent 3px);\n  mask-image: linear-gradient(90deg, var(--ds-color-off-black) 3px, transparent 3px), linear-gradient(var(--ds-color-off-black) 3px, transparent 3px);\n  -webkit-mask-size: 5px 5px;\n  mask-size: 5px 5px;\n  -webkit-mask-composite: source-in;\n  mask-composite: intersect;\n}\n.ds-index::before { position: absolute; inset: 0; background: var(--ds-color-neutral-700); content: \"\"; opacity: 0.6; }\n.ds-flick { position: absolute; z-index: 1; width: 3px; height: 3px; background: var(--ds-color-neutral-400); opacity: 0; animation: ds-flick 900ms var(--ds-easing-standard) infinite; animation-delay: calc(var(--s) * 1ms); }\n@keyframes ds-flick { 0%, 18%, 100% { opacity: 0; } 6% { opacity: 1; } }\n.ds-hitbtn { position: absolute; z-index: 2; display: grid; width: 24px; height: 24px; margin: -8px 0 0 -8px; padding: 0; place-items: center; cursor: pointer; }\n.ds-hit { position: static; display: block; width: 8px; height: 8px; background: var(--ds-color-edge-accent); animation: ds-hit-in var(--ds-duration-glide) steps(1, end) calc(var(--s) * 1ms) both; transition: transform var(--ds-duration-micro) var(--ds-easing-standard); }\n@keyframes ds-hit-in { from { opacity: 0; } }\n@media (hover: hover) and (pointer: fine) { .ds-hitbtn:hover .ds-hit { transform: scale(1.25); } }\n.ds-hitbtn:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-off-black); outline-offset: 2px; }\n.ds-hit-tip { position: absolute; top: calc(100% + 6px); z-index: 5; display: flex; max-width: 240px; flex-direction: column; gap: var(--ds-space-2xs); padding: var(--ds-space-sm) var(--ds-space-md); background: var(--ds-color-surface-inverse); color: var(--ds-color-off-white); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); pointer-events: none; }\n/* What the answer brings in. */\n.ds-run-in { animation: ds-run-in var(--ds-duration-enter) var(--ds-easing-out) both; }\n@keyframes ds-run-in { from { opacity: 0; transform: translateY(4px); } }\n@media (prefers-reduced-motion: reduce) {\n  .ds-flick, .ds-hit, .ds-run-in, .ds-run-shimmer { animation: none; }\n  .ds-run-shimmer { color: var(--ds-color-fg-muted); }\n  .ds-flick { opacity: 0.6; }\n  .ds-hit { transition: none; }\n}\n`\n"
+        },
+        {
+          "path": "react/hooks/useSearchResults.ts",
+          "content": "// What the search's parts share (SearchResults, SearchRun, WrittenAnswer): the result's shape and a written answer\n// split at its citations. The query's words are marked by MarkedText.\n\n/** The page a passage stands on, for results from PDF and Word documents: `top` is where on the page (0 to 1). */\nexport type ResultPage = { number: number, count: number, top: number, file: string }\n\n/** One passage a search found. */\nexport type SearchResult = { namespace: string, id: string, score: number, text: string, page?: ResultPage }\n\n/** A written answer that marks its sources [1], [2], as words and citation numbers. */\nexport function citeParts(text: string): Array<{ words: string } | { cite: number }> {\n  return text.split(/(\\[\\d+\\])/).filter(Boolean).map(p => (/^\\[\\d+\\]$/.test(p) ? { cite: Number(p.slice(1, -1)) } : { words: p }))\n}\n\n/** A result's key, unique across namespaces. */\nexport const resultKey = (r: SearchResult) => `${r.namespace}/${r.id}`\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "code-pop"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "SearchRun",
+            "file": "react/components/product/SearchRun.tsx",
+            "props": [
+              {
+                "name": "searching",
+                "type": "boolean",
+                "required": true
+              },
+              {
+                "name": "answer",
+                "type": "{ results: SearchResult[], took_ms: number } | null",
+                "required": true
+              },
+              {
+                "name": "namespaces",
+                "type": "Array<{ name: string, documents: number }>",
+                "required": true
+              },
+              {
+                "name": "ns",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "logoOf",
+                "type": "(namespace: string) => string | null | undefined",
+                "required": false
+              },
+              {
+                "name": "nsHref",
+                "type": "(namespace: string) => string",
+                "required": false
+              },
+              {
+                "name": "code",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "onReveal",
+                "type": "(key: string) => void",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "react/examples/search-run/Product.tsx",
+          "content": "'use client'\nimport { useEffect, useRef, useState } from 'react'\nimport { SearchRun } from '@/react/components/product/SearchRun'\nimport type { SearchResult } from '@/react/hooks/useSearchResults'\n// The run alone, on a loop: \"Searching\" over the namespaces while the index flickers, then where the answer was found,\n// each document a red square to point at. In the product it follows the request's real clock. It keeps the taller\n// state's height, so nothing under it moves, and holds still while the pointer or focus is in it. Once the answer is in,\n// Show code opens the request under the footer.\nconst results: SearchResult[] = [\n  { namespace: 'contracts', id: 'acme-msa-2026', score: 0.94, text: 'Acme may renew for twelve months with 60 days written notice.' },\n  { namespace: 'slack', id: 'legal-thread-1182', score: 0.81, text: 'Legal confirmed that Acme needs EU data residency in the renewal.' },\n  { namespace: 'sales-calls', id: 'acme-oct-review', score: 0.76, text: 'Acme asked what happens to their data at renewal.' },\n  { namespace: 'crm', id: 'acme-renewal-2026', score: 0.71, text: 'Renewal open. Blocker: data processing addendum for the EU region.' },\n]\nconst namespaces = [\n  { name: 'sec-filings', documents: 2184920 },\n  { name: 'contracts', documents: 412830 },\n  { name: 'slack', documents: 96410 },\n  { name: 'crm', documents: 52660 },\n  { name: 'sales-calls', documents: 2870 },\n]\nconst code = `curl https://api.conare.ai/v1/query \\\\\n  -H \"Authorization: Bearer $CONARE_API_KEY\" \\\\\n  -H \"Content-Type: application/json\" \\\\\n  -d '{\"query\": \"Acme renewal EU data\", \"top_k\": 10}'`\n\nexport default function Product() {\n  const [searching, setSearching] = useState(true)\n  const answer = searching ? null : { results, took_ms: 312 }\n  const [pointed, setPointed] = useState(false)\n  const [focused, setFocused] = useState(false)\n  // The loop: 600ms searching, 5s found, held while the pointer or focus is in it.\n  useEffect(() => {\n    if (pointed || focused) return\n    const timer = setTimeout(() => setSearching(s => !s), searching ? 600 : 5000)\n    return () => clearTimeout(timer)\n  }, [searching, pointed, focused])\n  const root = useRef<HTMLDivElement | null>(null)\n  const [tallest, setTallest] = useState(0)\n  useEffect(() => {\n    const box = root.current?.firstElementChild\n    if (!box) return\n    const sizer = new ResizeObserver(() => setTallest(t => Math.max(t, box.getBoundingClientRect().height)))\n    sizer.observe(box)\n    return () => sizer.disconnect()\n  }, [])\n  return (\n    <div ref={root} style={tallest ? { minHeight: `${tallest}px` } : undefined} onPointerEnter={() => setPointed(true)} onPointerLeave={() => setPointed(false)} onFocus={() => setFocused(true)} onBlur={e => setFocused(!!root.current?.contains(e.relatedTarget as Node | null))}>\n      <SearchRun searching={searching} answer={answer} namespaces={namespaces} code={code} />\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "code-pop"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/product/search-run.ts",
+          "content": "import { nothing, type PropertyValues } from 'lit'\nimport { html } from 'lit/static-html.js'\nimport { repeat } from 'lit/directives/repeat.js'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport type { SearchResult } from '@/elements/controllers/search-results'\nimport '@/elements/components/ui/code-pop'\nimport styles from 'virtual:tw'\n\n// SearchRun.vue as <conare-search-run>: a search on the request's clock, the website's demo window in the console's\n// light colours: \"Searching\" shimmers over the namespaces it reads while cells of the index flicker. When the answer is\n// in, \"Found in\" takes its place, the namespaces that held a result keep a red square and the rest step back, each\n// document found lights as a red square on the index, and the count reads \"4 of 2,749,690 documents\", with when it\n// finished and the API's time. Each square names its document when pointed at or focused, and a press fires `reveal`\n// with its key (for <conare-search-results> to show it). `nsHref` (a function) makes each namespace a link once the\n// answer is in; `code` (the request as the app would send it) puts Show code (code-pop) at the end of the footer,\n// opening under it. It follows the request: never fake a delay.\n\nconst fmt = (n: number) => n.toLocaleString('en-US')\n// Where a cell lights: a small hash, so a document keeps its place.\nfunction hash(text: string) {\n\tlet h = 2166136261\n\tfor (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619)\n\treturn (h >>> 0) / 4294967296\n}\nconst cell = (x: number, y: number) => `left: round(down, ${(x * 100).toFixed(2)}%, 5px); top: ${Math.floor(y * 3) * 5}px`\nconst sparks = Array.from({ length: 36 }, (_, k) => `${cell(hash('s' + k + 'x'), hash('s' + k + 'y'))}; --s: ${Math.floor(hash('s' + k + 't') * 900)}`)\n\ntype Hit = { key: string, id: string, ns?: string, x: number, style: string }\n\n/**\n * @summary A search on the request's clock: the namespaces read, the index, and what was found.\n * @fires reveal - A found document's square was pressed; detail { key }.\n */\nexport class SearchRun extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { searching: { type: Boolean }, answer: { type: Object }, namespaces: { type: Array }, ns: {}, logoOf: { attribute: false }, nsHref: { attribute: false }, code: {}, tip: { state: true }, doneAt: { state: true } }\n\n\t/** The request is out. */\n\tsearching = false\n\t/** { results, took_ms } once it is in. */\n\tanswer: { results: SearchResult[], took_ms: number } | null = null\n\t/** [{ name, documents }]: the namespaces it reads. */\n\tnamespaces: Array<{ name: string, documents: number }> = []\n\t/** One namespace only. */\n\tns?: string\n\t/** A namespace's app mark (a property: a function). */\n\tlogoOf?: (namespace: string) => string | null | undefined\n\t/** A namespace's page, once the answer is in (a property: a function). */\n\tnsHref?: (namespace: string) => string\n\t/** The request as the app would send it: Show code. */\n\tcode?: string\n\tprivate tip: Hit | null = null\n\tprivate doneAt = ''\n\n\tprivate get found() {\n\t\treturn !this.searching && !!this.answer\n\t}\n\t// Vue's watch(found, { immediate: true }).\n\tprotected willUpdate(changed: PropertyValues) {\n\t\tif ((changed.has('searching') || changed.has('answer')) && this.found) {\n\t\t\tconst was = !(changed.has('searching') ? changed.get('searching') : this.searching) && !!(changed.has('answer') ? changed.get('answer') : this.answer)\n\t\t\tif (!was || !this.hasUpdated) this.doneAt = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })\n\t\t}\n\t}\n\n\trender() {\n\t\tconst logo = (name: string) => this.logoOf?.(name) ?? null\n\t\tconst all = (this.namespaces ?? []).filter((n) => n.documents > 0).sort((a, b) => b.documents - a.documents)\n\t\tconst read = this.ns ? all.filter((n) => n.name === this.ns) : all\n\t\tconst shown = read.slice(0, 4)\n\t\tconst more = read.length - shown.length\n\t\tconst total = read.reduce((a, n) => a + n.documents, 0)\n\t\tconst results = this.answer?.results ?? []\n\t\tconst hitNs = new Set(results.map((r) => r.namespace))\n\t\tconst found = this.found\n\t\tconst n = Math.max(1, results.length)\n\t\t// Each found document takes a slot of its own across the field, at a height its id picks, so their 24px targets\n\t\t// never overlap.\n\t\tconst hits: Hit[] = results.map((r, k) => ({ r, k })).sort((a, b) => hash(a.r.id) - hash(b.r.id)).map(({ r, k }, slot) => {\n\t\t\tconst x = 0.04 + ((slot + 0.25 + hash(`${r.id}x`) * 0.5) / n) * 0.9\n\t\t\treturn { key: `${r.namespace}/${r.id}`, id: r.id, ns: r.namespace ?? this.ns, x, style: `${cell(x, hash(`${r.id}y`) * 0.8)}; --s: ${80 + k * 70}` }\n\t\t})\n\t\tconst pop = tag('code-pop')\n\t\tconst chip = (s: { name: string }) => {\n\t\t\tconst hit = ifDefined(found && hitNs.has(s.name) ? 'true' : found ? 'false' : undefined)\n\t\t\tconst inner = html`${logo(s.name) ? html`<img src=${logo(s.name)!} alt=\"\" width=\"12\" height=\"12\" class=\"size-2.5 shrink-0 object-contain\">` : nothing}<span class=\"type-code-sm\">${s.name}</span>${found && hitNs.has(s.name) ? html`<span class=\"ds-runchip-mark\" aria-hidden=\"true\"></span><span class=\"sr-only\">, has results</span>` : nothing}`\n\t\t\treturn found && this.nsHref ? html`<a href=${this.nsHref(s.name)} class=\"ds-runchip ds-runchip-link\" data-hit=${hit}>${inner}</a>` : html`<span class=\"ds-runchip\" data-hit=${hit}>${inner}</span>`\n\t\t}\n\t\treturn html`<section data-ds=\"search-run\" class=\"ds-run flex flex-col gap-2\" data-found=${ifDefined(found ? 'true' : undefined)} aria-label=\"search progress\">\n\t\t\t<div class=\"flex flex-wrap items-center gap-x-3 gap-y-2\">\n\t\t\t\t<span class=\"grid type-meta\" role=\"status\">${!found ? html`<span class=\"ds-run-shimmer [grid-area:1/1]\">Searching</span>` : html`<span class=\"ds-run-in text-fg-muted [grid-area:1/1]\">Found in</span>`}</span>\n\t\t\t\t<span class=\"flex flex-wrap items-center gap-x-3 gap-y-2\">${repeat(shown, (s) => s.name, chip)}${more > 0 ? html`<span class=\"ds-runchip\" data-hit=${ifDefined(found ? 'false' : undefined)}>${`+${more} more`}</span>` : nothing}</span>\n\t\t\t</div>\n\t\t\t<div class=\"relative mt-1\">\n\t\t\t\t<div class=\"ds-index\">${!found\n\t\t\t\t\t? sparks.map((s) => html`<i class=\"ds-flick\" style=${s} aria-hidden=\"true\"></i>`)\n\t\t\t\t\t: repeat(hits, (h) => h.key, (h) => html`<button type=\"button\" class=\"ds-hitbtn\" style=${h.style} aria-label=${`${h.id} in ${h.ns}, show it`} @pointerenter=${() => { this.tip = h }} @pointerleave=${() => { this.tip = null }} @focus=${() => { this.tip = h }} @blur=${() => { this.tip = null }} @click=${() => this.emit('reveal', { key: h.key })}><i class=\"ds-hit\" aria-hidden=\"true\"></i></button>`)}</div>\n\t\t\t\t${this.tip ? html`<p class=\"ds-hit-tip\" style=${`left: clamp(0px, calc(${(this.tip.x * 100).toFixed(2)}% - 12px), calc(100% - 220px))`} aria-hidden=\"true\"><span class=\"type-code-sm truncate\">${this.tip.id}</span><span class=\"text-ds-neutral-500\">${this.tip.ns}</span></p>` : nothing}\n\t\t\t</div>\n\t\t\t<div class=\"flex flex-wrap items-center gap-x-3 gap-y-1 type-meta text-fg-muted tabular-nums\">${!found\n\t\t\t\t? html`${'Searching'}${total ? ` ${fmt(total)}` : nothing}${' documents'}`\n\t\t\t\t: html`<span class=\"ds-run-in\"><span class=\"text-home-red-press\">${results.length}</span>${total ? ` of ${fmt(total)}` : nothing} documents</span><span class=\"ds-run-in\">${`Done ${this.doneAt}`}</span><span class=\"ds-run-in\">${`${this.answer!.took_ms} ms`}</span>${this.code && results.length ? html`<${pop} .code=${this.code}></${pop}>` : nothing}`}</div>\n\t\t</section>`\n\t}\n}\n\ndefine('search-run', SearchRun)\n"
+        },
+        {
+          "path": "elements/components/product/search-run.css",
+          "content": "/* The namespaces read, as quiet words: those that held a result keep a red square, the rest step back. */\n.ds-runchip { display: inline-flex; align-items: center; gap: var(--ds-space-xs); color: var(--ds-color-fg-soft); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); white-space: nowrap; transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-runchip img { transition: opacity var(--ds-duration-enter) var(--ds-easing-standard); }\n.ds-runchip[data-hit=\"false\"] { color: var(--ds-color-fg-muted); }\n.ds-runchip[data-hit=\"false\"] img { opacity: 0.5; }\n.ds-runchip-mark { width: 4px; height: 4px; flex-shrink: 0; background: var(--ds-color-edge-accent); }\n/* Small to the eye, 24px to the pointer. */\n.ds-runchip-link { margin-block: -4px; padding-block: 4px; }\n@media (hover: hover) and (pointer: fine) { .ds-runchip-link:hover { color: var(--ds-color-fg); } }\n.ds-runchip-link:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: 1px; }\n/* Searching: light running across the word (.v2-shimmer). */\n.ds-run-shimmer { background: linear-gradient(90deg, var(--ds-color-neutral-400) 30%, var(--ds-color-neutral-700) 50%, var(--ds-color-neutral-400) 70%) 0 0 / 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: ds-run-shimmer 1400ms linear infinite; }\n@keyframes ds-run-shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }\n/* The index: a field of 3px cells on a 5px pitch drawn by a mask over one fill. Cells flicker while it searches;\n   each document found is a 2 by 2 block of them, in red, so it sits on the field's grid. */\n.ds-index { position: relative; height: 19px; overflow: hidden; }\n.ds-run[data-found] .ds-index { overflow: visible; }\n.ds-index::before, .ds-hit {\n  -webkit-mask-image: linear-gradient(90deg, var(--ds-color-off-black) 3px, transparent 3px), linear-gradient(var(--ds-color-off-black) 3px, transparent 3px);\n  mask-image: linear-gradient(90deg, var(--ds-color-off-black) 3px, transparent 3px), linear-gradient(var(--ds-color-off-black) 3px, transparent 3px);\n  -webkit-mask-size: 5px 5px;\n  mask-size: 5px 5px;\n  -webkit-mask-composite: source-in;\n  mask-composite: intersect;\n}\n.ds-index::before { position: absolute; inset: 0; background: var(--ds-color-neutral-700); content: \"\"; opacity: 0.6; }\n.ds-flick { position: absolute; z-index: 1; width: 3px; height: 3px; background: var(--ds-color-neutral-400); opacity: 0; animation: ds-flick 900ms var(--ds-easing-standard) infinite; animation-delay: calc(var(--s) * 1ms); }\n@keyframes ds-flick { 0%, 18%, 100% { opacity: 0; } 6% { opacity: 1; } }\n.ds-hitbtn { position: absolute; z-index: 2; display: grid; width: 24px; height: 24px; margin: -8px 0 0 -8px; padding: 0; place-items: center; cursor: pointer; }\n.ds-hit { position: static; display: block; width: 8px; height: 8px; background: var(--ds-color-edge-accent); animation: ds-hit-in var(--ds-duration-glide) steps(1, end) calc(var(--s) * 1ms) both; transition: transform var(--ds-duration-micro) var(--ds-easing-standard); }\n@keyframes ds-hit-in { from { opacity: 0; } }\n@media (hover: hover) and (pointer: fine) { .ds-hitbtn:hover .ds-hit { transform: scale(1.25); } }\n.ds-hitbtn:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-off-black); outline-offset: 2px; }\n.ds-hit-tip { position: absolute; top: calc(100% + 6px); z-index: 5; display: flex; max-width: 240px; flex-direction: column; gap: var(--ds-space-2xs); padding: var(--ds-space-sm) var(--ds-space-md); background: var(--ds-color-surface-inverse); color: var(--ds-color-off-white); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); pointer-events: none; }\n/* What the answer brings in. */\n.ds-run-in { animation: ds-run-in var(--ds-duration-enter) var(--ds-easing-out) both; }\n@keyframes ds-run-in { from { opacity: 0; transform: translateY(4px); } }\n@media (prefers-reduced-motion: reduce) {\n  .ds-flick, .ds-hit, .ds-run-in, .ds-run-shimmer { animation: none; }\n  .ds-run-shimmer { color: var(--ds-color-fg-muted); }\n  .ds-flick { opacity: 0.6; }\n  .ds-hit { transition: none; }\n}\n"
+        },
+        {
+          "path": "elements/controllers/search-results.ts",
+          "content": "// What the search's parts share (SearchResults, SearchRun, WrittenAnswer): the result's shape and a written answer\n// split at its citations. The query's words are marked by MarkedText.\n\n/** The page a passage stands on, for results from PDF and Word documents: `top` is where on the page (0 to 1). */\nexport type ResultPage = { number: number, count: number, top: number, file: string }\n\n/** One passage a search found. */\nexport type SearchResult = { namespace: string, id: string, score: number, text: string, page?: ResultPage }\n\n/** A written answer that marks its sources [1], [2], as words and citation numbers. */\nexport function citeParts(text: string): Array<{ words: string } | { cite: number }> {\n\treturn text.split(/(\\[\\d+\\])/).filter(Boolean).map(p => (/^\\[\\d+\\]$/.test(p) ? { cite: Number(p.slice(1, -1)) } : { words: p }))\n}\n\n/** A result's key, unique across namespaces. */\nexport const resultKey = (r: SearchResult) => `${r.namespace}/${r.id}`\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/search-run.js",
+        "elements/code-pop.js",
+        "elements/code-block.js",
+        "elements/code-copy.js"
+      ],
+      "tag": "conare-search-run",
+      "tags": [
+        "conare-search-run"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "code-block",
+        "code-pop"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-search-run",
+            "name": "SearchRun",
+            "module": "elements/search-run.js",
+            "description": "A search on the request's clock: the namespaces read, the index, and what was found.",
+            "attributes": [
+              {
+                "name": "searching",
+                "field": "searching",
+                "type": "boolean",
+                "default": "false",
+                "description": "The request is out."
+              },
+              {
+                "name": "answer",
+                "field": "answer",
+                "type": "{ results: SearchResult[]; took_ms: number; } | null",
+                "default": "null",
+                "description": "{ results, took_ms } once it is in."
+              },
+              {
+                "name": "namespaces",
+                "field": "namespaces",
+                "type": "{ name: string; documents: number; }[]",
+                "default": "[]",
+                "description": "[{ name, documents }]: the namespaces it reads."
+              },
+              {
+                "name": "ns",
+                "field": "ns",
+                "type": "string | undefined",
+                "description": "One namespace only."
+              },
+              {
+                "name": "code",
+                "field": "code",
+                "type": "string | undefined",
+                "description": "The request as the app would send it: Show code."
+              },
+              {
+                "name": "tip",
+                "field": "tip",
+                "type": "Hit | null",
+                "default": "null"
+              },
+              {
+                "name": "doneAt",
+                "field": "doneAt",
+                "type": "string",
+                "default": "''"
+              }
+            ],
+            "properties": [
+              {
+                "name": "searching",
+                "type": "boolean",
+                "default": "false",
+                "description": "The request is out.",
+                "attribute": "searching"
+              },
+              {
+                "name": "answer",
+                "type": "{ results: SearchResult[]; took_ms: number; } | null",
+                "default": "null",
+                "description": "{ results, took_ms } once it is in.",
+                "attribute": "answer"
+              },
+              {
+                "name": "namespaces",
+                "type": "{ name: string; documents: number; }[]",
+                "default": "[]",
+                "description": "[{ name, documents }]: the namespaces it reads.",
+                "attribute": "namespaces"
+              },
+              {
+                "name": "ns",
+                "type": "string | undefined",
+                "description": "One namespace only.",
+                "attribute": "ns"
+              },
+              {
+                "name": "logoOf",
+                "type": "((namespace: string) => string | null | undefined) | undefined",
+                "description": "A namespace's app mark (a property: a function)."
+              },
+              {
+                "name": "nsHref",
+                "type": "((namespace: string) => string) | undefined",
+                "description": "A namespace's page, once the answer is in (a property: a function)."
+              },
+              {
+                "name": "code",
+                "type": "string | undefined",
+                "description": "The request as the app would send it: Show code.",
+                "attribute": "code"
+              }
+            ],
+            "events": [
+              {
+                "name": "reveal",
+                "description": "A found document's square was pressed; detail { key }."
+              }
+            ],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/search-run/Product.html",
+          "content": "<!-- The run alone, on a loop: \"Searching\" over the namespaces while the index flickers, then where the answer was\n     found, each document a red square to point at. In the product it follows the request's real clock. It keeps the\n     taller state's height, so nothing under it moves, and holds still while the pointer or focus is in it. Once the\n     answer is in, Show code opens the request under the footer. -->\n<div id=\"run-box\"><conare-search-run searching></conare-search-run></div>\n<script type=\"module\">\n  const results = [\n    { namespace: 'contracts', id: 'acme-msa-2026', score: 0.94, text: 'Acme may renew for twelve months with 60 days written notice.' },\n    { namespace: 'slack', id: 'legal-thread-1182', score: 0.81, text: 'Legal confirmed that Acme needs EU data residency in the renewal.' },\n    { namespace: 'sales-calls', id: 'acme-oct-review', score: 0.76, text: 'Acme asked what happens to their data at renewal.' },\n    { namespace: 'crm', id: 'acme-renewal-2026', score: 0.71, text: 'Renewal open. Blocker: data processing addendum for the EU region.' },\n  ]\n  const box = document.getElementById('run-box')\n  const run = box.querySelector('conare-search-run')\n  run.namespaces = [\n    { name: 'sec-filings', documents: 2184920 },\n    { name: 'contracts', documents: 412830 },\n    { name: 'slack', documents: 96410 },\n    { name: 'crm', documents: 52660 },\n    { name: 'sales-calls', documents: 2870 },\n  ]\n  run.code = `curl https://api.conare.ai/v1/query \\\\\n  -H \"Authorization: Bearer $CONARE_API_KEY\" \\\\\n  -H \"Content-Type: application/json\" \\\\\n  -d '{\"query\": \"Acme renewal EU data\", \"top_k\": 10}'`\n  // The loop: 600ms searching, 5s found, held while the pointer or focus is in it.\n  let timer\n  let pointed = false\n  let focused = false\n  const wait = () => {\n    clearTimeout(timer)\n    if (!pointed && !focused) timer = setTimeout(next, run.searching ? 600 : 5000)\n  }\n  const next = () => {\n    run.searching = !run.searching\n    run.answer = run.searching ? null : { results, took_ms: 312 }\n    wait()\n  }\n  box.addEventListener('pointerenter', () => { pointed = true; wait() })\n  box.addEventListener('pointerleave', () => { pointed = false; wait() })\n  box.addEventListener('focusin', () => { focused = true; wait() })\n  box.addEventListener('focusout', (e) => { focused = box.contains(e.relatedTarget) || run.shadowRoot.contains(e.relatedTarget); wait() })\n  wait()\n  // The taller state's height: the run draws its box in its shadow root.\n  await customElements.whenDefined('conare-search-run')\n  await run.updateComplete\n  const section = run.shadowRoot.querySelector('section')\n  let tallest = 0\n  new ResizeObserver(() => {\n    tallest = Math.max(tallest, section.getBoundingClientRect().height)\n    box.style.minHeight = `${tallest}px`\n  }).observe(section)\n</script>\n"
+        }
+      ]
+    }
+  }
+}

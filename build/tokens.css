@@ -1,0 +1,338 @@
+/*
+ * Conare design tokens: the single source of every value the library and the CLI use.
+ *
+ * Sources (read-only): conare-web branch agencidev/console, tokens/primitive.tokens.json,
+ * tokens/semantic.tokens.json, tokens/theme.dark.tokens.json (as generated into
+ * app/assets/css/tokens.css), app/assets/css/main.css (@theme), app/assets/css/console2.css
+ * (the console's measured sizes and motion) and conare-brand/design.md (the brand kit).
+ *
+ * The console, which this library draws, uses the website's look: Faculty Glyphic headings,
+ * Geist text, Geist Mono code, the website red (#EA3325), square controls and hairlines.
+ * The brand kit's own values (Inter, speed red, the rounded radius scale) are kept as
+ * primitives for brand surfaces outside the console.
+ *
+ * scripts/build-brand.mjs turns this file into build/tokens.css, build/theme.css (the
+ * Tailwind 4 theme), build/fonts.css and build/tokens.json. Edit values here only.
+ */
+
+:root {
+  /* Primitives: the brand kit (design.md section 3). */
+  --ds-color-speed-red: #FF0004;
+  --ds-color-red-lift: #FF4044;
+  --ds-color-red-deep: #C70003;
+  --ds-color-red-press: #B30003;
+  --ds-color-red-wash: #FFEBEB;
+  --ds-color-red-wash-dark: #2B0A0B;
+  --ds-color-off-white: #FEFEFE;
+  --ds-color-neutral-700: #DEDDDC;
+  --ds-color-neutral-600: #C3C1BF;
+  --ds-color-neutral-500: #989694;
+  --ds-color-neutral-400: #6C6A68;
+  --ds-color-neutral-300: #494745;
+  --ds-color-neutral-200: #31302F;
+  --ds-color-neutral-100: #201F1E;
+  --ds-color-off-black: #020202;
+
+  /* Primitives: the website and console (main.css, the "home" values). */
+  --ds-color-home-red: #EA3325;
+  --ds-color-home-red-hover: #D02A1D;
+  --ds-color-home-red-press: #B42317;
+  --ds-color-home-wash-hover: #FFDEDD;
+  --ds-color-home-paper: #F7F6F4;
+  --ds-color-home-grey: #F3F3F3;
+  --ds-color-code-sand: #D8C9A3;
+  --ds-color-code-peach: #F2C6A0;
+
+  /* Semantic roles, light theme (semantic.tokens.json). */
+  --ds-color-surface: var(--ds-color-off-white);
+  --ds-color-surface-subtle: var(--ds-color-home-paper);
+  --ds-color-surface-sunken: var(--ds-color-neutral-700);
+  --ds-color-surface-inverse: var(--ds-color-off-black);
+  --ds-color-surface-accent: var(--ds-color-home-red);
+  --ds-color-surface-danger: var(--ds-color-red-wash);
+  --ds-color-fg: var(--ds-color-off-black);
+  --ds-color-fg-soft: var(--ds-color-neutral-300);
+  --ds-color-fg-muted: var(--ds-color-neutral-400);
+  --ds-color-fg-faint: var(--ds-color-neutral-500);
+  --ds-color-fg-inverse: var(--ds-color-off-white);
+  --ds-color-fg-on-accent: var(--ds-color-off-white);
+  --ds-color-fg-accent: var(--ds-color-home-red-press);
+  --ds-color-fg-accent-display: var(--ds-color-home-red);
+  --ds-color-fg-danger: var(--ds-color-home-red-press);
+  --ds-color-edge: var(--ds-color-neutral-700);
+  --ds-color-edge-strong: var(--ds-color-neutral-600);
+  --ds-color-edge-focus: var(--ds-color-off-black);
+  --ds-color-edge-accent: var(--ds-color-home-red);
+  --ds-color-action-primary: var(--ds-color-off-black);
+  --ds-color-action-primary-hover: var(--ds-color-home-red-hover);
+  --ds-color-action-primary-press: var(--ds-color-home-red-press);
+  --ds-color-action-primary-fg: var(--ds-color-off-white);
+  --ds-color-action-secondary-edge: var(--ds-color-neutral-600);
+  --ds-color-action-secondary-edge-hover: var(--ds-color-off-black);
+  --ds-color-action-danger: var(--ds-color-home-red-press);
+  --ds-color-action-danger-hover: var(--ds-color-home-red-press);
+  --ds-color-action-disabled: var(--ds-color-neutral-700);
+  --ds-color-action-disabled-fg: var(--ds-color-neutral-300);
+  --ds-color-status-working: var(--ds-color-off-black);
+  --ds-color-status-working-fg: var(--ds-color-off-white);
+  --ds-color-status-failed: var(--ds-color-red-wash);
+  --ds-color-status-failed-fg: var(--ds-color-home-red-press);
+  --ds-color-code: var(--ds-color-neutral-100);
+  --ds-color-code-raised: var(--ds-color-neutral-200);
+  --ds-color-code-edge: var(--ds-color-neutral-300);
+  --ds-color-code-fg: var(--ds-color-off-white);
+  --ds-color-code-muted: var(--ds-color-neutral-500);
+  --ds-color-code-keyword: var(--ds-color-red-lift);
+  --ds-color-code-string: var(--ds-color-code-sand);
+  --ds-color-code-call: var(--ds-color-code-peach);
+  --ds-color-data-1: var(--ds-color-home-red);
+  --ds-color-data-2: var(--ds-color-neutral-400);
+  --ds-color-data-3: var(--ds-color-neutral-600);
+  --ds-color-data-highlight: var(--ds-color-home-red);
+  --ds-color-data-grid: var(--ds-color-neutral-700);
+  --ds-color-scrim: color-mix(in srgb, var(--ds-color-off-black) 40%, transparent);
+
+  /* Type: faces (console2.css @font-face, nuxt.config @nuxt/fonts). */
+  --ds-font-heading: "Faculty Glyphic (Conare)", "Faculty Glyphic", "Iowan Old Style", Georgia, serif;
+  --ds-font-text: "Geist (Conare)", "Geist", ui-sans-serif, system-ui, sans-serif;
+  --ds-font-code: "Geist Mono (Conare)", "Geist Mono", ui-monospace, SFMono-Regular, monospace;
+  --ds-font-brand: "Inter (Conare)", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --ds-font-weight-regular: 400;
+  --ds-font-weight-medium: 500;
+  --ds-font-weight-semibold: 600;
+
+  /* Type: sizes and line heights (console2.css: 11, 12, 13, 14, then multiples of 4). */
+  --ds-text-tag: 10px;
+  --ds-text-tag-leading: 14px;
+  --ds-text-caption: 11px;
+  --ds-text-caption-leading: 16px;
+  --ds-text-meta: 12px;
+  --ds-text-meta-leading: 16px;
+  --ds-text-ui: 13px;
+  --ds-text-ui-leading: 20px;
+  --ds-text-body: 14px;
+  --ds-text-body-leading: 20px;
+  --ds-text-body-lg: 15px;
+  --ds-text-body-lg-leading: 24px;
+  --ds-text-input: 16px;
+  --ds-text-input-leading: 24px;
+  --ds-text-heading-4: 16px;
+  --ds-text-heading-4-leading: 24px;
+  --ds-text-heading-3: 20px;
+  --ds-text-heading-3-leading: 28px;
+  --ds-text-heading-2: 24px;
+  --ds-text-heading-2-leading: 32px;
+  --ds-text-heading-1: 32px;
+  --ds-text-heading-1-leading: 40px;
+  --ds-text-hero: 40px;
+  --ds-text-hero-leading: 48px;
+  --ds-text-display: 48px;
+  --ds-text-display-leading: 52px;
+  --ds-tracking-tight: -0.01em;
+  --ds-tracking-display: -0.02em;
+  --ds-tracking-tag: 0.06em;
+
+  /* Space: a 4px base; the console's gaps and insets (tokens.css space.*). */
+  --ds-space-2xs: 2px;
+  --ds-space-xs: 4px;
+  --ds-space-sm: 6px;
+  --ds-space-md: 8px;
+  --ds-space-lg: 12px;
+  --ds-space-xl: 16px;
+  --ds-space-2xl: 24px;
+  --ds-space-3xl: 48px;
+  --ds-space-4xl: 96px;
+
+  /* Sizes (tokens.css size.*). */
+  --ds-size-control-xs: 22px;
+  --ds-size-control-sm: 28px;
+  --ds-size-control-md: 32px;
+  --ds-size-control-lg: 36px;
+  --ds-size-control-touch: 40px;
+  --ds-size-row: 40px;
+  --ds-size-bar: 48px;
+  --ds-size-icon-sm: 12px;
+  --ds-size-icon-md: 14px;
+  --ds-size-icon-lg: 16px;
+  --ds-size-mark-nav: 20px;
+  --ds-layout-sidebar: 216px;
+  --ds-layout-rail: 232px;
+  --ds-layout-page: 960px;
+  --ds-layout-page-wide: 1120px;
+
+  /* Radius: the console is square; the brand kit's scale is for brand surfaces. */
+  --ds-radius-control: 0px;
+  --ds-radius-container: 0px;
+  --ds-radius-sm: 8px;
+  --ds-radius-md: 12px;
+  --ds-radius-lg: 16px;
+  --ds-radius-xl: 24px;
+  --ds-radius-full: 9999px;
+
+  /* Borders. No shadows: Conare separates with a hairline or a fill (design.md section 5). */
+  --ds-border-hairline: 1px;
+  --ds-border-focus: 2px;
+
+  /* Motion (tokens.css motion.*, console2.css): never ease-in, exits faster than entrances. */
+  --ds-duration-instant: 0ms;
+  --ds-duration-press: 70ms; /* Pressed colour, from pointer-down. */
+  --ds-duration-cell: 80ms; /* One pixel cell of the dark button's fill, staggered across it. */
+  --ds-duration-micro: 120ms; /* Hover colour, border and background changes. */
+  --ds-duration-exit: 120ms; /* Menus and panels leaving, faster than they came. */
+  --ds-duration-fade: 140ms; /* A toast leaving. */
+  --ds-duration-swap: 150ms; /* Two words crossing in one cell (Copy, Copied). */
+  --ds-duration-glide: 160ms; /* Small moves: a thumb sliding, a label rolling, a chevron turning. */
+  --ds-duration-slide: 180ms; /* The segmented control's block gliding to the pick. */
+  --ds-duration-enter: 200ms; /* Menus, toasts and panels coming in. */
+  --ds-duration-settle: 220ms; /* A label or a check settling after a swap. */
+  --ds-duration-morph: 250ms; /* An icon turning into another. */
+  --ds-duration-collapse: 260ms; /* Disclosures opening. */
+  --ds-duration-draw: 300ms; /* A check drawing its stroke. */
+  --ds-duration-entrance: 320ms; /* A dialog rising in. */
+  --ds-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ds-easing-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ds-easing-swap: cubic-bezier(0.65, 0, 0.35, 1);
+  --ds-easing-decelerate: cubic-bezier(0, 0, 0.2, 1); /* A pixel cell lighting. */
+
+  /* Controls and text motion. */
+  --ds-duration-wipe: 420ms; /* The fix button's black wiping off once the source is back (console2.css .v2-fixbtn-ink). */
+  --ds-duration-reveal: 400ms; /* A headline letter settling from red to ink (home.css .hl-char). */
+  --ds-easing-reveal-fade: cubic-bezier(0.45, 0, 0.55, 1); /* A headline letter fading up (home.css .hl-char). */
+  --ds-easing-reveal-ink: cubic-bezier(0.215, 0.61, 0.355, 1); /* A headline letter settling to ink (home.css .hl-char). */
+  /* Site parts (button-link, prompt-bar, pages). */
+  --ds-color-warm-ink: #1E1B17; /* The prompt bar's warm dark glass (home.css .prompt-glass, at 52%). */
+  --ds-color-warm-ink-hover: #484440; /* The prompt bar's glass under the pointer (at 56%). */
+  --ds-color-warm-lift: #5C5854; /* A prompt bar suggestion under the pointer (at 60%). */
+  --ds-color-glass-ink: #F7F6F6; /* The prompt bar's text and send button on the glass. */
+  --ds-duration-dock: 280ms; /* The prompt bar rising into view; it leaves in 200ms. */
+  --ds-duration-word: 360ms; /* Each word of a prompt bar answer fading up, 22ms after the last. */
+  /* The product, eval, price and step windows (home.css .viz-*): explanatory motion that plays once while on screen. */
+  --ds-text-viz-score: 36px; /* An eval window's score. */
+  --ds-text-viz-score-leading: 36px;
+  --ds-duration-viz-row: 380ms; /* A result row landing where it was found. */
+  --ds-duration-viz-tick: 400ms; /* One second of a window's timer. */
+  --ds-duration-viz-bar: 600ms; /* A bar growing to its value. */
+  --ds-duration-viz-in: 640ms; /* A window's part rising in. */
+  --ds-duration-viz-draw: 700ms; /* The price chart's crosshair drawing. */
+  --ds-duration-viz-card: 900ms; /* A window arriving. */
+  --ds-duration-viz-shimmer: 1400ms; /* One pass of light across a working status. */
+  --ds-easing-viz: cubic-bezier(0.16, 1, 0.3, 1); /* The windows' long ease-out. */
+
+  /* Overlays, the console shell and its pages. */
+  --ds-duration-tip: 125ms; /* A tooltip coming in or leaving (Copy.vue version 1's tip). */
+  --ds-duration-drawer: 240ms; /* The phone sidebar sliding in (console2.css .v2-side[data-open]). */
+  --ds-duration-wait: 300ms; /* The pause before a tooltip or hover card shows under the pointer. */
+  --ds-color-scrim-light: color-mix(in srgb, var(--ds-color-off-black) 16%, transparent); /* .v2-sheet-backdrop, .v2-side-scrim */
+  --ds-color-scrim-palette: color-mix(in srgb, var(--ds-color-off-black) 24%, transparent); /* .v2-cmd-backdrop */
+  --ds-color-bar: color-mix(in srgb, var(--ds-color-surface) 92%, transparent); /* .v2-bar, under its 8px blur */
+  --ds-layout-sheet: 420px; /* The docs panel (.v2-docs). */
+  --ds-layout-palette: 560px; /* The command palette (.v2-cmd). */
+  --ds-duration-land: 240ms; /* A read region landing on the page, a score track filling (.v2-parse-land, .v2-evaltrack). */
+  --ds-duration-sweep: 900ms; /* The parse film's red line reading down a page, once (.v2-parse-sweep). */
+  --ds-duration-swap-out: 90ms; /* A window's content leaving as the next arrives (.v2-winswap). */
+  --ds-font-document: ui-serif, Georgia, "Times New Roman", serif; /* A sample document page as Parse draws it. */
+  --ds-font-scan: "Courier New", Courier, monospace; /* A scanned page as Parse draws it. */
+
+  /* The website's art (home.css): slow on purpose, decorative, off for reduced motion. */
+  --ds-duration-art: 480ms; /* The cells' hatch fading in as a panel nears the screen (.art-in). */
+  --ds-duration-tile-lit: 600ms; /* A room-grid tile lighting on its own (.room-tiles [data-lit]). */
+  --ds-duration-tile-fade: 1200ms; /* A room-grid tile going dark again. */
+  /* search-results, written-answer, work-panel (console2.css .v2-rise, .v2-answer-in, .v2-agent-rise, .v2-flash). */
+  --ds-duration-rise: 240ms; /* A result or a written answer rising in. */
+  --ds-duration-step-rise: 500ms; /* A work panel's title and line rising in, blur clearing, once. */
+  --ds-duration-flash: 900ms; /* A result shown from its square flashing its red outline once. */
+  /* faq (home.css .faq-panel, .faq-acc): the website's questions. */
+  --ds-duration-answer-out: 100ms; /* An answer leaving as the next is picked. */
+  --ds-duration-words: 280ms; /* An opened answer's words fading up, after the row starts opening. */
+  --ds-duration-unfold: 360ms; /* The phone FAQ's row opening on the swap curve, its ground and sign with it. */
+  /* blog-card (BlogCard.vue): the category tag on the picture and the post's title. */
+  --ds-text-tag-sm: 9px;
+  --ds-text-tag-sm-leading: 12px;
+  --ds-text-card-title: 18px;
+  --ds-text-card-title-leading: 24px;
+  /* docs-blocks (docs/Blocks.vue): a docs page's section heading, in Geist. */
+  --ds-text-docs-heading: 28px;
+  --ds-text-docs-heading-leading: 36px;
+  /* meter (console2.css .v2-meter[data-state]); a chart's bars rise on --ds-duration-rise. */
+  --ds-duration-progress: 900ms; /* A live meter easing linearly to a job's next value. */
+}
+
+/* Dark theme (theme.dark.tokens.json): the docs and the website's dark bands. */
+[data-theme="dark"] {
+  --ds-color-surface: var(--ds-color-off-black);
+  --ds-color-surface-subtle: var(--ds-color-neutral-100);
+  --ds-color-surface-sunken: var(--ds-color-neutral-200);
+  --ds-color-surface-inverse: var(--ds-color-off-white);
+  --ds-color-surface-accent: var(--ds-color-home-red);
+  --ds-color-surface-danger: var(--ds-color-red-wash-dark);
+  --ds-color-fg: var(--ds-color-off-white);
+  --ds-color-fg-soft: var(--ds-color-neutral-600);
+  --ds-color-fg-muted: var(--ds-color-neutral-500);
+  --ds-color-fg-faint: var(--ds-color-neutral-400);
+  --ds-color-fg-inverse: var(--ds-color-off-black);
+  --ds-color-fg-on-accent: var(--ds-color-off-white);
+  --ds-color-fg-accent: var(--ds-color-red-lift);
+  --ds-color-fg-accent-display: var(--ds-color-red-lift);
+  --ds-color-fg-danger: var(--ds-color-red-lift);
+  --ds-color-edge: var(--ds-color-neutral-200);
+  --ds-color-edge-strong: var(--ds-color-neutral-300);
+  --ds-color-edge-focus: var(--ds-color-off-white);
+  --ds-color-edge-accent: var(--ds-color-red-lift);
+  --ds-color-action-primary: var(--ds-color-off-white);
+  --ds-color-action-primary-hover: var(--ds-color-home-red-hover);
+  --ds-color-action-primary-press: var(--ds-color-home-red-press);
+  --ds-color-action-primary-fg: var(--ds-color-off-black);
+  --ds-color-action-secondary-edge: var(--ds-color-neutral-300);
+  --ds-color-action-secondary-edge-hover: var(--ds-color-off-white);
+  --ds-color-action-danger: var(--ds-color-red-lift);
+  --ds-color-action-danger-hover: var(--ds-color-red-lift);
+  --ds-color-action-disabled: var(--ds-color-neutral-200);
+  --ds-color-action-disabled-fg: var(--ds-color-neutral-500);
+  --ds-color-status-working: var(--ds-color-off-white);
+  --ds-color-status-working-fg: var(--ds-color-off-black);
+  --ds-color-status-failed: var(--ds-color-red-wash-dark);
+  --ds-color-status-failed-fg: var(--ds-color-red-lift);
+  --ds-color-data-1: var(--ds-color-off-white);
+  --ds-color-data-2: var(--ds-color-neutral-500);
+  --ds-color-data-3: var(--ds-color-neutral-300);
+  --ds-color-data-highlight: var(--ds-color-red-lift);
+  --ds-color-data-grid: var(--ds-color-neutral-200);
+}
+
+/* A light block inside a dark one. */
+[data-theme="light"] {
+  --ds-color-surface: var(--ds-color-off-white);
+  --ds-color-surface-subtle: var(--ds-color-home-paper);
+  --ds-color-surface-sunken: var(--ds-color-neutral-700);
+  --ds-color-surface-inverse: var(--ds-color-off-black);
+  --ds-color-surface-danger: var(--ds-color-red-wash);
+  --ds-color-fg: var(--ds-color-off-black);
+  --ds-color-fg-soft: var(--ds-color-neutral-300);
+  --ds-color-fg-muted: var(--ds-color-neutral-400);
+  --ds-color-fg-faint: var(--ds-color-neutral-500);
+  --ds-color-fg-inverse: var(--ds-color-off-white);
+  --ds-color-fg-accent: var(--ds-color-home-red-press);
+  --ds-color-fg-accent-display: var(--ds-color-home-red);
+  --ds-color-fg-danger: var(--ds-color-home-red-press);
+  --ds-color-edge: var(--ds-color-neutral-700);
+  --ds-color-edge-strong: var(--ds-color-neutral-600);
+  --ds-color-edge-focus: var(--ds-color-off-black);
+  --ds-color-edge-accent: var(--ds-color-home-red);
+  --ds-color-action-primary: var(--ds-color-off-black);
+  --ds-color-action-primary-fg: var(--ds-color-off-white);
+  --ds-color-action-secondary-edge: var(--ds-color-neutral-600);
+  --ds-color-action-secondary-edge-hover: var(--ds-color-off-black);
+  --ds-color-action-danger: var(--ds-color-home-red-press);
+  --ds-color-action-danger-hover: var(--ds-color-home-red-press);
+  --ds-color-action-disabled: var(--ds-color-neutral-700);
+  --ds-color-action-disabled-fg: var(--ds-color-neutral-300);
+  --ds-color-status-working: var(--ds-color-off-black);
+  --ds-color-status-working-fg: var(--ds-color-off-white);
+  --ds-color-status-failed: var(--ds-color-red-wash);
+  --ds-color-status-failed-fg: var(--ds-color-home-red-press);
+  --ds-color-data-1: var(--ds-color-home-red);
+  --ds-color-data-2: var(--ds-color-neutral-400);
+  --ds-color-data-3: var(--ds-color-neutral-600);
+  --ds-color-data-highlight: var(--ds-color-home-red);
+  --ds-color-data-grid: var(--ds-color-neutral-700);
+}

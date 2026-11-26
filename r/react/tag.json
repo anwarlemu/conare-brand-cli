@@ -1,0 +1,33 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "tag",
+  "type": "registry:ui",
+  "title": "Tag",
+  "description": "A short label for a state or a kind. In the console: ready in a hairline, syncing in black with the dot matrix, failed in the red wash with its square, quiet notes in grey. On the website: 10px capitals on the red.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://conare-ds-registry.vercel.app/r/react/loader.json"
+  ],
+  "files": [
+    {
+      "path": "components/ui/Tag.tsx",
+      "type": "registry:ui",
+      "content": "import type { HTMLAttributes, ReactNode } from 'react'\nimport { cn } from '@/lib/cn'\n\n// A short label for a state or a kind (console2.css .c-badge under the console): 18px, square, 11px lowercase words.\n// default: a hairline in ink; working: black, for a source at work; failed: the red wash with a red square; quiet: a\n// hairline in the muted grey, for a note such as \"default\" or \"invited\". The word carries the state, never colour alone.\nexport interface TagProps extends HTMLAttributes<HTMLSpanElement> {\n  tone?: 'default' | 'working' | 'failed' | 'quiet'\n  /** What leads the word (Vue's `mark` slot); by default a red square on `failed`. */\n  mark?: ReactNode\n  'data-ds'?: string\n}\n\nconst TONES = {\n  default: 'border-edge text-fg',\n  working: 'border-status-working bg-status-working text-status-working-fg',\n  failed: 'border-transparent bg-status-failed text-status-failed-fg',\n  quiet: 'border-edge text-fg-muted',\n}\n\nexport function Tag({ tone = 'default', mark, className, children, ...rest }: TagProps) {\n  return (\n    <span data-ds=\"tag\" className={cn('inline-flex h-4.5 items-center gap-1 border px-1.25 pb-0.5 text-caption leading-4 font-normal whitespace-nowrap', TONES[tone], className)} {...rest}>\n      {mark ?? (tone === 'failed' && <span className=\"mt-0.5 size-1 shrink-0 bg-edge-accent\" aria-hidden=\"true\" />)}\n      {children}\n    </span>\n  )\n}\n\nexport default Tag\n"
+    },
+    {
+      "path": "components/ui/StatusTag.tsx",
+      "type": "registry:ui",
+      "content": "import { DotMatrix } from '@/components/ui/DotMatrix'\nimport { Tag } from '@/components/ui/Tag'\n\n// A source's state as a tag (the console's Status.vue): ready in a hairline, syncing and connecting in black with the\n// dot matrix at work, error in the red wash with its square. Red marks only a failure.\nexport interface StatusTagProps {\n  status: 'ready' | 'syncing' | 'connecting' | 'error' | (string & {})\n  className?: string\n}\n\nexport function StatusTag({ status, className }: StatusTagProps) {\n  const working = status === 'syncing' || status === 'connecting'\n  const tone = status === 'error' ? 'failed' : working ? 'working' : 'default'\n  return (\n    <Tag data-ds=\"status-tag\" tone={tone} className={className} mark={working ? <DotMatrix tone=\"inverse\" className=\"mt-0.5 mr-0.5\" /> : undefined}>\n      {status}\n    </Tag>\n  )\n}\n\nexport default StatusTag\n"
+    },
+    {
+      "path": "components/ui/SiteTag.tsx",
+      "type": "registry:ui",
+      "content": "import type { HTMLAttributes } from 'react'\nimport { cn } from '@/lib/cn'\n\n// The website's tag (Tag.vue on conare.ai): 10px capitals on the red, tracked 0.06em, the system's only capitals.\n// `framed` adds a second rule 2px outside, as the cards' double rule (the hero's eyebrow).\nexport interface SiteTagProps extends HTMLAttributes<HTMLSpanElement> {\n  framed?: boolean\n}\n\nexport function SiteTag({ framed, className, children, ...rest }: SiteTagProps) {\n  return (\n    <span\n      data-ds=\"site-tag\"\n      className={cn('inline-block bg-home-red py-0.75 pr-[calc(4px-0.06em)] pl-1 type-tag text-off-white [text-box:trim-both_cap_alphabetic]', framed && 'outline outline-offset-2 outline-home-red', className)}\n      {...rest}\n    >{children}</span>\n  )\n}\n\nexport default SiteTag\n"
+    },
+    {
+      "path": "lib/cn.ts",
+      "type": "registry:lib",
+      "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+    }
+  ]
+}

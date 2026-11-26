@@ -1,0 +1,16 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "skeleton",
+  "type": "registry:ui",
+  "title": "Skeleton",
+  "description": "Loading that is never empty: a held part is the real part drawn from a blank record, its layout and rules kept and its content hidden, so nothing moves when the answer lands. The rules come in after 300ms, so a fast answer never shows them.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Skeleton.tsx",
+      "type": "registry:ui",
+      "content": "import type { ElementType, ReactNode } from 'react'\n\n// Loading is never empty (console2.css [data-held], useHeld.ts): a held part is the real part drawn from a blank\n// record. Its layout and its rules stay and nothing in it shows, so nothing moves when the answer lands, and the rules\n// come in after 300ms, so a fast answer never shows them. Never a shimmer block. Wrap the real markup (`as=\"tr\"` for a\n// table row, whose cells keep their rules) and pass `held` while it loads; it renders the children as is once loaded.\nexport interface SkeletonProps {\n  held?: boolean\n  as?: ElementType\n  label?: string\n  className?: string\n  children?: ReactNode\n}\n\nexport function Skeleton({ held = true, as: Tag = 'div', label = 'Loading', className, children }: SkeletonProps) {\n  return (\n    <>\n      <style href=\"ds-skeleton\" precedence=\"ds\">{css}</style>\n      <Tag data-ds=\"skeleton\" className={className} data-held={held || undefined} aria-busy={held || undefined} aria-label={held ? label : undefined}>{children}</Tag>\n    </>\n  )\n}\n\nexport default Skeleton\n\nconst css = `\n[data-held] { color: transparent !important; pointer-events: none; }\n[data-held] * { visibility: hidden; }\ntr[data-held] > * { visibility: visible; color: transparent !important; }\ntr[data-held] > *, :not(tr)[data-held] { animation: ds-held-in var(--ds-duration-enter) var(--ds-easing-out) 300ms backwards; }\n@keyframes ds-held-in { from { border-color: transparent; } }\n`\n"
+    }
+  ]
+}

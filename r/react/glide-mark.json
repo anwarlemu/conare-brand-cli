@@ -1,0 +1,21 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "glide-mark",
+  "type": "registry:ui",
+  "title": "Gliding block",
+  "description": "One block for a whole list: it glides to the row under the pointer in 200ms and rests on the picked one when the pointer leaves, so moving down a list is one movement.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "components/visuals/GlideMark.tsx",
+      "type": "registry:ui",
+      "content": "// The gliding block itself (console2.css .v2-rowmark): the paper behind the row useGlideMark points at, moving on\n// transform and height in 200ms on the strong ease-out, and placed without a glide the first time. Put it first inside\n// the list (which is position: relative) and give the rows a z-index above it. Reduced motion places it at once.\nexport interface GlideMarkProps {\n  mark: { y: number, h: number } | null\n  instant?: boolean\n}\n\nexport function GlideMark({ mark, instant }: GlideMarkProps) {\n  if (!mark) return null\n  return (\n    <>\n      <style href=\"ds-glide-mark\" precedence=\"ds\">{css}</style>\n      <span data-ds=\"glide-mark\" className=\"ds-rowmark\" data-instant={instant || undefined} style={{ transform: `translateY(${mark.y}px)`, height: `${mark.h}px` }} aria-hidden=\"true\" />\n    </>\n  )\n}\n\nexport default GlideMark\n\nconst css = `\n.ds-rowmark { position: absolute; top: 0; right: 0; left: 0; z-index: 0; background: var(--ds-color-surface-subtle); pointer-events: none; transition: transform var(--ds-duration-enter) var(--ds-easing-out), height var(--ds-duration-enter) var(--ds-easing-out); }\n.ds-rowmark[data-instant] { transition: none; }\n@media (prefers-reduced-motion: reduce) { .ds-rowmark { transition: none; } }\n`\n"
+    },
+    {
+      "path": "hooks/useGlideMark.ts",
+      "type": "registry:hook",
+      "content": "'use client'\nimport { useCallback, useEffect, useRef, useState, type RefObject } from 'react'\n\n/**\n * One block for a whole list (useGlideMark.ts, the website's Product menu highlight): it glides on transform to the row\n * under the pointer or focus, and rests on the current row (`rest`) when the pointer leaves, or hides when there is\n * none. Rows are the list's [data-glide-row] elements, in order, each positioned relative to the list. The first\n * placement doesn't glide. Draw the block with GlideMark.\n */\nexport function useGlideMark(list: RefObject<HTMLElement | null>, rest: () => number | null) {\n  const [mark, setMark] = useState<{ y: number, h: number } | null>(null)\n  const [shown, setShown] = useState(false)\n  const [instant, setInstant] = useState(true)\n  const [hot, setHot] = useState<number | null>(null)\n  // What place() reads straight after a change, as Vue's refs give it.\n  const shownNow = useRef(false)\n  const restRef = useRef(rest)\n  restRef.current = rest\n\n  const place = useCallback((i: number | null, instantly: boolean) => {\n    const row = i === null ? undefined : list.current?.querySelectorAll<HTMLElement>('[data-glide-row]')[i]\n    if (!row) {\n      shownNow.current = false\n      setShown(false)\n      setHot(null)\n      return\n    }\n    setInstant(instantly)\n    setMark({ y: row.offsetTop, h: row.offsetHeight })\n    shownNow.current = true\n    setShown(true)\n    setHot(i)\n  }, [list])\n\n  const point = useCallback((i: number) => place(i, !shownNow.current), [place])\n  const leave = useCallback(() => place(restRef.current(), false), [place])\n  const settle = useCallback(() => place(restRef.current(), true), [place])\n\n  useEffect(() => settle(), [settle])\n\n  return { mark, shown, instant, hot, point, leave, settle }\n}\n"
+    }
+  ]
+}

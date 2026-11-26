@@ -1,0 +1,554 @@
+{
+  "name": "search-results",
+  "title": "Search results",
+  "type": "registry:ui",
+  "group": "product",
+  "description": "Best match in its card with the written answer or the passage, the pages around it and its source; then the other matches as quiet lines, each opening in place to its passage. The query's words are in medium weight, and each opened result can download its document.",
+  "use_for": "A person checking what Conare finds, from Home, the sidebar or a namespace.",
+  "never": [
+    "A results page that leaves for another page to read a passage: lines open in place",
+    "Colour alone for the query's words: they are medium weight in ink",
+    "Scores without two decimals"
+  ],
+  "source": "conare-web app/components/console/search/BestMatch.vue, Answer.vue, PagePreview.vue, app/components/console/Marked.vue, app/utils/marks.ts, app/assets/css/console2.css (.v2-rise, .v2-others, .v2-match, .v2-expand, .v2-pg, .v2-cite, [data-flash])",
+  "body": "The query's words are marked with `marked-text`. Pass `download` (a function taking the result) and the best match and\neach opened match end on the dark Download button from `document-download`, which says Downloaded once it has; hand it\n`useDocumentDownload()` with your API's bytes. The `actions` slot adds other buttons beside it.",
+  "requires": [
+    "document-download",
+    "loader",
+    "marked-text"
+  ],
+  "dependencies": [
+    "lucide-vue-next@^0.479.0"
+  ],
+  "files": [
+    {
+      "path": "components/product/SearchResults.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed, nextTick, ref, useId, watch } from 'vue'\nimport { ChevronDown } from 'lucide-vue-next'\nimport DotMatrix from '@/components/ui/DotMatrix.vue'\nimport AnswerText from '@/components/product/AnswerText.vue'\nimport MarkedText from '@/components/ui/MarkedText.vue'\nimport PagePreview from '@/components/product/PagePreview.vue'\nimport DownloadButton from '@/components/product/DownloadButton.vue'\nimport { resultKey, type ResultPage, type SearchResult } from '@/composables/useSearchResults'\n\n// Search results, \"Best match\" (search/BestMatch.vue): the top result is the answer most of the time, so it gets the\n// card, the full passage at a larger size with the query's words marked, the pages around it (its own outlined in red)\n// and its source; the rest follow as one quiet line each, to scan, and a line opens in place to its full passage.\n// `answer` puts a written answer in the card instead of the passage, citing results [1], [2]; `writing` holds the\n// card's room with the dot matrix while it is written. `reveal` (a result's key and a time) opens that result, brings\n// it into view and flashes it once, as the search run's squares do. `logoOf` gives a namespace's app mark. `download`\n// puts the document's dark Download button (document-download) under the best match and each opened match, keyed by\n// the result's key so it says Downloaded once it has; the `actions` slot (with `result`) adds other buttons beside it.\n// Results rise in, 60ms apart.\nconst props = defineProps<{\n  results: SearchResult[]\n  query: string\n  answer?: string\n  writing?: boolean\n  reveal?: { key: string, at: number } | null\n  logoOf?: (namespace: string) => string | null | undefined\n  download?: (result: SearchResult) => void\n}>()\nconst emit = defineEmits<{ cite: [key: string] }>()\ndefineSlots<{ actions?: (p: { result: SearchResult }) => unknown }>()\n\nconst pre = `match-${useId()}`\nconst open = ref('')\nwatch(() => props.results, () => { open.value = '' })\nconst logo = (ns: string) => props.logoOf?.(ns) ?? null\nconst answers = computed(() => props.writing || props.answer !== undefined)\n\nconst flash = ref('')\nwatch(() => props.reveal?.at, () => { if (props.reveal) bringIn(props.reveal.key) })\nasync function bringIn(key: string) {\n  const i = props.results.findIndex(r => resultKey(r) === key)\n  if (i < 0) return\n  if (i > 0) open.value = key\n  flash.value = ''\n  await nextTick()\n  flash.value = key\n  document.getElementById(i === 0 ? `${pre}-top` : `${pre}-row-${i - 1}`)?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' })\n}\nfunction cite(n: number) {\n  const r = props.results[n - 1]\n  if (!r) return\n  emit('cite', resultKey(r))\n  bringIn(resultKey(r))\n}\n\nconst pageLine = (p: ResultPage) => `Page ${p.number} of ${p.count}`\n// The pages before and after the passage's, unmarked.\nconst around = (p: ResultPage) => [p.number - 1, p.number, p.number + 1].filter(n => n >= 1 && n <= p.count).map(n => ({ ...p, number: n, here: n === p.number }))\n</script>\n\n<template>\n  <div data-ds=\"search-results\" class=\"ds-results flex flex-col gap-6\">\n    <article v-if=\"results[0]\" :id=\"`${pre}-top`\" class=\"ds-rise border border-edge bg-surface\" :data-flash=\"flash === resultKey(results[0]) || undefined\" :style=\"{ '--i': 0 }\">\n      <div class=\"flex min-w-0 flex-col gap-9 px-4 pt-4 pb-4.5\">\n        <div v-if=\"answers\" class=\"min-h-12\" aria-live=\"polite\">\n          <p v-if=\"writing\" class=\"inline-flex items-center gap-1.5 type-meta\"><DotMatrix />Writing an answer</p>\n          <AnswerText v-else-if=\"answer\" :text=\"answer\" @cite=\"cite\" />\n          <p v-else class=\"ds-answer-text\"><MarkedText :text=\"results[0].text\" :query=\"query\" /></p>\n        </div>\n        <p v-else class=\"type-body-lg text-ds-neutral-200\"><MarkedText :text=\"results[0].text\" :query=\"query\" /></p>\n        <div v-if=\"results[0].page\" class=\"flex items-end gap-2\">\n          <PagePreview v-for=\"p in around(results[0].page)\" :key=\"p.number\" :page=\"p\" size=\"thumb\" :marked=\"p.here\" :here=\"p.here\" />\n          <span class=\"ml-1 type-meta text-fg-muted\">{{ pageLine(results[0].page) }} in <span class=\"type-code-sm\">{{ results[0].page.file }}</span></span>\n        </div>\n      </div>\n      <div class=\"flex flex-wrap items-center justify-between gap-3 border-t border-edge py-2.5 pr-2 pl-4\">\n        <span class=\"flex min-w-0 items-center gap-1.5\">\n          <img v-if=\"logo(results[0].namespace)\" :src=\"logo(results[0].namespace)!\" alt=\"\" width=\"14\" height=\"14\" class=\"size-3.5 shrink-0 object-contain\">\n          <span class=\"truncate type-code-sm\">{{ results[0].id }}</span>\n          <span class=\"shrink-0 type-meta text-fg-muted\">in <span class=\"type-code-sm\">{{ results[0].namespace }}</span>, {{ results[0].score.toFixed(2) }}</span>\n        </span>\n        <span v-if=\"$slots.actions || download\" class=\"flex items-center gap-2\"><slot name=\"actions\" :result=\"results[0]\" /><DownloadButton v-if=\"download\" :id=\"resultKey(results[0])\" @press=\"download(results[0])\" /></span>\n      </div>\n    </article>\n\n    <section v-if=\"results.length > 1\" class=\"ds-others flex flex-col gap-1\" :aria-labelledby=\"`${pre}-more`\">\n      <h2 :id=\"`${pre}-more`\" class=\"type-meta text-fg-muted\">Other matches</h2>\n      <ol class=\"ds-others-rows\">\n        <li v-for=\"(r, i) in results.slice(1)\" :id=\"`${pre}-row-${i}`\" :key=\"resultKey(r)\" class=\"ds-rise\" :data-flash=\"flash === resultKey(r) || undefined\" :style=\"{ '--i': i + 1 }\">\n          <button type=\"button\" class=\"ds-match w-full text-left\" :aria-expanded=\"open === resultKey(r)\" :aria-controls=\"`${pre}-${i}`\" @click=\"open = open === resultKey(r) ? '' : resultKey(r)\">\n            <img v-if=\"logo(r.namespace)\" :src=\"logo(r.namespace)!\" alt=\"\" width=\"12\" height=\"12\" class=\"size-3 shrink-0 object-contain\">\n            <span class=\"ds-match-id w-40 shrink-0 truncate max-sm:w-auto max-sm:min-w-0 max-sm:flex-1\">{{ r.id }}</span>\n            <span class=\"hidden min-w-0 flex-1 truncate sm:block\" :class=\"{ invisible: open === resultKey(r) }\">{{ r.text }}</span>\n            <span v-if=\"r.page\" class=\"hidden shrink-0 tabular-nums sm:inline\">p. {{ r.page.number }}</span>\n            <span class=\"shrink-0 tabular-nums\">{{ r.score.toFixed(2) }}</span>\n            <ChevronDown :size=\"12\" :stroke-width=\"1.5\" class=\"ds-match-chev shrink-0 text-fg-muted\" aria-hidden=\"true\" />\n          </button>\n          <!-- Opens by its rows' height (0fr to 1fr), so it grows to fit. -->\n          <div :id=\"`${pre}-${i}`\" class=\"ds-expand\" :data-open=\"open === resultKey(r) || undefined\" :inert=\"open !== resultKey(r)\">\n            <div class=\"min-h-0 overflow-hidden\">\n              <div class=\"flex min-w-0 flex-col gap-3 pt-1 pb-3\">\n                <p class=\"leading-5.5 text-ds-neutral-200\"><MarkedText :text=\"r.text\" :query=\"query\" /></p>\n                <div class=\"flex flex-wrap items-center justify-between gap-3\">\n                  <span class=\"flex flex-wrap gap-x-4 gap-y-1 type-meta text-fg-muted\">\n                    <span>in <span class=\"type-code-sm\">{{ r.namespace }}</span></span>\n                    <span v-if=\"r.page\">{{ pageLine(r.page) }}</span>\n                  </span>\n                  <span v-if=\"$slots.actions || download\" class=\"flex items-center gap-2\"><slot name=\"actions\" :result=\"r\" /><DownloadButton v-if=\"download\" :id=\"resultKey(r)\" @press=\"download(r)\" /></span>\n                </div>\n              </div>\n            </div>\n          </div>\n        </li>\n      </ol>\n    </section>\n  </div>\n</template>\n\n<style>\n/* Results rise in, each 60ms after the last (console2.css .v2-results[data-motion=\"1\"] .v2-rise). */\n.ds-results .ds-rise { animation: ds-results-in var(--ds-duration-enter) var(--ds-easing-out) both; animation-delay: calc(var(--i, 0) * 60ms); }\n@keyframes ds-results-in { from { opacity: 0; transform: translateY(12px); } }\n/* The dot matrix in red while the answer is written (.v2-proc .v2-matrix). */\n.ds-results .ds-matrix i { background: var(--ds-color-edge-accent); }\n.ds-others-rows > * + * { border-top: var(--ds-border-hairline) solid var(--ds-color-edge); }\n/* Other matches: a quiet list under the answer, every row still opening. */\n.ds-match { display: flex; min-height: var(--ds-size-control-md); align-items: center; gap: var(--ds-space-md); padding: 0; color: var(--ds-color-fg-muted); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-match-id { color: var(--ds-color-fg-soft); font-family: var(--ds-font-code); font-size: var(--ds-text-meta); transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) {\n  .ds-match:hover { color: var(--ds-color-fg-soft); }\n  .ds-match:hover .ds-match-id { color: var(--ds-color-fg); }\n}\n.ds-match:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: -2px; }\n.ds-match-chev { transition: rotate var(--ds-duration-micro) var(--ds-easing-out); }\n.ds-match[aria-expanded=\"true\"] .ds-match-chev { rotate: 180deg; transition-duration: var(--ds-duration-slide); }\n.ds-expand { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--ds-duration-slide) var(--ds-easing-out); }\n.ds-expand[data-open] { grid-template-rows: 1fr; }\n/* A result shown from its square flashes its red outline once. */\n.ds-results [data-flash] { animation: ds-results-flash var(--ds-duration-flash) var(--ds-easing-standard) both; }\n@keyframes ds-results-flash { 0%, 40% { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: -2px; } 100% { outline: var(--ds-border-focus) solid transparent; outline-offset: -2px; } }\n@media (prefers-reduced-motion: reduce) {\n  .ds-results .ds-rise, .ds-results [data-flash] { animation: none; }\n  .ds-match-chev, .ds-expand { transition: none; }\n}\n</style>\n"
+    },
+    {
+      "path": "components/product/AnswerText.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed } from 'vue'\nimport { citeParts } from '@/composables/useSearchResults'\n\n// A written answer's words at 16px with its sources as small ink squares, [1] and [2] in the text becoming numbered\n// buttons (console2.css .v2-written-text, .v2-cite). A citation turns red under the pointer and while it is the one\n// shown (`pointed`). The words rise in once, a blur clearing (.v2-answer-in).\nconst props = defineProps<{ text: string, pointed?: number }>()\nconst emit = defineEmits<{ cite: [n: number], point: [n: number] }>()\nconst parts = computed(() => citeParts(props.text))\n</script>\n\n<template>\n  <p data-ds=\"answer-text\" class=\"ds-answer-text\">\n    <template v-for=\"(p, i) in parts\" :key=\"i\">\n      <button v-if=\"'cite' in p\" type=\"button\" class=\"ds-cite\" :aria-label=\"`Source ${p.cite}`\" :aria-pressed=\"pointed === undefined ? undefined : pointed === p.cite\" @pointerenter=\"emit('point', p.cite)\" @focus=\"emit('point', p.cite)\" @click=\"emit('cite', p.cite)\">{{ p.cite }}</button>\n      <template v-else>{{ p.words }}</template>\n    </template>\n  </p>\n</template>\n\n<style>\n.ds-answer-text { margin: 0; font-size: var(--ds-text-input); line-height: var(--ds-text-input-leading); animation: ds-answer-in var(--ds-duration-rise) var(--ds-easing-out) both; }\n@keyframes ds-answer-in { from { opacity: 0; filter: blur(2px); transform: translateY(4px); } }\n.ds-cite { position: relative; display: inline-flex; min-width: 16px; height: 16px; align-items: center; justify-content: center; margin-inline: 2px; background: var(--ds-color-fg); color: var(--ds-color-fg-inverse); font-size: var(--ds-text-meta); line-height: 16px; vertical-align: 2px; font-variant-numeric: tabular-nums; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); touch-action: manipulation; }\n/* Small to the eye, larger to the pointer: 24px, 40px on touch. */\n.ds-cite::after { position: absolute; inset: -4px; content: \"\"; }\n.ds-cite[aria-pressed=\"true\"] { background: var(--ds-color-home-red-press); }\n@media (hover: hover) and (pointer: fine) { .ds-cite:hover { background: var(--ds-color-home-red-press); } }\n.ds-cite:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: 2px; }\n@media (pointer: coarse) { .ds-cite::after { inset: -12px; } }\n@media (prefers-reduced-motion: reduce) { .ds-answer-text { animation-name: ds-answer-fade; } }\n@keyframes ds-answer-fade { from { opacity: 0; } }\n</style>\n"
+    },
+    {
+      "path": "components/product/PagePreview.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed } from 'vue'\nimport type { ResultPage } from '@/composables/useSearchResults'\nimport MarkedText from '@/components/ui/MarkedText.vue'\n\n// A document's page drawn small, with the passage marked where it sits on it (search/PagePreview.vue). A result\n// carries only its passage, so the page's other lines are drawn as rules: at thumb and mid size the passage is a band\n// of darker rules on the red tint with a red edge; at full size it is its own words, the query's in medium weight.\n// Thumb and mid are pictures (say the page number beside them); full is read.\nconst props = withDefaults(defineProps<{ page: ResultPage, text?: string, query?: string, size?: 'thumb' | 'mid' | 'full', marked?: boolean, here?: boolean }>(), { text: '', query: '', size: 'mid', marked: true })\n\nconst COUNT = { thumb: 11, mid: 22, full: 26 }\n// Line lengths in percent; 0 is the gap between paragraphs.\nconst WIDTHS = [100, 97, 99, 94, 100, 62, 0, 98, 100, 95, 100, 71, 0]\nconst band = computed(() => (props.size === 'thumb' ? 2 : 4))\nconst lines = computed(() => {\n  const n = COUNT[props.size]\n  const at = Math.min(n - 3, Math.round(props.page.top * n))\n  const span = props.size === 'thumb' ? 2 : props.size === 'mid' ? 4 : 1\n  return Array.from({ length: n }, (_, i) => ({ w: WIDTHS[(i + props.page.number * 3) % WIDTHS.length]!, hit: props.marked && i >= at && i < at + span, first: i === at }))\n})\n</script>\n\n<template>\n  <div data-ds=\"page-preview\" class=\"ds-pg\" :data-size=\"size\" :data-here=\"here || undefined\" :aria-hidden=\"size === 'full' ? undefined : 'true'\">\n    <span class=\"ds-pg-head\" />\n    <template v-for=\"(l, i) in lines\" :key=\"i\">\n      <p v-if=\"size === 'full' && l.first\" class=\"ds-pg-hit ds-pg-words\"><MarkedText :text=\"text\" :query=\"query\" /></p>\n      <span v-else-if=\"l.hit && size !== 'full' && l.first\" class=\"ds-pg-hit\">\n        <span v-for=\"k in band\" :key=\"k\" class=\"ds-pg-line\" :style=\"{ width: k === band ? '68%' : '100%' }\" />\n      </span>\n      <span v-else-if=\"!l.hit\" class=\"ds-pg-line\" :style=\"{ width: `${l.w}%` }\" :data-gap=\"l.w === 0 || undefined\" />\n    </template>\n    <span v-if=\"size !== 'thumb'\" class=\"ds-pg-foot\">{{ page.number }}</span>\n  </div>\n</template>\n\n<style>\n.ds-pg { position: relative; display: flex; flex-shrink: 0; flex-direction: column; overflow: hidden; border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface); }\n.ds-pg-line { display: block; height: 1px; flex-shrink: 0; background: var(--ds-color-edge-strong); opacity: 0.55; }\n.ds-pg-line[data-gap] { opacity: 0; }\n.ds-pg-head { display: block; width: 34%; height: 1px; flex-shrink: 0; background: var(--ds-color-edge-strong); }\n.ds-pg-hit { display: flex; flex-shrink: 0; flex-direction: column; background: linear-gradient(var(--ds-color-edge-accent), var(--ds-color-edge-accent)) left / 2px 100% no-repeat, color-mix(in srgb, var(--ds-color-edge-accent) 14%, transparent); }\n.ds-pg-hit .ds-pg-line { background: var(--ds-color-off-black); opacity: 0.8; }\n/* ds-override: the folio of a drawn page, 8px as the branch draws it, not a text size */\n.ds-pg-foot { position: absolute; right: 0; bottom: 6px; left: 0; color: var(--ds-color-fg-muted); font-size: 8px; line-height: 8px; text-align: center; font-variant-numeric: tabular-nums; }\n.ds-pg[data-size=\"thumb\"] { width: 28px; height: 36px; gap: 2px; padding: 4px 4px; }\n.ds-pg[data-size=\"thumb\"] .ds-pg-head { margin-bottom: 1px; }\n.ds-pg[data-size=\"thumb\"] .ds-pg-hit { gap: 2px; margin: 0 -2px; padding: 1px 2px; }\n.ds-pg[data-size=\"mid\"] { width: 152px; height: 197px; gap: 4px; padding: 14px 14px 22px; }\n.ds-pg[data-size=\"mid\"] .ds-pg-line { height: 2px; }\n.ds-pg[data-size=\"mid\"] .ds-pg-head { height: 2px; margin-bottom: 6px; }\n/* ds-override: the band reaches 3px past the page's rules, as the branch draws it */\n.ds-pg[data-size=\"mid\"] .ds-pg-hit { gap: 4px; margin: -1px -4px; padding: 3px 4px; }\n.ds-pg[data-size=\"mid\"] .ds-pg-hit .ds-pg-line { height: 2px; }\n.ds-pg[data-size=\"full\"] { width: 100%; gap: 12px; padding: 40px 40px 56px; }\n.ds-pg[data-size=\"full\"] .ds-pg-line { height: 5px; }\n.ds-pg[data-size=\"full\"] .ds-pg-line[data-gap] { height: 2px; }\n.ds-pg[data-size=\"full\"] .ds-pg-head { height: 5px; margin-bottom: 12px; }\n.ds-pg[data-size=\"full\"] .ds-pg-foot { bottom: 20px; font-size: var(--ds-text-caption); line-height: 12px; }\n.ds-pg-words { margin: 2px -8px; padding: 8px; color: var(--ds-color-fg); font-size: var(--ds-text-ui); line-height: var(--ds-text-ui-leading); }\n.ds-pg[data-here] { outline: var(--ds-border-hairline) solid var(--ds-color-edge-accent); outline-offset: 2px; }\n@media (max-width: 639px) { .ds-pg[data-size=\"full\"] { padding: 28px 24px 48px; } }\n</style>\n"
+    },
+    {
+      "path": "composables/useSearchResults.ts",
+      "content": "// What the search's parts share (SearchResults, SearchRun, WrittenAnswer): the result's shape and a written answer\n// split at its citations. The query's words are marked by MarkedText.\n\n/** The page a passage stands on, for results from PDF and Word documents: `top` is where on the page (0 to 1). */\nexport type ResultPage = { number: number, count: number, top: number, file: string }\n\n/** One passage a search found. */\nexport type SearchResult = { namespace: string, id: string, score: number, text: string, page?: ResultPage }\n\n/** A written answer that marks its sources [1], [2], as words and citation numbers. */\nexport function citeParts(text: string): Array<{ words: string } | { cite: number }> {\n  return text.split(/(\\[\\d+\\])/).filter(Boolean).map(p => (/^\\[\\d+\\]$/.test(p) ? { cite: Number(p.slice(1, -1)) } : { words: p }))\n}\n\n/** A result's key, unique across namespaces. */\nexport const resultKey = (r: SearchResult) => `${r.namespace}/${r.id}`\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "In the product",
+      "center": false,
+      "half": false,
+      "path": "examples/search-results/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport SearchResults from '@/components/product/SearchResults.vue'\nimport { resultKey, type SearchResult } from '@/composables/useSearchResults'\nimport { useDocumentDownload } from '@/composables/useDocumentDownload'\n// The results alone, as Home shows them under the box: the best match in its card with the written answer, the pages\n// around its passage and its source, then the other matches, each opening in place. Press a citation to show its\n// result; Download saves the document (sample text stands in for your API's bytes).\nconst query = 'Acme renewal EU data'\nconst results: SearchResult[] = [\n  { namespace: 'contracts', id: 'acme-msa-2026', score: 0.94, page: { number: 9, count: 24, top: 0.3, file: 'acme-msa-2026.pdf' }, text: 'Acme may renew for twelve months with 60 days written notice. On renewal, all customer data stays in the EU region named in Schedule C.' },\n  { namespace: 'slack', id: 'legal-thread-1182', score: 0.81, text: 'Legal confirmed that Acme needs EU data residency in the renewal, and that Schedule C covers it.' },\n  { namespace: 'sales-calls', id: 'acme-oct-review', score: 0.76, text: 'Acme asked what happens to their data at renewal. We walked through the EU region and the 60 day notice.' },\n  { namespace: 'crm', id: 'acme-renewal-2026', score: 0.71, text: 'Renewal open. Blocker: data processing addendum for the EU region.' },\n]\nconst answer = 'Acme can renew for twelve months with 60 days written notice [1], and its data stays in the EU region named in Schedule C [1][2]. The open blocker is the data processing addendum [4].'\nconst save = useDocumentDownload()\nconst download = (r: SearchResult) => save(resultKey(r), () => new Promise<string>(done => setTimeout(() => done(r.text), 400)), `${r.id}.txt`)\n</script>\n\n<template>\n  <SearchResults :results=\"results\" :query=\"query\" :answer=\"answer\" :download=\"download\" />\n</template>\n",
+      "requires": [
+        "document-download",
+        "loader",
+        "marked-text"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/product/SearchResults.tsx",
+          "content": "'use client'\nimport { ChevronDown } from 'lucide-react'\nimport { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from 'react'\nimport { AnswerText } from '@/react/components/product/AnswerText'\nimport { DownloadButton } from '@/react/components/product/DownloadButton'\nimport { PagePreview } from '@/react/components/product/PagePreview'\nimport { DotMatrix } from '@/react/components/ui/DotMatrix'\nimport { MarkedText } from '@/react/components/ui/MarkedText'\nimport { resultKey, type ResultPage, type SearchResult } from '@/react/hooks/useSearchResults'\nimport { cn } from '@/react/lib/cn'\n\n// Search results, \"Best match\" (search/BestMatch.vue): the top result is the answer most of the time, so it gets the\n// card, the full passage at a larger size with the query's words marked, the pages around it (its own outlined in red)\n// and its source; the rest follow as one quiet line each, to scan, and a line opens in place to its full passage.\n// `answer` puts a written answer in the card instead of the passage, citing results [1], [2]; `writing` holds the\n// card's room with the dot matrix while it is written. `reveal` (a result's key and a time) opens that result, brings\n// it into view and flashes it once, as the search run's squares do. `logoOf` gives a namespace's app mark. `download`\n// puts the document's dark Download button (document-download) under the best match and each opened match, keyed by\n// the result's key so it says Downloaded once it has; `actions` (Vue's scoped slot, a function of the result) adds\n// other buttons beside it. Results rise in, 60ms apart.\nexport interface SearchResultsProps {\n  results: SearchResult[]\n  query: string\n  answer?: string\n  writing?: boolean\n  reveal?: { key: string, at: number } | null\n  logoOf?: (namespace: string) => string | null | undefined\n  download?: (result: SearchResult) => void\n  onCite?: (key: string) => void\n  actions?: (result: SearchResult) => ReactNode\n}\n\nconst pageLine = (p: ResultPage) => `Page ${p.number} of ${p.count}`\n// The pages before and after the passage's, unmarked.\nconst around = (p: ResultPage) => [p.number - 1, p.number, p.number + 1].filter(n => n >= 1 && n <= p.count).map(n => ({ ...p, number: n, here: n === p.number }))\n\nexport function SearchResults({ results, query, answer, writing, reveal, logoOf, download, onCite, actions }: SearchResultsProps) {\n  const pre = `match-${useId()}`\n  const [open, setOpen] = useState('')\n  useEffect(() => setOpen(''), [results])\n  const logo = (ns: string) => logoOf?.(ns) ?? null\n  const answers = writing || answer !== undefined\n\n  // A flash clears, then comes back once the page has drawn without it (Vue's nextTick), so its animation runs again.\n  const [flash, setFlash] = useState('')\n  const pending = useRef<{ key: string, i: number } | null>(null)\n  function bringIn(key: string) {\n    const i = results.findIndex(r => resultKey(r) === key)\n    if (i < 0) return\n    if (i > 0) setOpen(key)\n    setFlash('')\n    pending.current = { key, i }\n  }\n  useEffect(() => {\n    const p = pending.current\n    if (!p || flash) return\n    pending.current = null\n    setFlash(p.key)\n    document.getElementById(p.i === 0 ? `${pre}-top` : `${pre}-row-${p.i - 1}`)?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' })\n  })\n  useEffect(() => { if (reveal) bringIn(reveal.key) }, [reveal?.at]) // eslint-disable-line react-hooks/exhaustive-deps\n  function cite(n: number) {\n    const r = results[n - 1]\n    if (!r) return\n    onCite?.(resultKey(r))\n    bringIn(resultKey(r))\n  }\n  const ends = (r: SearchResult) => (actions || download) && <span className=\"flex items-center gap-2\">{actions?.(r)}{download && <DownloadButton id={resultKey(r)} onPress={() => download(r)} />}</span>\n\n  const top = results[0]\n  return (\n    <div data-ds=\"search-results\" className=\"ds-results flex flex-col gap-6\">\n      <style href=\"ds-search-results\" precedence=\"ds\">{css}</style>\n      {top && (\n        <article id={`${pre}-top`} className=\"ds-rise border border-edge bg-surface\" data-flash={flash === resultKey(top) || undefined} style={{ '--i': 0 } as CSSProperties}>\n          <div className=\"flex min-w-0 flex-col gap-9 px-4 pt-4 pb-4.5\">\n            {answers\n              ? (\n                  <div className=\"min-h-12\" aria-live=\"polite\">\n                    {writing\n                      ? <p className=\"inline-flex items-center gap-1.5 type-meta\"><DotMatrix />Writing an answer</p>\n                      : answer ? <AnswerText text={answer} onCite={cite} /> : <p className=\"ds-answer-text\"><MarkedText text={top.text} query={query} /></p>}\n                  </div>\n                )\n              : <p className=\"type-body-lg text-ds-neutral-200\"><MarkedText text={top.text} query={query} /></p>}\n            {top.page && (\n              <div className=\"flex items-end gap-2\">\n                {around(top.page).map(p => <PagePreview key={p.number} page={p} size=\"thumb\" marked={p.here} here={p.here} />)}\n                <span className=\"ml-1 type-meta text-fg-muted\">{`${pageLine(top.page)} in `}<span className=\"type-code-sm\">{top.page.file}</span></span>\n              </div>\n            )}\n          </div>\n          <div className=\"flex flex-wrap items-center justify-between gap-3 border-t border-edge py-2.5 pr-2 pl-4\">\n            <span className=\"flex min-w-0 items-center gap-1.5\">\n              {logo(top.namespace) && <img src={logo(top.namespace)!} alt=\"\" width=\"14\" height=\"14\" className=\"size-3.5 shrink-0 object-contain\" />}\n              <span className=\"truncate type-code-sm\">{top.id}</span>\n              <span className=\"shrink-0 type-meta text-fg-muted\">in <span className=\"type-code-sm\">{top.namespace}</span>{`, ${top.score.toFixed(2)}`}</span>\n            </span>\n            {ends(top)}\n          </div>\n        </article>\n      )}\n\n      {results.length > 1 && (\n        <section className=\"ds-others flex flex-col gap-1\" aria-labelledby={`${pre}-more`}>\n          <h2 id={`${pre}-more`} className=\"type-meta text-fg-muted\">Other matches</h2>\n          <ol className=\"ds-others-rows\">\n            {results.slice(1).map((r, i) => {\n              const key = resultKey(r)\n              const on = open === key\n              return (\n                <li id={`${pre}-row-${i}`} key={key} className=\"ds-rise\" data-flash={flash === key || undefined} style={{ '--i': i + 1 } as CSSProperties}>\n                  <button type=\"button\" className=\"ds-match w-full text-left\" aria-expanded={on} aria-controls={`${pre}-${i}`} onClick={() => setOpen(o => (o === key ? '' : key))}>\n                    {logo(r.namespace) && <img src={logo(r.namespace)!} alt=\"\" width=\"12\" height=\"12\" className=\"size-3 shrink-0 object-contain\" />}\n                    <span className=\"ds-match-id w-40 shrink-0 truncate max-sm:w-auto max-sm:min-w-0 max-sm:flex-1\">{r.id}</span>\n                    <span className={cn('hidden min-w-0 flex-1 truncate sm:block', on && 'invisible')}>{r.text}</span>\n                    {r.page && <span className=\"hidden shrink-0 tabular-nums sm:inline\">{`p. ${r.page.number}`}</span>}\n                    <span className=\"shrink-0 tabular-nums\">{r.score.toFixed(2)}</span>\n                    <ChevronDown size={12} strokeWidth={1.5} className=\"ds-match-chev shrink-0 text-fg-muted\" aria-hidden=\"true\" />\n                  </button>\n                  {/* Opens by its rows' height (0fr to 1fr), so it grows to fit. */}\n                  <div id={`${pre}-${i}`} className=\"ds-expand\" data-open={on || undefined} inert={!on}>\n                    <div className=\"min-h-0 overflow-hidden\">\n                      <div className=\"flex min-w-0 flex-col gap-3 pt-1 pb-3\">\n                        <p className=\"leading-5.5 text-ds-neutral-200\"><MarkedText text={r.text} query={query} /></p>\n                        <div className=\"flex flex-wrap items-center justify-between gap-3\">\n                          <span className=\"flex flex-wrap gap-x-4 gap-y-1 type-meta text-fg-muted\">\n                            <span>in <span className=\"type-code-sm\">{r.namespace}</span></span>\n                            {r.page && <span>{pageLine(r.page)}</span>}\n                          </span>\n                          {ends(r)}\n                        </div>\n                      </div>\n                    </div>\n                  </div>\n                </li>\n              )\n            })}\n          </ol>\n        </section>\n      )}\n    </div>\n  )\n}\n\nexport default SearchResults\n\nconst css = `\n/* Results rise in, each 60ms after the last (console2.css .v2-results[data-motion=\"1\"] .v2-rise). */\n.ds-results .ds-rise { animation: ds-results-in var(--ds-duration-enter) var(--ds-easing-out) both; animation-delay: calc(var(--i, 0) * 60ms); }\n@keyframes ds-results-in { from { opacity: 0; transform: translateY(12px); } }\n/* The dot matrix in red while the answer is written (.v2-proc .v2-matrix). */\n.ds-results .ds-matrix i { background: var(--ds-color-edge-accent); }\n.ds-others-rows > * + * { border-top: var(--ds-border-hairline) solid var(--ds-color-edge); }\n/* Other matches: a quiet list under the answer, every row still opening. */\n.ds-match { display: flex; min-height: var(--ds-size-control-md); align-items: center; gap: var(--ds-space-md); padding: 0; color: var(--ds-color-fg-muted); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-match-id { color: var(--ds-color-fg-soft); font-family: var(--ds-font-code); font-size: var(--ds-text-meta); transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) {\n  .ds-match:hover { color: var(--ds-color-fg-soft); }\n  .ds-match:hover .ds-match-id { color: var(--ds-color-fg); }\n}\n.ds-match:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: -2px; }\n.ds-match-chev { transition: rotate var(--ds-duration-micro) var(--ds-easing-out); }\n.ds-match[aria-expanded=\"true\"] .ds-match-chev { rotate: 180deg; transition-duration: var(--ds-duration-slide); }\n.ds-expand { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--ds-duration-slide) var(--ds-easing-out); }\n.ds-expand[data-open] { grid-template-rows: 1fr; }\n/* A result shown from its square flashes its red outline once. */\n.ds-results [data-flash] { animation: ds-results-flash var(--ds-duration-flash) var(--ds-easing-standard) both; }\n@keyframes ds-results-flash { 0%, 40% { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: -2px; } 100% { outline: var(--ds-border-focus) solid transparent; outline-offset: -2px; } }\n@media (prefers-reduced-motion: reduce) {\n  .ds-results .ds-rise, .ds-results [data-flash] { animation: none; }\n  .ds-match-chev, .ds-expand { transition: none; }\n}\n`\n"
+        },
+        {
+          "path": "react/components/product/AnswerText.tsx",
+          "content": "import { Fragment } from 'react'\nimport { citeParts } from '@/react/hooks/useSearchResults'\n\n// A written answer's words at 16px with its sources as small ink squares, [1] and [2] in the text becoming numbered\n// buttons (console2.css .v2-written-text, .v2-cite). A citation turns red under the pointer and while it is the one\n// shown (`pointed`). The words rise in once, a blur clearing (.v2-answer-in).\nexport interface AnswerTextProps {\n  text: string\n  pointed?: number\n  onCite?: (n: number) => void\n  onPoint?: (n: number) => void\n}\n\nexport function AnswerText({ text, pointed, onCite, onPoint }: AnswerTextProps) {\n  return (\n    <p data-ds=\"answer-text\" className=\"ds-answer-text\">\n      <style href=\"ds-answer-text\" precedence=\"ds\">{css}</style>\n      {citeParts(text).map((p, i) => ('cite' in p\n        ? <button key={i} type=\"button\" className=\"ds-cite\" aria-label={`Source ${p.cite}`} aria-pressed={pointed === undefined ? undefined : pointed === p.cite} onPointerEnter={() => onPoint?.(p.cite)} onFocus={() => onPoint?.(p.cite)} onClick={() => onCite?.(p.cite)}>{p.cite}</button>\n        : <Fragment key={i}>{p.words}</Fragment>))}\n    </p>\n  )\n}\n\nexport default AnswerText\n\nconst css = `\n.ds-answer-text { margin: 0; font-size: var(--ds-text-input); line-height: var(--ds-text-input-leading); animation: ds-answer-in var(--ds-duration-rise) var(--ds-easing-out) both; }\n@keyframes ds-answer-in { from { opacity: 0; filter: blur(2px); transform: translateY(4px); } }\n.ds-cite { position: relative; display: inline-flex; min-width: 16px; height: 16px; align-items: center; justify-content: center; margin-inline: 2px; background: var(--ds-color-fg); color: var(--ds-color-fg-inverse); font-size: var(--ds-text-meta); line-height: 16px; vertical-align: 2px; font-variant-numeric: tabular-nums; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); touch-action: manipulation; }\n/* Small to the eye, larger to the pointer: 24px, 40px on touch. */\n.ds-cite::after { position: absolute; inset: -4px; content: \"\"; }\n.ds-cite[aria-pressed=\"true\"] { background: var(--ds-color-home-red-press); }\n@media (hover: hover) and (pointer: fine) { .ds-cite:hover { background: var(--ds-color-home-red-press); } }\n.ds-cite:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: 2px; }\n@media (pointer: coarse) { .ds-cite::after { inset: -12px; } }\n@media (prefers-reduced-motion: reduce) { .ds-answer-text { animation-name: ds-answer-fade; } }\n@keyframes ds-answer-fade { from { opacity: 0; } }\n`\n"
+        },
+        {
+          "path": "react/components/product/PagePreview.tsx",
+          "content": "import { Fragment } from 'react'\nimport { MarkedText } from '@/react/components/ui/MarkedText'\nimport type { ResultPage } from '@/react/hooks/useSearchResults'\n\n// A document's page drawn small, with the passage marked where it sits on it (search/PagePreview.vue). A result\n// carries only its passage, so the page's other lines are drawn as rules: at thumb and mid size the passage is a band\n// of darker rules on the red tint with a red edge; at full size it is its own words, the query's in medium weight.\n// Thumb and mid are pictures (say the page number beside them); full is read.\nexport interface PagePreviewProps {\n  page: ResultPage\n  text?: string\n  query?: string\n  size?: 'thumb' | 'mid' | 'full'\n  marked?: boolean\n  here?: boolean\n}\n\nconst COUNT = { thumb: 11, mid: 22, full: 26 }\n// Line lengths in percent; 0 is the gap between paragraphs.\nconst WIDTHS = [100, 97, 99, 94, 100, 62, 0, 98, 100, 95, 100, 71, 0]\n\nexport function PagePreview({ page, text = '', query = '', size = 'mid', marked = true, here }: PagePreviewProps) {\n  const band = size === 'thumb' ? 2 : 4\n  const n = COUNT[size]\n  const at = Math.min(n - 3, Math.round(page.top * n))\n  const span = size === 'thumb' ? 2 : size === 'mid' ? 4 : 1\n  const lines = Array.from({ length: n }, (_, i) => ({ w: WIDTHS[(i + page.number * 3) % WIDTHS.length]!, hit: marked && i >= at && i < at + span, first: i === at }))\n  return (\n    <div data-ds=\"page-preview\" className=\"ds-pg\" data-size={size} data-here={here || undefined} aria-hidden={size === 'full' ? undefined : 'true'}>\n      <style href=\"ds-page-preview\" precedence=\"ds\">{css}</style>\n      <span className=\"ds-pg-head\" />\n      {lines.map((l, i) => (\n        <Fragment key={i}>\n          {size === 'full' && l.first\n            ? <p className=\"ds-pg-hit ds-pg-words\"><MarkedText text={text} query={query} /></p>\n            : l.hit && size !== 'full' && l.first\n              ? <span className=\"ds-pg-hit\">{Array.from({ length: band }, (_, k) => <span key={k} className=\"ds-pg-line\" style={{ width: k + 1 === band ? '68%' : '100%' }} />)}</span>\n              : !l.hit ? <span className=\"ds-pg-line\" style={{ width: `${l.w}%` }} data-gap={l.w === 0 || undefined} /> : null}\n        </Fragment>\n      ))}\n      {size !== 'thumb' && <span className=\"ds-pg-foot\">{page.number}</span>}\n    </div>\n  )\n}\n\nexport default PagePreview\n\nconst css = `\n.ds-pg { position: relative; display: flex; flex-shrink: 0; flex-direction: column; overflow: hidden; border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface); }\n.ds-pg-line { display: block; height: 1px; flex-shrink: 0; background: var(--ds-color-edge-strong); opacity: 0.55; }\n.ds-pg-line[data-gap] { opacity: 0; }\n.ds-pg-head { display: block; width: 34%; height: 1px; flex-shrink: 0; background: var(--ds-color-edge-strong); }\n.ds-pg-hit { display: flex; flex-shrink: 0; flex-direction: column; background: linear-gradient(var(--ds-color-edge-accent), var(--ds-color-edge-accent)) left / 2px 100% no-repeat, color-mix(in srgb, var(--ds-color-edge-accent) 14%, transparent); }\n.ds-pg-hit .ds-pg-line { background: var(--ds-color-off-black); opacity: 0.8; }\n/* ds-override: the folio of a drawn page, 8px as the branch draws it, not a text size */\n.ds-pg-foot { position: absolute; right: 0; bottom: 6px; left: 0; color: var(--ds-color-fg-muted); font-size: 8px; line-height: 8px; text-align: center; font-variant-numeric: tabular-nums; }\n.ds-pg[data-size=\"thumb\"] { width: 28px; height: 36px; gap: 2px; padding: 4px 4px; }\n.ds-pg[data-size=\"thumb\"] .ds-pg-head { margin-bottom: 1px; }\n.ds-pg[data-size=\"thumb\"] .ds-pg-hit { gap: 2px; margin: 0 -2px; padding: 1px 2px; }\n.ds-pg[data-size=\"mid\"] { width: 152px; height: 197px; gap: 4px; padding: 14px 14px 22px; }\n.ds-pg[data-size=\"mid\"] .ds-pg-line { height: 2px; }\n.ds-pg[data-size=\"mid\"] .ds-pg-head { height: 2px; margin-bottom: 6px; }\n/* ds-override: the band reaches 3px past the page's rules, as the branch draws it */\n.ds-pg[data-size=\"mid\"] .ds-pg-hit { gap: 4px; margin: -1px -4px; padding: 3px 4px; }\n.ds-pg[data-size=\"mid\"] .ds-pg-hit .ds-pg-line { height: 2px; }\n.ds-pg[data-size=\"full\"] { width: 100%; gap: 12px; padding: 40px 40px 56px; }\n.ds-pg[data-size=\"full\"] .ds-pg-line { height: 5px; }\n.ds-pg[data-size=\"full\"] .ds-pg-line[data-gap] { height: 2px; }\n.ds-pg[data-size=\"full\"] .ds-pg-head { height: 5px; margin-bottom: 12px; }\n.ds-pg[data-size=\"full\"] .ds-pg-foot { bottom: 20px; font-size: var(--ds-text-caption); line-height: 12px; }\n.ds-pg-words { margin: 2px -8px; padding: 8px; color: var(--ds-color-fg); font-size: var(--ds-text-ui); line-height: var(--ds-text-ui-leading); }\n.ds-pg[data-here] { outline: var(--ds-border-hairline) solid var(--ds-color-edge-accent); outline-offset: 2px; }\n@media (max-width: 639px) { .ds-pg[data-size=\"full\"] { padding: 28px 24px 48px; } }\n`\n"
+        },
+        {
+          "path": "react/hooks/useSearchResults.ts",
+          "content": "// What the search's parts share (SearchResults, SearchRun, WrittenAnswer): the result's shape and a written answer\n// split at its citations. The query's words are marked by MarkedText.\n\n/** The page a passage stands on, for results from PDF and Word documents: `top` is where on the page (0 to 1). */\nexport type ResultPage = { number: number, count: number, top: number, file: string }\n\n/** One passage a search found. */\nexport type SearchResult = { namespace: string, id: string, score: number, text: string, page?: ResultPage }\n\n/** A written answer that marks its sources [1], [2], as words and citation numbers. */\nexport function citeParts(text: string): Array<{ words: string } | { cite: number }> {\n  return text.split(/(\\[\\d+\\])/).filter(Boolean).map(p => (/^\\[\\d+\\]$/.test(p) ? { cite: Number(p.slice(1, -1)) } : { words: p }))\n}\n\n/** A result's key, unique across namespaces. */\nexport const resultKey = (r: SearchResult) => `${r.namespace}/${r.id}`\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [
+        "lucide-react@0.479.0"
+      ],
+      "registryDependencies": [
+        "document-download",
+        "loader",
+        "marked-text"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "SearchResults",
+            "file": "react/components/product/SearchResults.tsx",
+            "props": [
+              {
+                "name": "results",
+                "type": "SearchResult[]",
+                "required": true
+              },
+              {
+                "name": "query",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "answer",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "writing",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "reveal",
+                "type": "{ key: string, at: number } | null",
+                "required": false
+              },
+              {
+                "name": "logoOf",
+                "type": "(namespace: string) => string | null | undefined",
+                "required": false
+              },
+              {
+                "name": "download",
+                "type": "(result: SearchResult) => void",
+                "required": false
+              },
+              {
+                "name": "onCite",
+                "type": "(key: string) => void",
+                "required": false
+              },
+              {
+                "name": "actions",
+                "type": "(result: SearchResult) => ReactNode",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "AnswerText",
+            "file": "react/components/product/AnswerText.tsx",
+            "props": [
+              {
+                "name": "text",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "pointed",
+                "type": "number",
+                "required": false
+              },
+              {
+                "name": "onCite",
+                "type": "(n: number) => void",
+                "required": false
+              },
+              {
+                "name": "onPoint",
+                "type": "(n: number) => void",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "PagePreview",
+            "file": "react/components/product/PagePreview.tsx",
+            "props": [
+              {
+                "name": "page",
+                "type": "ResultPage",
+                "required": true
+              },
+              {
+                "name": "text",
+                "type": "string",
+                "required": false,
+                "default": "''"
+              },
+              {
+                "name": "query",
+                "type": "string",
+                "required": false,
+                "default": "''"
+              },
+              {
+                "name": "size",
+                "type": "'thumb' | 'mid' | 'full'",
+                "required": false,
+                "default": "'mid'"
+              },
+              {
+                "name": "marked",
+                "type": "boolean",
+                "required": false,
+                "default": "true"
+              },
+              {
+                "name": "here",
+                "type": "boolean",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "react/examples/search-results/Product.tsx",
+          "content": "'use client'\nimport { SearchResults } from '@/react/components/product/SearchResults'\nimport { useDocumentDownload } from '@/react/hooks/useDocumentDownload'\nimport { resultKey, type SearchResult } from '@/react/hooks/useSearchResults'\n// The results alone, as Home shows them under the box: the best match in its card with the written answer, the pages\n// around its passage and its source, then the other matches, each opening in place. Press a citation to show its\n// result; Download saves the document (sample text stands in for your API's bytes).\nconst query = 'Acme renewal EU data'\nconst results: SearchResult[] = [\n  { namespace: 'contracts', id: 'acme-msa-2026', score: 0.94, page: { number: 9, count: 24, top: 0.3, file: 'acme-msa-2026.pdf' }, text: 'Acme may renew for twelve months with 60 days written notice. On renewal, all customer data stays in the EU region named in Schedule C.' },\n  { namespace: 'slack', id: 'legal-thread-1182', score: 0.81, text: 'Legal confirmed that Acme needs EU data residency in the renewal, and that Schedule C covers it.' },\n  { namespace: 'sales-calls', id: 'acme-oct-review', score: 0.76, text: 'Acme asked what happens to their data at renewal. We walked through the EU region and the 60 day notice.' },\n  { namespace: 'crm', id: 'acme-renewal-2026', score: 0.71, text: 'Renewal open. Blocker: data processing addendum for the EU region.' },\n]\nconst answer = 'Acme can renew for twelve months with 60 days written notice [1], and its data stays in the EU region named in Schedule C [1][2]. The open blocker is the data processing addendum [4].'\n\nexport default function Product() {\n  const save = useDocumentDownload()\n  const download = (r: SearchResult) => save(resultKey(r), () => new Promise<string>(done => setTimeout(() => done(r.text), 400)), `${r.id}.txt`)\n  return <SearchResults results={results} query={query} answer={answer} download={download} />\n}\n",
+          "registryDependencies": [
+            "document-download",
+            "loader",
+            "marked-text"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/product/search-results.ts",
+          "content": "import { nothing, type PropertyValues } from 'lit'\nimport { html } from 'lit/static-html.js'\nimport { repeat } from 'lit/directives/repeat.js'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { ChevronDown } from 'lucide'\nimport { DsElement, define, tag, uid } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport { resultKey, type ResultPage, type SearchResult } from '@/elements/controllers/search-results'\nimport '@/elements/components/product/answer-text'\nimport '@/elements/components/product/download-button'\nimport '@/elements/components/product/page-preview'\nimport '@/elements/components/ui/dot-matrix'\nimport '@/elements/components/ui/marked-text'\nimport styles from 'virtual:tw'\n\n// SearchResults.vue as <conare-search-results>: search results, \"Best match\" (search/BestMatch.vue): the top result is\n// the answer most of the time, so it gets the card, the full passage at a larger size with the query's words marked,\n// the pages around it (its own outlined in red) and its source; the rest follow as one quiet line each, to scan, and a\n// line opens in place to its full passage. `answer` puts a written answer in the card instead of the passage, citing\n// results [1], [2]; `writing` holds the card's room with the dot matrix while it is written. `reveal` (a result's key\n// and a time) opens that result, brings it into view and flashes it once, as the search run's squares do. `logoOf`\n// gives a namespace's app mark. `download` (a function of the result) puts the document's dark Download button\n// (document-download) under the best match and each opened match, keyed by the result's key so it says Downloaded once\n// it has. Vue's scoped `actions` slot is renderActions(result), for a subclass to fill. Results rise in, 60ms apart.\n\n// `.ds-results .ds-matrix i` (the dot matrix in red while the answer is written) has to reach the cells\n// <conare-dot-matrix> draws in its own shadow root: the matrix is marked data-red and its shadow root takes this rule.\nconst RED_RULE = ':host([data-red]) i { background: var(--ds-color-edge-accent); }'\nconst redSheets = new WeakSet<ShadowRoot>()\n\nconst pageLine = (p: ResultPage) => `Page ${p.number} of ${p.count}`\n// The pages before and after the passage's, unmarked.\nconst around = (p: ResultPage) => [p.number - 1, p.number, p.number + 1].filter((n) => n >= 1 && n <= p.count).map((n) => ({ ...p, number: n, here: n === p.number }))\n\n/**\n * @summary Search results: the best match in its card, then the other matches, each opening in place.\n * @fires cite - A citation in the answer was pressed; detail { key } (the result's key).\n */\nexport class SearchResults extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { results: { type: Array }, query: {}, answer: {}, writing: { type: Boolean }, reveal: { type: Object }, logoOf: { attribute: false }, download: { attribute: false }, open: { state: true }, flash: { state: true } }\n\n\t/** [{ namespace, id, score, text, page? }], best first. */\n\tresults: SearchResult[] = []\n\t/** The question, its words marked. */\n\tquery = ''\n\t/** A written answer in the card, citing results [1], [2]. */\n\tanswer?: string\n\t/** The answer is being written. */\n\twriting = false\n\t/** { key, at }: open that result, bring it into view, flash it. */\n\treveal: { key: string, at: number } | null = null\n\t/** A namespace's app mark (a property: a function). */\n\tlogoOf?: (namespace: string) => string | null | undefined\n\t/** Download a result's document (a property: a function); shows the Download buttons. */\n\tdownload?: (result: SearchResult) => void\n\tprivate open = ''\n\tprivate flash = ''\n\tprivate pre = uid('match')\n\n\t/** Other buttons beside a result's Download (Vue's scoped `actions` slot): override in a subclass. */\n\tprotected renderActions(_result: SearchResult): unknown {\n\t\treturn nothing\n\t}\n\n\tprotected willUpdate(changed: PropertyValues) {\n\t\tif (changed.has('results') && this.hasUpdated) this.open = ''\n\t\tconst was = changed.get('reveal') as { at: number } | null | undefined\n\t\tif (changed.has('reveal') && this.reveal && was?.at !== this.reveal.at) void this.bringIn(this.reveal.key)\n\t}\n\n\tprotected async updated(changed: PropertyValues) {\n\t\tsuper.updated(changed)\n\t\tconst red = this.renderRoot.querySelector<HTMLElement & { updateComplete?: Promise<unknown> }>('[data-red]')\n\t\tif (!red) return\n\t\tawait customElements.whenDefined(red.localName)\n\t\tawait red.updateComplete\n\t\tconst root = red.shadowRoot\n\t\tif (!root || redSheets.has(root)) return\n\t\tconst sheet = new CSSStyleSheet()\n\t\tsheet.replaceSync(RED_RULE)\n\t\troot.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet]\n\t\tredSheets.add(root)\n\t}\n\n\tprivate async bringIn(key: string) {\n\t\tconst i = this.results.findIndex((r) => resultKey(r) === key)\n\t\tif (i < 0) return\n\t\tif (i > 0) this.open = key\n\t\tthis.flash = ''\n\t\tawait this.updateComplete\n\t\tthis.flash = key\n\t\t;(this.renderRoot as ShadowRoot).getElementById(i === 0 ? `${this.pre}-top` : `${this.pre}-row-${i - 1}`)?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' })\n\t}\n\t// The answer's own cite and point events stop here: composed, they would leave this element too, beside its cite.\n\tprivate cite(n: number) {\n\t\tconst r = this.results[n - 1]\n\t\tif (!r) return\n\t\tthis.emit('cite', { key: resultKey(r) })\n\t\tvoid this.bringIn(resultKey(r))\n\t}\n\n\trender() {\n\t\tconst results = this.results ?? []\n\t\tconst pre = this.pre\n\t\tconst top = results[0]\n\t\tconst [dots, answerText, marked, preview, dl] = ['dot-matrix', 'answer-text', 'marked-text', 'page-preview', 'download-button'].map(tag)\n\t\tconst logo = (ns: string) => this.logoOf?.(ns) ?? null\n\t\tconst mark = (text: string) => html`<${marked} .text=${text} .query=${this.query}></${marked}>`\n\t\tconst flash = (r: SearchResult) => ifDefined(this.flash === resultKey(r) ? 'true' : undefined)\n\t\tconst ends = (r: SearchResult) => {\n\t\t\tconst extra = this.renderActions(r)\n\t\t\treturn extra !== nothing || this.download ? html`<span class=\"flex items-center gap-2\">${extra}${this.download ? html`<${dl} doc-id=${resultKey(r)} @press=${() => this.download?.(r)}></${dl}>` : nothing}</span>` : nothing\n\t\t}\n\t\tconst answers = this.writing || this.answer !== undefined\n\t\treturn html`<div data-ds=\"search-results\" class=\"ds-results flex flex-col gap-6\">\n\t\t\t${top\n\t\t\t\t? html`<article id=${`${pre}-top`} class=\"ds-rise border border-edge bg-surface\" data-flash=${flash(top)} style=\"--i: 0\">\n\t\t\t\t\t\t<div class=\"flex min-w-0 flex-col gap-9 px-4 pt-4 pb-4.5\">\n\t\t\t\t\t\t\t${answers\n\t\t\t\t\t\t\t\t? html`<div class=\"min-h-12\" aria-live=\"polite\">${this.writing\n\t\t\t\t\t\t\t\t\t? html`<p class=\"inline-flex items-center gap-1.5 type-meta\"><${dots} data-red></${dots}>Writing an answer</p>`\n\t\t\t\t\t\t\t\t\t: this.answer ? html`<${answerText} .text=${this.answer} @cite=${(e: CustomEvent<{ n: number }>) => { e.stopPropagation(); this.cite(e.detail.n) }} @point=${(e: Event) => e.stopPropagation()}></${answerText}>` : html`<p class=\"ds-answer-text\">${mark(top.text)}</p>`}</div>`\n\t\t\t\t\t\t\t\t: html`<p class=\"type-body-lg text-ds-neutral-200\">${mark(top.text)}</p>`}\n\t\t\t\t\t\t\t${top.page\n\t\t\t\t\t\t\t\t? html`<div class=\"flex items-end gap-2\">${around(top.page).map((p) => html`<${preview} .page=${p} size=\"thumb\" .marked=${p.here} ?here=${p.here}></${preview}>`)}<span class=\"ml-1 type-meta text-fg-muted\">${`${pageLine(top.page)} in `}<span class=\"type-code-sm\">${top.page.file}</span></span></div>`\n\t\t\t\t\t\t\t\t: nothing}\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div class=\"flex flex-wrap items-center justify-between gap-3 border-t border-edge py-2.5 pr-2 pl-4\">\n\t\t\t\t\t\t\t<span class=\"flex min-w-0 items-center gap-1.5\">${logo(top.namespace) ? html`<img src=${logo(top.namespace)!} alt=\"\" width=\"14\" height=\"14\" class=\"size-3.5 shrink-0 object-contain\">` : nothing}<span class=\"truncate type-code-sm\">${top.id}</span><span class=\"shrink-0 type-meta text-fg-muted\">in <span class=\"type-code-sm\">${top.namespace}</span>${`, ${top.score.toFixed(2)}`}</span></span>\n\t\t\t\t\t\t\t${ends(top)}\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</article>`\n\t\t\t\t: nothing}\n\n\t\t\t${results.length > 1\n\t\t\t\t? html`<section class=\"ds-others flex flex-col gap-1\" aria-labelledby=${`${pre}-more`}>\n\t\t\t\t\t\t<h2 id=${`${pre}-more`} class=\"type-meta text-fg-muted\">Other matches</h2>\n\t\t\t\t\t\t<ol class=\"ds-others-rows\">${repeat(results.slice(1), (r) => resultKey(r), (r, i) => {\n\t\t\t\t\t\t\tconst key = resultKey(r)\n\t\t\t\t\t\t\tconst on = this.open === key\n\t\t\t\t\t\t\treturn html`<li id=${`${pre}-row-${i}`} class=\"ds-rise\" data-flash=${flash(r)} style=${`--i: ${i + 1}`}>\n\t\t\t\t\t\t\t\t<button type=\"button\" class=\"ds-match w-full text-left\" aria-expanded=${String(on)} aria-controls=${`${pre}-${i}`} @click=${() => { this.open = on ? '' : key }}>${logo(r.namespace) ? html`<img src=${logo(r.namespace)!} alt=\"\" width=\"12\" height=\"12\" class=\"size-3 shrink-0 object-contain\">` : nothing}<span class=\"ds-match-id w-40 shrink-0 truncate max-sm:w-auto max-sm:min-w-0 max-sm:flex-1\">${r.id}</span><span class=${['hidden min-w-0 flex-1 truncate sm:block', on ? 'invisible' : ''].join(' ')}>${r.text}</span>${r.page ? html`<span class=\"hidden shrink-0 tabular-nums sm:inline\">${`p. ${r.page.number}`}</span>` : nothing}<span class=\"shrink-0 tabular-nums\">${r.score.toFixed(2)}</span>${icon(ChevronDown, 'chevron-down', { size: 12, strokeWidth: 1.5, class: 'ds-match-chev shrink-0 text-fg-muted', attrs: { 'aria-hidden': 'true' } })}</button>\n\t\t\t\t\t\t\t\t<!-- Opens by its rows' height (0fr to 1fr), so it grows to fit. -->\n\t\t\t\t\t\t\t\t<div id=${`${pre}-${i}`} class=\"ds-expand\" data-open=${ifDefined(on ? 'true' : undefined)} ?inert=${!on}>\n\t\t\t\t\t\t\t\t\t<div class=\"min-h-0 overflow-hidden\">\n\t\t\t\t\t\t\t\t\t\t<div class=\"flex min-w-0 flex-col gap-3 pt-1 pb-3\">\n\t\t\t\t\t\t\t\t\t\t\t<p class=\"leading-5.5 text-ds-neutral-200\">${mark(r.text)}</p>\n\t\t\t\t\t\t\t\t\t\t\t<div class=\"flex flex-wrap items-center justify-between gap-3\">\n\t\t\t\t\t\t\t\t\t\t\t\t<span class=\"flex flex-wrap gap-x-4 gap-y-1 type-meta text-fg-muted\"><span>in <span class=\"type-code-sm\">${r.namespace}</span></span>${r.page ? html`<span>${pageLine(r.page)}</span>` : nothing}</span>\n\t\t\t\t\t\t\t\t\t\t\t\t${ends(r)}\n\t\t\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t</li>`\n\t\t\t\t\t\t})}</ol>\n\t\t\t\t\t</section>`\n\t\t\t\t: nothing}\n\t\t</div>`\n\t}\n}\n\ndefine('search-results', SearchResults)\n"
+        },
+        {
+          "path": "elements/components/product/search-results.css",
+          "content": "/* Results rise in, each 60ms after the last (console2.css .v2-results[data-motion=\"1\"] .v2-rise). */\n.ds-results .ds-rise { animation: ds-results-in var(--ds-duration-enter) var(--ds-easing-out) both; animation-delay: calc(var(--i, 0) * 60ms); }\n@keyframes ds-results-in { from { opacity: 0; transform: translateY(12px); } }\n/* The dot matrix in red while the answer is written (.v2-proc .v2-matrix). */\n.ds-results .ds-matrix i { background: var(--ds-color-edge-accent); }\n.ds-others-rows > * + * { border-top: var(--ds-border-hairline) solid var(--ds-color-edge); }\n/* Other matches: a quiet list under the answer, every row still opening. */\n.ds-match { display: flex; min-height: var(--ds-size-control-md); align-items: center; gap: var(--ds-space-md); padding: 0; color: var(--ds-color-fg-muted); font-size: var(--ds-text-meta); line-height: var(--ds-text-meta-leading); transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-match-id { color: var(--ds-color-fg-soft); font-family: var(--ds-font-code); font-size: var(--ds-text-meta); transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) {\n  .ds-match:hover { color: var(--ds-color-fg-soft); }\n  .ds-match:hover .ds-match-id { color: var(--ds-color-fg); }\n}\n.ds-match:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: -2px; }\n.ds-match-chev { transition: rotate var(--ds-duration-micro) var(--ds-easing-out); }\n.ds-match[aria-expanded=\"true\"] .ds-match-chev { rotate: 180deg; transition-duration: var(--ds-duration-slide); }\n.ds-expand { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--ds-duration-slide) var(--ds-easing-out); }\n.ds-expand[data-open] { grid-template-rows: 1fr; }\n/* A result shown from its square flashes its red outline once. */\n.ds-results [data-flash] { animation: ds-results-flash var(--ds-duration-flash) var(--ds-easing-standard) both; }\n@keyframes ds-results-flash { 0%, 40% { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: -2px; } 100% { outline: var(--ds-border-focus) solid transparent; outline-offset: -2px; } }\n@media (prefers-reduced-motion: reduce) {\n  .ds-results .ds-rise, .ds-results [data-flash] { animation: none; }\n  .ds-match-chev, .ds-expand { transition: none; }\n}\n"
+        },
+        {
+          "path": "elements/components/product/answer-text.ts",
+          "content": "import { html } from 'lit'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { DsElement, define } from '@/elements/lib/element'\nimport { citeParts } from '@/elements/controllers/search-results'\nimport styles from 'virtual:tw'\n\n// AnswerText.vue as <conare-answer-text>: a written answer's words at 16px with its sources as small ink squares, [1]\n// and [2] in the text becoming numbered buttons (console2.css .v2-written-text, .v2-cite). A citation turns red under\n// the pointer and while it is the one shown (`pointed`). The words rise in once, a blur clearing (.v2-answer-in).\n\n/**\n * @summary A written answer, its sources as small numbered buttons.\n * @fires cite - A citation was pressed; detail { n }.\n * @fires point - A citation is under the pointer or focus; detail { n }.\n */\nexport class AnswerText extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { text: {}, pointed: { type: Number } }\n\n\t/** The answer, its sources as [1], [2]. */\n\ttext = ''\n\t/** The citation shown. */\n\tpointed?: number\n\n\trender() {\n\t\treturn html`<p data-ds=\"answer-text\" class=\"ds-answer-text\">${citeParts(this.text ?? '').map((p) => ('cite' in p\n\t\t\t? html`<button type=\"button\" class=\"ds-cite\" aria-label=${`Source ${p.cite}`} aria-pressed=${ifDefined(this.pointed === undefined ? undefined : String(this.pointed === p.cite))} @pointerenter=${() => this.emit('point', { n: p.cite })} @focus=${() => this.emit('point', { n: p.cite })} @click=${() => this.emit('cite', { n: p.cite })}>${p.cite}</button>`\n\t\t\t: p.words))}</p>`\n\t}\n}\n\ndefine('answer-text', AnswerText)\n"
+        },
+        {
+          "path": "elements/components/product/answer-text.css",
+          "content": ".ds-answer-text { margin: 0; font-size: var(--ds-text-input); line-height: var(--ds-text-input-leading); animation: ds-answer-in var(--ds-duration-rise) var(--ds-easing-out) both; }\n@keyframes ds-answer-in { from { opacity: 0; filter: blur(2px); transform: translateY(4px); } }\n.ds-cite { position: relative; display: inline-flex; min-width: 16px; height: 16px; align-items: center; justify-content: center; margin-inline: 2px; background: var(--ds-color-fg); color: var(--ds-color-fg-inverse); font-size: var(--ds-text-meta); line-height: 16px; vertical-align: 2px; font-variant-numeric: tabular-nums; transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); touch-action: manipulation; }\n/* Small to the eye, larger to the pointer: 24px, 40px on touch. */\n.ds-cite::after { position: absolute; inset: -4px; content: \"\"; }\n.ds-cite[aria-pressed=\"true\"] { background: var(--ds-color-home-red-press); }\n@media (hover: hover) and (pointer: fine) { .ds-cite:hover { background: var(--ds-color-home-red-press); } }\n.ds-cite:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: 2px; }\n@media (pointer: coarse) { .ds-cite::after { inset: -12px; } }\n@media (prefers-reduced-motion: reduce) { .ds-answer-text { animation-name: ds-answer-fade; } }\n@keyframes ds-answer-fade { from { opacity: 0; } }\n"
+        },
+        {
+          "path": "elements/components/product/page-preview.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport type { ResultPage } from '@/elements/controllers/search-results'\nimport '@/elements/components/ui/marked-text'\nimport styles from 'virtual:tw'\n\n// PagePreview.vue as <conare-page-preview>: a document's page drawn small, with the passage marked where it sits on it\n// (search/PagePreview.vue). A result carries only its passage, so the page's other lines are drawn as rules: at thumb\n// and mid size the passage is a band of darker rules on the red tint with a red edge; at full size it is its own\n// words, the query's in medium weight. Thumb and mid are pictures (say the page number beside them); full is read.\n\nconst COUNT = { thumb: 11, mid: 22, full: 26 }\n// Line lengths in percent; 0 is the gap between paragraphs.\nconst WIDTHS = [100, 97, 99, 94, 100, 62, 0, 98, 100, 95, 100, 71, 0]\n\n/** On by default, as in Vue: marked=\"false\" turns it off. */\nconst onByDefault = { fromAttribute: (v: string | null) => v !== 'false' }\n\n/** @summary A document's page drawn small, the passage marked where it sits. */\nexport class PagePreview extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { page: { type: Object }, text: {}, query: {}, size: {}, marked: { converter: onByDefault }, here: { type: Boolean } }\n\n\t/** { number, count, top (0 to 1), file }. */\n\tpage: ResultPage = { number: 1, count: 1, top: 0, file: '' }\n\t/** The passage, read at full size. */\n\ttext = ''\n\t/** The question, its words marked at full size. */\n\tquery = ''\n\t/** thumb, mid or full. */\n\tsize: 'thumb' | 'mid' | 'full' = 'mid'\n\t/** The passage's band. */\n\tmarked = true\n\t/** This page is the passage's: a red outline. */\n\there = false\n\n\trender() {\n\t\tconst size = this.size\n\t\tconst band = size === 'thumb' ? 2 : 4\n\t\tconst n = COUNT[size] ?? COUNT.mid\n\t\tconst at = Math.min(n - 3, Math.round(this.page.top * n))\n\t\tconst span = size === 'thumb' ? 2 : size === 'mid' ? 4 : 1\n\t\tconst marked = tag('marked-text')\n\t\tconst lines = Array.from({ length: n }, (_, i) => ({ w: WIDTHS[(i + this.page.number * 3) % WIDTHS.length]!, hit: this.marked && i >= at && i < at + span, first: i === at }))\n\t\treturn html`<div data-ds=\"page-preview\" class=\"ds-pg\" data-size=${size} data-here=${ifDefined(this.here ? 'true' : undefined)} aria-hidden=${ifDefined(size === 'full' ? undefined : 'true')}>\n\t\t\t<span class=\"ds-pg-head\"></span>\n\t\t\t${lines.map((l) => (size === 'full' && l.first\n\t\t\t\t? staticHtml`<p class=\"ds-pg-hit ds-pg-words\"><${marked} .text=${this.text} .query=${this.query}></${marked}></p>`\n\t\t\t\t: l.hit && size !== 'full' && l.first\n\t\t\t\t\t? html`<span class=\"ds-pg-hit\">${Array.from({ length: band }, (_, k) => html`<span class=\"ds-pg-line\" style=${`width: ${k + 1 === band ? '68%' : '100%'}`}></span>`)}</span>`\n\t\t\t\t\t: !l.hit ? html`<span class=\"ds-pg-line\" style=${`width: ${l.w}%`} data-gap=${ifDefined(l.w === 0 ? 'true' : undefined)}></span>` : nothing))}\n\t\t\t${size !== 'thumb' ? html`<span class=\"ds-pg-foot\">${this.page.number}</span>` : nothing}\n\t\t</div>`\n\t}\n}\n\ndefine('page-preview', PagePreview)\n"
+        },
+        {
+          "path": "elements/components/product/page-preview.css",
+          "content": ".ds-pg { position: relative; display: flex; flex-shrink: 0; flex-direction: column; overflow: hidden; border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface); }\n.ds-pg-line { display: block; height: 1px; flex-shrink: 0; background: var(--ds-color-edge-strong); opacity: 0.55; }\n.ds-pg-line[data-gap] { opacity: 0; }\n.ds-pg-head { display: block; width: 34%; height: 1px; flex-shrink: 0; background: var(--ds-color-edge-strong); }\n.ds-pg-hit { display: flex; flex-shrink: 0; flex-direction: column; background: linear-gradient(var(--ds-color-edge-accent), var(--ds-color-edge-accent)) left / 2px 100% no-repeat, color-mix(in srgb, var(--ds-color-edge-accent) 14%, transparent); }\n.ds-pg-hit .ds-pg-line { background: var(--ds-color-off-black); opacity: 0.8; }\n/* ds-override: the folio of a drawn page, 8px as the branch draws it, not a text size */\n.ds-pg-foot { position: absolute; right: 0; bottom: 6px; left: 0; color: var(--ds-color-fg-muted); font-size: 8px; line-height: 8px; text-align: center; font-variant-numeric: tabular-nums; }\n.ds-pg[data-size=\"thumb\"] { width: 28px; height: 36px; gap: 2px; padding: 4px 4px; }\n.ds-pg[data-size=\"thumb\"] .ds-pg-head { margin-bottom: 1px; }\n.ds-pg[data-size=\"thumb\"] .ds-pg-hit { gap: 2px; margin: 0 -2px; padding: 1px 2px; }\n.ds-pg[data-size=\"mid\"] { width: 152px; height: 197px; gap: 4px; padding: 14px 14px 22px; }\n.ds-pg[data-size=\"mid\"] .ds-pg-line { height: 2px; }\n.ds-pg[data-size=\"mid\"] .ds-pg-head { height: 2px; margin-bottom: 6px; }\n/* ds-override: the band reaches 3px past the page's rules, as the branch draws it */\n.ds-pg[data-size=\"mid\"] .ds-pg-hit { gap: 4px; margin: -1px -4px; padding: 3px 4px; }\n.ds-pg[data-size=\"mid\"] .ds-pg-hit .ds-pg-line { height: 2px; }\n.ds-pg[data-size=\"full\"] { width: 100%; gap: 12px; padding: 40px 40px 56px; }\n.ds-pg[data-size=\"full\"] .ds-pg-line { height: 5px; }\n.ds-pg[data-size=\"full\"] .ds-pg-line[data-gap] { height: 2px; }\n.ds-pg[data-size=\"full\"] .ds-pg-head { height: 5px; margin-bottom: 12px; }\n.ds-pg[data-size=\"full\"] .ds-pg-foot { bottom: 20px; font-size: var(--ds-text-caption); line-height: 12px; }\n.ds-pg-words { margin: 2px -8px; padding: 8px; color: var(--ds-color-fg); font-size: var(--ds-text-ui); line-height: var(--ds-text-ui-leading); }\n.ds-pg[data-here] { outline: var(--ds-border-hairline) solid var(--ds-color-edge-accent); outline-offset: 2px; }\n@media (max-width: 639px) { .ds-pg[data-size=\"full\"] { padding: 28px 24px 48px; } }\n"
+        },
+        {
+          "path": "elements/controllers/search-results.ts",
+          "content": "// What the search's parts share (SearchResults, SearchRun, WrittenAnswer): the result's shape and a written answer\n// split at its citations. The query's words are marked by MarkedText.\n\n/** The page a passage stands on, for results from PDF and Word documents: `top` is where on the page (0 to 1). */\nexport type ResultPage = { number: number, count: number, top: number, file: string }\n\n/** One passage a search found. */\nexport type SearchResult = { namespace: string, id: string, score: number, text: string, page?: ResultPage }\n\n/** A written answer that marks its sources [1], [2], as words and citation numbers. */\nexport function citeParts(text: string): Array<{ words: string } | { cite: number }> {\n\treturn text.split(/(\\[\\d+\\])/).filter(Boolean).map(p => (/^\\[\\d+\\]$/.test(p) ? { cite: Number(p.slice(1, -1)) } : { words: p }))\n}\n\n/** A result's key, unique across namespaces. */\nexport const resultKey = (r: SearchResult) => `${r.namespace}/${r.id}`\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/search-results.js",
+        "elements/answer-text.js",
+        "elements/page-preview.js",
+        "elements/download-button.js",
+        "elements/dot-matrix.js",
+        "elements/marked-text.js",
+        "elements/pixel-button.js"
+      ],
+      "tag": "conare-search-results",
+      "tags": [
+        "conare-search-results",
+        "conare-answer-text",
+        "conare-page-preview"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "button",
+        "document-download",
+        "loader",
+        "marked-text"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-search-results",
+            "name": "SearchResults",
+            "module": "elements/search-results.js",
+            "description": "Search results: the best match in its card, then the other matches, each opening in place.",
+            "attributes": [
+              {
+                "name": "results",
+                "field": "results",
+                "type": "SearchResult[]",
+                "default": "[]",
+                "description": "[{ namespace, id, score, text, page? }], best first."
+              },
+              {
+                "name": "query",
+                "field": "query",
+                "type": "string",
+                "default": "''",
+                "description": "The question, its words marked."
+              },
+              {
+                "name": "answer",
+                "field": "answer",
+                "type": "string | undefined",
+                "description": "A written answer in the card, citing results [1], [2]."
+              },
+              {
+                "name": "writing",
+                "field": "writing",
+                "type": "boolean",
+                "default": "false",
+                "description": "The answer is being written."
+              },
+              {
+                "name": "reveal",
+                "field": "reveal",
+                "type": "{ key: string; at: number; } | null",
+                "default": "null",
+                "description": "{ key, at }: open that result, bring it into view, flash it."
+              },
+              {
+                "name": "open",
+                "field": "open",
+                "type": "string",
+                "default": "''"
+              },
+              {
+                "name": "flash",
+                "field": "flash",
+                "type": "string",
+                "default": "''"
+              }
+            ],
+            "properties": [
+              {
+                "name": "results",
+                "type": "SearchResult[]",
+                "default": "[]",
+                "description": "[{ namespace, id, score, text, page? }], best first.",
+                "attribute": "results"
+              },
+              {
+                "name": "query",
+                "type": "string",
+                "default": "''",
+                "description": "The question, its words marked.",
+                "attribute": "query"
+              },
+              {
+                "name": "answer",
+                "type": "string | undefined",
+                "description": "A written answer in the card, citing results [1], [2].",
+                "attribute": "answer"
+              },
+              {
+                "name": "writing",
+                "type": "boolean",
+                "default": "false",
+                "description": "The answer is being written.",
+                "attribute": "writing"
+              },
+              {
+                "name": "reveal",
+                "type": "{ key: string; at: number; } | null",
+                "default": "null",
+                "description": "{ key, at }: open that result, bring it into view, flash it.",
+                "attribute": "reveal"
+              },
+              {
+                "name": "logoOf",
+                "type": "((namespace: string) => string | null | undefined) | undefined",
+                "description": "A namespace's app mark (a property: a function)."
+              },
+              {
+                "name": "download",
+                "type": "((result: SearchResult) => void) | undefined",
+                "description": "Download a result's document (a property: a function); shows the Download buttons."
+              }
+            ],
+            "events": [
+              {
+                "name": "cite",
+                "description": "A citation in the answer was pressed; detail { key } (the result's key)."
+              }
+            ],
+            "slots": [],
+            "methods": []
+          },
+          {
+            "tag": "conare-answer-text",
+            "name": "AnswerText",
+            "module": "elements/answer-text.js",
+            "description": "A written answer, its sources as small numbered buttons.",
+            "attributes": [
+              {
+                "name": "text",
+                "field": "text",
+                "type": "string",
+                "default": "''",
+                "description": "The answer, its sources as [1], [2]."
+              },
+              {
+                "name": "pointed",
+                "field": "pointed",
+                "type": "number | undefined",
+                "description": "The citation shown."
+              }
+            ],
+            "properties": [
+              {
+                "name": "text",
+                "type": "string",
+                "default": "''",
+                "description": "The answer, its sources as [1], [2].",
+                "attribute": "text"
+              },
+              {
+                "name": "pointed",
+                "type": "number | undefined",
+                "description": "The citation shown.",
+                "attribute": "pointed"
+              }
+            ],
+            "events": [
+              {
+                "name": "cite",
+                "description": "A citation was pressed; detail { n }."
+              },
+              {
+                "name": "point",
+                "description": "A citation is under the pointer or focus; detail { n }."
+              }
+            ],
+            "slots": [],
+            "methods": []
+          },
+          {
+            "tag": "conare-page-preview",
+            "name": "PagePreview",
+            "module": "elements/page-preview.js",
+            "description": "A document's page drawn small, the passage marked where it sits.",
+            "attributes": [
+              {
+                "name": "page",
+                "field": "page",
+                "type": "ResultPage",
+                "default": "{ number: 1, count: 1, top: 0, file: '' }",
+                "description": "{ number, count, top (0 to 1), file }."
+              },
+              {
+                "name": "text",
+                "field": "text",
+                "type": "string",
+                "default": "''",
+                "description": "The passage, read at full size."
+              },
+              {
+                "name": "query",
+                "field": "query",
+                "type": "string",
+                "default": "''",
+                "description": "The question, its words marked at full size."
+              },
+              {
+                "name": "size",
+                "field": "size",
+                "type": "\"thumb\" | \"mid\" | \"full\"",
+                "default": "'mid'",
+                "description": "thumb, mid or full."
+              },
+              {
+                "name": "marked",
+                "field": "marked",
+                "type": "boolean",
+                "default": "true",
+                "description": "The passage's band."
+              },
+              {
+                "name": "here",
+                "field": "here",
+                "type": "boolean",
+                "default": "false",
+                "description": "This page is the passage's: a red outline."
+              }
+            ],
+            "properties": [
+              {
+                "name": "page",
+                "type": "ResultPage",
+                "default": "{ number: 1, count: 1, top: 0, file: '' }",
+                "description": "{ number, count, top (0 to 1), file }.",
+                "attribute": "page"
+              },
+              {
+                "name": "text",
+                "type": "string",
+                "default": "''",
+                "description": "The passage, read at full size.",
+                "attribute": "text"
+              },
+              {
+                "name": "query",
+                "type": "string",
+                "default": "''",
+                "description": "The question, its words marked at full size.",
+                "attribute": "query"
+              },
+              {
+                "name": "size",
+                "type": "\"thumb\" | \"mid\" | \"full\"",
+                "default": "'mid'",
+                "description": "thumb, mid or full.",
+                "attribute": "size"
+              },
+              {
+                "name": "marked",
+                "type": "boolean",
+                "default": "true",
+                "description": "The passage's band.",
+                "attribute": "marked"
+              },
+              {
+                "name": "here",
+                "type": "boolean",
+                "default": "false",
+                "description": "This page is the passage's: a red outline.",
+                "attribute": "here"
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/search-results/Product.html",
+          "content": "<!-- The results alone, as Home shows them under the box: the best match in its card with the written answer, the\n     pages around its passage and its source, then the other matches, each opening in place. Press a citation to show\n     its result; Download saves the document (sample text stands in for your API's bytes). -->\n<conare-search-results query=\"Acme renewal EU data\"></conare-search-results>\n<script type=\"module\">\n  const list = document.querySelector('conare-search-results')\n  list.results = [\n    { namespace: 'contracts', id: 'acme-msa-2026', score: 0.94, page: { number: 9, count: 24, top: 0.3, file: 'acme-msa-2026.pdf' }, text: 'Acme may renew for twelve months with 60 days written notice. On renewal, all customer data stays in the EU region named in Schedule C.' },\n    { namespace: 'slack', id: 'legal-thread-1182', score: 0.81, text: 'Legal confirmed that Acme needs EU data residency in the renewal, and that Schedule C covers it.' },\n    { namespace: 'sales-calls', id: 'acme-oct-review', score: 0.76, text: 'Acme asked what happens to their data at renewal. We walked through the EU region and the 60 day notice.' },\n    { namespace: 'crm', id: 'acme-renewal-2026', score: 0.71, text: 'Renewal open. Blocker: data processing addendum for the EU region.' },\n  ]\n  list.answer = 'Acme can renew for twelve months with 60 days written notice [1], and its data stays in the EU region named in Schedule C [1][2]. The open blocker is the data processing addendum [4].'\n  // Download: the button's own download, keyed by the result, with the passage as the document.\n  list.download = (r) => {\n    const key = `${r.namespace}/${r.id}`\n    const button = [...list.shadowRoot.querySelectorAll('conare-download-button')].find((b) => b.doc === key)\n    button?.download(() => new Promise((done) => setTimeout(() => done(r.text), 400)), `${r.id}.txt`)\n  }\n</script>\n"
+        }
+      ]
+    }
+  }
+}

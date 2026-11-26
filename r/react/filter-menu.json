@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "filter-menu",
+  "type": "registry:ui",
+  "title": "Filter menu",
+  "description": "Every filter in one menu from the search box's bar: app, type and date as radio groups, the button counting what is on. A second press clears a pick; the menu stays open for the next.",
+  "dependencies": [
+    "lucide-react@0.479.0"
+  ],
+  "registryDependencies": [
+    "https://conare-ds-registry.vercel.app/r/react/menu.json"
+  ],
+  "files": [
+    {
+      "path": "components/product/FilterMenu.tsx",
+      "type": "registry:ui",
+      "content": "'use client'\nimport { Fragment } from 'react'\nimport { Check, ListFilter } from 'lucide-react'\nimport { Menu } from '@/components/ui/Menu'\nimport { MenuItem } from '@/components/ui/MenuItem'\nimport { MenuLabel } from '@/components/ui/MenuLabel'\nimport { MenuSeparator } from '@/components/ui/MenuSeparator'\nimport { useControllable } from '@/hooks/useControllable'\nimport { cn } from '@/lib/cn'\n\n// Every filter in one menu from the search box's bar (search/FilterMenu.vue): the scope chip's button (.v2-scope)\n// reading Filters, with a count on ink (.v2-filter-count) once any is on, and a 240px menu of radio groups, each\n// under its label. A second press on what is chosen clears it; the menu stays open for the next pick. Vue's v-model is\n// `value` with `onValueChange` (or `defaultValue` alone): each group's key to its value ('' or 0 for none).\nexport interface FilterGroup { key: string, label: string, options: Array<{ value: string | number, label: string }> }\nexport type FilterValues = Record<string, string | number>\nexport interface FilterMenuProps { groups: FilterGroup[], value?: FilterValues, defaultValue?: FilterValues, onValueChange?: (value: FilterValues) => void }\n\nexport function FilterMenu({ groups, value, defaultValue = {}, onValueChange }: FilterMenuProps) {\n  const [model, setModel] = useControllable<FilterValues>(value, defaultValue, onValueChange)\n  const count = groups.filter(g => model[g.key]).length\n  function pick(key: string, v: string | number) {\n    setModel({ ...model, [key]: model[key] === v ? (typeof v === 'number' ? 0 : '') : v })\n  }\n\n  return (\n    <Menu\n      data-ds=\"filter-menu\"\n      label=\"filters\"\n      width=\"240px\"\n      triggerClass=\"inline-flex h-control-sm cursor-pointer items-center gap-1.5 border border-edge bg-surface-subtle px-2 text-meta text-fg transition-[border-color] duration-120 ease-standard hover:border-edge-focus aria-expanded:border-edge-focus aria-expanded:bg-surface active:bg-surface-subtle focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-edge-focus\"\n      trigger={(\n        <>\n          <ListFilter size={12} strokeWidth={1.5} className=\"text-fg-muted\" aria-hidden=\"true\" />\n          Filters{count > 0 && <span className=\"inline-flex h-4 min-w-4 items-center justify-center bg-surface-inverse px-1 text-caption leading-4 text-fg-inverse tabular-nums\">{count}</span>}\n        </>\n      )}\n    >\n      <div className=\"fade-y flex max-h-88 flex-col overflow-y-auto\">\n        {groups.map((g, i) => (\n          <Fragment key={g.key}>\n            {i > 0 && <MenuSeparator />}\n            <MenuLabel>{g.label}</MenuLabel>\n            <div role=\"group\" aria-label={g.label} className=\"flex flex-col\">\n              {g.options.map(o => (\n                <MenuItem key={o.value} role=\"menuitemradio\" aria-checked={model[g.key] === o.value} keepOpen onSelect={() => pick(g.key, o.value)}>\n                  <span className=\"min-w-0 flex-1 truncate text-left\">{o.label}</span>\n                  <Check size={14} strokeWidth={1.5} className={cn('shrink-0', model[g.key] !== o.value && 'invisible')} aria-hidden=\"true\" />\n                </MenuItem>\n              ))}\n            </div>\n          </Fragment>\n        ))}\n      </div>\n    </Menu>\n  )\n}\n\nexport default FilterMenu\n"
+    },
+    {
+      "path": "hooks/useControllable.ts",
+      "type": "registry:hook",
+      "content": "'use client'\nimport { useCallback, useRef, useState } from 'react'\n\n// Vue's defineModel in React: a value that is controlled when the caller passes it (value + onValueChange, as Radix\n// does) and kept inside otherwise (defaultValue). setValue calls onChange either way.\nexport function useControllable<T>(value: T | undefined, defaultValue: T, onChange?: (value: T) => void) {\n\tconst [inner, setInner] = useState<T>(defaultValue)\n\tconst controlled = value !== undefined\n\tconst current = controlled ? value : inner\n\tconst ref = useRef(onChange)\n\tref.current = onChange\n\tconst set = useCallback((next: T) => {\n\t\tif (!controlled) setInner(next)\n\t\tref.current?.(next)\n\t}, [controlled])\n\treturn [current, set] as const\n}\n"
+    },
+    {
+      "path": "lib/cn.ts",
+      "type": "registry:lib",
+      "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+    }
+  ]
+}

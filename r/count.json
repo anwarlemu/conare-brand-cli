@@ -1,0 +1,182 @@
+{
+  "name": "count",
+  "title": "Count",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "The one counter: a number that counts to its new value when it changes, so a syncing source's documents visibly climb. Reduced motion shows the new value at once.",
+  "use_for": "Numbers that change while the person watches: documents, rows read, the amount of the row pointed at.",
+  "never": [
+    "Numbers that never change on the page",
+    "A count that rolls on every visit: use `once`"
+  ],
+  "source": "conare-web app/components/console/Count.vue, app/composables/useFirstVisit.ts",
+  "body": "It eases to each new `value` over 700ms. `rolls` counts up from zero as it lands; `once=\"key\"` does that only the first time the key shows in the tab's session. `format` reads it as an amount or a share (a function from the number to its text); plain counts get thousands separators. Figures are tabular, so the width holds.",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Count.vue",
+      "content": "<script setup lang=\"ts\">\nimport { onBeforeUnmount, onMounted, ref, watch } from 'vue'\n\n// The one counter (Count.vue): a number that counts to its new value when it changes (700ms, easing out), so a syncing\n// source's documents visibly climb between polls. `rolls` also counts up from nothing as it lands, as the website's\n// figures do; `once` does that only the first time this key shows in the browser tab's session. `format` reads it as an\n// amount or a share; plain counts get thousands separators. Tabular figures, so the width holds. Reduced motion shows\n// the new value at once.\nconst props = defineProps<{ value: number, rolls?: boolean, once?: string, format?: (n: number) => string }>()\nconst shown = ref(props.value)\nlet raf = 0\nconst ROLL_MS = 700\nconst still = () => !globalThis.matchMedia || globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches\nconst plain = (n: number) => Math.round(n).toLocaleString('en-US')\n\n// True the first time a key is seen in this tab's session; storage blocked keeps the entrance.\nfunction firstTime(key: string) {\n  try {\n    const name = `ds-seen:${key}`\n    if (sessionStorage.getItem(name)) return false\n    sessionStorage.setItem(name, '1')\n  }\n  catch { /* storage blocked */ }\n  return true\n}\n\nfunction roll(to: number) {\n  cancelAnimationFrame(raf)\n  if (still()) {\n    shown.value = to\n    return\n  }\n  const from = shown.value\n  const start = performance.now()\n  const tick = (now: number) => {\n    const t = Math.min(1, (now - start) / ROLL_MS)\n    shown.value = from + (to - from) * (1 - (1 - t) ** 3)\n    if (t < 1) raf = requestAnimationFrame(tick)\n  }\n  raf = requestAnimationFrame(tick)\n}\nwatch(() => props.value, roll)\nonMounted(() => {\n  if (still() || !(props.rolls || (props.once && firstTime(props.once)))) return\n  shown.value = 0\n  roll(props.value)\n})\nonBeforeUnmount(() => cancelAnimationFrame(raf))\n</script>\n\n<template>\n  <span data-ds=\"count\" class=\"tabular-nums\">{{ format ? format(shown) : plain(shown) }}</span>\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "In the product",
+      "center": true,
+      "half": false,
+      "path": "examples/count/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { onBeforeUnmount, onMounted, ref } from 'vue'\nimport Count from '@/components/ui/Count.vue'\n// The count climbs by itself, as a syncing source's documents do between polls.\nconst documents = ref(412830)\nlet timer: ReturnType<typeof setInterval> | undefined\nonMounted(() => { timer = setInterval(() => { documents.value += 1240 }, 2000) })\nonBeforeUnmount(() => clearInterval(timer))\n</script>\n\n<template>\n  <p class=\"text-heading-4 font-medium\"><Count :value=\"documents\" /> <span class=\"type-meta font-normal text-fg-muted\">documents</span></p>\n</template>\n",
+      "requires": [],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Count.tsx",
+          "content": "'use client'\nimport { useEffect, useRef, useState } from 'react'\n\n// The one counter (Count.vue): a number that counts to its new value when it changes (700ms, easing out), so a syncing\n// source's documents visibly climb between polls. `rolls` also counts up from nothing as it lands, as the website's\n// figures do; `once` does that only the first time this key shows in the browser tab's session. `format` reads it as an\n// amount or a share; plain counts get thousands separators. Tabular figures, so the width holds. Reduced motion shows\n// the new value at once.\nexport interface CountProps {\n  value: number\n  rolls?: boolean\n  once?: string\n  format?: (n: number) => string\n}\n\nconst ROLL_MS = 700\nconst still = () => !globalThis.matchMedia || globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches\nconst plain = (n: number) => Math.round(n).toLocaleString('en-US')\n\n// True the first time a key is seen in this tab's session; storage blocked keeps the entrance.\nfunction firstTime(key: string) {\n  try {\n    const name = `ds-seen:${key}`\n    if (sessionStorage.getItem(name)) return false\n    sessionStorage.setItem(name, '1')\n  }\n  catch { /* storage blocked */ }\n  return true\n}\n\nexport function Count({ value, rolls, once, format }: CountProps) {\n  const [shown, setShown] = useState(value)\n  const current = useRef(value)\n  const raf = useRef(0)\n  const mounted = useRef(false)\n\n  function roll(to: number) {\n    cancelAnimationFrame(raf.current)\n    const show = (n: number) => {\n      current.current = n\n      setShown(n)\n    }\n    if (still()) return show(to)\n    const from = current.current\n    const start = performance.now()\n    const tick = (now: number) => {\n      const t = Math.min(1, (now - start) / ROLL_MS)\n      show(from + (to - from) * (1 - (1 - t) ** 3))\n      if (t < 1) raf.current = requestAnimationFrame(tick)\n    }\n    raf.current = requestAnimationFrame(tick)\n  }\n\n  // A new value counts to it (Vue's watch: not on the first render).\n  useEffect(() => {\n    if (!mounted.current) return\n    roll(value)\n  }, [value]) // eslint-disable-line react-hooks/exhaustive-deps\n\n  useEffect(() => {\n    mounted.current = true\n    if (!still() && (rolls || (once && firstTime(once)))) {\n      current.current = 0\n      setShown(0)\n      roll(value)\n    }\n    return () => cancelAnimationFrame(raf.current)\n  }, []) // eslint-disable-line react-hooks/exhaustive-deps\n\n  return <span data-ds=\"count\" className=\"tabular-nums\">{format ? format(shown) : plain(shown)}</span>\n}\n\nexport default Count\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "Count",
+            "file": "react/components/ui/Count.tsx",
+            "props": [
+              {
+                "name": "value",
+                "type": "number",
+                "required": true
+              },
+              {
+                "name": "rolls",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "once",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "format",
+                "type": "(n: number) => string",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": true,
+          "half": false,
+          "path": "react/examples/count/Product.tsx",
+          "content": "'use client'\nimport { useEffect, useState } from 'react'\nimport { Count } from '@/react/components/ui/Count'\n// The count climbs by itself, as a syncing source's documents do between polls.\n\nexport default function Product() {\n  const [documents, setDocuments] = useState(412830)\n  useEffect(() => {\n    const timer = setInterval(() => setDocuments(d => d + 1240), 2000)\n    return () => clearInterval(timer)\n  }, [])\n  return (\n    <p className=\"text-heading-4 font-medium\"><Count value={documents} /> <span className=\"type-meta font-normal text-fg-muted\">documents</span></p>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/count.ts",
+          "content": "import { html, type PropertyValues } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// Count.vue as <conare-count>: the one counter: a number that counts to its new value when it changes (700ms, easing\n// out), so a syncing source's documents visibly climb between polls. `rolls` also counts up from nothing as it lands,\n// as the website's figures do; `once` does that only the first time this key shows in the browser tab's session.\n// `format` (a property) reads it as an amount or a share; plain counts get thousands separators. Tabular figures, so\n// the width holds. Reduced motion shows the new value at once.\nconst ROLL_MS = 700\nconst still = () => !globalThis.matchMedia || globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches\nconst plain = (n: number) => Math.round(n).toLocaleString('en-US')\n\n// True the first time a key is seen in this tab's session; storage blocked keeps the entrance.\nfunction firstTime(key: string) {\n\ttry {\n\t\tconst name = `ds-seen:${key}`\n\t\tif (sessionStorage.getItem(name)) return false\n\t\tsessionStorage.setItem(name, '1')\n\t} catch {\n\t\t// storage blocked\n\t}\n\treturn true\n}\n\n/**\n * @summary A number that counts to its new value when it changes.\n */\nexport class Count extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { value: { type: Number }, rolls: { type: Boolean }, once: {}, format: { attribute: false }, shown: { state: true } }\n\n\tvalue = 0\n\t/** Counts up from nothing as it lands. */\n\trolls = false\n\t/** Counts up from nothing only the first time this key shows in the tab's session. */\n\tonce?: string\n\t/** Formats the number (an amount, a share); plain counts get thousands separators. */\n\tformat?: (n: number) => string\n\tprivate shown = 0\n\tprivate raf = 0\n\tprivate started = false\n\n\tprivate roll(to: number) {\n\t\tcancelAnimationFrame(this.raf)\n\t\tif (still()) {\n\t\t\tthis.shown = to\n\t\t\treturn\n\t\t}\n\t\tconst from = this.shown\n\t\tconst start = performance.now()\n\t\tconst tick = (now: number) => {\n\t\t\tconst t = Math.min(1, (now - start) / ROLL_MS)\n\t\t\tthis.shown = from + (to - from) * (1 - (1 - t) ** 3)\n\t\t\tif (t < 1) this.raf = requestAnimationFrame(tick)\n\t\t}\n\t\tthis.raf = requestAnimationFrame(tick)\n\t}\n\n\tprotected willUpdate(changed: PropertyValues) {\n\t\tsuper.willUpdate(changed)\n\t\tif (!changed.has('value')) return\n\t\t// The first value shows as it is (Vue's initial shown); later ones count to it (Vue's watch).\n\t\tif (!this.started) this.shown = this.value\n\t\telse this.roll(this.value)\n\t}\n\n\tprotected firstUpdated(changed: PropertyValues) {\n\t\tsuper.firstUpdated(changed)\n\t\tthis.started = true\n\t\tif (still() || !(this.rolls || (this.once && firstTime(this.once)))) return\n\t\tthis.shown = 0\n\t\tthis.roll(this.value)\n\t}\n\n\tdisconnectedCallback() {\n\t\tsuper.disconnectedCallback()\n\t\tcancelAnimationFrame(this.raf)\n\t}\n\n\trender() {\n\t\treturn html`<span data-ds=\"count\" class=\"tabular-nums\">${this.format ? this.format(this.shown) : plain(this.shown)}</span>`\n\t}\n}\n\ndefine('count', Count)\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/count.js"
+      ],
+      "tag": "conare-count",
+      "tags": [
+        "conare-count"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-count",
+            "name": "Count",
+            "module": "elements/count.js",
+            "description": "A number that counts to its new value when it changes.",
+            "attributes": [
+              {
+                "name": "value",
+                "field": "value",
+                "type": "number",
+                "default": "0"
+              },
+              {
+                "name": "rolls",
+                "field": "rolls",
+                "type": "boolean",
+                "default": "false",
+                "description": "Counts up from nothing as it lands."
+              },
+              {
+                "name": "once",
+                "field": "once",
+                "type": "string | undefined",
+                "description": "Counts up from nothing only the first time this key shows in the tab's session."
+              },
+              {
+                "name": "shown",
+                "field": "shown",
+                "type": "number",
+                "default": "0"
+              }
+            ],
+            "properties": [
+              {
+                "name": "value",
+                "type": "number",
+                "default": "0",
+                "attribute": "value"
+              },
+              {
+                "name": "rolls",
+                "type": "boolean",
+                "default": "false",
+                "description": "Counts up from nothing as it lands.",
+                "attribute": "rolls"
+              },
+              {
+                "name": "once",
+                "type": "string | undefined",
+                "description": "Counts up from nothing only the first time this key shows in the tab's session.",
+                "attribute": "once"
+              },
+              {
+                "name": "format",
+                "type": "((n: number) => string) | undefined",
+                "description": "Formats the number (an amount, a share); plain counts get thousands separators."
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": true,
+          "half": false,
+          "path": "elements/examples/count/Product.html",
+          "content": "<!-- The count climbs by itself, as a syncing source's documents do between polls. -->\n<p class=\"text-heading-4 font-medium\"><conare-count id=\"documents\" value=\"412830\"></conare-count> <span class=\"type-meta font-normal text-fg-muted\">documents</span></p>\n<script type=\"module\">\n  await customElements.whenDefined('conare-count')\n  const count = document.getElementById('documents')\n  const timer = setInterval(() => {\n    if (!count.isConnected) return clearInterval(timer)\n    count.value += 1240\n  }, 2000)\n</script>\n"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,232 @@
+{
+  "name": "form",
+  "title": "Form",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "Fields stacked with their labels, errors shown once a field is left or the form is sent, a failure from the server above the actions, and the main action last.",
+  "use_for": "Creating or changing a thing with several fields: a key, an invite, a namespace.",
+  "never": [
+    "Errors while the first value is still being typed",
+    "The browser's own error bubbles",
+    "A red border at rest"
+  ],
+  "source": "New in Conare's style, composed from Field, Input and Button (console2.css .v2-input, main.css .c-help-error)",
+  "body": "`useForm(initial, rules)` holds `values`, the `errors` to show now, `sending` and `failure`. Each rule returns a message or nothing. Call `touch(key)` when a field is left. `submit(send)` checks every rule, runs `send` only when all pass and turns a thrown Error into `failure`. `<Form>` lays the fields 16px apart, shows `failure` in the red wash, puts the `actions` slot at the end and, on a send with errors, moves focus to the first field marked invalid.",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Form.vue",
+      "content": "<script setup lang=\"ts\">\nimport { nextTick, ref } from 'vue'\n\n// A form in the console's grammar (new, composed from Field, Input and Button): fields stacked 16px apart, each a Field\n// with its label over it and its hint or error under it; a failure from the server in a red-wash box above the actions;\n// the actions at the end, the main one last. It never validates as the first value is typed: useForm shows an error\n// once its field is left or the form is sent, and on a send with errors focus moves to the first field that is wrong.\n// The browser's own bubbles are off (novalidate); Enter in a field sends it.\ndefineProps<{ failure?: string, label?: string }>()\nconst emit = defineEmits<{ submit: [] }>()\nconst form = ref<HTMLFormElement | null>(null)\nasync function send() {\n  emit('submit')\n  await nextTick()\n  form.value?.querySelector<HTMLElement>('[aria-invalid=\"true\"]')?.focus()\n}\n</script>\n\n<template>\n  <form data-ds=\"form\" ref=\"form\" class=\"flex flex-col gap-4\" novalidate :aria-label=\"label\" @submit.prevent=\"send\">\n    <slot />\n    <p v-if=\"failure\" class=\"flex items-start gap-2 border border-transparent bg-surface-danger px-3 py-2 type-meta text-fg-danger\" role=\"alert\">\n      <span class=\"mt-1.5 size-1 shrink-0 bg-edge-accent\" aria-hidden=\"true\" />{{ failure }}\n    </p>\n    <div v-if=\"$slots.actions\" class=\"flex flex-wrap items-center justify-end gap-2 pt-2\"><slot name=\"actions\" /></div>\n  </form>\n</template>\n"
+    },
+    {
+      "path": "composables/useForm.ts",
+      "content": "import { computed, reactive, ref } from 'vue'\n\n/** A rule for one field: the message to show when the value is wrong, or nothing when it is right. */\nexport type Rule<V extends Record<string, unknown>> = (value: V[keyof V], values: V) => string | undefined\n\n/**\n * A form's values, its errors and its submit (the Form item). An error shows once its field has been left or the form\n * submitted, never while the first value is still being typed; after that it updates as the value changes. `submit`\n * checks every rule and runs `send` only when all pass, holding `sending` while it runs; a thrown Error's message\n * becomes the form's `failure`.\n */\nexport function useForm<V extends Record<string, unknown>>(initial: V, rules: Partial<Record<keyof V, Rule<V>>>) {\n  const values = reactive({ ...initial }) as V\n  const touched = reactive<Record<string, boolean>>({})\n  const tried = ref(false)\n  const sending = ref(false)\n  const failure = ref('')\n\n  const all = computed(() => {\n    const out: Partial<Record<keyof V, string>> = {}\n    for (const key of Object.keys(rules) as Array<keyof V>) {\n      const message = rules[key]?.(values[key], values)\n      if (message) out[key] = message\n    }\n    return out\n  })\n  /** The errors to show now. */\n  const errors = computed(() => {\n    const out: Partial<Record<keyof V, string>> = {}\n    for (const key of Object.keys(all.value) as Array<keyof V>) if (tried.value || touched[String(key)]) out[key] = all.value[key]\n    return out\n  })\n  const valid = computed(() => Object.keys(all.value).length === 0)\n\n  function touch(key: keyof V) {\n    touched[String(key)] = true\n  }\n  async function submit(send: (values: V) => Promise<void> | void) {\n    tried.value = true\n    failure.value = ''\n    if (!valid.value || sending.value) return false\n    sending.value = true\n    try {\n      await send(values)\n      return true\n    }\n    catch (error) {\n      failure.value = error instanceof Error ? error.message : 'Something went wrong. Try again.'\n      return false\n    }\n    finally {\n      sending.value = false\n    }\n  }\n  function reset() {\n    Object.assign(values, initial)\n    for (const key of Object.keys(touched)) delete touched[key]\n    tried.value = false\n    failure.value = ''\n  }\n\n  return { values, errors, valid, sending, failure, touch, submit, reset }\n}\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "In the product",
+      "center": false,
+      "half": false,
+      "path": "examples/form/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport Button from '@/components/ui/Button.vue'\nimport Checkbox from '@/components/ui/Checkbox.vue'\nimport Field from '@/components/ui/Field.vue'\nimport Form from '@/components/ui/Form.vue'\nimport Input from '@/components/ui/Input.vue'\nimport NativeSelect from '@/components/ui/NativeSelect.vue'\nimport PixelButton from '@/components/ui/PixelButton.vue'\nimport { useForm } from '@/composables/useForm'\n// Creating an API key: a name, where it can search and when it expires. Send it empty to see the errors; a name of\n// \"taken\" shows the server's answer.\nconst created = ref('')\nconst { values, errors, sending, failure, touch, submit, reset } = useForm(\n  { name: '', namespace: '', expires: '90', readOnly: true },\n  {\n    name: v => (!String(v).trim() ? 'Give the key a name.' : /\\s/.test(String(v)) ? 'Use letters, numbers and dashes, no spaces.' : undefined),\n    namespace: v => (!v ? 'Pick where it can search.' : undefined),\n  },\n)\nfunction send() {\n  void submit(async (v) => {\n    await new Promise(resolve => setTimeout(resolve, 800))\n    if (v.name === 'taken') throw new Error('A key with that name already exists.')\n    created.value = v.name\n  })\n}\n</script>\n\n<template>\n  <div class=\"w-100 max-w-full\">\n    <Form v-if=\"!created\" label=\"create an API key\" :failure=\"failure\" @submit=\"send\">\n      <Field v-slot=\"{ id, hintId }\" label=\"Name\" hint=\"Letters, numbers and dashes.\" :error=\"errors.name\">\n        <Input :id=\"id\" v-model=\"values.name\" :invalid=\"!!errors.name\" :aria-describedby=\"hintId\" autocomplete=\"off\" placeholder=\"production-agent\" @blur=\"touch('name')\" />\n      </Field>\n      <Field v-slot=\"{ id, hintId }\" label=\"Namespace\" :error=\"errors.namespace\">\n        <NativeSelect :id=\"id\" v-model=\"values.namespace\" mono :invalid=\"!!errors.namespace\" :aria-describedby=\"hintId\" @blur=\"touch('namespace')\">\n          <option value=\"\" disabled>Pick a namespace</option><option>contracts</option><option>slack</option><option>sec-filings</option>\n        </NativeSelect>\n      </Field>\n      <Field v-slot=\"{ id }\" label=\"Expires\">\n        <NativeSelect :id=\"id\" v-model=\"values.expires\"><option value=\"30\">In 30 days</option><option value=\"90\">In 90 days</option><option value=\"never\">Never</option></NativeSelect>\n      </Field>\n      <Checkbox v-model=\"values.readOnly\" label=\"Read only\" hint=\"It can search but not add or delete documents.\" />\n      <template #actions>\n        <Button variant=\"ghost\" @click=\"reset\">Clear</Button>\n        <PixelButton type=\"submit\" :disabled=\"sending\">{{ sending ? 'Creating' : 'Create key' }}</PixelButton>\n      </template>\n    </Form>\n    <div v-else class=\"flex flex-col items-start gap-3 border border-edge p-4\" role=\"status\">\n      <p class=\"type-ui\">Key <span class=\"font-code text-meta\">{{ created }}</span> created.</p>\n      <Button @click=\"created = ''; reset()\">Create another</Button>\n    </div>\n  </div>\n</template>\n",
+      "requires": [
+        "button",
+        "checkbox",
+        "field",
+        "native-select"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Form.tsx",
+          "content": "'use client'\nimport { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'\n\n// A form in the console's grammar (new, composed from Field, Input and Button): fields stacked 16px apart, each a Field\n// with its label over it and its hint or error under it; a failure from the server in a red-wash box above the actions;\n// the actions at the end, the main one last. It never validates as the first value is typed: useForm shows an error\n// once its field is left or the form is sent, and on a send with errors focus moves to the first field that is wrong.\n// The browser's own bubbles are off (noValidate); Enter in a field sends it. Vue's #actions slot is `actions`.\nexport interface FormProps { failure?: string, label?: string, onSubmit?: () => void, actions?: ReactNode, children?: ReactNode, className?: string }\n\nexport function Form({ failure, label, onSubmit, actions, children, className }: FormProps) {\n  const form = useRef<HTMLFormElement | null>(null)\n  // Vue moves focus after the next render (nextTick), once the errors the submit raised are drawn.\n  const [sent, setSent] = useState(0)\n  useEffect(() => {\n    if (sent) form.current?.querySelector<HTMLElement>('[aria-invalid=\"true\"]')?.focus()\n  }, [sent])\n  function send(event: FormEvent) {\n    event.preventDefault()\n    onSubmit?.()\n    setSent(n => n + 1)\n  }\n  return (\n    <form data-ds=\"form\" ref={form} className={className ? `flex flex-col gap-4 ${className}` : 'flex flex-col gap-4'} noValidate aria-label={label} onSubmit={send}>\n      {children}\n      {failure && (\n        <p className=\"flex items-start gap-2 border border-transparent bg-surface-danger px-3 py-2 type-meta text-fg-danger\" role=\"alert\">\n          <span className=\"mt-1.5 size-1 shrink-0 bg-edge-accent\" aria-hidden=\"true\" />{failure}\n        </p>\n      )}\n      {actions && <div className=\"flex flex-wrap items-center justify-end gap-2 pt-2\">{actions}</div>}\n    </form>\n  )\n}\n\nexport default Form\n"
+        },
+        {
+          "path": "react/hooks/useForm.ts",
+          "content": "'use client'\nimport { useCallback, useRef, useState } from 'react'\n\n/** A rule for one field: the message to show when the value is wrong, or nothing when it is right. */\nexport type Rule<V extends Record<string, unknown>> = (value: V[keyof V], values: V) => string | undefined\n\n/**\n * A form's values, its errors and its submit (the Form item). An error shows once its field has been left or the form\n * submitted, never while the first value is still being typed; after that it updates as the value changes. `submit`\n * checks every rule and runs `send` only when all pass, holding `sending` while it runs; a thrown Error's message\n * becomes the form's `failure`. Vue's reactive `values` (written by v-model) is `values` with `set(key, value)`.\n */\nexport function useForm<V extends Record<string, unknown>>(initial: V, rules: Partial<Record<keyof V, Rule<V>>>) {\n  const [values, setValues] = useState<V>({ ...initial })\n  const [touched, setTouched] = useState<Record<string, boolean>>({})\n  const [tried, setTried] = useState(false)\n  const [sending, setSending] = useState(false)\n  const [failure, setFailure] = useState('')\n  // The latest values and sending, for a submit called from a stale closure.\n  const latest = useRef(values)\n  latest.current = values\n  const busy = useRef(false)\n  const first = useRef(initial)\n  const rulesRef = useRef(rules)\n  rulesRef.current = rules\n\n  const check = (v: V) => {\n    const out: Partial<Record<keyof V, string>> = {}\n    for (const key of Object.keys(rulesRef.current) as Array<keyof V>) {\n      const message = rulesRef.current[key]?.(v[key], v)\n      if (message) out[key] = message\n    }\n    return out\n  }\n  const all = check(values)\n  /** The errors to show now. */\n  const errors: Partial<Record<keyof V, string>> = {}\n  for (const key of Object.keys(all) as Array<keyof V>) if (tried || touched[String(key)]) errors[key] = all[key]\n  const valid = Object.keys(all).length === 0\n\n  const set = useCallback(<K extends keyof V>(key: K, value: V[K]) => {\n    setValues(v => ({ ...v, [key]: value }))\n  }, [])\n  const touch = useCallback((key: keyof V) => {\n    setTouched(t => ({ ...t, [String(key)]: true }))\n  }, [])\n  const submit = useCallback(async (send: (values: V) => Promise<void> | void) => {\n    setTried(true)\n    setFailure('')\n    if (Object.keys(check(latest.current)).length || busy.current) return false\n    busy.current = true\n    setSending(true)\n    try {\n      await send(latest.current)\n      return true\n    }\n    catch (error) {\n      setFailure(error instanceof Error ? error.message : 'Something went wrong. Try again.')\n      return false\n    }\n    finally {\n      busy.current = false\n      setSending(false)\n    }\n  }, []) // eslint-disable-line react-hooks/exhaustive-deps\n  const reset = useCallback(() => {\n    setValues({ ...first.current })\n    setTouched({})\n    setTried(false)\n    setFailure('')\n  }, [])\n\n  return { values, set, errors, valid, sending, failure, touch, submit, reset }\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "Form",
+            "file": "react/components/ui/Form.tsx",
+            "props": [
+              {
+                "name": "failure",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "onSubmit",
+                "type": "() => void",
+                "required": false
+              },
+              {
+                "name": "actions",
+                "type": "ReactNode",
+                "required": false
+              },
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "react/examples/form/Product.tsx",
+          "content": "'use client'\nimport { useState } from 'react'\nimport { Button } from '@/react/components/ui/Button'\nimport { Checkbox } from '@/react/components/ui/Checkbox'\nimport { Field } from '@/react/components/ui/Field'\nimport { Form } from '@/react/components/ui/Form'\nimport { Input } from '@/react/components/ui/Input'\nimport { NativeSelect } from '@/react/components/ui/NativeSelect'\nimport { PixelButton } from '@/react/components/ui/PixelButton'\nimport { useForm } from '@/react/hooks/useForm'\n// Creating an API key: a name, where it can search and when it expires. Send it empty to see the errors; a name of\n// \"taken\" shows the server's answer.\n\nexport default function Product() {\n  const [created, setCreated] = useState('')\n  const { values, set, errors, sending, failure, touch, submit, reset } = useForm(\n    { name: '', namespace: '', expires: '90', readOnly: true },\n    {\n      name: v => (!String(v).trim() ? 'Give the key a name.' : /\\s/.test(String(v)) ? 'Use letters, numbers and dashes, no spaces.' : undefined),\n      namespace: v => (!v ? 'Pick where it can search.' : undefined),\n    },\n  )\n  function send() {\n    void submit(async (v) => {\n      await new Promise(resolve => setTimeout(resolve, 800))\n      if (v.name === 'taken') throw new Error('A key with that name already exists.')\n      setCreated(v.name)\n    })\n  }\n  return (\n    <div className=\"w-100 max-w-full\">\n      {!created\n        ? (\n            <Form\n              label=\"create an API key\"\n              failure={failure}\n              onSubmit={send}\n              actions={(\n                <>\n                  <Button variant=\"ghost\" onClick={reset}>Clear</Button>\n                  <PixelButton type=\"submit\" disabled={sending}>{sending ? 'Creating' : 'Create key'}</PixelButton>\n                </>\n              )}\n            >\n              <Field label=\"Name\" hint=\"Letters, numbers and dashes.\" error={errors.name}>\n                {({ id, hintId }) => <Input id={id} value={values.name} onChange={e => set('name', e.target.value)} invalid={!!errors.name} aria-describedby={hintId} autoComplete=\"off\" placeholder=\"production-agent\" onBlur={() => touch('name')} />}\n              </Field>\n              <Field label=\"Namespace\" error={errors.namespace}>\n                {({ id, hintId }) => (\n                  <NativeSelect id={id} value={values.namespace} onChange={e => set('namespace', e.target.value)} mono invalid={!!errors.namespace} aria-describedby={hintId} onBlur={() => touch('namespace')}>\n                    <option value=\"\" disabled>Pick a namespace</option><option>contracts</option><option>slack</option><option>sec-filings</option>\n                  </NativeSelect>\n                )}\n              </Field>\n              <Field label=\"Expires\">\n                {({ id }) => <NativeSelect id={id} value={values.expires} onChange={e => set('expires', e.target.value)}><option value=\"30\">In 30 days</option><option value=\"90\">In 90 days</option><option value=\"never\">Never</option></NativeSelect>}\n              </Field>\n              <Checkbox checked={values.readOnly} onCheckedChange={on => set('readOnly', on)} label=\"Read only\" hint=\"It can search but not add or delete documents.\" />\n            </Form>\n          )\n        : (\n            <div className=\"flex flex-col items-start gap-3 border border-edge p-4\" role=\"status\">\n              <p className=\"type-ui\">Key <span className=\"font-code text-meta\">{created}</span> created.</p>\n              <Button onClick={() => { setCreated(''); reset() }}>Create another</Button>\n            </div>\n          )}\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "button",
+            "checkbox",
+            "field",
+            "native-select"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/form.ts",
+          "content": "import { html, nothing, type PropertyValues } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// Form.vue as <conare-form>: a form in the console's grammar (new, composed from Field, Input and Button): fields\n// stacked 16px apart, each a <conare-field> with its label over it and its hint or error under it; a `failure` from the\n// server in a red-wash box above the actions; the actions (slot=\"actions\") at the end, the main one last. It never\n// validates as the first value is typed: the page shows an error once its field is left or the form is sent, and on a\n// send with errors focus moves to the first field that is wrong: marked `invalid` (or aria-invalid=\"true\"), or failing\n// its own validity. Like Vue's novalidate form it never blocks a send or shows the browser's bubbles;\n// checkValidity() and reportValidity() check its fields, as a form's do.\n//\n// A <form> in a shadow root does not own the fields the page puts in its slots, so the element is the form's behavior\n// itself: a press on a submit button in it (a <button type=\"submit\"> or an element with type=\"submit\"), or Enter in a\n// one-line field, fires `submit`; a press on a reset button fires `reset`. The browser's own bubbles are off, as with\n// novalidate. The host is the form's box (Vue's root <form>), so a class on the element lands on it.\n\ntype Validatable = HTMLElement & { checkValidity(): boolean, reportValidity(): boolean, validity: ValidityState, willValidate: boolean }\n\nconst TEXT_INPUT = /^(text|email|password|search|tel|url|number|date|datetime-local|month|time|week)$/\n\n/**\n * @summary A form in the console's grammar: fields, a failure, the actions.\n * @slot - The fields.\n * @slot actions - The buttons at the end, the main one last.\n * @fires submit - It was sent (a submit button or Enter in a field).\n * @fires reset - A reset button was pressed.\n */\nexport class Form extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { failure: {}, label: {} }\n\n\t/** A failure from the server, shown above the actions. */\n\tfailure?: string\n\t/** The form's name for assistive tech. */\n\tlabel?: string\n\n\tconstructor() {\n\t\tsuper()\n\t\tthis.addEventListener('click', this.onClick)\n\t\tthis.addEventListener('keydown', this.onKey)\n\t}\n\n\tprotected updated(changed: PropertyValues) {\n\t\tsuper.updated(changed)\n\t\t// The host is the form, for assistive tech too.\n\t\tthis.setAttribute('role', 'form')\n\t\tif (this.label) this.setAttribute('aria-label', this.label)\n\t\telse this.removeAttribute('aria-label')\n\t}\n\n\t/**\n\t * What a control does when pressed: submit, reset or neither. An element's `type` is its attribute or its property\n\t * (React sets it as a property); a page's own <button> submits unless its type says otherwise, as in a native form;\n\t * a button inside an element's shadow root counts only for the type written on it.\n\t */\n\tprivate typeOf(n: HTMLElement): string | null {\n\t\tif (n.localName.includes('-')) {\n\t\t\tconst prop = (n as HTMLElement & { type?: unknown }).type\n\t\t\treturn n.getAttribute('type') ?? (typeof prop === 'string' ? prop : null)\n\t\t}\n\t\tif (n.localName !== 'button') return null\n\t\treturn n.getAttribute('type') ?? (n.getRootNode() === this.getRootNode() ? 'submit' : null)\n\t}\n\t/** The control in the event's path that submits or resets, if any. */\n\tprivate kind(event: Event): 'submit' | 'reset' | null {\n\t\tfor (const n of event.composedPath()) {\n\t\t\tif (n === this) break\n\t\t\tif (!(n instanceof HTMLElement)) continue\n\t\t\tconst type = this.typeOf(n)\n\t\t\tif (type === 'submit' || type === 'reset') return n.matches(':disabled, [disabled]') ? null : type\n\t\t}\n\t\treturn null\n\t}\n\tprivate onClick = (event: MouseEvent) => {\n\t\tconst kind = this.kind(event)\n\t\tif (kind === 'submit') this.send()\n\t\telse if (kind === 'reset') this.emit('reset')\n\t}\n\t// Enter in a one-line field sends it, as in a native form, unless its submit button is disabled.\n\tprivate onKey = (event: KeyboardEvent) => {\n\t\tif (event.key !== 'Enter' || event.isComposing || event.defaultPrevented) return\n\t\tconst target = event.composedPath()[0]\n\t\tif (!(target instanceof HTMLInputElement) || !TEXT_INPUT.test(target.type)) return\n\t\tconst button = [...this.querySelectorAll<HTMLElement>('*')].find((n) => (n.localName === 'button' || n.localName.includes('-')) && this.typeOf(n) === 'submit')\n\t\tif (button?.matches(':disabled, [disabled]')) return\n\t\tevent.preventDefault()\n\t\tthis.send()\n\t}\n\n\t/** Sends it, as a submit button does. */\n\tasync send() {\n\t\tthis.emit('submit')\n\t\t// Vue moves focus after the next render (nextTick), once the errors the submit raised are drawn.\n\t\tawait new Promise((resolve) => setTimeout(resolve))\n\t\tthis.firstWrong()?.focus()\n\t}\n\n\t/** Its fields: the controls and form-associated elements in it that take part in validation. */\n\tget fields(): Validatable[] {\n\t\treturn [...this.querySelectorAll<HTMLElement>('*')].filter((el): el is Validatable => typeof (el as Partial<Validatable>).checkValidity === 'function' && (el as Validatable).willValidate === true)\n\t}\n\tprivate firstWrong() {\n\t\tconst fields = new Set<HTMLElement>(this.fields)\n\t\treturn [...this.querySelectorAll<HTMLElement>('*')].find((el) => el.matches('[invalid], [aria-invalid=\"true\"]') || (fields.has(el) && !(el as Validatable).validity.valid)) ?? null\n\t}\n\t/** Whether every field is valid (no events, no messages). */\n\tcheckValidity() {\n\t\treturn this.fields.every((f) => f.validity.valid)\n\t}\n\t/** Like checkValidity, and the first invalid field shows the browser's message and takes focus. */\n\treportValidity() {\n\t\tconst bad = this.fields.find((f) => !f.validity.valid)\n\t\treturn bad ? bad.reportValidity() : true\n\t}\n\n\trender() {\n\t\treturn html`<slot></slot>\n\t\t\t${this.failure\n\t\t\t\t? html`<p class=\"flex items-start gap-2 border border-transparent bg-surface-danger px-3 py-2 type-meta text-fg-danger\" role=\"alert\"><span class=\"mt-1.5 size-1 shrink-0 bg-edge-accent\" aria-hidden=\"true\"></span>${this.failure}</p>`\n\t\t\t\t: nothing}\n\t\t\t${this.hasSlot('actions') ? html`<div class=\"flex flex-wrap items-center justify-end gap-2 pt-2\"><slot name=\"actions\"></slot></div>` : nothing}`\n\t}\n}\n\ndefine('form', Form)\n"
+        },
+        {
+          "path": "elements/components/ui/form.css",
+          "content": "/* The host is the form's box (Form.vue's root <form>), so a class on <conare-form> lands on it as on <Form>. */\n:host { @apply flex flex-col gap-4; }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/form.js",
+        "elements/field.js",
+        "elements/input.js",
+        "elements/native-select.js",
+        "elements/checkbox.js",
+        "elements/button.js",
+        "elements/pixel-button.js"
+      ],
+      "tag": "conare-form",
+      "tags": [
+        "conare-form"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-form",
+            "name": "Form",
+            "module": "elements/form.js",
+            "description": "A form in the console's grammar: fields, a failure, the actions.",
+            "attributes": [
+              {
+                "name": "failure",
+                "field": "failure",
+                "type": "string | undefined",
+                "description": "A failure from the server, shown above the actions."
+              },
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string | undefined",
+                "description": "The form's name for assistive tech."
+              }
+            ],
+            "properties": [
+              {
+                "name": "failure",
+                "type": "string | undefined",
+                "description": "A failure from the server, shown above the actions.",
+                "attribute": "failure"
+              },
+              {
+                "name": "label",
+                "type": "string | undefined",
+                "description": "The form's name for assistive tech.",
+                "attribute": "label"
+              },
+              {
+                "name": "fields",
+                "type": "Validatable[]",
+                "description": "Its fields: the controls and form-associated elements in it that take part in validation."
+              }
+            ],
+            "events": [
+              {
+                "name": "submit",
+                "description": "It was sent (a submit button or Enter in a field)."
+              },
+              {
+                "name": "reset",
+                "description": "A reset button was pressed."
+              }
+            ],
+            "slots": [
+              {
+                "name": "",
+                "description": "The fields."
+              },
+              {
+                "name": "actions",
+                "description": "The buttons at the end, the main one last."
+              }
+            ],
+            "methods": [
+              {
+                "name": "send",
+                "description": "Sends it, as a submit button does."
+              },
+              {
+                "name": "checkValidity",
+                "description": "Whether every field is valid (no events, no messages)."
+              },
+              {
+                "name": "reportValidity",
+                "description": "Like checkValidity, and the first invalid field shows the browser's message and takes focus."
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/form/Product.html",
+          "content": "<!-- Creating an API key: a name, where it can search and when it expires. Send it empty to see the errors; a name of\n     \"taken\" shows the server's answer. -->\n<div id=\"create-key\" class=\"w-100 max-w-full\">\n  <conare-form label=\"create an API key\">\n    <conare-field label=\"Name\" hint=\"Letters, numbers and dashes.\">\n      <conare-input data-key=\"name\" autocomplete=\"off\" placeholder=\"production-agent\"></conare-input>\n    </conare-field>\n    <conare-field label=\"Namespace\">\n      <conare-native-select data-key=\"namespace\" value=\"\" mono>\n        <option value=\"\" disabled>Pick a namespace</option><option>contracts</option><option>slack</option><option>sec-filings</option>\n      </conare-native-select>\n    </conare-field>\n    <conare-field label=\"Expires\">\n      <conare-native-select data-key=\"expires\" value=\"90\"><option value=\"30\">In 30 days</option><option value=\"90\">In 90 days</option><option value=\"never\">Never</option></conare-native-select>\n    </conare-field>\n    <conare-checkbox data-key=\"readOnly\" checked label=\"Read only\" hint=\"It can search but not add or delete documents.\"></conare-checkbox>\n    <conare-button slot=\"actions\" variant=\"ghost\" data-clear>Clear</conare-button>\n    <conare-pixel-button slot=\"actions\" type=\"submit\">Create key</conare-pixel-button>\n  </conare-form>\n  <template>\n    <div class=\"flex flex-col items-start gap-3 border border-edge p-4\" role=\"status\">\n      <p class=\"type-ui\">Key <span class=\"font-code text-meta\"></span> created.</p>\n      <conare-button>Create another</conare-button>\n    </div>\n  </template>\n</div>\n<script type=\"module\">\n  // useForm: an error shows once its field is left or the form sent, then follows the value.\n  await customElements.whenDefined('conare-form')\n  const root = document.getElementById('create-key')\n  const form = root.querySelector('conare-form')\n  const template = root.querySelector('template')\n  const submitButton = form.querySelector('[type=\"submit\"]')\n  const fields = Object.fromEntries([...form.querySelectorAll('[data-key]')].map((el) => [el.dataset.key, el]))\n  const initial = { name: '', namespace: '', expires: '90', readOnly: true }\n  const rules = {\n    name: (v) => (!String(v).trim() ? 'Give the key a name.' : /\\s/.test(String(v)) ? 'Use letters, numbers and dashes, no spaces.' : undefined),\n    namespace: (v) => (!v ? 'Pick where it can search.' : undefined),\n  }\n  let values = { ...initial }\n  let touched = {}\n  let tried = false\n  let sending = false\n  const all = () => Object.fromEntries(Object.entries(rules).map(([k, rule]) => [k, rule(values[k], values)]).filter(([, m]) => m))\n  const paint = () => {\n    const errors = all()\n    for (const key of Object.keys(rules)) {\n      const message = tried || touched[key] ? errors[key] : undefined\n      fields[key].closest('conare-field').error = message\n      fields[key].invalid = !!message\n    }\n    submitButton.disabled = sending\n    // Only a changed label is written: replacing the text under a press would swallow its click.\n    const label = sending ? 'Creating' : 'Create key'\n    if (submitButton.textContent !== label) submitButton.textContent = label\n  }\n  const read = (key) => (key === 'readOnly' ? fields[key].checked : fields[key].value)\n  for (const [key, el] of Object.entries(fields)) {\n    el.addEventListener('input', () => { values = { ...values, [key]: read(key) }; paint() })\n    el.addEventListener('change', () => { values = { ...values, [key]: read(key) }; paint() })\n    el.addEventListener('focusout', () => { touched[key] = true; paint() })\n  }\n  const reset = () => {\n    values = { ...initial }\n    touched = {}\n    tried = false\n    form.failure = undefined\n    fields.name.value = ''\n    fields.namespace.value = ''\n    fields.expires.value = '90'\n    fields.readOnly.checked = true\n    paint()\n  }\n  form.querySelector('[data-clear]').addEventListener('click', reset)\n  form.addEventListener('submit', async () => {\n    tried = true\n    form.failure = undefined\n    paint()\n    if (Object.keys(all()).length || sending) return\n    sending = true\n    paint()\n    try {\n      await new Promise((resolve) => setTimeout(resolve, 800))\n      if (values.name === 'taken') throw new Error('A key with that name already exists.')\n      // The form goes and the note comes, as Vue's v-if and v-else swap them.\n      const done = template.content.firstElementChild.cloneNode(true)\n      done.querySelector('span').textContent = values.name\n      done.querySelector('conare-button').addEventListener('click', () => {\n        done.replaceWith(form)\n        reset()\n      })\n      form.replaceWith(done)\n    } catch (error) {\n      form.failure = error.message\n    } finally {\n      sending = false\n      paint()\n    }\n  })\n  paint()\n</script>\n"
+        }
+      ]
+    }
+  }
+}

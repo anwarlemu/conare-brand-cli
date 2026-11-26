@@ -1,0 +1,298 @@
+{
+  "name": "alert-dialog",
+  "title": "Alert dialog",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "A question that must be answered first, on Dialog's window: the title, one line saying what happens, Cancel and the danger action. Focus starts on Cancel; the scrim does nothing; Escape cancels.",
+  "use_for": "Confirming what can't be undone and reaches past one row: deleting a namespace, an organization, every key.",
+  "never": [
+    "Confirming a row's delete or revoke: hold the danger button (HoldButton), as the console does",
+    "Routine actions, or more than one line of explanation",
+    "Two danger buttons, or a dark button beside the danger one"
+  ],
+  "source": "conare-web app/components/console/Modal.vue, app/assets/css/main.css (.c-modal), console2.css (.v2-btn-danger). New in Conare's style: shadcn's alert dialog.",
+  "body": "",
+  "requires": [
+    "button"
+  ],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/AlertDialog.vue",
+      "content": "<script setup lang=\"ts\">\nimport { nextTick, onMounted, ref, useId, watch } from 'vue'\nimport Button from '@/components/ui/Button.vue'\n\n// A question that needs an answer before anything else (Dialog's window, Modal.vue): the title, one line saying what\n// happens, then Cancel and the action, the danger button for what removes something. Focus starts on Cancel; the scrim\n// does nothing, so only a choice closes it; Escape cancels and focus returns to what opened it. It rises 8px over\n// 320ms, as Dialog. In a row, a held danger button (HoldButton) is better: it confirms without interrupting.\nwithDefaults(defineProps<{ title: string, description: string, action: string, cancel?: string, danger?: boolean }>(), { cancel: 'Cancel', danger: true })\nconst emit = defineEmits<{ confirm: [], cancel: [] }>()\nconst open = defineModel<boolean>('open', { default: false })\nconst dialog = ref<HTMLDialogElement | null>(null)\nconst id = useId()\nlet returnTo: HTMLElement | null = null\n\nfunction show() {\n  const d = dialog.value\n  if (!d || d.open) return\n  returnTo = document.activeElement instanceof HTMLElement ? document.activeElement : null\n  d.showModal()\n  d.querySelector<HTMLElement>('[data-cancel]')?.focus()\n}\nfunction close() {\n  if (dialog.value?.open) dialog.value.close()\n  returnTo?.focus({ preventScroll: true })\n  returnTo = null\n}\nwatch(open, async (now) => {\n  await nextTick()\n  if (now) show()\n  else close()\n})\nonMounted(() => { if (open.value) show() })\nfunction onCancel(event: Event) {\n  event.preventDefault()\n  emit('cancel')\n  open.value = false\n}\nfunction choose(confirmed: boolean) {\n  if (confirmed) emit('confirm')\n  else emit('cancel')\n  open.value = false\n}\n</script>\n\n<template>\n  <dialog data-ds=\"alert-dialog\" ref=\"dialog\" class=\"ds-alert\" role=\"alertdialog\" :aria-labelledby=\"`${id}-title`\" :aria-describedby=\"`${id}-text`\" @cancel=\"onCancel\">\n    <h2 :id=\"`${id}-title`\" class=\"type-ui-strong\">{{ title }}</h2>\n    <p :id=\"`${id}-text`\" class=\"mt-2 type-ui text-fg-soft\">{{ description }}</p>\n    <slot />\n    <div class=\"mt-6 flex justify-end gap-2\">\n      <Button data-cancel @click=\"choose(false)\">{{ cancel }}</Button>\n      <Button :variant=\"danger ? 'danger' : 'dark'\" @click=\"choose(true)\">{{ action }}</Button>\n    </div>\n  </dialog>\n</template>\n\n<style>\n.ds-alert { width: min(400px, calc(100vw - 32px)); margin: auto; padding: var(--ds-space-2xl); border: var(--ds-border-hairline) solid var(--ds-color-edge); border-radius: var(--ds-radius-container); background: var(--ds-color-surface); color: var(--ds-color-fg); font-size: var(--ds-text-ui); line-height: var(--ds-text-ui-leading); }\n.ds-alert::backdrop { background: var(--ds-color-scrim); }\n.ds-alert[open] { animation: ds-alert-rise var(--ds-duration-entrance) var(--ds-easing-standard); }\n@keyframes ds-alert-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }\n@media (prefers-reduced-motion: reduce) { .ds-alert[open] { animation: ds-alert-fade var(--ds-duration-enter) var(--ds-easing-standard); } }\n@keyframes ds-alert-fade { from { opacity: 0; } }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "Delete a namespace",
+      "center": true,
+      "half": false,
+      "path": "examples/alert-dialog/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport { Trash2 } from 'lucide-vue-next'\nimport AlertDialog from '@/components/ui/AlertDialog.vue'\nimport Button from '@/components/ui/Button.vue'\nimport Toaster from '@/components/ui/Toaster.vue'\nimport { useToast } from '@/composables/useToast'\n// Deleting a whole namespace: too much to undo, so it asks first. Focus starts on Cancel; only a choice closes it.\nconst open = ref(false)\nconst toast = useToast()\n</script>\n\n<template>\n  <div class=\"flex min-h-64 items-center justify-center\">\n    <Button variant=\"danger\" @click=\"open = true\"><Trash2 :size=\"12\" :stroke-width=\"1.5\" aria-hidden=\"true\" />Delete namespace</Button>\n    <AlertDialog\n      v-model:open=\"open\"\n      title=\"Delete contracts?\"\n      description=\"Its 412,830 documents are deleted with it, and searches that name it stop working. This can't be undone.\"\n      action=\"Delete namespace\"\n      @confirm=\"toast('Deleted', 'contracts')\"\n    />\n    <Toaster />\n  </div>\n</template>\n",
+      "requires": [
+        "button",
+        "toast"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/AlertDialog.tsx",
+          "content": "'use client'\nimport { useEffect, useId, useRef, type ReactNode, type SyntheticEvent } from 'react'\nimport { Button } from '@/react/components/ui/Button'\nimport { useControllable } from '@/react/hooks/useControllable'\n\n// A question that needs an answer before anything else (Dialog's window, Modal.vue): the title, one line saying what\n// happens, then Cancel and the action, the danger button for what removes something. Focus starts on Cancel; the scrim\n// does nothing, so only a choice closes it; Escape cancels and focus returns to what opened it. It rises 8px over\n// 320ms, as Dialog. In a row, a held danger button (HoldButton) is better: it confirms without interrupting. Vue's\n// v-model:open is `open` with `onOpenChange` (or `defaultOpen` alone); its events are `onConfirm` and `onCancel`.\nexport interface AlertDialogProps {\n  title: string\n  description: string\n  action: string\n  cancel?: string\n  danger?: boolean\n  open?: boolean\n  defaultOpen?: boolean\n  onOpenChange?: (open: boolean) => void\n  onConfirm?: () => void\n  onCancel?: () => void\n  children?: ReactNode\n}\n\nexport function AlertDialog({ title, description, action, cancel = 'Cancel', danger = true, open: openProp, defaultOpen = false, onOpenChange, onConfirm, onCancel, children }: AlertDialogProps) {\n  const [open, setOpen] = useControllable(openProp, defaultOpen, onOpenChange)\n  const dialog = useRef<HTMLDialogElement | null>(null)\n  const id = useId()\n  const returnTo = useRef<HTMLElement | null>(null)\n  const mounted = useRef(false)\n\n  useEffect(() => {\n    const d = dialog.current\n    const first = !mounted.current\n    mounted.current = true\n    if (!d) return\n    if (open) {\n      if (d.open) return\n      returnTo.current = document.activeElement instanceof HTMLElement ? document.activeElement : null\n      d.showModal()\n      d.querySelector<HTMLElement>('[data-cancel]')?.focus()\n    }\n    else if (!first) {\n      if (d.open) d.close()\n      returnTo.current?.focus({ preventScroll: true })\n      returnTo.current = null\n    }\n  }, [open])\n\n  function cancelled(event: SyntheticEvent) {\n    event.preventDefault()\n    onCancel?.()\n    setOpen(false)\n  }\n  function choose(confirmed: boolean) {\n    if (confirmed) onConfirm?.()\n    else onCancel?.()\n    setOpen(false)\n  }\n  return (\n    <>\n      <style href=\"ds-alert-dialog\" precedence=\"ds\">{css}</style>\n      <dialog data-ds=\"alert-dialog\" ref={dialog} className=\"ds-alert\" role=\"alertdialog\" aria-labelledby={`${id}-title`} aria-describedby={`${id}-text`} onCancel={cancelled}>\n        <h2 id={`${id}-title`} className=\"type-ui-strong\">{title}</h2>\n        <p id={`${id}-text`} className=\"mt-2 type-ui text-fg-soft\">{description}</p>\n        {children}\n        <div className=\"mt-6 flex justify-end gap-2\">\n          <Button data-cancel onClick={() => choose(false)}>{cancel}</Button>\n          <Button variant={danger ? 'danger' : 'dark'} onClick={() => choose(true)}>{action}</Button>\n        </div>\n      </dialog>\n    </>\n  )\n}\n\nexport default AlertDialog\n\nconst css = `\n.ds-alert { width: min(400px, calc(100vw - 32px)); margin: auto; padding: var(--ds-space-2xl); border: var(--ds-border-hairline) solid var(--ds-color-edge); border-radius: var(--ds-radius-container); background: var(--ds-color-surface); color: var(--ds-color-fg); font-size: var(--ds-text-ui); line-height: var(--ds-text-ui-leading); }\n.ds-alert::backdrop { background: var(--ds-color-scrim); }\n.ds-alert[open] { animation: ds-alert-rise var(--ds-duration-entrance) var(--ds-easing-standard); }\n@keyframes ds-alert-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }\n@media (prefers-reduced-motion: reduce) { .ds-alert[open] { animation: ds-alert-fade var(--ds-duration-enter) var(--ds-easing-standard); } }\n@keyframes ds-alert-fade { from { opacity: 0; } }\n`\n"
+        },
+        {
+          "path": "react/hooks/useControllable.ts",
+          "content": "'use client'\nimport { useCallback, useRef, useState } from 'react'\n\n// Vue's defineModel in React: a value that is controlled when the caller passes it (value + onValueChange, as Radix\n// does) and kept inside otherwise (defaultValue). setValue calls onChange either way.\nexport function useControllable<T>(value: T | undefined, defaultValue: T, onChange?: (value: T) => void) {\n\tconst [inner, setInner] = useState<T>(defaultValue)\n\tconst controlled = value !== undefined\n\tconst current = controlled ? value : inner\n\tconst ref = useRef(onChange)\n\tref.current = onChange\n\tconst set = useCallback((next: T) => {\n\t\tif (!controlled) setInner(next)\n\t\tref.current?.(next)\n\t}, [controlled])\n\treturn [current, set] as const\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "button"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "AlertDialog",
+            "file": "react/components/ui/AlertDialog.tsx",
+            "props": [
+              {
+                "name": "title",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "description",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "action",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "cancel",
+                "type": "string",
+                "required": false,
+                "default": "'Cancel'"
+              },
+              {
+                "name": "danger",
+                "type": "boolean",
+                "required": false,
+                "default": "true"
+              },
+              {
+                "name": "open",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "defaultOpen",
+                "type": "boolean",
+                "required": false,
+                "default": "false"
+              },
+              {
+                "name": "onOpenChange",
+                "type": "(open: boolean) => void",
+                "required": false
+              },
+              {
+                "name": "onConfirm",
+                "type": "() => void",
+                "required": false
+              },
+              {
+                "name": "onCancel",
+                "type": "() => void",
+                "required": false
+              },
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Delete a namespace",
+          "center": true,
+          "half": false,
+          "path": "react/examples/alert-dialog/Product.tsx",
+          "content": "'use client'\nimport { useState } from 'react'\nimport { Trash2 } from 'lucide-react'\nimport { AlertDialog } from '@/react/components/ui/AlertDialog'\nimport { Button } from '@/react/components/ui/Button'\nimport { Toaster } from '@/react/components/ui/Toaster'\nimport { useToast } from '@/react/hooks/useToast'\n// Deleting a whole namespace: too much to undo, so it asks first. Focus starts on Cancel; only a choice closes it.\n\nexport default function Product() {\n  const [open, setOpen] = useState(false)\n  const toast = useToast()\n  return (\n    <div className=\"flex min-h-64 items-center justify-center\">\n      <Button variant=\"danger\" onClick={() => setOpen(true)}><Trash2 size={12} strokeWidth={1.5} aria-hidden=\"true\" />Delete namespace</Button>\n      <AlertDialog\n        open={open}\n        onOpenChange={setOpen}\n        title=\"Delete contracts?\"\n        description=\"Its 412,830 documents are deleted with it, and searches that name it stop working. This can't be undone.\"\n        action=\"Delete namespace\"\n        onConfirm={() => toast('Deleted', 'contracts')}\n      />\n      <Toaster />\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "button",
+            "toast"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/alert-dialog.ts",
+          "content": "import { html, type LitElement, type PropertyValues } from 'lit'\nimport { DsElement, define, tag, uid } from '@/elements/lib/element'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport '@/elements/components/ui/button'\nimport styles from 'virtual:tw'\n\n// AlertDialog.vue as <conare-alert-dialog>: a question that needs an answer before anything else (Dialog's window,\n// Modal.vue): the title, one line saying what happens, then Cancel and the action, the danger button for what removes\n// something. Focus starts on Cancel; the scrim does nothing, so only a choice closes it; Escape cancels and focus\n// returns to what opened it. It rises 8px over 320ms, as the dialog. In a row, a held danger button\n// (<conare-hold-button>) is better. Vue's v-model:open is the `open` attribute with `open-change`; Vue's `title` is\n// `heading` (title is HTML's tooltip attribute); `cancel` is the Cancel button's label, and the `cancel` event fires\n// when it is chosen (or on Escape).\n\n/**\n * @summary A question that needs an answer before anything else.\n * @slot - More about what happens, under the line.\n * @fires confirm - The action was chosen.\n * @fires cancel - Cancel was chosen, or Escape pressed.\n * @fires open-change - It opened or closed (detail.value).\n */\nexport class AlertDialog extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { heading: {}, description: {}, action: {}, cancel: {}, danger: { converter: { fromAttribute: (v: string | null) => v !== 'false' } }, open: { type: Boolean, reflect: true } }\n\n\t/** The question (Vue's `title`). */\n\theading = ''\n\t/** One line saying what happens. */\n\tdescription = ''\n\t/** The action button's label. */\n\taction = ''\n\t/** The Cancel button's label. */\n\tcancel = 'Cancel'\n\t/** The danger button for the action; danger=\"false\" draws the dark one. */\n\tdanger = true\n\topen = false\n\tprivate dialogId = uid('alert')\n\tprivate returnTo: HTMLElement | null = null\n\n\tprivate get dialog() {\n\t\treturn this.renderRoot.querySelector('dialog')\n\t}\n\tprivate async show() {\n\t\tconst d = this.dialog\n\t\tif (!d || d.open) return\n\t\tlet a = document.activeElement as Element | null\n\t\twhile (a?.shadowRoot?.activeElement) a = a.shadowRoot.activeElement\n\t\tthis.returnTo = a instanceof HTMLElement ? a : null\n\t\td.showModal()\n\t\tconst cancel = d.querySelector<LitElement>('[data-cancel]')\n\t\tawait cancel?.updateComplete\n\t\t;(cancel?.shadowRoot?.querySelector('button') ?? cancel)?.focus()\n\t}\n\tprivate close() {\n\t\tif (this.dialog?.open) this.dialog.close()\n\t\tthis.returnTo?.focus({ preventScroll: true })\n\t\tthis.returnTo = null\n\t}\n\tprotected updated(changed: PropertyValues<this>) {\n\t\tsuper.updated(changed)\n\t\tif (!changed.has('open')) return\n\t\tif (this.open) void this.show()\n\t\telse if (changed.get('open') !== undefined) this.close()\n\t}\n\tprivate setOpen(open: boolean) {\n\t\tif (this.open === open) return\n\t\tthis.open = open\n\t\tthis.emit('open-change', { value: open })\n\t}\n\tprivate onCancel = (event: Event) => {\n\t\tevent.preventDefault()\n\t\tthis.emit('cancel')\n\t\tthis.setOpen(false)\n\t}\n\tprivate choose(confirmed: boolean) {\n\t\tthis.emit(confirmed ? 'confirm' : 'cancel')\n\t\tthis.setOpen(false)\n\t}\n\n\trender() {\n\t\tconst button = tag('button')\n\t\treturn html`<dialog data-ds=\"alert-dialog\" class=\"ds-alert\" role=\"alertdialog\" aria-labelledby=${`${this.dialogId}-title`} aria-describedby=${`${this.dialogId}-text`} @cancel=${this.onCancel}>\n\t\t\t<h2 id=${`${this.dialogId}-title`} class=\"type-ui-strong\">${this.heading}</h2>\n\t\t\t<p id=${`${this.dialogId}-text`} class=\"mt-2 type-ui text-fg-soft\">${this.description}</p>\n\t\t\t<slot></slot>\n\t\t\t<div class=\"mt-6 flex justify-end gap-2\">\n\t\t\t\t${staticHtml`<${button} data-cancel @click=${() => this.choose(false)}>${this.cancel}</${button}><${button} variant=${this.danger ? 'danger' : 'dark'} @click=${() => this.choose(true)}>${this.action}</${button}>`}\n\t\t\t</div>\n\t\t</dialog>`\n\t}\n}\n\ndefine('alert-dialog', AlertDialog)\n"
+        },
+        {
+          "path": "elements/components/ui/alert-dialog.css",
+          "content": "/* AlertDialog.vue's <style>, as it is. */\n.ds-alert { width: min(400px, calc(100vw - 32px)); margin: auto; padding: var(--ds-space-2xl); border: var(--ds-border-hairline) solid var(--ds-color-edge); border-radius: var(--ds-radius-container); background: var(--ds-color-surface); color: var(--ds-color-fg); font-size: var(--ds-text-ui); line-height: var(--ds-text-ui-leading); }\n.ds-alert::backdrop { background: var(--ds-color-scrim); }\n.ds-alert[open] { animation: ds-alert-rise var(--ds-duration-entrance) var(--ds-easing-standard); }\n@keyframes ds-alert-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }\n@media (prefers-reduced-motion: reduce) { .ds-alert[open] { animation: ds-alert-fade var(--ds-duration-enter) var(--ds-easing-standard); } }\n@keyframes ds-alert-fade { from { opacity: 0; } }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/alert-dialog.js",
+        "elements/button.js",
+        "elements/toaster.js"
+      ],
+      "tag": "conare-alert-dialog",
+      "tags": [
+        "conare-alert-dialog"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "button"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-alert-dialog",
+            "name": "AlertDialog",
+            "module": "elements/alert-dialog.js",
+            "description": "A question that needs an answer before anything else.",
+            "attributes": [
+              {
+                "name": "heading",
+                "field": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The question (Vue's `title`)."
+              },
+              {
+                "name": "description",
+                "field": "description",
+                "type": "string",
+                "default": "''",
+                "description": "One line saying what happens."
+              },
+              {
+                "name": "action",
+                "field": "action",
+                "type": "string",
+                "default": "''",
+                "description": "The action button's label."
+              },
+              {
+                "name": "cancel",
+                "field": "cancel",
+                "type": "string",
+                "default": "'Cancel'",
+                "description": "The Cancel button's label."
+              },
+              {
+                "name": "danger",
+                "field": "danger",
+                "type": "boolean",
+                "default": "true",
+                "description": "The danger button for the action; danger=\"false\" draws the dark one."
+              },
+              {
+                "name": "open",
+                "field": "open",
+                "type": "boolean",
+                "default": "false"
+              }
+            ],
+            "properties": [
+              {
+                "name": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The question (Vue's `title`).",
+                "attribute": "heading"
+              },
+              {
+                "name": "description",
+                "type": "string",
+                "default": "''",
+                "description": "One line saying what happens.",
+                "attribute": "description"
+              },
+              {
+                "name": "action",
+                "type": "string",
+                "default": "''",
+                "description": "The action button's label.",
+                "attribute": "action"
+              },
+              {
+                "name": "cancel",
+                "type": "string",
+                "default": "'Cancel'",
+                "description": "The Cancel button's label.",
+                "attribute": "cancel"
+              },
+              {
+                "name": "danger",
+                "type": "boolean",
+                "default": "true",
+                "description": "The danger button for the action; danger=\"false\" draws the dark one.",
+                "attribute": "danger"
+              },
+              {
+                "name": "open",
+                "type": "boolean",
+                "default": "false",
+                "attribute": "open"
+              }
+            ],
+            "events": [
+              {
+                "name": "confirm",
+                "description": "The action was chosen."
+              },
+              {
+                "name": "cancel",
+                "description": "Cancel was chosen, or Escape pressed."
+              },
+              {
+                "name": "open-change",
+                "description": "It opened or closed (detail.value)."
+              }
+            ],
+            "slots": [
+              {
+                "name": "",
+                "description": "More about what happens, under the line."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Delete a namespace",
+          "center": true,
+          "half": false,
+          "path": "elements/examples/alert-dialog/Product.html",
+          "content": "<!-- Deleting a whole namespace: too much to undo, so it asks first. Focus starts on Cancel; only a choice closes it. -->\n<div class=\"flex min-h-64 items-center justify-center\">\n  <conare-button variant=\"danger\" id=\"delete-namespace\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-trash-2\" aria-hidden=\"true\"><path d=\"M3 6h18\"></path><path d=\"M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6\"></path><path d=\"M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2\"></path><line x1=\"10\" x2=\"10\" y1=\"11\" y2=\"17\"></line><line x1=\"14\" x2=\"14\" y1=\"11\" y2=\"17\"></line></svg>Delete namespace</conare-button>\n  <conare-alert-dialog id=\"confirm-delete\" heading=\"Delete contracts?\" description=\"Its 412,830 documents are deleted with it, and searches that name it stop working. This can't be undone.\" action=\"Delete namespace\"></conare-alert-dialog>\n  <conare-toaster></conare-toaster>\n</div>\n<script type=\"module\">\n  const dialog = document.getElementById('confirm-delete')\n  document.getElementById('delete-namespace').addEventListener('click', () => { dialog.open = true })\n  dialog.addEventListener('confirm', () => document.querySelector('conare-toaster').toast('Deleted', 'contracts'))\n</script>\n"
+        }
+      ]
+    }
+  }
+}

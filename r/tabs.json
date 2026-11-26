@@ -1,0 +1,345 @@
+{
+  "name": "tabs",
+  "title": "Tabs",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "A few views of one thing: line tabs for a page's sections (an ink underline and a red square on the current one) and the segmented control for a chart's view or range, its white block gliding to the pick.",
+  "use_for": "Documents and Settings on a namespace; Volume and Latency on a chart; 1h, 24h and 7d.",
+  "never": [
+    "Actions (use Button)",
+    "More than six views (use Menu)",
+    "Bold on the current tab: the underline marks it"
+  ],
+  "source": "conare-web app/assets/css/console2.css (.v2-tabline, .v2-tabs)",
+  "body": "",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Tabs.vue",
+      "content": "<script setup lang=\"ts\" generic=\"T extends string\">\n// The segmented control (console2.css .v2-tabs), for a few views of one thing or a range: a paper track in a hairline,\n// the pick a white block with its own hairline. Where the browser has anchor positioning, one white block glides to the\n// pick (180ms, strong ease-out) while the row is in use, so a pick moves instead of blinking.\nconst model = defineModel<T>({ required: true })\ndefineProps<{ options: readonly T[] | { value: T, label: string, disabled?: boolean }[], label: string }>()\nconst norm = (o: T | { value: T, label: string, disabled?: boolean }) => (typeof o === 'string' ? { value: o, label: o, disabled: false } : { disabled: false, ...o })\n</script>\n\n<template>\n  <div data-ds=\"tabs\" class=\"ds-tabs\" role=\"tablist\" :aria-label=\"label\">\n    <button\n      v-for=\"o in options.map(norm)\"\n      :key=\"o.value\"\n      type=\"button\"\n      role=\"tab\"\n      :aria-selected=\"model === o.value\"\n      :disabled=\"o.disabled\"\n      @click=\"model = o.value\"\n    >\n      {{ o.label }}\n    </button>\n  </div>\n</template>\n\n<style>\n.ds-tabs { display: inline-flex; padding: var(--ds-space-2xs); border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface-subtle); }\n.ds-tabs > button { height: var(--ds-size-control-xs); padding: 0 8px; color: var(--ds-color-fg-muted); font-size: var(--ds-text-meta); cursor: pointer; transition: color var(--ds-duration-glide) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard), transform var(--ds-duration-glide) var(--ds-easing-out); }\n.ds-tabs > button:active:not(:disabled) { transform: scale(0.97); }\n@media (hover: hover) and (pointer: fine) { .ds-tabs > button:hover { color: var(--ds-color-fg); } }\n.ds-tabs > button:disabled { color: var(--ds-color-fg-faint); cursor: not-allowed; }\n.ds-tabs > button[aria-selected=\"true\"] { background: var(--ds-color-surface); color: var(--ds-color-fg); outline: var(--ds-border-hairline) solid var(--ds-color-edge); }\n@supports (anchor-scope: all) {\n  .ds-tabs { position: relative; anchor-scope: --ds-thumb; }\n  .ds-tabs::before { position: absolute; top: anchor(top); right: anchor(right); bottom: anchor(bottom); left: anchor(left); background: var(--ds-color-surface); content: \"\"; outline: var(--ds-border-hairline) solid var(--ds-color-edge); position-anchor: --ds-thumb; }\n  .ds-tabs:is(:hover, :focus-within)::before { transition: top var(--ds-duration-slide) var(--ds-easing-out), right var(--ds-duration-slide) var(--ds-easing-out), bottom var(--ds-duration-slide) var(--ds-easing-out), left var(--ds-duration-slide) var(--ds-easing-out); }\n  .ds-tabs:not(:has(> [aria-selected=\"true\"]))::before { content: none; }\n  .ds-tabs > button { position: relative; z-index: 1; }\n  .ds-tabs > button[aria-selected=\"true\"] { anchor-name: --ds-thumb; background: none; outline: 0; }\n  .ds-tabs > button[aria-selected=\"true\"]:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); }\n}\n@media (pointer: coarse), (max-width: 767px) {\n  .ds-tabs > button { position: relative; height: 34px; padding-inline: 12px; font-size: var(--ds-text-ui); }\n  .ds-tabs > button::after { position: absolute; inset: -3px 0; content: \"\"; }\n}\n@media (prefers-reduced-motion: reduce) {\n  .ds-tabs:is(:hover, :focus-within)::before { transition: none; }\n  .ds-tabs > button:active:not(:disabled) { transform: none; }\n}\n</style>\n"
+    },
+    {
+      "path": "components/ui/LineTabs.vue",
+      "content": "<script setup lang=\"ts\" generic=\"T extends string\">\n// Line tabs for a page's sections (console2.css .v2-tabline): 13px muted labels 24px apart over a hairline; the current\n// one in ink with a 2px ink underline and a 4px red square before it, which also shows under the pointer.\nconst model = defineModel<T>({ required: true })\ndefineProps<{ options: readonly T[] | { value: T, label: string }[], label: string }>()\nconst norm = (o: T | { value: T, label: string }) => (typeof o === 'string' ? { value: o, label: o } : o)\n</script>\n\n<template>\n  <div data-ds=\"line-tabs\" class=\"ds-tabline\" role=\"tablist\" :aria-label=\"label\">\n    <button v-for=\"o in options.map(norm)\" :key=\"o.value\" type=\"button\" role=\"tab\" :aria-selected=\"model === o.value\" @click=\"model = o.value\">{{ o.label }}</button>\n  </div>\n</template>\n\n<style>\n.ds-tabline { display: flex; gap: var(--ds-space-2xl); border-bottom: var(--ds-border-hairline) solid var(--ds-color-edge); }\n.ds-tabline > button { position: relative; display: flex; height: var(--ds-size-control-lg); flex-shrink: 0; align-items: center; color: var(--ds-color-fg-muted); font-size: var(--ds-text-ui); cursor: pointer; transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-tabline > button:hover { color: var(--ds-color-fg); } }\n.ds-tabline > [aria-selected=\"true\"] { color: var(--ds-color-fg); }\n.ds-tabline > [aria-selected=\"true\"]::after { position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; background: var(--ds-color-surface-inverse); content: \"\"; }\n.ds-tabline > button::before { position: absolute; top: 50%; left: -10px; width: 4px; height: 4px; margin-top: -2px; background: var(--ds-color-edge-accent); opacity: 0; content: \"\"; transition: opacity var(--ds-duration-micro) ease-out; }\n.ds-tabline > [aria-selected=\"true\"]::before { opacity: 1; }\n@media (hover: hover) and (pointer: fine) { .ds-tabline > button:hover::before { opacity: 1; } }\n@media (pointer: coarse), (max-width: 767px) { .ds-tabline > button { min-height: 44px; } }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Line",
+      "label": "Line tabs",
+      "center": false,
+      "half": false,
+      "path": "examples/tabs/Line.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport LineTabs from '@/components/ui/LineTabs.vue'\n// Line tabs for a page's sections, as a namespace has them.\nconst section = ref<'Documents' | 'Settings'>('Documents')\n</script>\n\n<template>\n  <LineTabs v-model=\"section\" :options=\"['Documents', 'Settings']\" label=\"namespace\" />\n</template>\n",
+      "requires": [],
+      "packages": []
+    },
+    {
+      "name": "Product",
+      "label": "Segmented control",
+      "center": false,
+      "half": false,
+      "path": "examples/tabs/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport Tabs from '@/components/ui/Tabs.vue'\n// The segmented control, for a chart's view and its range: the white block glides to the pick.\nconst view = ref('volume')\nconst range = ref('24h')\n</script>\n\n<template>\n  <div class=\"grid items-start gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8\">\n    <p class=\"type-meta leading-7 text-fg-muted\">Views of one thing</p>\n    <div><Tabs v-model=\"view\" :options=\"[{ value: 'volume', label: 'Volume' }, { value: 'latency', label: 'Latency' }]\" label=\"chart view\" /></div>\n    <p class=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">A range</p>\n    <div><Tabs v-model=\"range\" :options=\"['1h', '24h', '7d']\" label=\"range\" /></div>\n  </div>\n</template>\n",
+      "requires": [],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Tabs.tsx",
+          "content": "'use client'\nimport { useControllable } from '@/react/hooks/useControllable'\n\n// The segmented control (console2.css .v2-tabs), for a few views of one thing or a range: a paper track in a hairline,\n// the pick a white block with its own hairline. Where the browser has anchor positioning, one white block glides to the\n// pick (180ms, strong ease-out) while the row is in use, so a pick moves instead of blinking. Vue's v-model is\n// `value` with `onValueChange` (or `defaultValue` alone).\nexport type TabOption<T extends string> = T | { value: T, label: string, disabled?: boolean }\nexport interface TabsProps<T extends string> {\n  options: readonly TabOption<T>[]\n  label: string\n  value?: T\n  defaultValue?: T\n  onValueChange?: (value: T) => void\n  className?: string\n}\n\nconst norm = <T extends string>(o: TabOption<T>) => (typeof o === 'string' ? { value: o, label: o, disabled: false } : { disabled: false, ...o })\n\nexport function Tabs<T extends string>({ options, label, value, defaultValue, onValueChange, className }: TabsProps<T>) {\n  const [current, setCurrent] = useControllable<T | undefined>(value, defaultValue, v => v !== undefined && onValueChange?.(v))\n  return (\n    <>\n      <style href=\"ds-tabs\" precedence=\"ds\">{css}</style>\n      <div data-ds=\"tabs\" className={className ? `ds-tabs ${className}` : 'ds-tabs'} role=\"tablist\" aria-label={label}>\n        {options.map(norm).map(o => (\n          <button key={o.value} type=\"button\" role=\"tab\" aria-selected={current === o.value} disabled={o.disabled} onClick={() => setCurrent(o.value)}>\n            {o.label}\n          </button>\n        ))}\n      </div>\n    </>\n  )\n}\n\nexport default Tabs\n\nconst css = `\n.ds-tabs { display: inline-flex; padding: var(--ds-space-2xs); border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface-subtle); }\n.ds-tabs > button { height: var(--ds-size-control-xs); padding: 0 8px; color: var(--ds-color-fg-muted); font-size: var(--ds-text-meta); cursor: pointer; transition: color var(--ds-duration-glide) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard), transform var(--ds-duration-glide) var(--ds-easing-out); }\n.ds-tabs > button:active:not(:disabled) { transform: scale(0.97); }\n@media (hover: hover) and (pointer: fine) { .ds-tabs > button:hover { color: var(--ds-color-fg); } }\n.ds-tabs > button:disabled { color: var(--ds-color-fg-faint); cursor: not-allowed; }\n.ds-tabs > button[aria-selected=\"true\"] { background: var(--ds-color-surface); color: var(--ds-color-fg); outline: var(--ds-border-hairline) solid var(--ds-color-edge); }\n@supports (anchor-scope: all) {\n  .ds-tabs { position: relative; anchor-scope: --ds-thumb; }\n  .ds-tabs::before { position: absolute; top: anchor(top); right: anchor(right); bottom: anchor(bottom); left: anchor(left); background: var(--ds-color-surface); content: \"\"; outline: var(--ds-border-hairline) solid var(--ds-color-edge); position-anchor: --ds-thumb; }\n  .ds-tabs:is(:hover, :focus-within)::before { transition: top var(--ds-duration-slide) var(--ds-easing-out), right var(--ds-duration-slide) var(--ds-easing-out), bottom var(--ds-duration-slide) var(--ds-easing-out), left var(--ds-duration-slide) var(--ds-easing-out); }\n  .ds-tabs:not(:has(> [aria-selected=\"true\"]))::before { content: none; }\n  .ds-tabs > button { position: relative; z-index: 1; }\n  .ds-tabs > button[aria-selected=\"true\"] { anchor-name: --ds-thumb; background: none; outline: 0; }\n  .ds-tabs > button[aria-selected=\"true\"]:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); }\n}\n@media (pointer: coarse), (max-width: 767px) {\n  .ds-tabs > button { position: relative; height: 34px; padding-inline: 12px; font-size: var(--ds-text-ui); }\n  .ds-tabs > button::after { position: absolute; inset: -3px 0; content: \"\"; }\n}\n@media (prefers-reduced-motion: reduce) {\n  .ds-tabs:is(:hover, :focus-within)::before { transition: none; }\n  .ds-tabs > button:active:not(:disabled) { transform: none; }\n}\n`\n"
+        },
+        {
+          "path": "react/components/ui/LineTabs.tsx",
+          "content": "'use client'\nimport { useControllable } from '@/react/hooks/useControllable'\n\n// Line tabs for a page's sections (console2.css .v2-tabline): 13px muted labels 24px apart over a hairline; the current\n// one in ink with a 2px ink underline and a 4px red square before it, which also shows under the pointer. Vue's v-model\n// is `value` with `onValueChange` (or `defaultValue` alone).\nexport interface LineTabsProps<T extends string> {\n  options: readonly (T | { value: T, label: string })[]\n  label: string\n  value?: T\n  defaultValue?: T\n  onValueChange?: (value: T) => void\n  className?: string\n}\n\nconst norm = <T extends string>(o: T | { value: T, label: string }) => (typeof o === 'string' ? { value: o, label: o } : o)\n\nexport function LineTabs<T extends string>({ options, label, value, defaultValue, onValueChange, className }: LineTabsProps<T>) {\n  const [current, setCurrent] = useControllable<T | undefined>(value, defaultValue, v => v !== undefined && onValueChange?.(v))\n  return (\n    <>\n      <style href=\"ds-line-tabs\" precedence=\"ds\">{css}</style>\n      <div data-ds=\"line-tabs\" className={className ? `ds-tabline ${className}` : 'ds-tabline'} role=\"tablist\" aria-label={label}>\n        {options.map(norm).map(o => <button key={o.value} type=\"button\" role=\"tab\" aria-selected={current === o.value} onClick={() => setCurrent(o.value)}>{o.label}</button>)}\n      </div>\n    </>\n  )\n}\n\nexport default LineTabs\n\nconst css = `\n.ds-tabline { display: flex; gap: var(--ds-space-2xl); border-bottom: var(--ds-border-hairline) solid var(--ds-color-edge); }\n.ds-tabline > button { position: relative; display: flex; height: var(--ds-size-control-lg); flex-shrink: 0; align-items: center; color: var(--ds-color-fg-muted); font-size: var(--ds-text-ui); cursor: pointer; transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-tabline > button:hover { color: var(--ds-color-fg); } }\n.ds-tabline > [aria-selected=\"true\"] { color: var(--ds-color-fg); }\n.ds-tabline > [aria-selected=\"true\"]::after { position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; background: var(--ds-color-surface-inverse); content: \"\"; }\n.ds-tabline > button::before { position: absolute; top: 50%; left: -10px; width: 4px; height: 4px; margin-top: -2px; background: var(--ds-color-edge-accent); opacity: 0; content: \"\"; transition: opacity var(--ds-duration-micro) ease-out; }\n.ds-tabline > [aria-selected=\"true\"]::before { opacity: 1; }\n@media (hover: hover) and (pointer: fine) { .ds-tabline > button:hover::before { opacity: 1; } }\n@media (pointer: coarse), (max-width: 767px) { .ds-tabline > button { min-height: 44px; } }\n`\n"
+        },
+        {
+          "path": "react/hooks/useControllable.ts",
+          "content": "'use client'\nimport { useCallback, useRef, useState } from 'react'\n\n// Vue's defineModel in React: a value that is controlled when the caller passes it (value + onValueChange, as Radix\n// does) and kept inside otherwise (defaultValue). setValue calls onChange either way.\nexport function useControllable<T>(value: T | undefined, defaultValue: T, onChange?: (value: T) => void) {\n\tconst [inner, setInner] = useState<T>(defaultValue)\n\tconst controlled = value !== undefined\n\tconst current = controlled ? value : inner\n\tconst ref = useRef(onChange)\n\tref.current = onChange\n\tconst set = useCallback((next: T) => {\n\t\tif (!controlled) setInner(next)\n\t\tref.current?.(next)\n\t}, [controlled])\n\treturn [current, set] as const\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "Tabs",
+            "file": "react/components/ui/Tabs.tsx",
+            "props": [
+              {
+                "name": "options",
+                "type": "readonly TabOption<T>[]",
+                "required": true
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "value",
+                "type": "T",
+                "required": false
+              },
+              {
+                "name": "defaultValue",
+                "type": "T",
+                "required": false
+              },
+              {
+                "name": "onValueChange",
+                "type": "(value: T) => void",
+                "required": false
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "LineTabs",
+            "file": "react/components/ui/LineTabs.tsx",
+            "props": [
+              {
+                "name": "options",
+                "type": "readonly (T | { value: T, label: string })[]",
+                "required": true
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "value",
+                "type": "T",
+                "required": false
+              },
+              {
+                "name": "defaultValue",
+                "type": "T",
+                "required": false
+              },
+              {
+                "name": "onValueChange",
+                "type": "(value: T) => void",
+                "required": false
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Line",
+          "label": "Line tabs",
+          "center": false,
+          "half": false,
+          "path": "react/examples/tabs/Line.tsx",
+          "content": "import { LineTabs } from '@/react/components/ui/LineTabs'\n// Line tabs for a page's sections, as a namespace has them.\n\nexport default function Line() {\n  return <LineTabs defaultValue=\"Documents\" options={['Documents', 'Settings']} label=\"namespace\" />\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        },
+        {
+          "name": "Product",
+          "label": "Segmented control",
+          "center": false,
+          "half": false,
+          "path": "react/examples/tabs/Product.tsx",
+          "content": "import { Tabs } from '@/react/components/ui/Tabs'\n// The segmented control, for a chart's view and its range: the white block glides to the pick.\n\nexport default function Product() {\n  return (\n    <div className=\"grid items-start gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8\">\n      <p className=\"type-meta leading-7 text-fg-muted\">Views of one thing</p>\n      <div><Tabs defaultValue=\"volume\" options={[{ value: 'volume', label: 'Volume' }, { value: 'latency', label: 'Latency' }]} label=\"chart view\" /></div>\n      <p className=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">A range</p>\n      <div><Tabs defaultValue=\"24h\" options={['1h', '24h', '7d']} label=\"range\" /></div>\n    </div>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/tabs.ts",
+          "content": "import { html } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// Tabs.vue as <conare-tabs>: the segmented control (console2.css .v2-tabs), for a few views of one thing or a range: a\n// paper track in a hairline, the pick a white block with its own hairline. Where the browser has anchor positioning,\n// one white block glides to the pick. v-model is `value` with `input` and `change` events.\nexport type TabOption = string | { value: string, label: string, disabled?: boolean }\nconst norm = (o: TabOption) => (typeof o === 'string' ? { value: o, label: o, disabled: false } : { disabled: false, ...o })\n\n/**\n * @summary A segmented control for a few views of one thing.\n * @fires input - The pick changed (read `value`).\n * @fires change - The pick changed (read `value`).\n */\nexport class Tabs extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { value: {}, options: { type: Array }, label: {} }\n\n\t/** The picked option's value. */\n\tvalue = ''\n\t/** Strings, or { value, label, disabled } (a JSON attribute or the property). */\n\toptions: TabOption[] = []\n\t/** The group's name for assistive tech. */\n\tlabel = ''\n\n\trender() {\n\t\treturn html`<div data-ds=\"tabs\" class=\"ds-tabs\" role=\"tablist\" aria-label=${this.label}>${this.options.map(norm).map((o) => html`<button type=\"button\" role=\"tab\" aria-selected=${String(this.value === o.value)} ?disabled=${o.disabled} @click=${() => this.commit(o.value)}>${o.label}</button>`)}</div>`\n\t}\n}\n\ndefine('tabs', Tabs)\n"
+        },
+        {
+          "path": "elements/components/ui/tabs.css",
+          "content": "/* Tabs.vue's <style>, as it is. */\n.ds-tabs { display: inline-flex; padding: var(--ds-space-2xs); border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface-subtle); }\n.ds-tabs > button { height: var(--ds-size-control-xs); padding: 0 8px; color: var(--ds-color-fg-muted); font-size: var(--ds-text-meta); cursor: pointer; transition: color var(--ds-duration-glide) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard), transform var(--ds-duration-glide) var(--ds-easing-out); }\n.ds-tabs > button:active:not(:disabled) { transform: scale(0.97); }\n@media (hover: hover) and (pointer: fine) { .ds-tabs > button:hover { color: var(--ds-color-fg); } }\n.ds-tabs > button:disabled { color: var(--ds-color-fg-faint); cursor: not-allowed; }\n.ds-tabs > button[aria-selected=\"true\"] { background: var(--ds-color-surface); color: var(--ds-color-fg); outline: var(--ds-border-hairline) solid var(--ds-color-edge); }\n@supports (anchor-scope: all) {\n  .ds-tabs { position: relative; anchor-scope: --ds-thumb; }\n  .ds-tabs::before { position: absolute; top: anchor(top); right: anchor(right); bottom: anchor(bottom); left: anchor(left); background: var(--ds-color-surface); content: \"\"; outline: var(--ds-border-hairline) solid var(--ds-color-edge); position-anchor: --ds-thumb; }\n  .ds-tabs:is(:hover, :focus-within)::before { transition: top var(--ds-duration-slide) var(--ds-easing-out), right var(--ds-duration-slide) var(--ds-easing-out), bottom var(--ds-duration-slide) var(--ds-easing-out), left var(--ds-duration-slide) var(--ds-easing-out); }\n  .ds-tabs:not(:has(> [aria-selected=\"true\"]))::before { content: none; }\n  .ds-tabs > button { position: relative; z-index: 1; }\n  .ds-tabs > button[aria-selected=\"true\"] { anchor-name: --ds-thumb; background: none; outline: 0; }\n  .ds-tabs > button[aria-selected=\"true\"]:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); }\n}\n@media (pointer: coarse), (max-width: 767px) {\n  .ds-tabs > button { position: relative; height: 34px; padding-inline: 12px; font-size: var(--ds-text-ui); }\n  .ds-tabs > button::after { position: absolute; inset: -3px 0; content: \"\"; }\n}\n@media (prefers-reduced-motion: reduce) {\n  .ds-tabs:is(:hover, :focus-within)::before { transition: none; }\n  .ds-tabs > button:active:not(:disabled) { transform: none; }\n}\n"
+        },
+        {
+          "path": "elements/components/ui/line-tabs.ts",
+          "content": "import { html } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// LineTabs.vue as <conare-line-tabs>: line tabs for a page's sections (console2.css .v2-tabline): 13px muted labels\n// 24px apart over a hairline; the current one in ink with a 2px ink underline and a 4px red square before it. v-model\n// is `value` with `input` and `change` events.\nexport type LineTabOption = string | { value: string, label: string }\nconst norm = (o: LineTabOption) => (typeof o === 'string' ? { value: o, label: o } : o)\n\n/**\n * @summary Line tabs for a page's sections.\n * @fires input - The pick changed (read `value`).\n * @fires change - The pick changed (read `value`).\n */\nexport class LineTabs extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { value: {}, options: { type: Array }, label: {} }\n\n\tvalue = ''\n\t/** Strings, or { value, label } (a JSON attribute or the property). */\n\toptions: LineTabOption[] = []\n\tlabel = ''\n\n\trender() {\n\t\treturn html`<div data-ds=\"line-tabs\" class=\"ds-tabline\" role=\"tablist\" aria-label=${this.label}>${this.options.map(norm).map((o) => html`<button type=\"button\" role=\"tab\" aria-selected=${String(this.value === o.value)} @click=${() => this.commit(o.value)}>${o.label}</button>`)}</div>`\n\t}\n}\n\ndefine('line-tabs', LineTabs)\n"
+        },
+        {
+          "path": "elements/components/ui/line-tabs.css",
+          "content": "/* LineTabs.vue's <style>, as it is. */\n.ds-tabline { display: flex; gap: var(--ds-space-2xl); border-bottom: var(--ds-border-hairline) solid var(--ds-color-edge); }\n.ds-tabline > button { position: relative; display: flex; height: var(--ds-size-control-lg); flex-shrink: 0; align-items: center; color: var(--ds-color-fg-muted); font-size: var(--ds-text-ui); cursor: pointer; transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-tabline > button:hover { color: var(--ds-color-fg); } }\n.ds-tabline > [aria-selected=\"true\"] { color: var(--ds-color-fg); }\n.ds-tabline > [aria-selected=\"true\"]::after { position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; background: var(--ds-color-surface-inverse); content: \"\"; }\n.ds-tabline > button::before { position: absolute; top: 50%; left: -10px; width: 4px; height: 4px; margin-top: -2px; background: var(--ds-color-edge-accent); opacity: 0; content: \"\"; transition: opacity var(--ds-duration-micro) ease-out; }\n.ds-tabline > [aria-selected=\"true\"]::before { opacity: 1; }\n@media (hover: hover) and (pointer: fine) { .ds-tabline > button:hover::before { opacity: 1; } }\n@media (pointer: coarse), (max-width: 767px) { .ds-tabline > button { min-height: 44px; } }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/tabs.js",
+        "elements/line-tabs.js"
+      ],
+      "tag": "conare-tabs",
+      "tags": [
+        "conare-tabs",
+        "conare-line-tabs"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-tabs",
+            "name": "Tabs",
+            "module": "elements/tabs.js",
+            "description": "A segmented control for a few views of one thing.",
+            "attributes": [
+              {
+                "name": "value",
+                "field": "value",
+                "type": "string",
+                "default": "''",
+                "description": "The picked option's value."
+              },
+              {
+                "name": "options",
+                "field": "options",
+                "type": "TabOption[]",
+                "default": "[]",
+                "description": "Strings, or { value, label, disabled } (a JSON attribute or the property)."
+              },
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string",
+                "default": "''",
+                "description": "The group's name for assistive tech."
+              }
+            ],
+            "properties": [
+              {
+                "name": "value",
+                "type": "string",
+                "default": "''",
+                "description": "The picked option's value.",
+                "attribute": "value"
+              },
+              {
+                "name": "options",
+                "type": "TabOption[]",
+                "default": "[]",
+                "description": "Strings, or { value, label, disabled } (a JSON attribute or the property).",
+                "attribute": "options"
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "default": "''",
+                "description": "The group's name for assistive tech.",
+                "attribute": "label"
+              }
+            ],
+            "events": [
+              {
+                "name": "input",
+                "description": "The pick changed (read `value`)."
+              },
+              {
+                "name": "change",
+                "description": "The pick changed (read `value`)."
+              }
+            ],
+            "slots": [],
+            "methods": []
+          },
+          {
+            "tag": "conare-line-tabs",
+            "name": "LineTabs",
+            "module": "elements/line-tabs.js",
+            "description": "Line tabs for a page's sections.",
+            "attributes": [
+              {
+                "name": "value",
+                "field": "value",
+                "type": "string",
+                "default": "''"
+              },
+              {
+                "name": "options",
+                "field": "options",
+                "type": "LineTabOption[]",
+                "default": "[]",
+                "description": "Strings, or { value, label } (a JSON attribute or the property)."
+              },
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string",
+                "default": "''"
+              }
+            ],
+            "properties": [
+              {
+                "name": "value",
+                "type": "string",
+                "default": "''",
+                "attribute": "value"
+              },
+              {
+                "name": "options",
+                "type": "LineTabOption[]",
+                "default": "[]",
+                "description": "Strings, or { value, label } (a JSON attribute or the property).",
+                "attribute": "options"
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "default": "''",
+                "attribute": "label"
+              }
+            ],
+            "events": [
+              {
+                "name": "input",
+                "description": "The pick changed (read `value`)."
+              },
+              {
+                "name": "change",
+                "description": "The pick changed (read `value`)."
+              }
+            ],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Line",
+          "label": "Line tabs",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/tabs/Line.html",
+          "content": "<!-- Line tabs for a page's sections, as a namespace has them. -->\n<conare-line-tabs value=\"Documents\" options='[\"Documents\", \"Settings\"]' label=\"namespace\"></conare-line-tabs>\n"
+        },
+        {
+          "name": "Product",
+          "label": "Segmented control",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/tabs/Product.html",
+          "content": "<!-- The segmented control, for a chart's view and its range: the white block glides to the pick. -->\n<div class=\"grid items-start gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8\">\n  <p class=\"type-meta leading-7 text-fg-muted\">Views of one thing</p>\n  <div><conare-tabs value=\"volume\" options='[{ \"value\": \"volume\", \"label\": \"Volume\" }, { \"value\": \"latency\", \"label\": \"Latency\" }]' label=\"chart view\"></conare-tabs></div>\n  <p class=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">A range</p>\n  <div><conare-tabs value=\"24h\" options='[\"1h\", \"24h\", \"7d\"]' label=\"range\"></conare-tabs></div>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

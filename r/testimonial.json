@@ -1,0 +1,206 @@
+{
+  "name": "testimonial",
+  "title": "Testimonial",
+  "type": "registry:ui",
+  "group": "site",
+  "description": "One customer's words in the website's double rule: the tag, the quote in Faculty Glyphic, centred and balanced, then who said it: the company's square initial, the role and the company.",
+  "use_for": "One quote on a home or product page, from a customer who agreed to it.",
+  "never": [
+    "An invented person: attribute a quote to a role at the company",
+    "A carousel of quotes",
+    "Stars or ratings"
+  ],
+  "source": "No equivalent in conare-web; set from the website's rules: the FAQ's double rule (Faq.vue), the section tag (Tag.vue), Faculty Glyphic for display text, the square avatar (AccountMenu.vue)",
+  "body": "",
+  "requires": [
+    "avatar",
+    "tag"
+  ],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/site/Testimonial.vue",
+      "content": "<script setup lang=\"ts\">\nimport Avatar from '@/components/ui/Avatar.vue'\nimport SiteTag from '@/components/ui/SiteTag.vue'\n\n// One customer's words, in the website's double rule (the FAQ's frame): the tag, the quote in Faculty Glyphic 24px\n// (32px from 640px) on 1.2 lines, balanced and centred in 880px, then who said it: the company's square initial, the\n// role in ink and the company muted. Attribute a quote to a role, never invent a person.\nwithDefaults(defineProps<{ quote: string, role: string, company: string, tag?: string }>(), { tag: 'Customers' })\n</script>\n\n<template>\n  <section data-ds=\"testimonial\" class=\"mx-auto max-w-[1440px] px-4 pb-24 sm:px-6 lg:px-10 lg:pb-32\">\n    <figure class=\"mx-auto flex max-w-[1200px] flex-col items-center border border-edge px-5 py-14 text-center outline outline-offset-4 outline-edge sm:px-10 sm:py-20\">\n      <p class=\"mb-8 flex\"><SiteTag>{{ tag }}</SiteTag></p>\n      <blockquote class=\"ds-quote max-w-[880px] font-heading text-heading-2 font-normal tracking-tight text-fg sm:text-heading-1\">{{ quote }}</blockquote>\n      <figcaption class=\"mt-10 flex items-center gap-3 text-left\">\n        <Avatar :name=\"company\" variant=\"solid\" initial :size=\"32\" />\n        <span class=\"flex flex-col\">\n          <span class=\"type-body text-fg\">{{ role }}</span>\n          <span class=\"type-meta text-fg-muted\">{{ company }}</span>\n        </span>\n      </figcaption>\n    </figure>\n  </section>\n</template>\n\n<style>\n.ds-quote { line-height: 1.2; text-wrap: balance; }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "One customer's words",
+      "center": false,
+      "half": false,
+      "path": "examples/testimonial/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport Testimonial from '@/components/site/Testimonial.vue'\n// One customer's words, attributed to a role at the company.\n</script>\n\n<template>\n  <Testimonial\n    quote=\"Our support agent answers from every ticket and policy we have, and when it is not sure, it says where it looked.\"\n    role=\"Head of support\"\n    company=\"Acme\"\n  />\n</template>\n",
+      "requires": [
+        "avatar",
+        "tag"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/site/Testimonial.tsx",
+          "content": "import { Avatar } from '@/react/components/ui/Avatar'\nimport { SiteTag } from '@/react/components/ui/SiteTag'\n\n// One customer's words, in the website's double rule (the FAQ's frame): the tag, the quote in Faculty Glyphic 24px\n// (32px from 640px) on 1.2 lines, balanced and centred in 880px, then who said it: the company's square initial, the\n// role in ink and the company muted. Attribute a quote to a role, never invent a person.\nexport interface TestimonialProps { quote: string, role: string, company: string, tag?: string }\n\nexport function Testimonial({ quote, role, company, tag = 'Customers' }: TestimonialProps) {\n  return (\n    <>\n      <style href=\"ds-testimonial\" precedence=\"ds\">{css}</style>\n      <section data-ds=\"testimonial\" className=\"mx-auto max-w-[1440px] px-4 pb-24 sm:px-6 lg:px-10 lg:pb-32\">\n        <figure className=\"mx-auto flex max-w-[1200px] flex-col items-center border border-edge px-5 py-14 text-center outline outline-offset-4 outline-edge sm:px-10 sm:py-20\">\n          <p className=\"mb-8 flex\"><SiteTag>{tag}</SiteTag></p>\n          <blockquote className=\"ds-quote max-w-[880px] font-heading text-heading-2 font-normal tracking-tight text-fg sm:text-heading-1\">{quote}</blockquote>\n          <figcaption className=\"mt-10 flex items-center gap-3 text-left\">\n            <Avatar name={company} variant=\"solid\" initial size={32} />\n            <span className=\"flex flex-col\">\n              <span className=\"type-body text-fg\">{role}</span>\n              <span className=\"type-meta text-fg-muted\">{company}</span>\n            </span>\n          </figcaption>\n        </figure>\n      </section>\n    </>\n  )\n}\n\nexport default Testimonial\n\nconst css = `\n.ds-quote { line-height: 1.2; text-wrap: balance; }\n`\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "avatar",
+        "tag"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "Testimonial",
+            "file": "react/components/site/Testimonial.tsx",
+            "props": [
+              {
+                "name": "quote",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "role",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "company",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "tag",
+                "type": "string",
+                "required": false,
+                "default": "'Customers'"
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "One customer's words",
+          "center": false,
+          "half": false,
+          "path": "react/examples/testimonial/Site.tsx",
+          "content": "import { Testimonial } from '@/react/components/site/Testimonial'\n// One customer's words, attributed to a role at the company.\nexport default function Site() {\n  return (\n    <Testimonial\n      quote=\"Our support agent answers from every ticket and policy we have, and when it is not sure, it says where it looked.\"\n      role=\"Head of support\"\n      company=\"Acme\"\n    />\n  )\n}\n",
+          "registryDependencies": [
+            "avatar",
+            "tag"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/site/testimonial.ts",
+          "content": "import { html } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport '@/elements/components/ui/avatar'\nimport '@/elements/components/ui/site-tag'\nimport styles from 'virtual:tw'\n\n// Testimonial.vue as <conare-testimonial>: one customer's words, in the website's double rule (the FAQ's frame): the\n// tag, the quote in Faculty Glyphic 24px (32px from 640px) on 1.2 lines, balanced and centred in 880px, then who said\n// it: the company's square initial, the role in ink and the company muted. Attribute a quote to a role, never invent\n// a person. `job-title` is Vue's `role`.\n\n/** @summary One customer's words, attributed to a role at the company. */\nexport class Testimonial extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { quote: {}, jobTitle: { attribute: 'job-title' }, company: {}, tag: {} }\n\n\tquote = ''\n\t/** Who said it: a role at the company (Vue's `role`; `role` is HTML's ARIA attribute). */\n\tjobTitle = ''\n\tcompany = ''\n\ttag = 'Customers'\n\n\trender() {\n\t\tconst siteTag = tag('site-tag')\n\t\tconst avatar = tag('avatar')\n\t\treturn html`<section data-ds=\"testimonial\" class=\"mx-auto max-w-[1440px] px-4 pb-24 sm:px-6 lg:px-10 lg:pb-32\"><figure class=\"mx-auto flex max-w-[1200px] flex-col items-center border border-edge px-5 py-14 text-center outline outline-offset-4 outline-edge sm:px-10 sm:py-20\"><p class=\"mb-8 flex\">${staticHtml`<${siteTag}>${this.tag}</${siteTag}>`}</p><blockquote class=\"ds-quote max-w-[880px] font-heading text-heading-2 font-normal tracking-tight text-fg sm:text-heading-1\">${this.quote}</blockquote><figcaption class=\"mt-10 flex items-center gap-3 text-left\">${staticHtml`<${avatar} name=${this.company} variant=\"solid\" initial size=\"32\"></${avatar}>`}<span class=\"flex flex-col\"><span class=\"type-body text-fg\">${this.jobTitle}</span><span class=\"type-meta text-fg-muted\">${this.company}</span></span></figcaption></figure></section>`\n\t}\n}\n\ndefine('testimonial', Testimonial)\n"
+        },
+        {
+          "path": "elements/components/site/testimonial.css",
+          "content": "/* Testimonial.vue's <style>, as it is. */\n.ds-quote { line-height: 1.2; text-wrap: balance; }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/testimonial.js",
+        "elements/avatar.js",
+        "elements/site-tag.js"
+      ],
+      "tag": "conare-testimonial",
+      "tags": [
+        "conare-testimonial"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "avatar",
+        "tag"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-testimonial",
+            "name": "Testimonial",
+            "module": "elements/testimonial.js",
+            "description": "One customer's words, attributed to a role at the company.",
+            "attributes": [
+              {
+                "name": "quote",
+                "field": "quote",
+                "type": "string",
+                "default": "''"
+              },
+              {
+                "name": "job-title",
+                "field": "jobTitle",
+                "type": "string",
+                "default": "''",
+                "description": "Who said it: a role at the company (Vue's `role`; `role` is HTML's ARIA attribute)."
+              },
+              {
+                "name": "company",
+                "field": "company",
+                "type": "string",
+                "default": "''"
+              },
+              {
+                "name": "tag",
+                "field": "tag",
+                "type": "string",
+                "default": "'Customers'"
+              }
+            ],
+            "properties": [
+              {
+                "name": "quote",
+                "type": "string",
+                "default": "''",
+                "attribute": "quote"
+              },
+              {
+                "name": "jobTitle",
+                "type": "string",
+                "default": "''",
+                "description": "Who said it: a role at the company (Vue's `role`; `role` is HTML's ARIA attribute).",
+                "attribute": "job-title"
+              },
+              {
+                "name": "company",
+                "type": "string",
+                "default": "''",
+                "attribute": "company"
+              },
+              {
+                "name": "tag",
+                "type": "string",
+                "default": "'Customers'",
+                "attribute": "tag"
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "One customer's words",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/testimonial/Site.html",
+          "content": "<!-- One customer's words, attributed to a role at the company. -->\n<conare-testimonial\n  quote=\"Our support agent answers from every ticket and policy we have, and when it is not sure, it says where it looked.\"\n  job-title=\"Head of support\"\n  company=\"Acme\"\n></conare-testimonial>\n"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,407 @@
+{
+  "name": "search-box",
+  "title": "Search box",
+  "type": "registry:ui",
+  "group": "product",
+  "description": "The search box and the library's input group: the question, attached files, the plus for more data, the scope, the Enter cue and the red arrow.",
+  "use_for": "Asking a question of the data; any field with controls before and after it (the input group).",
+  "never": [
+    "A single-line input for questions",
+    "A second submit button",
+    "Red on the box itself: the arrow is the only red"
+  ],
+  "source": "conare-web app/design-system/examples/field/Search.vue, app/assets/css/console2.css (.v2-searchbox, .v2-searchbox-bar, .v2-attach, .v2-addbtn)",
+  "body": "`v-model` is the question; Enter searches and Shift+Enter breaks the line. `attached` lists files (`adding`, `added`, `failed`) that the app owns: the box emits `files` when they are picked or dropped, `paste` with pasted text, `remove` with a key, `connect` for Connect an app, and `submit` with the question. The add menu names `target`; turn it off with `:add-menu=\"false\"`. The `scope` slot takes where it looks: the console's `scope-menu`. `busy` shows the dot matrix in the arrow while the search runs.",
+  "requires": [
+    "button",
+    "loader",
+    "menu"
+  ],
+  "dependencies": [
+    "lucide-vue-next@^0.479.0"
+  ],
+  "files": [
+    {
+      "path": "components/product/SearchBox.vue",
+      "content": "<script setup lang=\"ts\">\nimport { nextTick, ref, useId } from 'vue'\nimport { ArrowUp, Check, ClipboardType, CornerDownLeft, FileText, Image, Plug, Plus, X } from 'lucide-vue-next'\nimport Button from '@/components/ui/Button.vue'\nimport DotMatrix from '@/components/ui/DotMatrix.vue'\nimport Menu from '@/components/ui/Menu.vue'\nimport MenuItem from '@/components/ui/MenuItem.vue'\nimport MenuLabel from '@/components/ui/MenuLabel.vue'\nimport MenuSeparator from '@/components/ui/MenuSeparator.vue'\nimport PixelButton from '@/components/ui/PixelButton.vue'\n\n// The search box as Explorer has it (design-system field/Search, console2.css .v2-searchbox, .v2-attach), and the\n// library's input group: a field with controls before and after it. The question in a 14px textarea; the files\n// attached, each showing adding, then added (or failed); a bar with the plus for more data (files, photos and scans,\n// pasted text, an app), the `scope` slot for where it looks, the Enter cue and the red arrow, live once there is a\n// question. Enter searches, Shift+Enter breaks the line. Files can be dropped on it. The hairline turns ink while\n// anything inside has focus. It calls nothing: it emits `submit`, `files`, `paste`, `connect` and `remove`, and the app\n// owns `attached`.\nexport interface Attachment { key: string, name: string, state: 'adding' | 'added' | 'failed' }\nconst props = withDefaults(defineProps<{\n  attached?: Attachment[]\n  label?: string\n  placeholder?: string\n  /** Where added data goes, named in the add menu. */\n  target?: string\n  busy?: boolean\n  accept?: string\n  addMenu?: boolean\n}>(), { attached: () => [], label: 'question', placeholder: 'Ask a question your documents answer', target: 'uploads', accept: '.pdf,.docx,.pptx,.xlsx,.txt,.md,.csv,.json,.html', addMenu: true })\nconst question = defineModel<string>({ default: '' })\nconst emit = defineEmits<{ submit: [question: string], files: [files: File[]], paste: [text: string], connect: [], remove: [key: string] }>()\nconst id = useId()\n\nconst dragging = ref(false)\nfunction onDrop(event: DragEvent) {\n  dragging.value = false\n  const files = Array.from(event.dataTransfer?.files ?? [])\n  if (files.length) emit('files', files)\n}\nconst fileInput = ref<HTMLInputElement | null>(null)\nconst photoInput = ref<HTMLInputElement | null>(null)\nfunction onFiles(event: Event) {\n  const input = event.target as HTMLInputElement\n  const files = Array.from(input.files ?? [])\n  if (files.length) emit('files', files)\n  input.value = ''\n}\n\nconst pasting = ref(false)\nconst pasted = ref('')\nconst pasteArea = ref<HTMLTextAreaElement | null>(null)\nfunction startPaste() {\n  pasting.value = true\n  nextTick(() => pasteArea.value?.focus())\n}\nfunction addPasted() {\n  emit('paste', pasted.value.trim())\n  pasted.value = ''\n  pasting.value = false\n}\n\nfunction submit() {\n  if (!question.value.trim() || props.busy) return\n  emit('submit', question.value.trim())\n}\nfunction onKey(event: KeyboardEvent) {\n  if (event.key !== 'Enter' || event.shiftKey || event.isComposing) return\n  event.preventDefault()\n  submit()\n}\n</script>\n\n<template>\n  <form data-ds=\"search-box\" class=\"ds-searchbox w-full\" role=\"search\" :data-drag=\"dragging || undefined\" @submit.prevent=\"submit\" @dragover.prevent=\"dragging = true\" @dragleave.self=\"dragging = false\" @drop.prevent=\"onDrop\">\n    <label class=\"sr-only\" :for=\"`${id}-q`\">{{ label }}</label>\n    <textarea :id=\"`${id}-q`\" v-model=\"question\" rows=\"2\" :placeholder=\"dragging ? 'Drop files to add them' : placeholder\" @keydown=\"onKey\" />\n    <div v-if=\"pasting\" class=\"mx-3 mt-1 flex flex-col gap-2 border border-edge bg-surface-subtle p-2\">\n      <label class=\"sr-only\" :for=\"`${id}-paste`\">text to add</label>\n      <textarea :id=\"`${id}-paste`\" ref=\"pasteArea\" v-model=\"pasted\" rows=\"3\" class=\"w-full resize-none bg-transparent type-ui outline-none placeholder:text-fg-muted\" placeholder=\"Paste a note, an email or a policy\" @keydown.esc.stop=\"pasting = false\" />\n      <div class=\"flex justify-end gap-2\">\n        <Button variant=\"ghost\" @click=\"pasting = false\">Cancel</Button>\n        <PixelButton :disabled=\"!pasted.trim()\" @click=\"addPasted\">Add text</PixelButton>\n      </div>\n    </div>\n    <ul v-if=\"attached.length\" class=\"flex flex-wrap gap-2 px-3 pt-1\" aria-label=\"attached files\">\n      <li v-for=\"a in attached\" :key=\"a.key\" class=\"ds-attach\" :data-state=\"a.state\">\n        <DotMatrix v-if=\"a.state === 'adding'\" />\n        <X v-else-if=\"a.state === 'failed'\" :size=\"12\" :stroke-width=\"1.5\" aria-hidden=\"true\" />\n        <Check v-else :size=\"12\" :stroke-width=\"2\" aria-hidden=\"true\" />\n        <span class=\"max-w-50 truncate\">{{ a.name }}</span>\n        <span class=\"sr-only\">{{ a.state }}</span>\n        <button type=\"button\" class=\"ds-attach-x\" :aria-label=\"`remove ${a.name} from the list`\" @click=\"emit('remove', a.key)\"><X :size=\"12\" :stroke-width=\"1.5\" aria-hidden=\"true\" /></button>\n      </li>\n    </ul>\n    <div class=\"ds-searchbox-bar\">\n      <template v-if=\"addMenu\">\n        <input ref=\"fileInput\" type=\"file\" multiple class=\"sr-only\" tabindex=\"-1\" aria-hidden=\"true\" :accept=\"accept\" @change=\"onFiles\">\n        <input ref=\"photoInput\" type=\"file\" multiple class=\"sr-only\" tabindex=\"-1\" aria-hidden=\"true\" accept=\"image/png,image/jpeg,image/webp,image/tiff\" @change=\"onFiles\">\n        <Menu label=\"add data\" trigger-label=\"add data\" width=\"244px\" trigger-class=\"ds-addbtn\">\n          <template #trigger><Plus :size=\"14\" :stroke-width=\"1.5\" aria-hidden=\"true\" /></template>\n          <MenuLabel><span>Add to <span class=\"font-code\">{{ target }}</span></span></MenuLabel>\n          <MenuItem @select=\"fileInput?.click()\"><FileText :size=\"14\" :stroke-width=\"1.5\" class=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" /><span class=\"flex-1\">Files</span><span class=\"type-meta text-fg-muted\">PDF, Word, slides</span></MenuItem>\n          <MenuItem @select=\"photoInput?.click()\"><Image :size=\"14\" :stroke-width=\"1.5\" class=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" /><span class=\"flex-1\">Photos and scans</span></MenuItem>\n          <MenuItem @select=\"startPaste\"><ClipboardType :size=\"14\" :stroke-width=\"1.5\" class=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" /><span class=\"flex-1\">Paste text</span></MenuItem>\n          <MenuSeparator />\n          <MenuItem @select=\"emit('connect')\"><Plug :size=\"14\" :stroke-width=\"1.5\" class=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" /><span class=\"flex-1\">Connect an app</span></MenuItem>\n        </Menu>\n      </template>\n      <slot name=\"scope\" />\n      <span class=\"ml-auto hidden items-center gap-1 type-meta text-fg-muted sm:flex\"><CornerDownLeft :size=\"12\" :stroke-width=\"1.5\" aria-hidden=\"true\" />to search</span>\n      <Button type=\"submit\" variant=\"primary\" icon class=\"ml-auto sm:ml-0\" :disabled=\"!question.trim() || busy\" :aria-label=\"busy ? 'searching' : 'search'\">\n        <DotMatrix v-if=\"busy\" tone=\"inverse\" />\n        <ArrowUp v-else :size=\"14\" :stroke-width=\"1.5\" aria-hidden=\"true\" />\n      </Button>\n    </div>\n  </form>\n</template>\n\n<style>\n.ds-searchbox { border: var(--ds-border-hairline) solid var(--ds-color-edge-strong); background: var(--ds-color-surface); transition: border-color var(--ds-duration-micro) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-searchbox:focus-within, .ds-searchbox[data-drag] { border-color: var(--ds-color-edge-focus); }\n.ds-searchbox[data-drag] { background: var(--ds-color-surface-subtle); }\n.ds-searchbox > textarea { display: block; width: 100%; min-height: 56px; padding: 12px 12px 0; resize: none; background: transparent; color: var(--ds-color-fg); font-size: var(--ds-text-body); line-height: var(--ds-text-body-leading); outline: none; }\n.ds-searchbox textarea::placeholder { color: var(--ds-color-fg-muted); }\n.ds-searchbox-bar { display: flex; align-items: center; gap: var(--ds-space-md); padding: 8px; }\n.ds-addbtn { display: inline-flex; width: var(--ds-size-control-sm); height: var(--ds-size-control-sm); align-items: center; justify-content: center; border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface-subtle); color: var(--ds-color-fg); cursor: pointer; transition: border-color var(--ds-duration-micro) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-addbtn[aria-expanded=\"true\"] { border-color: var(--ds-color-edge-focus); background: var(--ds-color-surface); }\n@media (hover: hover) and (pointer: fine) { .ds-addbtn:hover { border-color: var(--ds-color-edge-focus); } }\n.ds-addbtn:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: 1px; }\n.ds-attach { display: inline-flex; height: 26px; align-items: center; gap: var(--ds-space-sm); padding: 0 2px 0 8px; border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface); font-size: var(--ds-text-meta); animation: ds-attach-in var(--ds-duration-enter) var(--ds-easing-out) both; }\n.ds-attach[data-state=\"added\"] > svg:first-child { color: var(--ds-color-fg); }\n.ds-attach[data-state=\"failed\"] { border-color: var(--ds-color-home-red-press); color: var(--ds-color-fg-danger); }\n.ds-attach-x { display: inline-flex; width: 20px; height: 20px; align-items: center; justify-content: center; color: var(--ds-color-fg-muted); cursor: pointer; transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-attach-x:hover { color: var(--ds-color-fg); } }\n@keyframes ds-attach-in { from { opacity: 0; transform: translateY(6px); } }\n@media (pointer: coarse), (max-width: 767px) {\n  .ds-addbtn { width: var(--ds-size-control-touch); height: var(--ds-size-control-touch); }\n  .ds-attach-x { position: relative; }\n  .ds-attach-x::after { position: absolute; inset: -10px; content: \"\"; }\n}\n@media (prefers-reduced-motion: reduce) { .ds-attach { animation-name: ds-attach-fade; } }\n@keyframes ds-attach-fade { from { opacity: 0; } }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "In the product",
+      "center": false,
+      "half": false,
+      "path": "examples/search-box/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { onBeforeUnmount, ref } from 'vue'\nimport ScopeMenu from '@/components/product/ScopeMenu.vue'\nimport SearchBox, { type Attachment } from '@/components/product/SearchBox.vue'\n// The search box as Explorer has it: the question, the files attached, the plus for more data, the scope, the Enter cue\n// and the arrow, red once there is a question. Files stay here: each shows adding, then added. The scope is the\n// console's scope menu, in the box's `scope` slot.\nconst text = ref('notice period to terminate a contract')\nconst scope = ref('')\nconst namespaces = [\n  { name: 'contracts', documents: 412830 },\n  { name: 'slack', documents: 96410 },\n  { name: 'crm', documents: 52660 },\n]\nconst attached = ref<Attachment[]>([{ key: 'msa', name: 'acme-msa.pdf', state: 'added' }])\nconst busy = ref(false)\nconst timers: Array<ReturnType<typeof setTimeout>> = []\nfunction attach(names: string[]) {\n  for (const name of names) {\n    const key = `${name}-${Date.now()}`\n    attached.value = [...attached.value, { key, name, state: 'adding' }]\n    timers.push(setTimeout(() => { attached.value = attached.value.map(a => (a.key === key ? { ...a, state: 'added' } : a)) }, 900))\n  }\n}\nfunction search() {\n  busy.value = true\n  timers.push(setTimeout(() => { busy.value = false }, 1200))\n}\nonBeforeUnmount(() => timers.forEach(clearTimeout))\n</script>\n\n<template>\n  <div class=\"h-90 w-full\">\n    <SearchBox\n      v-model=\"text\"\n      :attached=\"attached\"\n      :target=\"scope || 'uploads'\"\n      :busy=\"busy\"\n      @submit=\"search\"\n      @files=\"files => attach(files.map(f => f.name))\"\n      @paste=\"t => attach([`${t.split(/\\s+/).slice(0, 6).join(' ').slice(0, 60)}.txt`])\"\n      @remove=\"key => (attached = attached.filter(a => a.key !== key))\"\n    >\n      <template #scope>\n        <ScopeMenu v-model=\"scope\" :options=\"namespaces\" own-mark=\"/conare-ds/logo/svg/mark.svg\" />\n      </template>\n    </SearchBox>\n  </div>\n</template>\n",
+      "requires": [
+        "button",
+        "loader",
+        "menu",
+        "scope-menu"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/product/SearchBox.tsx",
+          "content": "'use client'\nimport { ArrowUp, Check, ClipboardType, CornerDownLeft, FileText, Image, Plug, Plus, X } from 'lucide-react'\nimport { useEffect, useId, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'\nimport { Button } from '@/react/components/ui/Button'\nimport { DotMatrix } from '@/react/components/ui/DotMatrix'\nimport { Menu } from '@/react/components/ui/Menu'\nimport { MenuItem } from '@/react/components/ui/MenuItem'\nimport { MenuLabel } from '@/react/components/ui/MenuLabel'\nimport { MenuSeparator } from '@/react/components/ui/MenuSeparator'\nimport { PixelButton } from '@/react/components/ui/PixelButton'\nimport { useControllable } from '@/react/hooks/useControllable'\n\n// The search box as Explorer has it (design-system field/Search, console2.css .v2-searchbox, .v2-attach), and the\n// library's input group: a field with controls before and after it. The question in a 14px textarea; the files\n// attached, each showing adding, then added (or failed); a bar with the plus for more data (files, photos and scans,\n// pasted text, an app), the `scope` node for where it looks, the Enter cue and the red arrow, live once there is a\n// question. Enter searches, Shift+Enter breaks the line. Files can be dropped on it. The hairline turns ink while\n// anything inside has focus. It calls nothing: it calls `onSubmit`, `onFiles`, `onPaste`, `onConnect` and `onRemove`,\n// and the app owns `attached`. The question is `value` / `defaultValue` / `onValueChange` (Vue's v-model).\nexport interface Attachment { key: string, name: string, state: 'adding' | 'added' | 'failed' }\n\nexport interface SearchBoxProps {\n  attached?: Attachment[]\n  label?: string\n  placeholder?: string\n  /** Where added data goes, named in the add menu. */\n  target?: string\n  busy?: boolean\n  accept?: string\n  addMenu?: boolean\n  value?: string\n  defaultValue?: string\n  onValueChange?: (value: string) => void\n  onSubmit?: (question: string) => void\n  onFiles?: (files: File[]) => void\n  onPaste?: (text: string) => void\n  onConnect?: () => void\n  onRemove?: (key: string) => void\n  /** Where it looks (Vue's `scope` slot), such as a ScopeMenu. */\n  scope?: ReactNode\n}\n\nconst NONE: Attachment[] = []\n\nexport function SearchBox({ attached = NONE, label = 'question', placeholder = 'Ask a question your documents answer', target = 'uploads', busy, accept = '.pdf,.docx,.pptx,.xlsx,.txt,.md,.csv,.json,.html', addMenu = true, value, defaultValue = '', onValueChange, onSubmit, onFiles, onPaste, onConnect, onRemove, scope }: SearchBoxProps) {\n  const [question, setQuestion] = useControllable(value, defaultValue, onValueChange)\n  const id = useId()\n\n  const [dragging, setDragging] = useState(false)\n  function onDrop(event: DragEvent) {\n    event.preventDefault()\n    setDragging(false)\n    const files = Array.from(event.dataTransfer?.files ?? [])\n    if (files.length) onFiles?.(files)\n  }\n  const fileInput = useRef<HTMLInputElement | null>(null)\n  const photoInput = useRef<HTMLInputElement | null>(null)\n  function pickFiles(event: ChangeEvent<HTMLInputElement>) {\n    const input = event.target\n    const files = Array.from(input.files ?? [])\n    if (files.length) onFiles?.(files)\n    input.value = ''\n  }\n\n  const [pasting, setPasting] = useState(false)\n  const [pasted, setPasted] = useState('')\n  const pasteArea = useRef<HTMLTextAreaElement | null>(null)\n  // Paste text opens the box, then focuses it once it is in the page (Vue's nextTick).\n  const focusPaste = useRef(false)\n  useEffect(() => {\n    if (!focusPaste.current || !pasting) return\n    focusPaste.current = false\n    pasteArea.current?.focus()\n  }, [pasting])\n  function startPaste() {\n    focusPaste.current = true\n    setPasting(true)\n  }\n  function addPasted() {\n    onPaste?.(pasted.trim())\n    setPasted('')\n    setPasting(false)\n  }\n\n  function submit(event?: FormEvent) {\n    event?.preventDefault()\n    if (!question.trim() || busy) return\n    onSubmit?.(question.trim())\n  }\n  function onKey(event: KeyboardEvent<HTMLTextAreaElement>) {\n    if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing) return\n    event.preventDefault()\n    submit()\n  }\n\n  return (\n    <form data-ds=\"search-box\" className=\"ds-searchbox w-full\" role=\"search\" data-drag={dragging || undefined} onSubmit={submit} onDragOver={(e) => { e.preventDefault(); setDragging(true) }} onDragLeave={(e) => { if (e.target === e.currentTarget) setDragging(false) }} onDrop={onDrop}>\n      <style href=\"ds-search-box\" precedence=\"ds\">{css}</style>\n      <label className=\"sr-only\" htmlFor={`${id}-q`}>{label}</label>\n      <textarea id={`${id}-q`} value={question} onChange={e => setQuestion(e.target.value)} rows={2} placeholder={dragging ? 'Drop files to add them' : placeholder} onKeyDown={onKey} />\n      {pasting && (\n        <div className=\"mx-3 mt-1 flex flex-col gap-2 border border-edge bg-surface-subtle p-2\">\n          <label className=\"sr-only\" htmlFor={`${id}-paste`}>text to add</label>\n          <textarea id={`${id}-paste`} ref={pasteArea} value={pasted} onChange={e => setPasted(e.target.value)} rows={3} className=\"w-full resize-none bg-transparent type-ui outline-none placeholder:text-fg-muted\" placeholder=\"Paste a note, an email or a policy\" onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); setPasting(false) } }} />\n          <div className=\"flex justify-end gap-2\">\n            <Button variant=\"ghost\" onClick={() => setPasting(false)}>Cancel</Button>\n            <PixelButton disabled={!pasted.trim()} onClick={addPasted}>Add text</PixelButton>\n          </div>\n        </div>\n      )}\n      {attached.length > 0 && (\n        <ul className=\"flex flex-wrap gap-2 px-3 pt-1\" aria-label=\"attached files\">\n          {attached.map(a => (\n            <li key={a.key} className=\"ds-attach\" data-state={a.state}>\n              {a.state === 'adding' ? <DotMatrix /> : a.state === 'failed' ? <X size={12} strokeWidth={1.5} aria-hidden=\"true\" /> : <Check size={12} strokeWidth={2} aria-hidden=\"true\" />}\n              <span className=\"max-w-50 truncate\">{a.name}</span>\n              <span className=\"sr-only\">{a.state}</span>\n              <button type=\"button\" className=\"ds-attach-x\" aria-label={`remove ${a.name} from the list`} onClick={() => onRemove?.(a.key)}><X size={12} strokeWidth={1.5} aria-hidden=\"true\" /></button>\n            </li>\n          ))}\n        </ul>\n      )}\n      <div className=\"ds-searchbox-bar\">\n        {addMenu && (\n          <>\n            <input ref={fileInput} type=\"file\" multiple className=\"sr-only\" tabIndex={-1} aria-hidden=\"true\" accept={accept} onChange={pickFiles} />\n            <input ref={photoInput} type=\"file\" multiple className=\"sr-only\" tabIndex={-1} aria-hidden=\"true\" accept=\"image/png,image/jpeg,image/webp,image/tiff\" onChange={pickFiles} />\n            <Menu label=\"add data\" triggerLabel=\"add data\" width=\"244px\" triggerClass=\"ds-addbtn\" trigger={<Plus size={14} strokeWidth={1.5} aria-hidden=\"true\" />}>\n              <MenuLabel><span>Add to <span className=\"font-code\">{target}</span></span></MenuLabel>\n              <MenuItem onSelect={() => fileInput.current?.click()}><FileText size={14} strokeWidth={1.5} className=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" /><span className=\"flex-1\">Files</span><span className=\"type-meta text-fg-muted\">PDF, Word, slides</span></MenuItem>\n              <MenuItem onSelect={() => photoInput.current?.click()}><Image size={14} strokeWidth={1.5} className=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" /><span className=\"flex-1\">Photos and scans</span></MenuItem>\n              <MenuItem onSelect={startPaste}><ClipboardType size={14} strokeWidth={1.5} className=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" /><span className=\"flex-1\">Paste text</span></MenuItem>\n              <MenuSeparator />\n              <MenuItem onSelect={() => onConnect?.()}><Plug size={14} strokeWidth={1.5} className=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" /><span className=\"flex-1\">Connect an app</span></MenuItem>\n            </Menu>\n          </>\n        )}\n        {scope}\n        <span className=\"ml-auto hidden items-center gap-1 type-meta text-fg-muted sm:flex\"><CornerDownLeft size={12} strokeWidth={1.5} aria-hidden=\"true\" />to search</span>\n        <Button type=\"submit\" variant=\"primary\" icon className=\"ml-auto sm:ml-0\" disabled={!question.trim() || busy} aria-label={busy ? 'searching' : 'search'}>\n          {busy ? <DotMatrix tone=\"inverse\" /> : <ArrowUp size={14} strokeWidth={1.5} aria-hidden=\"true\" />}\n        </Button>\n      </div>\n    </form>\n  )\n}\n\nexport default SearchBox\n\nconst css = `\n.ds-searchbox { border: var(--ds-border-hairline) solid var(--ds-color-edge-strong); background: var(--ds-color-surface); transition: border-color var(--ds-duration-micro) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-searchbox:focus-within, .ds-searchbox[data-drag] { border-color: var(--ds-color-edge-focus); }\n.ds-searchbox[data-drag] { background: var(--ds-color-surface-subtle); }\n.ds-searchbox > textarea { display: block; width: 100%; min-height: 56px; padding: 12px 12px 0; resize: none; background: transparent; color: var(--ds-color-fg); font-size: var(--ds-text-body); line-height: var(--ds-text-body-leading); outline: none; }\n.ds-searchbox textarea::placeholder { color: var(--ds-color-fg-muted); }\n.ds-searchbox-bar { display: flex; align-items: center; gap: var(--ds-space-md); padding: 8px; }\n.ds-addbtn { display: inline-flex; width: var(--ds-size-control-sm); height: var(--ds-size-control-sm); align-items: center; justify-content: center; border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface-subtle); color: var(--ds-color-fg); cursor: pointer; transition: border-color var(--ds-duration-micro) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-addbtn[aria-expanded=\"true\"] { border-color: var(--ds-color-edge-focus); background: var(--ds-color-surface); }\n@media (hover: hover) and (pointer: fine) { .ds-addbtn:hover { border-color: var(--ds-color-edge-focus); } }\n.ds-addbtn:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: 1px; }\n.ds-attach { display: inline-flex; height: 26px; align-items: center; gap: var(--ds-space-sm); padding: 0 2px 0 8px; border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface); font-size: var(--ds-text-meta); animation: ds-attach-in var(--ds-duration-enter) var(--ds-easing-out) both; }\n.ds-attach[data-state=\"added\"] > svg:first-child { color: var(--ds-color-fg); }\n.ds-attach[data-state=\"failed\"] { border-color: var(--ds-color-home-red-press); color: var(--ds-color-fg-danger); }\n.ds-attach-x { display: inline-flex; width: 20px; height: 20px; align-items: center; justify-content: center; color: var(--ds-color-fg-muted); cursor: pointer; transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-attach-x:hover { color: var(--ds-color-fg); } }\n@keyframes ds-attach-in { from { opacity: 0; transform: translateY(6px); } }\n@media (pointer: coarse), (max-width: 767px) {\n  .ds-addbtn { width: var(--ds-size-control-touch); height: var(--ds-size-control-touch); }\n  .ds-attach-x { position: relative; }\n  .ds-attach-x::after { position: absolute; inset: -10px; content: \"\"; }\n}\n@media (prefers-reduced-motion: reduce) { .ds-attach { animation-name: ds-attach-fade; } }\n@keyframes ds-attach-fade { from { opacity: 0; } }\n`\n"
+        },
+        {
+          "path": "react/hooks/useControllable.ts",
+          "content": "'use client'\nimport { useCallback, useRef, useState } from 'react'\n\n// Vue's defineModel in React: a value that is controlled when the caller passes it (value + onValueChange, as Radix\n// does) and kept inside otherwise (defaultValue). setValue calls onChange either way.\nexport function useControllable<T>(value: T | undefined, defaultValue: T, onChange?: (value: T) => void) {\n\tconst [inner, setInner] = useState<T>(defaultValue)\n\tconst controlled = value !== undefined\n\tconst current = controlled ? value : inner\n\tconst ref = useRef(onChange)\n\tref.current = onChange\n\tconst set = useCallback((next: T) => {\n\t\tif (!controlled) setInner(next)\n\t\tref.current?.(next)\n\t}, [controlled])\n\treturn [current, set] as const\n}\n"
+        }
+      ],
+      "dependencies": [
+        "lucide-react@0.479.0"
+      ],
+      "registryDependencies": [
+        "button",
+        "loader",
+        "menu"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "SearchBox",
+            "file": "react/components/product/SearchBox.tsx",
+            "props": [
+              {
+                "name": "attached",
+                "type": "Attachment[]",
+                "required": false,
+                "default": "NONE"
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "required": false,
+                "default": "'question'"
+              },
+              {
+                "name": "placeholder",
+                "type": "string",
+                "required": false,
+                "default": "'Ask a question your documents answer'"
+              },
+              {
+                "name": "target",
+                "type": "string",
+                "required": false,
+                "default": "'uploads'",
+                "description": "Where added data goes, named in the add menu."
+              },
+              {
+                "name": "busy",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "accept",
+                "type": "string",
+                "required": false,
+                "default": "'.pdf,.docx,.pptx,.xlsx,.txt,.md,.csv,.json,.html'"
+              },
+              {
+                "name": "addMenu",
+                "type": "boolean",
+                "required": false,
+                "default": "true"
+              },
+              {
+                "name": "value",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "defaultValue",
+                "type": "string",
+                "required": false,
+                "default": "''"
+              },
+              {
+                "name": "onValueChange",
+                "type": "(value: string) => void",
+                "required": false
+              },
+              {
+                "name": "onSubmit",
+                "type": "(question: string) => void",
+                "required": false
+              },
+              {
+                "name": "onFiles",
+                "type": "(files: File[]) => void",
+                "required": false
+              },
+              {
+                "name": "onPaste",
+                "type": "(text: string) => void",
+                "required": false
+              },
+              {
+                "name": "onConnect",
+                "type": "() => void",
+                "required": false
+              },
+              {
+                "name": "onRemove",
+                "type": "(key: string) => void",
+                "required": false
+              },
+              {
+                "name": "scope",
+                "type": "ReactNode",
+                "required": false,
+                "description": "Where it looks (Vue's `scope` slot), such as a ScopeMenu."
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "react/examples/search-box/Product.tsx",
+          "content": "'use client'\nimport { useEffect, useRef, useState } from 'react'\nimport { ScopeMenu } from '@/react/components/product/ScopeMenu'\nimport { SearchBox, type Attachment } from '@/react/components/product/SearchBox'\n// The search box as Explorer has it: the question, the files attached, the plus for more data, the scope, the Enter cue\n// and the arrow, red once there is a question. Files stay here: each shows adding, then added. The scope is the\n// console's scope menu, in the box's `scope` slot.\nconst namespaces = [\n  { name: 'contracts', documents: 412830 },\n  { name: 'slack', documents: 96410 },\n  { name: 'crm', documents: 52660 },\n]\n\nexport default function Product() {\n  const [text, setText] = useState('notice period to terminate a contract')\n  const [scope, setScope] = useState('')\n  const [attached, setAttached] = useState<Attachment[]>([{ key: 'msa', name: 'acme-msa.pdf', state: 'added' }])\n  const [busy, setBusy] = useState(false)\n  const timers = useRef<Array<ReturnType<typeof setTimeout>>>([])\n  useEffect(() => () => timers.current.forEach(clearTimeout), [])\n  function attach(names: string[]) {\n    for (const name of names) {\n      const key = `${name}-${Date.now()}`\n      setAttached(list => [...list, { key, name, state: 'adding' }])\n      timers.current.push(setTimeout(() => setAttached(list => list.map(a => (a.key === key ? { ...a, state: 'added' } : a))), 900))\n    }\n  }\n  function search() {\n    setBusy(true)\n    timers.current.push(setTimeout(() => setBusy(false), 1200))\n  }\n  return (\n    <div className=\"h-90 w-full\">\n      <SearchBox\n        value={text}\n        onValueChange={setText}\n        attached={attached}\n        target={scope || 'uploads'}\n        busy={busy}\n        onSubmit={search}\n        onFiles={files => attach(files.map(f => f.name))}\n        onPaste={t => attach([`${t.split(/\\s+/).slice(0, 6).join(' ').slice(0, 60)}.txt`])}\n        onRemove={key => setAttached(list => list.filter(a => a.key !== key))}\n        scope={<ScopeMenu value={scope} onValueChange={setScope} options={namespaces} ownMark=\"/conare-ds/logo/svg/mark.svg\" />}\n      />\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "button",
+            "loader",
+            "menu",
+            "scope-menu"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/product/search-box.ts",
+          "content": "import { nothing } from 'lit'\nimport { html } from 'lit/static-html.js'\nimport { live } from 'lit/directives/live.js'\nimport { repeat } from 'lit/directives/repeat.js'\nimport { ArrowUp, Check, ClipboardType, CornerDownLeft, FileText, Image, Plug, Plus, X } from 'lucide'\nimport { DsElement, define, tag, uid } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport '@/elements/components/ui/button'\nimport '@/elements/components/ui/dot-matrix'\nimport '@/elements/components/ui/menu'\nimport '@/elements/components/ui/menu-item'\nimport '@/elements/components/ui/menu-label'\nimport '@/elements/components/ui/menu-separator'\nimport '@/elements/components/ui/pixel-button'\nimport styles from 'virtual:tw'\n\n// SearchBox.vue as <conare-search-box>: the search box as Explorer has it (design-system field/Search, console2.css\n// .v2-searchbox, .v2-attach), and the library's input group: a field with controls before and after it. The question\n// in a 14px textarea; the files attached, each showing adding, then added (or failed); a bar with the plus for more\n// data (files, photos and scans, pasted text, an app), the `scope` slot for where it looks, the Enter cue and the red\n// arrow, live once there is a question. Enter searches, Shift+Enter breaks the line. Files can be dropped on it. The\n// hairline turns ink while anything inside has focus. It calls nothing: it fires `submit`, `files`, `paste`, `connect`\n// and `remove`, and the app owns `attached`. v-model is `value` with the textarea's own `input` events.\nexport interface Attachment { key: string, name: string, state: 'adding' | 'added' | 'failed' }\n\n/**\n * @summary The search box: the question, attached files, the add menu, the scope and the send arrow.\n * @slot scope - Where it looks (a <conare-scope-menu>).\n * @fires submit - Search; detail { question }.\n * @fires files - Files to add (picked or dropped); detail { files }.\n * @fires paste - Text to add; detail { text }.\n * @fires connect - Connect an app was chosen.\n * @fires remove - An attached file's cross; detail { key }.\n * @fires input - The question changed (read `value`).\n */\nexport class SearchBox extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = {\n\t\tvalue: {},\n\t\tattached: { type: Array },\n\t\tlabel: {},\n\t\tplaceholder: {},\n\t\ttarget: {},\n\t\tbusy: { type: Boolean },\n\t\taccept: {},\n\t\taddMenu: { attribute: 'add-menu', converter: { fromAttribute: (v: string | null) => v !== 'false' } },\n\t\tdragging: { state: true },\n\t\tpasting: { state: true },\n\t\tpasted: { state: true },\n\t}\n\n\t/** The question. */\n\tvalue = ''\n\t/** [{ key, name, state: adding, added or failed }]. */\n\tattached: Attachment[] = []\n\t/** The question's name. */\n\tlabel = 'question'\n\tplaceholder = 'Ask a question your documents answer'\n\t/** Where added data goes, named in the add menu. */\n\ttarget = 'uploads'\n\t/** A search is running: the arrow shows the dot matrix. */\n\tbusy = false\n\t/** The file types the Files row picks. */\n\taccept = '.pdf,.docx,.pptx,.xlsx,.txt,.md,.csv,.json,.html'\n\t/** The plus with the add menu; add-menu=\"false\" leaves it out. */\n\taddMenu = true\n\tprivate dragging = false\n\tprivate pasting = false\n\tprivate pasted = ''\n\tprivate uid = uid('searchbox')\n\n\tprivate onDrop(event: DragEvent) {\n\t\tevent.preventDefault()\n\t\tthis.dragging = false\n\t\tconst files = Array.from(event.dataTransfer?.files ?? [])\n\t\tif (files.length) this.emit('files', { files })\n\t}\n\tprivate onFiles(event: Event) {\n\t\tconst input = event.target as HTMLInputElement\n\t\tconst files = Array.from(input.files ?? [])\n\t\tif (files.length) this.emit('files', { files })\n\t\tinput.value = ''\n\t}\n\tprivate async startPaste() {\n\t\tthis.pasting = true\n\t\tawait this.updateComplete\n\t\tthis.renderRoot.querySelector<HTMLTextAreaElement>(`#${this.uid}-paste`)?.focus()\n\t}\n\tprivate addPasted() {\n\t\tthis.emit('paste', { text: this.pasted.trim() })\n\t\tthis.pasted = ''\n\t\tthis.pasting = false\n\t}\n\tprivate submit(event?: Event) {\n\t\tevent?.preventDefault()\n\t\tif (!this.value.trim() || this.busy) return\n\t\tthis.emit('submit', { question: this.value.trim() })\n\t}\n\tprivate onKey(event: KeyboardEvent) {\n\t\tif (event.key !== 'Enter' || event.shiftKey || event.isComposing) return\n\t\tevent.preventDefault()\n\t\tthis.submit()\n\t}\n\n\trender() {\n\t\tconst u = this.uid\n\t\tconst [button, dots, menu, item, menuLabel, separator, pixel] = ['button', 'dot-matrix', 'menu', 'menu-item', 'menu-label', 'menu-separator', 'pixel-button'].map(tag)\n\t\tconst files = () => this.renderRoot.querySelector<HTMLInputElement>('[data-files]')?.click()\n\t\tconst photos = () => this.renderRoot.querySelector<HTMLInputElement>('[data-photos]')?.click()\n\t\tconst glyph = (node: Parameters<typeof icon>[0], name: string) => icon(node, name, { size: 14, strokeWidth: 1.5, class: 'shrink-0 text-fg-muted', attrs: { 'aria-hidden': 'true' } })\n\t\treturn html`<form data-ds=\"search-box\" class=\"ds-searchbox w-full\" role=\"search\" data-drag=${this.dragging ? 'true' : nothing} @submit=${(e: Event) => this.submit(e)} @dragover=${(e: DragEvent) => { e.preventDefault(); this.dragging = true }} @dragleave=${(e: DragEvent) => { if (e.target === e.currentTarget) this.dragging = false }} @drop=${(e: DragEvent) => this.onDrop(e)}>\n\t\t\t<label class=\"sr-only\" for=${`${u}-q`}>${this.label}</label>\n\t\t\t<textarea id=${`${u}-q`} .value=${live(this.value)} rows=\"2\" placeholder=${this.dragging ? 'Drop files to add them' : this.placeholder} @input=${(e: Event) => { this.value = (e.target as HTMLTextAreaElement).value }} @keydown=${(e: KeyboardEvent) => this.onKey(e)}></textarea>\n\t\t\t${this.pasting\n\t\t\t\t? html`<div class=\"mx-3 mt-1 flex flex-col gap-2 border border-edge bg-surface-subtle p-2\">\n\t\t\t\t\t\t<label class=\"sr-only\" for=${`${u}-paste`}>text to add</label>\n\t\t\t\t\t\t<textarea id=${`${u}-paste`} .value=${live(this.pasted)} rows=\"3\" class=\"w-full resize-none bg-transparent type-ui outline-none placeholder:text-fg-muted\" placeholder=\"Paste a note, an email or a policy\" @input=${(e: Event) => { e.stopPropagation(); this.pasted = (e.target as HTMLTextAreaElement).value }} @keydown=${(e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); this.pasting = false } }}></textarea>\n\t\t\t\t\t\t<div class=\"flex justify-end gap-2\">\n\t\t\t\t\t\t\t<${button} variant=\"ghost\" @click=${() => { this.pasting = false }}>Cancel</${button}>\n\t\t\t\t\t\t\t<${pixel} ?disabled=${!this.pasted.trim()} @click=${() => this.addPasted()}>Add text</${pixel}>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>`\n\t\t\t\t: nothing}\n\t\t\t${this.attached?.length\n\t\t\t\t? html`<ul class=\"flex flex-wrap gap-2 px-3 pt-1\" aria-label=\"attached files\">${repeat(this.attached, (a) => a.key, (a) => html`<li class=\"ds-attach\" data-state=${a.state}>${a.state === 'adding' ? html`<${dots}></${dots}>` : a.state === 'failed' ? icon(X, 'x', { size: 12, strokeWidth: 1.5, attrs: { 'aria-hidden': 'true' } }) : icon(Check, 'check', { size: 12, strokeWidth: 2, attrs: { 'aria-hidden': 'true' } })}<span class=\"max-w-50 truncate\">${a.name}</span><span class=\"sr-only\">${a.state}</span><button type=\"button\" class=\"ds-attach-x\" aria-label=${`remove ${a.name} from the list`} @click=${() => this.emit('remove', { key: a.key })}>${icon(X, 'x', { size: 12, strokeWidth: 1.5, attrs: { 'aria-hidden': 'true' } })}</button></li>`)}</ul>`\n\t\t\t\t: nothing}\n\t\t\t<div class=\"ds-searchbox-bar\">\n\t\t\t\t${this.addMenu\n\t\t\t\t\t? html`<input data-files type=\"file\" multiple class=\"sr-only\" tabindex=\"-1\" aria-hidden=\"true\" accept=${this.accept} @change=${(e: Event) => this.onFiles(e)}>\n\t\t\t\t\t\t<input data-photos type=\"file\" multiple class=\"sr-only\" tabindex=\"-1\" aria-hidden=\"true\" accept=\"image/png,image/jpeg,image/webp,image/tiff\" @change=${(e: Event) => this.onFiles(e)}>\n\t\t\t\t\t\t<${menu} label=\"add data\" trigger-label=\"add data\" width=\"244px\">\n\t\t\t\t\t\t\t<button slot=\"trigger\" type=\"button\" class=\"ds-addbtn\">${icon(Plus, 'plus', { size: 14, strokeWidth: 1.5, attrs: { 'aria-hidden': 'true' } })}</button>\n\t\t\t\t\t\t\t<${menuLabel}><span>Add to <span class=\"font-code\">${this.target}</span></span></${menuLabel}>\n\t\t\t\t\t\t\t<${item} @select=${files}>${glyph(FileText, 'file-text')}<span class=\"flex-1\">Files</span><span class=\"type-meta text-fg-muted\">PDF, Word, slides</span></${item}>\n\t\t\t\t\t\t\t<${item} @select=${photos}>${glyph(Image, 'image')}<span class=\"flex-1\">Photos and scans</span></${item}>\n\t\t\t\t\t\t\t<${item} @select=${() => void this.startPaste()}>${glyph(ClipboardType, 'clipboard-type')}<span class=\"flex-1\">Paste text</span></${item}>\n\t\t\t\t\t\t\t<${separator}></${separator}>\n\t\t\t\t\t\t\t<${item} @select=${() => this.emit('connect')}>${glyph(Plug, 'plug')}<span class=\"flex-1\">Connect an app</span></${item}>\n\t\t\t\t\t\t</${menu}>`\n\t\t\t\t\t: nothing}\n\t\t\t\t<slot name=\"scope\"></slot>\n\t\t\t\t<span class=\"ml-auto hidden items-center gap-1 type-meta text-fg-muted sm:flex\">${icon(CornerDownLeft, 'corner-down-left', { size: 12, strokeWidth: 1.5, attrs: { 'aria-hidden': 'true' } })}to search</span>\n\t\t\t\t<${button} data-searchbox-send type=\"submit\" variant=\"primary\" icon ?disabled=${!this.value.trim() || this.busy} aria-label=${this.busy ? 'searching' : 'search'}>${this.busy ? html`<${dots} tone=\"inverse\"></${dots}>` : icon(ArrowUp, 'arrow-up', { size: 14, strokeWidth: 1.5, attrs: { 'aria-hidden': 'true' } })}</${button}>\n\t\t\t</div>\n\t\t</form>`\n\t}\n}\n\ndefine('search-box', SearchBox)\n"
+        },
+        {
+          "path": "elements/components/product/search-box.css",
+          "content": ".ds-searchbox { border: var(--ds-border-hairline) solid var(--ds-color-edge-strong); background: var(--ds-color-surface); transition: border-color var(--ds-duration-micro) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-searchbox:focus-within, .ds-searchbox[data-drag] { border-color: var(--ds-color-edge-focus); }\n.ds-searchbox[data-drag] { background: var(--ds-color-surface-subtle); }\n.ds-searchbox > textarea { display: block; width: 100%; min-height: 56px; padding: 12px 12px 0; resize: none; background: transparent; color: var(--ds-color-fg); font-size: var(--ds-text-body); line-height: var(--ds-text-body-leading); outline: none; }\n.ds-searchbox textarea::placeholder { color: var(--ds-color-fg-muted); }\n.ds-searchbox-bar { display: flex; align-items: center; gap: var(--ds-space-md); padding: 8px; }\n.ds-addbtn { display: inline-flex; width: var(--ds-size-control-sm); height: var(--ds-size-control-sm); align-items: center; justify-content: center; border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface-subtle); color: var(--ds-color-fg); cursor: pointer; transition: border-color var(--ds-duration-micro) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-addbtn[aria-expanded=\"true\"] { border-color: var(--ds-color-edge-focus); background: var(--ds-color-surface); }\n@media (hover: hover) and (pointer: fine) { .ds-addbtn:hover { border-color: var(--ds-color-edge-focus); } }\n.ds-addbtn:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: 1px; }\n.ds-attach { display: inline-flex; height: 26px; align-items: center; gap: var(--ds-space-sm); padding: 0 2px 0 8px; border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface); font-size: var(--ds-text-meta); animation: ds-attach-in var(--ds-duration-enter) var(--ds-easing-out) both; }\n.ds-attach[data-state=\"added\"] > svg:first-child { color: var(--ds-color-fg); }\n.ds-attach[data-state=\"failed\"] { border-color: var(--ds-color-home-red-press); color: var(--ds-color-fg-danger); }\n.ds-attach-x { display: inline-flex; width: 20px; height: 20px; align-items: center; justify-content: center; color: var(--ds-color-fg-muted); cursor: pointer; transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-attach-x:hover { color: var(--ds-color-fg); } }\n@keyframes ds-attach-in { from { opacity: 0; transform: translateY(6px); } }\n@media (pointer: coarse), (max-width: 767px) {\n  .ds-addbtn { width: var(--ds-size-control-touch); height: var(--ds-size-control-touch); }\n  .ds-attach-x { position: relative; }\n  .ds-attach-x::after { position: absolute; inset: -10px; content: \"\"; }\n}\n@media (prefers-reduced-motion: reduce) { .ds-attach { animation-name: ds-attach-fade; } }\n@keyframes ds-attach-fade { from { opacity: 0; } }\n/* The send button's `ml-auto sm:ml-0` (a class on Vue's Button root) lands on the box <conare-button> draws, its control\n   part. */\n[data-searchbox-send]::part(control) { margin-left: auto; }\n@media (width >= 40rem) { [data-searchbox-send]::part(control) { margin-left: 0; } }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/search-box.js",
+        "elements/button.js",
+        "elements/dot-matrix.js",
+        "elements/menu.js",
+        "elements/menu-item.js",
+        "elements/menu-label.js",
+        "elements/menu-separator.js",
+        "elements/pixel-button.js",
+        "elements/scope-menu.js"
+      ],
+      "tag": "conare-search-box",
+      "tags": [
+        "conare-search-box"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "button",
+        "loader",
+        "menu"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-search-box",
+            "name": "SearchBox",
+            "module": "elements/search-box.js",
+            "description": "The search box: the question, attached files, the add menu, the scope and the send arrow.",
+            "attributes": [
+              {
+                "name": "value",
+                "field": "value",
+                "type": "string",
+                "default": "''",
+                "description": "The question."
+              },
+              {
+                "name": "attached",
+                "field": "attached",
+                "type": "Attachment[]",
+                "default": "[]",
+                "description": "[{ key, name, state: adding, added or failed }]."
+              },
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string",
+                "default": "'question'",
+                "description": "The question's name."
+              },
+              {
+                "name": "placeholder",
+                "field": "placeholder",
+                "type": "string",
+                "default": "'Ask a question your documents answer'"
+              },
+              {
+                "name": "target",
+                "field": "target",
+                "type": "string",
+                "default": "'uploads'",
+                "description": "Where added data goes, named in the add menu."
+              },
+              {
+                "name": "busy",
+                "field": "busy",
+                "type": "boolean",
+                "default": "false",
+                "description": "A search is running: the arrow shows the dot matrix."
+              },
+              {
+                "name": "accept",
+                "field": "accept",
+                "type": "string",
+                "default": "'.pdf,.docx,.pptx,.xlsx,.txt,.md,.csv,.json,.html'",
+                "description": "The file types the Files row picks."
+              },
+              {
+                "name": "add-menu",
+                "field": "addMenu",
+                "type": "boolean",
+                "default": "true",
+                "description": "The plus with the add menu; add-menu=\"false\" leaves it out."
+              },
+              {
+                "name": "dragging",
+                "field": "dragging",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "pasting",
+                "field": "pasting",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "pasted",
+                "field": "pasted",
+                "type": "string",
+                "default": "''"
+              }
+            ],
+            "properties": [
+              {
+                "name": "value",
+                "type": "string",
+                "default": "''",
+                "description": "The question.",
+                "attribute": "value"
+              },
+              {
+                "name": "attached",
+                "type": "Attachment[]",
+                "default": "[]",
+                "description": "[{ key, name, state: adding, added or failed }].",
+                "attribute": "attached"
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "default": "'question'",
+                "description": "The question's name.",
+                "attribute": "label"
+              },
+              {
+                "name": "placeholder",
+                "type": "string",
+                "default": "'Ask a question your documents answer'",
+                "attribute": "placeholder"
+              },
+              {
+                "name": "target",
+                "type": "string",
+                "default": "'uploads'",
+                "description": "Where added data goes, named in the add menu.",
+                "attribute": "target"
+              },
+              {
+                "name": "busy",
+                "type": "boolean",
+                "default": "false",
+                "description": "A search is running: the arrow shows the dot matrix.",
+                "attribute": "busy"
+              },
+              {
+                "name": "accept",
+                "type": "string",
+                "default": "'.pdf,.docx,.pptx,.xlsx,.txt,.md,.csv,.json,.html'",
+                "description": "The file types the Files row picks.",
+                "attribute": "accept"
+              },
+              {
+                "name": "addMenu",
+                "type": "boolean",
+                "default": "true",
+                "description": "The plus with the add menu; add-menu=\"false\" leaves it out.",
+                "attribute": "add-menu"
+              }
+            ],
+            "events": [
+              {
+                "name": "submit",
+                "description": "Search; detail { question }."
+              },
+              {
+                "name": "files",
+                "description": "Files to add (picked or dropped); detail { files }."
+              },
+              {
+                "name": "paste",
+                "description": "Text to add; detail { text }."
+              },
+              {
+                "name": "connect",
+                "description": "Connect an app was chosen."
+              },
+              {
+                "name": "remove",
+                "description": "An attached file's cross; detail { key }."
+              },
+              {
+                "name": "input",
+                "description": "The question changed (read `value`)."
+              }
+            ],
+            "slots": [
+              {
+                "name": "scope",
+                "description": "Where it looks (a <conare-scope-menu>)."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/search-box/Product.html",
+          "content": "<!-- The search box as Explorer has it: the question, the files attached, the plus for more data, the scope, the Enter\n     cue and the arrow, red once there is a question. Files stay here: each shows adding, then added. The scope is the\n     console's scope menu, in the box's `scope` slot. -->\n<div class=\"h-90 w-full\">\n  <conare-search-box value=\"notice period to terminate a contract\" attached='[{ \"key\": \"msa\", \"name\": \"acme-msa.pdf\", \"state\": \"added\" }]'>\n    <conare-scope-menu slot=\"scope\" value=\"\" own-mark=\"/conare-ds/logo/svg/mark.svg\" namespaces='[\n      { \"name\": \"contracts\", \"documents\": 412830 },\n      { \"name\": \"slack\", \"documents\": 96410 },\n      { \"name\": \"crm\", \"documents\": 52660 }\n    ]'></conare-scope-menu>\n  </conare-search-box>\n</div>\n<script type=\"module\">\n  // The app owns the attached files and the busy state; the scope names where added data goes.\n  const box = document.querySelector('conare-search-box')\n  const scope = box.querySelector('conare-scope-menu')\n  scope.addEventListener('change', () => { box.target = scope.value || 'uploads' })\n  const attach = (names) => {\n    for (const name of names) {\n      const key = `${name}-${Date.now()}`\n      box.attached = [...box.attached, { key, name, state: 'adding' }]\n      setTimeout(() => { box.attached = box.attached.map((a) => (a.key === key ? { ...a, state: 'added' } : a)) }, 900)\n    }\n  }\n  box.addEventListener('submit', () => {\n    box.busy = true\n    setTimeout(() => { box.busy = false }, 1200)\n  })\n  box.addEventListener('files', (e) => attach(e.detail.files.map((f) => f.name)))\n  box.addEventListener('paste', (e) => attach([`${e.detail.text.split(/\\s+/).slice(0, 6).join(' ').slice(0, 60)}.txt`]))\n  box.addEventListener('remove', (e) => { box.attached = box.attached.filter((a) => a.key !== e.detail.key) })\n</script>\n"
+        }
+      ]
+    }
+  }
+}

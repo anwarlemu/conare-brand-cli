@@ -1,0 +1,220 @@
+{
+  "name": "avatar",
+  "title": "Avatar",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "Who or what something belongs to, always square: the workspace switcher's 20px hairline tile with an initial, and the account's black square that stands in for a profile picture. A picture crops square and falls back to the initial.",
+  "use_for": "Organizations in the switcher, the account at the sidebar's foot, a member in a list.",
+  "never": [
+    "A round avatar: Conare has no round shapes",
+    "Colored backgrounds per person",
+    "A picture with no name for screen readers"
+  ],
+  "source": "conare-web app/assets/css/console2.css (.v2-tile), app/components/console/WorkspaceMenu.vue, AccountMenu.vue",
+  "body": "",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Avatar.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed, ref } from 'vue'\n\n// Who or what something belongs to, always square (never round). `tile` (console2.css .v2-tile, the workspace\n// switcher's organization): a 20px hairline box with the name's initial, 11px medium. `solid` (AccountMenu.vue): the\n// black square that stands in for a profile picture; with `initial` it carries the letter in off-white. A `src` shows a\n// picture cropped square, falling back to the initial if it fails. Sizes follow the controls: 20 (in a row), 28, 32.\nconst props = withDefaults(defineProps<{ name?: string, src?: string, variant?: 'tile' | 'solid', size?: 20 | 28 | 32, initial?: boolean }>(), { variant: 'tile', size: 20 })\nconst failed = ref(false)\nconst letter = computed(() => (props.name?.trim()[0] ?? '').toUpperCase())\nconst showLetter = computed(() => props.variant === 'tile' || props.initial)\nconst SIZES = { 20: 'size-5 text-caption', 28: 'size-7 text-meta', 32: 'size-8 text-ui' }\n</script>\n\n<template>\n  <span data-ds=\"avatar\"\n    class=\"inline-flex shrink-0 items-center justify-center overflow-hidden leading-none font-medium select-none\"\n    :class=\"[SIZES[size], variant === 'tile' ? 'border border-edge bg-surface text-fg' : 'bg-off-black text-off-white']\"\n    :role=\"name ? 'img' : undefined\"\n    :aria-label=\"name\"\n    :aria-hidden=\"name ? undefined : 'true'\"\n  >\n    <img v-if=\"src && !failed\" :src=\"src\" alt=\"\" class=\"size-full object-cover\" @error=\"failed = true\">\n    <template v-else-if=\"showLetter\">{{ letter }}</template>\n  </span>\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "In the product",
+      "center": false,
+      "half": false,
+      "path": "examples/avatar/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ChevronsUpDown } from 'lucide-vue-next'\nimport Avatar from '@/components/ui/Avatar.vue'\n// The organization tile in the switcher, the account's black square at the sidebar's foot, and the three sizes.\nconst orgs = ['Acme', 'Acme Labs', 'Globex']\n</script>\n\n<template>\n  <div class=\"flex flex-col gap-6\">\n    <ul class=\"flex w-full max-w-60 flex-col border border-edge p-1\">\n      <li v-for=\"o in orgs\" :key=\"o\" class=\"flex h-8 items-center gap-2 px-2 type-ui\"><Avatar :name=\"o\" />{{ o }}</li>\n    </ul>\n    <div class=\"flex h-10 w-full max-w-60 items-center gap-2 border border-edge px-2 type-ui\">\n      <Avatar variant=\"solid\" />\n      <span class=\"min-w-0 flex-1 truncate\">team@acme.com</span>\n      <ChevronsUpDown :size=\"14\" :stroke-width=\"1.5\" class=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />\n    </div>\n    <div class=\"flex items-center gap-3\">\n      <Avatar name=\"Acme\" :size=\"20\" />\n      <Avatar name=\"Acme\" :size=\"28\" />\n      <Avatar name=\"Acme\" :size=\"32\" />\n      <Avatar name=\"Acme\" variant=\"solid\" initial :size=\"32\" />\n    </div>\n  </div>\n</template>\n",
+      "requires": [],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Avatar.tsx",
+          "content": "'use client'\nimport { useState, type HTMLAttributes } from 'react'\nimport { cn } from '@/react/lib/cn'\n\n// Who or what something belongs to, always square (never round). `tile` (console2.css .v2-tile, the workspace\n// switcher's organization): a 20px hairline box with the name's initial, 11px medium. `solid` (AccountMenu.vue): the\n// black square that stands in for a profile picture; with `initial` it carries the letter in off-white. A `src` shows a\n// picture cropped square, falling back to the initial if it fails. Sizes follow the controls: 20 (in a row), 28, 32.\nexport interface AvatarProps extends Omit<HTMLAttributes<HTMLSpanElement>, 'children'> {\n  name?: string\n  src?: string\n  variant?: 'tile' | 'solid'\n  size?: 20 | 28 | 32\n  initial?: boolean\n}\n\nconst SIZES = { 20: 'size-5 text-caption', 28: 'size-7 text-meta', 32: 'size-8 text-ui' }\n\nexport function Avatar({ name, src, variant = 'tile', size = 20, initial, className, ...rest }: AvatarProps) {\n  const [failed, setFailed] = useState(false)\n  const letter = (name?.trim()[0] ?? '').toUpperCase()\n  const showLetter = variant === 'tile' || initial\n  return (\n    <span\n      data-ds=\"avatar\"\n      className={cn('inline-flex shrink-0 items-center justify-center overflow-hidden leading-none font-medium select-none', SIZES[size], variant === 'tile' ? 'border border-edge bg-surface text-fg' : 'bg-off-black text-off-white', className)}\n      role={name ? 'img' : undefined}\n      aria-label={name}\n      aria-hidden={name ? undefined : 'true'}\n      {...rest}\n    >\n      {src && !failed ? <img src={src} alt=\"\" className=\"size-full object-cover\" onError={() => setFailed(true)} /> : showLetter ? letter : null}\n    </span>\n  )\n}\n\nexport default Avatar\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "Avatar",
+            "file": "react/components/ui/Avatar.tsx",
+            "props": [
+              {
+                "name": "name",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "src",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "variant",
+                "type": "'tile' | 'solid'",
+                "required": false,
+                "default": "'tile'"
+              },
+              {
+                "name": "size",
+                "type": "20 | 28 | 32",
+                "required": false,
+                "default": "20"
+              },
+              {
+                "name": "initial",
+                "type": "boolean",
+                "required": false
+              }
+            ],
+            "extends": [
+              "Omit<HTMLAttributes<HTMLSpanElement>, 'children'>"
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "react/examples/avatar/Product.tsx",
+          "content": "import { ChevronsUpDown } from 'lucide-react'\nimport { Avatar } from '@/react/components/ui/Avatar'\n// The organization tile in the switcher, the account's black square at the sidebar's foot, and the three sizes.\nconst orgs = ['Acme', 'Acme Labs', 'Globex']\n\nexport default function Product() {\n  return (\n    <div className=\"flex flex-col gap-6\">\n      <ul className=\"flex w-full max-w-60 flex-col border border-edge p-1\">\n        {orgs.map(o => <li key={o} className=\"flex h-8 items-center gap-2 px-2 type-ui\"><Avatar name={o} />{o}</li>)}\n      </ul>\n      <div className=\"flex h-10 w-full max-w-60 items-center gap-2 border border-edge px-2 type-ui\">\n        <Avatar variant=\"solid\" />\n        <span className=\"min-w-0 flex-1 truncate\">team@acme.com</span>\n        <ChevronsUpDown size={14} strokeWidth={1.5} className=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />\n      </div>\n      <div className=\"flex items-center gap-3\">\n        <Avatar name=\"Acme\" size={20} />\n        <Avatar name=\"Acme\" size={28} />\n        <Avatar name=\"Acme\" size={32} />\n        <Avatar name=\"Acme\" variant=\"solid\" initial size={32} />\n      </div>\n    </div>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/avatar.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// Avatar.vue as <conare-avatar>: who or what something belongs to, always square (never round). `tile` (console2.css\n// .v2-tile, the workspace switcher's organization): a 20px hairline box with the name's initial, 11px medium. `solid`\n// (AccountMenu.vue): the black square that stands in for a profile picture; with `initial` it carries the letter in\n// off-white. A `src` shows a picture cropped square, falling back to the initial if it fails. Sizes follow the\n// controls: 20 (in a row), 28, 32.\nconst SIZES = { 20: 'size-5 text-caption', 28: 'size-7 text-meta', 32: 'size-8 text-ui' }\n\n/**\n * @summary Who or what something belongs to, always square.\n */\nexport class Avatar extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { name: {}, src: {}, variant: {}, size: { type: Number }, initial: { type: Boolean }, failed: { state: true } }\n\n\t/** Whose it is: its initial, and the name for assistive tech. */\n\tname?: string\n\t/** A picture, cropped square. */\n\tsrc?: string\n\tvariant: 'tile' | 'solid' = 'tile'\n\tsize: 20 | 28 | 32 = 20\n\t/** On `solid`, the letter in off-white. */\n\tinitial = false\n\tprivate failed = false\n\n\trender() {\n\t\tconst letter = (this.name?.trim()[0] ?? '').toUpperCase()\n\t\tconst showLetter = this.variant === 'tile' || this.initial\n\t\tconst classes = ['inline-flex shrink-0 items-center justify-center overflow-hidden leading-none font-medium select-none', SIZES[this.size] ?? SIZES[20], this.variant === 'tile' ? 'border border-edge bg-surface text-fg' : 'bg-off-black text-off-white'].join(' ')\n\t\treturn html`<span data-ds=\"avatar\" class=${classes} role=${ifDefined(this.name ? 'img' : undefined)} aria-label=${ifDefined(this.name)} aria-hidden=${ifDefined(this.name ? undefined : 'true')}>${this.src && !this.failed ? html`<img src=${this.src} alt=\"\" class=\"size-full object-cover\" @error=${() => { this.failed = true }}>` : showLetter ? letter : nothing}</span>`\n\t}\n}\n\ndefine('avatar', Avatar)\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/avatar.js"
+      ],
+      "tag": "conare-avatar",
+      "tags": [
+        "conare-avatar"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-avatar",
+            "name": "Avatar",
+            "module": "elements/avatar.js",
+            "description": "Who or what something belongs to, always square.",
+            "attributes": [
+              {
+                "name": "name",
+                "field": "name",
+                "type": "string | undefined",
+                "description": "Whose it is: its initial, and the name for assistive tech."
+              },
+              {
+                "name": "src",
+                "field": "src",
+                "type": "string | undefined",
+                "description": "A picture, cropped square."
+              },
+              {
+                "name": "variant",
+                "field": "variant",
+                "type": "\"tile\" | \"solid\"",
+                "default": "'tile'"
+              },
+              {
+                "name": "size",
+                "field": "size",
+                "type": "20 | 28 | 32",
+                "default": "20"
+              },
+              {
+                "name": "initial",
+                "field": "initial",
+                "type": "boolean",
+                "default": "false",
+                "description": "On `solid`, the letter in off-white."
+              },
+              {
+                "name": "failed",
+                "field": "failed",
+                "type": "boolean",
+                "default": "false"
+              }
+            ],
+            "properties": [
+              {
+                "name": "name",
+                "type": "string | undefined",
+                "description": "Whose it is: its initial, and the name for assistive tech.",
+                "attribute": "name"
+              },
+              {
+                "name": "src",
+                "type": "string | undefined",
+                "description": "A picture, cropped square.",
+                "attribute": "src"
+              },
+              {
+                "name": "variant",
+                "type": "\"tile\" | \"solid\"",
+                "default": "'tile'",
+                "attribute": "variant"
+              },
+              {
+                "name": "size",
+                "type": "20 | 28 | 32",
+                "default": "20",
+                "attribute": "size"
+              },
+              {
+                "name": "initial",
+                "type": "boolean",
+                "default": "false",
+                "description": "On `solid`, the letter in off-white.",
+                "attribute": "initial"
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/avatar/Product.html",
+          "content": "<!-- The organization tile in the switcher, the account's black square at the sidebar's foot, and the three sizes. -->\n<div class=\"flex flex-col gap-6\">\n  <ul class=\"flex w-full max-w-60 flex-col border border-edge p-1\">\n    <li class=\"flex h-8 items-center gap-2 px-2 type-ui\"><conare-avatar name=\"Acme\"></conare-avatar>Acme</li>\n    <li class=\"flex h-8 items-center gap-2 px-2 type-ui\"><conare-avatar name=\"Acme Labs\"></conare-avatar>Acme Labs</li>\n    <li class=\"flex h-8 items-center gap-2 px-2 type-ui\"><conare-avatar name=\"Globex\"></conare-avatar>Globex</li>\n  </ul>\n  <div class=\"flex h-10 w-full max-w-60 items-center gap-2 border border-edge px-2 type-ui\">\n    <conare-avatar variant=\"solid\"></conare-avatar>\n    <span class=\"min-w-0 flex-1 truncate\">team@acme.com</span>\n    <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-chevrons-up-down shrink-0 text-fg-muted\" aria-hidden=\"true\"><path d=\"m7 15 5 5 5-5\"></path><path d=\"m7 9 5-5 5 5\"></path></svg>\n  </div>\n  <div class=\"flex items-center gap-3\">\n    <conare-avatar name=\"Acme\" size=\"20\"></conare-avatar>\n    <conare-avatar name=\"Acme\" size=\"28\"></conare-avatar>\n    <conare-avatar name=\"Acme\" size=\"32\"></conare-avatar>\n    <conare-avatar name=\"Acme\" variant=\"solid\" initial size=\"32\"></conare-avatar>\n  </div>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,282 @@
+{
+  "name": "native-select",
+  "title": "Native select",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "The browser's own select drawn as the console's field: square, the hairline that darkens on hover and turns to a 2px ink edge on focus, and its own 12px chevron.",
+  "use_for": "A pick from a short, fixed list inside a form: a role, an expiry, a namespace. The system picker opens on phones.",
+  "never": [
+    "A list that needs a filter or marks (use Menu or the scope menu)",
+    "Options that do something at once (use Menu)"
+  ],
+  "source": "conare-web app/assets/css/main.css (select.c-input, .c-input-sm), console2.css (.cv2 .c-input: square, 32px)",
+  "body": "Options go in the slot. `small` is the 28px, 12px size for rows of filters; `mono` sets the options in Geist Mono for namespaces and IDs; `invalid` turns the edge red. The chevron is Lucide's ChevronDown at 12px in the muted grey, in place of the branch's inline image, so its colour follows the theme. 40px and 16px on phones.",
+  "requires": [],
+  "dependencies": [
+    "lucide-vue-next@^0.479.0"
+  ],
+  "files": [
+    {
+      "path": "components/ui/NativeSelect.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ChevronDown } from 'lucide-vue-next'\n\n// The browser's own select, drawn as the console's field (main.css select.c-input, square under the console): 32px (28px\n// with `small`), 13px, the #C3C1BF hairline that darkens on hover and turns to a 2px ink edge on focus, and its own 12px\n// chevron in the muted grey, the same in every browser. 40px and 16px on phones, where the system picker opens. Options\n// go in the slot as <option>s. For a pick with search or marks, use Menu.\ndefineOptions({ inheritAttrs: false })\nconst model = defineModel<string | number>()\ndefineProps<{ small?: boolean, invalid?: boolean, mono?: boolean }>()\n</script>\n\n<template>\n  <span data-ds=\"native-select\" class=\"ds-select\" :data-small=\"small || undefined\" :class=\"$attrs.class\">\n    <select v-model=\"model\" v-bind=\"{ ...$attrs, class: undefined }\" :aria-invalid=\"invalid || undefined\" :class=\"mono && 'font-code'\"><slot /></select>\n    <ChevronDown :size=\"12\" :stroke-width=\"2\" aria-hidden=\"true\" />\n  </span>\n</template>\n\n<style>\n.ds-select { position: relative; display: inline-flex; width: 100%; align-items: center; }\n.ds-select > select { width: 100%; height: var(--ds-size-control-md); padding: 0 32px 0 12px; border: var(--ds-border-hairline) solid var(--ds-color-edge-strong); background: var(--ds-color-surface); color: var(--ds-color-fg); font-size: var(--ds-text-ui); line-height: var(--ds-text-ui-leading); appearance: none; cursor: pointer; transition: border-color var(--ds-duration-enter) var(--ds-easing-standard); }\n.ds-select > svg { position: absolute; right: 12px; color: var(--ds-color-fg-muted); pointer-events: none; }\n@media (hover: hover) and (pointer: fine) { .ds-select > select:hover:not(:disabled, :focus) { border-color: var(--ds-color-neutral-500); } }\n.ds-select > select:focus { padding: 0 calc(32px - 1px) 0 calc(12px - 1px); border: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline: none; }\n.ds-select > select[aria-invalid=\"true\"] { border-color: var(--ds-color-action-danger); }\n.ds-select > select:disabled { border-color: var(--ds-color-edge); color: var(--ds-color-fg-muted); cursor: not-allowed; }\n.ds-select[data-small] { width: auto; }\n.ds-select[data-small] > select { height: var(--ds-size-control-sm); padding: 0 28px 0 8px; font-size: var(--ds-text-meta); }\n.ds-select[data-small] > select:focus { padding: 0 calc(28px - 1px) 0 calc(8px - 1px); }\n.ds-select[data-small] > svg { right: 8px; }\n@media (pointer: coarse), (max-width: 767px) { .ds-select > select, .ds-select[data-small] > select { height: var(--ds-size-control-touch); font-size: var(--ds-text-input); } }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "In the product",
+      "center": false,
+      "half": false,
+      "path": "examples/native-select/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport Field from '@/components/ui/Field.vue'\nimport NativeSelect from '@/components/ui/NativeSelect.vue'\n// A member's role, a namespace in mono, and the small size in a row of filters.\nconst role = ref('member')\nconst ns = ref('contracts')\nconst range = ref('7d')\n</script>\n\n<template>\n  <div class=\"flex w-90 max-w-full flex-col gap-4\">\n    <Field v-slot=\"{ id }\" label=\"Role\">\n      <NativeSelect :id=\"id\" v-model=\"role\"><option value=\"admin\">Admin</option><option value=\"member\">Member</option><option value=\"viewer\">Viewer</option></NativeSelect>\n    </Field>\n    <Field v-slot=\"{ id }\" label=\"Namespace\">\n      <NativeSelect :id=\"id\" v-model=\"ns\" mono><option>contracts</option><option>slack</option><option>sec-filings</option></NativeSelect>\n    </Field>\n    <div class=\"flex items-center gap-2\">\n      <span class=\"type-meta text-fg-muted\">Range</span>\n      <NativeSelect v-model=\"range\" small aria-label=\"range\"><option value=\"24h\">Last 24 hours</option><option value=\"7d\">Last 7 days</option><option value=\"30d\">Last 30 days</option></NativeSelect>\n    </div>\n  </div>\n</template>\n",
+      "requires": [
+        "field"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/NativeSelect.tsx",
+          "content": "import type { Ref, SelectHTMLAttributes } from 'react'\nimport { ChevronDown } from 'lucide-react'\nimport { cn } from '@/react/lib/cn'\n\n// The browser's own select, drawn as the console's field (main.css select.c-input, square under the console): 32px (28px\n// with `small`), 13px, the #C3C1BF hairline that darkens on hover and turns to a 2px ink edge on focus, and its own 12px\n// chevron in the muted grey, the same in every browser. 40px and 16px on phones, where the system picker opens. Options\n// go in as <option> children. For a pick with search or marks, use Menu. `className` lands on the wrapper, every other\n// prop on the <select> (value and onChange as React's own), as Vue's attributes do.\nexport interface NativeSelectProps extends SelectHTMLAttributes<HTMLSelectElement> {\n  small?: boolean\n  invalid?: boolean\n  mono?: boolean\n  ref?: Ref<HTMLSelectElement>\n}\n\nexport function NativeSelect({ small, invalid, mono, className, children, ...rest }: NativeSelectProps) {\n  return (\n    <>\n      <style href=\"ds-native-select\" precedence=\"ds\">{css}</style>\n      <span data-ds=\"native-select\" className={cn('ds-select', className)} data-small={small || undefined}>\n        <select {...rest} aria-invalid={invalid || undefined} className={mono ? 'font-code' : undefined}>{children}</select>\n        <ChevronDown size={12} strokeWidth={2} aria-hidden=\"true\" />\n      </span>\n    </>\n  )\n}\n\nexport default NativeSelect\n\nconst css = `\n.ds-select { position: relative; display: inline-flex; width: 100%; align-items: center; }\n.ds-select > select { width: 100%; height: var(--ds-size-control-md); padding: 0 32px 0 12px; border: var(--ds-border-hairline) solid var(--ds-color-edge-strong); background: var(--ds-color-surface); color: var(--ds-color-fg); font-size: var(--ds-text-ui); line-height: var(--ds-text-ui-leading); appearance: none; cursor: pointer; transition: border-color var(--ds-duration-enter) var(--ds-easing-standard); }\n.ds-select > svg { position: absolute; right: 12px; color: var(--ds-color-fg-muted); pointer-events: none; }\n@media (hover: hover) and (pointer: fine) { .ds-select > select:hover:not(:disabled, :focus) { border-color: var(--ds-color-neutral-500); } }\n.ds-select > select:focus { padding: 0 calc(32px - 1px) 0 calc(12px - 1px); border: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline: none; }\n.ds-select > select[aria-invalid=\"true\"] { border-color: var(--ds-color-action-danger); }\n.ds-select > select:disabled { border-color: var(--ds-color-edge); color: var(--ds-color-fg-muted); cursor: not-allowed; }\n.ds-select[data-small] { width: auto; }\n.ds-select[data-small] > select { height: var(--ds-size-control-sm); padding: 0 28px 0 8px; font-size: var(--ds-text-meta); }\n.ds-select[data-small] > select:focus { padding: 0 calc(28px - 1px) 0 calc(8px - 1px); }\n.ds-select[data-small] > svg { right: 8px; }\n@media (pointer: coarse), (max-width: 767px) { .ds-select > select, .ds-select[data-small] > select { height: var(--ds-size-control-touch); font-size: var(--ds-text-input); } }\n`\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [
+        "lucide-react@0.479.0"
+      ],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "NativeSelect",
+            "file": "react/components/ui/NativeSelect.tsx",
+            "props": [
+              {
+                "name": "small",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "invalid",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "mono",
+                "type": "boolean",
+                "required": false
+              }
+            ],
+            "extends": [
+              "SelectHTMLAttributes<HTMLSelectElement>"
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "react/examples/native-select/Product.tsx",
+          "content": "'use client'\nimport { useState } from 'react'\nimport { Field } from '@/react/components/ui/Field'\nimport { NativeSelect } from '@/react/components/ui/NativeSelect'\n// A member's role, a namespace in mono, and the small size in a row of filters.\n\nexport default function Product() {\n  const [role, setRole] = useState('member')\n  const [ns, setNs] = useState('contracts')\n  const [range, setRange] = useState('7d')\n  return (\n    <div className=\"flex w-90 max-w-full flex-col gap-4\">\n      <Field label=\"Role\">\n        {({ id }) => <NativeSelect id={id} value={role} onChange={e => setRole(e.target.value)}><option value=\"admin\">Admin</option><option value=\"member\">Member</option><option value=\"viewer\">Viewer</option></NativeSelect>}\n      </Field>\n      <Field label=\"Namespace\">\n        {({ id }) => <NativeSelect id={id} value={ns} onChange={e => setNs(e.target.value)} mono><option>contracts</option><option>slack</option><option>sec-filings</option></NativeSelect>}\n      </Field>\n      <div className=\"flex items-center gap-2\">\n        <span className=\"type-meta text-fg-muted\">Range</span>\n        <NativeSelect value={range} onChange={e => setRange(e.target.value)} small aria-label=\"range\"><option value=\"24h\">Last 24 hours</option><option value=\"7d\">Last 7 days</option><option value=\"30d\">Last 30 days</option></NativeSelect>\n      </div>\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "field"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/native-select.ts",
+          "content": "import { html, LitElement, type PropertyValues } from 'lit'\nimport { ChevronDown } from 'lucide'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { DsFormElement, define } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport styles from 'virtual:tw'\n\n// NativeSelect.vue as <conare-native-select>: the browser's own select, drawn as the console's field (main.css\n// select.c-input, square under the console): 32px (28px with `small`), 13px, the #C3C1BF hairline that darkens on hover\n// and turns to a 2px ink edge on focus, and its own 12px chevron in the muted grey, the same in every browser. 40px and\n// 16px on phones, where the system picker opens. Options go inside as <option>s, as in Vue's slot: a <select> takes\n// only its own children, so the element draws a copy of them in its shadow root and follows changes to them. The host\n// is the box (Vue's root span), so a class on the element lands on it. Form-associated (its `name` and `value` go with\n// its form, a <label for> names it); v-model is `value` with the native `input` and `change` events. aria-label and\n// aria-description pass to the inner <select>.\n\n/**\n * @summary The browser's own select, drawn as the console's field.\n * @slot - The <option>s (copied into the select).\n * @fires input - The pick changed (read `value`).\n * @fires change - The pick changed (read `value`).\n */\nexport class NativeSelect extends DsFormElement {\n\tstatic styles = [DsFormElement.styles, styles]\n\tstatic shadowRootOptions = { ...LitElement.shadowRootOptions, delegatesFocus: true }\n\tstatic dsField = true\n\tstatic properties = {\n\t\tvalue: {},\n\t\tname: {},\n\t\tsmall: { type: Boolean, reflect: true },\n\t\tmono: { type: Boolean },\n\t\tdisabled: { type: Boolean, reflect: true },\n\t\trequired: { type: Boolean },\n\t\tinvalid: { type: Boolean, reflect: true },\n\t\tlabel: { attribute: 'aria-label' },\n\t\tdescription: { attribute: 'aria-description' },\n\t}\n\n\t/** The picked option's value (the first option's when unset, as a select's). */\n\tvalue?: string\n\tname?: string\n\t/** The 28px size, for a row of filters. */\n\tsmall = false\n\t/** The options in Geist Mono (namespaces, ids). */\n\tmono = false\n\tdisabled = false\n\trequired = false\n\t/** A red edge (with the message under it in a field). */\n\tinvalid = false\n\t/** The name for assistive tech, passed to the inner select. */\n\tlabel?: string\n\t/** The hint or error, passed to the inner select (a field sets it). */\n\tdescription?: string\n\tprivate observer = new MutationObserver(() => this.requestUpdate())\n\n\tconnectedCallback() {\n\t\tsuper.connectedCallback()\n\t\tthis.observer.observe(this, { childList: true, subtree: true, characterData: true, attributes: true })\n\t}\n\tdisconnectedCallback() {\n\t\tsuper.disconnectedCallback()\n\t\tthis.observer.disconnect()\n\t}\n\n\tprivate get select() {\n\t\treturn this.renderRoot.querySelector('select')\n\t}\n\tprotected updated(changed: PropertyValues) {\n\t\tsuper.updated(changed)\n\t\tconst select = this.select\n\t\tif (!select) return\n\t\t// The options render after the select's own bindings, so the value goes on once they are there.\n\t\tif (this.value === undefined) this.value = select.value\n\t\telse if (select.value !== this.value) select.value = this.value\n\t\tthis.internals.setFormValue(this.value ?? null)\n\t\tthis.syncValidity()\n\t}\n\tprotected validityControl() {\n\t\treturn this.renderRoot.querySelector<HTMLSelectElement>('select')\n\t}\n\tformResetCallback() {\n\t\tthis.value = this.getAttribute('value') ?? undefined\n\t}\n\tprivate onInput(event: Event) {\n\t\tthis.value = (event.target as HTMLSelectElement).value\n\t}\n\t// The inner change does not leave the shadow root: the element sends its own.\n\tprivate onChange() {\n\t\tthis.dispatchEvent(new Event('change', { bubbles: true, composed: true }))\n\t}\n\n\trender() {\n\t\tconst options = [...this.querySelectorAll('option')]\n\t\treturn html`<select name=${ifDefined(this.name)} ?disabled=${this.inactive} ?required=${this.required} aria-invalid=${ifDefined(this.invalid ? 'true' : undefined)} aria-label=${ifDefined(this.label)} aria-description=${ifDefined(this.description)} class=${this.mono ? 'font-code' : ''} @input=${this.onInput} @change=${this.onChange}>${options.map((o) => html`<option value=${o.value} ?disabled=${o.disabled}>${o.text}</option>`)}</select>${icon(ChevronDown, 'chevron-down', { size: 12, strokeWidth: 2, attrs: { 'aria-hidden': 'true' } })}`\n\t}\n}\n\ndefine('native-select', NativeSelect)\n"
+        },
+        {
+          "path": "elements/components/ui/native-select.css",
+          "content": "/* NativeSelect.vue's <style>, with the wrapper (.ds-select, the Vue root) as the host. */\n:host { position: relative; display: inline-flex; width: 100%; align-items: center; }\n:host > select { width: 100%; height: var(--ds-size-control-md); padding: 0 32px 0 12px; border: var(--ds-border-hairline) solid var(--ds-color-edge-strong); background: var(--ds-color-surface); color: var(--ds-color-fg); font-size: var(--ds-text-ui); line-height: var(--ds-text-ui-leading); appearance: none; cursor: pointer; transition: border-color var(--ds-duration-enter) var(--ds-easing-standard); }\n:host > svg { position: absolute; right: 12px; color: var(--ds-color-fg-muted); pointer-events: none; }\n@media (hover: hover) and (pointer: fine) { :host > select:hover:not(:disabled, :focus) { border-color: var(--ds-color-neutral-500); } }\n:host > select:focus { padding: 0 calc(32px - 1px) 0 calc(12px - 1px); border: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline: none; }\n:host > select[aria-invalid=\"true\"] { border-color: var(--ds-color-action-danger); }\n:host > select:disabled { border-color: var(--ds-color-edge); color: var(--ds-color-fg-muted); cursor: not-allowed; }\n:host([small]) { width: auto; }\n:host([small]) > select { height: var(--ds-size-control-sm); padding: 0 28px 0 8px; font-size: var(--ds-text-meta); }\n:host([small]) > select:focus { padding: 0 calc(28px - 1px) 0 calc(8px - 1px); }\n:host([small]) > svg { right: 8px; }\n@media (pointer: coarse), (max-width: 767px) { :host > select, :host([small]) > select { height: var(--ds-size-control-touch); font-size: var(--ds-text-input); } }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/native-select.js",
+        "elements/field.js"
+      ],
+      "tag": "conare-native-select",
+      "tags": [
+        "conare-native-select"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-native-select",
+            "name": "NativeSelect",
+            "module": "elements/native-select.js",
+            "description": "The browser's own select, drawn as the console's field.",
+            "attributes": [
+              {
+                "name": "value",
+                "field": "value",
+                "type": "string | undefined",
+                "description": "The picked option's value (the first option's when unset, as a select's)."
+              },
+              {
+                "name": "name",
+                "field": "name",
+                "type": "string | undefined"
+              },
+              {
+                "name": "small",
+                "field": "small",
+                "type": "boolean",
+                "default": "false",
+                "description": "The 28px size, for a row of filters."
+              },
+              {
+                "name": "mono",
+                "field": "mono",
+                "type": "boolean",
+                "default": "false",
+                "description": "The options in Geist Mono (namespaces, ids)."
+              },
+              {
+                "name": "disabled",
+                "field": "disabled",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "required",
+                "field": "required",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "invalid",
+                "field": "invalid",
+                "type": "boolean",
+                "default": "false",
+                "description": "A red edge (with the message under it in a field)."
+              },
+              {
+                "name": "aria-label",
+                "field": "label",
+                "type": "string | undefined",
+                "description": "The name for assistive tech, passed to the inner select."
+              },
+              {
+                "name": "aria-description",
+                "field": "description",
+                "type": "string | undefined",
+                "description": "The hint or error, passed to the inner select (a field sets it)."
+              }
+            ],
+            "properties": [
+              {
+                "name": "value",
+                "type": "string | undefined",
+                "description": "The picked option's value (the first option's when unset, as a select's).",
+                "attribute": "value"
+              },
+              {
+                "name": "name",
+                "type": "string | undefined",
+                "attribute": "name"
+              },
+              {
+                "name": "small",
+                "type": "boolean",
+                "default": "false",
+                "description": "The 28px size, for a row of filters.",
+                "attribute": "small"
+              },
+              {
+                "name": "mono",
+                "type": "boolean",
+                "default": "false",
+                "description": "The options in Geist Mono (namespaces, ids).",
+                "attribute": "mono"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "attribute": "disabled"
+              },
+              {
+                "name": "required",
+                "type": "boolean",
+                "default": "false",
+                "attribute": "required"
+              },
+              {
+                "name": "invalid",
+                "type": "boolean",
+                "default": "false",
+                "description": "A red edge (with the message under it in a field).",
+                "attribute": "invalid"
+              },
+              {
+                "name": "label",
+                "type": "string | undefined",
+                "description": "The name for assistive tech, passed to the inner select.",
+                "attribute": "aria-label"
+              },
+              {
+                "name": "description",
+                "type": "string | undefined",
+                "description": "The hint or error, passed to the inner select (a field sets it).",
+                "attribute": "aria-description"
+              }
+            ],
+            "events": [
+              {
+                "name": "change",
+                "description": "The pick changed (read `value`)."
+              },
+              {
+                "name": "input",
+                "description": "The pick changed (read `value`)."
+              }
+            ],
+            "slots": [
+              {
+                "name": "",
+                "description": "The <option>s (copied into the select)."
+              }
+            ],
+            "methods": [
+              {
+                "name": "formResetCallback"
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/native-select/Product.html",
+          "content": "<!-- A member's role, a namespace in mono, and the small size in a row of filters. -->\n<div class=\"flex w-90 max-w-full flex-col gap-4\">\n  <conare-field label=\"Role\">\n    <conare-native-select value=\"member\"><option value=\"admin\">Admin</option><option value=\"member\">Member</option><option value=\"viewer\">Viewer</option></conare-native-select>\n  </conare-field>\n  <conare-field label=\"Namespace\">\n    <conare-native-select value=\"contracts\" mono><option>contracts</option><option>slack</option><option>sec-filings</option></conare-native-select>\n  </conare-field>\n  <div class=\"flex items-center gap-2\">\n    <span class=\"type-meta text-fg-muted\">Range</span>\n    <conare-native-select value=\"7d\" small aria-label=\"range\"><option value=\"24h\">Last 24 hours</option><option value=\"7d\">Last 7 days</option><option value=\"30d\">Last 30 days</option></conare-native-select>\n  </div>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

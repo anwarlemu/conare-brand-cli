@@ -1,0 +1,382 @@
+{
+  "name": "hero",
+  "title": "Hero",
+  "type": "registry:ui",
+  "group": "site",
+  "description": "The home's first band: the eyebrow tag, the headline in Faculty Glyphic with its red stop and letter reveal, one line and one action settling up in turn, then the red frame (the room grid, the burst and the grain in a triple rule) with the window in front and the teams as stepped tabs on its top, taking turns on a timer.",
+  "use_for": "The top of the home page.",
+  "never": [
+    "More than one hero on a page",
+    "Red past about 10% of the first screen",
+    "A timer that runs off screen or for reduced motion"
+  ],
+  "source": "conare-web app/components/home/Hero.vue, UseCases.vue (the frame and the team tabs), app/assets/css/home.css (.settle, .hero-frame, .uc-shell, .uc-frame, .uc-px-tab, .uc-fill)",
+  "body": "The headline is `highlight-text`: its letters wait faint and red, then settle to ink once, as the band comes on\nscreen (a `title` slot replaces it with plain markup). Put a `button-link` in the `action` slot: the dark one with\n`grain`, `pixels` and `arrow`, as the website has it. The `window` slot takes what each team asks; the example draws it\non `VizWindow`, the website's product window, re-keying its body on each turn so its parts rise again.",
+  "requires": [
+    "burst",
+    "cell-burst",
+    "highlight-text",
+    "room-grid",
+    "tag"
+  ],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/site/Hero.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed, onBeforeUnmount, onMounted, ref, useId } from 'vue'\nimport SiteTag from '@/components/ui/SiteTag.vue'\nimport HighlightText from '@/components/visuals/HighlightText.vue'\nimport Burst from '@/components/visuals/Burst.vue'\nimport Grain from '@/components/visuals/Grain.vue'\nimport RoomGrid from '@/components/visuals/RoomGrid.vue'\n\n// The home's first band (Hero.vue, UseCases.vue): the eyebrow tag, the headline in Faculty Glyphic with its red stop\n// and its letter reveal (highlight-text: faint red letters settling to ink, once, as it comes on screen), one line, the\n// one action (a button-link), then the red frame: a room in one-point perspective with the burst's slabs, under the\n// grain, in a triple grey rule, with the window (the `window` slot) in front at up to 600px. The parts above settle up\n// 12px in turn (320ms, 60ms apart). With `tabs`, the teams stand on the frame's top as stepped-corner tabs; the picked\n// one is red, and a line along its foot fills over `turn` ms as the timer, handing over to the next team. The timer\n// runs only while the frame is on screen, pauses while a pointer rests on it, and never runs for reduced motion.\n// v-model is the picked tab's index. Tab `mark` is an optional pixel pattern: a path on a 16px square.\nconst props = withDefaults(defineProps<{\n  eyebrow?: string\n  title: string\n  accent?: string\n  body?: string\n  tabs?: { label: string, mark?: string }[]\n  tabsLabel?: string\n  turn?: number\n}>(), { accent: '.', tabs: () => [], tabsLabel: 'Team', turn: 6000 })\nconst active = defineModel<number>({ default: 0 })\nconst uid = useId()\n\nconst stage = ref<HTMLElement | null>(null)\nconst inView = ref(false)\nconst still = ref(false)\n// Each pick restarts the timer.\nconst run = ref(0)\nlet io: IntersectionObserver | undefined\n\nfunction pick(i: number) {\n  if (i === active.value) return\n  active.value = i\n  run.value++\n}\nfunction next() {\n  active.value = (active.value + 1) % props.tabs.length\n  run.value++\n}\nfunction onKey(e: KeyboardEvent) {\n  const n = props.tabs.length\n  const to = e.key === 'ArrowRight' ? (active.value + 1) % n : e.key === 'ArrowLeft' ? (active.value - 1 + n) % n : e.key === 'Home' ? 0 : e.key === 'End' ? n - 1 : null\n  if (to === null) return\n  e.preventDefault()\n  pick(to)\n  ;(e.currentTarget as HTMLElement).querySelectorAll<HTMLElement>('[role=\"tab\"]')[to]?.focus()\n}\n\nonMounted(() => {\n  still.value = window.matchMedia('(prefers-reduced-motion: reduce)').matches\n  if (!stage.value || !('IntersectionObserver' in window)) {\n    inView.value = true\n    return\n  }\n  io = new IntersectionObserver(([e]) => { inView.value = !!e?.isIntersecting })\n  io.observe(stage.value)\n})\nonBeforeUnmount(() => io?.disconnect())\n\nconst timed = computed(() => props.tabs.length > 1 && props.turn > 0)\n</script>\n\n<template>\n  <section data-ds=\"hero\" :aria-labelledby=\"`${uid}-title`\" class=\"ds-hero mx-auto max-w-[1440px] px-4 pt-24 pb-24 sm:px-6 lg:px-10 lg:pt-32\">\n    <div class=\"flex flex-col items-center text-center\">\n      <p v-if=\"eyebrow\" class=\"ds-settle mb-4 flex justify-center\"><SiteTag>{{ eyebrow }}</SiteTag></p>\n      <h1 v-if=\"$slots.title\" :id=\"`${uid}-title`\" class=\"ds-hero-title font-heading text-hero font-normal tracking-display sm:text-display\"><slot name=\"title\" /></h1>\n      <HighlightText v-else :id=\"`${uid}-title`\" as=\"h1\" :text=\"title\" :accent=\"accent\" class=\"ds-hero-title font-heading text-hero font-normal tracking-display sm:text-display\" />\n      <p v-if=\"body\" class=\"ds-settle mt-4 max-w-[600px] text-input text-balance text-fg-muted\" style=\"--i: 1\">{{ body }}</p>\n      <div v-if=\"$slots.action\" class=\"ds-settle mt-8\" style=\"--i: 2\"><slot name=\"action\" /></div>\n    </div>\n\n    <div ref=\"stage\" class=\"ds-hero-stage mt-10 w-full lg:mt-14\" :data-running=\"inView && !still\" :style=\"{ '--turn': `${turn}ms` }\">\n      <div v-if=\"tabs.length\" role=\"tablist\" :aria-label=\"tabsLabel\" class=\"relative z-10 -mb-px flex items-end gap-px sm:justify-center sm:gap-1\" @keydown=\"onKey\">\n        <button\n          v-for=\"(t, i) in tabs\"\n          :id=\"`${uid}-tab-${i}`\"\n          :key=\"t.label\"\n          role=\"tab\"\n          type=\"button\"\n          :aria-selected=\"i === active\"\n          :aria-controls=\"`${uid}-window`\"\n          :tabindex=\"i === active ? 0 : -1\"\n          class=\"ds-hero-tab relative flex h-8 min-w-0 flex-1 basis-0 items-center justify-center gap-2 overflow-hidden px-0.5 text-caption leading-4 whitespace-nowrap sm:h-9 sm:px-2 sm:text-ui md:w-36 md:flex-none md:px-4\"\n          :data-on=\"i === active\"\n          @pointerdown.left=\"pick(i)\"\n          @click=\"pick(i)\"\n        >\n          <span aria-hidden=\"true\" class=\"ds-hero-tab-edge absolute inset-0\" />\n          <span aria-hidden=\"true\" class=\"ds-hero-tab-ground absolute inset-px\" />\n          <svg v-if=\"t.mark\" aria-hidden=\"true\" width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" shape-rendering=\"crispEdges\" class=\"ds-hero-tab-mark relative size-3.5 shrink-0 max-sm:hidden\"><path :d=\"t.mark\" class=\"fill-current\" /></svg>\n          <span class=\"relative\">{{ t.label }}</span>\n          <span v-if=\"i === active && timed\" aria-hidden=\"true\" class=\"absolute inset-x-px bottom-px h-0.5 overflow-hidden\">\n            <span :key=\"run\" class=\"ds-hero-fill block h-full bg-off-white\" @animationend=\"next()\" />\n          </span>\n        </button>\n      </div>\n\n      <!-- The shell: the frame's outer rule, 9px out; the frame's second rule 5px out of its border. -->\n      <div class=\"relative -mx-2.5 border border-edge-strong p-2.25\">\n        <div class=\"ds-hero-frame relative\">\n          <div class=\"relative flex w-full justify-center overflow-hidden border border-edge-strong bg-home-red px-4 py-10 text-ds-neutral-300 sm:px-8 sm:py-16 lg:py-20\">\n            <Grain />\n            <RoomGrid />\n            <Burst :inner=\"0.01\" corners />\n            <div class=\"relative w-full max-w-[600px]\">\n              <div :id=\"`${uid}-window`\" data-burst-clear class=\"relative z-10 w-full\" :role=\"tabs.length ? 'tabpanel' : undefined\" :aria-labelledby=\"tabs.length ? `${uid}-tab-${active}` : undefined\">\n                <slot name=\"window\" :active=\"active\" />\n              </div>\n            </div>\n          </div>\n        </div>\n      </div>\n    </div>\n  </section>\n</template>\n\n<style>\n.ds-hero-title { line-height: 1.1; text-wrap: balance; }\n/* Elements enter flat and settle upward (home.css .settle). */\n.ds-settle { animation: ds-settle var(--ds-duration-entrance) var(--ds-easing-standard) both; animation-delay: calc(var(--i, 0) * 60ms); }\n@keyframes ds-settle { from { opacity: 0; transform: translateY(12px); } }\n.ds-hero-frame::before { position: absolute; inset: -5px; border: var(--ds-border-hairline) solid var(--ds-color-edge-strong); content: \"\"; pointer-events: none; }\n/* A short window (a small laptop, a phone on its side): less room above, a smaller heading, a closer frame. */\n@media (max-height: 760px) and (min-width: 640px) {\n  .ds-hero { padding-top: 40px; }\n  .ds-hero-title { font-size: var(--ds-text-heading-1); }\n  .ds-hero-stage { margin-top: var(--ds-space-2xl); }\n}\n@media (max-height: 480px) and (min-width: 640px) {\n  .ds-hero { padding-top: var(--ds-space-2xl); }\n  .ds-hero-title { font-size: var(--ds-text-heading-2); }\n  .ds-hero-stage { margin-top: var(--ds-space-xl); }\n}\n/* The teams: both top corners stepped in three 3px pixels, the rule's grey under a ground 1px in, so a hairline runs\n   up the sides and round the top and meets the frame's rule at the foot. Idle grey, darkening under the pointer as\n   the pattern takes the red; the picked one red, its name and pattern off-white. */\n.ds-hero-tab { color: var(--ds-color-neutral-400); cursor: pointer; transition: color var(--ds-duration-rise) var(--ds-easing-standard); }\n.ds-hero-tab :is(.ds-hero-tab-edge, .ds-hero-tab-ground) { clip-path: polygon(0 9px, 3px 9px, 3px 6px, 6px 6px, 6px 3px, 9px 3px, 9px 0, calc(100% - 9px) 0, calc(100% - 9px) 3px, calc(100% - 6px) 3px, calc(100% - 6px) 6px, calc(100% - 3px) 6px, calc(100% - 3px) 9px, 100% 9px, 100% 100%, 0 100%); }\n.ds-hero-tab-edge { background: var(--ds-color-neutral-600); }\n.ds-hero-tab-ground { background: var(--ds-color-home-grey); transition: background-color var(--ds-duration-rise) var(--ds-easing-standard); }\n.ds-hero-tab-mark { color: var(--ds-color-neutral-500); transition: color var(--ds-duration-rise) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) {\n  .ds-hero-tab:not([data-on=\"true\"]):hover { color: var(--ds-color-off-black); }\n  .ds-hero-tab:not([data-on=\"true\"]):hover .ds-hero-tab-ground { background: color-mix(in srgb, var(--ds-color-neutral-700) 45%, var(--ds-color-home-grey)); }\n  .ds-hero-tab:not([data-on=\"true\"]):hover .ds-hero-tab-mark { color: var(--ds-color-home-red); }\n}\n.ds-hero-tab[data-on=\"true\"] { color: var(--ds-color-off-white); }\n.ds-hero-tab[data-on=\"true\"] .ds-hero-tab-ground { background: var(--ds-color-home-red); }\n.ds-hero-tab[data-on=\"true\"] .ds-hero-tab-mark { color: var(--ds-color-off-white); }\n.ds-hero-tab:focus-visible { outline-offset: -2px; }\n/* The timer: a line filling along the picked tab's foot, linear over the turn, paused off screen and under a resting\n   pointer. Reduced motion: no auto-advance, the line sits full. */\n.ds-hero-fill { transform: scaleX(0); transform-origin: left; animation: ds-hero-fill var(--turn) linear forwards; animation-play-state: paused; }\n.ds-hero-stage[data-running=\"true\"] .ds-hero-fill { animation-play-state: running; }\n@media (hover: hover) and (pointer: fine) { .ds-hero-stage[data-running=\"true\"]:hover .ds-hero-fill { animation-play-state: paused; } }\n@keyframes ds-hero-fill { to { transform: none; } }\n@media (prefers-reduced-motion: reduce) {\n  .ds-settle { animation-name: ds-settle-fade; }\n  .ds-hero-tab, .ds-hero-tab-ground, .ds-hero-tab-mark { transition: none; }\n  .ds-hero-fill { animation: none; transform: none; }\n}\n@keyframes ds-settle-fade { from { opacity: 0; } }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "On the site",
+      "center": false,
+      "half": false,
+      "path": "examples/hero/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport ButtonLink from '@/components/site/ButtonLink.vue'\nimport VizWindow from '@/components/visuals/VizWindow.vue'\nimport Hero from '@/components/site/Hero.vue'\n// The home's first band on sample data: the teams take turns in the frame, each with its question and the answer in\n// the window (the website's product window, its parts rising in turn each time a team takes over). Pick a team, or let\n// the timer hand over.\nconst cells = (on: (x: number, y: number) => boolean) => {\n  const lit: [number, number][] = []\n  for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) if (on(x, y)) lit.push([x, y])\n  return lit.map(([x, y]) => `M${x * 2} ${y * 2}h2v2h-2Z`).join('')\n}\nconst teams = [\n  { label: 'Sales', mark: cells((x, y) => (Math.floor(x / 2) + Math.floor(y / 2)) % 2 === 0), where: 'Sales agent', ask: 'What did Acme ask for at renewal?', answer: 'Twelve more months on 60 days notice, with their data kept in the EU region.', source: 'renewal-call.md' },\n  { label: 'Finance', mark: cells((_, y) => y % 2 === 0), where: 'Finance agent', ask: 'Which invoices are past 30 days?', answer: 'Three: two from the March batch and one held for a missing purchase order.', source: 'ledger.xlsx' },\n  { label: 'Engineering', mark: cells((x, y) => (x + y) % 3 === 0), where: 'Coding agent over MCP', ask: 'Why do sync jobs retry twice?', answer: 'The worker retries on a timeout, and the queue retries the same job once more.', source: 'issue-1182' },\n  { label: 'Support', mark: cells((x, y) => x % 2 === 0 && y % 2 === 0), where: 'Support agent', ask: 'How does a customer reset their key?', answer: 'Settings, then API keys: revoke the old one and create a new one in its place.', source: 'help-center.md' },\n  { label: 'Legal', mark: cells(x => x % 2 === 0), where: 'Assistant', ask: 'Where does the contract say data is stored?', answer: 'Schedule C names the EU region, and every subprocessor is listed beside it.', source: 'acme-msa.pdf' },\n]\nconst active = ref(0)\n</script>\n\n<template>\n  <Hero\n    v-model=\"active\"\n    eyebrow=\"Search across 100M+ documents\"\n    title=\"Everything your agent needs to know\"\n    body=\"Conare finds the right answer in any data you bring, for your agents and the products you build on them.\"\n    :tabs=\"teams\"\n  >\n    <template #action><ButtonLink href=\"#\" grain pixels arrow>Book a call</ButtonLink></template>\n    <template #window>\n      <VizWindow active class=\"text-left\">\n        <template #title>\n          <span class=\"text-ui\">Conare</span>\n          <span class=\"bg-ds-neutral-200 px-1.5 py-0.5 text-caption text-ds-neutral-500\">{{ teams[active]!.where }}</span>\n        </template>\n        <div :key=\"active\" class=\"flex flex-col gap-4 px-4 pt-1 pb-5 sm:px-7 sm:pb-6\">\n          <p class=\"ds-viz-in self-end bg-ds-neutral-200 px-3 py-2 text-body\" style=\"--d: 200\">{{ teams[active]!.ask }}</p>\n          <p class=\"ds-viz-in text-body text-ds-neutral-600\" style=\"--d: 700\">{{ teams[active]!.answer }}</p>\n          <p class=\"ds-viz-in flex items-center gap-2 text-meta text-ds-neutral-500\" style=\"--d: 900\">Source <span class=\"ds-viz-chip text-off-white\"><span class=\"ds-viz-dot bg-home-red\" />{{ teams[active]!.source }}</span></p>\n        </div>\n      </VizWindow>\n    </template>\n  </Hero>\n</template>\n",
+      "requires": [
+        "burst",
+        "button-link",
+        "cell-burst",
+        "eval-viz",
+        "highlight-text",
+        "room-grid",
+        "tag"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/site/Hero.tsx",
+          "content": "'use client'\nimport { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react'\nimport { useControllable } from '@/react/hooks/useControllable'\nimport { SiteTag } from '@/react/components/ui/SiteTag'\nimport { HighlightText } from '@/react/components/visuals/HighlightText'\nimport { Burst } from '@/react/components/visuals/Burst'\nimport { Grain } from '@/react/components/visuals/Grain'\nimport { RoomGrid } from '@/react/components/visuals/RoomGrid'\n\n// The home's first band (Hero.vue, UseCases.vue): the eyebrow tag, the headline in Faculty Glyphic with its red stop\n// and its letter reveal (highlight-text: faint red letters settling to ink, once, as it comes on screen), one line, the\n// one action (a button-link), then the red frame: a room in one-point perspective with the burst's slabs, under the\n// grain, in a triple grey rule, with the window (`window`, given the picked tab) in front at up to 600px. The parts above settle up\n// 12px in turn (320ms, 60ms apart). With `tabs`, the teams stand on the frame's top as stepped-corner tabs; the picked\n// one is red, and a line along its foot fills over `turn` ms as the timer, handing over to the next team. The timer\n// runs only while the frame is on screen, pauses while a pointer rests on it, and never runs for reduced motion.\n// The picked tab is `value` with `onValueChange` (Vue's v-model), or `defaultValue` alone. Tab `mark` is an optional pixel pattern: a path on a 16px square.\nexport interface HeroProps {\n  eyebrow?: string\n  title: string\n  accent?: string\n  body?: string\n  tabs?: { label: string, mark?: string }[]\n  tabsLabel?: string\n  turn?: number\n  value?: number\n  defaultValue?: number\n  onValueChange?: (value: number) => void\n  /** The headline drawn as you like, in place of the revealed `title` (Vue's `title` slot). */\n  headline?: ReactNode\n  /** The one action (Vue's `action` slot): a button-link. */\n  action?: ReactNode\n  /** The window in the frame, given the picked tab (Vue's `#window=\"{ active }\"`). */\n  window?: (slot: { active: number }) => ReactNode\n}\n\nexport function Hero({ eyebrow, title, accent = '.', body, tabs = [], tabsLabel = 'Team', turn = 6000, value, defaultValue = 0, onValueChange, headline, action, window: win }: HeroProps) {\n  const [active, setActive] = useControllable(value, defaultValue, onValueChange)\n  const uid = useId()\n  const stage = useRef<HTMLDivElement | null>(null)\n  const [inView, setInView] = useState(false)\n  const [still, setStill] = useState(false)\n  // Each pick restarts the timer.\n  const [run, setRun] = useState(0)\n\n  function pick(i: number) {\n    if (i === active) return\n    setActive(i)\n    setRun(r => r + 1)\n  }\n  function next() {\n    setActive((active + 1) % tabs.length)\n    setRun(r => r + 1)\n  }\n  function onKey(e: KeyboardEvent<HTMLDivElement>) {\n    const n = tabs.length\n    const to = e.key === 'ArrowRight' ? (active + 1) % n : e.key === 'ArrowLeft' ? (active - 1 + n) % n : e.key === 'Home' ? 0 : e.key === 'End' ? n - 1 : null\n    if (to === null) return\n    e.preventDefault()\n    pick(to)\n    e.currentTarget.querySelectorAll<HTMLElement>('[role=\"tab\"]')[to]?.focus()\n  }\n\n  useEffect(() => {\n    setStill(window.matchMedia('(prefers-reduced-motion: reduce)').matches)\n    if (!stage.current || !('IntersectionObserver' in window)) {\n      setInView(true)\n      return\n    }\n    const io = new IntersectionObserver(([e]) => setInView(!!e?.isIntersecting))\n    io.observe(stage.current)\n    return () => io.disconnect()\n  }, [])\n\n  const timed = tabs.length > 1 && turn > 0\n  const titleClass = 'ds-hero-title font-heading text-hero font-normal tracking-display sm:text-display'\n  return (\n    <>\n      <style href=\"ds-hero\" precedence=\"ds\">{css}</style>\n      <section data-ds=\"hero\" aria-labelledby={`${uid}-title`} className=\"ds-hero mx-auto max-w-[1440px] px-4 pt-24 pb-24 sm:px-6 lg:px-10 lg:pt-32\">\n        <div className=\"flex flex-col items-center text-center\">\n          {eyebrow && <p className=\"ds-settle mb-4 flex justify-center\"><SiteTag>{eyebrow}</SiteTag></p>}\n          {headline\n            ? <h1 id={`${uid}-title`} className={titleClass}>{headline}</h1>\n            : <HighlightText id={`${uid}-title`} as=\"h1\" text={title} accent={accent} className={titleClass} />}\n          {body && <p className=\"ds-settle mt-4 max-w-[600px] text-input text-balance text-fg-muted\" style={{ '--i': 1 } as CSSProperties}>{body}</p>}\n          {action && <div className=\"ds-settle mt-8\" style={{ '--i': 2 } as CSSProperties}>{action}</div>}\n        </div>\n\n        <div ref={stage} className=\"ds-hero-stage mt-10 w-full lg:mt-14\" data-running={inView && !still} style={{ '--turn': `${turn}ms` } as CSSProperties}>\n          {tabs.length > 0 && (\n            <div role=\"tablist\" aria-label={tabsLabel} className=\"relative z-10 -mb-px flex items-end gap-px sm:justify-center sm:gap-1\" onKeyDown={onKey}>\n              {tabs.map((t, i) => (\n                <button\n                  id={`${uid}-tab-${i}`}\n                  key={t.label}\n                  role=\"tab\"\n                  type=\"button\"\n                  aria-selected={i === active}\n                  aria-controls={`${uid}-window`}\n                  tabIndex={i === active ? 0 : -1}\n                  className=\"ds-hero-tab relative flex h-8 min-w-0 flex-1 basis-0 items-center justify-center gap-2 overflow-hidden px-0.5 text-caption leading-4 whitespace-nowrap sm:h-9 sm:px-2 sm:text-ui md:w-36 md:flex-none md:px-4\"\n                  data-on={i === active}\n                  onPointerDown={(e) => { if (e.button === 0) pick(i) }}\n                  onClick={() => pick(i)}\n                >\n                  <span aria-hidden=\"true\" className=\"ds-hero-tab-edge absolute inset-0\" />\n                  <span aria-hidden=\"true\" className=\"ds-hero-tab-ground absolute inset-px\" />\n                  {t.mark && <svg aria-hidden=\"true\" width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" shapeRendering=\"crispEdges\" className=\"ds-hero-tab-mark relative size-3.5 shrink-0 max-sm:hidden\"><path d={t.mark} className=\"fill-current\" /></svg>}\n                  <span className=\"relative\">{t.label}</span>\n                  {i === active && timed && (\n                    <span aria-hidden=\"true\" className=\"absolute inset-x-px bottom-px h-0.5 overflow-hidden\">\n                      <span key={run} className=\"ds-hero-fill block h-full bg-off-white\" onAnimationEnd={() => next()} />\n                    </span>\n                  )}\n                </button>\n              ))}\n            </div>\n          )}\n\n          {/* The shell: the frame's outer rule, 9px out; the frame's second rule 5px out of its border. */}\n          <div className=\"relative -mx-2.5 border border-edge-strong p-2.25\">\n            <div className=\"ds-hero-frame relative\">\n              <div className=\"relative flex w-full justify-center overflow-hidden border border-edge-strong bg-home-red px-4 py-10 text-ds-neutral-300 sm:px-8 sm:py-16 lg:py-20\">\n                <Grain />\n                <RoomGrid />\n                <Burst inner={0.01} corners />\n                <div className=\"relative w-full max-w-[600px]\">\n                  <div id={`${uid}-window`} data-burst-clear className=\"relative z-10 w-full\" role={tabs.length ? 'tabpanel' : undefined} aria-labelledby={tabs.length ? `${uid}-tab-${active}` : undefined}>\n                    {win?.({ active })}\n                  </div>\n                </div>\n              </div>\n            </div>\n          </div>\n        </div>\n      </section>\n    </>\n  )\n}\n\nexport default Hero\n\nconst css = `\n.ds-hero-title { line-height: 1.1; text-wrap: balance; }\n/* Elements enter flat and settle upward (home.css .settle). */\n.ds-settle { animation: ds-settle var(--ds-duration-entrance) var(--ds-easing-standard) both; animation-delay: calc(var(--i, 0) * 60ms); }\n@keyframes ds-settle { from { opacity: 0; transform: translateY(12px); } }\n.ds-hero-frame::before { position: absolute; inset: -5px; border: var(--ds-border-hairline) solid var(--ds-color-edge-strong); content: \"\"; pointer-events: none; }\n/* A short window (a small laptop, a phone on its side): less room above, a smaller heading, a closer frame. */\n@media (max-height: 760px) and (min-width: 640px) {\n  .ds-hero { padding-top: 40px; }\n  .ds-hero-title { font-size: var(--ds-text-heading-1); }\n  .ds-hero-stage { margin-top: var(--ds-space-2xl); }\n}\n@media (max-height: 480px) and (min-width: 640px) {\n  .ds-hero { padding-top: var(--ds-space-2xl); }\n  .ds-hero-title { font-size: var(--ds-text-heading-2); }\n  .ds-hero-stage { margin-top: var(--ds-space-xl); }\n}\n/* The teams: both top corners stepped in three 3px pixels, the rule's grey under a ground 1px in, so a hairline runs\n   up the sides and round the top and meets the frame's rule at the foot. Idle grey, darkening under the pointer as\n   the pattern takes the red; the picked one red, its name and pattern off-white. */\n.ds-hero-tab { color: var(--ds-color-neutral-400); cursor: pointer; transition: color var(--ds-duration-rise) var(--ds-easing-standard); }\n.ds-hero-tab :is(.ds-hero-tab-edge, .ds-hero-tab-ground) { clip-path: polygon(0 9px, 3px 9px, 3px 6px, 6px 6px, 6px 3px, 9px 3px, 9px 0, calc(100% - 9px) 0, calc(100% - 9px) 3px, calc(100% - 6px) 3px, calc(100% - 6px) 6px, calc(100% - 3px) 6px, calc(100% - 3px) 9px, 100% 9px, 100% 100%, 0 100%); }\n.ds-hero-tab-edge { background: var(--ds-color-neutral-600); }\n.ds-hero-tab-ground { background: var(--ds-color-home-grey); transition: background-color var(--ds-duration-rise) var(--ds-easing-standard); }\n.ds-hero-tab-mark { color: var(--ds-color-neutral-500); transition: color var(--ds-duration-rise) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) {\n  .ds-hero-tab:not([data-on=\"true\"]):hover { color: var(--ds-color-off-black); }\n  .ds-hero-tab:not([data-on=\"true\"]):hover .ds-hero-tab-ground { background: color-mix(in srgb, var(--ds-color-neutral-700) 45%, var(--ds-color-home-grey)); }\n  .ds-hero-tab:not([data-on=\"true\"]):hover .ds-hero-tab-mark { color: var(--ds-color-home-red); }\n}\n.ds-hero-tab[data-on=\"true\"] { color: var(--ds-color-off-white); }\n.ds-hero-tab[data-on=\"true\"] .ds-hero-tab-ground { background: var(--ds-color-home-red); }\n.ds-hero-tab[data-on=\"true\"] .ds-hero-tab-mark { color: var(--ds-color-off-white); }\n.ds-hero-tab:focus-visible { outline-offset: -2px; }\n/* The timer: a line filling along the picked tab's foot, linear over the turn, paused off screen and under a resting\n   pointer. Reduced motion: no auto-advance, the line sits full. */\n.ds-hero-fill { transform: scaleX(0); transform-origin: left; animation: ds-hero-fill var(--turn) linear forwards; animation-play-state: paused; }\n.ds-hero-stage[data-running=\"true\"] .ds-hero-fill { animation-play-state: running; }\n@media (hover: hover) and (pointer: fine) { .ds-hero-stage[data-running=\"true\"]:hover .ds-hero-fill { animation-play-state: paused; } }\n@keyframes ds-hero-fill { to { transform: none; } }\n@media (prefers-reduced-motion: reduce) {\n  .ds-settle { animation-name: ds-settle-fade; }\n  .ds-hero-tab, .ds-hero-tab-ground, .ds-hero-tab-mark { transition: none; }\n  .ds-hero-fill { animation: none; transform: none; }\n}\n@keyframes ds-settle-fade { from { opacity: 0; } }\n`\n"
+        },
+        {
+          "path": "react/hooks/useControllable.ts",
+          "content": "'use client'\nimport { useCallback, useRef, useState } from 'react'\n\n// Vue's defineModel in React: a value that is controlled when the caller passes it (value + onValueChange, as Radix\n// does) and kept inside otherwise (defaultValue). setValue calls onChange either way.\nexport function useControllable<T>(value: T | undefined, defaultValue: T, onChange?: (value: T) => void) {\n\tconst [inner, setInner] = useState<T>(defaultValue)\n\tconst controlled = value !== undefined\n\tconst current = controlled ? value : inner\n\tconst ref = useRef(onChange)\n\tref.current = onChange\n\tconst set = useCallback((next: T) => {\n\t\tif (!controlled) setInner(next)\n\t\tref.current?.(next)\n\t}, [controlled])\n\treturn [current, set] as const\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "burst",
+        "cell-burst",
+        "highlight-text",
+        "room-grid",
+        "tag"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "Hero",
+            "file": "react/components/site/Hero.tsx",
+            "props": [
+              {
+                "name": "eyebrow",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "title",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "accent",
+                "type": "string",
+                "required": false,
+                "default": "'.'"
+              },
+              {
+                "name": "body",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "tabs",
+                "type": "{ label: string, mark?: string }[]",
+                "required": false,
+                "default": "[]"
+              },
+              {
+                "name": "tabsLabel",
+                "type": "string",
+                "required": false,
+                "default": "'Team'"
+              },
+              {
+                "name": "turn",
+                "type": "number",
+                "required": false,
+                "default": "6000"
+              },
+              {
+                "name": "value",
+                "type": "number",
+                "required": false
+              },
+              {
+                "name": "defaultValue",
+                "type": "number",
+                "required": false,
+                "default": "0"
+              },
+              {
+                "name": "onValueChange",
+                "type": "(value: number) => void",
+                "required": false
+              },
+              {
+                "name": "headline",
+                "type": "ReactNode",
+                "required": false,
+                "description": "The headline drawn as you like, in place of the revealed `title` (Vue's `title` slot)."
+              },
+              {
+                "name": "action",
+                "type": "ReactNode",
+                "required": false,
+                "description": "The one action (Vue's `action` slot): a button-link."
+              },
+              {
+                "name": "window",
+                "type": "(slot: { active: number }) => ReactNode",
+                "required": false,
+                "description": "The window in the frame, given the picked tab (Vue's `#window=\"{ active }\"`)."
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "On the site",
+          "center": false,
+          "half": false,
+          "path": "react/examples/hero/Site.tsx",
+          "content": "'use client'\nimport { useState, type CSSProperties } from 'react'\nimport { ButtonLink } from '@/react/components/site/ButtonLink'\nimport { VizWindow } from '@/react/components/visuals/VizWindow'\nimport { Hero } from '@/react/components/site/Hero'\n// The home's first band on sample data: the teams take turns in the frame, each with its question and the answer in\n// the window (the website's product window, its parts rising in turn each time a team takes over). Pick a team, or let\n// the timer hand over.\nconst cells = (on: (x: number, y: number) => boolean) => {\n  const lit: [number, number][] = []\n  for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) if (on(x, y)) lit.push([x, y])\n  return lit.map(([x, y]) => `M${x * 2} ${y * 2}h2v2h-2Z`).join('')\n}\nconst teams = [\n  { label: 'Sales', mark: cells((x, y) => (Math.floor(x / 2) + Math.floor(y / 2)) % 2 === 0), where: 'Sales agent', ask: 'What did Acme ask for at renewal?', answer: 'Twelve more months on 60 days notice, with their data kept in the EU region.', source: 'renewal-call.md' },\n  { label: 'Finance', mark: cells((_, y) => y % 2 === 0), where: 'Finance agent', ask: 'Which invoices are past 30 days?', answer: 'Three: two from the March batch and one held for a missing purchase order.', source: 'ledger.xlsx' },\n  { label: 'Engineering', mark: cells((x, y) => (x + y) % 3 === 0), where: 'Coding agent over MCP', ask: 'Why do sync jobs retry twice?', answer: 'The worker retries on a timeout, and the queue retries the same job once more.', source: 'issue-1182' },\n  { label: 'Support', mark: cells((x, y) => x % 2 === 0 && y % 2 === 0), where: 'Support agent', ask: 'How does a customer reset their key?', answer: 'Settings, then API keys: revoke the old one and create a new one in its place.', source: 'help-center.md' },\n  { label: 'Legal', mark: cells(x => x % 2 === 0), where: 'Assistant', ask: 'Where does the contract say data is stored?', answer: 'Schedule C names the EU region, and every subprocessor is listed beside it.', source: 'acme-msa.pdf' },\n]\nexport default function Site() {\n  const [active, setActive] = useState(0)\n  return (\n    <Hero\n      value={active}\n      onValueChange={setActive}\n      eyebrow=\"Search across 100M+ documents\"\n      title=\"Everything your agent needs to know\"\n      body=\"Conare finds the right answer in any data you bring, for your agents and the products you build on them.\"\n      tabs={teams}\n      action={<ButtonLink href=\"#\" grain pixels arrow>Book a call</ButtonLink>}\n      window={() => (\n        <VizWindow\n          active\n          className=\"text-left\"\n          title={(\n            <>\n              <span className=\"text-ui\">Conare</span>\n              <span className=\"bg-ds-neutral-200 px-1.5 py-0.5 text-caption text-ds-neutral-500\">{teams[active]!.where}</span>\n            </>\n          )}\n        >\n          <div key={active} className=\"flex flex-col gap-4 px-4 pt-1 pb-5 sm:px-7 sm:pb-6\">\n            <p className=\"ds-viz-in self-end bg-ds-neutral-200 px-3 py-2 text-body\" style={{ '--d': 200 } as CSSProperties}>{teams[active]!.ask}</p>\n            <p className=\"ds-viz-in text-body text-ds-neutral-600\" style={{ '--d': 700 } as CSSProperties}>{teams[active]!.answer}</p>\n            <p className=\"ds-viz-in flex items-center gap-2 text-meta text-ds-neutral-500\" style={{ '--d': 900 } as CSSProperties}>Source <span className=\"ds-viz-chip text-off-white\"><span className=\"ds-viz-dot bg-home-red\" />{teams[active]!.source}</span></p>\n          </div>\n        </VizWindow>\n      )}\n    />\n  )\n}\n",
+          "registryDependencies": [
+            "burst",
+            "button-link",
+            "cell-burst",
+            "eval-viz",
+            "highlight-text",
+            "room-grid",
+            "tag"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/site/hero.ts",
+          "content": "import { html, nothing, type PropertyValues } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { repeat } from 'lit/directives/repeat.js'\nimport { DsElement, define, tag, uid } from '@/elements/lib/element'\nimport '@/elements/components/ui/site-tag'\nimport '@/elements/components/visuals/highlight-text'\nimport '@/elements/components/visuals/burst'\nimport '@/elements/components/visuals/grain'\nimport '@/elements/components/visuals/room-grid'\nimport styles from 'virtual:tw'\n\n// Hero.vue as <conare-hero>: the home's first band (Hero.vue, UseCases.vue): the eyebrow tag, the headline in Faculty Glyphic with its red stop\n// and its letter reveal (highlight-text: faint red letters settling to ink, once, as it comes on screen), one line, the\n// one action (a button-link), then the red frame: a room in one-point perspective with the burst's slabs, under the\n// grain, in a triple grey rule, with the window (the `window` slot) in front at up to 600px. The parts above settle up\n// 12px in turn (320ms, 60ms apart). With `tabs`, the teams stand on the frame's top as stepped-corner tabs; the picked\n// one is red, and a line along its foot fills over `turn` ms as the timer, handing over to the next team. The timer\n// runs only while the frame is on screen, pauses while a pointer rests on it, and never runs for reduced motion.\n// Vue's v-model is `value` (the picked tab) with `input` and `change`. Tab `mark` is an optional pixel pattern: a path on a 16px square.\n// `heading` is Vue's `title`; the `title` slot draws the headline otherwise. The window goes in the `window` slot;\n// read `value` (or listen for `change`) to show the picked team's. `tabs` is a JSON attribute or a property.\n\n/**\n * @summary The home's first band: the headline, one action and the red frame with its window.\n * @slot title - The headline drawn as you like, in place of the revealed heading.\n * @slot action - The one action: a button-link.\n * @slot window - The window in the frame (show the picked tab's: read `value`).\n * @fires input - A tab was picked (read `value`).\n * @fires change - A tab was picked (read `value`).\n */\nexport class Hero extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { eyebrow: {}, heading: {}, accent: {}, body: {}, tabs: { type: Array }, tabsLabel: { attribute: 'tabs-label' }, turn: { type: Number }, value: { type: Number }, inView: { state: true }, still: { state: true }, run: { state: true } }\n\n\t/** The tag above the headline. */\n\teyebrow?: string\n\t/** The headline (Vue's `title`), revealed letter by letter. */\n\theading = ''\n\t/** Trailing characters that stay red. */\n\taccent = '.'\n\t/** The one line under the headline. */\n\tbody?: string\n\t/** The teams on the frame's top: { label, mark? }. */\n\ttabs: { label: string, mark?: string }[] = []\n\ttabsLabel = 'Team'\n\t/** How long each team holds, in ms. */\n\tturn = 6000\n\t/** The picked tab's index. */\n\tvalue = 0\n\tprivate inView = false\n\tprivate still = false\n\t// Each pick restarts the timer.\n\tprivate run = 0\n\tprivate uid = uid('hero')\n\tprivate io?: IntersectionObserver\n\n\tprivate pick(i: number) {\n\t\tif (i === this.value) return\n\t\tthis.commit(i)\n\t\tthis.run++\n\t}\n\tprivate next() {\n\t\tthis.commit((this.value + 1) % this.tabs.length)\n\t\tthis.run++\n\t}\n\tprivate onKey = (e: KeyboardEvent) => {\n\t\tconst n = this.tabs.length\n\t\tconst a = this.value\n\t\tconst to = e.key === 'ArrowRight' ? (a + 1) % n : e.key === 'ArrowLeft' ? (a - 1 + n) % n : e.key === 'Home' ? 0 : e.key === 'End' ? n - 1 : null\n\t\tif (to === null) return\n\t\te.preventDefault()\n\t\tthis.pick(to)\n\t\t;(e.currentTarget as HTMLElement).querySelectorAll<HTMLElement>('[role=\"tab\"]')[to]?.focus()\n\t}\n\n\tprotected firstUpdated(changed: PropertyValues) {\n\t\tsuper.firstUpdated(changed)\n\t\tthis.still = window.matchMedia('(prefers-reduced-motion: reduce)').matches\n\t\tconst stage = this.renderRoot.querySelector('.ds-hero-stage')\n\t\tif (!stage || !('IntersectionObserver' in window)) {\n\t\t\tthis.inView = true\n\t\t\treturn\n\t\t}\n\t\tthis.io = new IntersectionObserver(([e]) => { this.inView = !!e?.isIntersecting })\n\t\tthis.io.observe(stage)\n\t}\n\n\tdisconnectedCallback() {\n\t\tsuper.disconnectedCallback()\n\t\tthis.io?.disconnect()\n\t}\n\n\trender() {\n\t\tconst id = this.uid\n\t\tconst tabs = this.tabs\n\t\tconst active = this.value\n\t\tconst timed = tabs.length > 1 && this.turn > 0\n\t\treturn html`<section data-ds=\"hero\" aria-labelledby=${`${id}-title`} class=\"ds-hero mx-auto max-w-[1440px] px-4 pt-24 pb-24 sm:px-6 lg:px-10 lg:pt-32\"><div class=\"flex flex-col items-center text-center\">${this.eyebrow ? html`<p class=\"ds-settle mb-4 flex justify-center\">${staticHtml`<${tag('site-tag')}>${this.eyebrow}</${tag('site-tag')}>`}</p>` : nothing}${this.hasSlot('title')\n\t\t\t? html`<h1 id=${`${id}-title`} class=\"ds-hero-title font-heading text-hero font-normal tracking-display sm:text-display\"><slot name=\"title\"></slot></h1>`\n\t\t\t: staticHtml`<${tag('highlight-text')} id=${`${id}-title`} as=\"h1\" text=${this.heading} accent=${this.accent} class=\"ds-hero-title font-heading text-hero font-normal tracking-display sm:text-display\"></${tag('highlight-text')}>`}${this.body ? html`<p class=\"ds-settle mt-4 max-w-[600px] text-input text-balance text-fg-muted\" style=\"--i: 1\">${this.body}</p>` : nothing}${this.hasSlot('action') ? html`<div class=\"ds-settle mt-8\" style=\"--i: 2\"><slot name=\"action\"></slot></div>` : nothing}</div><div class=\"ds-hero-stage mt-10 w-full lg:mt-14\" data-running=${String(this.inView && !this.still)} style=${`--turn: ${this.turn}ms`}>${tabs.length ? html`<div role=\"tablist\" aria-label=${this.tabsLabel} class=\"relative z-10 -mb-px flex items-end gap-px sm:justify-center sm:gap-1\" @keydown=${this.onKey}>${tabs.map((t, i) => html`<button id=${`${id}-tab-${i}`} role=\"tab\" type=\"button\" aria-selected=${String(i === active)} aria-controls=${`${id}-window`} tabindex=${i === active ? 0 : -1} class=\"ds-hero-tab relative flex h-8 min-w-0 flex-1 basis-0 items-center justify-center gap-2 overflow-hidden px-0.5 text-caption leading-4 whitespace-nowrap sm:h-9 sm:px-2 sm:text-ui md:w-36 md:flex-none md:px-4\" data-on=${String(i === active)} @pointerdown=${(e: PointerEvent) => { if (e.button === 0) this.pick(i) }} @click=${() => this.pick(i)}><span aria-hidden=\"true\" class=\"ds-hero-tab-edge absolute inset-0\"></span><span aria-hidden=\"true\" class=\"ds-hero-tab-ground absolute inset-px\"></span>${t.mark ? html`<svg aria-hidden=\"true\" width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" shape-rendering=\"crispEdges\" class=\"ds-hero-tab-mark relative size-3.5 shrink-0 max-sm:hidden\"><path d=${t.mark} class=\"fill-current\"></path></svg>` : nothing}<span class=\"relative\">${t.label}</span>${i === active && timed ? html`<span aria-hidden=\"true\" class=\"absolute inset-x-px bottom-px h-0.5 overflow-hidden\">${repeat([this.run], (r) => r, () => html`<span class=\"ds-hero-fill block h-full bg-off-white\" @animationend=${() => this.next()}></span>`)}</span>` : nothing}</button>`)}</div>` : nothing}<div class=\"relative -mx-2.5 border border-edge-strong p-2.25\"><div class=\"ds-hero-frame relative\"><div class=\"relative flex w-full justify-center overflow-hidden border border-edge-strong bg-home-red px-4 py-10 text-ds-neutral-300 sm:px-8 sm:py-16 lg:py-20\">${staticHtml`<${tag('grain')}></${tag('grain')}><${tag('room-grid')}></${tag('room-grid')}><${tag('burst')} inner=\"0.01\" corners></${tag('burst')}>`}<div class=\"relative w-full max-w-[600px]\"><div id=${`${id}-window`} data-burst-clear class=\"relative z-10 w-full\" role=${tabs.length ? 'tabpanel' : nothing} aria-labelledby=${tabs.length ? `${id}-tab-${active}` : nothing}><slot name=\"window\"></slot></div></div></div></div></div></div></section>`\n\t}\n}\n\ndefine('hero', Hero)\n"
+        },
+        {
+          "path": "elements/components/site/hero.css",
+          "content": "/* Hero.vue's <style>, as it is. */\n.ds-hero-title { line-height: 1.1; text-wrap: balance; }\n/* Elements enter flat and settle upward (home.css .settle). */\n.ds-settle { animation: ds-settle var(--ds-duration-entrance) var(--ds-easing-standard) both; animation-delay: calc(var(--i, 0) * 60ms); }\n@keyframes ds-settle { from { opacity: 0; transform: translateY(12px); } }\n.ds-hero-frame::before { position: absolute; inset: -5px; border: var(--ds-border-hairline) solid var(--ds-color-edge-strong); content: \"\"; pointer-events: none; }\n/* A short window (a small laptop, a phone on its side): less room above, a smaller heading, a closer frame. */\n@media (max-height: 760px) and (min-width: 640px) {\n  .ds-hero { padding-top: 40px; }\n  .ds-hero-title { font-size: var(--ds-text-heading-1); }\n  .ds-hero-stage { margin-top: var(--ds-space-2xl); }\n}\n@media (max-height: 480px) and (min-width: 640px) {\n  .ds-hero { padding-top: var(--ds-space-2xl); }\n  .ds-hero-title { font-size: var(--ds-text-heading-2); }\n  .ds-hero-stage { margin-top: var(--ds-space-xl); }\n}\n/* The teams: both top corners stepped in three 3px pixels, the rule's grey under a ground 1px in, so a hairline runs\n   up the sides and round the top and meets the frame's rule at the foot. Idle grey, darkening under the pointer as\n   the pattern takes the red; the picked one red, its name and pattern off-white. */\n.ds-hero-tab { color: var(--ds-color-neutral-400); cursor: pointer; transition: color var(--ds-duration-rise) var(--ds-easing-standard); }\n.ds-hero-tab :is(.ds-hero-tab-edge, .ds-hero-tab-ground) { clip-path: polygon(0 9px, 3px 9px, 3px 6px, 6px 6px, 6px 3px, 9px 3px, 9px 0, calc(100% - 9px) 0, calc(100% - 9px) 3px, calc(100% - 6px) 3px, calc(100% - 6px) 6px, calc(100% - 3px) 6px, calc(100% - 3px) 9px, 100% 9px, 100% 100%, 0 100%); }\n.ds-hero-tab-edge { background: var(--ds-color-neutral-600); }\n.ds-hero-tab-ground { background: var(--ds-color-home-grey); transition: background-color var(--ds-duration-rise) var(--ds-easing-standard); }\n.ds-hero-tab-mark { color: var(--ds-color-neutral-500); transition: color var(--ds-duration-rise) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) {\n  .ds-hero-tab:not([data-on=\"true\"]):hover { color: var(--ds-color-off-black); }\n  .ds-hero-tab:not([data-on=\"true\"]):hover .ds-hero-tab-ground { background: color-mix(in srgb, var(--ds-color-neutral-700) 45%, var(--ds-color-home-grey)); }\n  .ds-hero-tab:not([data-on=\"true\"]):hover .ds-hero-tab-mark { color: var(--ds-color-home-red); }\n}\n.ds-hero-tab[data-on=\"true\"] { color: var(--ds-color-off-white); }\n.ds-hero-tab[data-on=\"true\"] .ds-hero-tab-ground { background: var(--ds-color-home-red); }\n.ds-hero-tab[data-on=\"true\"] .ds-hero-tab-mark { color: var(--ds-color-off-white); }\n.ds-hero-tab:focus-visible { outline-offset: -2px; }\n/* The timer: a line filling along the picked tab's foot, linear over the turn, paused off screen and under a resting\n   pointer. Reduced motion: no auto-advance, the line sits full. */\n.ds-hero-fill { transform: scaleX(0); transform-origin: left; animation: ds-hero-fill var(--turn) linear forwards; animation-play-state: paused; }\n.ds-hero-stage[data-running=\"true\"] .ds-hero-fill { animation-play-state: running; }\n@media (hover: hover) and (pointer: fine) { .ds-hero-stage[data-running=\"true\"]:hover .ds-hero-fill { animation-play-state: paused; } }\n@keyframes ds-hero-fill { to { transform: none; } }\n@media (prefers-reduced-motion: reduce) {\n  .ds-settle { animation-name: ds-settle-fade; }\n  .ds-hero-tab, .ds-hero-tab-ground, .ds-hero-tab-mark { transition: none; }\n  .ds-hero-fill { animation: none; transform: none; }\n}\n@keyframes ds-settle-fade { from { opacity: 0; } }"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/hero.js",
+        "elements/site-tag.js",
+        "elements/highlight-text.js",
+        "elements/burst.js",
+        "elements/grain.js",
+        "elements/room-grid.js",
+        "elements/button-link.js",
+        "elements/viz-window.js"
+      ],
+      "tag": "conare-hero",
+      "tags": [
+        "conare-hero"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "burst",
+        "cell-burst",
+        "highlight-text",
+        "room-grid",
+        "tag"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-hero",
+            "name": "Hero",
+            "module": "elements/hero.js",
+            "description": "The home's first band: the headline, one action and the red frame with its window.",
+            "attributes": [
+              {
+                "name": "eyebrow",
+                "field": "eyebrow",
+                "type": "string | undefined",
+                "description": "The tag above the headline."
+              },
+              {
+                "name": "heading",
+                "field": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The headline (Vue's `title`), revealed letter by letter."
+              },
+              {
+                "name": "accent",
+                "field": "accent",
+                "type": "string",
+                "default": "'.'",
+                "description": "Trailing characters that stay red."
+              },
+              {
+                "name": "body",
+                "field": "body",
+                "type": "string | undefined",
+                "description": "The one line under the headline."
+              },
+              {
+                "name": "tabs",
+                "field": "tabs",
+                "type": "{ label: string; mark?: string; }[]",
+                "default": "[]",
+                "description": "The teams on the frame's top: { label, mark? }."
+              },
+              {
+                "name": "tabs-label",
+                "field": "tabsLabel",
+                "type": "string",
+                "default": "'Team'"
+              },
+              {
+                "name": "turn",
+                "field": "turn",
+                "type": "number",
+                "default": "6000",
+                "description": "How long each team holds, in ms."
+              },
+              {
+                "name": "value",
+                "field": "value",
+                "type": "number",
+                "default": "0",
+                "description": "The picked tab's index."
+              },
+              {
+                "name": "inView",
+                "field": "inView",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "still",
+                "field": "still",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "run",
+                "field": "run",
+                "type": "number",
+                "default": "0"
+              }
+            ],
+            "properties": [
+              {
+                "name": "eyebrow",
+                "type": "string | undefined",
+                "description": "The tag above the headline.",
+                "attribute": "eyebrow"
+              },
+              {
+                "name": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The headline (Vue's `title`), revealed letter by letter.",
+                "attribute": "heading"
+              },
+              {
+                "name": "accent",
+                "type": "string",
+                "default": "'.'",
+                "description": "Trailing characters that stay red.",
+                "attribute": "accent"
+              },
+              {
+                "name": "body",
+                "type": "string | undefined",
+                "description": "The one line under the headline.",
+                "attribute": "body"
+              },
+              {
+                "name": "tabs",
+                "type": "{ label: string; mark?: string; }[]",
+                "default": "[]",
+                "description": "The teams on the frame's top: { label, mark? }.",
+                "attribute": "tabs"
+              },
+              {
+                "name": "tabsLabel",
+                "type": "string",
+                "default": "'Team'",
+                "attribute": "tabs-label"
+              },
+              {
+                "name": "turn",
+                "type": "number",
+                "default": "6000",
+                "description": "How long each team holds, in ms.",
+                "attribute": "turn"
+              },
+              {
+                "name": "value",
+                "type": "number",
+                "default": "0",
+                "description": "The picked tab's index.",
+                "attribute": "value"
+              }
+            ],
+            "events": [
+              {
+                "name": "input",
+                "description": "A tab was picked (read `value`)."
+              },
+              {
+                "name": "change",
+                "description": "A tab was picked (read `value`)."
+              }
+            ],
+            "slots": [
+              {
+                "name": "title",
+                "description": "The headline drawn as you like, in place of the revealed heading."
+              },
+              {
+                "name": "action",
+                "description": "The one action: a button-link."
+              },
+              {
+                "name": "window",
+                "description": "The window in the frame (show the picked tab's: read `value`)."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "On the site",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/hero/Site.html",
+          "content": "<!-- The home's first band on sample data: the teams take turns in the frame, each with its question and the answer in\n     the window (the website's product window, its parts rising in turn each time a team takes over). Pick a team, or let\n     the timer hand over. -->\n<conare-hero id=\"hero\" eyebrow=\"Search across 100M+ documents\" heading=\"Everything your agent needs to know\" body=\"Conare finds the right answer in any data you bring, for your agents and the products you build on them.\" tabs='[{\"label\": \"Sales\", \"mark\": \"M0 0h2v2h-2ZM2 0h2v2h-2ZM8 0h2v2h-2ZM10 0h2v2h-2ZM0 2h2v2h-2ZM2 2h2v2h-2ZM8 2h2v2h-2ZM10 2h2v2h-2ZM4 4h2v2h-2ZM6 4h2v2h-2ZM12 4h2v2h-2ZM14 4h2v2h-2ZM4 6h2v2h-2ZM6 6h2v2h-2ZM12 6h2v2h-2ZM14 6h2v2h-2ZM0 8h2v2h-2ZM2 8h2v2h-2ZM8 8h2v2h-2ZM10 8h2v2h-2ZM0 10h2v2h-2ZM2 10h2v2h-2ZM8 10h2v2h-2ZM10 10h2v2h-2ZM4 12h2v2h-2ZM6 12h2v2h-2ZM12 12h2v2h-2ZM14 12h2v2h-2ZM4 14h2v2h-2ZM6 14h2v2h-2ZM12 14h2v2h-2ZM14 14h2v2h-2Z\"}, {\"label\": \"Finance\", \"mark\": \"M0 0h2v2h-2ZM2 0h2v2h-2ZM4 0h2v2h-2ZM6 0h2v2h-2ZM8 0h2v2h-2ZM10 0h2v2h-2ZM12 0h2v2h-2ZM14 0h2v2h-2ZM0 4h2v2h-2ZM2 4h2v2h-2ZM4 4h2v2h-2ZM6 4h2v2h-2ZM8 4h2v2h-2ZM10 4h2v2h-2ZM12 4h2v2h-2ZM14 4h2v2h-2ZM0 8h2v2h-2ZM2 8h2v2h-2ZM4 8h2v2h-2ZM6 8h2v2h-2ZM8 8h2v2h-2ZM10 8h2v2h-2ZM12 8h2v2h-2ZM14 8h2v2h-2ZM0 12h2v2h-2ZM2 12h2v2h-2ZM4 12h2v2h-2ZM6 12h2v2h-2ZM8 12h2v2h-2ZM10 12h2v2h-2ZM12 12h2v2h-2ZM14 12h2v2h-2Z\"}, {\"label\": \"Engineering\", \"mark\": \"M0 0h2v2h-2ZM6 0h2v2h-2ZM12 0h2v2h-2ZM4 2h2v2h-2ZM10 2h2v2h-2ZM2 4h2v2h-2ZM8 4h2v2h-2ZM14 4h2v2h-2ZM0 6h2v2h-2ZM6 6h2v2h-2ZM12 6h2v2h-2ZM4 8h2v2h-2ZM10 8h2v2h-2ZM2 10h2v2h-2ZM8 10h2v2h-2ZM14 10h2v2h-2ZM0 12h2v2h-2ZM6 12h2v2h-2ZM12 12h2v2h-2ZM4 14h2v2h-2ZM10 14h2v2h-2Z\"}, {\"label\": \"Support\", \"mark\": \"M0 0h2v2h-2ZM4 0h2v2h-2ZM8 0h2v2h-2ZM12 0h2v2h-2ZM0 4h2v2h-2ZM4 4h2v2h-2ZM8 4h2v2h-2ZM12 4h2v2h-2ZM0 8h2v2h-2ZM4 8h2v2h-2ZM8 8h2v2h-2ZM12 8h2v2h-2ZM0 12h2v2h-2ZM4 12h2v2h-2ZM8 12h2v2h-2ZM12 12h2v2h-2Z\"}, {\"label\": \"Legal\", \"mark\": \"M0 0h2v2h-2ZM4 0h2v2h-2ZM8 0h2v2h-2ZM12 0h2v2h-2ZM0 2h2v2h-2ZM4 2h2v2h-2ZM8 2h2v2h-2ZM12 2h2v2h-2ZM0 4h2v2h-2ZM4 4h2v2h-2ZM8 4h2v2h-2ZM12 4h2v2h-2ZM0 6h2v2h-2ZM4 6h2v2h-2ZM8 6h2v2h-2ZM12 6h2v2h-2ZM0 8h2v2h-2ZM4 8h2v2h-2ZM8 8h2v2h-2ZM12 8h2v2h-2ZM0 10h2v2h-2ZM4 10h2v2h-2ZM8 10h2v2h-2ZM12 10h2v2h-2ZM0 12h2v2h-2ZM4 12h2v2h-2ZM8 12h2v2h-2ZM12 12h2v2h-2ZM0 14h2v2h-2ZM4 14h2v2h-2ZM8 14h2v2h-2ZM12 14h2v2h-2Z\"}]'>\n  <conare-button-link slot=\"action\" href=\"#\" grain pixels arrow>Book a call</conare-button-link>\n  <conare-viz-window slot=\"window\" active class=\"text-left\">\n    <span slot=\"title\" class=\"contents\"><span class=\"text-ui\">Conare</span><span class=\"bg-ds-neutral-200 px-1.5 py-0.5 text-caption text-ds-neutral-500\" data-where>Sales agent</span></span>\n    <div class=\"flex flex-col gap-4 px-4 pt-1 pb-5 sm:px-7 sm:pb-6\" data-answer>\n      <p class=\"ds-viz-in self-end bg-ds-neutral-200 px-3 py-2 text-body\" style=\"--d: 200\" data-ask>What did Acme ask for at renewal?</p>\n      <p class=\"ds-viz-in text-body text-ds-neutral-600\" style=\"--d: 700\" data-text>Twelve more months on 60 days notice, with their data kept in the EU region.</p>\n      <p class=\"ds-viz-in flex items-center gap-2 text-meta text-ds-neutral-500\" style=\"--d: 900\">Source <span class=\"ds-viz-chip text-off-white\"><span class=\"ds-viz-dot bg-home-red\"></span><span class=\"contents\" data-source>renewal-call.md</span></span></p>\n    </div>\n  </conare-viz-window>\n</conare-hero>\n<script type=\"module\">\n  const teams = [{\"where\": \"Sales agent\", \"ask\": \"What did Acme ask for at renewal?\", \"answer\": \"Twelve more months on 60 days notice, with their data kept in the EU region.\", \"source\": \"renewal-call.md\"}, {\"where\": \"Finance agent\", \"ask\": \"Which invoices are past 30 days?\", \"answer\": \"Three: two from the March batch and one held for a missing purchase order.\", \"source\": \"ledger.xlsx\"}, {\"where\": \"Coding agent over MCP\", \"ask\": \"Why do sync jobs retry twice?\", \"answer\": \"The worker retries on a timeout, and the queue retries the same job once more.\", \"source\": \"issue-1182\"}, {\"where\": \"Support agent\", \"ask\": \"How does a customer reset their key?\", \"answer\": \"Settings, then API keys: revoke the old one and create a new one in its place.\", \"source\": \"help-center.md\"}, {\"where\": \"Assistant\", \"ask\": \"Where does the contract say data is stored?\", \"answer\": \"Schedule C names the EU region, and every subprocessor is listed beside it.\", \"source\": \"acme-msa.pdf\"}]\n  await customElements.whenDefined('conare-hero')\n  const hero = document.getElementById('hero')\n  hero.addEventListener('change', () => {\n    const t = teams[hero.value]\n    hero.querySelector('[data-where]').textContent = t.where\n    // A new body for each team, so its parts rise again (Vue's :key).\n    const old = hero.querySelector('[data-answer]')\n    const body = old.cloneNode(true)\n    body.querySelector('[data-ask]').textContent = t.ask\n    body.querySelector('[data-text]').textContent = t.answer\n    body.querySelector('[data-source]').textContent = t.source\n    old.replaceWith(body)\n  })\n</script>\n"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,403 @@
+{
+  "name": "source-row",
+  "title": "Source row",
+  "type": "registry:product",
+  "group": "product",
+  "description": "A source as getting started lists it: its app's mark and name, linking to the source, then its sync's state as a tag, and with detail its last and next sync.",
+  "use_for": "Lists of sources: getting started, a namespace's sources, a sidebar note.",
+  "never": [
+    "A source without its app's mark",
+    "Red for anything but a failed sync"
+  ],
+  "source": "conare-web app/components/console/Source.vue, app/assets/css/console2.css (.c-badge under .cv2)",
+  "body": "`AppMark` draws an app's logo when you pass `logo`, otherwise a square tile with its initial; the library ships no\nthird-party logos. Word `synced` and `next` in the reader's terms (\"2 hours ago\").",
+  "requires": [
+    "tag"
+  ],
+  "dependencies": [
+    "lucide-vue-next@^0.479.0"
+  ],
+  "files": [
+    {
+      "path": "components/product/SourceRow.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed, type Component } from 'vue'\nimport { RefreshCw } from 'lucide-vue-next'\nimport AppMark from '@/components/product/AppMark.vue'\nimport Tag from '@/components/ui/Tag.vue'\n\n// A source that writes into a namespace, as getting started lists it (the console's Source.vue): its app's mark and\n// its name, linking to the source, then its sync's state as a tag: how often it syncs when ready (with the turn\n// arrows), black with a 4px square while it syncs or connects, the red wash when it needs attention, \"via API\" for a\n// source pushed through the API. `detail` adds the last and next sync. The tag's title says what the state means.\n// `as` renders a router link component for the name (it gets `href` and `to`).\nexport type SourceStatus = 'ready' | 'syncing' | 'connecting' | 'error' | 'pushed'\nconst props = withDefaults(defineProps<{\n  name: string\n  app: string\n  logo?: string | null\n  status: SourceStatus\n  /** How often it syncs when ready (\"every 6 hours\"). */\n  every?: string\n  /** When it last synced and will next, already worded (\"2 hours ago\", \"in 4 hours\"). */\n  synced?: string\n  next?: string\n  detail?: boolean\n  href?: string\n  as?: string | Component\n}>(), { as: 'a' })\ndefineEmits<{ open: [event: MouseEvent] }>()\n\nconst STATES: Record<SourceStatus, { label: string, tone: 'default' | 'working' | 'failed' | 'quiet', note: string }> = {\n  ready: { label: 'auto-sync', tone: 'quiet', note: 'Syncs automatically on a schedule.' },\n  syncing: { label: 'syncing', tone: 'working', note: 'A sync is running. It syncs automatically on a schedule.' },\n  connecting: { label: 'connecting', tone: 'working', note: 'Waiting for the app account to be connected. Then it syncs automatically.' },\n  error: { label: 'needs attention', tone: 'failed', note: 'The last sync failed. Open the source to see why.' },\n  pushed: { label: 'via API', tone: 'quiet', note: 'Its documents are pushed through the API.' },\n}\nconst state = computed(() => {\n  const s = STATES[props.status]\n  return props.status === 'ready' && props.every ? { ...s, label: `syncs ${props.every}` } : s\n})\nconst title = computed(() => [state.value.note, props.synced ? `Last sync ${props.synced}.` : '', props.next && props.status === 'ready' ? `Next sync ${props.next}.` : ''].filter(Boolean).join(' '))\n</script>\n\n<template>\n  <span data-ds=\"source-row\" class=\"inline-flex flex-wrap items-center gap-x-2 gap-y-1 text-ui\">\n    <component :is=\"as\" :href=\"href ?? '#'\" :to=\"href\" class=\"ds-source-name\" :title=\"app === name ? undefined : app\" @click=\"$emit('open', $event)\">\n      <AppMark :name=\"app\" :logo=\"logo\" />\n      <span>{{ name }}</span>\n    </component>\n    <Tag :tone=\"state.tone\" :title=\"title\">\n      <template v-if=\"status === 'ready'\" #mark><RefreshCw :size=\"10\" :stroke-width=\"2\" class=\"mt-0.5\" aria-hidden=\"true\" /></template>\n      <template v-else-if=\"state.tone === 'working'\" #mark><span class=\"mt-0.5 size-1 shrink-0 animate-pulse bg-surface motion-reduce:animate-none\" aria-hidden=\"true\" /></template>\n      {{ state.label }}\n    </Tag>\n    <span v-if=\"detail && synced\" class=\"type-meta whitespace-nowrap text-fg-muted\">synced {{ synced }}</span>\n    <span v-if=\"detail && next && status === 'ready'\" class=\"type-meta whitespace-nowrap text-fg-muted\">next {{ next }}</span>\n  </span>\n</template>\n\n<style>\n.ds-source-name { display: inline-flex; align-items: center; gap: var(--ds-space-sm); white-space: nowrap; color: var(--ds-color-fg); }\n.ds-source-name:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: 2px; }\n</style>\n"
+    },
+    {
+      "path": "components/product/AppMark.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed } from 'vue'\n\n// An app's mark beside its name: the app's own logo when `logo` is given, otherwise a square tile in a hairline with\n// the name's initial, never a round one. `size` in px (16 in rows, 20 in tiles).\nconst props = withDefaults(defineProps<{ name: string, logo?: string | null, size?: number }>(), { size: 16 })\nconst box = computed(() => ({ width: `${props.size}px`, height: `${props.size}px` }))\n</script>\n\n<template>\n  <img data-ds=\"app-mark\" v-if=\"logo\" :src=\"logo\" alt=\"\" :width=\"size\" :height=\"size\" class=\"shrink-0 object-contain\" :style=\"box\" loading=\"lazy\" decoding=\"async\">\n  <span data-ds=\"app-mark\" v-else class=\"inline-flex shrink-0 items-center justify-center border border-edge bg-surface-subtle text-tag leading-none font-medium text-fg-soft\" :style=\"box\" aria-hidden=\"true\">{{ name.charAt(0).toUpperCase() }}</span>\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "Getting started's sources",
+      "center": false,
+      "half": false,
+      "path": "examples/source-row/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport SourceRow from '@/components/product/SourceRow.vue'\n// A sample team's sources as getting started lists them: an app on its schedule, one syncing, one that failed, and one\n// pushed through the API.\nconst sources = [\n  { name: 'Acme drive', app: 'Google Drive', status: 'ready', every: 'every 6 hours', synced: '2 hours ago', next: 'in 4 hours' },\n  { name: 'Acme Slack', app: 'Slack', status: 'syncing', synced: '6 hours ago' },\n  { name: 'Wiki', app: 'Notion', status: 'error', synced: 'yesterday' },\n  { name: 'Support inbox', app: 'Gmail', status: 'pushed', synced: '12 minutes ago' },\n] as const\n</script>\n\n<template>\n  <ul class=\"flex max-w-140 flex-col gap-3\">\n    <li v-for=\"s in sources\" :key=\"s.name\"><SourceRow v-bind=\"s\" detail @open=\"(e: MouseEvent) => e.preventDefault()\" /></li>\n  </ul>\n</template>\n",
+      "requires": [
+        "tag"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/product/SourceRow.tsx",
+          "content": "import { RefreshCw } from 'lucide-react'\nimport type { ElementType, MouseEvent } from 'react'\nimport { AppMark } from '@/react/components/product/AppMark'\nimport { Tag } from '@/react/components/ui/Tag'\n\n// A source that writes into a namespace, as getting started lists it (the console's Source.vue): its app's mark and\n// its name, linking to the source, then its sync's state as a tag: how often it syncs when ready (with the turn\n// arrows), black with a 4px square while it syncs or connects, the red wash when it needs attention, \"via API\" for a\n// source pushed through the API. `detail` adds the last and next sync. The tag's title says what the state means.\n// `as` renders a router link component for the name (it gets `href` and `to`).\nexport type SourceStatus = 'ready' | 'syncing' | 'connecting' | 'error' | 'pushed'\n\nexport interface SourceRowProps {\n  name: string\n  app: string\n  logo?: string | null\n  status: SourceStatus\n  /** How often it syncs when ready (\"every 6 hours\"). */\n  every?: string\n  /** When it last synced and will next, already worded (\"2 hours ago\", \"in 4 hours\"). */\n  synced?: string\n  next?: string\n  detail?: boolean\n  href?: string\n  as?: ElementType\n  onOpen?: (event: MouseEvent<HTMLElement>) => void\n}\n\nconst STATES: Record<SourceStatus, { label: string, tone: 'default' | 'working' | 'failed' | 'quiet', note: string }> = {\n  ready: { label: 'auto-sync', tone: 'quiet', note: 'Syncs automatically on a schedule.' },\n  syncing: { label: 'syncing', tone: 'working', note: 'A sync is running. It syncs automatically on a schedule.' },\n  connecting: { label: 'connecting', tone: 'working', note: 'Waiting for the app account to be connected. Then it syncs automatically.' },\n  error: { label: 'needs attention', tone: 'failed', note: 'The last sync failed. Open the source to see why.' },\n  pushed: { label: 'via API', tone: 'quiet', note: 'Its documents are pushed through the API.' },\n}\n\nexport function SourceRow({ name, app, logo, status, every, synced, next, detail, href, as: Link = 'a', onOpen }: SourceRowProps) {\n  const base = STATES[status]\n  const state = status === 'ready' && every ? { ...base, label: `syncs ${every}` } : base\n  const title = [state.note, synced ? `Last sync ${synced}.` : '', next && status === 'ready' ? `Next sync ${next}.` : ''].filter(Boolean).join(' ')\n  const mark = status === 'ready'\n    ? <RefreshCw size={10} strokeWidth={2} className=\"mt-0.5\" aria-hidden=\"true\" />\n    : state.tone === 'working' ? <span className=\"mt-0.5 size-1 shrink-0 animate-pulse bg-surface motion-reduce:animate-none\" aria-hidden=\"true\" /> : undefined\n  return (\n    <span data-ds=\"source-row\" className=\"inline-flex flex-wrap items-center gap-x-2 gap-y-1 text-ui\">\n      <style href=\"ds-source-row\" precedence=\"ds\">{css}</style>\n      <Link href={href ?? '#'} {...(Link === 'a' ? {} : { to: href })} className=\"ds-source-name\" title={app === name ? undefined : app} onClick={onOpen}>\n        <AppMark name={app} logo={logo} />\n        <span>{name}</span>\n      </Link>\n      <Tag tone={state.tone} title={title} mark={mark}>{state.label}</Tag>\n      {detail && synced && <span className=\"type-meta whitespace-nowrap text-fg-muted\">{`synced ${synced}`}</span>}\n      {detail && next && status === 'ready' && <span className=\"type-meta whitespace-nowrap text-fg-muted\">{`next ${next}`}</span>}\n    </span>\n  )\n}\n\nexport default SourceRow\n\nconst css = `\n.ds-source-name { display: inline-flex; align-items: center; gap: var(--ds-space-sm); white-space: nowrap; color: var(--ds-color-fg); }\n.ds-source-name:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: 2px; }\n`\n"
+        },
+        {
+          "path": "react/components/product/AppMark.tsx",
+          "content": "// An app's mark beside its name: the app's own logo when `logo` is given, otherwise a square tile in a hairline with\n// the name's initial, never a round one. `size` in px (16 in rows, 20 in tiles).\nexport interface AppMarkProps {\n  name: string\n  logo?: string | null\n  size?: number\n}\n\nexport function AppMark({ name, logo, size = 16 }: AppMarkProps) {\n  const box = { width: `${size}px`, height: `${size}px` }\n  if (logo) return <img data-ds=\"app-mark\" src={logo} alt=\"\" width={size} height={size} className=\"shrink-0 object-contain\" style={box} loading=\"lazy\" decoding=\"async\" />\n  return <span data-ds=\"app-mark\" className=\"inline-flex shrink-0 items-center justify-center border border-edge bg-surface-subtle text-tag leading-none font-medium text-fg-soft\" style={box} aria-hidden=\"true\">{name.charAt(0).toUpperCase()}</span>\n}\n\nexport default AppMark\n"
+        }
+      ],
+      "dependencies": [
+        "lucide-react@0.479.0"
+      ],
+      "registryDependencies": [
+        "tag"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "SourceRow",
+            "file": "react/components/product/SourceRow.tsx",
+            "props": [
+              {
+                "name": "name",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "app",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "logo",
+                "type": "string | null",
+                "required": false
+              },
+              {
+                "name": "status",
+                "type": "SourceStatus",
+                "required": true
+              },
+              {
+                "name": "every",
+                "type": "string",
+                "required": false,
+                "description": "How often it syncs when ready (\"every 6 hours\")."
+              },
+              {
+                "name": "synced",
+                "type": "string",
+                "required": false,
+                "description": "When it last synced and will next, already worded (\"2 hours ago\", \"in 4 hours\")."
+              },
+              {
+                "name": "next",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "detail",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "href",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "as",
+                "type": "ElementType",
+                "required": false
+              },
+              {
+                "name": "onOpen",
+                "type": "(event: MouseEvent<HTMLElement>) => void",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "AppMark",
+            "file": "react/components/product/AppMark.tsx",
+            "props": [
+              {
+                "name": "name",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "logo",
+                "type": "string | null",
+                "required": false
+              },
+              {
+                "name": "size",
+                "type": "number",
+                "required": false,
+                "default": "16"
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Getting started's sources",
+          "center": false,
+          "half": false,
+          "path": "react/examples/source-row/Product.tsx",
+          "content": "import { SourceRow, type SourceStatus } from '@/react/components/product/SourceRow'\n// A sample team's sources as getting started lists them: an app on its schedule, one syncing, one that failed, and one\n// pushed through the API.\nconst sources: { name: string, app: string, status: SourceStatus, every?: string, synced?: string, next?: string }[] = [\n  { name: 'Acme drive', app: 'Google Drive', status: 'ready', every: 'every 6 hours', synced: '2 hours ago', next: 'in 4 hours' },\n  { name: 'Acme Slack', app: 'Slack', status: 'syncing', synced: '6 hours ago' },\n  { name: 'Wiki', app: 'Notion', status: 'error', synced: 'yesterday' },\n  { name: 'Support inbox', app: 'Gmail', status: 'pushed', synced: '12 minutes ago' },\n]\n\nexport default function Product() {\n  return (\n    <ul className=\"flex max-w-140 flex-col gap-3\">\n      {sources.map(s => <li key={s.name}><SourceRow {...s} detail onOpen={e => e.preventDefault()} /></li>)}\n    </ul>\n  )\n}\n",
+          "registryDependencies": [
+            "tag"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/product/source-row.ts",
+          "content": "import { nothing } from 'lit'\nimport { html } from 'lit/static-html.js'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { RefreshCw } from 'lucide'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport '@/elements/components/product/app-mark'\nimport '@/elements/components/ui/tag'\nimport styles from 'virtual:tw'\n\n// SourceRow.vue as <conare-source-row>: a source that writes into a namespace, as getting started lists it (the\n// console's Source.vue): its app's mark and its name, linking to the source, then its sync's state as a tag: how often\n// it syncs when ready (with the turn arrows), black with a 4px square while it syncs or connects, the red wash when it\n// needs attention, \"via API\" for a source pushed through the API. `detail` adds the last and next sync. The tag's title\n// says what the state means. The name is a link (Vue's `as` router link has no counterpart without a framework).\nexport type SourceStatus = 'ready' | 'syncing' | 'connecting' | 'error' | 'pushed'\n\nconst STATES: Record<SourceStatus, { label: string, tone: 'default' | 'working' | 'failed' | 'quiet', note: string }> = {\n\tready: { label: 'auto-sync', tone: 'quiet', note: 'Syncs automatically on a schedule.' },\n\tsyncing: { label: 'syncing', tone: 'working', note: 'A sync is running. It syncs automatically on a schedule.' },\n\tconnecting: { label: 'connecting', tone: 'working', note: 'Waiting for the app account to be connected. Then it syncs automatically.' },\n\terror: { label: 'needs attention', tone: 'failed', note: 'The last sync failed. Open the source to see why.' },\n\tpushed: { label: 'via API', tone: 'quiet', note: 'Its documents are pushed through the API.' },\n}\n\n/**\n * @summary A source in a namespace: its app's mark and name, and its sync's state.\n * @fires open - The name was pressed; detail { event } (call event.preventDefault() to stay on the page).\n */\nexport class SourceRow extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { name: {}, app: {}, logo: {}, status: {}, every: {}, synced: {}, next: {}, detail: { type: Boolean }, href: {} }\n\n\t/** The source's name. */\n\tname = ''\n\t/** Its app's name. */\n\tapp = ''\n\t/** Its app's logo. */\n\tlogo?: string | null\n\t/** ready, syncing, connecting, error or pushed. */\n\tstatus: SourceStatus = 'ready'\n\t/** How often it syncs when ready (\"every 6 hours\"). */\n\tevery?: string\n\t/** When it last synced, already worded (\"2 hours ago\"). */\n\tsynced?: string\n\t/** When it will next (\"in 4 hours\"). */\n\tnext?: string\n\t/** Adds the last and next sync. */\n\tdetail = false\n\t/** The source's page. */\n\thref?: string\n\n\t// Text that Vue renders as one node is one node here too (\"synced 2 hours ago\"): split, it measures a hair wider.\n\trender() {\n\t\tconst base = STATES[this.status] ?? STATES.ready\n\t\tconst state = this.status === 'ready' && this.every ? { ...base, label: `syncs ${this.every}` } : base\n\t\tconst title = [state.note, this.synced ? `Last sync ${this.synced}.` : '', this.next && this.status === 'ready' ? `Next sync ${this.next}.` : ''].filter(Boolean).join(' ')\n\t\tconst t = tag('tag')\n\t\tconst mark = tag('app-mark')\n\t\tconst lead = this.status === 'ready'\n\t\t\t? icon(RefreshCw, 'refresh-cw', { size: 10, strokeWidth: 2, class: 'mt-0.5', attrs: { 'aria-hidden': 'true', slot: 'mark' } })\n\t\t\t: state.tone === 'working' ? html`<span slot=\"mark\" class=\"mt-0.5 size-1 shrink-0 animate-pulse bg-surface motion-reduce:animate-none\" aria-hidden=\"true\"></span>` : nothing\n\t\treturn html`<span data-ds=\"source-row\" class=\"inline-flex flex-wrap items-center gap-x-2 gap-y-1 text-ui\">\n\t\t\t<a href=${this.href ?? '#'} class=\"ds-source-name\" title=${ifDefined(this.app === this.name ? undefined : this.app)} @click=${(event: MouseEvent) => this.emit('open', { event })}>\n\t\t\t\t<${mark} .name=${this.app} .logo=${this.logo}></${mark}>\n\t\t\t\t<span>${this.name}</span>\n\t\t\t</a>\n\t\t\t<${t} .tone=${state.tone} title=${title}>${lead}${state.label}</${t}>\n\t\t\t${this.detail && this.synced ? html`<span class=\"type-meta whitespace-nowrap text-fg-muted\">${`synced ${this.synced}`}</span>` : nothing}\n\t\t\t${this.detail && this.next && this.status === 'ready' ? html`<span class=\"type-meta whitespace-nowrap text-fg-muted\">${`next ${this.next}`}</span>` : nothing}\n\t\t</span>`\n\t}\n}\n\ndefine('source-row', SourceRow)\n"
+        },
+        {
+          "path": "elements/components/product/source-row.css",
+          "content": ".ds-source-name { display: inline-flex; align-items: center; gap: var(--ds-space-sm); white-space: nowrap; color: var(--ds-color-fg); }\n.ds-source-name:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: 2px; }\n"
+        },
+        {
+          "path": "elements/components/product/app-mark.ts",
+          "content": "import { html } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// AppMark.vue as <conare-app-mark>: an app's mark beside its name: the app's own logo when `logo` is given, otherwise\n// a square tile in a hairline with the name's initial, never a round one. `size` in px (16 in rows, 20 in tiles).\n\n/** @summary An app's logo, or a square tile with its initial. */\nexport class AppMark extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { name: {}, logo: {}, size: { type: Number } }\n\n\t/** The app's name (its initial when there is no logo). */\n\tname = ''\n\t/** The app's logo. */\n\tlogo?: string | null\n\t/** In px. */\n\tsize = 16\n\n\trender() {\n\t\tconst box = `width: ${this.size}px; height: ${this.size}px`\n\t\treturn this.logo\n\t\t\t? html`<img data-ds=\"app-mark\" src=${this.logo} alt=\"\" width=${this.size} height=${this.size} class=\"shrink-0 object-contain\" style=${box} loading=\"lazy\" decoding=\"async\">`\n\t\t\t: html`<span data-ds=\"app-mark\" class=\"inline-flex shrink-0 items-center justify-center border border-edge bg-surface-subtle text-tag leading-none font-medium text-fg-soft\" style=${box} aria-hidden=\"true\">${(this.name ?? '').charAt(0).toUpperCase()}</span>`\n\t}\n}\n\ndefine('app-mark', AppMark)\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/source-row.js",
+        "elements/app-mark.js",
+        "elements/tag.js"
+      ],
+      "tag": "conare-source-row",
+      "tags": [
+        "conare-source-row",
+        "conare-app-mark"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "tag"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-source-row",
+            "name": "SourceRow",
+            "module": "elements/source-row.js",
+            "description": "A source in a namespace: its app's mark and name, and its sync's state.",
+            "attributes": [
+              {
+                "name": "name",
+                "field": "name",
+                "type": "string",
+                "default": "''",
+                "description": "The source's name."
+              },
+              {
+                "name": "app",
+                "field": "app",
+                "type": "string",
+                "default": "''",
+                "description": "Its app's name."
+              },
+              {
+                "name": "logo",
+                "field": "logo",
+                "type": "string | null | undefined",
+                "description": "Its app's logo."
+              },
+              {
+                "name": "status",
+                "field": "status",
+                "type": "SourceStatus",
+                "default": "'ready'",
+                "description": "ready, syncing, connecting, error or pushed."
+              },
+              {
+                "name": "every",
+                "field": "every",
+                "type": "string | undefined",
+                "description": "How often it syncs when ready (\"every 6 hours\")."
+              },
+              {
+                "name": "synced",
+                "field": "synced",
+                "type": "string | undefined",
+                "description": "When it last synced, already worded (\"2 hours ago\")."
+              },
+              {
+                "name": "next",
+                "field": "next",
+                "type": "string | undefined",
+                "description": "When it will next (\"in 4 hours\")."
+              },
+              {
+                "name": "detail",
+                "field": "detail",
+                "type": "boolean",
+                "default": "false",
+                "description": "Adds the last and next sync."
+              },
+              {
+                "name": "href",
+                "field": "href",
+                "type": "string | undefined",
+                "description": "The source's page."
+              }
+            ],
+            "properties": [
+              {
+                "name": "name",
+                "type": "string",
+                "default": "''",
+                "description": "The source's name.",
+                "attribute": "name"
+              },
+              {
+                "name": "app",
+                "type": "string",
+                "default": "''",
+                "description": "Its app's name.",
+                "attribute": "app"
+              },
+              {
+                "name": "logo",
+                "type": "string | null | undefined",
+                "description": "Its app's logo.",
+                "attribute": "logo"
+              },
+              {
+                "name": "status",
+                "type": "SourceStatus",
+                "default": "'ready'",
+                "description": "ready, syncing, connecting, error or pushed.",
+                "attribute": "status"
+              },
+              {
+                "name": "every",
+                "type": "string | undefined",
+                "description": "How often it syncs when ready (\"every 6 hours\").",
+                "attribute": "every"
+              },
+              {
+                "name": "synced",
+                "type": "string | undefined",
+                "description": "When it last synced, already worded (\"2 hours ago\").",
+                "attribute": "synced"
+              },
+              {
+                "name": "next",
+                "type": "string | undefined",
+                "description": "When it will next (\"in 4 hours\").",
+                "attribute": "next"
+              },
+              {
+                "name": "detail",
+                "type": "boolean",
+                "default": "false",
+                "description": "Adds the last and next sync.",
+                "attribute": "detail"
+              },
+              {
+                "name": "href",
+                "type": "string | undefined",
+                "description": "The source's page.",
+                "attribute": "href"
+              }
+            ],
+            "events": [
+              {
+                "name": "open",
+                "description": "The name was pressed; detail { event } (call event.preventDefault() to stay on the page)."
+              }
+            ],
+            "slots": [],
+            "methods": []
+          },
+          {
+            "tag": "conare-app-mark",
+            "name": "AppMark",
+            "module": "elements/app-mark.js",
+            "description": "An app's logo, or a square tile with its initial.",
+            "attributes": [
+              {
+                "name": "name",
+                "field": "name",
+                "type": "string",
+                "default": "''",
+                "description": "The app's name (its initial when there is no logo)."
+              },
+              {
+                "name": "logo",
+                "field": "logo",
+                "type": "string | null | undefined",
+                "description": "The app's logo."
+              },
+              {
+                "name": "size",
+                "field": "size",
+                "type": "number",
+                "default": "16",
+                "description": "In px."
+              }
+            ],
+            "properties": [
+              {
+                "name": "name",
+                "type": "string",
+                "default": "''",
+                "description": "The app's name (its initial when there is no logo).",
+                "attribute": "name"
+              },
+              {
+                "name": "logo",
+                "type": "string | null | undefined",
+                "description": "The app's logo.",
+                "attribute": "logo"
+              },
+              {
+                "name": "size",
+                "type": "number",
+                "default": "16",
+                "description": "In px.",
+                "attribute": "size"
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Getting started's sources",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/source-row/Product.html",
+          "content": "<!-- A sample team's sources as getting started lists them: an app on its schedule, one syncing, one that failed, and\n     one pushed through the API. -->\n<ul class=\"flex max-w-140 flex-col gap-3\">\n  <li><conare-source-row name=\"Acme drive\" app=\"Google Drive\" status=\"ready\" every=\"every 6 hours\" synced=\"2 hours ago\" next=\"in 4 hours\" detail></conare-source-row></li>\n  <li><conare-source-row name=\"Acme Slack\" app=\"Slack\" status=\"syncing\" synced=\"6 hours ago\" detail></conare-source-row></li>\n  <li><conare-source-row name=\"Wiki\" app=\"Notion\" status=\"error\" synced=\"yesterday\" detail></conare-source-row></li>\n  <li><conare-source-row name=\"Support inbox\" app=\"Gmail\" status=\"pushed\" synced=\"12 minutes ago\" detail></conare-source-row></li>\n</ul>\n<script type=\"module\">\n  // The sample rows stay on the page.\n  for (const row of document.querySelectorAll('conare-source-row')) row.addEventListener('open', (e) => e.detail.event.preventDefault())\n</script>\n"
+        }
+      ]
+    }
+  }
+}

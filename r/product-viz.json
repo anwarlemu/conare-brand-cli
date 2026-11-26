@@ -1,0 +1,223 @@
+{
+  "name": "product-viz",
+  "title": "Product window",
+  "type": "registry:ui",
+  "group": "visuals",
+  "description": "A product as a small window: search's question and best passage, a source syncing, a file parsed to Markdown, an embedding's values as bars, results reranked into a new order.",
+  "use_for": "The website's product cards and the header's product menu, one window per product (`id`: search, sync, parse, embed, rerank).",
+  "never": [
+    "A window for a product that is not one of the five",
+    "Running while off screen: set `active` only while it is in view"
+  ],
+  "source": "conare-web app/components/home/ProductViz.vue, app/assets/css/home.css (.viz-*)",
+  "body": "",
+  "requires": [
+    "eval-viz"
+  ],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/visuals/ProductViz.vue",
+      "content": "<script setup lang=\"ts\">\nimport VizWindow from '@/components/visuals/VizWindow.vue'\n\n// A product as a small window (the website's ProductViz.vue), told on the quickstart's case: search (a question and its\n// best passage), sync (a source writing changed issues and deleting a deleted one), parse (a runbook PDF back as\n// Markdown), embed (a passage and a question as vectors, drawn as bars) and rerank (three passages, the answer moved\n// first). Each carries its call's options as tags. The content is the website's illustration, fixed per `id`.\nexport type ProductVizId = 'search' | 'sync' | 'parse' | 'embed' | 'rerank'\ndefineProps<{ id: ProductVizId, active: boolean }>()\n\nconst TITLES: Record<ProductVizId, string> = { search: 'POST /namespaces/docs/query', sync: 'Source Linear', parse: 'POST /parse', embed: 'POST /v1/embeddings', rerank: 'POST /v1/rerank' }\n// An embedding's first values, drawn as bars of their size: the shape of a vector, not its numbers.\nconst vector = [0.62, 0.36, 0.09, 0.48, 0.21]\nconst synced = [\n  { id: 'ENG-212 Key rotation fails in EU', result: 'Updated' },\n  { id: 'ENG-219 Add rollback runbook', result: 'Created' },\n  { id: 'ENG-180 Checkout timeouts', result: 'Updated' },\n  { id: 'ENG-97 Old signing key', result: 'Deleted', gone: true },\n]\n// Found in one order, reranked into another (rows' places before and after).\nconst ranked = [\n  { text: 'EU checkout broke after a key rotation.', from: 1, to: 0 },\n  { text: 'Checkout runs in three regions.', from: 0, to: 1 },\n  { text: 'Rotate keys from the console.', from: 2, to: 2 },\n]\nconst syncedStyles = synced.map((_, i) => ({ '--d': 500 + i * 300 }))\nconst vectorRows = vector.map((v, i) => ({ v, row: { '--d': 500 + i * 120 }, bar: { '--w': v, '--d': 600 + i * 120 } }))\nconst rankedStyles = ranked.map(r => ({ '--from': r.from, '--to': r.to, '--d': 600 + r.from * 120, '--track': '32px' }))\n</script>\n\n<template>\n  <VizWindow data-ds=\"product-viz\" :active=\"active\" size=\"sm\" class=\"max-w-75\">\n    <template #title>\n      <span class=\"truncate text-caption text-ds-neutral-600\">{{ TITLES[id] }}</span>\n    </template>\n\n    <div class=\"flex flex-col gap-2 px-3 pt-0.5 pb-3 text-meta\">\n      <!-- Search: the ask with its filter, the reranked results, the timing. -->\n      <template v-if=\"id === 'search'\">\n        <p class=\"ds-viz-in bg-ds-neutral-200 px-2.5 py-2\" style=\"--d: 200\">Why did checkout break?</p>\n        <p class=\"ds-viz-in flex flex-wrap gap-1.5\" style=\"--d: 400\">\n          <span class=\"ds-viz-tag\">Filter Team payments</span><span class=\"ds-viz-tag\">Top 5</span><span class=\"ds-viz-tag\">Vector and keyword</span>\n        </p>\n        <div class=\"border border-ds-neutral-300\">\n          <p class=\"ds-viz-in flex items-center gap-2 border-b border-ds-neutral-300 px-2.5 py-2\" style=\"--d: 700\">\n            <span class=\"ds-viz-dot bg-home-red\" />\n            <span class=\"min-w-0 flex-1 truncate\">EU checkout broke after a key rotation.</span>\n            <span class=\"text-ds-neutral-500 tabular-nums\">0.91</span>\n          </p>\n          <p class=\"ds-viz-in flex items-center gap-2 border-b border-ds-neutral-300 px-2.5 py-2 text-ds-neutral-500\" style=\"--d: 850\">\n            <span class=\"ds-viz-dot bg-ds-neutral-500\" />\n            <span class=\"min-w-0 flex-1 truncate\">Rotate keys from the console.</span>\n          </p>\n          <p class=\"ds-viz-in flex items-center gap-2 px-2.5 py-2 text-ds-neutral-500\" style=\"--d: 1000\">\n            <span class=\"ds-viz-dot bg-ds-neutral-500\" />\n            <span class=\"min-w-0 flex-1 truncate\">Checkout runs in three regions.</span>\n          </p>\n        </div>\n        <p class=\"ds-viz-in flex justify-between text-caption text-ds-neutral-500\" style=\"--d: 1300\">\n          <span>Reranked</span><span class=\"tabular-nums\">Took 62 ms</span>\n        </p>\n      </template>\n\n      <!-- Sync: a run writing what changed and deleting what went, with its progress and the next run. -->\n      <template v-else-if=\"id === 'sync'\">\n        <p class=\"ds-viz-in flex items-center justify-between text-caption text-ds-neutral-500\" style=\"--d: 200\">\n          Namespace Eng\n          <span class=\"grid\">\n            <span class=\"ds-viz-swap-a [grid-area:1/1] bg-ds-neutral-200 px-1.5 text-caption leading-4.5 text-ds-neutral-400\" style=\"--d: 1900\">Syncing</span>\n            <span class=\"ds-viz-swap-b [grid-area:1/1] bg-home-red px-1.5 text-caption leading-4.5 text-off-white\" style=\"--d: 1900\">Synced</span>\n          </span>\n        </p>\n        <div class=\"border border-ds-neutral-300\">\n          <p v-for=\"(r, i) in synced\" :key=\"r.id\" class=\"ds-viz-in flex items-center gap-2 border-b border-ds-neutral-300 px-2.5 py-2 last:border-b-0\" :style=\"syncedStyles[i]\">\n            <span class=\"ds-viz-dot\" :class=\"r.gone ? 'bg-ds-neutral-500' : 'bg-home-red'\" />\n            <span class=\"min-w-0 flex-1 truncate\" :class=\"r.gone && 'text-ds-neutral-500 line-through'\">{{ r.id }}</span>\n            <span class=\"text-ds-neutral-500\">{{ r.result }}</span>\n          </p>\n        </div>\n        <p class=\"ds-viz-in flex items-center gap-2 text-caption text-ds-neutral-500\" style=\"--d: 600\">\n          <span class=\"h-0.5 flex-1 bg-ds-neutral-300\"><span class=\"ds-viz-bar block h-full bg-off-white\" style=\"--w: 1; --d: 600\" /></span>\n          <span class=\"tabular-nums\">4 records</span>\n        </p>\n        <p class=\"ds-viz-in text-caption text-ds-neutral-500\" style=\"--d: 2100\">Next sync in 15 min, picked by Conare</p>\n      </template>\n\n      <!-- Parse: the file's facts, then its Markdown. -->\n      <template v-else-if=\"id === 'parse'\">\n        <p class=\"ds-viz-in flex items-center gap-2 text-caption text-ds-neutral-500\" style=\"--d: 200\">\n          <svg width=\"10\" height=\"12\" viewBox=\"0 0 10 12\" aria-hidden=\"true\"><path d=\"M.5.5h6l3 3v8H.5z\" fill=\"none\" stroke=\"currentColor\" /></svg>\n          <span class=\"text-ds-neutral-600\">Runbook.pdf</span> to Markdown\n        </p>\n        <p class=\"ds-viz-in flex flex-wrap gap-1.5\" style=\"--d: 400\">\n          <span class=\"ds-viz-tag\">12 pages</span><span class=\"ds-viz-tag\">Scans read by OCR</span><span class=\"ds-viz-tag\">Stores nothing</span>\n        </p>\n        <div class=\"border border-ds-neutral-300 px-2.5 py-2 text-caption leading-5\">\n          <p class=\"ds-viz-in\" style=\"--d: 600\"><span class=\"text-red-lift\"># </span>Key rotation</p>\n          <p class=\"ds-viz-in text-ds-neutral-600\" style=\"--d: 750\">Rotate the signing key every 90 days.</p>\n          <p class=\"ds-viz-in\" style=\"--d: 900\"><span class=\"text-red-lift\">## </span>Rollback</p>\n          <p class=\"ds-viz-in text-ds-neutral-600\" style=\"--d: 1050\">Restore the previous key from the vault.</p>\n          <p class=\"ds-viz-in text-ds-neutral-500\" style=\"--d: 1200\"><span class=\"text-red-lift\">| </span>EU <span class=\"text-red-lift\">| </span>Payments <span class=\"text-red-lift\">|</span></p>\n        </div>\n      </template>\n\n      <!-- Embed: a passage and a query, each as its first values. -->\n      <template v-else-if=\"id === 'embed'\">\n        <p class=\"ds-viz-in flex items-center justify-between gap-2\" style=\"--d: 200\">\n          <span class=\"min-w-0 flex-1 truncate bg-ds-neutral-200 px-2.5 py-2\">EU checkout broke after a key rotation.</span>\n          <span class=\"ds-viz-tag\">Document</span>\n        </p>\n        <div class=\"border border-ds-neutral-300 px-2.5 py-2\">\n          <p v-for=\"(row, i) in vectorRows\" :key=\"row.v\" class=\"ds-viz-in flex items-center gap-2 text-caption tabular-nums\" :style=\"row.row\">\n            <span class=\"w-6 shrink-0 text-ds-neutral-500\">{{ i + 1 }}</span>\n            <span class=\"h-0.5 flex-1 bg-ds-neutral-300\"><span class=\"ds-viz-bar block h-full bg-off-white\" :style=\"row.bar\" /></span>\n          </p>\n          <p class=\"ds-viz-in text-caption text-ds-neutral-500\" style=\"--d: 1100\">And 1,019 more</p>\n        </div>\n        <p class=\"ds-viz-in flex items-center justify-between gap-2\" style=\"--d: 1300\">\n          <span class=\"min-w-0 flex-1 truncate bg-ds-neutral-200 px-2.5 py-2\">Why did checkout break?</span>\n          <span class=\"ds-viz-tag\">Query</span>\n        </p>\n        <p class=\"ds-viz-in flex justify-between text-caption text-ds-neutral-500\" style=\"--d: 1500\">\n          <span>conare-embed-1, 1,024 dimensions</span><span>OpenAI-compatible</span>\n        </p>\n      </template>\n\n      <!-- Rerank: three passages, the answer moved first on a 32px track. -->\n      <template v-else>\n        <p class=\"ds-viz-in bg-ds-neutral-200 px-2.5 py-2\" style=\"--d: 200\">Why did checkout break?</p>\n        <p class=\"ds-viz-in flex flex-wrap gap-1.5\" style=\"--d: 400\">\n          <span class=\"ds-viz-tag\">3 documents</span><span class=\"ds-viz-tag\">Top 1</span>\n        </p>\n        <!-- Three 32px rows plus the box's 2px of border, so none is clipped. -->\n        <div class=\"relative h-[98px] border border-ds-neutral-300\">\n          <div\n            v-for=\"(r, i) in ranked\"\n            :key=\"r.text\"\n            class=\"ds-viz-row absolute inset-x-0 top-0 flex h-8 items-center gap-2 border-b border-ds-neutral-300 bg-ds-neutral-100 px-2.5 last:border-b-0\"\n            :style=\"rankedStyles[i]\"\n          >\n            <span class=\"ds-viz-dot\" :class=\"r.to === 0 ? 'bg-home-red' : 'bg-ds-neutral-500'\" />\n            <span class=\"min-w-0 flex-1 truncate\" :class=\"r.to !== 0 && 'text-ds-neutral-500'\">{{ r.text }}</span>\n          </div>\n        </div>\n        <p class=\"ds-viz-in flex justify-between text-caption text-ds-neutral-500\" style=\"--d: 1300\">\n          <span>conare-rerank-1, best first</span><span>Cohere-compatible</span>\n        </p>\n      </template>\n    </div>\n  </VizWindow>\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "On the site",
+      "center": false,
+      "half": false,
+      "path": "examples/product-viz/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport ProductViz, { type ProductVizId } from '@/components/visuals/ProductViz.vue'\n// Three products as the website's product cards draw them: search, embed and rerank.\nconst ids: ProductVizId[] = ['search', 'embed', 'rerank']\n</script>\n\n<template>\n  <div class=\"grid gap-4 md:grid-cols-3\">\n    <div v-for=\"id in ids\" :key=\"id\" class=\"relative grid min-h-64 place-items-center overflow-hidden bg-ds-neutral-200 px-4 py-8 text-ds-neutral-300\">\n      <ProductViz :id=\"id\" active />\n    </div>\n  </div>\n</template>\n",
+      "requires": [
+        "eval-viz"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/visuals/ProductViz.tsx",
+          "content": "import type { CSSProperties } from 'react'\nimport { cn } from '@/react/lib/cn'\nimport { VizWindow } from '@/react/components/visuals/VizWindow'\n\n// A product as a small window (the website's ProductViz.vue), told on the quickstart's case: search (a question and its\n// best passage), sync (a source writing changed issues and deleting a deleted one), parse (a runbook PDF back as\n// Markdown), embed (a passage and a question as vectors, drawn as bars) and rerank (three passages, the answer moved\n// first). Each carries its call's options as tags. The content is the website's illustration, fixed per `id`.\nexport type ProductVizId = 'search' | 'sync' | 'parse' | 'embed' | 'rerank'\nexport interface ProductVizProps {\n  id: ProductVizId\n  active: boolean\n  /** Classes on the window's root after its own (Vue's class falling through), such as relative over a cell-burst. */\n  className?: string\n}\n\nconst TITLES: Record<ProductVizId, string> = { search: 'POST /namespaces/docs/query', sync: 'Source Linear', parse: 'POST /parse', embed: 'POST /v1/embeddings', rerank: 'POST /v1/rerank' }\n// An embedding's first values, drawn as bars of their size: the shape of a vector, not its numbers.\nconst vector = [0.62, 0.36, 0.09, 0.48, 0.21]\nconst synced = [\n  { id: 'ENG-212 Key rotation fails in EU', result: 'Updated' },\n  { id: 'ENG-219 Add rollback runbook', result: 'Created' },\n  { id: 'ENG-180 Checkout timeouts', result: 'Updated' },\n  { id: 'ENG-97 Old signing key', result: 'Deleted', gone: true },\n]\n// Found in one order, reranked into another (rows' places before and after).\nconst ranked = [\n  { text: 'EU checkout broke after a key rotation.', from: 1, to: 0 },\n  { text: 'Checkout runs in three regions.', from: 0, to: 1 },\n  { text: 'Rotate keys from the console.', from: 2, to: 2 },\n]\nconst d = (n: number) => ({ '--d': n }) as CSSProperties\nconst syncedStyles = synced.map((_, i) => d(500 + i * 300))\nconst vectorRows = vector.map((v, i) => ({ v, row: d(500 + i * 120), bar: { '--w': v, '--d': 600 + i * 120 } as CSSProperties }))\nconst rankedStyles = ranked.map(r => ({ '--from': r.from, '--to': r.to, '--d': 600 + r.from * 120, '--track': '32px' }) as CSSProperties)\n\nexport function ProductViz({ id, active, className }: ProductVizProps) {\n  return (\n    <VizWindow data-ds=\"product-viz\" active={active} size=\"sm\" className={cn('max-w-75', className)} title={<span className=\"truncate text-caption text-ds-neutral-600\">{TITLES[id]}</span>}>\n      <div className=\"flex flex-col gap-2 px-3 pt-0.5 pb-3 text-meta\">\n        {id === 'search'\n          ? (\n              // Search: the ask with its filter, the reranked results, the timing.\n              <>\n                <p className=\"ds-viz-in bg-ds-neutral-200 px-2.5 py-2\" style={d(200)}>Why did checkout break?</p>\n                <p className=\"ds-viz-in flex flex-wrap gap-1.5\" style={d(400)}>\n                  <span className=\"ds-viz-tag\">Filter Team payments</span><span className=\"ds-viz-tag\">Top 5</span><span className=\"ds-viz-tag\">Vector and keyword</span>\n                </p>\n                <div className=\"border border-ds-neutral-300\">\n                  <p className=\"ds-viz-in flex items-center gap-2 border-b border-ds-neutral-300 px-2.5 py-2\" style={d(700)}>\n                    <span className=\"ds-viz-dot bg-home-red\" />\n                    <span className=\"min-w-0 flex-1 truncate\">EU checkout broke after a key rotation.</span>\n                    <span className=\"text-ds-neutral-500 tabular-nums\">0.91</span>\n                  </p>\n                  <p className=\"ds-viz-in flex items-center gap-2 border-b border-ds-neutral-300 px-2.5 py-2 text-ds-neutral-500\" style={d(850)}>\n                    <span className=\"ds-viz-dot bg-ds-neutral-500\" />\n                    <span className=\"min-w-0 flex-1 truncate\">Rotate keys from the console.</span>\n                  </p>\n                  <p className=\"ds-viz-in flex items-center gap-2 px-2.5 py-2 text-ds-neutral-500\" style={d(1000)}>\n                    <span className=\"ds-viz-dot bg-ds-neutral-500\" />\n                    <span className=\"min-w-0 flex-1 truncate\">Checkout runs in three regions.</span>\n                  </p>\n                </div>\n                <p className=\"ds-viz-in flex justify-between text-caption text-ds-neutral-500\" style={d(1300)}>\n                  <span>Reranked</span><span className=\"tabular-nums\">Took 62 ms</span>\n                </p>\n              </>\n            )\n          : id === 'sync'\n            ? (\n                // Sync: a run writing what changed and deleting what went, with its progress and the next run.\n                <>\n                  <p className=\"ds-viz-in flex items-center justify-between text-caption text-ds-neutral-500\" style={d(200)}>\n                    {' Namespace Eng '}\n                    <span className=\"grid\">\n                      <span className=\"ds-viz-swap-a [grid-area:1/1] bg-ds-neutral-200 px-1.5 text-caption leading-4.5 text-ds-neutral-400\" style={d(1900)}>Syncing</span>\n                      <span className=\"ds-viz-swap-b [grid-area:1/1] bg-home-red px-1.5 text-caption leading-4.5 text-off-white\" style={d(1900)}>Synced</span>\n                    </span>\n                  </p>\n                  <div className=\"border border-ds-neutral-300\">\n                    {synced.map((r, i) => (\n                      <p key={r.id} className=\"ds-viz-in flex items-center gap-2 border-b border-ds-neutral-300 px-2.5 py-2 last:border-b-0\" style={syncedStyles[i]}>\n                        <span className={cn('ds-viz-dot', r.gone ? 'bg-ds-neutral-500' : 'bg-home-red')} />\n                        <span className={cn('min-w-0 flex-1 truncate', r.gone && 'text-ds-neutral-500 line-through')}>{r.id}</span>\n                        <span className=\"text-ds-neutral-500\">{r.result}</span>\n                      </p>\n                    ))}\n                  </div>\n                  <p className=\"ds-viz-in flex items-center gap-2 text-caption text-ds-neutral-500\" style={d(600)}>\n                    <span className=\"h-0.5 flex-1 bg-ds-neutral-300\"><span className=\"ds-viz-bar block h-full bg-off-white\" style={{ '--w': 1, '--d': 600 } as CSSProperties} /></span>\n                    <span className=\"tabular-nums\">4 records</span>\n                  </p>\n                  <p className=\"ds-viz-in text-caption text-ds-neutral-500\" style={d(2100)}>Next sync in 15 min, picked by Conare</p>\n                </>\n              )\n            : id === 'parse'\n              ? (\n                  // Parse: the file's facts, then its Markdown.\n                  <>\n                    <p className=\"ds-viz-in flex items-center gap-2 text-caption text-ds-neutral-500\" style={d(200)}>\n                      <svg width=\"10\" height=\"12\" viewBox=\"0 0 10 12\" aria-hidden=\"true\"><path d=\"M.5.5h6l3 3v8H.5z\" fill=\"none\" stroke=\"currentColor\" /></svg>\n                      <span className=\"text-ds-neutral-600\">Runbook.pdf</span> to Markdown\n                    </p>\n                    <p className=\"ds-viz-in flex flex-wrap gap-1.5\" style={d(400)}>\n                      <span className=\"ds-viz-tag\">12 pages</span><span className=\"ds-viz-tag\">Scans read by OCR</span><span className=\"ds-viz-tag\">Stores nothing</span>\n                    </p>\n                    <div className=\"border border-ds-neutral-300 px-2.5 py-2 text-caption leading-5\">\n                      <p className=\"ds-viz-in\" style={d(600)}><span className=\"text-red-lift\"># </span>Key rotation</p>\n                      <p className=\"ds-viz-in text-ds-neutral-600\" style={d(750)}>Rotate the signing key every 90 days.</p>\n                      <p className=\"ds-viz-in\" style={d(900)}><span className=\"text-red-lift\">## </span>Rollback</p>\n                      <p className=\"ds-viz-in text-ds-neutral-600\" style={d(1050)}>Restore the previous key from the vault.</p>\n                      <p className=\"ds-viz-in text-ds-neutral-500\" style={d(1200)}><span className=\"text-red-lift\">| </span>EU <span className=\"text-red-lift\">| </span>Payments <span className=\"text-red-lift\">|</span></p>\n                    </div>\n                  </>\n                )\n              : id === 'embed'\n                ? (\n                    // Embed: a passage and a query, each as its first values.\n                    <>\n                      <p className=\"ds-viz-in flex items-center justify-between gap-2\" style={d(200)}>\n                        <span className=\"min-w-0 flex-1 truncate bg-ds-neutral-200 px-2.5 py-2\">EU checkout broke after a key rotation.</span>\n                        <span className=\"ds-viz-tag\">Document</span>\n                      </p>\n                      <div className=\"border border-ds-neutral-300 px-2.5 py-2\">\n                        {vectorRows.map((row, i) => (\n                          <p key={row.v} className=\"ds-viz-in flex items-center gap-2 text-caption tabular-nums\" style={row.row}>\n                            <span className=\"w-6 shrink-0 text-ds-neutral-500\">{i + 1}</span>\n                            <span className=\"h-0.5 flex-1 bg-ds-neutral-300\"><span className=\"ds-viz-bar block h-full bg-off-white\" style={row.bar} /></span>\n                          </p>\n                        ))}\n                        <p className=\"ds-viz-in text-caption text-ds-neutral-500\" style={d(1100)}>And 1,019 more</p>\n                      </div>\n                      <p className=\"ds-viz-in flex items-center justify-between gap-2\" style={d(1300)}>\n                        <span className=\"min-w-0 flex-1 truncate bg-ds-neutral-200 px-2.5 py-2\">Why did checkout break?</span>\n                        <span className=\"ds-viz-tag\">Query</span>\n                      </p>\n                      <p className=\"ds-viz-in flex justify-between text-caption text-ds-neutral-500\" style={d(1500)}>\n                        <span>conare-embed-1, 1,024 dimensions</span><span>OpenAI-compatible</span>\n                      </p>\n                    </>\n                  )\n                : (\n                    // Rerank: three passages, the answer moved first on a 32px track.\n                    <>\n                      <p className=\"ds-viz-in bg-ds-neutral-200 px-2.5 py-2\" style={d(200)}>Why did checkout break?</p>\n                      <p className=\"ds-viz-in flex flex-wrap gap-1.5\" style={d(400)}>\n                        <span className=\"ds-viz-tag\">3 documents</span><span className=\"ds-viz-tag\">Top 1</span>\n                      </p>\n                      {/* Three 32px rows plus the box's 2px of border, so none is clipped. */}\n                      <div className=\"relative h-[98px] border border-ds-neutral-300\">\n                        {ranked.map((r, i) => (\n                          <div key={r.text} className=\"ds-viz-row absolute inset-x-0 top-0 flex h-8 items-center gap-2 border-b border-ds-neutral-300 bg-ds-neutral-100 px-2.5 last:border-b-0\" style={rankedStyles[i]}>\n                            <span className={cn('ds-viz-dot', r.to === 0 ? 'bg-home-red' : 'bg-ds-neutral-500')} />\n                            <span className={cn('min-w-0 flex-1 truncate', r.to !== 0 && 'text-ds-neutral-500')}>{r.text}</span>\n                          </div>\n                        ))}\n                      </div>\n                      <p className=\"ds-viz-in flex justify-between text-caption text-ds-neutral-500\" style={d(1300)}>\n                        <span>conare-rerank-1, best first</span><span>Cohere-compatible</span>\n                      </p>\n                    </>\n                  )}\n      </div>\n    </VizWindow>\n  )\n}\n\nexport default ProductViz\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "eval-viz"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "ProductViz",
+            "file": "react/components/visuals/ProductViz.tsx",
+            "props": [
+              {
+                "name": "id",
+                "type": "ProductVizId",
+                "required": true
+              },
+              {
+                "name": "active",
+                "type": "boolean",
+                "required": true
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false,
+                "description": "Classes on the window's root after its own (Vue's class falling through), such as relative over a cell-burst."
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "On the site",
+          "center": false,
+          "half": false,
+          "path": "react/examples/product-viz/Site.tsx",
+          "content": "import { ProductViz, type ProductVizId } from '@/react/components/visuals/ProductViz'\n// Three products as the website's product cards draw them: search, embed and rerank.\nconst ids: ProductVizId[] = ['search', 'embed', 'rerank']\n\nexport default function Site() {\n  return (\n    <div className=\"grid gap-4 md:grid-cols-3\">\n      {ids.map(id => (\n        <div key={id} className=\"relative grid min-h-64 place-items-center overflow-hidden bg-ds-neutral-200 px-4 py-8 text-ds-neutral-300\">\n          <ProductViz id={id} active />\n        </div>\n      ))}\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "eval-viz"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/visuals/product-viz.ts",
+          "content": "import { html } from 'lit'\nimport { define } from '@/elements/lib/element'\nimport { VizWindow } from '@/elements/components/visuals/viz-window'\nimport styles from 'virtual:tw'\n\n// ProductViz.vue as <conare-product-viz>: a product as a small window (the website's ProductViz.vue), told on the\n// quickstart's case: search (a question and its best passage), sync (a source writing changed issues and deleting a\n// deleted one), parse (a runbook PDF back as Markdown), embed (a passage and a question as vectors, drawn as bars) and\n// rerank (three passages, the answer moved first). Each carries its call's options as tags. The content is the\n// website's illustration, fixed per `product` (Vue's `id`; `id` is HTML's). It is a <conare-viz-window> drawing its\n// own title and body.\nexport type ProductVizId = 'search' | 'sync' | 'parse' | 'embed' | 'rerank'\n\nconst TITLES: Record<ProductVizId, string> = { search: 'POST /namespaces/docs/query', sync: 'Source Linear', parse: 'POST /parse', embed: 'POST /v1/embeddings', rerank: 'POST /v1/rerank' }\n// An embedding's first values, drawn as bars of their size: the shape of a vector, not its numbers.\nconst vector = [0.62, 0.36, 0.09, 0.48, 0.21]\nconst synced = [\n\t{ id: 'ENG-212 Key rotation fails in EU', result: 'Updated' },\n\t{ id: 'ENG-219 Add rollback runbook', result: 'Created' },\n\t{ id: 'ENG-180 Checkout timeouts', result: 'Updated' },\n\t{ id: 'ENG-97 Old signing key', result: 'Deleted', gone: true },\n]\n// Found in one order, reranked into another (rows' places before and after).\nconst ranked = [\n\t{ text: 'EU checkout broke after a key rotation.', from: 1, to: 0 },\n\t{ text: 'Checkout runs in three regions.', from: 0, to: 1 },\n\t{ text: 'Rotate keys from the console.', from: 2, to: 2 },\n]\n\n/**\n * @summary A product as a small window: search, sync, parse, embed or rerank.\n */\nexport class ProductViz extends VizWindow {\n\tstatic styles = [VizWindow.styles, styles]\n\tstatic properties = { ...VizWindow.properties, product: {} }\n\n\t/** Which product it tells (Vue's `id`). */\n\tproduct: ProductVizId = 'search'\n\tsize: 'sm' | 'md' = 'sm'\n\n\tprotected rootClass() {\n\t\treturn 'max-w-75'\n\t}\n\n\tprotected renderTitle() {\n\t\treturn html`<span class=\"truncate text-caption text-ds-neutral-600\">${TITLES[this.product] ?? ''}</span>`\n\t}\n\n\tprotected renderBody() {\n\t\treturn html`<div class=\"flex flex-col gap-2 px-3 pt-0.5 pb-3 text-meta\">${this.renderProduct()}</div>`\n\t}\n\n\tprivate renderProduct() {\n\t\tswitch (this.product) {\n\t\t\t// Search: the ask with its filter, the reranked results, the timing.\n\t\t\tcase 'search':\n\t\t\t\treturn html`<p class=\"ds-viz-in bg-ds-neutral-200 px-2.5 py-2\" style=\"--d: 200\">Why did checkout break?</p><p class=\"ds-viz-in flex flex-wrap gap-1.5\" style=\"--d: 400\"><span class=\"ds-viz-tag\">Filter Team payments</span><span class=\"ds-viz-tag\">Top 5</span><span class=\"ds-viz-tag\">Vector and keyword</span></p><div class=\"border border-ds-neutral-300\"><p class=\"ds-viz-in flex items-center gap-2 border-b border-ds-neutral-300 px-2.5 py-2\" style=\"--d: 700\"><span class=\"ds-viz-dot bg-home-red\"></span><span class=\"min-w-0 flex-1 truncate\">EU checkout broke after a key rotation.</span><span class=\"text-ds-neutral-500 tabular-nums\">0.91</span></p><p class=\"ds-viz-in flex items-center gap-2 border-b border-ds-neutral-300 px-2.5 py-2 text-ds-neutral-500\" style=\"--d: 850\"><span class=\"ds-viz-dot bg-ds-neutral-500\"></span><span class=\"min-w-0 flex-1 truncate\">Rotate keys from the console.</span></p><p class=\"ds-viz-in flex items-center gap-2 px-2.5 py-2 text-ds-neutral-500\" style=\"--d: 1000\"><span class=\"ds-viz-dot bg-ds-neutral-500\"></span><span class=\"min-w-0 flex-1 truncate\">Checkout runs in three regions.</span></p></div><p class=\"ds-viz-in flex justify-between text-caption text-ds-neutral-500\" style=\"--d: 1300\"><span>Reranked</span><span class=\"tabular-nums\">Took 62 ms</span></p>`\n\t\t\t// Sync: a run writing what changed and deleting what went, with its progress and the next run.\n\t\t\tcase 'sync':\n\t\t\t\treturn html`<p class=\"ds-viz-in flex items-center justify-between text-caption text-ds-neutral-500\" style=\"--d: 200\"> Namespace Eng <span class=\"grid\"><span class=\"ds-viz-swap-a [grid-area:1/1] bg-ds-neutral-200 px-1.5 text-caption leading-4.5 text-ds-neutral-400\" style=\"--d: 1900\">Syncing</span><span class=\"ds-viz-swap-b [grid-area:1/1] bg-home-red px-1.5 text-caption leading-4.5 text-off-white\" style=\"--d: 1900\">Synced</span></span></p><div class=\"border border-ds-neutral-300\">${synced.map((r, i) => html`<p class=\"ds-viz-in flex items-center gap-2 border-b border-ds-neutral-300 px-2.5 py-2 last:border-b-0\" style=\"--d: ${500 + i * 300}\"><span class=${r.gone ? 'ds-viz-dot bg-ds-neutral-500' : 'ds-viz-dot bg-home-red'}></span><span class=${r.gone ? 'min-w-0 flex-1 truncate text-ds-neutral-500 line-through' : 'min-w-0 flex-1 truncate'}>${r.id}</span><span class=\"text-ds-neutral-500\">${r.result}</span></p>`)}</div><p class=\"ds-viz-in flex items-center gap-2 text-caption text-ds-neutral-500\" style=\"--d: 600\"><span class=\"h-0.5 flex-1 bg-ds-neutral-300\"><span class=\"ds-viz-bar block h-full bg-off-white\" style=\"--w: 1; --d: 600\"></span></span><span class=\"tabular-nums\">4 records</span></p><p class=\"ds-viz-in text-caption text-ds-neutral-500\" style=\"--d: 2100\">Next sync in 15 min, picked by Conare</p>`\n\t\t\t// Parse: the file's facts, then its Markdown.\n\t\t\tcase 'parse':\n\t\t\t\treturn html`<p class=\"ds-viz-in flex items-center gap-2 text-caption text-ds-neutral-500\" style=\"--d: 200\"><svg width=\"10\" height=\"12\" viewBox=\"0 0 10 12\" aria-hidden=\"true\"><path d=\"M.5.5h6l3 3v8H.5z\" fill=\"none\" stroke=\"currentColor\"></path></svg><span class=\"text-ds-neutral-600\">Runbook.pdf</span> to Markdown</p><p class=\"ds-viz-in flex flex-wrap gap-1.5\" style=\"--d: 400\"><span class=\"ds-viz-tag\">12 pages</span><span class=\"ds-viz-tag\">Scans read by OCR</span><span class=\"ds-viz-tag\">Stores nothing</span></p><div class=\"border border-ds-neutral-300 px-2.5 py-2 text-caption leading-5\"><p class=\"ds-viz-in\" style=\"--d: 600\"><span class=\"text-red-lift\"># </span>Key rotation</p><p class=\"ds-viz-in text-ds-neutral-600\" style=\"--d: 750\">Rotate the signing key every 90 days.</p><p class=\"ds-viz-in\" style=\"--d: 900\"><span class=\"text-red-lift\">## </span>Rollback</p><p class=\"ds-viz-in text-ds-neutral-600\" style=\"--d: 1050\">Restore the previous key from the vault.</p><p class=\"ds-viz-in text-ds-neutral-500\" style=\"--d: 1200\"><span class=\"text-red-lift\">| </span>EU <span class=\"text-red-lift\">| </span>Payments <span class=\"text-red-lift\">|</span></p></div>`\n\t\t\t// Embed: a passage and a query, each as its first values.\n\t\t\tcase 'embed':\n\t\t\t\treturn html`<p class=\"ds-viz-in flex items-center justify-between gap-2\" style=\"--d: 200\"><span class=\"min-w-0 flex-1 truncate bg-ds-neutral-200 px-2.5 py-2\">EU checkout broke after a key rotation.</span><span class=\"ds-viz-tag\">Document</span></p><div class=\"border border-ds-neutral-300 px-2.5 py-2\">${vector.map((v, i) => html`<p class=\"ds-viz-in flex items-center gap-2 text-caption tabular-nums\" style=\"--d: ${500 + i * 120}\"><span class=\"w-6 shrink-0 text-ds-neutral-500\">${i + 1}</span><span class=\"h-0.5 flex-1 bg-ds-neutral-300\"><span class=\"ds-viz-bar block h-full bg-off-white\" style=\"--w: ${v}; --d: ${600 + i * 120}\"></span></span></p>`)}<p class=\"ds-viz-in text-caption text-ds-neutral-500\" style=\"--d: 1100\">And 1,019 more</p></div><p class=\"ds-viz-in flex items-center justify-between gap-2\" style=\"--d: 1300\"><span class=\"min-w-0 flex-1 truncate bg-ds-neutral-200 px-2.5 py-2\">Why did checkout break?</span><span class=\"ds-viz-tag\">Query</span></p><p class=\"ds-viz-in flex justify-between text-caption text-ds-neutral-500\" style=\"--d: 1500\"><span>conare-embed-1, 1,024 dimensions</span><span>OpenAI-compatible</span></p>`\n\t\t\t// Rerank: three passages, the answer moved first on a 32px track.\n\t\t\tdefault:\n\t\t\t\treturn html`<p class=\"ds-viz-in bg-ds-neutral-200 px-2.5 py-2\" style=\"--d: 200\">Why did checkout break?</p><p class=\"ds-viz-in flex flex-wrap gap-1.5\" style=\"--d: 400\"><span class=\"ds-viz-tag\">3 documents</span><span class=\"ds-viz-tag\">Top 1</span></p><div class=\"relative h-[98px] border border-ds-neutral-300\">${ranked.map((r) => html`<div class=\"ds-viz-row absolute inset-x-0 top-0 flex h-8 items-center gap-2 border-b border-ds-neutral-300 bg-ds-neutral-100 px-2.5 last:border-b-0\" style=\"--from: ${r.from}; --to: ${r.to}; --d: ${600 + r.from * 120}; --track: 32px\"><span class=${r.to === 0 ? 'ds-viz-dot bg-home-red' : 'ds-viz-dot bg-ds-neutral-500'}></span><span class=${r.to !== 0 ? 'min-w-0 flex-1 truncate text-ds-neutral-500' : 'min-w-0 flex-1 truncate'}>${r.text}</span></div>`)}</div><p class=\"ds-viz-in flex justify-between text-caption text-ds-neutral-500\" style=\"--d: 1300\"><span>conare-rerank-1, best first</span><span>Cohere-compatible</span></p>`\n\t\t}\n\t}\n}\n\ndefine('product-viz', ProductViz)\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/product-viz.js",
+        "elements/viz-window.js"
+      ],
+      "tag": "conare-product-viz",
+      "tags": [
+        "conare-product-viz"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "eval-viz"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-product-viz",
+            "name": "ProductViz",
+            "module": "elements/product-viz.js",
+            "description": "A product as a small window: search, sync, parse, embed or rerank.",
+            "attributes": [
+              {
+                "name": "product",
+                "field": "product",
+                "type": "ProductVizId",
+                "default": "'search'",
+                "description": "Which product it tells (Vue's `id`)."
+              },
+              {
+                "name": "active",
+                "field": "active",
+                "type": "boolean",
+                "default": "false",
+                "description": "Plays the entrance; inactive, it holds its finished state."
+              },
+              {
+                "name": "size",
+                "field": "size",
+                "type": "\"sm\" | \"md\"",
+                "default": "'md'",
+                "description": "`sm`: the product cards' 36px bar with two controls."
+              },
+              {
+                "name": "stretch",
+                "field": "stretch",
+                "type": "boolean",
+                "default": "false",
+                "description": "Fills its box (full height, no max width)."
+              },
+              {
+                "name": "relative",
+                "field": "relative",
+                "type": "boolean",
+                "default": "false",
+                "description": "Positions its box (Vue's class=\"relative\" on the window), so it paints over an absolute sibling such as a cell-burst."
+              }
+            ],
+            "properties": [
+              {
+                "name": "product",
+                "type": "ProductVizId",
+                "default": "'search'",
+                "description": "Which product it tells (Vue's `id`).",
+                "attribute": "product"
+              },
+              {
+                "name": "size",
+                "type": "\"sm\" | \"md\"",
+                "default": "'sm'",
+                "description": "`sm`: the product cards' 36px bar with two controls.",
+                "attribute": "size"
+              },
+              {
+                "name": "active",
+                "type": "boolean",
+                "default": "false",
+                "description": "Plays the entrance; inactive, it holds its finished state.",
+                "attribute": "active"
+              },
+              {
+                "name": "stretch",
+                "type": "boolean",
+                "default": "false",
+                "description": "Fills its box (full height, no max width).",
+                "attribute": "stretch"
+              },
+              {
+                "name": "relative",
+                "type": "boolean",
+                "default": "false",
+                "description": "Positions its box (Vue's class=\"relative\" on the window), so it paints over an absolute sibling such as a cell-burst.",
+                "attribute": "relative"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "title",
+                "description": "What the bar says after the mark."
+              },
+              {
+                "name": "",
+                "description": "The window's body."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "On the site",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/product-viz/Site.html",
+          "content": "<!-- Three products as the website's product cards draw them: search, embed and rerank. -->\n<div class=\"grid gap-4 md:grid-cols-3\">\n  <div class=\"relative grid min-h-64 place-items-center overflow-hidden bg-ds-neutral-200 px-4 py-8 text-ds-neutral-300\"><conare-product-viz product=\"search\" active></conare-product-viz></div>\n  <div class=\"relative grid min-h-64 place-items-center overflow-hidden bg-ds-neutral-200 px-4 py-8 text-ds-neutral-300\"><conare-product-viz product=\"embed\" active></conare-product-viz></div>\n  <div class=\"relative grid min-h-64 place-items-center overflow-hidden bg-ds-neutral-200 px-4 py-8 text-ds-neutral-300\"><conare-product-viz product=\"rerank\" active></conare-product-viz></div>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

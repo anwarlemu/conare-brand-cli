@@ -1,0 +1,23 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "about-page",
+  "type": "registry:block",
+  "title": "About page",
+  "description": "About the company: the head, the story in one narrow column, the numbers in the double rule, what the team holds to (feature grid) and the closing band, in the site's frame.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://conare-ds-registry.vercel.app/r/react/button-link.json",
+    "https://conare-ds-registry.vercel.app/r/react/call-to-action.json",
+    "https://conare-ds-registry.vercel.app/r/react/docs-blocks.json",
+    "https://conare-ds-registry.vercel.app/r/react/feature-grid.json",
+    "https://conare-ds-registry.vercel.app/r/react/section-head.json",
+    "https://conare-ds-registry.vercel.app/r/react/site-page.json"
+  ],
+  "files": [
+    {
+      "path": "components/site/AboutPage.tsx",
+      "type": "registry:ui",
+      "content": "import { ButtonLink } from '@/components/site/ButtonLink'\nimport { CallToAction } from '@/components/site/CallToAction'\nimport { DocsBlocks, type DocsBlock } from '@/components/site/DocsBlocks'\nimport { FeatureGrid, type Feature } from '@/components/site/FeatureGrid'\nimport { SectionHead } from '@/components/site/SectionHead'\nimport { SitePage, type SiteAction, type SiteFrameProps } from '@/components/site/SitePage'\n\n// About the company: the head, the story in one narrow column (docs-blocks, as a blog post's text), the numbers in the\n// double rule (each large in tabular figures over its label, as a price), what the team holds to (feature-grid) and the\n// closing band, in the site's frame.\nexport interface AboutPageProps extends SiteFrameProps {\n  head: { tag?: string, title: string, body?: string }\n  story: DocsBlock[]\n  numbers: { value: string, label: string }[]\n  values: { title: string, tag?: string, body?: string, features: Feature[] }\n  cta: { title: string, action: SiteAction }\n}\n\nexport function AboutPage({ header, footer, announcement, logo, actions, head, story, numbers, values, cta }: AboutPageProps) {\n  return (\n    <SitePage data-ds=\"about-page\" header={header} footer={footer} announcement={announcement} logo={logo} actions={actions}>\n      <section aria-labelledby=\"about-page-title\" className=\"mx-auto max-w-[1440px] px-4 pt-14 pb-16 sm:px-6 lg:px-10 lg:pt-20 lg:pb-20\">\n        <SectionHead as=\"h1\" titleId=\"about-page-title\" tag={head.tag} title={head.title} body={head.body} />\n        <div className=\"mx-auto mt-12 max-w-[640px]\"><DocsBlocks blocks={story} /></div>\n      </section>\n      <section aria-label=\"In numbers\" className=\"mx-auto max-w-[1440px] px-4 pb-24 sm:px-6 lg:px-10 lg:pb-32\">\n        <dl className=\"grid grid-cols-2 gap-px border border-edge bg-edge outline outline-offset-4 outline-edge lg:grid-cols-4\">\n          {numbers.map(n => (\n            <div key={n.label} className=\"flex flex-col-reverse gap-2 bg-surface px-5 py-6 sm:px-6\">\n              <dt className=\"text-body text-fg-muted\">{n.label}</dt>\n              <dd className=\"text-viz-score tracking-display text-fg tabular-nums\">{n.value}</dd>\n            </div>\n          ))}\n        </dl>\n      </section>\n      <FeatureGrid {...values} />\n      <CallToAction title={cta.title}>\n        <ButtonLink href={cta.action.href} variant=\"light\" fill=\"black\">{cta.action.label}</ButtonLink>\n      </CallToAction>\n    </SitePage>\n  )\n}\n\nexport default AboutPage\n"
+    }
+  ]
+}

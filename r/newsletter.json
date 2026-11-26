@@ -1,0 +1,327 @@
+{
+  "name": "newsletter",
+  "title": "Newsletter",
+  "type": "registry:block",
+  "group": "site",
+  "description": "A sign-up for news by email: the band's head, one email field and the one dark button in the double rule; the app sends it and says what follows.",
+  "use_for": "A newsletter or updates sign-up on a marketing page.",
+  "never": [
+    "A second button or a checkbox wall",
+    "Asking for more than the email"
+  ],
+  "source": "No newsletter in conare-web; set from its contact form (the field, the pixel button and the double rule) and the pages' heads",
+  "body": "`submit` carries the address (`onSubmit` in React). `sent` shows `sent-text` in place of the form; `error` shows the server's answer under it.",
+  "requires": [
+    "button",
+    "field",
+    "section-head"
+  ],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/site/Newsletter.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport SectionHead from '@/components/site/SectionHead.vue'\nimport Field from '@/components/ui/Field.vue'\nimport Input from '@/components/ui/Input.vue'\nimport PixelButton from '@/components/ui/PixelButton.vue'\n\n// A sign-up for news by email: the band's head, then one email field and the one dark button in the website's double\n// rule. It calls nothing: `submit` carries the address, `sent` (the app's) swaps the form for the line the app gives,\n// and a failure from the server shows under it. The site has no newsletter: set from the contact form's field, button\n// and frame.\nwithDefaults(defineProps<{\n  title: string, tag?: string, body?: string, label?: string, action?: string\n  sent?: boolean, sentText?: string, sending?: boolean, error?: string, titleId?: string\n}>(), { label: 'Work email', action: 'Subscribe', sentText: '', titleId: 'newsletter-title' })\nconst emit = defineEmits<{ submit: [email: string] }>()\nconst email = ref('')\n</script>\n\n<template>\n  <section data-ds=\"newsletter\" :aria-labelledby=\"titleId\" class=\"mx-auto max-w-[1440px] px-4 pb-24 sm:px-6 lg:px-10 lg:pb-32\">\n    <SectionHead :title=\"title\" :tag=\"tag\" :body=\"body\" :title-id=\"titleId\" />\n    <div class=\"mx-auto mt-10 max-w-[560px] border border-edge p-5 outline outline-offset-4 outline-edge sm:p-6\">\n      <p v-if=\"sent\" role=\"status\" class=\"type-ui text-fg\">{{ sentText }}</p>\n      <form v-else class=\"flex flex-col gap-4 sm:flex-row sm:items-end\" :aria-label=\"title\" @submit.prevent=\"emit('submit', email)\">\n        <div class=\"min-w-0 flex-1\">\n          <Field v-slot=\"{ id }\" :label=\"label\">\n            <Input :id=\"id\" v-model=\"email\" type=\"email\" autocomplete=\"email\" maxlength=\"200\" required />\n          </Field>\n        </div>\n        <div><PixelButton type=\"submit\" :disabled=\"sending\">{{ action }}</PixelButton></div>\n      </form>\n      <p v-if=\"error\" class=\"mt-4 bg-surface-danger px-3 py-2 type-ui\" role=\"alert\">{{ error }}</p>\n    </div>\n  </section>\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "Newsletter, on sample data",
+      "center": false,
+      "half": false,
+      "path": "examples/newsletter/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport Newsletter from '@/components/site/Newsletter.vue'\n// The sign-up on sample data: send it with an address to see the line that follows.\nconst sent = ref(false)\n</script>\n\n<template>\n  <div class=\"-mx-8 pt-8\">\n    <Newsletter tag=\"Newsletter\" title=\"News from the team, once a month.\" body=\"What shipped, what we learned, and nothing else.\" sent-text=\"You are on the list. The next issue comes at the start of the month.\" :sent=\"sent\" @submit=\"sent = true\" />\n  </div>\n</template>\n",
+      "requires": [
+        "button",
+        "field",
+        "section-head"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/site/Newsletter.tsx",
+          "content": "'use client'\nimport { useState } from 'react'\nimport { SectionHead } from '@/react/components/site/SectionHead'\nimport { Field } from '@/react/components/ui/Field'\nimport { Input } from '@/react/components/ui/Input'\nimport { PixelButton } from '@/react/components/ui/PixelButton'\n\n// A sign-up for news by email: the band's head, then one email field and the one dark button in the website's double\n// rule. It calls nothing: `onSubmit` carries the address, `sent` (the app's) swaps the form for the line the app gives,\n// and a failure from the server shows under it. The site has no newsletter: set from the contact form's field, button\n// and frame.\nexport interface NewsletterProps {\n  title: string, tag?: string, body?: string, label?: string, action?: string\n  sent?: boolean, sentText?: string, sending?: boolean, error?: string, titleId?: string\n  onSubmit?: (email: string) => void\n}\n\nexport function Newsletter({ title, tag, body, label = 'Work email', action = 'Subscribe', sent, sentText = '', sending, error, titleId = 'newsletter-title', onSubmit }: NewsletterProps) {\n  const [email, setEmail] = useState('')\n  return (\n    <section data-ds=\"newsletter\" aria-labelledby={titleId} className=\"mx-auto max-w-[1440px] px-4 pb-24 sm:px-6 lg:px-10 lg:pb-32\">\n      <SectionHead title={title} tag={tag} body={body} titleId={titleId} />\n      <div className=\"mx-auto mt-10 max-w-[560px] border border-edge p-5 outline outline-offset-4 outline-edge sm:p-6\">\n        {sent\n          ? <p role=\"status\" className=\"type-ui text-fg\">{sentText}</p>\n          : (\n              <form className=\"flex flex-col gap-4 sm:flex-row sm:items-end\" aria-label={title} onSubmit={(e) => { e.preventDefault(); onSubmit?.(email) }}>\n                <div className=\"min-w-0 flex-1\">\n                  <Field label={label}>\n                    {({ id }) => <Input id={id} value={email} onChange={(e: { target: { value: string } }) => setEmail(e.target.value)} type=\"email\" autoComplete=\"email\" maxLength={200} required />}\n                  </Field>\n                </div>\n                <div><PixelButton type=\"submit\" disabled={sending}>{action}</PixelButton></div>\n              </form>\n            )}\n        {error && <p className=\"mt-4 bg-surface-danger px-3 py-2 type-ui\" role=\"alert\">{error}</p>}\n      </div>\n    </section>\n  )\n}\n\nexport default Newsletter\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "button",
+        "field",
+        "section-head"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "Newsletter",
+            "file": "react/components/site/Newsletter.tsx",
+            "props": [
+              {
+                "name": "title",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "tag",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "body",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "required": false,
+                "default": "'Work email'"
+              },
+              {
+                "name": "action",
+                "type": "string",
+                "required": false,
+                "default": "'Subscribe'"
+              },
+              {
+                "name": "sent",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "sentText",
+                "type": "string",
+                "required": false,
+                "default": "''"
+              },
+              {
+                "name": "sending",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "error",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "titleId",
+                "type": "string",
+                "required": false,
+                "default": "'newsletter-title'"
+              },
+              {
+                "name": "onSubmit",
+                "type": "(email: string) => void",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "Newsletter, on sample data",
+          "center": false,
+          "half": false,
+          "path": "react/examples/newsletter/Site.tsx",
+          "content": "'use client'\nimport { useState } from 'react'\nimport { Newsletter } from '@/react/components/site/Newsletter'\n// The sign-up on sample data: send it with an address to see the line that follows.\nexport default function Site() {\n  const [sent, setSent] = useState(false)\n  return (\n    <div className=\"-mx-8 pt-8\">\n      <Newsletter tag=\"Newsletter\" title=\"News from the team, once a month.\" body=\"What shipped, what we learned, and nothing else.\" sentText=\"You are on the list. The next issue comes at the start of the month.\" sent={sent} onSubmit={() => setSent(true)} />\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "button",
+            "field",
+            "section-head"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/site/newsletter.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport '@/elements/components/site/section-head'\nimport '@/elements/components/ui/field'\nimport '@/elements/components/ui/input'\nimport '@/elements/components/ui/pixel-button'\nimport styles from 'virtual:tw'\n\n// Newsletter.vue as <conare-newsletter>: a sign-up for news by email: the band's head, then one email field and the one\n// dark button in the website's double rule. It calls nothing: `submit` carries the address (detail), `sent` (the\n// app's) swaps the form for the line the app gives, and a failure from the server (`error`) shows under it. `heading`\n// is Vue's `title`.\n\n/**\n * @summary A sign-up for news by email, in the double rule.\n * @fires submit - The form was sent; detail is the email address.\n */\nexport class Newsletter extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { heading: {}, tag: {}, body: {}, label: {}, action: {}, sent: { type: Boolean }, sentText: { attribute: 'sent-text' }, sending: { type: Boolean }, error: {}, titleId: { attribute: 'title-id' }, email: { state: true } }\n\n\t/** The band's line (Vue's `title`). */\n\theading = ''\n\ttag?: string\n\tbody?: string\n\tlabel = 'Work email'\n\taction = 'Subscribe'\n\t/** The app has the address: `sentText` shows in place of the form. */\n\tsent = false\n\tsentText = ''\n\tsending = false\n\terror?: string\n\ttitleId = 'newsletter-title'\n\tprivate email = ''\n\n\tprivate onSubmit(event: SubmitEvent) {\n\t\tevent.preventDefault()\n\t\tthis.emit('submit', this.email)\n\t}\n\n\trender() {\n\t\tconst [head, field, input, pixel] = [tag('section-head'), tag('field'), tag('input'), tag('pixel-button')]\n\t\treturn html`<section data-ds=\"newsletter\" aria-labelledby=${this.titleId} class=\"mx-auto max-w-[1440px] px-4 pb-24 sm:px-6 lg:px-10 lg:pb-32\">${staticHtml`<${head} .heading=${this.heading} .tag=${this.tag} .body=${this.body} .titleId=${this.titleId}></${head}>`}<div class=\"mx-auto mt-10 max-w-[560px] border border-edge p-5 outline outline-offset-4 outline-edge sm:p-6\">${this.sent\n\t\t\t? html`<p role=\"status\" class=\"type-ui text-fg\">${this.sentText}</p>`\n\t\t\t: staticHtml`<form class=\"flex flex-col gap-4 sm:flex-row sm:items-end\" aria-label=${this.heading} @submit=${this.onSubmit}><div class=\"min-w-0 flex-1\"><${field} label=${this.label}><${input} .value=${this.email} name=\"email\" type=\"email\" autocomplete=\"email\" maxlength=\"200\" required @input=${(e: Event) => { this.email = (e.target as HTMLElement & { value: string }).value }}></${input}></${field}></div><div><${pixel} type=\"submit\" ?disabled=${this.sending}>${this.action}</${pixel}></div></form>`}${this.error ? html`<p class=\"mt-4 bg-surface-danger px-3 py-2 type-ui\" role=\"alert\">${this.error}</p>` : nothing}</div></section>`\n\t}\n}\n\ndefine('newsletter', Newsletter)\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/newsletter.js",
+        "elements/section-head.js",
+        "elements/field.js",
+        "elements/input.js",
+        "elements/pixel-button.js",
+        "elements/site-tag.js"
+      ],
+      "tag": "conare-newsletter",
+      "tags": [
+        "conare-newsletter"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "button",
+        "field",
+        "section-head",
+        "tag"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-newsletter",
+            "name": "Newsletter",
+            "module": "elements/newsletter.js",
+            "description": "A sign-up for news by email, in the double rule.",
+            "attributes": [
+              {
+                "name": "heading",
+                "field": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The band's line (Vue's `title`)."
+              },
+              {
+                "name": "tag",
+                "field": "tag",
+                "type": "string | undefined"
+              },
+              {
+                "name": "body",
+                "field": "body",
+                "type": "string | undefined"
+              },
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string",
+                "default": "'Work email'"
+              },
+              {
+                "name": "action",
+                "field": "action",
+                "type": "string",
+                "default": "'Subscribe'"
+              },
+              {
+                "name": "sent",
+                "field": "sent",
+                "type": "boolean",
+                "default": "false",
+                "description": "The app has the address: `sentText` shows in place of the form."
+              },
+              {
+                "name": "sent-text",
+                "field": "sentText",
+                "type": "string",
+                "default": "''"
+              },
+              {
+                "name": "sending",
+                "field": "sending",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "error",
+                "field": "error",
+                "type": "string | undefined"
+              },
+              {
+                "name": "title-id",
+                "field": "titleId",
+                "type": "string",
+                "default": "'newsletter-title'"
+              },
+              {
+                "name": "email",
+                "field": "email",
+                "type": "string",
+                "default": "''"
+              }
+            ],
+            "properties": [
+              {
+                "name": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The band's line (Vue's `title`).",
+                "attribute": "heading"
+              },
+              {
+                "name": "tag",
+                "type": "string | undefined",
+                "attribute": "tag"
+              },
+              {
+                "name": "body",
+                "type": "string | undefined",
+                "attribute": "body"
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "default": "'Work email'",
+                "attribute": "label"
+              },
+              {
+                "name": "action",
+                "type": "string",
+                "default": "'Subscribe'",
+                "attribute": "action"
+              },
+              {
+                "name": "sent",
+                "type": "boolean",
+                "default": "false",
+                "description": "The app has the address: `sentText` shows in place of the form.",
+                "attribute": "sent"
+              },
+              {
+                "name": "sentText",
+                "type": "string",
+                "default": "''",
+                "attribute": "sent-text"
+              },
+              {
+                "name": "sending",
+                "type": "boolean",
+                "default": "false",
+                "attribute": "sending"
+              },
+              {
+                "name": "error",
+                "type": "string | undefined",
+                "attribute": "error"
+              },
+              {
+                "name": "titleId",
+                "type": "string",
+                "default": "'newsletter-title'",
+                "attribute": "title-id"
+              }
+            ],
+            "events": [
+              {
+                "name": "submit",
+                "description": "The form was sent; detail is the email address."
+              }
+            ],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "Newsletter, on sample data",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/newsletter/Site.html",
+          "content": "<!-- The sign-up on sample data: send it with an address to see the line that follows. -->\n<div class=\"-mx-8 pt-8\">\n  <conare-newsletter id=\"newsletter\" tag=\"Newsletter\" heading=\"News from the team, once a month.\" body=\"What shipped, what we learned, and nothing else.\" sent-text=\"You are on the list. The next issue comes at the start of the month.\"></conare-newsletter>\n</div>\n<script type=\"module\">\n  await customElements.whenDefined('conare-newsletter')\n  const form = document.getElementById('newsletter')\n  form.addEventListener('submit', () => { form.sent = true })\n</script>\n"
+        }
+      ]
+    }
+  }
+}

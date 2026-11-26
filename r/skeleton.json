@@ -1,0 +1,198 @@
+{
+  "name": "skeleton",
+  "title": "Skeleton",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "Loading that is never empty: a held part is the real part drawn from a blank record, its layout and rules kept and its content hidden, so nothing moves when the answer lands. The rules come in after 300ms, so a fast answer never shows them.",
+  "use_for": "Table rows, cards and lists while their data loads. The dot matrix beside a word for work that takes longer.",
+  "never": [
+    "A shimmer block or gray bars",
+    "A layout that jumps when the data lands",
+    "Showing the rules before 300ms"
+  ],
+  "source": "conare-web app/assets/css/console2.css ([data-held], .v2-held-in), app/composables/useHeld.ts",
+  "body": "",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Skeleton.vue",
+      "content": "<script setup lang=\"ts\">\n// Loading is never empty (console2.css [data-held], useHeld.ts): a held part is the real part drawn from a blank\n// record. Its layout and its rules stay and nothing in it shows, so nothing moves when the answer lands, and the rules\n// come in after 300ms, so a fast answer never shows them. Never a shimmer block. Wrap the real markup (`as=\"tr\"` for a\n// table row, whose cells keep their rules) and pass `held` while it loads; it renders the slot as is once loaded.\nwithDefaults(defineProps<{ held?: boolean, as?: string, label?: string }>(), { held: true, as: 'div', label: 'Loading' })\n</script>\n\n<template>\n  <component data-ds=\"skeleton\" :is=\"as\" :data-held=\"held || undefined\" :aria-busy=\"held || undefined\" :aria-label=\"held ? label : undefined\"><slot /></component>\n</template>\n\n<style>\n[data-held] { color: transparent !important; pointer-events: none; }\n[data-held] * { visibility: hidden; }\ntr[data-held] > * { visibility: visible; color: transparent !important; }\ntr[data-held] > *, :not(tr)[data-held] { animation: ds-held-in var(--ds-duration-enter) var(--ds-easing-out) 300ms backwards; }\n@keyframes ds-held-in { from { border-color: transparent; } }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "Held rows",
+      "center": false,
+      "half": false,
+      "path": "examples/skeleton/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { onBeforeUnmount, ref } from 'vue'\nimport Button from '@/components/ui/Button.vue'\nimport Skeleton from '@/components/ui/Skeleton.vue'\nimport Table from '@/components/ui/Table.vue'\n// Held rows while the namespaces load: each is the real row from a blank record, so its rules stay and nothing moves\n// when the answer lands. Reload holds them for three seconds; the rules come in only after 300ms.\nconst BLANK = { name: 'namespace', documents: 0, queried: 'never' }\nconst rows = [\n  { name: 'contracts', documents: 412830, queried: '2 min ago' },\n  { name: 'slack', documents: 96410, queried: '1 h ago' },\n  { name: 'crm', documents: 52660, queried: 'yesterday' },\n]\nconst held = ref(true)\nlet timer: ReturnType<typeof setTimeout> | undefined\nfunction load() {\n  held.value = true\n  clearTimeout(timer)\n  timer = setTimeout(() => { held.value = false }, 3000)\n}\nload()\nonBeforeUnmount(() => clearTimeout(timer))\n</script>\n\n<template>\n  <div class=\"flex flex-col items-start gap-4\">\n    <Table framed label=\"namespaces\" class=\"w-full\">\n      <thead><tr><th>Namespace</th><th class=\"text-right\">Documents</th><th>Last query</th></tr></thead>\n      <tbody>\n        <Skeleton v-for=\"(r, i) in rows\" :key=\"i\" as=\"tr\" :held=\"held\">\n          <td class=\"type-code-sm\">{{ held ? BLANK.name : r.name }}</td>\n          <td class=\"text-right tabular-nums\">{{ (held ? BLANK : r).documents.toLocaleString('en-US') }}</td>\n          <td class=\"type-meta whitespace-nowrap text-fg-muted\">{{ held ? BLANK.queried : r.queried }}</td>\n        </Skeleton>\n      </tbody>\n    </Table>\n    <Button :disabled=\"held\" @click=\"load\">Reload</Button>\n  </div>\n</template>\n",
+      "requires": [
+        "button",
+        "table"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Skeleton.tsx",
+          "content": "import type { ElementType, ReactNode } from 'react'\n\n// Loading is never empty (console2.css [data-held], useHeld.ts): a held part is the real part drawn from a blank\n// record. Its layout and its rules stay and nothing in it shows, so nothing moves when the answer lands, and the rules\n// come in after 300ms, so a fast answer never shows them. Never a shimmer block. Wrap the real markup (`as=\"tr\"` for a\n// table row, whose cells keep their rules) and pass `held` while it loads; it renders the children as is once loaded.\nexport interface SkeletonProps {\n  held?: boolean\n  as?: ElementType\n  label?: string\n  className?: string\n  children?: ReactNode\n}\n\nexport function Skeleton({ held = true, as: Tag = 'div', label = 'Loading', className, children }: SkeletonProps) {\n  return (\n    <>\n      <style href=\"ds-skeleton\" precedence=\"ds\">{css}</style>\n      <Tag data-ds=\"skeleton\" className={className} data-held={held || undefined} aria-busy={held || undefined} aria-label={held ? label : undefined}>{children}</Tag>\n    </>\n  )\n}\n\nexport default Skeleton\n\nconst css = `\n[data-held] { color: transparent !important; pointer-events: none; }\n[data-held] * { visibility: hidden; }\ntr[data-held] > * { visibility: visible; color: transparent !important; }\ntr[data-held] > *, :not(tr)[data-held] { animation: ds-held-in var(--ds-duration-enter) var(--ds-easing-out) 300ms backwards; }\n@keyframes ds-held-in { from { border-color: transparent; } }\n`\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "Skeleton",
+            "file": "react/components/ui/Skeleton.tsx",
+            "props": [
+              {
+                "name": "held",
+                "type": "boolean",
+                "required": false,
+                "default": "true"
+              },
+              {
+                "name": "as",
+                "type": "ElementType",
+                "required": false
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "required": false,
+                "default": "'Loading'"
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Held rows",
+          "center": false,
+          "half": false,
+          "path": "react/examples/skeleton/Product.tsx",
+          "content": "'use client'\nimport { useEffect, useRef, useState } from 'react'\nimport { Button } from '@/react/components/ui/Button'\nimport { Skeleton } from '@/react/components/ui/Skeleton'\nimport { Table } from '@/react/components/ui/Table'\n// Held rows while the namespaces load: each is the real row from a blank record, so its rules stay and nothing moves\n// when the answer lands. Reload holds them for three seconds; the rules come in only after 300ms.\nconst BLANK = { name: 'namespace', documents: 0, queried: 'never' }\nconst rows = [\n  { name: 'contracts', documents: 412830, queried: '2 min ago' },\n  { name: 'slack', documents: 96410, queried: '1 h ago' },\n  { name: 'crm', documents: 52660, queried: 'yesterday' },\n]\n\nexport default function Product() {\n  const [held, setHeld] = useState(true)\n  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)\n  function load() {\n    setHeld(true)\n    clearTimeout(timer.current)\n    timer.current = setTimeout(() => setHeld(false), 3000)\n  }\n  useEffect(() => {\n    load()\n    return () => clearTimeout(timer.current)\n  }, [])\n  return (\n    <div className=\"flex flex-col items-start gap-4\">\n      <Table framed label=\"namespaces\" className=\"w-full\">\n        <thead><tr><th>Namespace</th><th className=\"text-right\">Documents</th><th>Last query</th></tr></thead>\n        <tbody>\n          {rows.map((r, i) => (\n            <Skeleton key={i} as=\"tr\" held={held}>\n              <td className=\"type-code-sm\">{held ? BLANK.name : r.name}</td>\n              <td className=\"text-right tabular-nums\">{(held ? BLANK : r).documents.toLocaleString('en-US')}</td>\n              <td className=\"type-meta whitespace-nowrap text-fg-muted\">{held ? BLANK.queried : r.queried}</td>\n            </Skeleton>\n          ))}\n        </tbody>\n      </Table>\n      <Button disabled={held} onClick={load}>Reload</Button>\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "button",
+            "table"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/skeleton.ts",
+          "content": "import { html } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// Skeleton.vue as <conare-skeleton>: loading is never empty (console2.css [data-held], useHeld.ts): a held part is the\n// real part drawn from a blank record. Its layout and its rules stay and nothing in it shows, so nothing moves when the\n// answer lands, and the rules come in after 300ms, so a fast answer never shows them. Never a shimmer block. Wrap the\n// real markup and set `held` while it loads (held=\"false\" once loaded).\n//\n// Its content is the page's, so the held rules go to the page once and the marks (data-held, aria-busy, aria-label)\n// go on the page's elements: on the element itself, the held part; or, with `target` (a selector, such as \"tbody >\n// tr\"), on each element inside it that matches, for table rows (Vue's as=\"tr\"), which no element can stand in for,\n// since an HTML parser drops a <tr> anywhere but in a table.\n\n/** Skeleton.vue's <style>. */\nconst RULES = `\n[data-held] { color: transparent !important; pointer-events: none; }\n[data-held] * { visibility: hidden; }\ntr[data-held] > * { visibility: visible; color: transparent !important; }\ntr[data-held] > *, :not(tr)[data-held] { animation: ds-held-in var(--ds-duration-enter) var(--ds-easing-out) 300ms backwards; }\n@keyframes ds-held-in { from { border-color: transparent; } }\n`\nconst sheets = new WeakSet<Document | ShadowRoot>()\nfunction adoptRules(root: Node) {\n\tif (!(root instanceof Document || root instanceof ShadowRoot) || sheets.has(root)) return\n\tconst sheet = new CSSStyleSheet()\n\tsheet.replaceSync(RULES)\n\troot.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet]\n\tsheets.add(root)\n}\n\n/** On by default, as in Vue: held=\"false\" turns it off. */\nconst onByDefault = { fromAttribute: (v: string | null) => v !== 'false' }\n\n/**\n * @summary A held part while it loads: the real markup, its rules kept, nothing in it shown.\n * @slot - The real markup, drawn from a blank record while held.\n */\nexport class Skeleton extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { held: { converter: onByDefault }, target: { reflect: true }, label: {} }\n\n\t/** Loading. */\n\theld = true\n\t/** A selector for the page's elements to hold (each table row: \"tbody > tr\"); none holds the element itself. */\n\ttarget?: string\n\t/** What assistive tech hears while held. */\n\tlabel = 'Loading'\n\n\tconnectedCallback() {\n\t\tsuper.connectedCallback()\n\t\tadoptRules(this.getRootNode())\n\t}\n\n\tprivate mark(el: Element) {\n\t\tel.toggleAttribute('data-held', this.held)\n\t\tif (this.held) {\n\t\t\tel.setAttribute('aria-busy', 'true')\n\t\t\tel.setAttribute('aria-label', this.label)\n\t\t} else {\n\t\t\tel.removeAttribute('aria-busy')\n\t\t\tel.removeAttribute('aria-label')\n\t\t}\n\t}\n\n\tprotected updated() {\n\t\tif (!this.target) return this.mark(this)\n\t\tfor (const el of this.querySelectorAll(this.target)) {\n\t\t\tel.setAttribute('data-ds', 'skeleton')\n\t\t\tthis.mark(el)\n\t\t}\n\t}\n\n\trender() {\n\t\treturn html`<slot @slotchange=${() => this.updated()}></slot>`\n\t}\n}\n\ndefine('skeleton', Skeleton)\n"
+        },
+        {
+          "path": "elements/components/ui/skeleton.css",
+          "content": "/* The host is the held part (Skeleton.vue's root, as=\"div\"), so a class on <conare-skeleton> lands on it. With\n   `target`, it marks the page's own elements instead (table rows) and lays out nothing itself. */\n:host { display: block; }\n:host([target]) { display: contents; }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/skeleton.js",
+        "elements/table.js",
+        "elements/button.js"
+      ],
+      "tag": "conare-skeleton",
+      "tags": [
+        "conare-skeleton"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-skeleton",
+            "name": "Skeleton",
+            "module": "elements/skeleton.js",
+            "description": "A held part while it loads: the real markup, its rules kept, nothing in it shown.",
+            "attributes": [
+              {
+                "name": "held",
+                "field": "held",
+                "type": "boolean",
+                "default": "true",
+                "description": "Loading."
+              },
+              {
+                "name": "target",
+                "field": "target",
+                "type": "string | undefined",
+                "description": "A selector for the page's elements to hold (each table row: \"tbody > tr\"); none holds the element itself."
+              },
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string",
+                "default": "'Loading'",
+                "description": "What assistive tech hears while held."
+              }
+            ],
+            "properties": [
+              {
+                "name": "held",
+                "type": "boolean",
+                "default": "true",
+                "description": "Loading.",
+                "attribute": "held"
+              },
+              {
+                "name": "target",
+                "type": "string | undefined",
+                "description": "A selector for the page's elements to hold (each table row: \"tbody > tr\"); none holds the element itself.",
+                "attribute": "target"
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "default": "'Loading'",
+                "description": "What assistive tech hears while held.",
+                "attribute": "label"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "The real markup, drawn from a blank record while held."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Held rows",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/skeleton/Product.html",
+          "content": "<!-- Held rows while the namespaces load: each is the real row from a blank record, so its rules stay and nothing moves\n     when the answer lands. Reload holds them for three seconds; the rules come in only after 300ms. -->\n<div class=\"flex flex-col items-start gap-4\">\n  <conare-skeleton target=\"tbody > tr\" id=\"held\">\n    <conare-table framed label=\"namespaces\" class=\"w-full\">\n      <table>\n        <thead><tr><th>Namespace</th><th class=\"text-right\">Documents</th><th>Last query</th></tr></thead>\n        <tbody>\n          <tr><td class=\"type-code-sm\"></td><td class=\"text-right tabular-nums\"></td><td class=\"type-meta whitespace-nowrap text-fg-muted\"></td></tr>\n          <tr><td class=\"type-code-sm\"></td><td class=\"text-right tabular-nums\"></td><td class=\"type-meta whitespace-nowrap text-fg-muted\"></td></tr>\n          <tr><td class=\"type-code-sm\"></td><td class=\"text-right tabular-nums\"></td><td class=\"type-meta whitespace-nowrap text-fg-muted\"></td></tr>\n        </tbody>\n      </table>\n    </conare-table>\n  </conare-skeleton>\n  <conare-button id=\"reload\">Reload</conare-button>\n</div>\n<script type=\"module\">\n  // While held, each row is drawn from the blank record; once loaded, from its own.\n  const BLANK = { name: 'namespace', documents: 0, queried: 'never' }\n  const rows = [\n    { name: 'contracts', documents: 412830, queried: '2 min ago' },\n    { name: 'slack', documents: 96410, queried: '1 h ago' },\n    { name: 'crm', documents: 52660, queried: 'yesterday' },\n  ]\n  const skeleton = document.getElementById('held')\n  const reload = document.getElementById('reload')\n  const paint = (held) => {\n    skeleton.held = held\n    reload.disabled = held\n    reload.updateComplete?.then(() => reload.requestUpdate())\n    skeleton.querySelectorAll('tbody > tr').forEach((tr, i) => {\n      const r = held ? BLANK : rows[i]\n      tr.children[0].textContent = r.name\n      tr.children[1].textContent = r.documents.toLocaleString('en-US')\n      tr.children[2].textContent = r.queried\n    })\n  }\n  let timer\n  const load = () => {\n    paint(true)\n    clearTimeout(timer)\n    timer = setTimeout(() => paint(false), 3000)\n  }\n  reload.addEventListener('click', load)\n  load()\n</script>\n"
+        }
+      ]
+    }
+  }
+}

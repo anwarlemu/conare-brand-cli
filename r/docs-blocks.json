@@ -1,0 +1,408 @@
+{
+  "name": "docs-blocks",
+  "title": "Docs blocks",
+  "type": "registry:ui",
+  "group": "site",
+  "description": "A docs page's body block by block: paragraphs, headings, lists led by a red square, callouts (a warning on the wash), ruled tables under a paper head, the code window, an endpoint's fields with nested ones behind a toggle, and link cards in the double rule whose pixel pattern turns red.",
+  "use_for": "Docs pages and guides written as data (one block per paragraph, list, table or sample).",
+  "never": [
+    "Prose set in mono",
+    "A callout for every paragraph",
+    "Headings past two levels"
+  ],
+  "source": "conare-web app/components/docs/Blocks.vue, Inline.vue, Fields.vue, Table.vue, Code.vue, app/content/patterns.ts, app/assets/css/docs.css (example-only item docs-blocks)",
+  "body": "A wide table scrolls sideways under a fade (`fade-x`); its frame stays whole.",
+  "requires": [
+    "code-block"
+  ],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/site/DocsBlocks.vue",
+      "content": "<script setup lang=\"ts\">\nimport CodeBlock from '@/components/ui/CodeBlock.vue'\nimport DocsFields, { type DocsField } from '@/components/site/DocsFields.vue'\nimport DocsInline from '@/components/site/DocsInline.vue'\nimport DocsTable from '@/components/site/DocsTable.vue'\n\n// A docs page's body, block by block (docs/Blocks.vue): paragraphs, headings (steps are the smaller ones), lists led\n// by a red square, callouts (a warning on the wash), tables, code in the one code window, an endpoint's fields, and the\n// link cards, each in the double rule with a pixel pattern that turns red under the pointer. Text takes `code`,\n// **bold** and [links](href). `wide` drops the 880px measure, for a page of cards. Follows the theme (data-theme).\nexport type DocsBlock =\n  | { kind: 'p', text: string }\n  | { kind: 'h2' | 'h3', id: string, text: string }\n  | { kind: 'list', items: string[] }\n  | { kind: 'callout', tone: 'note' | 'warning' | 'caution' | (string & {}), text: string }\n  | { kind: 'table', head?: string[], rows: string[][] }\n  | { kind: 'code', samples: { label: string, code: string }[] }\n  | { kind: 'cards', items: { title: string, body: string, href: string }[] }\n  | { kind: 'fields', media?: string, fields: DocsField[] }\nexport type { DocsField }\n\ndefineProps<{ blocks: DocsBlock[], wide?: boolean }>()\n\n// The hero tabs' pixel patterns, each a path on a 16px square of 2px cells, centred.\nconst pattern = (on: (x: number, y: number) => boolean) => {\n  const lit: [number, number][] = []\n  for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) if (on(x, y)) lit.push([x, y])\n  const ox = (16 - (Math.max(...lit.map(c => c[0])) + Math.min(...lit.map(c => c[0])) + 1) * 2) / 2\n  const oy = (16 - (Math.max(...lit.map(c => c[1])) + Math.min(...lit.map(c => c[1])) + 1) * 2) / 2\n  return lit.map(([x, y]) => `M${x * 2 + ox} ${y * 2 + oy}h2v2h-2Z`).join('')\n}\nconst PATTERNS = [\n  pattern((x, y) => x % 2 === 0 && y % 2 === 0),\n  pattern((x, y) => (x + y) % 3 === 0),\n  pattern((x, y) => (Math.floor(x / 2) + Math.floor(y / 2)) % 2 === 0),\n  pattern((_, y) => y % 2 === 0),\n]\n</script>\n\n<template>\n  <div data-ds=\"docs-blocks\" class=\"flex flex-col gap-5 text-fg\" :class=\"!wide && 'max-w-220'\">\n    <template v-for=\"(b, i) in blocks\" :key=\"i\">\n      <h2 v-if=\"b.kind === 'h2'\" :id=\"b.id\" class=\"mt-10 scroll-mt-28 text-docs-heading tracking-tight\">{{ b.text }}</h2>\n      <h3 v-else-if=\"b.kind === 'h3'\" :id=\"b.id\" class=\"mt-4 scroll-mt-28 text-heading-4 font-medium\">{{ b.text }}</h3>\n      <p v-else-if=\"b.kind === 'p'\" class=\"text-input leading-7 text-fg-muted\"><DocsInline :text=\"b.text\" /></p>\n      <ul v-else-if=\"b.kind === 'list'\" class=\"flex flex-col gap-2 text-input leading-7 text-fg-muted\">\n        <li v-for=\"t in b.items\" :key=\"t\" class=\"flex gap-3\">\n          <span aria-hidden=\"true\" class=\"mt-2.75 size-1.5 shrink-0 bg-edge-accent\" />\n          <span><DocsInline :text=\"t\" /></span>\n        </li>\n      </ul>\n      <div v-else-if=\"b.kind === 'callout'\" class=\"ds-docs-callout flex gap-3 px-4 py-3 type-body-lg\" :data-tone=\"b.tone\">\n        <span aria-hidden=\"true\" class=\"mt-2.25 size-1.5 shrink-0 bg-edge-accent\" />\n        <span><DocsInline :text=\"b.text\" /></span>\n      </div>\n      <DocsTable v-else-if=\"b.kind === 'table'\" :head=\"b.head\" :rows=\"b.rows\" />\n      <div v-else-if=\"b.kind === 'fields'\">\n        <p v-if=\"b.media\" class=\"-mt-2 mb-1 type-code-sm text-fg-muted\" dir=\"ltr\">{{ b.media }}</p>\n        <DocsFields :fields=\"b.fields\" />\n      </div>\n      <CodeBlock v-else-if=\"b.kind === 'code'\" class=\"my-2\" :samples=\"b.samples.length > 1 ? b.samples : undefined\" :code=\"b.samples.length > 1 ? undefined : b.samples[0]?.code\" :label=\"b.samples.length > 1 ? undefined : b.samples[0]?.label\" />\n      <ul v-else-if=\"b.kind === 'cards'\" class=\"my-4 grid gap-6 sm:grid-cols-2\">\n        <li v-for=\"(c, j) in b.items\" :key=\"c.title\" class=\"border border-edge-strong outline outline-offset-4 outline-edge-strong\">\n          <a :href=\"c.href\" class=\"ds-docs-card flex h-full flex-col gap-4 p-5\">\n            <svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" shape-rendering=\"crispEdges\" aria-hidden=\"true\" class=\"ds-docs-card-mark\"><path :d=\"PATTERNS[j % 4]\" fill=\"currentColor\" /></svg>\n            <span>\n              <span class=\"block type-heading-3\">{{ c.title }}</span>\n              <span class=\"mt-1 block type-body text-fg-muted\"><DocsInline :text=\"c.body\" /></span>\n            </span>\n          </a>\n        </li>\n      </ul>\n    </template>\n  </div>\n</template>\n\n<style>\n.ds-docs-callout { border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface-subtle); color: var(--ds-color-fg); }\n.ds-docs-callout:is([data-tone=\"warning\"], [data-tone=\"caution\"]) { border-color: color-mix(in srgb, var(--ds-color-edge-accent) 30%, transparent); background: var(--ds-color-surface-danger); }\n.ds-docs-card { transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-docs-card-mark { color: var(--ds-color-fg-faint); transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) {\n  .ds-docs-card:hover { background: var(--ds-color-surface-subtle); }\n  .ds-docs-card:hover .ds-docs-card-mark { color: var(--ds-color-edge-accent); }\n}\n</style>\n"
+    },
+    {
+      "path": "components/site/DocsInline.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed } from 'vue'\n\n// A line of docs text with its `code`, **bold** and [links](href) set (docs/Inline.vue): code in the mono on the\n// paper, bold in ink, links in the red with a quiet underline that turns full under the pointer.\nconst props = defineProps<{ text: string }>()\ntype Part = { kind: 'text' | 'code' | 'bold', text: string } | { kind: 'link', text: string, href: string }\nconst parts = computed<Part[]>(() => {\n  const out: Part[] = []\n  const re = /`([^`]+)`|\\[([^\\]]+)\\]\\(([^)]+)\\)|\\*\\*(.+?)\\*\\*/g\n  let last = 0\n  for (const m of props.text.matchAll(re)) {\n    if (m.index > last) out.push({ kind: 'text', text: props.text.slice(last, m.index) })\n    if (m[1] !== undefined) out.push({ kind: 'code', text: m[1] })\n    else if (m[4] !== undefined) out.push({ kind: 'bold', text: m[4] })\n    else out.push({ kind: 'link', text: m[2]!, href: m[3]! })\n    last = m.index + m[0].length\n  }\n  if (last < props.text.length) out.push({ kind: 'text', text: props.text.slice(last) })\n  return out\n})\n</script>\n\n<template>\n  <template v-for=\"(p, i) in parts\" :key=\"i\">\n    <code data-ds=\"docs-inline\" v-if=\"p.kind === 'code'\" dir=\"ltr\" class=\"ds-docs-code\">{{ p.text }}</code>\n    <a data-ds=\"docs-inline\" v-else-if=\"p.kind === 'link'\" :href=\"p.href\" class=\"ds-docs-link\">{{ p.text }}</a>\n    <strong data-ds=\"docs-inline\" v-else-if=\"p.kind === 'bold'\" class=\"font-medium text-fg\">{{ p.text }}</strong>\n    <template v-else>{{ p.text }}</template>\n  </template>\n</template>\n\n<style>\n.ds-docs-code { border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface-subtle); padding: 0 var(--ds-space-xs); font-family: var(--ds-font-code); font-size: 0.86em; }\n.ds-docs-link { color: var(--ds-color-edge-accent); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--ds-color-edge-accent) 40%, transparent); text-underline-offset: 3px; transition: text-decoration-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-docs-link:hover { text-decoration-color: var(--ds-color-edge-accent); } }\n</style>\n"
+    },
+    {
+      "path": "components/site/DocsFields.vue",
+      "content": "<script setup lang=\"ts\">\nimport DocsInline from '@/components/site/DocsInline.vue'\n\n// An endpoint's parameters or fields (docs/Fields.vue), one ruled row each: the name in the mono, its type and\n// \"required\" or its default beside it, then what it is and its limits. A field's own fields sit under it behind a\n// toggle, in the same rows a step in; the toggle's plus turns to a minus when open.\nexport type DocsField = { name: string, type: string, required?: boolean, default?: string, text?: string, notes?: string[], children?: DocsField[] }\ndefineProps<{ fields: DocsField[], nested?: boolean }>()\n</script>\n\n<template>\n  <ul data-ds=\"docs-fields\" class=\"ds-docs-params flex flex-col\" :class=\"nested && 'border-s border-edge ps-4'\">\n    <li v-for=\"f in fields\" :key=\"f.name\" class=\"py-4\">\n      <p class=\"flex flex-wrap items-center gap-x-2 gap-y-1 type-code\" dir=\"ltr\">\n        <span class=\"font-medium text-fg\">{{ f.name }}</span>\n        <span class=\"ds-docs-tag\">{{ f.type }}</span>\n        <span v-if=\"f.required\" class=\"ds-docs-tag\" data-required>required</span>\n        <span v-if=\"f.default !== undefined\" class=\"ds-docs-tag\">default: {{ f.default }}</span>\n      </p>\n      <p v-if=\"f.text\" class=\"mt-2 type-body-lg text-fg-muted\"><DocsInline :text=\"f.text\" /></p>\n      <p v-for=\"n in f.notes\" :key=\"n\" class=\"mt-1.5 type-ui text-fg-muted\"><DocsInline :text=\"n\" /></p>\n      <details v-if=\"f.children\" class=\"ds-docs-more mt-3\">\n        <summary class=\"ds-docs-btn inline-flex h-7 cursor-pointer list-none items-center gap-1.5 px-2.5 text-meta leading-4\">\n          <svg width=\"10\" height=\"10\" viewBox=\"0 0 10 10\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.2\" aria-hidden=\"true\" class=\"ds-docs-sign\"><path d=\"M5 1.5v7M1.5 5h7\" /></svg>\n          {{ f.children.length }} {{ f.children.length === 1 ? 'field' : 'fields' }}\n        </summary>\n        <DocsFields :fields=\"f.children\" nested class=\"mt-2\" />\n      </details>\n    </li>\n  </ul>\n</template>\n\n<style>\n.ds-docs-params > li + li { border-top: var(--ds-border-hairline) solid var(--ds-color-edge); }\n.ds-docs-tag { border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface-subtle); padding: 0 calc(var(--ds-space-xs) + 1px); font-size: var(--ds-text-caption); line-height: 18px; color: var(--ds-color-fg-muted); }\n.ds-docs-tag[data-required] { border-color: color-mix(in srgb, var(--ds-color-edge-accent) 40%, transparent); background: var(--ds-color-surface-danger); color: var(--ds-color-edge-accent); }\n.ds-docs-btn { border: var(--ds-border-hairline) solid var(--ds-color-edge); color: var(--ds-color-fg); transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-docs-btn:hover { background: var(--ds-color-surface-subtle); } }\n.ds-docs-more summary::-webkit-details-marker { display: none; }\n.ds-docs-more[open] > summary .ds-docs-sign path { d: path(\"M1.5 5h7\"); }\n</style>\n"
+    },
+    {
+      "path": "components/site/DocsTable.vue",
+      "content": "<script setup lang=\"ts\">\nimport DocsInline from '@/components/site/DocsInline.vue'\n\n// A docs table (docs/Table.vue): ruled rows under a paper head, or none for a key-value table, whose first column is\n// set in ink. Cells take DocsInline. It scrolls sideways in its own frame on a phone.\ndefineProps<{ head?: string[], rows: string[][], label?: string }>()\n</script>\n\n<template>\n  <div data-ds=\"docs-table\" class=\"ds-docs-table fade-x overflow-x-auto border border-edge\" role=\"region\" :aria-label=\"label ?? head?.join(', ') ?? 'table'\" tabindex=\"0\">\n    <table class=\"w-full text-left type-body\">\n      <thead v-if=\"head\" class=\"bg-surface-subtle text-fg-muted\">\n        <tr><th v-for=\"h in head\" :key=\"h\" class=\"px-4 py-3 text-meta font-normal whitespace-nowrap\">{{ h }}</th></tr>\n      </thead>\n      <tbody>\n        <tr v-for=\"row in rows\" :key=\"row[0]\">\n          <td v-for=\"(cell, c) in row\" :key=\"c\" class=\"px-4 py-3 align-top\" :class=\"c === 0 ? 'min-w-35 text-fg' : 'text-fg-muted'\"><DocsInline :text=\"cell\" /></td>\n        </tr>\n      </tbody>\n    </table>\n  </div>\n</template>\n\n<style>\n.ds-docs-table tr + tr, .ds-docs-table thead + tbody tr:first-child { border-top: var(--ds-border-hairline) solid var(--ds-color-edge); }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "On the site",
+      "center": false,
+      "half": false,
+      "path": "examples/docs-blocks/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport DocsBlocks, { type DocsBlock } from '@/components/site/DocsBlocks.vue'\n// One of each block, as a docs page sets them.\nconst blocks: DocsBlock[] = [\n  { kind: 'p', text: 'Search returns the passages that answer a question, from one namespace or several.' },\n  { kind: 'h2', id: 'request', text: 'Send a request' },\n  { kind: 'list', items: ['Pick the namespace', 'Write the question as a person would', 'Read the hits in order'] },\n  { kind: 'callout', tone: 'note', text: 'Each hit cites its document, and its page when it came from a file.' },\n  { kind: 'callout', tone: 'warning', text: 'A key is shown once. Store it before you close the page.' },\n  { kind: 'code', samples: [{ label: 'cURL', code: 'curl https://api.acme.dev/v1/search -d \\'{ \"query\": \"notice period\" }\\'' }] },\n  { kind: 'table', head: ['Field', 'Type', 'What it is'], rows: [['query', 'string', 'The question'], ['top_k', 'number', 'How many hits, 10 by default']] },\n  { kind: 'fields', fields: [{ name: 'query', type: 'string', required: true, text: 'The question, as a person would ask it.' }, { name: 'top_k', type: 'number', default: '10', text: 'How many hits to return.', notes: ['1 to 100'] }, { name: 'filters', type: 'object', text: 'Metadata the hits must have.', children: [{ name: 'app', type: 'string', text: 'Only hits from this app.' }] }] },\n  { kind: 'cards', items: [{ title: 'Namespaces', body: 'Group documents you search together.', href: '#namespaces' }, { title: 'Connect an agent', body: 'Give your agent search over `MCP`.', href: '#mcp-server' }] },\n]\n</script>\n\n<template>\n  <div class=\"max-w-180\" data-theme=\"light\">\n    <DocsBlocks :blocks=\"blocks\" />\n  </div>\n</template>\n",
+      "requires": [
+        "code-block"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/site/DocsBlocks.tsx",
+          "content": "import { CodeBlock } from '@/react/components/ui/CodeBlock'\nimport { DocsFields, type DocsField } from '@/react/components/site/DocsFields'\nimport { DocsInline } from '@/react/components/site/DocsInline'\nimport { DocsTable } from '@/react/components/site/DocsTable'\nimport { cn } from '@/react/lib/cn'\n\n// A docs page's body, block by block (docs/Blocks.vue): paragraphs, headings (steps are the smaller ones), lists led\n// by a red square, callouts (a warning on the wash), tables, code in the one code window, an endpoint's fields, and the\n// link cards, each in the double rule with a pixel pattern that turns red under the pointer. Text takes `code`,\n// **bold** and [links](href). `wide` drops the 880px measure, for a page of cards. Follows the theme (data-theme).\nexport type DocsBlock =\n  | { kind: 'p', text: string }\n  | { kind: 'h2' | 'h3', id: string, text: string }\n  | { kind: 'list', items: string[] }\n  | { kind: 'callout', tone: 'note' | 'warning' | 'caution' | (string & {}), text: string }\n  | { kind: 'table', head?: string[], rows: string[][] }\n  | { kind: 'code', samples: { label: string, code: string }[] }\n  | { kind: 'cards', items: { title: string, body: string, href: string }[] }\n  | { kind: 'fields', media?: string, fields: DocsField[] }\nexport type { DocsField }\n\nexport interface DocsBlocksProps {\n  blocks: DocsBlock[]\n  wide?: boolean\n  className?: string\n}\n\n// The hero tabs' pixel patterns, each a path on a 16px square of 2px cells, centred.\nconst pattern = (on: (x: number, y: number) => boolean) => {\n  const lit: [number, number][] = []\n  for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) if (on(x, y)) lit.push([x, y])\n  const ox = (16 - (Math.max(...lit.map(c => c[0])) + Math.min(...lit.map(c => c[0])) + 1) * 2) / 2\n  const oy = (16 - (Math.max(...lit.map(c => c[1])) + Math.min(...lit.map(c => c[1])) + 1) * 2) / 2\n  return lit.map(([x, y]) => `M${x * 2 + ox} ${y * 2 + oy}h2v2h-2Z`).join('')\n}\nconst PATTERNS = [\n  pattern((x, y) => x % 2 === 0 && y % 2 === 0),\n  pattern((x, y) => (x + y) % 3 === 0),\n  pattern((x, y) => (Math.floor(x / 2) + Math.floor(y / 2)) % 2 === 0),\n  pattern((_, y) => y % 2 === 0),\n]\n\nfunction Block({ b }: { b: DocsBlock }) {\n  switch (b.kind) {\n    case 'h2': return <h2 id={b.id} className=\"mt-10 scroll-mt-28 text-docs-heading tracking-tight\">{b.text}</h2>\n    case 'h3': return <h3 id={b.id} className=\"mt-4 scroll-mt-28 text-heading-4 font-medium\">{b.text}</h3>\n    case 'p': return <p className=\"text-input leading-7 text-fg-muted\"><DocsInline text={b.text} /></p>\n    case 'list':\n      return (\n        <ul className=\"flex flex-col gap-2 text-input leading-7 text-fg-muted\">\n          {b.items.map(t => (\n            <li key={t} className=\"flex gap-3\">\n              <span aria-hidden=\"true\" className=\"mt-2.75 size-1.5 shrink-0 bg-edge-accent\" />\n              <span><DocsInline text={t} /></span>\n            </li>\n          ))}\n        </ul>\n      )\n    case 'callout':\n      return (\n        <div className=\"ds-docs-callout flex gap-3 px-4 py-3 type-body-lg\" data-tone={b.tone}>\n          <span aria-hidden=\"true\" className=\"mt-2.25 size-1.5 shrink-0 bg-edge-accent\" />\n          <span><DocsInline text={b.text} /></span>\n        </div>\n      )\n    case 'table': return <DocsTable head={b.head} rows={b.rows} />\n    case 'fields':\n      return (\n        <div>\n          {b.media && <p className=\"-mt-2 mb-1 type-code-sm text-fg-muted\" dir=\"ltr\">{b.media}</p>}\n          <DocsFields fields={b.fields} />\n        </div>\n      )\n    case 'code': return <CodeBlock className=\"my-2\" samples={b.samples.length > 1 ? b.samples : undefined} code={b.samples.length > 1 ? undefined : b.samples[0]?.code} label={b.samples.length > 1 ? undefined : b.samples[0]?.label} />\n    case 'cards':\n      return (\n        <ul className=\"my-4 grid gap-6 sm:grid-cols-2\">\n          {b.items.map((c, j) => (\n            <li key={c.title} className=\"border border-edge-strong outline outline-offset-4 outline-edge-strong\">\n              <a href={c.href} className=\"ds-docs-card flex h-full flex-col gap-4 p-5\">\n                <svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" shapeRendering=\"crispEdges\" aria-hidden=\"true\" className=\"ds-docs-card-mark\"><path d={PATTERNS[j % 4]} fill=\"currentColor\" /></svg>\n                <span>\n                  <span className=\"block type-heading-3\">{c.title}</span>\n                  <span className=\"mt-1 block type-body text-fg-muted\"><DocsInline text={c.body} /></span>\n                </span>\n              </a>\n            </li>\n          ))}\n        </ul>\n      )\n  }\n}\n\nexport function DocsBlocks({ blocks, wide, className }: DocsBlocksProps) {\n  return (\n    <div data-ds=\"docs-blocks\" className={cn('flex flex-col gap-5 text-fg', !wide && 'max-w-220', className)}>\n      <style href=\"ds-docs-blocks\" precedence=\"ds\">{css}</style>\n      {blocks.map((b, i) => <Block key={i} b={b} />)}\n    </div>\n  )\n}\n\nexport default DocsBlocks\n\nconst css = `\n.ds-docs-callout { border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface-subtle); color: var(--ds-color-fg); }\n.ds-docs-callout:is([data-tone=\"warning\"], [data-tone=\"caution\"]) { border-color: color-mix(in srgb, var(--ds-color-edge-accent) 30%, transparent); background: var(--ds-color-surface-danger); }\n.ds-docs-card { transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-docs-card-mark { color: var(--ds-color-fg-faint); transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) {\n  .ds-docs-card:hover { background: var(--ds-color-surface-subtle); }\n  .ds-docs-card:hover .ds-docs-card-mark { color: var(--ds-color-edge-accent); }\n}\n`\n"
+        },
+        {
+          "path": "react/components/site/DocsInline.tsx",
+          "content": "import { Fragment } from 'react'\n\n// A line of docs text with its `code`, **bold** and [links](href) set (docs/Inline.vue): code in the mono on the\n// paper, bold in ink, links in the red with a quiet underline that turns full under the pointer.\ntype Part = { kind: 'text' | 'code' | 'bold', text: string } | { kind: 'link', text: string, href: string }\n\nexport function docsParts(text: string): Part[] {\n  const out: Part[] = []\n  const re = /`([^`]+)`|\\[([^\\]]+)\\]\\(([^)]+)\\)|\\*\\*(.+?)\\*\\*/g\n  let last = 0\n  for (const m of text.matchAll(re)) {\n    if (m.index > last) out.push({ kind: 'text', text: text.slice(last, m.index) })\n    if (m[1] !== undefined) out.push({ kind: 'code', text: m[1] })\n    else if (m[4] !== undefined) out.push({ kind: 'bold', text: m[4] })\n    else out.push({ kind: 'link', text: m[2]!, href: m[3]! })\n    last = m.index + m[0].length\n  }\n  if (last < text.length) out.push({ kind: 'text', text: text.slice(last) })\n  return out\n}\n\nexport interface DocsInlineProps { text: string }\n\nexport function DocsInline({ text }: DocsInlineProps) {\n  return (\n    <>\n      <style href=\"ds-docs-inline\" precedence=\"ds\">{css}</style>\n      {docsParts(text).map((p, i) => (p.kind === 'code'\n        ? <code key={i} data-ds=\"docs-inline\" dir=\"ltr\" className=\"ds-docs-code\">{p.text}</code>\n        : p.kind === 'link'\n          ? <a key={i} data-ds=\"docs-inline\" href={p.href} className=\"ds-docs-link\">{p.text}</a>\n          : p.kind === 'bold'\n            ? <strong key={i} data-ds=\"docs-inline\" className=\"font-medium text-fg\">{p.text}</strong>\n            : <Fragment key={i}>{p.text}</Fragment>))}\n    </>\n  )\n}\n\nexport default DocsInline\n\nconst css = `\n.ds-docs-code { border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface-subtle); padding: 0 var(--ds-space-xs); font-family: var(--ds-font-code); font-size: 0.86em; }\n.ds-docs-link { color: var(--ds-color-edge-accent); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--ds-color-edge-accent) 40%, transparent); text-underline-offset: 3px; transition: text-decoration-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-docs-link:hover { text-decoration-color: var(--ds-color-edge-accent); } }\n`\n"
+        },
+        {
+          "path": "react/components/site/DocsFields.tsx",
+          "content": "import { DocsInline } from '@/react/components/site/DocsInline'\nimport { cn } from '@/react/lib/cn'\n\n// An endpoint's parameters or fields (docs/Fields.vue), one ruled row each: the name in the mono, its type and\n// \"required\" or its default beside it, then what it is and its limits. A field's own fields sit under it behind a\n// toggle, in the same rows a step in; the toggle's plus turns to a minus when open.\nexport type DocsField = { name: string, type: string, required?: boolean, default?: string, text?: string, notes?: string[], children?: DocsField[] }\n\nexport interface DocsFieldsProps {\n  fields: DocsField[]\n  nested?: boolean\n  className?: string\n}\n\nexport function DocsFields({ fields, nested, className }: DocsFieldsProps) {\n  return (\n    <>\n      <style href=\"ds-docs-fields\" precedence=\"ds\">{css}</style>\n      <ul data-ds=\"docs-fields\" className={cn('ds-docs-params flex flex-col', nested && 'border-s border-edge ps-4', className)}>\n        {fields.map(f => (\n          <li key={f.name} className=\"py-4\">\n            <p className=\"flex flex-wrap items-center gap-x-2 gap-y-1 type-code\" dir=\"ltr\">\n              <span className=\"font-medium text-fg\">{f.name}</span>\n              <span className=\"ds-docs-tag\">{f.type}</span>\n              {f.required && <span className=\"ds-docs-tag\" data-required=\"\">required</span>}\n              {f.default !== undefined && <span className=\"ds-docs-tag\">{`default: ${f.default}`}</span>}\n            </p>\n            {f.text && <p className=\"mt-2 type-body-lg text-fg-muted\"><DocsInline text={f.text} /></p>}\n            {f.notes?.map(n => <p key={n} className=\"mt-1.5 type-ui text-fg-muted\"><DocsInline text={n} /></p>)}\n            {f.children && (\n              <details className=\"ds-docs-more mt-3\">\n                <summary className=\"ds-docs-btn inline-flex h-7 cursor-pointer list-none items-center gap-1.5 px-2.5 text-meta leading-4\">\n                  <svg width=\"10\" height=\"10\" viewBox=\"0 0 10 10\" fill=\"none\" stroke=\"currentColor\" strokeWidth=\"1.2\" aria-hidden=\"true\" className=\"ds-docs-sign\"><path d=\"M5 1.5v7M1.5 5h7\" /></svg>\n                  {`${f.children.length} ${f.children.length === 1 ? 'field' : 'fields'}`}\n                </summary>\n                <DocsFields fields={f.children} nested className=\"mt-2\" />\n              </details>\n            )}\n          </li>\n        ))}\n      </ul>\n    </>\n  )\n}\n\nexport default DocsFields\n\nconst css = `\n.ds-docs-params > li + li { border-top: var(--ds-border-hairline) solid var(--ds-color-edge); }\n.ds-docs-tag { border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface-subtle); padding: 0 calc(var(--ds-space-xs) + 1px); font-size: var(--ds-text-caption); line-height: 18px; color: var(--ds-color-fg-muted); }\n.ds-docs-tag[data-required] { border-color: color-mix(in srgb, var(--ds-color-edge-accent) 40%, transparent); background: var(--ds-color-surface-danger); color: var(--ds-color-edge-accent); }\n.ds-docs-btn { border: var(--ds-border-hairline) solid var(--ds-color-edge); color: var(--ds-color-fg); transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-docs-btn:hover { background: var(--ds-color-surface-subtle); } }\n.ds-docs-more summary::-webkit-details-marker { display: none; }\n.ds-docs-more[open] > summary .ds-docs-sign path { d: path(\"M1.5 5h7\"); }\n`\n"
+        },
+        {
+          "path": "react/components/site/DocsTable.tsx",
+          "content": "import { DocsInline } from '@/react/components/site/DocsInline'\nimport { cn } from '@/react/lib/cn'\n\n// A docs table (docs/Table.vue): ruled rows under a paper head, or none for a key-value table, whose first column is\n// set in ink. Cells take DocsInline. It scrolls sideways in its own frame on a phone.\nexport interface DocsTableProps {\n  head?: string[]\n  rows: string[][]\n  label?: string\n  className?: string\n}\n\nexport function DocsTable({ head, rows, label, className }: DocsTableProps) {\n  return (\n    <>\n      <style href=\"ds-docs-table\" precedence=\"ds\">{css}</style>\n      <div data-ds=\"docs-table\" className={cn('ds-docs-table fade-x overflow-x-auto border border-edge', className)} role=\"region\" aria-label={label ?? head?.join(', ') ?? 'table'} tabIndex={0}>\n        <table className=\"w-full text-left type-body\">\n          {head && (\n            <thead className=\"bg-surface-subtle text-fg-muted\">\n              <tr>{head.map(h => <th key={h} className=\"px-4 py-3 text-meta font-normal whitespace-nowrap\">{h}</th>)}</tr>\n            </thead>\n          )}\n          <tbody>\n            {rows.map(row => (\n              <tr key={row[0]}>\n                {row.map((cell, c) => <td key={c} className={cn('px-4 py-3 align-top', c === 0 ? 'min-w-35 text-fg' : 'text-fg-muted')}><DocsInline text={cell} /></td>)}\n              </tr>\n            ))}\n          </tbody>\n        </table>\n      </div>\n    </>\n  )\n}\n\nexport default DocsTable\n\nconst css = `\n.ds-docs-table tr + tr, .ds-docs-table thead + tbody tr:first-child { border-top: var(--ds-border-hairline) solid var(--ds-color-edge); }\n`\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "code-block"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "DocsBlocks",
+            "file": "react/components/site/DocsBlocks.tsx",
+            "props": [
+              {
+                "name": "blocks",
+                "type": "DocsBlock[]",
+                "required": true
+              },
+              {
+                "name": "wide",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "DocsInline",
+            "file": "react/components/site/DocsInline.tsx",
+            "props": [
+              {
+                "name": "text",
+                "type": "string",
+                "required": true
+              }
+            ]
+          },
+          {
+            "name": "DocsFields",
+            "file": "react/components/site/DocsFields.tsx",
+            "props": [
+              {
+                "name": "fields",
+                "type": "DocsField[]",
+                "required": true
+              },
+              {
+                "name": "nested",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "DocsTable",
+            "file": "react/components/site/DocsTable.tsx",
+            "props": [
+              {
+                "name": "head",
+                "type": "string[]",
+                "required": false
+              },
+              {
+                "name": "rows",
+                "type": "string[][]",
+                "required": true
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "On the site",
+          "center": false,
+          "half": false,
+          "path": "react/examples/docs-blocks/Site.tsx",
+          "content": "import { DocsBlocks, type DocsBlock } from '@/react/components/site/DocsBlocks'\n// One of each block, as a docs page sets them.\nconst blocks: DocsBlock[] = [\n  { kind: 'p', text: 'Search returns the passages that answer a question, from one namespace or several.' },\n  { kind: 'h2', id: 'request', text: 'Send a request' },\n  { kind: 'list', items: ['Pick the namespace', 'Write the question as a person would', 'Read the hits in order'] },\n  { kind: 'callout', tone: 'note', text: 'Each hit cites its document, and its page when it came from a file.' },\n  { kind: 'callout', tone: 'warning', text: 'A key is shown once. Store it before you close the page.' },\n  { kind: 'code', samples: [{ label: 'cURL', code: 'curl https://api.acme.dev/v1/search -d \\'{ \"query\": \"notice period\" }\\'' }] },\n  { kind: 'table', head: ['Field', 'Type', 'What it is'], rows: [['query', 'string', 'The question'], ['top_k', 'number', 'How many hits, 10 by default']] },\n  { kind: 'fields', fields: [{ name: 'query', type: 'string', required: true, text: 'The question, as a person would ask it.' }, { name: 'top_k', type: 'number', default: '10', text: 'How many hits to return.', notes: ['1 to 100'] }, { name: 'filters', type: 'object', text: 'Metadata the hits must have.', children: [{ name: 'app', type: 'string', text: 'Only hits from this app.' }] }] },\n  { kind: 'cards', items: [{ title: 'Namespaces', body: 'Group documents you search together.', href: '#namespaces' }, { title: 'Connect an agent', body: 'Give your agent search over `MCP`.', href: '#mcp-server' }] },\n]\n\nexport default function Site() {\n  return (\n    <div className=\"max-w-180\" data-theme=\"light\">\n      <DocsBlocks blocks={blocks} />\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "code-block"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/site/docs-blocks.ts",
+          "content": "import { nothing } from 'lit'\nimport { html } from 'lit/static-html.js'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport '@/elements/components/ui/code-block'\nimport '@/elements/components/site/docs-fields'\nimport '@/elements/components/site/docs-inline'\nimport '@/elements/components/site/docs-table'\nimport type { DocsField } from '@/elements/components/site/docs-fields'\nimport styles from 'virtual:tw'\n\n// DocsBlocks.vue as <conare-docs-blocks>: a docs page's body, block by block (docs/Blocks.vue): paragraphs, headings\n// (steps are the smaller ones), lists led by a red square, callouts (a warning on the wash), tables, code in the one\n// code window, an endpoint's fields, and the link cards, each in the double rule with a pixel pattern that turns red\n// under the pointer. Text takes `code`, **bold** and [links](href). `wide` drops the 880px measure, for a page of\n// cards. Follows the theme (data-theme).\nexport type DocsBlock =\n\t| { kind: 'p', text: string }\n\t| { kind: 'h2' | 'h3', id: string, text: string }\n\t| { kind: 'list', items: string[] }\n\t| { kind: 'callout', tone: 'note' | 'warning' | 'caution' | (string & {}), text: string }\n\t| { kind: 'table', head?: string[], rows: string[][] }\n\t| { kind: 'code', samples: { label: string, code: string }[] }\n\t| { kind: 'cards', items: { title: string, body: string, href: string }[] }\n\t| { kind: 'fields', media?: string, fields: DocsField[] }\n\n// The hero tabs' pixel patterns, each a path on a 16px square of 2px cells, centred.\nconst pattern = (on: (x: number, y: number) => boolean) => {\n\tconst lit: [number, number][] = []\n\tfor (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) if (on(x, y)) lit.push([x, y])\n\tconst ox = (16 - (Math.max(...lit.map((c) => c[0])) + Math.min(...lit.map((c) => c[0])) + 1) * 2) / 2\n\tconst oy = (16 - (Math.max(...lit.map((c) => c[1])) + Math.min(...lit.map((c) => c[1])) + 1) * 2) / 2\n\treturn lit.map(([x, y]) => `M${x * 2 + ox} ${y * 2 + oy}h2v2h-2Z`).join('')\n}\nconst PATTERNS = [\n\tpattern((x, y) => x % 2 === 0 && y % 2 === 0),\n\tpattern((x, y) => (x + y) % 3 === 0),\n\tpattern((x, y) => (Math.floor(x / 2) + Math.floor(y / 2)) % 2 === 0),\n\tpattern((_, y) => y % 2 === 0),\n]\n\n/** @summary A docs page's body, block by block. */\nexport class DocsBlocks extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { blocks: { type: Array }, wide: { type: Boolean } }\n\n\t/** The blocks: { kind: p, h2, h3, list, callout, table, code, cards or fields, ... }. */\n\tblocks: DocsBlock[] = []\n\t/** No 880px measure, for a page of cards. */\n\twide = false\n\n\tprivate block(b: DocsBlock) {\n\t\tconst inline = tag('docs-inline')\n\t\tconst text = (t: string) => html`<${inline} .text=${t}></${inline}>`\n\t\tswitch (b.kind) {\n\t\t\tcase 'h2': return html`<h2 id=${b.id} class=\"mt-10 scroll-mt-28 text-docs-heading tracking-tight\">${b.text}</h2>`\n\t\t\tcase 'h3': return html`<h3 id=${b.id} class=\"mt-4 scroll-mt-28 text-heading-4 font-medium\">${b.text}</h3>`\n\t\t\tcase 'p': return html`<p class=\"text-input leading-7 text-fg-muted\">${text(b.text)}</p>`\n\t\t\tcase 'list': return html`<ul class=\"flex flex-col gap-2 text-input leading-7 text-fg-muted\">${b.items.map((t) => html`<li class=\"flex gap-3\"><span aria-hidden=\"true\" class=\"mt-2.75 size-1.5 shrink-0 bg-edge-accent\"></span><span>${text(t)}</span></li>`)}</ul>`\n\t\t\tcase 'callout': return html`<div class=\"ds-docs-callout flex gap-3 px-4 py-3 type-body-lg\" data-tone=${b.tone}><span aria-hidden=\"true\" class=\"mt-2.25 size-1.5 shrink-0 bg-edge-accent\"></span><span>${text(b.text)}</span></div>`\n\t\t\tcase 'table': {\n\t\t\t\tconst t = tag('docs-table')\n\t\t\t\treturn html`<${t} .head=${b.head} .rows=${b.rows}></${t}>`\n\t\t\t}\n\t\t\tcase 'fields': {\n\t\t\t\tconst f = tag('docs-fields')\n\t\t\t\treturn html`<div>${b.media ? html`<p class=\"-mt-2 mb-1 type-code-sm text-fg-muted\" dir=\"ltr\">${b.media}</p>` : nothing}<${f} .fields=${b.fields}></${f}></div>`\n\t\t\t}\n\t\t\tcase 'code': {\n\t\t\t\tconst c = tag('code-block')\n\t\t\t\tconst many = b.samples.length > 1\n\t\t\t\treturn html`<${c} class=\"my-2\" .samples=${many ? b.samples : undefined} .code=${many ? undefined : b.samples[0]?.code} .label=${many ? undefined : b.samples[0]?.label}></${c}>`\n\t\t\t}\n\t\t\tcase 'cards': return html`<ul class=\"my-4 grid gap-6 sm:grid-cols-2\">${b.items.map((c, j) => html`<li class=\"border border-edge-strong outline outline-offset-4 outline-edge-strong\">\n\t\t\t\t<a href=${c.href} class=\"ds-docs-card flex h-full flex-col gap-4 p-5\">\n\t\t\t\t\t<svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" shape-rendering=\"crispEdges\" aria-hidden=\"true\" class=\"ds-docs-card-mark\"><path d=${PATTERNS[j % 4]!} fill=\"currentColor\"></path></svg>\n\t\t\t\t\t<span>\n\t\t\t\t\t\t<span class=\"block type-heading-3\">${c.title}</span>\n\t\t\t\t\t\t<span class=\"mt-1 block type-body text-fg-muted\">${text(c.body)}</span>\n\t\t\t\t\t</span>\n\t\t\t\t</a>\n\t\t\t</li>`)}</ul>`\n\t\t}\n\t}\n\n\trender() {\n\t\treturn html`<div data-ds=\"docs-blocks\" class=${['flex flex-col gap-5 text-fg', this.wide ? '' : 'max-w-220'].join(' ')}>${(this.blocks ?? []).map((b) => this.block(b))}</div>`\n\t}\n}\n\ndefine('docs-blocks', DocsBlocks)\n"
+        },
+        {
+          "path": "elements/components/site/docs-blocks.css",
+          "content": ".ds-docs-callout { border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface-subtle); color: var(--ds-color-fg); }\n.ds-docs-callout:is([data-tone=\"warning\"], [data-tone=\"caution\"]) { border-color: color-mix(in srgb, var(--ds-color-edge-accent) 30%, transparent); background: var(--ds-color-surface-danger); }\n.ds-docs-card { transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-docs-card-mark { color: var(--ds-color-fg-faint); transition: color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) {\n  .ds-docs-card:hover { background: var(--ds-color-surface-subtle); }\n  .ds-docs-card:hover .ds-docs-card-mark { color: var(--ds-color-edge-accent); }\n}\n"
+        },
+        {
+          "path": "elements/components/site/docs-inline.ts",
+          "content": "import { html } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// DocsInline.vue as <conare-docs-inline>: a line of docs text with its `code`, **bold** and [links](href) set\n// (docs/Inline.vue): code in the mono on the paper, bold in ink, links in the red with a quiet underline that turns full\n// under the pointer. The host lays out nothing, so the text flows in the line around it.\ntype Part = { kind: 'text' | 'code' | 'bold', text: string } | { kind: 'link', text: string, href: string }\n\nexport function docsParts(text: string): Part[] {\n\tconst out: Part[] = []\n\tconst re = /`([^`]+)`|\\[([^\\]]+)\\]\\(([^)]+)\\)|\\*\\*(.+?)\\*\\*/g\n\tlet last = 0\n\tfor (const m of text.matchAll(re)) {\n\t\tif (m.index > last) out.push({ kind: 'text', text: text.slice(last, m.index) })\n\t\tif (m[1] !== undefined) out.push({ kind: 'code', text: m[1] })\n\t\telse if (m[4] !== undefined) out.push({ kind: 'bold', text: m[4] })\n\t\telse out.push({ kind: 'link', text: m[2]!, href: m[3]! })\n\t\tlast = m.index + m[0].length\n\t}\n\tif (last < text.length) out.push({ kind: 'text', text: text.slice(last) })\n\treturn out\n}\n\n/** @summary A line of docs text with its code, bold and links set. */\nexport class DocsInline extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { text: {} }\n\n\t/** The text: `code`, **bold** and [links](href). */\n\ttext = ''\n\n\trender() {\n\t\treturn html`${docsParts(this.text ?? '').map((p) => (p.kind === 'code'\n\t\t\t? html`<code data-ds=\"docs-inline\" dir=\"ltr\" class=\"ds-docs-code\">${p.text}</code>`\n\t\t\t: p.kind === 'link'\n\t\t\t\t? html`<a data-ds=\"docs-inline\" href=${p.href} class=\"ds-docs-link\">${p.text}</a>`\n\t\t\t\t: p.kind === 'bold'\n\t\t\t\t\t? html`<strong data-ds=\"docs-inline\" class=\"font-medium text-fg\">${p.text}</strong>`\n\t\t\t\t\t: p.text))}`\n\t}\n}\n\ndefine('docs-inline', DocsInline)\n"
+        },
+        {
+          "path": "elements/components/site/docs-inline.css",
+          "content": ".ds-docs-code { border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface-subtle); padding: 0 var(--ds-space-xs); font-family: var(--ds-font-code); font-size: 0.86em; }\n.ds-docs-link { color: var(--ds-color-edge-accent); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--ds-color-edge-accent) 40%, transparent); text-underline-offset: 3px; transition: text-decoration-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-docs-link:hover { text-decoration-color: var(--ds-color-edge-accent); } }\n"
+        },
+        {
+          "path": "elements/components/site/docs-fields.ts",
+          "content": "import { nothing } from 'lit'\nimport { html } from 'lit/static-html.js'\nimport { repeat } from 'lit/directives/repeat.js'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport '@/elements/components/site/docs-inline'\nimport styles from 'virtual:tw'\n\n// DocsFields.vue as <conare-docs-fields>: an endpoint's parameters or fields (docs/Fields.vue), one ruled row each: the\n// name in the mono, its type and \"required\" or its default beside it, then what it is and its limits. A field's own\n// fields sit under it behind a toggle, in the same rows a step in; the toggle's plus turns to a minus when open.\nexport type DocsField = { name: string, type: string, required?: boolean, default?: string, text?: string, notes?: string[], children?: DocsField[] }\n\n/** @summary An endpoint's fields, one ruled row each, nested fields behind a toggle. */\nexport class DocsFields extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { fields: { type: Array }, nested: { type: Boolean, reflect: true } }\n\n\t/** [{ name, type, required?, default?, text?, notes?, children? }]. */\n\tfields: DocsField[] = []\n\t/** A field's own fields: ruled at the start and stepped in. */\n\tnested = false\n\n\trender() {\n\t\tconst inline = tag('docs-inline')\n\t\tconst fields = tag('docs-fields')\n\t\treturn html`<ul class=\"ds-docs-params contents\">${repeat(this.fields ?? [], (f) => f.name, (f) => html`<li class=\"py-4\">\n\t\t\t<p class=\"flex flex-wrap items-center gap-x-2 gap-y-1 type-code\" dir=\"ltr\">\n\t\t\t\t<span class=\"font-medium text-fg\">${f.name}</span>\n\t\t\t\t<span class=\"ds-docs-tag\">${f.type}</span>\n\t\t\t\t${f.required ? html`<span class=\"ds-docs-tag\" data-required>required</span>` : nothing}\n\t\t\t\t${f.default !== undefined ? html`<span class=\"ds-docs-tag\">${`default: ${f.default}`}</span>` : nothing}\n\t\t\t</p>\n\t\t\t${f.text ? html`<p class=\"mt-2 type-body-lg text-fg-muted\"><${inline} .text=${f.text}></${inline}></p>` : nothing}\n\t\t\t${(f.notes ?? []).map((n) => html`<p class=\"mt-1.5 type-ui text-fg-muted\"><${inline} .text=${n}></${inline}></p>`)}\n\t\t\t${f.children\n\t\t\t\t? html`<details class=\"ds-docs-more mt-3\">\n\t\t\t\t\t\t<summary class=\"ds-docs-btn inline-flex h-7 cursor-pointer list-none items-center gap-1.5 px-2.5 text-meta leading-4\">\n\t\t\t\t\t\t\t<svg width=\"10\" height=\"10\" viewBox=\"0 0 10 10\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.2\" aria-hidden=\"true\" class=\"ds-docs-sign\"><path d=\"M5 1.5v7M1.5 5h7\"></path></svg>\n\t\t\t\t\t\t\t${`${f.children.length} ${f.children.length === 1 ? 'field' : 'fields'}`}\n\t\t\t\t\t\t</summary>\n\t\t\t\t\t\t<${fields} .fields=${f.children} nested class=\"mt-2\"></${fields}>\n\t\t\t\t\t</details>`\n\t\t\t\t: nothing}\n\t\t</li>`)}</ul>`\n\t}\n}\n\ndefine('docs-fields', DocsFields)\n"
+        },
+        {
+          "path": "elements/components/site/docs-fields.css",
+          "content": ".ds-docs-params > li + li { border-top: var(--ds-border-hairline) solid var(--ds-color-edge); }\n.ds-docs-tag { border: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface-subtle); padding: 0 calc(var(--ds-space-xs) + 1px); font-size: var(--ds-text-caption); line-height: 18px; color: var(--ds-color-fg-muted); }\n.ds-docs-tag[data-required] { border-color: color-mix(in srgb, var(--ds-color-edge-accent) 40%, transparent); background: var(--ds-color-surface-danger); color: var(--ds-color-edge-accent); }\n.ds-docs-btn { border: var(--ds-border-hairline) solid var(--ds-color-edge); color: var(--ds-color-fg); transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-docs-btn:hover { background: var(--ds-color-surface-subtle); } }\n.ds-docs-more summary::-webkit-details-marker { display: none; }\n.ds-docs-more[open] > summary .ds-docs-sign path { d: path(\"M1.5 5h7\"); }\n/* The host is the list's box (DocsFields.vue's <ul>), so a class on <conare-docs-fields> lands on it; the <ul> inside\n   keeps the list's meaning and lays out nothing. The page's reset (no border, no padding on any element) outranks\n   :host, so a nested list's rule and indent are important here. */\n:host { display: flex; flex-direction: column; }\n:host([nested]) { @apply border-s! border-edge! ps-4!; }\n"
+        },
+        {
+          "path": "elements/components/site/docs-table.ts",
+          "content": "import { nothing } from 'lit'\nimport { html } from 'lit/static-html.js'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport '@/elements/components/site/docs-inline'\nimport styles from 'virtual:tw'\n\n// DocsTable.vue as <conare-docs-table>: a docs table (docs/Table.vue): ruled rows under a paper head, or none for a\n// key-value table, whose first column is set in ink. Cells take docs inline text. It scrolls sideways in its own frame\n// on a phone.\n\n/** @summary A ruled docs table that scrolls sideways in its own frame. */\nexport class DocsTable extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { head: { type: Array }, rows: { type: Array }, label: {} }\n\n\t/** The head's cells; none for a key-value table. */\n\thead?: string[]\n\t/** The rows, each an array of cells. */\n\trows: string[][] = []\n\t/** The region's name (else the head, joined). */\n\tlabel?: string\n\n\trender() {\n\t\tconst inline = tag('docs-inline')\n\t\treturn html`<div data-ds=\"docs-table\" class=\"ds-docs-table fade-x overflow-x-auto border border-edge\" role=\"region\" aria-label=${this.label ?? this.head?.join(', ') ?? 'table'} tabindex=\"0\">\n\t\t\t<table class=\"w-full text-left type-body\">\n\t\t\t\t${this.head ? html`<thead class=\"bg-surface-subtle text-fg-muted\"><tr>${this.head.map((h) => html`<th class=\"px-4 py-3 text-meta font-normal whitespace-nowrap\">${h}</th>`)}</tr></thead>` : nothing}\n\t\t\t\t<tbody>\n\t\t\t\t\t${(this.rows ?? []).map((row) => html`<tr>${row.map((cell, c) => html`<td class=${['px-4 py-3 align-top', c === 0 ? 'min-w-35 text-fg' : 'text-fg-muted'].join(' ')}><${inline} .text=${cell}></${inline}></td>`)}</tr>`)}\n\t\t\t\t</tbody>\n\t\t\t</table>\n\t\t</div>`\n\t}\n}\n\ndefine('docs-table', DocsTable)\n"
+        },
+        {
+          "path": "elements/components/site/docs-table.css",
+          "content": ".ds-docs-table tr + tr, .ds-docs-table thead + tbody tr:first-child { border-top: var(--ds-border-hairline) solid var(--ds-color-edge); }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/docs-blocks.js",
+        "elements/docs-inline.js",
+        "elements/docs-fields.js",
+        "elements/docs-table.js",
+        "elements/code-block.js",
+        "elements/code-copy.js"
+      ],
+      "tag": "conare-docs-blocks",
+      "tags": [
+        "conare-docs-blocks",
+        "conare-docs-inline",
+        "conare-docs-fields",
+        "conare-docs-table"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "code-block"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-docs-blocks",
+            "name": "DocsBlocks",
+            "module": "elements/docs-blocks.js",
+            "description": "A docs page's body, block by block.",
+            "attributes": [
+              {
+                "name": "blocks",
+                "field": "blocks",
+                "type": "DocsBlock[]",
+                "default": "[]",
+                "description": "The blocks: { kind: p, h2, h3, list, callout, table, code, cards or fields, ... }."
+              },
+              {
+                "name": "wide",
+                "field": "wide",
+                "type": "boolean",
+                "default": "false",
+                "description": "No 880px measure, for a page of cards."
+              }
+            ],
+            "properties": [
+              {
+                "name": "blocks",
+                "type": "DocsBlock[]",
+                "default": "[]",
+                "description": "The blocks: { kind: p, h2, h3, list, callout, table, code, cards or fields, ... }.",
+                "attribute": "blocks"
+              },
+              {
+                "name": "wide",
+                "type": "boolean",
+                "default": "false",
+                "description": "No 880px measure, for a page of cards.",
+                "attribute": "wide"
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          },
+          {
+            "tag": "conare-docs-inline",
+            "name": "DocsInline",
+            "module": "elements/docs-inline.js",
+            "description": "A line of docs text with its code, bold and links set.",
+            "attributes": [
+              {
+                "name": "text",
+                "field": "text",
+                "type": "string",
+                "default": "''",
+                "description": "The text: `code`, **bold** and [links](href)."
+              }
+            ],
+            "properties": [
+              {
+                "name": "text",
+                "type": "string",
+                "default": "''",
+                "description": "The text: `code`, **bold** and [links](href).",
+                "attribute": "text"
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          },
+          {
+            "tag": "conare-docs-fields",
+            "name": "DocsFields",
+            "module": "elements/docs-fields.js",
+            "description": "An endpoint's fields, one ruled row each, nested fields behind a toggle.",
+            "attributes": [
+              {
+                "name": "fields",
+                "field": "fields",
+                "type": "DocsField[]",
+                "default": "[]",
+                "description": "[{ name, type, required?, default?, text?, notes?, children? }]."
+              },
+              {
+                "name": "nested",
+                "field": "nested",
+                "type": "boolean",
+                "default": "false",
+                "description": "A field's own fields: ruled at the start and stepped in."
+              }
+            ],
+            "properties": [
+              {
+                "name": "fields",
+                "type": "DocsField[]",
+                "default": "[]",
+                "description": "[{ name, type, required?, default?, text?, notes?, children? }].",
+                "attribute": "fields"
+              },
+              {
+                "name": "nested",
+                "type": "boolean",
+                "default": "false",
+                "description": "A field's own fields: ruled at the start and stepped in.",
+                "attribute": "nested"
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          },
+          {
+            "tag": "conare-docs-table",
+            "name": "DocsTable",
+            "module": "elements/docs-table.js",
+            "description": "A ruled docs table that scrolls sideways in its own frame.",
+            "attributes": [
+              {
+                "name": "head",
+                "field": "head",
+                "type": "string[] | undefined",
+                "description": "The head's cells; none for a key-value table."
+              },
+              {
+                "name": "rows",
+                "field": "rows",
+                "type": "string[][]",
+                "default": "[]",
+                "description": "The rows, each an array of cells."
+              },
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string | undefined",
+                "description": "The region's name (else the head, joined)."
+              }
+            ],
+            "properties": [
+              {
+                "name": "head",
+                "type": "string[] | undefined",
+                "description": "The head's cells; none for a key-value table.",
+                "attribute": "head"
+              },
+              {
+                "name": "rows",
+                "type": "string[][]",
+                "default": "[]",
+                "description": "The rows, each an array of cells.",
+                "attribute": "rows"
+              },
+              {
+                "name": "label",
+                "type": "string | undefined",
+                "description": "The region's name (else the head, joined).",
+                "attribute": "label"
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "On the site",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/docs-blocks/Site.html",
+          "content": "<!-- One of each block, as a docs page sets them. -->\n<div class=\"max-w-180\" data-theme=\"light\">\n  <conare-docs-blocks></conare-docs-blocks>\n</div>\n<script type=\"module\">\n  document.querySelector('conare-docs-blocks').blocks = [\n    { kind: 'p', text: 'Search returns the passages that answer a question, from one namespace or several.' },\n    { kind: 'h2', id: 'request', text: 'Send a request' },\n    { kind: 'list', items: ['Pick the namespace', 'Write the question as a person would', 'Read the hits in order'] },\n    { kind: 'callout', tone: 'note', text: 'Each hit cites its document, and its page when it came from a file.' },\n    { kind: 'callout', tone: 'warning', text: 'A key is shown once. Store it before you close the page.' },\n    { kind: 'code', samples: [{ label: 'cURL', code: 'curl https://api.acme.dev/v1/search -d \\'{ \"query\": \"notice period\" }\\'' }] },\n    { kind: 'table', head: ['Field', 'Type', 'What it is'], rows: [['query', 'string', 'The question'], ['top_k', 'number', 'How many hits, 10 by default']] },\n    { kind: 'fields', fields: [{ name: 'query', type: 'string', required: true, text: 'The question, as a person would ask it.' }, { name: 'top_k', type: 'number', default: '10', text: 'How many hits to return.', notes: ['1 to 100'] }, { name: 'filters', type: 'object', text: 'Metadata the hits must have.', children: [{ name: 'app', type: 'string', text: 'Only hits from this app.' }] }] },\n    { kind: 'cards', items: [{ title: 'Namespaces', body: 'Group documents you search together.', href: '#namespaces' }, { title: 'Connect an agent', body: 'Give your agent search over `MCP`.', href: '#mcp-server' }] },\n  ]\n</script>\n"
+        }
+      ]
+    }
+  }
+}

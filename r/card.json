@@ -1,0 +1,389 @@
+{
+  "name": "card",
+  "title": "Card",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "A bordered box for one subject: a head with its title and actions over a hairline, then the body. Square, no shadow. Framed adds the website's double rule; a door is a whole card that opens something.",
+  "use_for": "A chart, a list, a setting, a way in. The framed card for the one block a page leads with.",
+  "never": [
+    "A card inside a card",
+    "Shadows",
+    "A clickable div: an interactive card is one link or button (Door)"
+  ],
+  "source": "conare-web app/assets/css/console2.css (.v2-card, .v2-card-head, .v2-card-framed, .v2-door)",
+  "body": "",
+  "requires": [],
+  "dependencies": [
+    "lucide-vue-next@^0.479.0"
+  ],
+  "files": [
+    {
+      "path": "components/ui/Card.vue",
+      "content": "<script setup lang=\"ts\">\nimport { useId } from 'vue'\n\n// A bordered box for one subject (console2.css .v2-card): a head with its title and actions over a hairline, then the\n// body. Square, no shadow. `framed` adds the website's double rule, a second hairline 4px outside, for the one block a\n// page leads with. `flush` drops the body's padding, for a table that runs to the edges.\nconst props = defineProps<{ title?: string, framed?: boolean, flush?: boolean }>()\nconst titleId = `card-${useId()}`\n</script>\n\n<template>\n  <section data-ds=\"card\" class=\"border border-edge bg-surface\" :class=\"framed && 'outline outline-offset-4 outline-edge'\" :aria-labelledby=\"props.title ? titleId : undefined\">\n    <div v-if=\"title || $slots.actions\" class=\"flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-edge px-4 py-3\">\n      <h3 v-if=\"title\" :id=\"titleId\" class=\"type-ui-strong\">{{ title }}</h3>\n      <div v-if=\"$slots.actions\" class=\"flex items-center gap-2 type-meta text-fg-muted\"><slot name=\"actions\" /></div>\n    </div>\n    <div :class=\"!flush && 'p-4'\"><slot /></div>\n  </section>\n</template>\n"
+    },
+    {
+      "path": "components/ui/Door.vue",
+      "content": "<script setup lang=\"ts\">\nimport type { Component } from 'vue'\nimport { ArrowRight } from 'lucide-vue-next'\n\n// A whole card that opens something (console2.css .v2-door): a way in, such as Connect an app or Send by API. Its\n// border turns ink under the pointer and while what it opens is open (`expanded`). One link or one button, never a\n// clickable div.\ndefineProps<{ title: string, description?: string, icon?: Component, href?: string, arrow?: boolean, expanded?: boolean }>()\n</script>\n\n<template>\n  <component data-ds=\"door\"\n    :is=\"href ? 'a' : 'button'\"\n    :href=\"href\"\n    :type=\"href ? undefined : 'button'\"\n    :aria-expanded=\"href ? undefined : expanded\"\n    class=\"flex cursor-pointer flex-col gap-1 border border-edge bg-surface p-3 text-left transition-[border-color,background-color] duration-120 ease-standard hover:border-edge-focus active:bg-surface-subtle aria-expanded:border-edge-focus\"\n  >\n    <span class=\"flex items-center gap-2 type-ui-strong\">\n      <component :is=\"icon\" v-if=\"icon\" :size=\"14\" :stroke-width=\"1.5\" aria-hidden=\"true\" />{{ title }}\n      <ArrowRight v-if=\"arrow\" :size=\"12\" :stroke-width=\"1.5\" class=\"ml-auto text-fg-muted\" aria-hidden=\"true\" />\n    </span>\n    <span v-if=\"description || $slots.default\" class=\"type-meta text-fg-muted\"><slot>{{ description }}</slot></span>\n  </component>\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "Cards and doors",
+      "center": false,
+      "half": false,
+      "path": "examples/card/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { Cable, Code } from 'lucide-vue-next'\nimport Card from '@/components/ui/Card.vue'\nimport Door from '@/components/ui/Door.vue'\n// A card with its head and body, the framed card a page leads with, and doors: whole cards that open something.\n</script>\n\n<template>\n  <div class=\"grid gap-6 md:grid-cols-2\">\n    <Card title=\"Credits\">\n      <template #actions><a href=\"#\" class=\"hover:text-fg\">Billing</a></template>\n      <div class=\"flex flex-col gap-2\">\n        <p><span class=\"type-heading-3\">$268.73</span> <span class=\"type-meta text-fg-muted\">left of $310.00</span></p>\n        <div class=\"h-1 bg-edge\" role=\"meter\" aria-label=\"credits left\" aria-valuemin=\"0\" aria-valuemax=\"310\" aria-valuenow=\"268.73\"><span class=\"block h-full w-[87%] bg-surface-inverse\" /></div>\n      </div>\n    </Card>\n    <Card framed><p class=\"type-ui\">The website's double rule, for the one block a page leads with.</p></Card>\n    <Door title=\"Connect an app\" description=\"Slack, Notion, Gmail and 11 more.\" :icon=\"Cable\" />\n    <Door title=\"Send by API\" description=\"Write documents from your code.\" :icon=\"Code\" arrow />\n  </div>\n</template>\n",
+      "requires": [],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    },
+    {
+      "name": "PageOrder",
+      "label": "In the order a page uses them",
+      "center": false,
+      "half": false,
+      "path": "examples/card/PageOrder.vue",
+      "content": "<script setup lang=\"ts\">\nimport { Cable, Code } from 'lucide-vue-next'\nimport Card from '@/components/ui/Card.vue'\nimport Door from '@/components/ui/Door.vue'\n// The cards in the order a page uses them: the one block it leads with, the subjects under it, the ways in at the foot.\n</script>\n\n<template>\n  <div class=\"grid items-start gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8\">\n    <p class=\"type-meta leading-7 text-fg-muted\">Leads the page</p>\n    <Card framed><p class=\"type-ui\">Conare reached the right page on 94 of 100 questions.</p></Card>\n    <p class=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">One subject each</p>\n    <div class=\"grid gap-4 sm:grid-cols-2\">\n      <Card title=\"Credits\">\n        <template #actions><a href=\"#\" class=\"hover:text-fg\">Billing</a></template>\n        <div class=\"flex flex-col gap-2\">\n          <p><span class=\"type-heading-3\">$268.73</span> <span class=\"type-meta text-fg-muted\">left of $310.00</span></p>\n          <div class=\"h-1 bg-edge\" role=\"meter\" aria-label=\"credits left\" aria-valuemin=\"0\" aria-valuemax=\"310\" aria-valuenow=\"268.73\"><span class=\"block h-full w-[87%] bg-surface-inverse\" /></div>\n        </div>\n      </Card>\n      <Card title=\"Queries\">\n        <template #actions><a href=\"#\" class=\"hover:text-fg\">Usage</a></template>\n        <div class=\"flex flex-col gap-2\">\n          <p><span class=\"type-heading-3\">186,402</span> <span class=\"type-meta text-fg-muted\">this month</span></p>\n          <div class=\"h-1 bg-edge\" role=\"meter\" aria-label=\"queries used\" aria-valuemin=\"0\" aria-valuemax=\"300000\" aria-valuenow=\"186402\"><span class=\"block h-full w-[62%] bg-surface-inverse\" /></div>\n        </div>\n      </Card>\n    </div>\n    <p class=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">Ways in</p>\n    <div class=\"grid gap-4 sm:grid-cols-2\">\n      <Door title=\"Connect an app\" description=\"Slack, Notion, Gmail and 11 more.\" :icon=\"Cable\" />\n      <Door title=\"Send by API\" description=\"Write documents from your code.\" :icon=\"Code\" arrow />\n    </div>\n  </div>\n</template>\n",
+      "requires": [],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Card.tsx",
+          "content": "import { useId, type HTMLAttributes, type ReactNode } from 'react'\nimport { cn } from '@/react/lib/cn'\n\n// A bordered box for one subject (console2.css .v2-card): a head with its title and actions over a hairline, then the\n// body. Square, no shadow. `framed` adds the website's double rule, a second hairline 4px outside, for the one block a\n// page leads with. `flush` drops the body's padding, for a table that runs to the edges.\nexport interface CardProps extends Omit<HTMLAttributes<HTMLElement>, 'title'> {\n  title?: string\n  framed?: boolean\n  flush?: boolean\n  /** The head's actions (Vue's `actions` slot): links or buttons at its end. */\n  actions?: ReactNode\n}\n\nexport function Card({ title, framed, flush, actions, className, children, ...rest }: CardProps) {\n  const titleId = `card-${useId()}`\n  return (\n    <section data-ds=\"card\" className={cn('border border-edge bg-surface', framed && 'outline outline-offset-4 outline-edge', className)} aria-labelledby={title ? titleId : undefined} {...rest}>\n      {(title || actions) && (\n        <div className=\"flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-edge px-4 py-3\">\n          {title && <h3 id={titleId} className=\"type-ui-strong\">{title}</h3>}\n          {actions && <div className=\"flex items-center gap-2 type-meta text-fg-muted\">{actions}</div>}\n        </div>\n      )}\n      <div className={flush ? undefined : 'p-4'}>{children}</div>\n    </section>\n  )\n}\n\nexport default Card\n"
+        },
+        {
+          "path": "react/components/ui/Door.tsx",
+          "content": "import type { ComponentType, ReactNode } from 'react'\nimport { ArrowRight } from 'lucide-react'\nimport { cn } from '@/react/lib/cn'\n\n// A whole card that opens something (console2.css .v2-door): a way in, such as Connect an app or Send by API. Its\n// border turns ink under the pointer and while what it opens is open (`expanded`). One link or one button, never a\n// clickable div.\nexport interface DoorProps {\n  title: string\n  description?: string\n  /** A Lucide icon component, drawn at 14px. */\n  icon?: ComponentType<{ size?: number, strokeWidth?: number, 'aria-hidden'?: boolean | 'true' }>\n  href?: string\n  arrow?: boolean\n  expanded?: boolean\n  className?: string\n  onClick?: () => void\n  /** Replaces the description (Vue's default slot). */\n  children?: ReactNode\n}\n\nexport function Door({ title, description, icon: Icon, href, arrow, expanded, className, onClick, children }: DoorProps) {\n  const classes = cn('flex cursor-pointer flex-col gap-1 border border-edge bg-surface p-3 text-left transition-[border-color,background-color] duration-120 ease-standard hover:border-edge-focus active:bg-surface-subtle aria-expanded:border-edge-focus', className)\n  const content = (\n    <>\n      <span className=\"flex items-center gap-2 type-ui-strong\">\n        {Icon && <Icon size={14} strokeWidth={1.5} aria-hidden=\"true\" />}{title}\n        {arrow && <ArrowRight size={12} strokeWidth={1.5} className=\"ml-auto text-fg-muted\" aria-hidden=\"true\" />}\n      </span>\n      {(description || children) && <span className=\"type-meta text-fg-muted\">{children ?? description}</span>}\n    </>\n  )\n  return href\n    ? <a data-ds=\"door\" href={href} className={classes} onClick={onClick}>{content}</a>\n    : <button data-ds=\"door\" type=\"button\" aria-expanded={expanded} className={classes} onClick={onClick}>{content}</button>\n}\n\nexport default Door\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [
+        "lucide-react@0.479.0"
+      ],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "Card",
+            "file": "react/components/ui/Card.tsx",
+            "props": [
+              {
+                "name": "title",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "framed",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "flush",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "actions",
+                "type": "ReactNode",
+                "required": false,
+                "description": "The head's actions (Vue's `actions` slot): links or buttons at its end."
+              }
+            ],
+            "extends": [
+              "Omit<HTMLAttributes<HTMLElement>, 'title'>"
+            ]
+          },
+          {
+            "name": "Door",
+            "file": "react/components/ui/Door.tsx",
+            "props": [
+              {
+                "name": "title",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "description",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "icon",
+                "type": "ComponentType<{ size?: number, strokeWidth?: number, 'aria-hidden'?: boolean | 'true' }>",
+                "required": false,
+                "description": "A Lucide icon component, drawn at 14px."
+              },
+              {
+                "name": "href",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "arrow",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "expanded",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "onClick",
+                "type": "() => void",
+                "required": false
+              },
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false,
+                "description": "Replaces the description (Vue's default slot)."
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Cards and doors",
+          "center": false,
+          "half": false,
+          "path": "react/examples/card/Product.tsx",
+          "content": "import { Cable, Code } from 'lucide-react'\nimport { Card } from '@/react/components/ui/Card'\nimport { Door } from '@/react/components/ui/Door'\n// A card with its head and body, the framed card a page leads with, and doors: whole cards that open something.\n\nexport default function Product() {\n  return (\n    <div className=\"grid gap-6 md:grid-cols-2\">\n      <Card title=\"Credits\" actions={<a href=\"#\" className=\"hover:text-fg\">Billing</a>}>\n        <div className=\"flex flex-col gap-2\">\n          <p><span className=\"type-heading-3\">$268.73</span> <span className=\"type-meta text-fg-muted\">left of $310.00</span></p>\n          <div className=\"h-1 bg-edge\" role=\"meter\" aria-label=\"credits left\" aria-valuemin={0} aria-valuemax={310} aria-valuenow={268.73}><span className=\"block h-full w-[87%] bg-surface-inverse\" /></div>\n        </div>\n      </Card>\n      <Card framed><p className=\"type-ui\">The website's double rule, for the one block a page leads with.</p></Card>\n      <Door title=\"Connect an app\" description=\"Slack, Notion, Gmail and 11 more.\" icon={Cable} />\n      <Door title=\"Send by API\" description=\"Write documents from your code.\" icon={Code} arrow />\n    </div>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        },
+        {
+          "name": "PageOrder",
+          "label": "In the order a page uses them",
+          "center": false,
+          "half": false,
+          "path": "react/examples/card/PageOrder.tsx",
+          "content": "import { Cable, Code } from 'lucide-react'\nimport { Card } from '@/react/components/ui/Card'\nimport { Door } from '@/react/components/ui/Door'\n// The cards in the order a page uses them: the one block it leads with, the subjects under it, the ways in at the foot.\n\nexport default function PageOrder() {\n  return (\n    <div className=\"grid items-start gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8\">\n      <p className=\"type-meta leading-7 text-fg-muted\">Leads the page</p>\n      <Card framed><p className=\"type-ui\">Conare reached the right page on 94 of 100 questions.</p></Card>\n      <p className=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">One subject each</p>\n      <div className=\"grid gap-4 sm:grid-cols-2\">\n        <Card title=\"Credits\" actions={<a href=\"#\" className=\"hover:text-fg\">Billing</a>}>\n          <div className=\"flex flex-col gap-2\">\n            <p><span className=\"type-heading-3\">$268.73</span> <span className=\"type-meta text-fg-muted\">left of $310.00</span></p>\n            <div className=\"h-1 bg-edge\" role=\"meter\" aria-label=\"credits left\" aria-valuemin={0} aria-valuemax={310} aria-valuenow={268.73}><span className=\"block h-full w-[87%] bg-surface-inverse\" /></div>\n          </div>\n        </Card>\n        <Card title=\"Queries\" actions={<a href=\"#\" className=\"hover:text-fg\">Usage</a>}>\n          <div className=\"flex flex-col gap-2\">\n            <p><span className=\"type-heading-3\">186,402</span> <span className=\"type-meta text-fg-muted\">this month</span></p>\n            <div className=\"h-1 bg-edge\" role=\"meter\" aria-label=\"queries used\" aria-valuemin={0} aria-valuemax={300000} aria-valuenow={186402}><span className=\"block h-full w-[62%] bg-surface-inverse\" /></div>\n          </div>\n        </Card>\n      </div>\n      <p className=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">Ways in</p>\n      <div className=\"grid gap-4 sm:grid-cols-2\">\n        <Door title=\"Connect an app\" description=\"Slack, Notion, Gmail and 11 more.\" icon={Cable} />\n        <Door title=\"Send by API\" description=\"Write documents from your code.\" icon={Code} arrow />\n      </div>\n    </div>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/card.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { DsElement, define, uid } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// Card.vue as <conare-card>: a bordered box for one subject (console2.css .v2-card): a head with its title and actions\n// over a hairline, then the body. Square, no shadow. `framed` adds the website's double rule, a second hairline 4px\n// outside, for the one block a page leads with. `flush` drops the body's padding.\n\n/**\n * @summary A bordered box for one subject.\n * @slot - The body.\n * @slot actions - The head's actions: links or buttons at its end.\n */\nexport class Card extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { heading: {}, framed: { type: Boolean }, flush: { type: Boolean } }\n\n\t/** The head's title (Vue's `title`; `title` is HTML's tooltip attribute). */\n\theading = ''\n\t/** The website's double rule. */\n\tframed = false\n\t/** No padding in the body, for a table that runs to the edges. */\n\tflush = false\n\tprivate headingId = uid('card')\n\n\trender() {\n\t\tconst actions = this.hasSlot('actions')\n\t\treturn html`<section data-ds=\"card\" class=${['border border-edge bg-surface', this.framed ? 'outline outline-offset-4 outline-edge' : ''].join(' ')} aria-labelledby=${ifDefined(this.heading ? this.headingId : undefined)}>\n\t\t\t${this.heading || actions\n\t\t\t\t? html`<div class=\"flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-edge px-4 py-3\">${this.heading ? html`<h3 id=${this.headingId} class=\"type-ui-strong\">${this.heading}</h3>` : nothing}${actions ? html`<div class=\"flex items-center gap-2 type-meta text-fg-muted\"><slot name=\"actions\"></slot></div>` : nothing}</div>`\n\t\t\t\t: nothing}\n\t\t\t<div class=${this.flush ? '' : 'p-4'}><slot></slot></div>\n\t\t</section>`\n\t}\n}\n\ndefine('card', Card)\n"
+        },
+        {
+          "path": "elements/components/ui/door.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { ArrowRight } from 'lucide'\nimport { DsElement, define } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport styles from 'virtual:tw'\n\n// Door.vue as <conare-door>: a whole card that opens something (console2.css .v2-door), such as Connect an app or Send\n// by API. Its border turns ink under the pointer and while what it opens is open (`expanded`). One link or one button.\n// Vue's `icon` prop is the `icon` slot here: a 14px Lucide svg with stroke-width 1.5.\n\n/**\n * @summary A whole card that opens something.\n * @slot - Replaces the description.\n * @slot icon - A 14px Lucide icon before the title.\n * @fires click - When pressed.\n */\nexport class Door extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { heading: {}, description: {}, href: {}, arrow: { type: Boolean }, expanded: { type: Boolean } }\n\n\t/** The title (Vue's `title`; `title` is HTML's tooltip attribute). */\n\theading = ''\n\tdescription?: string\n\thref?: string\n\t/** An arrow at the end of the title. */\n\tarrow = false\n\t/** What it opens is open (aria-expanded). */\n\texpanded = false\n\n\trender() {\n\t\tconst classes = 'flex cursor-pointer flex-col gap-1 border border-edge bg-surface p-3 text-left transition-[border-color,background-color] duration-120 ease-standard hover:border-edge-focus active:bg-surface-subtle aria-expanded:border-edge-focus'\n\t\tconst body = this.description || this.hasSlot()\n\t\tconst content = html`<span class=\"flex items-center gap-2 type-ui-strong\"><slot name=\"icon\"></slot>${this.heading}${this.arrow ? icon(ArrowRight, 'arrow-right', { size: 12, strokeWidth: 1.5, class: 'ml-auto text-fg-muted', attrs: { 'aria-hidden': 'true' } }) : nothing}</span>${body ? html`<span class=\"type-meta text-fg-muted\"><slot>${this.description}</slot></span>` : nothing}`\n\t\treturn this.href\n\t\t\t? html`<a data-ds=\"door\" href=${this.href} class=${classes}>${content}</a>`\n\t\t\t: html`<button data-ds=\"door\" type=\"button\" aria-expanded=${ifDefined(this.expanded === undefined ? undefined : String(this.expanded))} class=${classes}>${content}</button>`\n\t}\n}\n\ndefine('door', Door)\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/card.js",
+        "elements/door.js"
+      ],
+      "tag": "conare-card",
+      "tags": [
+        "conare-card",
+        "conare-door"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-card",
+            "name": "Card",
+            "module": "elements/card.js",
+            "description": "A bordered box for one subject.",
+            "attributes": [
+              {
+                "name": "heading",
+                "field": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The head's title (Vue's `title`; `title` is HTML's tooltip attribute)."
+              },
+              {
+                "name": "framed",
+                "field": "framed",
+                "type": "boolean",
+                "default": "false",
+                "description": "The website's double rule."
+              },
+              {
+                "name": "flush",
+                "field": "flush",
+                "type": "boolean",
+                "default": "false",
+                "description": "No padding in the body, for a table that runs to the edges."
+              }
+            ],
+            "properties": [
+              {
+                "name": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The head's title (Vue's `title`; `title` is HTML's tooltip attribute).",
+                "attribute": "heading"
+              },
+              {
+                "name": "framed",
+                "type": "boolean",
+                "default": "false",
+                "description": "The website's double rule.",
+                "attribute": "framed"
+              },
+              {
+                "name": "flush",
+                "type": "boolean",
+                "default": "false",
+                "description": "No padding in the body, for a table that runs to the edges.",
+                "attribute": "flush"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "The body."
+              },
+              {
+                "name": "actions",
+                "description": "The head's actions: links or buttons at its end."
+              }
+            ],
+            "methods": []
+          },
+          {
+            "tag": "conare-door",
+            "name": "Door",
+            "module": "elements/door.js",
+            "description": "A whole card that opens something.",
+            "attributes": [
+              {
+                "name": "heading",
+                "field": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The title (Vue's `title`; `title` is HTML's tooltip attribute)."
+              },
+              {
+                "name": "description",
+                "field": "description",
+                "type": "string | undefined"
+              },
+              {
+                "name": "href",
+                "field": "href",
+                "type": "string | undefined"
+              },
+              {
+                "name": "arrow",
+                "field": "arrow",
+                "type": "boolean",
+                "default": "false",
+                "description": "An arrow at the end of the title."
+              },
+              {
+                "name": "expanded",
+                "field": "expanded",
+                "type": "boolean",
+                "default": "false",
+                "description": "What it opens is open (aria-expanded)."
+              }
+            ],
+            "properties": [
+              {
+                "name": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The title (Vue's `title`; `title` is HTML's tooltip attribute).",
+                "attribute": "heading"
+              },
+              {
+                "name": "description",
+                "type": "string | undefined",
+                "attribute": "description"
+              },
+              {
+                "name": "href",
+                "type": "string | undefined",
+                "attribute": "href"
+              },
+              {
+                "name": "arrow",
+                "type": "boolean",
+                "default": "false",
+                "description": "An arrow at the end of the title.",
+                "attribute": "arrow"
+              },
+              {
+                "name": "expanded",
+                "type": "boolean",
+                "default": "false",
+                "description": "What it opens is open (aria-expanded).",
+                "attribute": "expanded"
+              }
+            ],
+            "events": [
+              {
+                "name": "click",
+                "description": "When pressed."
+              }
+            ],
+            "slots": [
+              {
+                "name": "",
+                "description": "Replaces the description."
+              },
+              {
+                "name": "icon",
+                "description": "A 14px Lucide icon before the title."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Cards and doors",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/card/Product.html",
+          "content": "<!-- A card with its head and body, the framed card a page leads with, and doors: whole cards that open something. -->\n<div class=\"grid gap-6 md:grid-cols-2\">\n  <conare-card heading=\"Credits\">\n    <a slot=\"actions\" href=\"#\" class=\"hover:text-fg\">Billing</a>\n    <div class=\"flex flex-col gap-2\">\n      <p><span class=\"type-heading-3\">$268.73</span> <span class=\"type-meta text-fg-muted\">left of $310.00</span></p>\n      <div class=\"h-1 bg-edge\" role=\"meter\" aria-label=\"credits left\" aria-valuemin=\"0\" aria-valuemax=\"310\" aria-valuenow=\"268.73\"><span class=\"block h-full w-[87%] bg-surface-inverse\"></span></div>\n    </div>\n  </conare-card>\n  <conare-card framed><p class=\"type-ui\">The website's double rule, for the one block a page leads with.</p></conare-card>\n  <conare-door heading=\"Connect an app\" description=\"Slack, Notion, Gmail and 11 more.\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-cable\" slot=\"icon\" aria-hidden=\"true\"><path d=\"M17 21v-2a1 1 0 0 1-1-1v-1a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1a1 1 0 0 1-1 1\"></path><path d=\"M19 15V6.5a1 1 0 0 0-7 0v11a1 1 0 0 1-7 0V9\"></path><path d=\"M21 21v-2h-4\"></path><path d=\"M3 5h4V3\"></path><path d=\"M7 5a1 1 0 0 1 1 1v1a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a1 1 0 0 1 1-1V3\"></path></svg></conare-door>\n  <conare-door heading=\"Send by API\" description=\"Write documents from your code.\" arrow><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-code\" slot=\"icon\" aria-hidden=\"true\"><polyline points=\"16 18 22 12 16 6\"></polyline><polyline points=\"8 6 2 12 8 18\"></polyline></svg></conare-door>\n</div>\n"
+        },
+        {
+          "name": "PageOrder",
+          "label": "In the order a page uses them",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/card/PageOrder.html",
+          "content": "<!-- The cards in the order a page uses them: the one block it leads with, the subjects under it, the ways in at the\n     foot. -->\n<div class=\"grid items-start gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8\">\n  <p class=\"type-meta leading-7 text-fg-muted\">Leads the page</p>\n  <conare-card framed><p class=\"type-ui\">Conare reached the right page on 94 of 100 questions.</p></conare-card>\n  <p class=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">One subject each</p>\n  <div class=\"grid gap-4 sm:grid-cols-2\">\n    <conare-card heading=\"Credits\">\n      <a slot=\"actions\" href=\"#\" class=\"hover:text-fg\">Billing</a>\n      <div class=\"flex flex-col gap-2\">\n        <p><span class=\"type-heading-3\">$268.73</span> <span class=\"type-meta text-fg-muted\">left of $310.00</span></p>\n        <div class=\"h-1 bg-edge\" role=\"meter\" aria-label=\"credits left\" aria-valuemin=\"0\" aria-valuemax=\"310\" aria-valuenow=\"268.73\"><span class=\"block h-full w-[87%] bg-surface-inverse\"></span></div>\n      </div>\n    </conare-card>\n    <conare-card heading=\"Queries\">\n      <a slot=\"actions\" href=\"#\" class=\"hover:text-fg\">Usage</a>\n      <div class=\"flex flex-col gap-2\">\n        <p><span class=\"type-heading-3\">186,402</span> <span class=\"type-meta text-fg-muted\">this month</span></p>\n        <div class=\"h-1 bg-edge\" role=\"meter\" aria-label=\"queries used\" aria-valuemin=\"0\" aria-valuemax=\"300000\" aria-valuenow=\"186402\"><span class=\"block h-full w-[62%] bg-surface-inverse\"></span></div>\n      </div>\n    </conare-card>\n  </div>\n  <p class=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">Ways in</p>\n  <div class=\"grid gap-4 sm:grid-cols-2\">\n    <conare-door heading=\"Connect an app\" description=\"Slack, Notion, Gmail and 11 more.\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-cable\" slot=\"icon\" aria-hidden=\"true\"><path d=\"M17 21v-2a1 1 0 0 1-1-1v-1a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1a1 1 0 0 1-1 1\"></path><path d=\"M19 15V6.5a1 1 0 0 0-7 0v11a1 1 0 0 1-7 0V9\"></path><path d=\"M21 21v-2h-4\"></path><path d=\"M3 5h4V3\"></path><path d=\"M7 5a1 1 0 0 1 1 1v1a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a1 1 0 0 1 1-1V3\"></path></svg></conare-door>\n    <conare-door heading=\"Send by API\" description=\"Write documents from your code.\" arrow><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-code\" slot=\"icon\" aria-hidden=\"true\"><polyline points=\"16 18 22 12 16 6\"></polyline><polyline points=\"8 6 2 12 8 18\"></polyline></svg></conare-door>\n  </div>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

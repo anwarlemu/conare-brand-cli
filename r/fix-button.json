@@ -1,0 +1,245 @@
+{
+  "name": "fix-button",
+  "title": "Fix button",
+  "type": "registry:ui",
+  "group": "product",
+  "description": "The fix for a failure: the website's dark button that signs in, counts the changes as they come back and ends on a check, all in one cell.",
+  "use_for": "Reconnecting a source that stopped syncing, in its row or in Home's banner.",
+  "never": [
+    "Actions that are not a fix",
+    "Two on one view",
+    "Moving the row while it works: every state stays in its cell"
+  ],
+  "source": "conare-web app/components/console/namespaces/FixButton.vue, app/assets/css/console2.css (.v2-fixbtn, .v2-states), app/design-system/examples/button/Brand.vue",
+  "body": "`state` is `broken`, `signing`, `catching` or `done`; the app moves it along after `press`. `count` is the changes so far (it counts up with Count, and the last count stays). `app` names the source in the label and for screen readers. `tone=\"red\"` is the red version, its squares running black. The black wipes off in 420ms (`--ds-duration-wipe`), longer than the console's usual 320ms ceiling because it reports a rare, slow action.",
+  "requires": [
+    "count",
+    "loader"
+  ],
+  "dependencies": [
+    "lucide-vue-next@^0.479.0"
+  ],
+  "files": [
+    {
+      "path": "components/product/FixButton.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed, ref, watch } from 'vue'\nimport { Check } from 'lucide-vue-next'\nimport Count from '@/components/ui/Count.vue'\nimport DotMatrix from '@/components/ui/DotMatrix.vue'\nimport { usePixelGrid } from '@/composables/usePixelGrid'\n\n// The one button a fix needs, which then reports the fix itself, so the eye stays where it pressed\n// (namespaces/FixButton.vue, console2.css .v2-fixbtn, .v2-states). At rest it is the website's dark button: on hover\n// its red squares run across under the label. A press answers on pointer-down (scale 0.97) and emits `press`; the app\n// then moves `state` along: signing (signing in), catching (the changes coming back, counted as they arrive), done (a\n// check draws itself and the last count stays as the result). Every state is stacked in one cell, so nothing around it\n// moves: labels leave up and arrive from below with a touch of blur. Once the source is back the black wipes off left\n// to right on the strong ease-out (420ms), and since the label is printed on both layers it changes colour exactly at\n// the edge. `tone=\"red\"` is the same button the other way round (red, its squares running black), for a calm page.\n// It is a rare action, so it may take a moment. Reduced motion keeps the fades only.\nexport type FixState = 'broken' | 'signing' | 'catching' | 'done'\nconst STEP: Record<FixState, number> = { broken: 0, signing: 1, catching: 2, done: 3 }\nconst props = defineProps<{ state: FixState, app: string, count: number, tone?: 'red' }>()\ndefineEmits<{ press: [] }>()\nconst pulled = ref(props.count)\nwatch(() => props.count, (n) => { if (n) pulled.value = n })\nconst root = ref<HTMLElement | null>(null)\nconst { grid, style } = usePixelGrid(() => root.value)\nconst spoken = computed(() => ({ broken: `Reconnect ${props.app}`, signing: `Signing in to ${props.app}`, catching: `${props.app} is syncing`, done: `${props.app} is up to date` })[props.state])\nconst plain = (n: number) => n.toLocaleString('en-US')\n</script>\n\n<template>\n  <button data-ds=\"fix-button\" ref=\"root\" type=\"button\" class=\"ds-fix\" :data-state=\"state\" :data-tone=\"tone\" :style=\"{ '--s': STEP[state] }\" :disabled=\"state !== 'broken'\" :aria-busy=\"state === 'signing' || state === 'catching'\" :aria-label=\"spoken\" @click.stop=\"$emit('press')\">\n    <span v-for=\"layer in ['text', 'ink']\" :key=\"layer\" class=\"ds-states\" :class=\"`ds-fix-${layer}`\" aria-hidden=\"true\">\n      <span v-if=\"layer === 'ink' && grid\" class=\"ds-fix-fill\" :style=\"style\"><i v-for=\"(c, k) in grid.cells\" :key=\"k\" :style=\"c\" /></span>\n      <span style=\"--n: 0\">Reconnect {{ app }}</span>\n      <span style=\"--n: 1\"><DotMatrix :tone=\"layer === 'ink' ? 'inverse' : 'default'\" />Signing in</span>\n      <span style=\"--n: 2\"><DotMatrix :tone=\"layer === 'ink' ? 'inverse' : 'default'\" /><Count :value=\"pulled\" /> changes</span>\n      <span style=\"--n: 3\"><Check :size=\"12\" :stroke-width=\"2\" aria-hidden=\"true\" />{{ plain(pulled) }} changes</span>\n    </span>\n  </button>\n</template>\n\n<style>\n/* A thing moving through states in place: --s is the state, --n each label's. */\n.ds-states { display: inline-grid; justify-items: start; vertical-align: top; }\n.ds-states > :not(.ds-fix-fill) { --d: calc(var(--n) - var(--s)); grid-area: 1 / 1; opacity: clamp(0, calc(1 - var(--d) * var(--d)), 1); filter: blur(calc(clamp(0, calc(var(--d) * var(--d)), 1) * 2px)); transform: translateY(calc(clamp(-1, var(--d), 1) * 5px)); transition: opacity var(--ds-duration-glide) ease, filter var(--ds-duration-glide) ease, transform var(--ds-duration-settle) var(--ds-easing-out); }\n.ds-fix { position: relative; display: inline-grid; height: var(--ds-size-control-sm); flex-shrink: 0; align-items: center; border: var(--ds-border-hairline) solid var(--ds-color-edge); color: var(--ds-color-fg); font-size: var(--ds-text-meta); font-weight: var(--ds-font-weight-medium); white-space: nowrap; cursor: pointer; transition: transform var(--ds-duration-micro) var(--ds-easing-out); }\n.ds-fix:disabled { cursor: default; }\n.ds-fix:active:not(:disabled) { transform: scale(0.97); }\n.ds-fix:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: var(--ds-border-focus); }\n.ds-fix-text, .ds-fix-ink { display: grid; align-items: center; justify-items: center; padding: 0 10px; }\n.ds-fix-text > :not(.ds-fix-fill), .ds-fix-ink > :not(.ds-fix-fill) { display: inline-flex; align-items: center; gap: var(--ds-space-sm); }\n.ds-fix-ink { position: absolute; inset: -1px; isolation: isolate; overflow: hidden; background: var(--ds-color-action-primary); color: var(--ds-color-action-primary-fg); clip-path: inset(0 0 0 0); transition: clip-path var(--ds-duration-wipe) var(--ds-easing-out), background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-fix:is([data-state=\"catching\"], [data-state=\"done\"]) .ds-fix-ink { clip-path: inset(0 0 0 100%); }\n.ds-fix[data-tone=\"red\"] { background: var(--ds-color-surface); }\n.ds-fix[data-tone=\"red\"] .ds-fix-ink { background: var(--ds-color-home-red-hover); color: var(--ds-color-off-white); }\n.ds-fix-fill { position: absolute; inset: 0; z-index: -1; display: grid; pointer-events: none; }\n.ds-fix-fill i { position: relative; background: var(--ds-color-edge-accent); font-style: normal; opacity: 0; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard) calc(var(--o) * 1ms); }\n.ds-fix[data-tone=\"red\"] .ds-fix-fill i { background: var(--ds-color-surface-inverse); }\n@media (hover: hover) and (pointer: fine) { .ds-fix[data-state=\"broken\"]:hover .ds-fix-fill i { opacity: 1; transition: opacity var(--ds-duration-cell) var(--ds-easing-decelerate) calc(var(--i) * 1ms); } }\n.ds-fix[data-state=\"broken\"]:active .ds-fix-fill i { opacity: 1; transition: opacity var(--ds-duration-press) ease 0ms; }\n.ds-fix:focus-visible .ds-fix-fill i { opacity: 1; }\n.ds-fix svg path { stroke-dasharray: 24; stroke-dashoffset: 24; transition: stroke-dashoffset var(--ds-duration-micro) ease; }\n.ds-fix[data-state=\"done\"] svg path { stroke-dashoffset: 0; transition: stroke-dashoffset var(--ds-duration-collapse) var(--ds-easing-out) 80ms; }\n@media (pointer: coarse), (max-width: 767px) { .ds-fix { height: var(--ds-size-control-touch); font-size: var(--ds-text-ui); } }\n@media (prefers-reduced-motion: reduce) {\n  .ds-states > :not(.ds-fix-fill) { filter: none; transform: none; transition: opacity var(--ds-duration-micro) ease; }\n  .ds-fix-ink { transition: opacity var(--ds-duration-micro) ease; }\n  .ds-fix:is([data-state=\"catching\"], [data-state=\"done\"]) .ds-fix-ink { clip-path: none; opacity: 0; }\n  .ds-fix:active:not(:disabled) { transform: none; }\n  .ds-fix svg path { stroke-dashoffset: 0; transition: none; }\n  .ds-fix-fill i { transition-delay: 0ms !important; }\n}\n</style>\n"
+    },
+    {
+      "path": "composables/usePixelGrid.ts",
+      "content": "import { computed, onBeforeUnmount, onMounted, ref } from 'vue'\n\n// The website's dark button's red fill (PixelButton.vue): 6px squares laid over an element, each with its own delay in\n// and out, from the same seed as the website's, so the buttons feel like one product. It lays them again on resize.\nconst PX = 6\n\n/** A seeded random source (mulberry32), the same as the website's, so every button scatters the same way. */\nfunction rng(seed: number) {\n  let s = seed >>> 0\n  return () => {\n    s = (s + 0x6D2B79F5) >>> 0\n    let t = s\n    t = Math.imul(t ^ (t >>> 15), t | 1)\n    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)\n    return ((t ^ (t >>> 14)) >>> 0) / 4294967296\n  }\n}\n\nexport function usePixelGrid(el: () => HTMLElement | null) {\n  const grid = ref<{ cols: number, w: number, h: number, cells: Array<Record<string, number>> } | null>(null)\n  function lay() {\n    const box = el()\n    if (!box) return\n    const rect = box.getBoundingClientRect()\n    const w = rect.width - (box.offsetWidth - box.clientWidth)\n    const h = rect.height - (box.offsetHeight - box.clientHeight)\n    if (grid.value?.w === w && grid.value.h === h) return\n    const cols = Math.ceil(w / PX)\n    const rows = Math.ceil(h / PX)\n    const rand = rng(29)\n    grid.value = {\n      cols,\n      w,\n      h,\n      cells: Array.from({ length: cols * rows }, (_, k) => {\n        // Eased along the button, so the front starts quick and settles.\n        const e = 1 - (1 - (k % cols) / cols) ** 1.6\n        return { '--i': Math.round(e * 60 + rand() * 20), '--o': Math.round(e * 50 + rand() * 20) }\n      }),\n    }\n  }\n  let ro: ResizeObserver | undefined\n  onMounted(() => {\n    lay()\n    ro = new ResizeObserver(lay)\n    const box = el()\n    if (box) ro.observe(box)\n  })\n  onBeforeUnmount(() => ro?.disconnect())\n  const style = computed(() => (grid.value ? { gridTemplateColumns: `repeat(${grid.value.cols}, ${PX}px)`, gridAutoRows: `${PX}px` } : undefined))\n  return { grid, style }\n}\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "In the product",
+      "center": false,
+      "half": false,
+      "path": "examples/fix-button/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { onBeforeUnmount, ref } from 'vue'\nimport FixButton, { type FixState } from '@/components/product/FixButton.vue'\n// The fix for a failure, as a namespace's row has it, and in the failure's own red as Home's banner has it: hover runs\n// its squares across; a press signs in, counts the changes as they come back, and ends on the check. Here each comes\n// back to the start after a few seconds.\nconst states = ref<Record<'dark' | 'red', FixState>>({ dark: 'broken', red: 'broken' })\nconst counts = ref({ dark: 0, red: 0 })\nconst timers: Array<ReturnType<typeof setTimeout>> = []\nfunction press(which: 'dark' | 'red') {\n  states.value[which] = 'signing'\n  timers.push(setTimeout(() => { states.value[which] = 'catching'; counts.value[which] = 1240 }, 1000))\n  timers.push(setTimeout(() => { states.value[which] = 'done' }, 2800))\n  timers.push(setTimeout(() => { states.value[which] = 'broken'; counts.value[which] = 0 }, 6000))\n}\nonBeforeUnmount(() => timers.forEach(clearTimeout))\n</script>\n\n<template>\n  <div class=\"grid items-center gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8\">\n    <p class=\"type-meta leading-7 text-fg-muted\">In a row</p>\n    <div><FixButton :state=\"states.dark\" app=\"Acme CRM\" :count=\"counts.dark\" @press=\"press('dark')\" /></div>\n    <p class=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">Red, on a calm page</p>\n    <div><FixButton :state=\"states.red\" app=\"Acme CRM\" :count=\"counts.red\" tone=\"red\" @press=\"press('red')\" /></div>\n  </div>\n</template>\n",
+      "requires": [
+        "count",
+        "loader"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/product/FixButton.tsx",
+          "content": "'use client'\nimport { Check } from 'lucide-react'\nimport { useEffect, useRef, useState, type CSSProperties } from 'react'\nimport { Count } from '@/react/components/ui/Count'\nimport { DotMatrix } from '@/react/components/ui/DotMatrix'\nimport { usePixelGrid } from '@/react/hooks/usePixelGrid'\n\n// The one button a fix needs, which then reports the fix itself, so the eye stays where it pressed\n// (namespaces/FixButton.vue, console2.css .v2-fixbtn, .v2-states). At rest it is the website's dark button: on hover\n// its red squares run across under the label. A press answers on pointer-down (scale 0.97) and calls `onPress`; the\n// app then moves `state` along: signing (signing in), catching (the changes coming back, counted as they arrive), done\n// (a check draws itself and the last count stays as the result). Every state is stacked in one cell, so nothing around\n// it moves: labels leave up and arrive from below with a touch of blur. Once the source is back the black wipes off\n// left to right on the strong ease-out (420ms), and since the label is printed on both layers it changes colour exactly\n// at the edge. `tone=\"red\"` is the same button the other way round (red, its squares running black), for a calm page.\n// It is a rare action, so it may take a moment. Reduced motion keeps the fades only.\nexport type FixState = 'broken' | 'signing' | 'catching' | 'done'\nconst STEP: Record<FixState, number> = { broken: 0, signing: 1, catching: 2, done: 3 }\n\nexport interface FixButtonProps {\n  state: FixState\n  app: string\n  count: number\n  tone?: 'red'\n  onPress?: () => void\n}\n\nconst plain = (n: number) => n.toLocaleString('en-US')\n\nexport function FixButton({ state, app, count, tone, onPress }: FixButtonProps) {\n  const [pulled, setPulled] = useState(count)\n  useEffect(() => { if (count) setPulled(count) }, [count])\n  const root = useRef<HTMLButtonElement | null>(null)\n  const { grid, style } = usePixelGrid(root)\n  const spoken = ({ broken: `Reconnect ${app}`, signing: `Signing in to ${app}`, catching: `${app} is syncing`, done: `${app} is up to date` })[state]\n  return (\n    <>\n      <style href=\"ds-fix-button\" precedence=\"ds\">{css}</style>\n      <button data-ds=\"fix-button\" ref={root} type=\"button\" className=\"ds-fix\" data-state={state} data-tone={tone} style={{ '--s': STEP[state] } as CSSProperties} disabled={state !== 'broken'} aria-busy={state === 'signing' || state === 'catching'} aria-label={spoken} onClick={(e) => { e.stopPropagation(); onPress?.() }}>\n        {(['text', 'ink'] as const).map(layer => (\n          <span key={layer} className={`ds-states ds-fix-${layer}`} aria-hidden=\"true\">\n            {layer === 'ink' && grid && <span className=\"ds-fix-fill\" style={style}>{grid.cells.map((c, k) => <i key={k} style={c} />)}</span>}\n            <span style={{ '--n': 0 } as CSSProperties}>{`Reconnect ${app}`}</span>\n            <span style={{ '--n': 1 } as CSSProperties}><DotMatrix tone={layer === 'ink' ? 'inverse' : 'default'} />Signing in</span>\n            <span style={{ '--n': 2 } as CSSProperties}><DotMatrix tone={layer === 'ink' ? 'inverse' : 'default'} /><Count value={pulled} /> changes</span>\n            <span style={{ '--n': 3 } as CSSProperties}><Check size={12} strokeWidth={2} aria-hidden=\"true\" />{`${plain(pulled)} changes`}</span>\n          </span>\n        ))}\n      </button>\n    </>\n  )\n}\n\nexport default FixButton\n\nconst css = `\n/* A thing moving through states in place: --s is the state, --n each label's. */\n.ds-states { display: inline-grid; justify-items: start; vertical-align: top; }\n.ds-states > :not(.ds-fix-fill) { --d: calc(var(--n) - var(--s)); grid-area: 1 / 1; opacity: clamp(0, calc(1 - var(--d) * var(--d)), 1); filter: blur(calc(clamp(0, calc(var(--d) * var(--d)), 1) * 2px)); transform: translateY(calc(clamp(-1, var(--d), 1) * 5px)); transition: opacity var(--ds-duration-glide) ease, filter var(--ds-duration-glide) ease, transform var(--ds-duration-settle) var(--ds-easing-out); }\n.ds-fix { position: relative; display: inline-grid; height: var(--ds-size-control-sm); flex-shrink: 0; align-items: center; border: var(--ds-border-hairline) solid var(--ds-color-edge); color: var(--ds-color-fg); font-size: var(--ds-text-meta); font-weight: var(--ds-font-weight-medium); white-space: nowrap; cursor: pointer; transition: transform var(--ds-duration-micro) var(--ds-easing-out); }\n.ds-fix:disabled { cursor: default; }\n.ds-fix:active:not(:disabled) { transform: scale(0.97); }\n.ds-fix:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: var(--ds-border-focus); }\n.ds-fix-text, .ds-fix-ink { display: grid; align-items: center; justify-items: center; padding: 0 10px; }\n.ds-fix-text > :not(.ds-fix-fill), .ds-fix-ink > :not(.ds-fix-fill) { display: inline-flex; align-items: center; gap: var(--ds-space-sm); }\n.ds-fix-ink { position: absolute; inset: -1px; isolation: isolate; overflow: hidden; background: var(--ds-color-action-primary); color: var(--ds-color-action-primary-fg); clip-path: inset(0 0 0 0); transition: clip-path var(--ds-duration-wipe) var(--ds-easing-out), background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-fix:is([data-state=\"catching\"], [data-state=\"done\"]) .ds-fix-ink { clip-path: inset(0 0 0 100%); }\n.ds-fix[data-tone=\"red\"] { background: var(--ds-color-surface); }\n.ds-fix[data-tone=\"red\"] .ds-fix-ink { background: var(--ds-color-home-red-hover); color: var(--ds-color-off-white); }\n.ds-fix-fill { position: absolute; inset: 0; z-index: -1; display: grid; pointer-events: none; }\n.ds-fix-fill i { position: relative; background: var(--ds-color-edge-accent); font-style: normal; opacity: 0; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard) calc(var(--o) * 1ms); }\n.ds-fix[data-tone=\"red\"] .ds-fix-fill i { background: var(--ds-color-surface-inverse); }\n@media (hover: hover) and (pointer: fine) { .ds-fix[data-state=\"broken\"]:hover .ds-fix-fill i { opacity: 1; transition: opacity var(--ds-duration-cell) var(--ds-easing-decelerate) calc(var(--i) * 1ms); } }\n.ds-fix[data-state=\"broken\"]:active .ds-fix-fill i { opacity: 1; transition: opacity var(--ds-duration-press) ease 0ms; }\n.ds-fix:focus-visible .ds-fix-fill i { opacity: 1; }\n.ds-fix svg path { stroke-dasharray: 24; stroke-dashoffset: 24; transition: stroke-dashoffset var(--ds-duration-micro) ease; }\n.ds-fix[data-state=\"done\"] svg path { stroke-dashoffset: 0; transition: stroke-dashoffset var(--ds-duration-collapse) var(--ds-easing-out) 80ms; }\n@media (pointer: coarse), (max-width: 767px) { .ds-fix { height: var(--ds-size-control-touch); font-size: var(--ds-text-ui); } }\n@media (prefers-reduced-motion: reduce) {\n  .ds-states > :not(.ds-fix-fill) { filter: none; transform: none; transition: opacity var(--ds-duration-micro) ease; }\n  .ds-fix-ink { transition: opacity var(--ds-duration-micro) ease; }\n  .ds-fix:is([data-state=\"catching\"], [data-state=\"done\"]) .ds-fix-ink { clip-path: none; opacity: 0; }\n  .ds-fix:active:not(:disabled) { transform: none; }\n  .ds-fix svg path { stroke-dashoffset: 0; transition: none; }\n  .ds-fix-fill i { transition-delay: 0ms !important; }\n}\n`\n"
+        },
+        {
+          "path": "react/hooks/usePixelGrid.ts",
+          "content": "'use client'\nimport { useEffect, useState, type CSSProperties, type RefObject } from 'react'\n\n// The website's dark button's red fill (PixelButton): 6px squares laid over an element, each with its own delay in\n// and out, from the same seed as the website's, so the buttons feel like one product. It lays them again on resize.\nconst PX = 6\n\n/** A seeded random source (mulberry32), the same as the website's, so every button scatters the same way. */\nfunction rng(seed: number) {\n  let s = seed >>> 0\n  return () => {\n    s = (s + 0x6D2B79F5) >>> 0\n    let t = s\n    t = Math.imul(t ^ (t >>> 15), t | 1)\n    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)\n    return ((t ^ (t >>> 14)) >>> 0) / 4294967296\n  }\n}\n\nexport interface PixelGrid { cols: number, w: number, h: number, cells: Array<Record<string, number>> }\n\nexport function usePixelGrid(el: RefObject<HTMLElement | null>) {\n  const [grid, setGrid] = useState<PixelGrid | null>(null)\n  useEffect(() => {\n    const box = el.current\n    if (!box) return\n    function lay() {\n      if (!box) return\n      const rect = box.getBoundingClientRect()\n      const w = rect.width - (box.offsetWidth - box.clientWidth)\n      const h = rect.height - (box.offsetHeight - box.clientHeight)\n      setGrid((g) => {\n        if (g?.w === w && g.h === h) return g\n        const cols = Math.ceil(w / PX)\n        const rows = Math.ceil(h / PX)\n        const rand = rng(29)\n        return {\n          cols,\n          w,\n          h,\n          cells: Array.from({ length: cols * rows }, (_, k) => {\n            // Eased along the button, so the front starts quick and settles.\n            const e = 1 - (1 - (k % cols) / cols) ** 1.6\n            return { '--i': Math.round(e * 60 + rand() * 20), '--o': Math.round(e * 50 + rand() * 20) }\n          }),\n        }\n      })\n    }\n    lay()\n    const ro = new ResizeObserver(lay)\n    ro.observe(box)\n    return () => ro.disconnect()\n  }, [el])\n  const style: CSSProperties | undefined = grid ? { gridTemplateColumns: `repeat(${grid.cols}, ${PX}px)`, gridAutoRows: `${PX}px` } : undefined\n  return { grid, style }\n}\n"
+        }
+      ],
+      "dependencies": [
+        "lucide-react@0.479.0"
+      ],
+      "registryDependencies": [
+        "count",
+        "loader"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "FixButton",
+            "file": "react/components/product/FixButton.tsx",
+            "props": [
+              {
+                "name": "state",
+                "type": "FixState",
+                "required": true
+              },
+              {
+                "name": "app",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "count",
+                "type": "number",
+                "required": true
+              },
+              {
+                "name": "tone",
+                "type": "'red'",
+                "required": false
+              },
+              {
+                "name": "onPress",
+                "type": "() => void",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "react/examples/fix-button/Product.tsx",
+          "content": "'use client'\nimport { useEffect, useRef, useState } from 'react'\nimport { FixButton, type FixState } from '@/react/components/product/FixButton'\n// The fix for a failure, as a namespace's row has it, and in the failure's own red as Home's banner has it: hover runs\n// its squares across; a press signs in, counts the changes as they come back, and ends on the check. Here each comes\n// back to the start after a few seconds.\ntype Which = 'dark' | 'red'\n\nexport default function Product() {\n  const [states, setStates] = useState<Record<Which, FixState>>({ dark: 'broken', red: 'broken' })\n  const [counts, setCounts] = useState({ dark: 0, red: 0 })\n  const timers = useRef<Array<ReturnType<typeof setTimeout>>>([])\n  useEffect(() => () => timers.current.forEach(clearTimeout), [])\n  const set = (which: Which, state: FixState, count?: number) => {\n    setStates(s => ({ ...s, [which]: state }))\n    if (count !== undefined) setCounts(c => ({ ...c, [which]: count }))\n  }\n  function press(which: Which) {\n    set(which, 'signing')\n    timers.current.push(setTimeout(() => set(which, 'catching', 1240), 1000))\n    timers.current.push(setTimeout(() => set(which, 'done'), 2800))\n    timers.current.push(setTimeout(() => set(which, 'broken', 0), 6000))\n  }\n  return (\n    <div className=\"grid items-center gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8\">\n      <p className=\"type-meta leading-7 text-fg-muted\">In a row</p>\n      <div><FixButton state={states.dark} app=\"Acme CRM\" count={counts.dark} onPress={() => press('dark')} /></div>\n      <p className=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">Red, on a calm page</p>\n      <div><FixButton state={states.red} app=\"Acme CRM\" count={counts.red} tone=\"red\" onPress={() => press('red')} /></div>\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "count",
+            "loader"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/product/fix-button.ts",
+          "content": "import { type PropertyValues } from 'lit'\nimport { html } from 'lit/static-html.js'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { Check } from 'lucide'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport { PixelGridController, vars } from '@/elements/controllers/pixel-grid'\nimport '@/elements/components/ui/count'\nimport '@/elements/components/ui/dot-matrix'\nimport styles from 'virtual:tw'\n\n// FixButton.vue as <conare-fix-button>: the one button a fix needs, which then reports the fix itself, so the eye stays\n// where it pressed (namespaces/FixButton.vue, console2.css .v2-fixbtn, .v2-states). At rest it is the website's dark\n// button: on hover its red squares run across under the label. A press answers on pointer-down (scale 0.97) and fires\n// `press`; the app then moves `state` along: signing (signing in), catching (the changes coming back, counted as they\n// arrive), done (a check draws itself and the last count stays as the result). Every state is stacked in one cell, so\n// nothing around it moves: labels leave up and arrive from below with a touch of blur. Once the source is back the\n// black wipes off left to right on the strong ease-out (420ms), and since the label is printed on both layers it changes\n// colour exactly at the edge. `tone=\"red\"` is the same button the other way round (red, its squares running black), for\n// a calm page. It is a rare action, so it may take a moment. Reduced motion keeps the fades only.\nexport type FixState = 'broken' | 'signing' | 'catching' | 'done'\nconst STEP: Record<FixState, number> = { broken: 0, signing: 1, catching: 2, done: 3 }\nconst plain = (n: number) => n.toLocaleString('en-US')\n\n/**\n * @summary The button a fix needs, which then reports the fix in place.\n * @fires press - It was pressed (move `state` along from here).\n */\nexport class FixButton extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { state: {}, app: {}, count: { type: Number }, tone: {}, pulled: { state: true } }\n\n\t/** broken, signing, catching or done. */\n\tstate: FixState = 'broken'\n\t/** The app to reconnect. */\n\tapp = ''\n\t/** The changes that came back. */\n\tcount = 0\n\t/** red: the button the other way round. */\n\ttone?: 'red'\n\tprivate pulled = 0\n\n\tprivate grid = new PixelGridController(this, () => this.renderRoot.querySelector<HTMLElement>('.ds-fix'))\n\n\tprotected willUpdate(changed: PropertyValues) {\n\t\tif (!this.hasUpdated) this.pulled = this.count\n\t\telse if (changed.has('count') && this.count) this.pulled = this.count\n\t}\n\n\trender() {\n\t\tconst g = this.grid.grid\n\t\tconst app = this.app\n\t\tconst spoken = ({ broken: `Reconnect ${app}`, signing: `Signing in to ${app}`, catching: `${app} is syncing`, done: `${app} is up to date` })[this.state]\n\t\tconst dots = tag('dot-matrix')\n\t\tconst count = tag('count')\n\t\tconst layer = (name: 'text' | 'ink') => html`<span class=${`ds-states ds-fix-${name}`} aria-hidden=\"true\">${name === 'ink' && g ? html`<span class=\"ds-fix-fill\" style=${this.grid.style}>${g.cells.map((c) => html`<i style=${vars(c)}></i>`)}</span>` : ''}<span style=\"--n: 0\">${`Reconnect ${app}`}</span><span style=\"--n: 1\"><${dots} tone=${name === 'ink' ? 'inverse' : 'default'}></${dots}>Signing in</span><span style=\"--n: 2\"><${dots} tone=${name === 'ink' ? 'inverse' : 'default'}></${dots}><${count} .value=${this.pulled}></${count}> changes</span><span style=\"--n: 3\">${icon(Check, 'check', { size: 12, strokeWidth: 2, attrs: { 'aria-hidden': 'true' } })}${`${plain(this.pulled)} changes`}</span></span>`\n\t\treturn html`<button data-ds=\"fix-button\" type=\"button\" class=\"ds-fix\" data-state=${this.state} data-tone=${ifDefined(this.tone)} style=${`--s: ${STEP[this.state] ?? 0}`} ?disabled=${this.state !== 'broken'} aria-busy=${String(this.state === 'signing' || this.state === 'catching')} aria-label=${spoken} @click=${(e: Event) => { e.stopPropagation(); this.emit('press') }}>${layer('text')}${layer('ink')}</button>`\n\t}\n}\n\ndefine('fix-button', FixButton)\n"
+        },
+        {
+          "path": "elements/components/product/fix-button.css",
+          "content": "/* A thing moving through states in place: --s is the state, --n each label's. */\n.ds-states { display: inline-grid; justify-items: start; vertical-align: top; }\n.ds-states > :not(.ds-fix-fill) { --d: calc(var(--n) - var(--s)); grid-area: 1 / 1; opacity: clamp(0, calc(1 - var(--d) * var(--d)), 1); filter: blur(calc(clamp(0, calc(var(--d) * var(--d)), 1) * 2px)); transform: translateY(calc(clamp(-1, var(--d), 1) * 5px)); transition: opacity var(--ds-duration-glide) ease, filter var(--ds-duration-glide) ease, transform var(--ds-duration-settle) var(--ds-easing-out); }\n.ds-fix { position: relative; display: inline-grid; height: var(--ds-size-control-sm); flex-shrink: 0; align-items: center; border: var(--ds-border-hairline) solid var(--ds-color-edge); color: var(--ds-color-fg); font-size: var(--ds-text-meta); font-weight: var(--ds-font-weight-medium); white-space: nowrap; cursor: pointer; transition: transform var(--ds-duration-micro) var(--ds-easing-out); }\n.ds-fix:disabled { cursor: default; }\n.ds-fix:active:not(:disabled) { transform: scale(0.97); }\n.ds-fix:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-accent); outline-offset: var(--ds-border-focus); }\n.ds-fix-text, .ds-fix-ink { display: grid; align-items: center; justify-items: center; padding: 0 10px; }\n.ds-fix-text > :not(.ds-fix-fill), .ds-fix-ink > :not(.ds-fix-fill) { display: inline-flex; align-items: center; gap: var(--ds-space-sm); }\n.ds-fix-ink { position: absolute; inset: -1px; isolation: isolate; overflow: hidden; background: var(--ds-color-action-primary); color: var(--ds-color-action-primary-fg); clip-path: inset(0 0 0 0); transition: clip-path var(--ds-duration-wipe) var(--ds-easing-out), background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-fix:is([data-state=\"catching\"], [data-state=\"done\"]) .ds-fix-ink { clip-path: inset(0 0 0 100%); }\n.ds-fix[data-tone=\"red\"] { background: var(--ds-color-surface); }\n.ds-fix[data-tone=\"red\"] .ds-fix-ink { background: var(--ds-color-home-red-hover); color: var(--ds-color-off-white); }\n.ds-fix-fill { position: absolute; inset: 0; z-index: -1; display: grid; pointer-events: none; }\n.ds-fix-fill i { position: relative; background: var(--ds-color-edge-accent); font-style: normal; opacity: 0; transition: opacity var(--ds-duration-micro) var(--ds-easing-standard) calc(var(--o) * 1ms); }\n.ds-fix[data-tone=\"red\"] .ds-fix-fill i { background: var(--ds-color-surface-inverse); }\n@media (hover: hover) and (pointer: fine) { .ds-fix[data-state=\"broken\"]:hover .ds-fix-fill i { opacity: 1; transition: opacity var(--ds-duration-cell) var(--ds-easing-decelerate) calc(var(--i) * 1ms); } }\n.ds-fix[data-state=\"broken\"]:active .ds-fix-fill i { opacity: 1; transition: opacity var(--ds-duration-press) ease 0ms; }\n.ds-fix:focus-visible .ds-fix-fill i { opacity: 1; }\n.ds-fix svg path { stroke-dasharray: 24; stroke-dashoffset: 24; transition: stroke-dashoffset var(--ds-duration-micro) ease; }\n.ds-fix[data-state=\"done\"] svg path { stroke-dashoffset: 0; transition: stroke-dashoffset var(--ds-duration-collapse) var(--ds-easing-out) 80ms; }\n@media (pointer: coarse), (max-width: 767px) { .ds-fix { height: var(--ds-size-control-touch); font-size: var(--ds-text-ui); } }\n@media (prefers-reduced-motion: reduce) {\n  .ds-states > :not(.ds-fix-fill) { filter: none; transform: none; transition: opacity var(--ds-duration-micro) ease; }\n  .ds-fix-ink { transition: opacity var(--ds-duration-micro) ease; }\n  .ds-fix:is([data-state=\"catching\"], [data-state=\"done\"]) .ds-fix-ink { clip-path: none; opacity: 0; }\n  .ds-fix:active:not(:disabled) { transform: none; }\n  .ds-fix svg path { stroke-dashoffset: 0; transition: none; }\n  .ds-fix-fill i { transition-delay: 0ms !important; }\n}\n"
+        },
+        {
+          "path": "elements/controllers/pixel-grid.ts",
+          "content": "import type { ReactiveController, ReactiveControllerHost } from 'lit'\n\n// usePixelGrid as a Lit controller: 6px squares laid over an element, each with its own delay in and out, from the same\n// seed as the website's, so the buttons feel like one product. It lays them again on resize. `el` returns the box\n// (an element in the shadow root), read after the first render.\nconst PX = 6\n\n/** A seeded random source (mulberry32), the same as the website's, so every button scatters the same way. */\nfunction rng(seed: number) {\n\tlet s = seed >>> 0\n\treturn () => {\n\t\ts = (s + 0x6d2b79f5) >>> 0\n\t\tlet t = s\n\t\tt = Math.imul(t ^ (t >>> 15), t | 1)\n\t\tt ^= t + Math.imul(t ^ (t >>> 7), t | 61)\n\t\treturn ((t ^ (t >>> 14)) >>> 0) / 4294967296\n\t}\n}\n\nexport interface PixelGrid { cols: number, w: number, h: number, cells: Array<Record<string, number>> }\n\nexport class PixelGridController implements ReactiveController {\n\tgrid: PixelGrid | null = null\n\tprivate ro?: ResizeObserver\n\tconstructor(private host: ReactiveControllerHost & HTMLElement, private el: () => HTMLElement | null | undefined) {\n\t\thost.addController(this)\n\t}\n\thostConnected() {\n\t\tvoid this.host.updateComplete.then(() => {\n\t\t\tconst box = this.el()\n\t\t\tif (!box) return\n\t\t\tthis.lay()\n\t\t\tthis.ro = new ResizeObserver(() => this.lay())\n\t\t\tthis.ro.observe(box)\n\t\t})\n\t}\n\thostDisconnected() {\n\t\tthis.ro?.disconnect()\n\t}\n\tprivate lay() {\n\t\tconst box = this.el()\n\t\tif (!box) return\n\t\tconst rect = box.getBoundingClientRect()\n\t\tconst w = rect.width - (box.offsetWidth - box.clientWidth)\n\t\tconst h = rect.height - (box.offsetHeight - box.clientHeight)\n\t\tif (this.grid?.w === w && this.grid.h === h) return\n\t\tconst cols = Math.ceil(w / PX)\n\t\tconst rows = Math.ceil(h / PX)\n\t\tconst rand = rng(29)\n\t\tthis.grid = {\n\t\t\tcols,\n\t\t\tw,\n\t\t\th,\n\t\t\tcells: Array.from({ length: cols * rows }, (_, k) => {\n\t\t\t\t// Eased along the button, so the front starts quick and settles.\n\t\t\t\tconst e = 1 - (1 - (k % cols) / cols) ** 1.6\n\t\t\t\treturn { '--i': Math.round(e * 60 + rand() * 20), '--o': Math.round(e * 50 + rand() * 20) }\n\t\t\t}),\n\t\t}\n\t\tthis.host.requestUpdate()\n\t}\n\t/** The fill's grid template, as a style string. */\n\tget style() {\n\t\treturn this.grid ? `grid-template-columns: repeat(${this.grid.cols}, ${PX}px); grid-auto-rows: ${PX}px` : ''\n\t}\n}\n\n/** A cell's custom properties as a style string ({ '--i': 12 } -> \"--i: 12\"). */\nexport const vars = (cell: Record<string, number | string>) => Object.entries(cell).map(([k, v]) => `${k}: ${v}`).join('; ')\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/fix-button.js",
+        "elements/count.js",
+        "elements/dot-matrix.js"
+      ],
+      "tag": "conare-fix-button",
+      "tags": [
+        "conare-fix-button"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "count",
+        "loader"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-fix-button",
+            "name": "FixButton",
+            "module": "elements/fix-button.js",
+            "description": "The button a fix needs, which then reports the fix in place.",
+            "attributes": [
+              {
+                "name": "state",
+                "field": "state",
+                "type": "FixState",
+                "default": "'broken'",
+                "description": "broken, signing, catching or done."
+              },
+              {
+                "name": "app",
+                "field": "app",
+                "type": "string",
+                "default": "''",
+                "description": "The app to reconnect."
+              },
+              {
+                "name": "count",
+                "field": "count",
+                "type": "number",
+                "default": "0",
+                "description": "The changes that came back."
+              },
+              {
+                "name": "tone",
+                "field": "tone",
+                "type": "\"red\" | undefined",
+                "description": "red: the button the other way round."
+              },
+              {
+                "name": "pulled",
+                "field": "pulled",
+                "type": "number",
+                "default": "0"
+              }
+            ],
+            "properties": [
+              {
+                "name": "state",
+                "type": "FixState",
+                "default": "'broken'",
+                "description": "broken, signing, catching or done.",
+                "attribute": "state"
+              },
+              {
+                "name": "app",
+                "type": "string",
+                "default": "''",
+                "description": "The app to reconnect.",
+                "attribute": "app"
+              },
+              {
+                "name": "count",
+                "type": "number",
+                "default": "0",
+                "description": "The changes that came back.",
+                "attribute": "count"
+              },
+              {
+                "name": "tone",
+                "type": "\"red\" | undefined",
+                "description": "red: the button the other way round.",
+                "attribute": "tone"
+              }
+            ],
+            "events": [
+              {
+                "name": "press",
+                "description": "It was pressed (move `state` along from here)."
+              }
+            ],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/fix-button/Product.html",
+          "content": "<!-- The fix for a failure, as a namespace's row has it, and in the failure's own red as Home's banner has it: hover\n     runs its squares across; a press signs in, counts the changes as they come back, and ends on the check. Here each\n     comes back to the start after a few seconds. -->\n<div class=\"grid items-center gap-2 md:grid-cols-[112px_minmax(0,1fr)] md:gap-x-6 md:gap-y-8\">\n  <p class=\"type-meta leading-7 text-fg-muted\">In a row</p>\n  <div><conare-fix-button state=\"broken\" app=\"Acme CRM\" count=\"0\"></conare-fix-button></div>\n  <p class=\"mt-4 type-meta leading-7 text-fg-muted md:mt-0\">Red, on a calm page</p>\n  <div><conare-fix-button state=\"broken\" app=\"Acme CRM\" count=\"0\" tone=\"red\"></conare-fix-button></div>\n</div>\n<script type=\"module\">\n  // The app moves each button along: signing, then catching with the count, then done; back to the start after 6s.\n  for (const button of document.querySelectorAll('conare-fix-button')) {\n    button.addEventListener('press', () => {\n      button.state = 'signing'\n      setTimeout(() => { button.state = 'catching'; button.count = 1240 }, 1000)\n      setTimeout(() => { button.state = 'done' }, 2800)\n      setTimeout(() => { button.state = 'broken'; button.count = 0 }, 6000)\n    })\n  }\n</script>\n"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,198 @@
+{
+  "name": "suggestion-chips",
+  "title": "Suggestion chips",
+  "type": "registry:ui",
+  "group": "product",
+  "description": "Questions to start from under the search box, each ending on the namespace that answers it; a block glides to the one pointed at.",
+  "use_for": "Home, before anything is asked.",
+  "never": [
+    "Questions the data cannot answer",
+    "More than one row on a desktop"
+  ],
+  "source": "conare-web app/components/console/search/SuggestChips.vue (take 3, the gliding block), app/assets/css/console2.css (.v2-chip-tagged, .v2-chip-mark, .v2-sg-tag)",
+  "body": "`items` are `{ q, ns, logo? }`: the question, the namespace and the app's 10px mark. Picking one emits `ask` with it. The paper block glides on transform and size in 160ms on the console's curve, placed without a glide the first time the pointer arrives, and fades in 120ms when it leaves. The tag under it goes a shade darker. The branch's other two takes (the pixel fill and the roll) were not picked and are not ported.",
+  "requires": [],
+  "dependencies": [
+    "lucide-vue-next@^0.479.0"
+  ],
+  "files": [
+    {
+      "path": "components/product/SuggestionChips.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport { Search } from 'lucide-vue-next'\n\n// Questions to start from under the search box (search/SuggestChips.vue, the picked take 3): each chip ends on a mono tag\n// for the namespace that answers it, with the app's 10px mark when there is one. A paper block glides between the chips\n// under the pointer or focus (160ms on the console's curve, placed without a glide the first time) and fades when the\n// pointer leaves; the tag under it goes a shade darker, never lighter. Picking one emits `ask`.\nexport interface Suggestion { q: string, ns: string, logo?: string }\ndefineProps<{ items: Suggestion[], label?: string }>()\ndefineEmits<{ ask: [item: Suggestion] }>()\n\nconst shown = ref(false)\nconst instant = ref(true)\nconst mark = ref({ x: 0, y: 0, w: 0, h: 0 })\nfunction glide(event: Event) {\n  const el = event.currentTarget as HTMLElement\n  instant.value = !shown.value\n  shown.value = true\n  mark.value = { x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight }\n}\n</script>\n\n<template>\n  <div data-ds=\"suggestion-chips\" class=\"relative flex flex-wrap justify-center gap-2\" role=\"group\" :aria-label=\"label ?? 'suggested searches'\" @pointerleave=\"shown = false\">\n    <span class=\"ds-chipmark\" :data-shown=\"shown || undefined\" :data-instant=\"instant || undefined\" :style=\"{ transform: `translate(${mark.x}px, ${mark.y}px)`, width: `${mark.w}px`, height: `${mark.h}px` }\" aria-hidden=\"true\" />\n    <button v-for=\"s in items\" :key=\"s.q\" type=\"button\" class=\"ds-sgchip\" @pointerenter=\"glide\" @focus=\"glide\" @blur=\"shown = false\" @click=\"$emit('ask', s)\">\n      <Search :size=\"12\" :stroke-width=\"1.5\" class=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />\n      <span class=\"min-w-0\">{{ s.q }}</span>\n      <span class=\"ds-sgtag\"><span class=\"sr-only\">in</span><img v-if=\"s.logo\" :src=\"s.logo\" alt=\"\" width=\"10\" height=\"10\" class=\"size-2.5 object-contain\">{{ s.ns }}</span>\n    </button>\n  </div>\n</template>\n\n<style>\n.ds-chipmark { position: absolute; top: 0; left: 0; background: var(--ds-color-surface-subtle); opacity: 0; pointer-events: none; transition: transform var(--ds-duration-glide) var(--ds-easing-standard), width var(--ds-duration-glide) var(--ds-easing-standard), height var(--ds-duration-glide) var(--ds-easing-standard), opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-chipmark[data-shown] { opacity: 1; }\n.ds-chipmark[data-instant] { transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-sgchip { position: relative; display: inline-flex; height: var(--ds-size-control-sm); align-items: center; gap: var(--ds-space-sm); padding: 0 4px 0 10px; border: var(--ds-border-hairline) solid var(--ds-color-edge); background: transparent; color: var(--ds-color-fg); font-size: var(--ds-text-meta); text-align: left; cursor: pointer; transition: border-color var(--ds-duration-micro) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-sgchip:active { background: var(--ds-color-surface-subtle); }\n.ds-sgtag { display: inline-flex; height: 20px; flex-shrink: 0; align-items: center; gap: var(--ds-space-xs); margin-left: 2px; padding: 0 6px; background: var(--ds-color-surface-subtle); color: var(--ds-color-fg-soft); font-family: var(--ds-font-code); font-size: var(--ds-text-caption); transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-sgchip:hover .ds-sgtag { background: var(--ds-color-surface-sunken); } }\n.ds-sgchip:focus-visible .ds-sgtag { background: var(--ds-color-surface-sunken); }\n@media (pointer: coarse), (max-width: 767px) { .ds-sgchip { height: auto; min-height: var(--ds-size-control-touch); max-width: 100%; padding-block: 6px; font-size: var(--ds-text-ui); } }\n@media (prefers-reduced-motion: reduce) { .ds-chipmark { transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); } }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "In the product",
+      "center": false,
+      "half": false,
+      "path": "examples/suggestion-chips/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport SuggestionChips, { type Suggestion } from '@/components/product/SuggestionChips.vue'\n// Questions to start from, each ending on the namespace that answers it. Point at them: one block glides along.\nconst items: Suggestion[] = [\n  { q: 'notice period to terminate a contract', ns: 'contracts' },\n  { q: 'breach notification window', ns: 'slack' },\n  { q: 'cash on hand last quarter', ns: 'sec-filings' },\n]\nconst asked = ref('')\n</script>\n\n<template>\n  <div class=\"flex flex-col items-center gap-4\">\n    <SuggestionChips :items=\"items\" @ask=\"s => (asked = `Searching ${s.ns} for: ${s.q}`)\" />\n    <p class=\"min-h-4 type-meta text-fg-muted\" role=\"status\">{{ asked }}</p>\n  </div>\n</template>\n",
+      "requires": [],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/product/SuggestionChips.tsx",
+          "content": "'use client'\nimport { Search } from 'lucide-react'\nimport { useState, type FocusEvent, type PointerEvent } from 'react'\nimport { cn } from '@/react/lib/cn'\n\n// Questions to start from under the search box (search/SuggestChips.vue, the picked take 3): each chip ends on a mono tag\n// for the namespace that answers it, with the app's 10px mark when there is one. A paper block glides between the chips\n// under the pointer or focus (160ms on the console's curve, placed without a glide the first time) and fades when the\n// pointer leaves; the tag under it goes a shade darker, never lighter. Picking one calls `onAsk`.\nexport interface Suggestion { q: string, ns: string, logo?: string }\n\nexport interface SuggestionChipsProps {\n  items: Suggestion[]\n  label?: string\n  onAsk?: (item: Suggestion) => void\n  className?: string\n}\n\nexport function SuggestionChips({ items, label, onAsk, className }: SuggestionChipsProps) {\n  const [shown, setShown] = useState(false)\n  const [instant, setInstant] = useState(true)\n  const [mark, setMark] = useState({ x: 0, y: 0, w: 0, h: 0 })\n  function glide(event: PointerEvent<HTMLElement> | FocusEvent<HTMLElement>) {\n    const el = event.currentTarget\n    setInstant(!shown)\n    setShown(true)\n    setMark({ x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight })\n  }\n  return (\n    <>\n      <style href=\"ds-suggestion-chips\" precedence=\"ds\">{css}</style>\n      <div data-ds=\"suggestion-chips\" className={cn('relative flex flex-wrap justify-center gap-2', className)} role=\"group\" aria-label={label ?? 'suggested searches'} onPointerLeave={() => setShown(false)}>\n        <span className=\"ds-chipmark\" data-shown={shown || undefined} data-instant={instant || undefined} style={{ transform: `translate(${mark.x}px, ${mark.y}px)`, width: `${mark.w}px`, height: `${mark.h}px` }} aria-hidden=\"true\" />\n        {items.map(s => (\n          <button key={s.q} type=\"button\" className=\"ds-sgchip\" onPointerEnter={glide} onFocus={glide} onBlur={() => setShown(false)} onClick={() => onAsk?.(s)}>\n            <Search size={12} strokeWidth={1.5} className=\"shrink-0 text-fg-muted\" aria-hidden=\"true\" />\n            <span className=\"min-w-0\">{s.q}</span>\n            <span className=\"ds-sgtag\"><span className=\"sr-only\">in</span>{s.logo && <img src={s.logo} alt=\"\" width=\"10\" height=\"10\" className=\"size-2.5 object-contain\" />}{s.ns}</span>\n          </button>\n        ))}\n      </div>\n    </>\n  )\n}\n\nexport default SuggestionChips\n\nconst css = `\n.ds-chipmark { position: absolute; top: 0; left: 0; background: var(--ds-color-surface-subtle); opacity: 0; pointer-events: none; transition: transform var(--ds-duration-glide) var(--ds-easing-standard), width var(--ds-duration-glide) var(--ds-easing-standard), height var(--ds-duration-glide) var(--ds-easing-standard), opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-chipmark[data-shown] { opacity: 1; }\n.ds-chipmark[data-instant] { transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-sgchip { position: relative; display: inline-flex; height: var(--ds-size-control-sm); align-items: center; gap: var(--ds-space-sm); padding: 0 4px 0 10px; border: var(--ds-border-hairline) solid var(--ds-color-edge); background: transparent; color: var(--ds-color-fg); font-size: var(--ds-text-meta); text-align: left; cursor: pointer; transition: border-color var(--ds-duration-micro) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-sgchip:active { background: var(--ds-color-surface-subtle); }\n.ds-sgtag { display: inline-flex; height: 20px; flex-shrink: 0; align-items: center; gap: var(--ds-space-xs); margin-left: 2px; padding: 0 6px; background: var(--ds-color-surface-subtle); color: var(--ds-color-fg-soft); font-family: var(--ds-font-code); font-size: var(--ds-text-caption); transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-sgchip:hover .ds-sgtag { background: var(--ds-color-surface-sunken); } }\n.ds-sgchip:focus-visible .ds-sgtag { background: var(--ds-color-surface-sunken); }\n@media (pointer: coarse), (max-width: 767px) { .ds-sgchip { height: auto; min-height: var(--ds-size-control-touch); max-width: 100%; padding-block: 6px; font-size: var(--ds-text-ui); } }\n@media (prefers-reduced-motion: reduce) { .ds-chipmark { transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); } }\n`\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [
+        "lucide-react@0.479.0"
+      ],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "SuggestionChips",
+            "file": "react/components/product/SuggestionChips.tsx",
+            "props": [
+              {
+                "name": "items",
+                "type": "Suggestion[]",
+                "required": true
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "onAsk",
+                "type": "(item: Suggestion) => void",
+                "required": false
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "react/examples/suggestion-chips/Product.tsx",
+          "content": "'use client'\nimport { useState } from 'react'\nimport { SuggestionChips, type Suggestion } from '@/react/components/product/SuggestionChips'\n// Questions to start from, each ending on the namespace that answers it. Point at them: one block glides along.\nconst items: Suggestion[] = [\n  { q: 'notice period to terminate a contract', ns: 'contracts' },\n  { q: 'breach notification window', ns: 'slack' },\n  { q: 'cash on hand last quarter', ns: 'sec-filings' },\n]\n\nexport default function Product() {\n  const [asked, setAsked] = useState('')\n  return (\n    <div className=\"flex flex-col items-center gap-4\">\n      <SuggestionChips items={items} onAsk={s => setAsked(`Searching ${s.ns} for: ${s.q}`)} />\n      <p className=\"min-h-4 type-meta text-fg-muted\" role=\"status\">{asked}</p>\n    </div>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/product/suggestion-chips.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { repeat } from 'lit/directives/repeat.js'\nimport { ifDefined } from 'lit/directives/if-defined.js'\nimport { Search } from 'lucide'\nimport { DsElement, define } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport styles from 'virtual:tw'\n\n// SuggestionChips.vue as <conare-suggestion-chips>: questions to start from under the search box (search/SuggestChips.vue,\n// the picked take 3): each chip ends on a mono tag for the namespace that answers it, with the app's 10px mark when\n// there is one. A paper block glides between the chips under the pointer or focus (160ms on the console's curve, placed\n// without a glide the first time) and fades when the pointer leaves; the tag under it goes a shade darker, never\n// lighter. Picking one fires `ask`.\nexport interface Suggestion { q: string, ns: string, logo?: string }\n\n/**\n * @summary Questions to start from, each ending on the namespace that answers it.\n * @fires ask - A chip was picked; detail is the suggestion { q, ns, logo }.\n */\nexport class SuggestionChips extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { items: { type: Array }, label: {}, shown: { state: true }, instant: { state: true }, mark: { state: true } }\n\n\t/** [{ q, ns, logo? }]. */\n\titems: Suggestion[] = []\n\t/** The group's name. */\n\tlabel?: string\n\tprivate shown = false\n\tprivate instant = true\n\tprivate mark = { x: 0, y: 0, w: 0, h: 0 }\n\n\tprivate glide(event: Event) {\n\t\tconst el = event.currentTarget as HTMLElement\n\t\tthis.instant = !this.shown\n\t\tthis.shown = true\n\t\tthis.mark = { x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight }\n\t}\n\n\trender() {\n\t\tconst m = this.mark\n\t\tconst glide = (e: Event) => this.glide(e)\n\t\tconst hide = () => { this.shown = false }\n\t\treturn html`<div data-ds=\"suggestion-chips\" class=\"relative flex flex-wrap justify-center gap-2\" role=\"group\" aria-label=${this.label ?? 'suggested searches'} @pointerleave=${hide}>\n\t\t\t<span class=\"ds-chipmark\" data-shown=${ifDefined(this.shown ? '' : undefined)} data-instant=${ifDefined(this.instant ? '' : undefined)} style=${`transform: translate(${m.x}px, ${m.y}px); width: ${m.w}px; height: ${m.h}px`} aria-hidden=\"true\"></span>\n\t\t\t${repeat(this.items ?? [], (s) => s.q, (s) => html`<button type=\"button\" class=\"ds-sgchip\" @pointerenter=${glide} @focus=${glide} @blur=${hide} @click=${() => this.emit('ask', s)}>\n\t\t\t\t${icon(Search, 'search', { size: 12, strokeWidth: 1.5, class: 'shrink-0 text-fg-muted', attrs: { 'aria-hidden': 'true' } })}\n\t\t\t\t<span class=\"min-w-0\">${s.q}</span>\n\t\t\t\t<span class=\"ds-sgtag\"><span class=\"sr-only\">in</span>${s.logo ? html`<img src=${s.logo} alt=\"\" width=\"10\" height=\"10\" class=\"size-2.5 object-contain\">` : nothing}${s.ns}</span>\n\t\t\t</button>`)}\n\t\t</div>`\n\t}\n}\n\ndefine('suggestion-chips', SuggestionChips)\n"
+        },
+        {
+          "path": "elements/components/product/suggestion-chips.css",
+          "content": ".ds-chipmark { position: absolute; top: 0; left: 0; background: var(--ds-color-surface-subtle); opacity: 0; pointer-events: none; transition: transform var(--ds-duration-glide) var(--ds-easing-standard), width var(--ds-duration-glide) var(--ds-easing-standard), height var(--ds-duration-glide) var(--ds-easing-standard), opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-chipmark[data-shown] { opacity: 1; }\n.ds-chipmark[data-instant] { transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-sgchip { position: relative; display: inline-flex; height: var(--ds-size-control-sm); align-items: center; gap: var(--ds-space-sm); padding: 0 4px 0 10px; border: var(--ds-border-hairline) solid var(--ds-color-edge); background: transparent; color: var(--ds-color-fg); font-size: var(--ds-text-meta); text-align: left; cursor: pointer; transition: border-color var(--ds-duration-micro) var(--ds-easing-standard), background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-sgchip:active { background: var(--ds-color-surface-subtle); }\n.ds-sgtag { display: inline-flex; height: 20px; flex-shrink: 0; align-items: center; gap: var(--ds-space-xs); margin-left: 2px; padding: 0 6px; background: var(--ds-color-surface-subtle); color: var(--ds-color-fg-soft); font-family: var(--ds-font-code); font-size: var(--ds-text-caption); transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-sgchip:hover .ds-sgtag { background: var(--ds-color-surface-sunken); } }\n.ds-sgchip:focus-visible .ds-sgtag { background: var(--ds-color-surface-sunken); }\n@media (pointer: coarse), (max-width: 767px) { .ds-sgchip { height: auto; min-height: var(--ds-size-control-touch); max-width: 100%; padding-block: 6px; font-size: var(--ds-text-ui); } }\n@media (prefers-reduced-motion: reduce) { .ds-chipmark { transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); } }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/suggestion-chips.js"
+      ],
+      "tag": "conare-suggestion-chips",
+      "tags": [
+        "conare-suggestion-chips"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-suggestion-chips",
+            "name": "SuggestionChips",
+            "module": "elements/suggestion-chips.js",
+            "description": "Questions to start from, each ending on the namespace that answers it.",
+            "attributes": [
+              {
+                "name": "items",
+                "field": "items",
+                "type": "Suggestion[]",
+                "default": "[]",
+                "description": "[{ q, ns, logo? }]."
+              },
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string | undefined",
+                "description": "The group's name."
+              },
+              {
+                "name": "shown",
+                "field": "shown",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "instant",
+                "field": "instant",
+                "type": "boolean",
+                "default": "true"
+              },
+              {
+                "name": "mark",
+                "field": "mark",
+                "type": "object",
+                "default": "{ x: 0, y: 0, w: 0, h: 0 }"
+              }
+            ],
+            "properties": [
+              {
+                "name": "items",
+                "type": "Suggestion[]",
+                "default": "[]",
+                "description": "[{ q, ns, logo? }].",
+                "attribute": "items"
+              },
+              {
+                "name": "label",
+                "type": "string | undefined",
+                "description": "The group's name.",
+                "attribute": "label"
+              }
+            ],
+            "events": [
+              {
+                "name": "ask",
+                "description": "A chip was picked; detail is the suggestion { q, ns, logo }."
+              }
+            ],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/suggestion-chips/Product.html",
+          "content": "<!-- Questions to start from, each ending on the namespace that answers it. Point at them: one block glides along. -->\n<div class=\"flex flex-col items-center gap-4\">\n  <conare-suggestion-chips items='[\n    { \"q\": \"notice period to terminate a contract\", \"ns\": \"contracts\" },\n    { \"q\": \"breach notification window\", \"ns\": \"slack\" },\n    { \"q\": \"cash on hand last quarter\", \"ns\": \"sec-filings\" }\n  ]'></conare-suggestion-chips>\n  <p class=\"min-h-4 type-meta text-fg-muted\" role=\"status\"></p>\n</div>\n<script type=\"module\">\n  // Say what the picked chip searches.\n  const status = document.querySelector('[role=\"status\"]')\n  document.querySelector('conare-suggestion-chips').addEventListener('ask', (e) => { status.textContent = `Searching ${e.detail.ns} for: ${e.detail.q}` })\n</script>\n"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "roll-text",
+  "type": "registry:ui",
+  "title": "Roll text",
+  "description": "A label that rolls up to a copy of itself on hover or focus: the console's pace for its lists, the website's for its footer.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "components/visuals/RollText.tsx",
+      "type": "registry:ui",
+      "content": "import { cn } from '@/lib/cn'\n\n// A label that rolls up to a copy of itself (RollText.vue, console2.css and home.css .roll): the label sits in a\n// clipped box with a copy parked just below; hovering or keyboard focus on the nearest `.ds-roll-host` slides the label\n// up and out as the copy slides in, in 160ms on the console's curve. `pace=\"site\"` moves one line (the website's\n// footer), the console's moves 110% so no sliver shows. Only where a pointer can rest: a tap would leave it rolled.\n// Reduced motion holds it still.\nexport interface RollTextProps {\n  text: string\n  pace?: 'console' | 'site'\n  className?: string\n}\n\nexport function RollText({ text, pace = 'console', className }: RollTextProps) {\n  return (\n    <>\n      <style href=\"ds-roll-text\" precedence=\"ds\">{css}</style>\n      <span data-ds=\"roll-text\" className={cn('ds-roll', className)} data-pace={pace}>\n        <span className=\"ds-roll-a\">{text}</span>\n        <span className=\"ds-roll-b\" aria-hidden=\"true\">{text}</span>\n      </span>\n    </>\n  )\n}\n\nexport default RollText\n\nconst css = `\n.ds-roll { --roll-out: -110%; position: relative; display: block; overflow: hidden; line-height: 1.4; }\n.ds-roll[data-pace=\"site\"] { --roll-out: -100%; }\n.ds-roll-a, .ds-roll-b { display: block; transition: transform var(--ds-duration-glide) var(--ds-easing-standard); }\n.ds-roll-b { position: absolute; inset-inline: 0; top: 0; transform: translateY(110%); }\n.ds-roll-host:focus-visible .ds-roll-a { transform: translateY(var(--roll-out)); }\n.ds-roll-host:focus-visible .ds-roll-b { transform: none; }\n@media (hover: hover) and (pointer: fine) {\n  .ds-roll-host:hover .ds-roll-a { transform: translateY(var(--roll-out)); }\n  .ds-roll-host:hover .ds-roll-b { transform: none; }\n}\n@media (prefers-reduced-motion: reduce) {\n  .ds-roll-a, .ds-roll-b { transition: none; }\n  .ds-roll-host:is(:hover, :focus-visible) .ds-roll-a { transform: none; }\n  .ds-roll-host:is(:hover, :focus-visible) .ds-roll-b { transform: translateY(110%); }\n}\n`\n"
+    },
+    {
+      "path": "lib/cn.ts",
+      "type": "registry:lib",
+      "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+    }
+  ]
+}

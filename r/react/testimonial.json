@@ -1,0 +1,19 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "testimonial",
+  "type": "registry:ui",
+  "title": "Testimonial",
+  "description": "One customer's words in the website's double rule: the tag, the quote in Faculty Glyphic, centred and balanced, then who said it: the company's square initial, the role and the company.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://conare-ds-registry.vercel.app/r/react/avatar.json",
+    "https://conare-ds-registry.vercel.app/r/react/tag.json"
+  ],
+  "files": [
+    {
+      "path": "components/site/Testimonial.tsx",
+      "type": "registry:ui",
+      "content": "import { Avatar } from '@/components/ui/Avatar'\nimport { SiteTag } from '@/components/ui/SiteTag'\n\n// One customer's words, in the website's double rule (the FAQ's frame): the tag, the quote in Faculty Glyphic 24px\n// (32px from 640px) on 1.2 lines, balanced and centred in 880px, then who said it: the company's square initial, the\n// role in ink and the company muted. Attribute a quote to a role, never invent a person.\nexport interface TestimonialProps { quote: string, role: string, company: string, tag?: string }\n\nexport function Testimonial({ quote, role, company, tag = 'Customers' }: TestimonialProps) {\n  return (\n    <>\n      <style href=\"ds-testimonial\" precedence=\"ds\">{css}</style>\n      <section data-ds=\"testimonial\" className=\"mx-auto max-w-[1440px] px-4 pb-24 sm:px-6 lg:px-10 lg:pb-32\">\n        <figure className=\"mx-auto flex max-w-[1200px] flex-col items-center border border-edge px-5 py-14 text-center outline outline-offset-4 outline-edge sm:px-10 sm:py-20\">\n          <p className=\"mb-8 flex\"><SiteTag>{tag}</SiteTag></p>\n          <blockquote className=\"ds-quote max-w-[880px] font-heading text-heading-2 font-normal tracking-tight text-fg sm:text-heading-1\">{quote}</blockquote>\n          <figcaption className=\"mt-10 flex items-center gap-3 text-left\">\n            <Avatar name={company} variant=\"solid\" initial size={32} />\n            <span className=\"flex flex-col\">\n              <span className=\"type-body text-fg\">{role}</span>\n              <span className=\"type-meta text-fg-muted\">{company}</span>\n            </span>\n          </figcaption>\n        </figure>\n      </section>\n    </>\n  )\n}\n\nexport default Testimonial\n\nconst css = `\n.ds-quote { line-height: 1.2; text-wrap: balance; }\n`\n"
+    }
+  ]
+}

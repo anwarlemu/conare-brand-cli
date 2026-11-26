@@ -1,0 +1,198 @@
+{
+  "name": "logo-strip",
+  "title": "Logo strip",
+  "type": "registry:ui",
+  "group": "site",
+  "description": "Who uses it or what it connects to: the band's head, then a 64px cell per name in the website's double rule, two, three and six across. Names are wordmarks set as text in the type's colour.",
+  "use_for": "The band under a hero: the companies on it, or the apps it connects.",
+  "never": [
+    "Another company's real logo without its permission",
+    "Logos in colour: they sit in the type's colour",
+    "A count that leaves a row half full: pass multiples of six"
+  ],
+  "source": "conare-web app/components/home/Integrations.vue (the cells in the double rule)",
+  "body": "`mark` puts a small square before a name, for a wordmark that has one.",
+  "requires": [
+    "section-head"
+  ],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/site/LogoStrip.vue",
+      "content": "<script setup lang=\"ts\">\nimport SectionHead from '@/components/site/SectionHead.vue'\n\n// Who uses it or what it connects to (Integrations.vue): the band's head, then a 64px cell per name in the website's\n// double rule, two across on phones, three from 640px and six from 1024px. Each name is a wordmark drawn as text in the\n// type's colour, never a company's real logo; `mark` puts a 16px pixel square before it. Pass multiples of six.\nexport type Logo = { name: string, mark?: boolean }\nwithDefaults(defineProps<{ title: string, tag?: string, logos: Logo[], titleId?: string }>(), { titleId: 'logos-title' })\n</script>\n\n<template>\n  <section data-ds=\"logo-strip\" :aria-labelledby=\"titleId\" class=\"mx-auto max-w-[1440px] px-4 pb-24 sm:px-6 lg:px-10\">\n    <SectionHead :title=\"title\" :tag=\"tag\" :title-id=\"titleId\" />\n    <ul class=\"mt-8 grid grid-cols-2 gap-px border border-edge bg-edge outline outline-offset-4 outline-edge sm:grid-cols-3 lg:grid-cols-6\">\n      <li v-for=\"logo in logos\" :key=\"logo.name\" class=\"flex h-16 items-center justify-center gap-2 bg-surface px-3 text-body-lg font-medium tracking-tight text-fg\">\n        <span v-if=\"logo.mark\" aria-hidden=\"true\" class=\"size-2 shrink-0 bg-fg\" />\n        <span class=\"truncate\">{{ logo.name }}</span>\n      </li>\n    </ul>\n  </section>\n</template>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "Twelve names",
+      "center": false,
+      "half": false,
+      "path": "examples/logo-strip/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport LogoStrip from '@/components/site/LogoStrip.vue'\n// Who uses it: twelve wordmarks set as text, never real logos.\nconst logos = [\n  {\n    \"name\": \"Acme\",\n    \"mark\": true\n  },\n  {\n    \"name\": \"Acme Labs\",\n    \"mark\": false\n  },\n  {\n    \"name\": \"Acme Cloud\",\n    \"mark\": false\n  },\n  {\n    \"name\": \"Acme Health\",\n    \"mark\": true\n  },\n  {\n    \"name\": \"Acme Freight\",\n    \"mark\": false\n  },\n  {\n    \"name\": \"Acme Bank\",\n    \"mark\": false\n  },\n  {\n    \"name\": \"Acme Retail\",\n    \"mark\": true\n  },\n  {\n    \"name\": \"Acme Energy\",\n    \"mark\": false\n  },\n  {\n    \"name\": \"Acme Legal\",\n    \"mark\": false\n  },\n  {\n    \"name\": \"Acme Studio\",\n    \"mark\": true\n  },\n  {\n    \"name\": \"Acme Robotics\",\n    \"mark\": false\n  },\n  {\n    \"name\": \"Acme Foods\",\n    \"mark\": false\n  }\n]\n</script>\n\n<template>\n  <LogoStrip\n    tag=\"Customers\"\n    title=\"Teams at Acme companies search with it.\"\n    :logos=\"logos\"\n  />\n</template>\n",
+      "requires": [
+        "section-head"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/site/LogoStrip.tsx",
+          "content": "import { SectionHead } from '@/react/components/site/SectionHead'\n\n// Who uses it or what it connects to (Integrations.vue): the band's head, then a 64px cell per name in the website's\n// double rule, two across on phones, three from 640px and six from 1024px. Each name is a wordmark drawn as text in the\n// type's colour, never a company's real logo; `mark` puts a small square before it. Pass multiples of six.\nexport type Logo = { name: string, mark?: boolean }\nexport interface LogoStripProps { title: string, tag?: string, logos: Logo[], titleId?: string }\n\nexport function LogoStrip({ title, tag, logos, titleId = 'logos-title' }: LogoStripProps) {\n  return (\n    <section data-ds=\"logo-strip\" aria-labelledby={titleId} className=\"mx-auto max-w-[1440px] px-4 pb-24 sm:px-6 lg:px-10\">\n      <SectionHead title={title} tag={tag} titleId={titleId} />\n      <ul className=\"mt-8 grid grid-cols-2 gap-px border border-edge bg-edge outline outline-offset-4 outline-edge sm:grid-cols-3 lg:grid-cols-6\">\n        {logos.map(logo => (\n          <li key={logo.name} className=\"flex h-16 items-center justify-center gap-2 bg-surface px-3 text-body-lg font-medium tracking-tight text-fg\">\n            {logo.mark && <span aria-hidden=\"true\" className=\"size-2 shrink-0 bg-fg\" />}\n            <span className=\"truncate\">{logo.name}</span>\n          </li>\n        ))}\n      </ul>\n    </section>\n  )\n}\n\nexport default LogoStrip\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "section-head"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "LogoStrip",
+            "file": "react/components/site/LogoStrip.tsx",
+            "props": [
+              {
+                "name": "title",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "tag",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "logos",
+                "type": "Logo[]",
+                "required": true
+              },
+              {
+                "name": "titleId",
+                "type": "string",
+                "required": false,
+                "default": "'logos-title'"
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "Twelve names",
+          "center": false,
+          "half": false,
+          "path": "react/examples/logo-strip/Site.tsx",
+          "content": "import { LogoStrip } from '@/react/components/site/LogoStrip'\n// Who uses it: twelve wordmarks set as text, never real logos.\nconst logos = [\n  {\n    \"name\": \"Acme\",\n    \"mark\": true\n  },\n  {\n    \"name\": \"Acme Labs\",\n    \"mark\": false\n  },\n  {\n    \"name\": \"Acme Cloud\",\n    \"mark\": false\n  },\n  {\n    \"name\": \"Acme Health\",\n    \"mark\": true\n  },\n  {\n    \"name\": \"Acme Freight\",\n    \"mark\": false\n  },\n  {\n    \"name\": \"Acme Bank\",\n    \"mark\": false\n  },\n  {\n    \"name\": \"Acme Retail\",\n    \"mark\": true\n  },\n  {\n    \"name\": \"Acme Energy\",\n    \"mark\": false\n  },\n  {\n    \"name\": \"Acme Legal\",\n    \"mark\": false\n  },\n  {\n    \"name\": \"Acme Studio\",\n    \"mark\": true\n  },\n  {\n    \"name\": \"Acme Robotics\",\n    \"mark\": false\n  },\n  {\n    \"name\": \"Acme Foods\",\n    \"mark\": false\n  }\n]\nexport default function Site() {\n  return (\n    <LogoStrip\n      tag=\"Customers\"\n      title=\"Teams at Acme companies search with it.\"\n      logos={logos}\n    />\n  )\n}\n",
+          "registryDependencies": [
+            "section-head"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/site/logo-strip.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport '@/elements/components/site/section-head'\nimport styles from 'virtual:tw'\n\n// LogoStrip.vue as <conare-logo-strip>: who uses it or what it connects to (Integrations.vue): the band's head, then a\n// 64px cell per name in the website's double rule, two across on phones, three from 640px and six from 1024px. Each\n// name is a wordmark drawn as text in the type's colour, never a company's real logo; `mark` puts a small square\n// before it. Pass multiples of six. `heading` is Vue's `title`.\nexport type Logo = { name: string, mark?: boolean }\n\n/** @summary Who uses it: a cell per wordmark in the website's double rule. */\nexport class LogoStrip extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { heading: {}, tag: {}, logos: { type: Array }, titleId: { attribute: 'title-id' } }\n\n\t/** The band's line (Vue's `title`). */\n\theading = ''\n\ttag?: string\n\t/** Each { name, mark }. */\n\tlogos: Logo[] = []\n\ttitleId = 'logos-title'\n\n\trender() {\n\t\tconst head = tag('section-head')\n\t\treturn html`<section data-ds=\"logo-strip\" aria-labelledby=${this.titleId} class=\"mx-auto max-w-[1440px] px-4 pb-24 sm:px-6 lg:px-10\">${staticHtml`<${head} .heading=${this.heading} .tag=${this.tag} .titleId=${this.titleId}></${head}>`}<ul class=\"mt-8 grid grid-cols-2 gap-px border border-edge bg-edge outline outline-offset-4 outline-edge sm:grid-cols-3 lg:grid-cols-6\">${this.logos.map((logo) => html`<li class=\"flex h-16 items-center justify-center gap-2 bg-surface px-3 text-body-lg font-medium tracking-tight text-fg\">${logo.mark ? html`<span aria-hidden=\"true\" class=\"size-2 shrink-0 bg-fg\"></span>` : nothing}<span class=\"truncate\">${logo.name}</span></li>`)}</ul></section>`\n\t}\n}\n\ndefine('logo-strip', LogoStrip)\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/logo-strip.js",
+        "elements/section-head.js",
+        "elements/site-tag.js"
+      ],
+      "tag": "conare-logo-strip",
+      "tags": [
+        "conare-logo-strip"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "section-head",
+        "tag"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-logo-strip",
+            "name": "LogoStrip",
+            "module": "elements/logo-strip.js",
+            "description": "Who uses it: a cell per wordmark in the website's double rule.",
+            "attributes": [
+              {
+                "name": "heading",
+                "field": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The band's line (Vue's `title`)."
+              },
+              {
+                "name": "tag",
+                "field": "tag",
+                "type": "string | undefined"
+              },
+              {
+                "name": "logos",
+                "field": "logos",
+                "type": "Logo[]",
+                "default": "[]",
+                "description": "Each { name, mark }."
+              },
+              {
+                "name": "title-id",
+                "field": "titleId",
+                "type": "string",
+                "default": "'logos-title'"
+              }
+            ],
+            "properties": [
+              {
+                "name": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The band's line (Vue's `title`).",
+                "attribute": "heading"
+              },
+              {
+                "name": "tag",
+                "type": "string | undefined",
+                "attribute": "tag"
+              },
+              {
+                "name": "logos",
+                "type": "Logo[]",
+                "default": "[]",
+                "description": "Each { name, mark }.",
+                "attribute": "logos"
+              },
+              {
+                "name": "titleId",
+                "type": "string",
+                "default": "'logos-title'",
+                "attribute": "title-id"
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "Twelve names",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/logo-strip/Site.html",
+          "content": "<!-- Who uses it: twelve wordmarks set as text, never real logos. -->\n<conare-logo-strip\n  tag=\"Customers\"\n  heading=\"Teams at Acme companies search with it.\"\n  logos='[{\"name\": \"Acme\", \"mark\": true}, {\"name\": \"Acme Labs\", \"mark\": false}, {\"name\": \"Acme Cloud\", \"mark\": false}, {\"name\": \"Acme Health\", \"mark\": true}, {\"name\": \"Acme Freight\", \"mark\": false}, {\"name\": \"Acme Bank\", \"mark\": false}, {\"name\": \"Acme Retail\", \"mark\": true}, {\"name\": \"Acme Energy\", \"mark\": false}, {\"name\": \"Acme Legal\", \"mark\": false}, {\"name\": \"Acme Studio\", \"mark\": true}, {\"name\": \"Acme Robotics\", \"mark\": false}, {\"name\": \"Acme Foods\", \"mark\": false}]'\n></conare-logo-strip>\n"
+        }
+      ]
+    }
+  }
+}

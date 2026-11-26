@@ -1,0 +1,26 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "stat",
+  "type": "registry:ui",
+  "title": "Stat",
+  "description": "A label over a number in a row of stats, split by hairlines. A stat that drives a chart is a button: it fills with the paper under the pointer, and the pinned one stays filled with a red edge on top.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Stats.tsx",
+      "type": "registry:ui",
+      "content": "import type { HTMLAttributes } from 'react'\nimport { cn } from '@/lib/cn'\n\n// A row of stats (console2.css .v2-stats): two columns on phones, three from 640px, cells split by hairlines. On a\n// phone an odd last stat takes the whole row. Put Stat in the children; four at most.\nexport type StatsProps = HTMLAttributes<HTMLDivElement>\n\nexport function Stats({ className, children, ...rest }: StatsProps) {\n  return (\n    <>\n      <style href=\"ds-stats\" precedence=\"ds\">{css}</style>\n      <div data-ds=\"stats\" className={cn('ds-stats', className)} {...rest}>{children}</div>\n    </>\n  )\n}\n\nexport default Stats\n\nconst css = `\n.ds-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: var(--ds-border-hairline) solid var(--ds-color-edge); border-left: var(--ds-border-hairline) solid var(--ds-color-edge); }\n@media (min-width: 640px) { .ds-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }\n@media (max-width: 639px) { .ds-stats > :last-child:nth-child(odd) { grid-column: 1 / -1; } }\n`\n"
+    },
+    {
+      "path": "components/ui/Stat.tsx",
+      "type": "registry:ui",
+      "content": "import type { ReactNode } from 'react'\nimport { cn } from '@/lib/cn'\n\n// A label over a number (console2.css .v2-stat): 12px muted label, 16px medium value in tabular figures. A stat that\n// drives a chart is a button: pass `pressed` and it fills with the paper under the pointer, and the pinned one stays\n// filled with a 2px red edge on top. Inside Stats, or alone at the top of a card.\nexport interface StatProps {\n  label: string\n  value?: string\n  pressed?: boolean\n  onPress?: () => void\n  className?: string\n  /** The value, in place of `value`. */\n  children?: ReactNode\n}\n\nexport function Stat({ label, value, pressed, onPress, className, children }: StatProps) {\n  const pressable = pressed !== undefined\n  const body = (\n    <>\n      <p className=\"type-meta text-fg-muted\">{label}</p>\n      <p className=\"ds-stat-value\">{children ?? value}</p>\n    </>\n  )\n  return (\n    <>\n      <style href=\"ds-stat\" precedence=\"ds\">{css}</style>\n      {pressable\n        ? <button data-ds=\"stat\" type=\"button\" className={cn('ds-stat', className)} aria-pressed={pressed} data-on={pressed || undefined} onClick={() => onPress?.()}>{body}</button>\n        : <div data-ds=\"stat\" className={cn('ds-stat', className)}>{body}</div>}\n    </>\n  )\n}\n\nexport default Stat\n\nconst css = `\n.ds-stat { position: relative; padding: var(--ds-space-md) var(--ds-space-lg); border-right: var(--ds-border-hairline) solid var(--ds-color-edge); border-bottom: var(--ds-border-hairline) solid var(--ds-color-edge); transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-stat-value { font-size: var(--ds-text-heading-4); font-weight: var(--ds-font-weight-medium); line-height: var(--ds-text-heading-4-leading); font-variant-numeric: tabular-nums; }\nbutton.ds-stat { width: 100%; text-align: left; cursor: pointer; }\n.ds-stat[data-on] { background: var(--ds-color-surface-subtle); }\n@media (hover: hover) and (pointer: fine) { button.ds-stat:hover { background: var(--ds-color-surface-subtle); } }\n.ds-stat[aria-pressed=\"true\"]::before { position: absolute; top: -1px; right: -1px; left: -1px; height: 2px; background: var(--ds-color-edge-accent); content: \"\"; }\nbutton.ds-stat:focus-visible { outline-offset: -2px; }\n`\n"
+    },
+    {
+      "path": "lib/cn.ts",
+      "type": "registry:lib",
+      "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+    }
+  ]
+}

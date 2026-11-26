@@ -1,0 +1,153 @@
+{
+  "name": "kbd",
+  "title": "Kbd",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "A key or a shortcut: 11px in the face around it, plain or in a hairline box, hidden on touch screens.",
+  "use_for": "The shortcut at the end of the sidebar's search and of a command; keys named in help text.",
+  "never": [
+    "Shortcuts on touch screens",
+    "Mono or capitals for key names"
+  ],
+  "source": "conare-web app/assets/css/console2.css (.v2-side-search kbd), app/components/home/PromptBar.vue (the boxed key)",
+  "body": "Plain by default, in the colour around it. `boxed` draws the prompt bar's 1px box at 24% of the text colour with 4px across. It hides where the pointer is coarse.",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Kbd.vue",
+      "content": "<script setup lang=\"ts\">\n// A key or a shortcut (console2.css .v2-side-search kbd): 11px in the face around it, no box, in the colour around it.\n// `boxed` adds the prompt bar's hairline box (1px, 4px across). Hidden on touch screens, which have no keyboard to press\n// it on. Several keys in one Kbd read as one shortcut: <Kbd>⌘K</Kbd>.\ndefineProps<{ boxed?: boolean }>()\n</script>\n\n<template>\n  <kbd data-ds=\"kbd\" class=\"ds-kbd\" :data-boxed=\"boxed || undefined\"><slot /></kbd>\n</template>\n\n<style>\n.ds-kbd { font-family: inherit; font-size: var(--ds-text-caption); line-height: var(--ds-text-caption-leading); white-space: nowrap; }\n.ds-kbd[data-boxed] { display: inline-block; padding: 0 4px; border: var(--ds-border-hairline) solid currentColor; border-color: color-mix(in srgb, currentColor 24%, transparent); }\n@media (pointer: coarse) { .ds-kbd { display: none; } }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "In the product",
+      "center": true,
+      "half": false,
+      "path": "examples/kbd/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { Search } from 'lucide-vue-next'\nimport Kbd from '@/components/ui/Kbd.vue'\n// The sidebar's search with its shortcut at the end, and a boxed key in a line of help. Touch screens hide them.\n</script>\n\n<template>\n  <div class=\"flex w-58 flex-col gap-4\">\n    <button type=\"button\" class=\"flex h-control-sm cursor-pointer items-center gap-2 border border-edge bg-surface px-2 text-meta text-fg-muted transition-[border-color] duration-120 ease-standard hover:border-edge-strong\">\n      <Search :size=\"12\" :stroke-width=\"1.5\" aria-hidden=\"true\" />Search<Kbd class=\"ml-auto\">⌘K</Kbd>\n    </button>\n    <p class=\"type-meta text-fg-muted\">Press <Kbd boxed>Enter</Kbd> to search, <Kbd boxed>Shift</Kbd> <Kbd boxed>Enter</Kbd> for a new line.</p>\n  </div>\n</template>\n",
+      "requires": [],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Kbd.tsx",
+          "content": "import type { ReactNode } from 'react'\n\n// A key or a shortcut (console2.css .v2-side-search kbd): 11px in the face around it, no box, in the colour around it.\n// `boxed` adds the prompt bar's hairline box (1px, 4px across). Hidden on touch screens, which have no keyboard to press\n// it on. Several keys in one Kbd read as one shortcut: <Kbd>⌘K</Kbd>.\nexport interface KbdProps { boxed?: boolean, className?: string, children?: ReactNode }\n\nexport function Kbd({ boxed, className, children }: KbdProps) {\n  return (\n    <>\n      <style href=\"ds-kbd\" precedence=\"ds\">{css}</style>\n      <kbd data-ds=\"kbd\" className={className ? `ds-kbd ${className}` : 'ds-kbd'} data-boxed={boxed || undefined}>{children}</kbd>\n    </>\n  )\n}\n\nexport default Kbd\n\nconst css = `\n.ds-kbd { font-family: inherit; font-size: var(--ds-text-caption); line-height: var(--ds-text-caption-leading); white-space: nowrap; }\n.ds-kbd[data-boxed] { display: inline-block; padding: 0 4px; border: var(--ds-border-hairline) solid currentColor; border-color: color-mix(in srgb, currentColor 24%, transparent); }\n@media (pointer: coarse) { .ds-kbd { display: none; } }\n`\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "Kbd",
+            "file": "react/components/ui/Kbd.tsx",
+            "props": [
+              {
+                "name": "boxed",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": true,
+          "half": false,
+          "path": "react/examples/kbd/Product.tsx",
+          "content": "import { Search } from 'lucide-react'\nimport { Kbd } from '@/react/components/ui/Kbd'\n// The sidebar's search with its shortcut at the end, and a boxed key in a line of help. Touch screens hide them.\n\nexport default function Product() {\n  return (\n    <div className=\"flex w-58 flex-col gap-4\">\n      <button type=\"button\" className=\"flex h-control-sm cursor-pointer items-center gap-2 border border-edge bg-surface px-2 text-meta text-fg-muted transition-[border-color] duration-120 ease-standard hover:border-edge-strong\">\n        <Search size={12} strokeWidth={1.5} aria-hidden=\"true\" />Search<Kbd className=\"ml-auto\">⌘K</Kbd>\n      </button>\n      <p className=\"type-meta text-fg-muted\">Press <Kbd boxed>Enter</Kbd> to search, <Kbd boxed>Shift</Kbd> <Kbd boxed>Enter</Kbd> for a new line.</p>\n    </div>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/kbd.ts",
+          "content": "import { html } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// Kbd.vue as <conare-kbd>: a key or a shortcut (console2.css .v2-side-search kbd): 11px in the face around it, no box, in\n// the colour around it. `boxed` adds the prompt bar's hairline box (1px, 4px across). Hidden on touch screens, which have\n// no keyboard to press it on. Several keys in one read as one shortcut: <conare-kbd>⌘K</conare-kbd>. The host is the\n// key's box (Vue's root kbd), so a class on the element (ml-auto) lands on it.\n\n/**\n * @summary A key or a shortcut.\n * @slot - The key or keys.\n */\nexport class Kbd extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { boxed: { type: Boolean, reflect: true } }\n\n\tboxed = false\n\n\trender() {\n\t\treturn html`<kbd class=\"contents\"><slot></slot></kbd>`\n\t}\n}\n\ndefine('kbd', Kbd)\n"
+        },
+        {
+          "path": "elements/components/ui/kbd.css",
+          "content": "/* Kbd.vue's <style>, with the key (.ds-kbd, the Vue root) as the host. */\n/* The host rules are !important: the page's preflight and scoped base (padding: 0, border: 0, the root's type) win over a plain :host rule, and Vue's unlayered rule wins over them, as an important shadow rule does. */\n:host { display: inline !important; font-family: inherit; font-size: var(--ds-text-caption) !important; line-height: var(--ds-text-caption-leading) !important; white-space: nowrap !important; }\n:host([boxed]) { display: inline-block !important; padding: 0 4px !important; border: var(--ds-border-hairline) solid currentColor !important; border-color: color-mix(in srgb, currentColor 24%, transparent) !important; }\n@media (pointer: coarse) { :host { display: none !important; } }\n/* The inner <kbd> (for its meaning) takes the host's face and size, not the base layer's mono. */\nkbd { font-family: inherit; font-size: inherit; }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/kbd.js"
+      ],
+      "tag": "conare-kbd",
+      "tags": [
+        "conare-kbd"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-kbd",
+            "name": "Kbd",
+            "module": "elements/kbd.js",
+            "description": "A key or a shortcut.",
+            "attributes": [
+              {
+                "name": "boxed",
+                "field": "boxed",
+                "type": "boolean",
+                "default": "false"
+              }
+            ],
+            "properties": [
+              {
+                "name": "boxed",
+                "type": "boolean",
+                "default": "false",
+                "attribute": "boxed"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "The key or keys."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "In the product",
+          "center": true,
+          "half": false,
+          "path": "elements/examples/kbd/Product.html",
+          "content": "<!-- The sidebar's search with its shortcut at the end, and a boxed key in a line of help. Touch screens hide them. -->\n<div class=\"flex w-58 flex-col gap-4\">\n  <button type=\"button\" class=\"flex h-control-sm cursor-pointer items-center gap-2 border border-edge bg-surface px-2 text-meta text-fg-muted transition-[border-color] duration-120 ease-standard hover:border-edge-strong\">\n    <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-search\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"8\"></circle><path d=\"m21 21-4.3-4.3\"></path></svg>Search<conare-kbd class=\"ml-auto\">⌘K</conare-kbd>\n  </button>\n  <p class=\"type-meta text-fg-muted\">Press <conare-kbd boxed>Enter</conare-kbd> to search, <conare-kbd boxed>Shift</conare-kbd> <conare-kbd boxed>Enter</conare-kbd> for a new line.</p>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

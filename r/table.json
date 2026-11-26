@@ -1,0 +1,235 @@
+{
+  "name": "table",
+  "title": "Table",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "Rows of one kind of thing: a paper head in sentence case, 40px rows, numbers in tabular figures, IDs in mono, and a status column of tags. Settings and the audit log share one plainer table with buttons one width.",
+  "use_for": "Namespaces, sources, keys, members, the audit log.",
+  "never": [
+    "A table for one subject with a chart (use Card)",
+    "Capitals in heads",
+    "A scroll box a keyboard can't reach"
+  ],
+  "source": "conare-web app/assets/css/console2.css (.v2-table, .c-table), app/assets/css/main.css (.c-table)",
+  "body": "Framed, the rows scroll sideways under a fade (`fade-x`); the hairline frame stays whole.",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/ui/Table.vue",
+      "content": "<script setup lang=\"ts\">\n// Rows of one kind of thing. `product` (console2.css .v2-table): a paper head in sentence case, 12px muted; 40px rows\n// (48px on phones); IDs in mono, numbers in tabular figures. `settings` (.c-table under the console): the plainer table\n// Settings and the audit log share, its first and last columns on a 16px inset and a last column of buttons one width\n// (92px). Rows with class `is-link` take the paper fill under the pointer. `framed` puts it in a hairline box that\n// scrolls sideways on its own, so a phone never scrolls the page. Write the <thead> and <tbody> in the slot.\nwithDefaults(defineProps<{ variant?: 'product' | 'settings', framed?: boolean, label?: string }>(), { variant: 'product' })\n</script>\n\n<template>\n  <div data-ds=\"table\" v-if=\"framed\" class=\"fade-x overflow-x-auto border border-edge bg-surface\" :role=\"label ? 'region' : undefined\" :aria-label=\"label\" :tabindex=\"label ? 0 : undefined\">\n    <table class=\"ds-table\" :data-variant=\"variant\"><slot /></table>\n  </div>\n  <table data-ds=\"table\" v-else class=\"ds-table\" :data-variant=\"variant\"><slot /></table>\n</template>\n\n<style>\n.ds-table { position: relative; width: 100%; border-collapse: collapse; font-size: var(--ds-text-ui); line-height: var(--ds-text-ui-leading); }\n.ds-table th { height: var(--ds-size-control-md); padding: 0 12px; border-bottom: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface-subtle); color: var(--ds-color-fg-muted); font-size: var(--ds-text-meta); font-weight: var(--ds-font-weight-regular); text-align: left; white-space: nowrap; vertical-align: middle; }\n.ds-table th.text-right { text-align: right; }\n.ds-table td { height: var(--ds-size-row); padding: 4px 12px; border-bottom: var(--ds-border-hairline) solid var(--ds-color-edge); vertical-align: middle; }\n.ds-table tbody tr:last-child td { border-bottom: 0; }\n.ds-table tbody tr.is-link { cursor: pointer; }\n@media (hover: hover) and (pointer: fine) { .ds-table tbody tr.is-link:hover td { background: color-mix(in srgb, var(--ds-color-surface-subtle) 70%, var(--ds-color-off-white)); } }\n.ds-table tbody tr.is-link:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }\n/* Settings: a 16px inset at both ends, 6px cell padding, heads in sentence case. */\n.ds-table[data-variant=\"settings\"] td { padding: 6px 12px; }\n.ds-table[data-variant=\"settings\"] :is(th, td):first-child { padding-left: 16px; }\n.ds-table[data-variant=\"settings\"] :is(th, td):last-child { padding-right: 16px; }\n.ds-table[data-variant=\"settings\"] th::first-letter { text-transform: uppercase; }\n.ds-table[data-variant=\"settings\"] td:last-child :is(button, a):only-child { width: 92px; }\n@media (pointer: coarse), (max-width: 767px) {\n  .ds-table[data-variant=\"product\"] td { height: 48px; }\n  .ds-table[data-variant=\"product\"] th { height: var(--ds-size-control-lg); }\n}\n@media (max-width: 359px) { .ds-table[data-variant=\"product\"] :is(th, td) { padding-inline: 8px; } }\n/* Beside a sidebar, a tablet has less room than its width suggests. */\n@media (min-width: 768px) and (max-width: 1023px) { .ds-table :is(th, td) { padding-inline: 8px; } }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "Rows that open",
+      "center": false,
+      "half": false,
+      "path": "examples/table/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport { ref } from 'vue'\nimport { ChevronDown } from 'lucide-vue-next'\nimport StatusTag from '@/components/ui/StatusTag.vue'\nimport Table from '@/components/ui/Table.vue'\n// The namespaces table on sample data: press a row and it opens in place to where its documents come from; press it\n// again, or another row, and it closes as the next one opens. Names in mono, numbers in tabular figures.\nconst rows = [\n  { name: 'contracts', documents: 412830, source: 'Google Drive', status: 'ready', queried: '2 min ago' },\n  { name: 'slack', documents: 96410, source: 'Slack', status: 'syncing', queried: '1 h ago' },\n  { name: 'crm', documents: 52660, source: 'HubSpot', status: 'error', queried: 'yesterday' },\n  { name: 'support', documents: 18204, source: 'API', status: 'ready', queried: '3 days ago' },\n]\nconst opened = ref<string | null>(null)\nconst toggle = (name: string) => { opened.value = opened.value === name ? null : name }\n</script>\n\n<template>\n  <Table framed label=\"namespaces\">\n    <thead>\n      <tr><th>Namespace</th><th class=\"text-right\">Documents</th><th>Health</th><th>Last query</th><th class=\"w-px\"><span class=\"sr-only\">Open</span></th></tr>\n    </thead>\n    <tbody>\n      <template v-for=\"r in rows\" :key=\"r.name\">\n        <tr class=\"is-link\" tabindex=\"0\" :aria-expanded=\"opened === r.name\" @click=\"toggle(r.name)\" @keydown.enter.prevent=\"toggle(r.name)\" @keydown.space.prevent=\"toggle(r.name)\">\n          <td class=\"type-code-sm\">{{ r.name }}</td>\n          <td class=\"text-right tabular-nums\">{{ r.documents.toLocaleString('en-US') }}</td>\n          <td><StatusTag :status=\"r.status\" /></td>\n          <td class=\"type-meta whitespace-nowrap text-fg-muted\">{{ r.queried }}</td>\n          <td><ChevronDown :size=\"14\" :stroke-width=\"1.5\" class=\"text-fg-muted transition-[rotate] duration-160 ease-out motion-reduce:transition-none\" :class=\"opened === r.name && 'rotate-180'\" aria-hidden=\"true\" /></td>\n        </tr>\n        <tr v-if=\"opened === r.name\">\n          <td colspan=\"5\" class=\"bg-surface-subtle\">\n            <p class=\"type-meta text-fg-soft\">{{ r.documents.toLocaleString('en-US') }} documents from {{ r.source }}. Searched {{ r.queried }}.</p>\n          </td>\n        </tr>\n      </template>\n    </tbody>\n  </Table>\n</template>\n",
+      "requires": [
+        "tag"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    },
+    {
+      "name": "Settings",
+      "label": "In settings",
+      "center": false,
+      "half": false,
+      "path": "examples/table/Settings.vue",
+      "content": "<script setup lang=\"ts\">\nimport Button from '@/components/ui/Button.vue'\nimport Table from '@/components/ui/Table.vue'\n// The table every Settings tab and the audit log share: a header row, 13px rows, the line that matters most in ink,\n// and buttons one width in the last column.\nconst members = [\n  { name: 'Acme admin', email: 'admin@acme.com', role: 'Admin', joined: '3 months ago' },\n  { name: 'Acme operations', email: 'ops@acme.com', role: 'Member', joined: '2 weeks ago' },\n  { name: 'Acme support', email: 'support@acme.com', role: 'Member', joined: '4 days ago' },\n]\n</script>\n\n<template>\n  <Table variant=\"settings\" framed label=\"members\">\n    <thead>\n      <tr><th>Name</th><th class=\"w-24\">Role</th><th class=\"w-32\">Joined</th><th class=\"w-px\"><span class=\"sr-only\">Actions</span></th></tr>\n    </thead>\n    <tbody>\n      <tr v-for=\"m in members\" :key=\"m.email\">\n        <td class=\"max-w-0\">\n          <p class=\"truncate\">{{ m.name }}</p>\n          <p class=\"truncate type-meta text-fg-muted\">{{ m.email }}</p>\n        </td>\n        <td>{{ m.role }}</td>\n        <td class=\"type-meta whitespace-nowrap text-fg-muted\">{{ m.joined }}</td>\n        <td class=\"text-right\"><Button press>Manage</Button></td>\n      </tr>\n    </tbody>\n  </Table>\n</template>\n",
+      "requires": [
+        "button"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Table.tsx",
+          "content": "import type { ReactNode } from 'react'\nimport { cn } from '@/react/lib/cn'\n\n// Rows of one kind of thing. `product` (console2.css .v2-table): a paper head in sentence case, 12px muted; 40px rows\n// (48px on phones); IDs in mono, numbers in tabular figures. `settings` (.c-table under the console): the plainer table\n// Settings and the audit log share, its first and last columns on a 16px inset and a last column of buttons one width\n// (92px). Rows with class `is-link` take the paper fill under the pointer. `framed` puts it in a hairline box that\n// scrolls sideways on its own, so a phone never scrolls the page. Write the <thead> and <tbody> as children.\nexport interface TableProps {\n  variant?: 'product' | 'settings'\n  framed?: boolean\n  label?: string\n  className?: string\n  children?: ReactNode\n}\n\nexport function Table({ variant = 'product', framed, label, className, children }: TableProps) {\n  return (\n    <>\n      <style href=\"ds-table\" precedence=\"ds\">{css}</style>\n      {framed\n        ? (\n            <div data-ds=\"table\" className={cn('fade-x overflow-x-auto border border-edge bg-surface', className)} role={label ? 'region' : undefined} aria-label={label} tabIndex={label ? 0 : undefined}>\n              <table className=\"ds-table\" data-variant={variant}>{children}</table>\n            </div>\n          )\n        : <table data-ds=\"table\" className={cn('ds-table', className)} data-variant={variant}>{children}</table>}\n    </>\n  )\n}\n\nexport default Table\n\nconst css = `\n.ds-table { position: relative; width: 100%; border-collapse: collapse; font-size: var(--ds-text-ui); line-height: var(--ds-text-ui-leading); }\n.ds-table th { height: var(--ds-size-control-md); padding: 0 12px; border-bottom: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface-subtle); color: var(--ds-color-fg-muted); font-size: var(--ds-text-meta); font-weight: var(--ds-font-weight-regular); text-align: left; white-space: nowrap; vertical-align: middle; }\n.ds-table th.text-right { text-align: right; }\n.ds-table td { height: var(--ds-size-row); padding: 4px 12px; border-bottom: var(--ds-border-hairline) solid var(--ds-color-edge); vertical-align: middle; }\n.ds-table tbody tr:last-child td { border-bottom: 0; }\n.ds-table tbody tr.is-link { cursor: pointer; }\n@media (hover: hover) and (pointer: fine) { .ds-table tbody tr.is-link:hover td { background: color-mix(in srgb, var(--ds-color-surface-subtle) 70%, var(--ds-color-off-white)); } }\n.ds-table tbody tr.is-link:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }\n/* Settings: a 16px inset at both ends, 6px cell padding, heads in sentence case. */\n.ds-table[data-variant=\"settings\"] td { padding: 6px 12px; }\n.ds-table[data-variant=\"settings\"] :is(th, td):first-child { padding-left: 16px; }\n.ds-table[data-variant=\"settings\"] :is(th, td):last-child { padding-right: 16px; }\n.ds-table[data-variant=\"settings\"] th::first-letter { text-transform: uppercase; }\n.ds-table[data-variant=\"settings\"] td:last-child :is(button, a):only-child { width: 92px; }\n@media (pointer: coarse), (max-width: 767px) {\n  .ds-table[data-variant=\"product\"] td { height: 48px; }\n  .ds-table[data-variant=\"product\"] th { height: var(--ds-size-control-lg); }\n}\n@media (max-width: 359px) { .ds-table[data-variant=\"product\"] :is(th, td) { padding-inline: 8px; } }\n/* Beside a sidebar, a tablet has less room than its width suggests. */\n@media (min-width: 768px) and (max-width: 1023px) { .ds-table :is(th, td) { padding-inline: 8px; } }\n`\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "Table",
+            "file": "react/components/ui/Table.tsx",
+            "props": [
+              {
+                "name": "variant",
+                "type": "'product' | 'settings'",
+                "required": false,
+                "default": "'product'"
+              },
+              {
+                "name": "framed",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "className",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "children",
+                "type": "ReactNode",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Rows that open",
+          "center": false,
+          "half": false,
+          "path": "react/examples/table/Product.tsx",
+          "content": "'use client'\nimport { Fragment, useState } from 'react'\nimport { ChevronDown } from 'lucide-react'\nimport { StatusTag } from '@/react/components/ui/StatusTag'\nimport { Table } from '@/react/components/ui/Table'\nimport { cn } from '@/react/lib/cn'\n// The namespaces table on sample data: press a row and it opens in place to where its documents come from; press it\n// again, or another row, and it closes as the next one opens. Names in mono, numbers in tabular figures.\nconst rows = [\n  { name: 'contracts', documents: 412830, source: 'Google Drive', status: 'ready', queried: '2 min ago' },\n  { name: 'slack', documents: 96410, source: 'Slack', status: 'syncing', queried: '1 h ago' },\n  { name: 'crm', documents: 52660, source: 'HubSpot', status: 'error', queried: 'yesterday' },\n  { name: 'support', documents: 18204, source: 'API', status: 'ready', queried: '3 days ago' },\n]\n\nexport default function Product() {\n  const [opened, setOpened] = useState<string | null>(null)\n  const toggle = (name: string) => setOpened(o => (o === name ? null : name))\n  return (\n    <Table framed label=\"namespaces\">\n      <thead>\n        <tr><th>Namespace</th><th className=\"text-right\">Documents</th><th>Health</th><th>Last query</th><th className=\"w-px\"><span className=\"sr-only\">Open</span></th></tr>\n      </thead>\n      <tbody>\n        {rows.map(r => (\n          <Fragment key={r.name}>\n            <tr className=\"is-link\" tabIndex={0} aria-expanded={opened === r.name} onClick={() => toggle(r.name)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(r.name) } }}>\n              <td className=\"type-code-sm\">{r.name}</td>\n              <td className=\"text-right tabular-nums\">{r.documents.toLocaleString('en-US')}</td>\n              <td><StatusTag status={r.status} /></td>\n              <td className=\"type-meta whitespace-nowrap text-fg-muted\">{r.queried}</td>\n              <td><ChevronDown size={14} strokeWidth={1.5} className={cn('text-fg-muted transition-[rotate] duration-160 ease-out motion-reduce:transition-none', opened === r.name && 'rotate-180')} aria-hidden=\"true\" /></td>\n            </tr>\n            {opened === r.name && (\n              <tr>\n                <td colSpan={5} className=\"bg-surface-subtle\">\n                  <p className=\"type-meta text-fg-soft\">{r.documents.toLocaleString('en-US')} documents from {r.source}. Searched {r.queried}.</p>\n                </td>\n              </tr>\n            )}\n          </Fragment>\n        ))}\n      </tbody>\n    </Table>\n  )\n}\n",
+          "registryDependencies": [
+            "tag"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        },
+        {
+          "name": "Settings",
+          "label": "In settings",
+          "center": false,
+          "half": false,
+          "path": "react/examples/table/Settings.tsx",
+          "content": "import { Button } from '@/react/components/ui/Button'\nimport { Table } from '@/react/components/ui/Table'\n// The table every Settings tab and the audit log share: a header row, 13px rows, the line that matters most in ink,\n// and buttons one width in the last column.\nconst members = [\n  { name: 'Acme admin', email: 'admin@acme.com', role: 'Admin', joined: '3 months ago' },\n  { name: 'Acme operations', email: 'ops@acme.com', role: 'Member', joined: '2 weeks ago' },\n  { name: 'Acme support', email: 'support@acme.com', role: 'Member', joined: '4 days ago' },\n]\n\nexport default function Settings() {\n  return (\n    <Table variant=\"settings\" framed label=\"members\">\n      <thead>\n        <tr><th>Name</th><th className=\"w-24\">Role</th><th className=\"w-32\">Joined</th><th className=\"w-px\"><span className=\"sr-only\">Actions</span></th></tr>\n      </thead>\n      <tbody>\n        {members.map(m => (\n          <tr key={m.email}>\n            <td className=\"max-w-0\">\n              <p className=\"truncate\">{m.name}</p>\n              <p className=\"truncate type-meta text-fg-muted\">{m.email}</p>\n            </td>\n            <td>{m.role}</td>\n            <td className=\"type-meta whitespace-nowrap text-fg-muted\">{m.joined}</td>\n            <td className=\"text-right\"><Button press>Manage</Button></td>\n          </tr>\n        ))}\n      </tbody>\n    </Table>\n  )\n}\n",
+          "registryDependencies": [
+            "button"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/table.ts",
+          "content": "import { html } from 'lit'\nimport { DsElement, define, tagName } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// Table.vue as <conare-table>: rows of one kind of thing. `product` (console2.css .v2-table): a paper head in sentence\n// case, 12px muted; 40px rows (48px on phones); IDs in mono, numbers in tabular figures. `settings` (.c-table under the\n// console): the plainer table Settings and the audit log share, its first and last columns on a 16px inset and a last\n// column of buttons one width (92px). Rows with class `is-link` take the paper fill under the pointer. `framed` puts it\n// in a hairline box that scrolls sideways on its own, so a phone never scrolls the page.\n//\n// Put the page's own <table> inside (<conare-table><table><thead>...</thead><tbody>...</tbody></table></conare-table>):\n// an HTML parser drops <thead>, <tr> and <td> anywhere but in a <table>, so the element cannot hold them itself. It\n// marks that table (class ds-table, data-variant) and gives the page the table's rules once, as its cells are the\n// page's, out of the shadow root's reach.\n\n/** Table.vue's <style>, scoped to tables inside the element. */\nconst RULES = `\n.ds-table { position: relative; width: 100%; border-collapse: collapse; font-size: var(--ds-text-ui); line-height: var(--ds-text-ui-leading); }\n.ds-table th { height: var(--ds-size-control-md); padding: 0 12px; border-bottom: var(--ds-border-hairline) solid var(--ds-color-edge); background: var(--ds-color-surface-subtle); color: var(--ds-color-fg-muted); font-size: var(--ds-text-meta); font-weight: var(--ds-font-weight-regular); text-align: left; white-space: nowrap; vertical-align: middle; }\n.ds-table th.text-right { text-align: right; }\n.ds-table td { height: var(--ds-size-row); padding: 4px 12px; border-bottom: var(--ds-border-hairline) solid var(--ds-color-edge); vertical-align: middle; }\n.ds-table tbody tr:last-child td { border-bottom: 0; }\n.ds-table tbody tr.is-link { cursor: pointer; }\n@media (hover: hover) and (pointer: fine) { .ds-table tbody tr.is-link:hover td { background: color-mix(in srgb, var(--ds-color-surface-subtle) 70%, var(--ds-color-off-white)); } }\n.ds-table tbody tr.is-link:focus-visible { outline: var(--ds-border-focus) solid var(--ds-color-edge-focus); outline-offset: -2px; }\n/* Settings: a 16px inset at both ends, 6px cell padding, heads in sentence case. */\n.ds-table[data-variant=\"settings\"] td { padding: 6px 12px; }\n.ds-table[data-variant=\"settings\"] :is(th, td):first-child { padding-left: 16px; }\n.ds-table[data-variant=\"settings\"] :is(th, td):last-child { padding-right: 16px; }\n.ds-table[data-variant=\"settings\"] th::first-letter { text-transform: uppercase; }\n.ds-table[data-variant=\"settings\"] td:last-child :is(button, a):only-child { width: 92px; }\n.ds-table[data-variant=\"settings\"] td:last-child > :only-child::part(control) { width: 92px; }\n@media (pointer: coarse), (max-width: 767px) {\n  .ds-table[data-variant=\"product\"] td { height: 48px; }\n  .ds-table[data-variant=\"product\"] th { height: var(--ds-size-control-lg); }\n}\n@media (max-width: 359px) { .ds-table[data-variant=\"product\"] :is(th, td) { padding-inline: 8px; } }\n/* Beside a sidebar, a tablet has less room than its width suggests. */\n@media (min-width: 768px) and (max-width: 1023px) { .ds-table :is(th, td) { padding-inline: 8px; } }\n`\nconst sheets = new WeakSet<Document | ShadowRoot>()\nfunction adoptRules(root: Node) {\n\tif (!(root instanceof Document || root instanceof ShadowRoot) || sheets.has(root)) return\n\tconst sheet = new CSSStyleSheet()\n\tsheet.replaceSync(`@scope (${tagName('table')}) { ${RULES} }`)\n\troot.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet]\n\tsheets.add(root)\n}\n\n/**\n * @summary Rows of one kind of thing: wraps the page's own <table>.\n * @slot - A <table> with its <thead> and <tbody>.\n */\nexport class Table extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { variant: {}, framed: { type: Boolean, reflect: true }, label: {} }\n\n\t/** product or settings. */\n\tvariant: 'product' | 'settings' = 'product'\n\t/** A hairline box that scrolls sideways on its own. */\n\tframed = false\n\t/** The frame's name (a region), when framed. */\n\tlabel?: string\n\n\tconnectedCallback() {\n\t\tsuper.connectedCallback()\n\t\tadoptRules(this.getRootNode())\n\t}\n\n\t// The page's table takes Vue's classes; unframed, it is the item's box and carries data-ds.\n\tprotected updated() {\n\t\tconst table = this.querySelector(':scope > table')\n\t\tif (!table) return\n\t\ttable.classList.add('ds-table')\n\t\ttable.setAttribute('data-variant', this.variant)\n\t\tif (this.framed) table.removeAttribute('data-ds')\n\t\telse table.setAttribute('data-ds', 'table')\n\t\t// Framed, the host is the frame (table.css), so a class on <conare-table> (w-full) lands on it as on Vue's\n\t\t// root; it is the region a keyboard scrolls.\n\t\tconst region = this.framed && this.label\n\t\tfor (const [name, value] of [['role', 'region'], ['aria-label', this.label], ['tabindex', '0']] as const) {\n\t\t\tif (region && value) this.setAttribute(name, value)\n\t\t\telse this.removeAttribute(name)\n\t\t}\n\t}\n\n\trender() {\n\t\treturn html`<slot @slotchange=${() => this.updated()}></slot>`\n\t}\n}\n\ndefine('table', Table)\n"
+        },
+        {
+          "path": "elements/components/ui/table.css",
+          "content": "/* Framed, the host is the frame (Table.vue's root div), so a class on <conare-table> (w-full) lands on it as a class on\n   <Table> does. The border is important: the page's reset (no border on any element) outranks :host. */\n:host { display: contents; }\n:host([framed]) { @apply fade-x block overflow-x-auto bg-surface; border: var(--ds-border-hairline) solid var(--ds-color-edge) !important; }\n/* The fade's own focus rule reads :host:focus-visible, which a host never matches: the whole ring shows, as in Vue. */\n:host([framed]:focus-visible) { mask-image: none; }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/table.js",
+        "elements/status-tag.js",
+        "elements/button.js"
+      ],
+      "tag": "conare-table",
+      "tags": [
+        "conare-table"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-table",
+            "name": "Table",
+            "module": "elements/table.js",
+            "description": "Rows of one kind of thing: wraps the page's own <table>.",
+            "attributes": [
+              {
+                "name": "variant",
+                "field": "variant",
+                "type": "\"product\" | \"settings\"",
+                "default": "'product'",
+                "description": "product or settings."
+              },
+              {
+                "name": "framed",
+                "field": "framed",
+                "type": "boolean",
+                "default": "false",
+                "description": "A hairline box that scrolls sideways on its own."
+              },
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string | undefined",
+                "description": "The frame's name (a region), when framed."
+              }
+            ],
+            "properties": [
+              {
+                "name": "variant",
+                "type": "\"product\" | \"settings\"",
+                "default": "'product'",
+                "description": "product or settings.",
+                "attribute": "variant"
+              },
+              {
+                "name": "framed",
+                "type": "boolean",
+                "default": "false",
+                "description": "A hairline box that scrolls sideways on its own.",
+                "attribute": "framed"
+              },
+              {
+                "name": "label",
+                "type": "string | undefined",
+                "description": "The frame's name (a region), when framed.",
+                "attribute": "label"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "A <table> with its <thead> and <tbody>."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Rows that open",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/table/Product.html",
+          "content": "<!-- The namespaces table on sample data: press a row and it opens in place to where its documents come from; press it\n     again, or another row, and it closes as the next one opens. Names in mono, numbers in tabular figures. -->\n<conare-table framed label=\"namespaces\">\n  <table>\n    <thead>\n      <tr><th>Namespace</th><th class=\"text-right\">Documents</th><th>Health</th><th>Last query</th><th class=\"w-px\"><span class=\"sr-only\">Open</span></th></tr>\n    </thead>\n    <tbody>\n      <tr class=\"is-link\" tabindex=\"0\" aria-expanded=\"false\" data-name=\"contracts\" data-source=\"Google Drive\" data-queried=\"2 min ago\"><td class=\"type-code-sm\">contracts</td><td class=\"text-right tabular-nums\">412,830</td><td><conare-status-tag status=\"ready\"></conare-status-tag></td><td class=\"type-meta whitespace-nowrap text-fg-muted\">2 min ago</td><td><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-chevron-down text-fg-muted transition-[rotate] duration-160 ease-out motion-reduce:transition-none\" aria-hidden=\"true\"><path d=\"m6 9 6 6 6-6\"></path></svg></td></tr>\n      <tr class=\"is-link\" tabindex=\"0\" aria-expanded=\"false\" data-name=\"slack\" data-source=\"Slack\" data-queried=\"1 h ago\"><td class=\"type-code-sm\">slack</td><td class=\"text-right tabular-nums\">96,410</td><td><conare-status-tag status=\"syncing\"></conare-status-tag></td><td class=\"type-meta whitespace-nowrap text-fg-muted\">1 h ago</td><td><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-chevron-down text-fg-muted transition-[rotate] duration-160 ease-out motion-reduce:transition-none\" aria-hidden=\"true\"><path d=\"m6 9 6 6 6-6\"></path></svg></td></tr>\n      <tr class=\"is-link\" tabindex=\"0\" aria-expanded=\"false\" data-name=\"crm\" data-source=\"HubSpot\" data-queried=\"yesterday\"><td class=\"type-code-sm\">crm</td><td class=\"text-right tabular-nums\">52,660</td><td><conare-status-tag status=\"error\"></conare-status-tag></td><td class=\"type-meta whitespace-nowrap text-fg-muted\">yesterday</td><td><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-chevron-down text-fg-muted transition-[rotate] duration-160 ease-out motion-reduce:transition-none\" aria-hidden=\"true\"><path d=\"m6 9 6 6 6-6\"></path></svg></td></tr>\n      <tr class=\"is-link\" tabindex=\"0\" aria-expanded=\"false\" data-name=\"support\" data-source=\"API\" data-queried=\"3 days ago\"><td class=\"type-code-sm\">support</td><td class=\"text-right tabular-nums\">18,204</td><td><conare-status-tag status=\"ready\"></conare-status-tag></td><td class=\"type-meta whitespace-nowrap text-fg-muted\">3 days ago</td><td><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-chevron-down text-fg-muted transition-[rotate] duration-160 ease-out motion-reduce:transition-none\" aria-hidden=\"true\"><path d=\"m6 9 6 6 6-6\"></path></svg></td></tr>\n    </tbody>\n  </table>\n</conare-table>\n<script type=\"module\">\n  // One row open at a time: its detail row goes in under it and its chevron turns over (rotate-180).\n  const rows = [...document.querySelectorAll('tr.is-link')]\n  let opened = null\n  const paint = () => {\n    document.querySelector('tr[data-detail]')?.remove()\n    for (const r of rows) {\n      const on = r.dataset.name === opened\n      r.setAttribute('aria-expanded', String(on))\n      r.querySelector('svg').classList.toggle('rotate-180', on)\n      if (!on) continue\n      const docs = r.children[1].textContent\n      const detail = document.createElement('tr')\n      detail.dataset.detail = ''\n      detail.innerHTML = `<td colspan=\"5\" class=\"bg-surface-subtle\"><p class=\"type-meta text-fg-soft\">${docs} documents from ${r.dataset.source}. Searched ${r.dataset.queried}.</p></td>`\n      r.after(detail)\n    }\n  }\n  const toggle = (name) => { opened = opened === name ? null : name; paint() }\n  for (const r of rows) {\n    r.addEventListener('click', () => toggle(r.dataset.name))\n    r.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(r.dataset.name) } })\n  }\n</script>\n"
+        },
+        {
+          "name": "Settings",
+          "label": "In settings",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/table/Settings.html",
+          "content": "<!-- The table every Settings tab and the audit log share: a header row, 13px rows, the line that matters most in ink,\n     and buttons one width in the last column. -->\n<conare-table variant=\"settings\" framed label=\"members\">\n  <table>\n    <thead>\n      <tr><th>Name</th><th class=\"w-24\">Role</th><th class=\"w-32\">Joined</th><th class=\"w-px\"><span class=\"sr-only\">Actions</span></th></tr>\n    </thead>\n    <tbody>\n      <tr><td class=\"max-w-0\"><p class=\"truncate\">Acme admin</p><p class=\"truncate type-meta text-fg-muted\">admin@acme.com</p></td><td>Admin</td><td class=\"type-meta whitespace-nowrap text-fg-muted\">3 months ago</td><td class=\"text-right\"><conare-button press>Manage</conare-button></td></tr>\n      <tr><td class=\"max-w-0\"><p class=\"truncate\">Acme operations</p><p class=\"truncate type-meta text-fg-muted\">ops@acme.com</p></td><td>Member</td><td class=\"type-meta whitespace-nowrap text-fg-muted\">2 weeks ago</td><td class=\"text-right\"><conare-button press>Manage</conare-button></td></tr>\n      <tr><td class=\"max-w-0\"><p class=\"truncate\">Acme support</p><p class=\"truncate type-meta text-fg-muted\">support@acme.com</p></td><td>Member</td><td class=\"type-meta whitespace-nowrap text-fg-muted\">4 days ago</td><td class=\"text-right\"><conare-button press>Manage</conare-button></td></tr>\n    </tbody>\n  </table>\n</conare-table>\n"
+        }
+      ]
+    }
+  }
+}

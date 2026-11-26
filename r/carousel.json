@@ -1,0 +1,210 @@
+{
+  "name": "carousel",
+  "title": "Carousel",
+  "type": "registry:ui",
+  "group": "ui",
+  "description": "Slides in a row, one or more in view: square, a hairline round the track and between slides, the arrows as ghost icon buttons with the place in tabular figures between them. Native scroll snap, so a swipe or a trackpad moves it as the arrows do. Never plays on its own.",
+  "use_for": "A few cards of one kind that don't fit side by side: ways in, posts, examples.",
+  "never": [
+    "Autoplay",
+    "Hiding the one thing a page needs inside a slide",
+    "Dots for navigation: the count says where you are"
+  ],
+  "source": "New in Conare's style (no Conare equivalent): Button ghost icon, the hairline and the console's tabular figures",
+  "body": "The track fades at an edge with another slide past it (`fade-x`); its hairline stays whole.",
+  "requires": [
+    "button"
+  ],
+  "dependencies": [
+    "lucide-vue-next@^0.479.0"
+  ],
+  "files": [
+    {
+      "path": "components/ui/Carousel.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed, onBeforeUnmount, onMounted, ref } from 'vue'\nimport { ChevronLeft, ChevronRight } from 'lucide-vue-next'\nimport Button from '@/components/ui/Button.vue'\n\n// Slides in a row, one or more in view (new in Conare's style): square, a hairline round the track, the arrows as ghost\n// icon buttons with the place in tabular figures between them. Native scroll snap, so a swipe or a trackpad moves it as\n// the arrows do; arrow keys work on the focused track. Never plays on its own. Each slide is a slot item: pass `count`\n// and write the slides in `#slide=\"{ index }\"`. `perView` sets how many show at 768px and up (one on phones).\nconst props = withDefaults(defineProps<{ count: number, label: string, perView?: 1 | 2 | 3 }>(), { perView: 1 })\nconst track = ref<HTMLElement | null>(null)\nconst current = ref(0)\nconst last = computed(() => Math.max(0, props.count - visible.value))\nconst visible = ref(1)\n\nfunction measure() {\n  const el = track.value\n  const first = el?.firstElementChild as HTMLElement | null\n  if (!el || !first) return\n  visible.value = Math.max(1, Math.round(el.clientWidth / first.offsetWidth))\n  current.value = Math.min(last.value, Math.round(el.scrollLeft / first.offsetWidth))\n}\nfunction go(i: number) {\n  const el = track.value\n  const first = el?.firstElementChild as HTMLElement | null\n  if (!el || !first) return\n  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches\n  el.scrollTo({ left: Math.max(0, Math.min(last.value, i)) * first.offsetWidth, behavior: reduce ? 'auto' : 'smooth' })\n}\nfunction onKey(e: KeyboardEvent) {\n  if (e.key === 'ArrowRight') { e.preventDefault(); go(current.value + 1) }\n  if (e.key === 'ArrowLeft') { e.preventDefault(); go(current.value - 1) }\n}\nlet ro: ResizeObserver | undefined\nonMounted(() => {\n  measure()\n  ro = new ResizeObserver(measure)\n  if (track.value) ro.observe(track.value)\n})\nonBeforeUnmount(() => ro?.disconnect())\n</script>\n\n<template>\n  <section data-ds=\"carousel\" class=\"flex flex-col gap-2\" role=\"region\" aria-roledescription=\"carousel\" :aria-label=\"label\">\n    <div\n      ref=\"track\"\n      class=\"ds-carousel fade-x flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain border border-edge\"\n      :data-per-view=\"perView\"\n      tabindex=\"0\"\n      :aria-label=\"`${label}, use the arrow keys to move`\"\n      @scroll.passive=\"measure\"\n      @keydown=\"onKey\"\n    >\n      <div\n        v-for=\"i in count\"\n        :key=\"i\"\n        class=\"ds-carousel-slide shrink-0 snap-start border-e border-edge last:border-e-0\"\n        role=\"group\"\n        aria-roledescription=\"slide\"\n        :aria-label=\"`${i} of ${count}`\"\n      >\n        <slot name=\"slide\" :index=\"i - 1\" />\n      </div>\n    </div>\n    <div class=\"flex items-center justify-end gap-1\">\n      <Button variant=\"ghost\" icon :disabled=\"current <= 0\" :aria-label=\"`previous ${label}`\" @click=\"go(current - 1)\"><ChevronLeft :size=\"14\" :stroke-width=\"1.5\" aria-hidden=\"true\" /></Button>\n      <span class=\"min-w-12 text-center type-meta text-fg-muted tabular-nums\" aria-live=\"polite\">{{ current + 1 }} / {{ last + 1 }}</span>\n      <Button variant=\"ghost\" icon :disabled=\"current >= last\" :aria-label=\"`next ${label}`\" @click=\"go(current + 1)\"><ChevronRight :size=\"14\" :stroke-width=\"1.5\" aria-hidden=\"true\" /></Button>\n    </div>\n  </section>\n</template>\n\n<style>\n.ds-carousel { scrollbar-width: none; }\n.ds-carousel::-webkit-scrollbar { display: none; }\n.ds-carousel:focus-visible { outline-offset: var(--ds-border-focus); }\n.ds-carousel-slide { width: 100%; }\n@media (min-width: 768px) {\n  .ds-carousel[data-per-view=\"2\"] .ds-carousel-slide { width: 50%; }\n  .ds-carousel[data-per-view=\"3\"] .ds-carousel-slide { width: calc(100% / 3); }\n}\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Product",
+      "label": "Ways in",
+      "center": false,
+      "half": false,
+      "path": "examples/carousel/Product.vue",
+      "content": "<script setup lang=\"ts\">\nimport Carousel from '@/components/ui/Carousel.vue'\n// Ways data comes in, three in view on a wide screen and one on a phone: swipe, scroll or use the arrows.\nconst ways = [\n  { title: 'Connect an app', body: 'Slack, Notion, Gmail and 11 more, kept in sync.' },\n  { title: 'Upload files', body: 'PDFs, documents and spreadsheets, read page by page.' },\n  { title: 'Send by API', body: 'Write documents from your own code.' },\n  { title: 'Paste text', body: 'A note or a policy, searchable at once.' },\n  { title: 'Crawl a site', body: 'Your docs and help center, refreshed daily.' },\n]\n</script>\n\n<template>\n  <Carousel :count=\"ways.length\" label=\"ways to add data\" :per-view=\"3\">\n    <template #slide=\"{ index }\">\n      <div class=\"flex h-full flex-col gap-1 p-4\">\n        <span class=\"type-meta text-fg-muted tabular-nums\">{{ String(index + 1).padStart(2, '0') }}</span>\n        <span class=\"type-ui-strong\">{{ ways[index]!.title }}</span>\n        <span class=\"type-meta text-fg-muted\">{{ ways[index]!.body }}</span>\n      </div>\n    </template>\n  </Carousel>\n</template>\n",
+      "requires": [
+        "button"
+      ],
+      "packages": [
+        "lucide-vue-next"
+      ]
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/ui/Carousel.tsx",
+          "content": "'use client'\nimport { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'\nimport { ChevronLeft, ChevronRight } from 'lucide-react'\nimport { Button } from '@/react/components/ui/Button'\n\n// Slides in a row, one or more in view (new in Conare's style): square, a hairline round the track, the arrows as ghost\n// icon buttons with the place in tabular figures between them. Native scroll snap, so a swipe or a trackpad moves it as\n// the arrows do; arrow keys work on the focused track. Never plays on its own. Pass `count` and draw each slide with\n// `slide({ index })` (Vue's `#slide` scoped slot). `perView` sets how many show at 768px and up (one on phones).\nexport interface CarouselProps {\n  count: number\n  label: string\n  perView?: 1 | 2 | 3\n  /** Draws slide `index` (Vue's `#slide=\"{ index }\"`). */\n  slide?: (slot: { index: number }) => ReactNode\n}\n\nexport function Carousel({ count, label, perView = 1, slide }: CarouselProps) {\n  const track = useRef<HTMLDivElement | null>(null)\n  const [current, setCurrent] = useState(0)\n  const [visible, setVisible] = useState(1)\n  const last = Math.max(0, count - visible)\n  // measure() reads the latest count through a ref, as Vue's computed does.\n  const countRef = useRef(count)\n  countRef.current = count\n\n  function measure() {\n    const el = track.current\n    const first = el?.firstElementChild as HTMLElement | null\n    if (!el || !first) return\n    const v = Math.max(1, Math.round(el.clientWidth / first.offsetWidth))\n    setVisible(v)\n    setCurrent(Math.min(Math.max(0, countRef.current - v), Math.round(el.scrollLeft / first.offsetWidth)))\n  }\n  function go(i: number) {\n    const el = track.current\n    const first = el?.firstElementChild as HTMLElement | null\n    if (!el || !first) return\n    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches\n    el.scrollTo({ left: Math.max(0, Math.min(last, i)) * first.offsetWidth, behavior: reduce ? 'auto' : 'smooth' })\n  }\n  function onKey(e: KeyboardEvent) {\n    if (e.key === 'ArrowRight') { e.preventDefault(); go(current + 1) }\n    if (e.key === 'ArrowLeft') { e.preventDefault(); go(current - 1) }\n  }\n  useEffect(() => {\n    measure()\n    const ro = new ResizeObserver(measure)\n    if (track.current) ro.observe(track.current)\n    return () => ro.disconnect()\n  }, []) // eslint-disable-line react-hooks/exhaustive-deps\n\n  return (\n    <>\n      <style href=\"ds-carousel\" precedence=\"ds\">{css}</style>\n      <section data-ds=\"carousel\" className=\"flex flex-col gap-2\" role=\"region\" aria-roledescription=\"carousel\" aria-label={label}>\n        <div\n          ref={track}\n          className=\"ds-carousel fade-x flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain border border-edge\"\n          data-per-view={perView}\n          tabIndex={0}\n          aria-label={`${label}, use the arrow keys to move`}\n          onScroll={measure}\n          onKeyDown={onKey}\n        >\n          {Array.from({ length: count }, (_, k) => (\n            <div\n              key={k + 1}\n              className=\"ds-carousel-slide shrink-0 snap-start border-e border-edge last:border-e-0\"\n              role=\"group\"\n              aria-roledescription=\"slide\"\n              aria-label={`${k + 1} of ${count}`}\n            >\n              {slide?.({ index: k })}\n            </div>\n          ))}\n        </div>\n        <div className=\"flex items-center justify-end gap-1\">\n          <Button variant=\"ghost\" icon disabled={current <= 0} aria-label={`previous ${label}`} onClick={() => go(current - 1)}><ChevronLeft size={14} strokeWidth={1.5} aria-hidden=\"true\" /></Button>\n          <span className=\"min-w-12 text-center type-meta text-fg-muted tabular-nums\" aria-live=\"polite\">{`${current + 1} / ${last + 1}`}</span>\n          <Button variant=\"ghost\" icon disabled={current >= last} aria-label={`next ${label}`} onClick={() => go(current + 1)}><ChevronRight size={14} strokeWidth={1.5} aria-hidden=\"true\" /></Button>\n        </div>\n      </section>\n    </>\n  )\n}\n\nexport default Carousel\n\nconst css = `\n.ds-carousel { scrollbar-width: none; }\n.ds-carousel::-webkit-scrollbar { display: none; }\n.ds-carousel:focus-visible { outline-offset: var(--ds-border-focus); }\n.ds-carousel-slide { width: 100%; }\n@media (min-width: 768px) {\n  .ds-carousel[data-per-view=\"2\"] .ds-carousel-slide { width: 50%; }\n  .ds-carousel[data-per-view=\"3\"] .ds-carousel-slide { width: calc(100% / 3); }\n}\n`\n"
+        }
+      ],
+      "dependencies": [
+        "lucide-react@0.479.0"
+      ],
+      "registryDependencies": [
+        "button"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "Carousel",
+            "file": "react/components/ui/Carousel.tsx",
+            "props": [
+              {
+                "name": "count",
+                "type": "number",
+                "required": true
+              },
+              {
+                "name": "label",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "perView",
+                "type": "1 | 2 | 3",
+                "required": false,
+                "default": "1"
+              },
+              {
+                "name": "slide",
+                "type": "(slot: { index: number }) => ReactNode",
+                "required": false,
+                "description": "Draws slide `index` (Vue's `#slide=\"{ index }\"`)."
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Ways in",
+          "center": false,
+          "half": false,
+          "path": "react/examples/carousel/Product.tsx",
+          "content": "import { Carousel } from '@/react/components/ui/Carousel'\n// Ways data comes in, three in view on a wide screen and one on a phone: swipe, scroll or use the arrows.\nconst ways = [\n  { title: 'Connect an app', body: 'Slack, Notion, Gmail and 11 more, kept in sync.' },\n  { title: 'Upload files', body: 'PDFs, documents and spreadsheets, read page by page.' },\n  { title: 'Send by API', body: 'Write documents from your own code.' },\n  { title: 'Paste text', body: 'A note or a policy, searchable at once.' },\n  { title: 'Crawl a site', body: 'Your docs and help center, refreshed daily.' },\n]\n\nexport default function Product() {\n  return (\n    <Carousel\n      count={ways.length}\n      label=\"ways to add data\"\n      perView={3}\n      slide={({ index }) => (\n        <div className=\"flex h-full flex-col gap-1 p-4\">\n          <span className=\"type-meta text-fg-muted tabular-nums\">{String(index + 1).padStart(2, '0')}</span>\n          <span className=\"type-ui-strong\">{ways[index]!.title}</span>\n          <span className=\"type-meta text-fg-muted\">{ways[index]!.body}</span>\n        </div>\n      )}\n    />\n  )\n}\n",
+          "registryDependencies": [
+            "button"
+          ],
+          "dependencies": [
+            "lucide-react@0.479.0"
+          ]
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/ui/carousel.ts",
+          "content": "import { html, LitElement, type PropertyValues } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport { icon } from '@/elements/lib/icon'\nimport { ChevronLeft, ChevronRight } from 'lucide'\nimport '@/elements/components/ui/button'\nimport styles from 'virtual:tw'\n\n// Carousel.vue as <conare-carousel>: slides in a row, one or more in view (new in Conare's style): square, a hairline\n// round the track, the arrows as ghost icon buttons with the place in tabular figures between them. Native scroll snap,\n// so a swipe or a trackpad moves it as the arrows do; arrow keys work on the focused track. Never plays on its own.\n// Each child element is a slide (Vue's `count` and `#slide` scoped slot): the element puts each in its own slide box.\n// `per-view` sets how many show at 768px and up (one on phones).\n\n/**\n * @summary Slides in a row with arrows and the place between them.\n * @slot - The slides: each child element is one.\n */\nexport class Carousel extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\t// Each child goes into its own slide's slot, assigned by the element.\n\tstatic shadowRootOptions = { ...LitElement.shadowRootOptions, slotAssignment: 'manual' as const }\n\tstatic properties = { label: {}, perView: { type: Number, attribute: 'per-view' }, current: { state: true }, visible: { state: true }, slides: { state: true } }\n\n\t/** What it holds, for assistive tech (\"ways to add data\"). */\n\tlabel = ''\n\t/** How many show at 768px and up. */\n\tperView: 1 | 2 | 3 = 1\n\tprivate current = 0\n\tprivate visible = 1\n\tprivate slides: Element[] = []\n\tprivate ro?: ResizeObserver\n\tprivate mo?: MutationObserver\n\n\tprivate get count() {\n\t\treturn this.slides.length\n\t}\n\tprivate get last() {\n\t\treturn Math.max(0, this.count - this.visible)\n\t}\n\tprivate get track() {\n\t\treturn this.renderRoot.querySelector<HTMLElement>('.ds-carousel')\n\t}\n\n\tprivate measure = () => {\n\t\tconst el = this.track\n\t\tconst first = el?.firstElementChild as HTMLElement | null\n\t\tif (!el || !first) return\n\t\tthis.visible = Math.max(1, Math.round(el.clientWidth / first.offsetWidth))\n\t\tthis.current = Math.min(this.last, Math.round(el.scrollLeft / first.offsetWidth))\n\t}\n\tprivate go(i: number) {\n\t\tconst el = this.track\n\t\tconst first = el?.firstElementChild as HTMLElement | null\n\t\tif (!el || !first) return\n\t\tconst reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches\n\t\tel.scrollTo({ left: Math.max(0, Math.min(this.last, i)) * first.offsetWidth, behavior: reduce ? 'auto' : 'smooth' })\n\t}\n\tprivate onKey = (e: KeyboardEvent) => {\n\t\tif (e.key === 'ArrowRight') {\n\t\t\te.preventDefault()\n\t\t\tthis.go(this.current + 1)\n\t\t}\n\t\tif (e.key === 'ArrowLeft') {\n\t\t\te.preventDefault()\n\t\t\tthis.go(this.current - 1)\n\t\t}\n\t}\n\n\tconnectedCallback() {\n\t\tsuper.connectedCallback()\n\t\tthis.slides = [...this.children]\n\t\tthis.mo = new MutationObserver(() => { this.slides = [...this.children] })\n\t\tthis.mo.observe(this, { childList: true })\n\t}\n\tdisconnectedCallback() {\n\t\tsuper.disconnectedCallback()\n\t\tthis.mo?.disconnect()\n\t\tthis.ro?.disconnect()\n\t}\n\n\tprotected firstUpdated(changed: PropertyValues) {\n\t\tsuper.firstUpdated(changed)\n\t\tthis.measure()\n\t\tthis.ro = new ResizeObserver(this.measure)\n\t\tif (this.track) this.ro.observe(this.track)\n\t}\n\n\tprotected updated(changed: PropertyValues) {\n\t\tsuper.updated(changed)\n\t\tconst slots = this.renderRoot.querySelectorAll<HTMLSlotElement>('slot')\n\t\tthis.slides.forEach((s, k) => slots[k]?.assign(s))\n\t}\n\n\trender() {\n\t\tconst count = this.count\n\t\tconst last = this.last\n\t\tconst button = tag('button')\n\t\treturn html`<section data-ds=\"carousel\" class=\"flex flex-col gap-2\" role=\"region\" aria-roledescription=\"carousel\" aria-label=${this.label}><div class=\"ds-carousel fade-x flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain border border-edge\" data-per-view=${this.perView} tabindex=\"0\" aria-label=${`${this.label}, use the arrow keys to move`} @scroll=${this.measure} @keydown=${this.onKey}>${this.slides.map((_, k) => html`<div class=\"ds-carousel-slide shrink-0 snap-start border-e border-edge last:border-e-0\" role=\"group\" aria-roledescription=\"slide\" aria-label=${`${k + 1} of ${count}`}><slot></slot></div>`)}</div><div class=\"flex items-center justify-end gap-1\">${staticHtml`<${button} variant=\"ghost\" icon ?disabled=${this.current <= 0} aria-label=${`previous ${this.label}`} @click=${() => this.go(this.current - 1)}>${icon(ChevronLeft, 'chevron-left', { size: 14, strokeWidth: 1.5, attrs: { 'aria-hidden': 'true' } })}</${button}>`}<span class=\"min-w-12 text-center type-meta text-fg-muted tabular-nums\" aria-live=\"polite\">${`${this.current + 1} / ${last + 1}`}</span>${staticHtml`<${button} variant=\"ghost\" icon ?disabled=${this.current >= last} aria-label=${`next ${this.label}`} @click=${() => this.go(this.current + 1)}>${icon(ChevronRight, 'chevron-right', { size: 14, strokeWidth: 1.5, attrs: { 'aria-hidden': 'true' } })}</${button}>`}</div></section>`\n\t}\n}\n\ndefine('carousel', Carousel)\n"
+        },
+        {
+          "path": "elements/components/ui/carousel.css",
+          "content": "/* Carousel.vue's <style>, as it is. */\n.ds-carousel { scrollbar-width: none; }\n.ds-carousel::-webkit-scrollbar { display: none; }\n.ds-carousel:focus-visible { outline-offset: var(--ds-border-focus); }\n.ds-carousel-slide { width: 100%; }\n@media (min-width: 768px) {\n  .ds-carousel[data-per-view=\"2\"] .ds-carousel-slide { width: 50%; }\n  .ds-carousel[data-per-view=\"3\"] .ds-carousel-slide { width: calc(100% / 3); }\n}\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/carousel.js",
+        "elements/button.js"
+      ],
+      "tag": "conare-carousel",
+      "tags": [
+        "conare-carousel"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "button"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-carousel",
+            "name": "Carousel",
+            "module": "elements/carousel.js",
+            "description": "Slides in a row with arrows and the place between them.",
+            "attributes": [
+              {
+                "name": "label",
+                "field": "label",
+                "type": "string",
+                "default": "''",
+                "description": "What it holds, for assistive tech (\"ways to add data\")."
+              },
+              {
+                "name": "per-view",
+                "field": "perView",
+                "type": "1 | 2 | 3",
+                "default": "1",
+                "description": "How many show at 768px and up."
+              },
+              {
+                "name": "current",
+                "field": "current",
+                "type": "number",
+                "default": "0"
+              },
+              {
+                "name": "visible",
+                "field": "visible",
+                "type": "number",
+                "default": "1"
+              },
+              {
+                "name": "slides",
+                "field": "slides",
+                "type": "Element[]",
+                "default": "[]"
+              }
+            ],
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "''",
+                "description": "What it holds, for assistive tech (\"ways to add data\").",
+                "attribute": "label"
+              },
+              {
+                "name": "perView",
+                "type": "1 | 2 | 3",
+                "default": "1",
+                "description": "How many show at 768px and up.",
+                "attribute": "per-view"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "",
+                "description": "The slides: each child element is one."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Product",
+          "label": "Ways in",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/carousel/Product.html",
+          "content": "<!-- Ways data comes in, three in view on a wide screen and one on a phone: swipe, scroll or use the arrows. Each child\n     is a slide. -->\n<conare-carousel label=\"ways to add data\" per-view=\"3\">\n  <div class=\"flex h-full flex-col gap-1 p-4\">\n    <span class=\"type-meta text-fg-muted tabular-nums\">01</span>\n    <span class=\"type-ui-strong\">Connect an app</span>\n    <span class=\"type-meta text-fg-muted\">Slack, Notion, Gmail and 11 more, kept in sync.</span>\n  </div>\n  <div class=\"flex h-full flex-col gap-1 p-4\">\n    <span class=\"type-meta text-fg-muted tabular-nums\">02</span>\n    <span class=\"type-ui-strong\">Upload files</span>\n    <span class=\"type-meta text-fg-muted\">PDFs, documents and spreadsheets, read page by page.</span>\n  </div>\n  <div class=\"flex h-full flex-col gap-1 p-4\">\n    <span class=\"type-meta text-fg-muted tabular-nums\">03</span>\n    <span class=\"type-ui-strong\">Send by API</span>\n    <span class=\"type-meta text-fg-muted\">Write documents from your own code.</span>\n  </div>\n  <div class=\"flex h-full flex-col gap-1 p-4\">\n    <span class=\"type-meta text-fg-muted tabular-nums\">04</span>\n    <span class=\"type-ui-strong\">Paste text</span>\n    <span class=\"type-meta text-fg-muted\">A note or a policy, searchable at once.</span>\n  </div>\n  <div class=\"flex h-full flex-col gap-1 p-4\">\n    <span class=\"type-meta text-fg-muted tabular-nums\">05</span>\n    <span class=\"type-ui-strong\">Crawl a site</span>\n    <span class=\"type-meta text-fg-muted\">Your docs and help center, refreshed daily.</span>\n  </div>\n</conare-carousel>\n"
+        }
+      ]
+    }
+  }
+}

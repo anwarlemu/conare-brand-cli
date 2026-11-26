@@ -1,0 +1,298 @@
+{
+  "name": "site-header",
+  "title": "Site header",
+  "type": "registry:ui",
+  "group": "site",
+  "description": "The website header: the logo, the Product menu and the links on the page's true center with a paper block gliding under them, the two buttons at the edge; below 768px a square button folds the links into a sheet.",
+  "use_for": "The top of every website page.",
+  "never": [
+    "A translucent bar: the red footer under the page would tint it",
+    "More than one dark button in it"
+  ],
+  "source": "conare-web app/components/home/Header.vue, app/composables/useNavMarks.ts, app/assets/css/home.css (.nav-mark, .nav-link, .menu-btn, .menu-grid, .mobile-menu)",
+  "body": "`actions` renders twice, in the bar and in the phone sheet (`place` says which). Mark where the reader is with a link's\n`current`, or `product-current` while the products are on screen.\n\nOn a phone, a menu taller than the screen scrolls under a fade (`fade-y`).",
+  "requires": [
+    "product-menu"
+  ],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/site/SiteHeader.vue",
+      "content": "<script setup lang=\"ts\">\nimport { nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'\nimport ProductMenu, { type ProductMenuItem } from '@/components/site/ProductMenu.vue'\n\n// The website header (home/Header.vue): solid off-white, 64px, a hairline under it, three columns so the links sit on\n// the page's true center whatever the widths of the logo (slot `logo`) and the buttons (slot `actions`). The links are\n// 14px soft, the Product menu first. Two paper blocks glide under them on transform: one rests on the current link\n// (`current`, or `productCurrent`) with its red square, the other follows the pointer or focus, appearing in place on\n// the first link and fading when it leaves the row. Below 768px the links fold into a sheet under the bar, opened by a\n// square button whose 3 by 3 red squares turn into an X: the sheet unrolls on a clip and its rows rise in one after\n// another; a link, Escape or a wider window closes it, quickly and all at once. `actions` renders twice, with\n// `place` 'bar' or 'sheet'.\nexport interface SiteLink { label: string, href: string, current?: boolean }\nconst props = withDefaults(defineProps<{\n  items: ProductMenuItem[]\n  more?: ProductMenuItem[]\n  links: SiteLink[]\n  productCurrent?: boolean\n  homeHref?: string\n  homeLabel?: string\n}>(), { more: () => [], homeHref: '/', homeLabel: 'home' })\n\nconst menu = ref(false)\nconst sheetId = `site-menu-${useId()}`\nfunction onKey(event: KeyboardEvent) { if (event.key === 'Escape') menu.value = false }\nlet mq: MediaQueryList | undefined\nconst onWide = (event: MediaQueryListEvent) => { if (event.matches) menu.value = false }\n\n// The two blocks: x and width of the item they sit under, drawn as a 1px block scaled to it so only transform moves.\ninterface Mark { x: number, w: number, shown: boolean, instant: boolean }\nconst row = ref<HTMLElement | null>(null)\nconst restMark = ref<Mark | null>(null)\nconst hoverMark = ref<Mark | null>(null)\nfunction measure(item: HTMLElement, mark: Mark | null): Mark | null {\n  if (!row.value) return mark\n  return { x: item.getBoundingClientRect().left - row.value.getBoundingClientRect().left, w: item.offsetWidth, shown: true, instant: !mark?.shown }\n}\nfunction point(event: Event) {\n  const item = (event.target as HTMLElement).closest<HTMLElement>('[data-nav-item]')\n  if (item) hoverMark.value = measure(item, hoverMark.value)\n}\nfunction rest(instant = false) {\n  const here = row.value?.querySelector<HTMLElement>('[data-nav-item][aria-current]')\n  if (here) restMark.value = measure(here, instant ? null : restMark.value)\n  else if (restMark.value) restMark.value = { ...restMark.value, shown: false }\n}\nfunction leave(event?: FocusEvent) {\n  if (event && row.value?.contains(event.relatedTarget as Node)) return\n  if (hoverMark.value) hoverMark.value = { ...hoverMark.value, shown: false }\n}\nwatch(() => [props.productCurrent, props.links.map(l => l.current)], () => nextTick(() => rest()), { deep: true })\n\n// The page's first frame places the blocks and colors without gliding into them.\nconst ready = ref(false)\nonMounted(() => {\n  document.addEventListener('keydown', onKey)\n  mq = window.matchMedia('(min-width: 768px)')\n  mq.addEventListener('change', onWide)\n  rest(true)\n  void document.fonts?.ready.then(() => rest(true))\n  requestAnimationFrame(() => requestAnimationFrame(() => { ready.value = true }))\n})\nonBeforeUnmount(() => {\n  document.removeEventListener('keydown', onKey)\n  mq?.removeEventListener('change', onWide)\n})\n// Pointer activation toggles on pointerdown; detail 0 is the keyboard.\nfunction onMenuClick(event: MouseEvent) { if (event.detail === 0) menu.value = !menu.value }\nconst markStyle = (m: Mark | null) => (m ? { transform: `translateX(${m.x}px) scaleX(${m.w})` } : undefined)\nconst rowsBefore = () => props.items.length + props.more.length\n</script>\n\n<template>\n  <header data-ds=\"site-header\" class=\"sticky top-0 z-20 border-b border-edge bg-surface\" :data-ready=\"ready || undefined\">\n    <div class=\"mx-auto grid h-16 max-w-[1440px] grid-cols-[1fr_auto_1fr] items-center px-4 sm:px-6 lg:px-10\">\n      <a :href=\"homeHref\" :aria-label=\"homeLabel\" class=\"flex shrink-0 justify-self-start outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-edge-focus\"><slot name=\"logo\" /></a>\n\n      <!-- role=\"navigation\" rather than <nav>, as the website's. -->\n      <div role=\"navigation\" aria-label=\"primary\" class=\"hidden md:block\">\n        <ul ref=\"row\" class=\"relative flex items-center gap-1 text-body leading-none text-fg-soft\" @pointerover=\"point\" @focusin=\"point\" @pointerleave=\"leave()\" @focusout=\"leave\">\n          <li\n            v-for=\"(m, k) in [restMark, hoverMark]\"\n            v-show=\"m\"\n            :key=\"k\"\n            aria-hidden=\"true\"\n            class=\"ds-site-mark pointer-events-none absolute inset-y-0 left-0 my-auto h-7.5 w-px origin-left bg-surface-subtle\"\n            :data-shown=\"m?.shown || undefined\"\n            :data-instant=\"m?.instant || undefined\"\n            :style=\"markStyle(m)\"\n          />\n          <ProductMenu :items=\"items\" :more=\"more\" :current=\"productCurrent\" />\n          <li v-for=\"link in links\" :key=\"link.label\" class=\"relative flex\">\n            <a\n              :href=\"link.href\"\n              data-nav-item\n              :aria-current=\"link.current ? 'page' : undefined\"\n              class=\"ds-navlink-site relative flex items-center py-2 hover:text-fg\"\n              :class=\"link.current ? 'gap-1.5 px-2.5 text-fg' : 'px-4'\"\n            >\n              <span v-if=\"link.current\" aria-hidden=\"true\" class=\"size-1.5 shrink-0 bg-home-red\" />\n              {{ link.label }}\n            </a>\n          </li>\n        </ul>\n      </div>\n\n      <div class=\"col-start-3 flex gap-2 justify-self-end\">\n        <div class=\"flex gap-2 max-md:hidden\"><slot name=\"actions\" place=\"bar\" /></div>\n        <button\n          type=\"button\"\n          class=\"ds-site-menu-btn flex size-6.5 cursor-pointer items-center justify-center border border-edge-strong text-fg transition-[border-color] duration-200 ease-standard hover:border-edge-focus focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-edge-focus md:hidden\"\n          :data-open=\"menu || undefined\"\n          :aria-expanded=\"menu\"\n          :aria-controls=\"sheetId\"\n          :aria-label=\"menu ? 'Close menu' : 'Open menu'\"\n          @pointerdown=\"menu = !menu\"\n          @click=\"onMenuClick\"\n        >\n          <span aria-hidden=\"true\" class=\"ds-site-grid\"><i v-for=\"k in 9\" :key=\"k\" :data-edge=\"k % 2 === 0 || undefined\" /></span>\n        </button>\n      </div>\n    </div>\n\n    <!-- The sheet unrolls from under the bar; closed, it is inert, so out of the tab order. -->\n    <div :id=\"sheetId\" class=\"ds-site-sheet fade-y absolute inset-x-0 top-full max-h-[calc(100dvh-4rem)] overflow-y-auto border-b border-edge bg-surface md:hidden\" :data-open=\"menu || undefined\" :inert=\"!menu\">\n      <div class=\"mx-auto max-w-[1440px] px-4 pt-4 pb-5 sm:px-6\">\n        <p class=\"ds-site-row ds-site-caps px-1 pb-1 text-caption text-fg-muted\" style=\"--i: 0\">Product</p>\n        <ul class=\"border-b border-edge pb-3\">\n          <li v-for=\"(item, i) in [...items, ...more]\" :key=\"item.label\" class=\"ds-site-row\" :style=\"{ '--i': i + 1 }\">\n            <a :href=\"item.href\" class=\"block px-1 py-2\" @click=\"menu = false\">\n              <span class=\"block text-body-lg leading-5 font-medium text-fg\">{{ item.label }}</span>\n              <span class=\"block text-ui leading-5 text-fg-muted\">{{ item.desc }}</span>\n            </a>\n          </li>\n        </ul>\n        <ul class=\"pt-2\">\n          <li v-for=\"(link, j) in links\" :key=\"link.label\" class=\"ds-site-row\" :style=\"{ '--i': rowsBefore() + 1 + j }\">\n            <a :href=\"link.href\" class=\"block px-1 py-2.5 text-body-lg leading-5 text-fg\" :aria-current=\"link.current ? 'page' : undefined\" @click=\"menu = false\">{{ link.label }}</a>\n          </li>\n        </ul>\n        <div class=\"ds-site-row mt-4 grid grid-cols-2 gap-2\" :style=\"{ '--i': rowsBefore() + links.length + 1 }\" @click=\"menu = false\">\n          <slot name=\"actions\" place=\"sheet\" />\n        </div>\n      </div>\n    </div>\n  </header>\n</template>\n\n<style>\n.ds-site-caps { letter-spacing: var(--ds-tracking-tag); text-transform: uppercase; }\n/* The blocks glide on transform (the Product menu's pace); arriving from outside they fade in where they land. */\n.ds-site-mark { opacity: 0; transition: transform var(--ds-duration-glide) var(--ds-easing-standard), opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-site-mark[data-shown] { opacity: 1; }\n.ds-site-mark[data-instant] { transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }\nheader:not([data-ready]) :is(.ds-site-mark, .ds-navlink-site) { transition: none; }\n.ds-site-menu-btn:active { background: var(--ds-color-surface-subtle); }\n/* The menu button's 3 by 3 in red: open, the four edge squares fade away while the corners and center grow from 3px\n   to 5px, just enough to meet corner to corner, and the grid turns a quarter, so the five read as an X. */\n.ds-site-grid { display: grid; grid-template-columns: repeat(3, 3px); gap: 2px; transition: transform var(--ds-duration-morph) var(--ds-easing-swap); }\n.ds-site-grid i { width: 3px; height: 3px; background: var(--ds-color-home-red); transition: transform var(--ds-duration-morph) var(--ds-easing-swap) 80ms, opacity var(--ds-duration-morph) var(--ds-easing-swap) 80ms; }\n.ds-site-menu-btn[data-open] .ds-site-grid { transform: rotate(90deg); }\n.ds-site-menu-btn[data-open] .ds-site-grid i { transform: scale(1.667); }\n.ds-site-menu-btn[data-open] .ds-site-grid i[data-edge] { opacity: 0; transform: scale(0.5); transition-delay: 0ms; }\n/* The sheet unrolls downward on a clip (no layout moves) and its rows rise 6px and fade in 28ms apart; closing, it\n   rolls back up quickly and all at once. */\n.ds-site-sheet { visibility: hidden; clip-path: inset(0 0 100% 0); transition: clip-path var(--ds-duration-exit) var(--ds-easing-standard), visibility 0s linear var(--ds-duration-exit); }\n.ds-site-sheet[data-open] { visibility: visible; clip-path: inset(0 0 -1px 0); transition: clip-path var(--ds-duration-entrance) var(--ds-easing-out), visibility 0s; }\n.ds-site-row { opacity: 0; transform: translateY(6px); transition: opacity var(--ds-duration-exit) var(--ds-easing-standard), transform 0s linear var(--ds-duration-exit); }\n.ds-site-sheet[data-open] .ds-site-row { opacity: 1; transform: none; transition: opacity var(--ds-duration-entrance) var(--ds-easing-out), transform var(--ds-duration-entrance) var(--ds-easing-out); transition-delay: calc(80ms + var(--i) * 28ms); }\n@media (prefers-reduced-motion: reduce) {\n  .ds-site-mark, .ds-site-grid, .ds-site-grid i, .ds-site-sheet, .ds-site-sheet[data-open] { transition: none; }\n  .ds-site-row, .ds-site-sheet[data-open] .ds-site-row { transform: none; transition: opacity var(--ds-duration-enter) var(--ds-easing-standard); transition-delay: 0ms; }\n}\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "The website header",
+      "center": false,
+      "half": false,
+      "path": "examples/site-header/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport Button from '@/components/ui/Button.vue'\nimport PixelButton from '@/components/ui/PixelButton.vue'\nimport SiteHeader from '@/components/site/SiteHeader.vue'\n// The website header with the Product menu. Below 768px the links fold into the sheet behind the square button.\nconst items = [\n  { label: 'Search', desc: 'Store documents and query them.', href: '#search' },\n  { label: 'Sync', desc: 'Keep your apps in a namespace.', href: '#sync' },\n  { label: 'Parse', desc: 'Read any file in full, every row and cell.', href: '#parse' },\n  { label: 'Embed', desc: 'Embeddings for any vector database.', href: '#embed' },\n  { label: 'Rerank', desc: 'Put the best passages first.', href: '#rerank' },\n]\nconst more = [\n  { label: 'Benchmarks', desc: 'Accuracy you can check, losses included.', href: '#benchmarks' },\n  { label: 'Price vs accuracy', desc: 'Most accurate, and the cheapest.', href: '#price' },\n]\nconst links = [{ label: 'FAQ', href: '#faq' }, { label: 'Pricing', href: '#pricing', current: true }, { label: 'Docs', href: '#docs' }]\n</script>\n\n<template>\n  <div class=\"relative -m-8 min-h-150\">\n    <SiteHeader :items=\"items\" :more=\"more\" :links=\"links\" home-label=\"Acme home\">\n      <template #logo><img src=\"/conare-ds/logo/svg/primary-logo.svg\" alt=\"\" width=\"147\" height=\"24\" class=\"h-6 w-auto\"></template>\n      <template #actions>\n        <Button href=\"#contact\">Contact us</Button>\n        <PixelButton href=\"#dashboard\">Dashboard</PixelButton>\n      </template>\n    </SiteHeader>\n  </div>\n</template>\n",
+      "requires": [
+        "button",
+        "product-menu"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/site/SiteHeader.tsx",
+          "content": "'use client'\nimport { useEffect, useId, useRef, useState, type CSSProperties, type FocusEvent, type ReactNode, type SyntheticEvent } from 'react'\nimport { cn } from '@/react/lib/cn'\nimport { ProductMenu, type ProductMenuItem } from '@/react/components/site/ProductMenu'\n\n// The website header (home/Header.vue): solid off-white, 64px, a hairline under it, three columns so the links sit on\n// the page's true center whatever the widths of the logo (`logo`) and the buttons (`actions`). The links are\n// 14px soft, the Product menu first. Two paper blocks glide under them on transform: one rests on the current link\n// (`current`, or `productCurrent`) with its red square, the other follows the pointer or focus, appearing in place on\n// the first link and fading when it leaves the row. Below 768px the links fold into a sheet under the bar, opened by a\n// square button whose 3 by 3 red squares turn into an X: the sheet unrolls on a clip and its rows rise in one after\n// another; a link, Escape or a wider window closes it, quickly and all at once. `actions` renders twice, given\n// `place` 'bar' or 'sheet'.\nexport interface SiteLink { label: string, href: string, current?: boolean }\nexport interface SiteHeaderProps {\n  items: ProductMenuItem[]\n  more?: ProductMenuItem[]\n  links: SiteLink[]\n  productCurrent?: boolean\n  homeHref?: string\n  homeLabel?: string\n  /** The logo in the home link (Vue's `logo` slot). */\n  logo?: ReactNode\n  /** The buttons, drawn for the bar and again for the sheet (Vue's `#actions=\"{ place }\"`). */\n  actions?: (slot: { place: 'bar' | 'sheet' }) => ReactNode\n}\n\n// The two blocks: x and width of the item they sit under, drawn as a 1px block scaled to it so only transform moves.\ninterface Mark { x: number, w: number, shown: boolean, instant: boolean }\nconst markStyle = (m: Mark | null) => (m ? { transform: `translateX(${m.x}px) scaleX(${m.w})` } : undefined)\n\nexport function SiteHeader({ items, more = [], links, productCurrent, homeHref = '/', homeLabel = 'home', logo, actions }: SiteHeaderProps) {\n  const [menu, setMenu] = useState(false)\n  const sheetId = `site-menu-${useId()}`\n  const row = useRef<HTMLUListElement | null>(null)\n  const [restMark, setRestMark] = useState<Mark | null>(null)\n  const [hoverMark, setHoverMark] = useState<Mark | null>(null)\n  const restNow = useRef<Mark | null>(null)\n  const hoverNow = useRef<Mark | null>(null)\n  const setRest = (m: Mark | null) => { restNow.current = m; setRestMark(m) }\n  const setHover = (m: Mark | null) => { hoverNow.current = m; setHoverMark(m) }\n\n  function measure(item: HTMLElement, mark: Mark | null): Mark | null {\n    if (!row.current) return mark\n    return { x: item.getBoundingClientRect().left - row.current.getBoundingClientRect().left, w: item.offsetWidth, shown: true, instant: !mark?.shown }\n  }\n  function point(event: SyntheticEvent) {\n    const item = (event.target as HTMLElement).closest<HTMLElement>('[data-nav-item]')\n    if (item) setHover(measure(item, hoverNow.current))\n  }\n  function rest(instant = false) {\n    const here = row.current?.querySelector<HTMLElement>('[data-nav-item][aria-current]')\n    if (here) setRest(measure(here, instant ? null : restNow.current))\n    else if (restNow.current) setRest({ ...restNow.current, shown: false })\n  }\n  function leave(event?: FocusEvent) {\n    if (event && row.current?.contains(event.relatedTarget as Node)) return\n    if (hoverNow.current) setHover({ ...hoverNow.current, shown: false })\n  }\n  // A new current link: the resting block goes there (after the render, as Vue's nextTick).\n  const currentKey = [productCurrent, ...links.map(l => l.current)].join()\n  const first = useRef(true)\n  useEffect(() => {\n    if (first.current) { first.current = false; return }\n    rest()\n  }, [currentKey]) // eslint-disable-line react-hooks/exhaustive-deps\n\n  // The page's first frame places the blocks and colors without gliding into them.\n  const [ready, setReady] = useState(false)\n  useEffect(() => {\n    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') setMenu(false) }\n    const mq = window.matchMedia('(min-width: 768px)')\n    const onWide = (event: MediaQueryListEvent) => { if (event.matches) setMenu(false) }\n    document.addEventListener('keydown', onKey)\n    mq.addEventListener('change', onWide)\n    rest(true)\n    void document.fonts?.ready.then(() => rest(true))\n    requestAnimationFrame(() => requestAnimationFrame(() => setReady(true)))\n    return () => {\n      document.removeEventListener('keydown', onKey)\n      mq.removeEventListener('change', onWide)\n    }\n  }, []) // eslint-disable-line react-hooks/exhaustive-deps\n  const rowsBefore = items.length + more.length\n\n  return (\n    <>\n      <style href=\"ds-site-header\" precedence=\"ds\">{css}</style>\n      <header data-ds=\"site-header\" className=\"sticky top-0 z-20 border-b border-edge bg-surface\" data-ready={ready || undefined}>\n        <div className=\"mx-auto grid h-16 max-w-[1440px] grid-cols-[1fr_auto_1fr] items-center px-4 sm:px-6 lg:px-10\">\n          <a href={homeHref} aria-label={homeLabel} className=\"flex shrink-0 justify-self-start outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-edge-focus\">{logo}</a>\n\n          {/* role=\"navigation\" rather than <nav>, as the website's. */}\n          <div role=\"navigation\" aria-label=\"primary\" className=\"hidden md:block\">\n            <ul ref={row} className=\"relative flex items-center gap-1 text-body leading-none text-fg-soft\" onPointerOver={point} onFocus={point} onPointerLeave={() => leave()} onBlur={leave}>\n              {[restMark, hoverMark].map((m, k) => (\n                <li\n                  key={k}\n                  aria-hidden=\"true\"\n                  className=\"ds-site-mark pointer-events-none absolute inset-y-0 left-0 my-auto h-7.5 w-px origin-left bg-surface-subtle\"\n                  data-shown={m?.shown || undefined}\n                  data-instant={m?.instant || undefined}\n                  style={{ ...markStyle(m), ...(m ? {} : { display: 'none' }) }}\n                />\n              ))}\n              <ProductMenu items={items} more={more} current={productCurrent} />\n              {links.map(link => (\n                <li key={link.label} className=\"relative flex\">\n                  <a\n                    href={link.href}\n                    data-nav-item\n                    aria-current={link.current ? 'page' : undefined}\n                    className={cn('ds-navlink-site relative flex items-center py-2 hover:text-fg', link.current ? 'gap-1.5 px-2.5 text-fg' : 'px-4')}\n                  >\n                    {link.current && <span aria-hidden=\"true\" className=\"size-1.5 shrink-0 bg-home-red\" />}\n                    {link.label}\n                  </a>\n                </li>\n              ))}\n            </ul>\n          </div>\n\n          <div className=\"col-start-3 flex gap-2 justify-self-end\">\n            <div className=\"flex gap-2 max-md:hidden\">{actions?.({ place: 'bar' })}</div>\n            <button\n              type=\"button\"\n              className=\"ds-site-menu-btn flex size-6.5 cursor-pointer items-center justify-center border border-edge-strong text-fg transition-[border-color] duration-200 ease-standard hover:border-edge-focus focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-edge-focus md:hidden\"\n              data-open={menu || undefined}\n              aria-expanded={menu}\n              aria-controls={sheetId}\n              aria-label={menu ? 'Close menu' : 'Open menu'}\n              onPointerDown={() => setMenu(m => !m)}\n              // Pointer activation toggles on pointerdown; detail 0 is the keyboard.\n              onClick={(e) => { if (e.detail === 0) setMenu(m => !m) }}\n            >\n              <span aria-hidden=\"true\" className=\"ds-site-grid\">{Array.from({ length: 9 }, (_, i) => <i key={i + 1} data-edge={(i + 1) % 2 === 0 || undefined} />)}</span>\n            </button>\n          </div>\n        </div>\n\n        {/* The sheet unrolls from under the bar; closed, it is inert, so out of the tab order. */}\n        <div id={sheetId} className=\"ds-site-sheet fade-y absolute inset-x-0 top-full max-h-[calc(100dvh-4rem)] overflow-y-auto border-b border-edge bg-surface md:hidden\" data-open={menu || undefined} inert={!menu}>\n          <div className=\"mx-auto max-w-[1440px] px-4 pt-4 pb-5 sm:px-6\">\n            <p className=\"ds-site-row ds-site-caps px-1 pb-1 text-caption text-fg-muted\" style={{ '--i': 0 } as CSSProperties}>Product</p>\n            <ul className=\"border-b border-edge pb-3\">\n              {[...items, ...more].map((item, i) => (\n                <li key={item.label} className=\"ds-site-row\" style={{ '--i': i + 1 } as CSSProperties}>\n                  <a href={item.href} className=\"block px-1 py-2\" onClick={() => setMenu(false)}>\n                    <span className=\"block text-body-lg leading-5 font-medium text-fg\">{item.label}</span>\n                    <span className=\"block text-ui leading-5 text-fg-muted\">{item.desc}</span>\n                  </a>\n                </li>\n              ))}\n            </ul>\n            <ul className=\"pt-2\">\n              {links.map((link, j) => (\n                <li key={link.label} className=\"ds-site-row\" style={{ '--i': rowsBefore + 1 + j } as CSSProperties}>\n                  <a href={link.href} className=\"block px-1 py-2.5 text-body-lg leading-5 text-fg\" aria-current={link.current ? 'page' : undefined} onClick={() => setMenu(false)}>{link.label}</a>\n                </li>\n              ))}\n            </ul>\n            <div className=\"ds-site-row mt-4 grid grid-cols-2 gap-2\" style={{ '--i': rowsBefore + links.length + 1 } as CSSProperties} onClick={() => setMenu(false)}>\n              {actions?.({ place: 'sheet' })}\n            </div>\n          </div>\n        </div>\n      </header>\n    </>\n  )\n}\n\nexport default SiteHeader\n\nconst css = `\n.ds-site-caps { letter-spacing: var(--ds-tracking-tag); text-transform: uppercase; }\n/* The blocks glide on transform (the Product menu's pace); arriving from outside they fade in where they land. */\n.ds-site-mark { opacity: 0; transition: transform var(--ds-duration-glide) var(--ds-easing-standard), opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-site-mark[data-shown] { opacity: 1; }\n.ds-site-mark[data-instant] { transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }\nheader:not([data-ready]) :is(.ds-site-mark, .ds-navlink-site) { transition: none; }\n.ds-site-menu-btn:active { background: var(--ds-color-surface-subtle); }\n/* The menu button's 3 by 3 in red: open, the four edge squares fade away while the corners and center grow from 3px\n   to 5px, just enough to meet corner to corner, and the grid turns a quarter, so the five read as an X. */\n.ds-site-grid { display: grid; grid-template-columns: repeat(3, 3px); gap: 2px; transition: transform var(--ds-duration-morph) var(--ds-easing-swap); }\n.ds-site-grid i { width: 3px; height: 3px; background: var(--ds-color-home-red); transition: transform var(--ds-duration-morph) var(--ds-easing-swap) 80ms, opacity var(--ds-duration-morph) var(--ds-easing-swap) 80ms; }\n.ds-site-menu-btn[data-open] .ds-site-grid { transform: rotate(90deg); }\n.ds-site-menu-btn[data-open] .ds-site-grid i { transform: scale(1.667); }\n.ds-site-menu-btn[data-open] .ds-site-grid i[data-edge] { opacity: 0; transform: scale(0.5); transition-delay: 0ms; }\n/* The sheet unrolls downward on a clip (no layout moves) and its rows rise 6px and fade in 28ms apart; closing, it\n   rolls back up quickly and all at once. */\n.ds-site-sheet { visibility: hidden; clip-path: inset(0 0 100% 0); transition: clip-path var(--ds-duration-exit) var(--ds-easing-standard), visibility 0s linear var(--ds-duration-exit); }\n.ds-site-sheet[data-open] { visibility: visible; clip-path: inset(0 0 -1px 0); transition: clip-path var(--ds-duration-entrance) var(--ds-easing-out), visibility 0s; }\n.ds-site-row { opacity: 0; transform: translateY(6px); transition: opacity var(--ds-duration-exit) var(--ds-easing-standard), transform 0s linear var(--ds-duration-exit); }\n.ds-site-sheet[data-open] .ds-site-row { opacity: 1; transform: none; transition: opacity var(--ds-duration-entrance) var(--ds-easing-out), transform var(--ds-duration-entrance) var(--ds-easing-out); transition-delay: calc(80ms + var(--i) * 28ms); }\n@media (prefers-reduced-motion: reduce) {\n  .ds-site-mark, .ds-site-grid, .ds-site-grid i, .ds-site-sheet, .ds-site-sheet[data-open] { transition: none; }\n  .ds-site-row, .ds-site-sheet[data-open] .ds-site-row { transform: none; transition: opacity var(--ds-duration-enter) var(--ds-easing-standard); transition-delay: 0ms; }\n}\n`\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "product-menu"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "SiteHeader",
+            "file": "react/components/site/SiteHeader.tsx",
+            "props": [
+              {
+                "name": "items",
+                "type": "ProductMenuItem[]",
+                "required": true
+              },
+              {
+                "name": "more",
+                "type": "ProductMenuItem[]",
+                "required": false,
+                "default": "[]"
+              },
+              {
+                "name": "links",
+                "type": "SiteLink[]",
+                "required": true
+              },
+              {
+                "name": "productCurrent",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "name": "homeHref",
+                "type": "string",
+                "required": false,
+                "default": "'/'"
+              },
+              {
+                "name": "homeLabel",
+                "type": "string",
+                "required": false,
+                "default": "'home'"
+              },
+              {
+                "name": "logo",
+                "type": "ReactNode",
+                "required": false,
+                "description": "The logo in the home link (Vue's `logo` slot)."
+              },
+              {
+                "name": "actions",
+                "type": "(slot: { place: 'bar' | 'sheet' }) => ReactNode",
+                "required": false,
+                "description": "The buttons, drawn for the bar and again for the sheet (Vue's `#actions=\"{ place }\"`)."
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "The website header",
+          "center": false,
+          "half": false,
+          "path": "react/examples/site-header/Site.tsx",
+          "content": "import { Button } from '@/react/components/ui/Button'\nimport { PixelButton } from '@/react/components/ui/PixelButton'\nimport { SiteHeader } from '@/react/components/site/SiteHeader'\n// The website header with the Product menu. Below 768px the links fold into the sheet behind the square button.\nconst items = [\n  { label: 'Search', desc: 'Store documents and query them.', href: '#search' },\n  { label: 'Sync', desc: 'Keep your apps in a namespace.', href: '#sync' },\n  { label: 'Parse', desc: 'Read any file in full, every row and cell.', href: '#parse' },\n  { label: 'Embed', desc: 'Embeddings for any vector database.', href: '#embed' },\n  { label: 'Rerank', desc: 'Put the best passages first.', href: '#rerank' },\n]\nconst more = [\n  { label: 'Benchmarks', desc: 'Accuracy you can check, losses included.', href: '#benchmarks' },\n  { label: 'Price vs accuracy', desc: 'Most accurate, and the cheapest.', href: '#price' },\n]\nconst links = [{ label: 'FAQ', href: '#faq' }, { label: 'Pricing', href: '#pricing', current: true }, { label: 'Docs', href: '#docs' }]\n\nexport default function Site() {\n  return (\n    <div className=\"relative -m-8 min-h-150\">\n      <SiteHeader\n        items={items}\n        more={more}\n        links={links}\n        homeLabel=\"Acme home\"\n        logo={<img src=\"/conare-ds/logo/svg/primary-logo.svg\" alt=\"\" width=\"147\" height=\"24\" className=\"h-6 w-auto\" />}\n        actions={() => (\n          <>\n            <Button href=\"#contact\">Contact us</Button>\n            <PixelButton href=\"#dashboard\">Dashboard</PixelButton>\n          </>\n        )}\n      />\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "button",
+            "product-menu"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/site/site-header.ts",
+          "content": "import { html, nothing, type PropertyValues } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { DsElement, define, tag, tagName, uid } from '@/elements/lib/element'\nimport type { ProductMenuItem } from '@/elements/components/site/product-menu'\nimport '@/elements/components/site/product-menu'\nimport styles from 'virtual:tw'\n\n// SiteHeader.vue as <conare-site-header>: the website header (home/Header.vue): solid off-white, 64px, a hairline under it, three columns so the links sit on\n// the page's true center whatever the widths of the logo (the `logo` slot) and the buttons (the `actions` slot). The links are\n// 14px soft, the Product menu first. Two paper blocks glide under them on transform: one rests on the current link\n// (`current`, or `productCurrent`) with its red square, the other follows the pointer or focus, appearing in place on\n// the first link and fading when it leaves the row. Below 768px the links fold into a sheet under the bar, opened by a\n// square button whose 3 by 3 red squares turn into an X: the sheet unrolls on a clip and its rows rise in one after\n// another; a link, Escape or a wider window closes it, quickly and all at once.\n//\n// Vue's `actions` slot renders twice; a slot shows its nodes once, so the bar's buttons go in `actions` and the\n// sheet's copies in `sheet-actions`. `items`, `more` and `links` are JSON attributes or properties.\nexport interface SiteLink { label: string, href: string, current?: boolean }\n// The two blocks: x and width of the item they sit under, drawn as a 1px block scaled to it so only transform moves.\ninterface Mark { x: number, w: number, shown: boolean, instant: boolean }\n\n/** The nav item an event came from or an element marked current, through the Product menu's shadow root. */\nfunction navItem(path: EventTarget[]) {\n\treturn path.find((n): n is HTMLElement => n instanceof HTMLElement && n.hasAttribute('data-nav-item'))\n}\n\n/**\n * @summary The website header: the logo, the links with the Product menu, the buttons, and a sheet on phones.\n * @slot logo - The logo in the home link.\n * @slot actions - The bar's buttons.\n * @slot sheet-actions - The same buttons again, for the sheet on phones.\n */\nexport class SiteHeader extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { items: { type: Array }, more: { type: Array }, links: { type: Array }, productCurrent: { type: Boolean, attribute: 'product-current' }, homeHref: { attribute: 'home-href' }, homeLabel: { attribute: 'home-label' }, menu: { state: true }, restMark: { state: true }, hoverMark: { state: true }, ready: { state: true } }\n\n\t/** The Product menu's items. */\n\titems: ProductMenuItem[] = []\n\t/** The Product menu's extra links. */\n\tmore: ProductMenuItem[] = []\n\tlinks: SiteLink[] = []\n\t/** The Product menu is the current place. */\n\tproductCurrent = false\n\thomeHref = '/'\n\thomeLabel = 'home'\n\tprivate menu = false\n\tprivate restMark: Mark | null = null\n\tprivate hoverMark: Mark | null = null\n\t// The page's first frame places the blocks and colors without gliding into them.\n\tprivate ready = false\n\tprivate sheetId = uid('site-menu')\n\tprivate mq?: MediaQueryList\n\n\tprivate get row() {\n\t\treturn this.renderRoot.querySelector<HTMLElement>('ul[data-row]')\n\t}\n\tprivate measure(item: HTMLElement, mark: Mark | null): Mark | null {\n\t\tconst row = this.row\n\t\tif (!row) return mark\n\t\treturn { x: item.getBoundingClientRect().left - row.getBoundingClientRect().left, w: item.offsetWidth, shown: true, instant: !mark?.shown }\n\t}\n\tprivate point = (event: Event) => {\n\t\tconst item = navItem(event.composedPath())\n\t\tif (item) this.hoverMark = this.measure(item, this.hoverMark)\n\t}\n\tprivate rest(instant = false) {\n\t\tconst row = this.row\n\t\tconst menu = row?.querySelector(tagName('product-menu'))\n\t\tconst here = row?.querySelector<HTMLElement>('[data-nav-item][aria-current]') ?? menu?.shadowRoot?.querySelector<HTMLElement>('[data-nav-item][aria-current]')\n\t\tif (here) this.restMark = this.measure(here, instant ? null : this.restMark)\n\t\telse if (this.restMark) this.restMark = { ...this.restMark, shown: false }\n\t}\n\tprivate leave = (event?: FocusEvent) => {\n\t\tif (event && event.relatedTarget instanceof Node && (this.row?.contains(event.relatedTarget) || this.contains(event.relatedTarget))) return\n\t\tif (this.hoverMark) this.hoverMark = { ...this.hoverMark, shown: false }\n\t}\n\tprivate onKey = (event: KeyboardEvent) => {\n\t\tif (event.key === 'Escape') this.menu = false\n\t}\n\tprivate onWide = (event: MediaQueryListEvent) => {\n\t\tif (event.matches) this.menu = false\n\t}\n\n\tconnectedCallback() {\n\t\tsuper.connectedCallback()\n\t\tdocument.addEventListener('keydown', this.onKey)\n\t\tthis.mq = window.matchMedia('(min-width: 768px)')\n\t\tthis.mq.addEventListener('change', this.onWide)\n\t}\n\tdisconnectedCallback() {\n\t\tsuper.disconnectedCallback()\n\t\tdocument.removeEventListener('keydown', this.onKey)\n\t\tthis.mq?.removeEventListener('change', this.onWide)\n\t}\n\n\tprotected async firstUpdated(changed: PropertyValues) {\n\t\tsuper.firstUpdated(changed)\n\t\t// The Product menu draws its button first.\n\t\tconst menu = this.row?.querySelector(tagName('product-menu')) as (HTMLElement & { updateComplete?: Promise<unknown> }) | null\n\t\tawait menu?.updateComplete\n\t\tthis.rest(true)\n\t\tvoid document.fonts?.ready.then(() => this.rest(true))\n\t\trequestAnimationFrame(() => requestAnimationFrame(() => { this.ready = true }))\n\t}\n\n\tprotected updated(changed: PropertyValues) {\n\t\tsuper.updated(changed)\n\t\t// A new current link: the resting block goes there.\n\t\tif (this.hasUpdated && (changed.has('links') || changed.has('productCurrent')) && changed.get('links') !== undefined) this.rest()\n\t}\n\n\trender() {\n\t\tconst { items, more, links, menu } = this\n\t\tconst rowsBefore = items.length + more.length\n\t\tconst markStyle = (m: Mark | null) => (m ? `transform: translateX(${m.x}px) scaleX(${m.w})` : 'display: none')\n\t\treturn html`<header data-ds=\"site-header\" class=\"sticky top-0 z-20 border-b border-edge bg-surface\" ?data-ready=${this.ready}><div class=\"mx-auto grid h-16 max-w-[1440px] grid-cols-[1fr_auto_1fr] items-center px-4 sm:px-6 lg:px-10\"><a href=${this.homeHref} aria-label=${this.homeLabel} class=\"flex shrink-0 justify-self-start outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-edge-focus\"><slot name=\"logo\"></slot></a><div role=\"navigation\" aria-label=\"primary\" class=\"hidden md:block\"><ul data-row class=\"relative flex items-center gap-1 text-body leading-none text-fg-soft\" @pointerover=${this.point} @focusin=${this.point} @pointerleave=${() => this.leave()} @focusout=${this.leave}>${[this.restMark, this.hoverMark].map((m) => html`<li aria-hidden=\"true\" class=\"ds-site-mark pointer-events-none absolute inset-y-0 left-0 my-auto h-7.5 w-px origin-left bg-surface-subtle\" ?data-shown=${!!m?.shown} ?data-instant=${!!m?.instant} style=${markStyle(m)}></li>`)}${staticHtml`<${tag('product-menu')} .items=${items} .more=${more} ?current=${this.productCurrent}></${tag('product-menu')}>`}${links.map((link) => html`<li class=\"relative flex\"><a href=${link.href} data-nav-item aria-current=${link.current ? 'page' : nothing} class=${['ds-navlink-site relative flex items-center py-2 hover:text-fg', link.current ? 'gap-1.5 px-2.5 text-fg' : 'px-4'].join(' ')}>${link.current ? html`<span aria-hidden=\"true\" class=\"size-1.5 shrink-0 bg-home-red\"></span>` : nothing}${link.label}</a></li>`)}</ul></div><div class=\"col-start-3 flex gap-2 justify-self-end\"><div class=\"flex gap-2 max-md:hidden\"><slot name=\"actions\"></slot></div><button type=\"button\" class=\"ds-site-menu-btn flex size-6.5 cursor-pointer items-center justify-center border border-edge-strong text-fg transition-[border-color] duration-200 ease-standard hover:border-edge-focus focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-edge-focus md:hidden\" ?data-open=${menu} aria-expanded=${String(menu)} aria-controls=${this.sheetId} aria-label=${menu ? 'Close menu' : 'Open menu'} @pointerdown=${() => { this.menu = !this.menu }} @click=${(e: MouseEvent) => { if (e.detail === 0) this.menu = !this.menu }}><span aria-hidden=\"true\" class=\"ds-site-grid\">${Array.from({ length: 9 }, (_, i) => html`<i ?data-edge=${(i + 1) % 2 === 0}></i>`)}</span></button></div></div><div id=${this.sheetId} class=\"ds-site-sheet fade-y absolute inset-x-0 top-full max-h-[calc(100dvh-4rem)] overflow-y-auto border-b border-edge bg-surface md:hidden\" ?data-open=${menu} ?inert=${!menu}><div class=\"mx-auto max-w-[1440px] px-4 pt-4 pb-5 sm:px-6\"><p class=\"ds-site-row ds-site-caps px-1 pb-1 text-caption text-fg-muted\" style=\"--i: 0\">Product</p><ul class=\"border-b border-edge pb-3\">${[...items, ...more].map((item, i) => html`<li class=\"ds-site-row\" style=\"--i: ${i + 1}\"><a href=${item.href} class=\"block px-1 py-2\" @click=${() => { this.menu = false }}><span class=\"block text-body-lg leading-5 font-medium text-fg\">${item.label}</span><span class=\"block text-ui leading-5 text-fg-muted\">${item.desc}</span></a></li>`)}</ul><ul class=\"pt-2\">${links.map((link, j) => html`<li class=\"ds-site-row\" style=\"--i: ${rowsBefore + 1 + j}\"><a href=${link.href} class=\"block px-1 py-2.5 text-body-lg leading-5 text-fg\" aria-current=${link.current ? 'page' : nothing} @click=${() => { this.menu = false }}>${link.label}</a></li>`)}</ul><div class=\"ds-site-row mt-4 grid grid-cols-2 gap-2\" style=\"--i: ${rowsBefore + links.length + 1}\" @click=${() => { this.menu = false }}><slot name=\"sheet-actions\"></slot></div></div></div></header>`\n\t}\n}\n\n\ndefine('site-header', SiteHeader)\n"
+        },
+        {
+          "path": "elements/components/site/site-header.css",
+          "content": "/* SiteHeader.vue's <style>, as it is. */\n.ds-site-caps { letter-spacing: var(--ds-tracking-tag); text-transform: uppercase; }\n/* The blocks glide on transform (the Product menu's pace); arriving from outside they fade in where they land. */\n.ds-site-mark { opacity: 0; transition: transform var(--ds-duration-glide) var(--ds-easing-standard), opacity var(--ds-duration-micro) var(--ds-easing-standard); }\n.ds-site-mark[data-shown] { opacity: 1; }\n.ds-site-mark[data-instant] { transition: opacity var(--ds-duration-micro) var(--ds-easing-standard); }\nheader:not([data-ready]) :is(.ds-site-mark, .ds-navlink-site) { transition: none; }\n.ds-site-menu-btn:active { background: var(--ds-color-surface-subtle); }\n/* The menu button's 3 by 3 in red: open, the four edge squares fade away while the corners and center grow from 3px\n   to 5px, just enough to meet corner to corner, and the grid turns a quarter, so the five read as an X. */\n.ds-site-grid { display: grid; grid-template-columns: repeat(3, 3px); gap: 2px; transition: transform var(--ds-duration-morph) var(--ds-easing-swap); }\n.ds-site-grid i { width: 3px; height: 3px; background: var(--ds-color-home-red); transition: transform var(--ds-duration-morph) var(--ds-easing-swap) 80ms, opacity var(--ds-duration-morph) var(--ds-easing-swap) 80ms; }\n.ds-site-menu-btn[data-open] .ds-site-grid { transform: rotate(90deg); }\n.ds-site-menu-btn[data-open] .ds-site-grid i { transform: scale(1.667); }\n.ds-site-menu-btn[data-open] .ds-site-grid i[data-edge] { opacity: 0; transform: scale(0.5); transition-delay: 0ms; }\n/* The sheet unrolls downward on a clip (no layout moves) and its rows rise 6px and fade in 28ms apart; closing, it\n   rolls back up quickly and all at once. */\n.ds-site-sheet { visibility: hidden; clip-path: inset(0 0 100% 0); transition: clip-path var(--ds-duration-exit) var(--ds-easing-standard), visibility 0s linear var(--ds-duration-exit); }\n.ds-site-sheet[data-open] { visibility: visible; clip-path: inset(0 0 -1px 0); transition: clip-path var(--ds-duration-entrance) var(--ds-easing-out), visibility 0s; }\n.ds-site-row { opacity: 0; transform: translateY(6px); transition: opacity var(--ds-duration-exit) var(--ds-easing-standard), transform 0s linear var(--ds-duration-exit); }\n.ds-site-sheet[data-open] .ds-site-row { opacity: 1; transform: none; transition: opacity var(--ds-duration-entrance) var(--ds-easing-out), transform var(--ds-duration-entrance) var(--ds-easing-out); transition-delay: calc(80ms + var(--i) * 28ms); }\n@media (prefers-reduced-motion: reduce) {\n  .ds-site-mark, .ds-site-grid, .ds-site-grid i, .ds-site-sheet, .ds-site-sheet[data-open] { transition: none; }\n  .ds-site-row, .ds-site-sheet[data-open] .ds-site-row { transform: none; transition: opacity var(--ds-duration-enter) var(--ds-easing-standard); transition-delay: 0ms; }\n}"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/site-header.js",
+        "elements/product-menu.js",
+        "elements/grain.js",
+        "elements/button.js",
+        "elements/pixel-button.js"
+      ],
+      "tag": "conare-site-header",
+      "tags": [
+        "conare-site-header"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "cell-burst",
+        "product-menu"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-site-header",
+            "name": "SiteHeader",
+            "module": "elements/site-header.js",
+            "description": "The website header: the logo, the links with the Product menu, the buttons, and a sheet on phones.",
+            "attributes": [
+              {
+                "name": "items",
+                "field": "items",
+                "type": "ProductMenuItem[]",
+                "default": "[]",
+                "description": "The Product menu's items."
+              },
+              {
+                "name": "more",
+                "field": "more",
+                "type": "ProductMenuItem[]",
+                "default": "[]",
+                "description": "The Product menu's extra links."
+              },
+              {
+                "name": "links",
+                "field": "links",
+                "type": "SiteLink[]",
+                "default": "[]"
+              },
+              {
+                "name": "product-current",
+                "field": "productCurrent",
+                "type": "boolean",
+                "default": "false",
+                "description": "The Product menu is the current place."
+              },
+              {
+                "name": "home-href",
+                "field": "homeHref",
+                "type": "string",
+                "default": "'/'"
+              },
+              {
+                "name": "home-label",
+                "field": "homeLabel",
+                "type": "string",
+                "default": "'home'"
+              },
+              {
+                "name": "menu",
+                "field": "menu",
+                "type": "boolean",
+                "default": "false"
+              },
+              {
+                "name": "restMark",
+                "field": "restMark",
+                "type": "Mark | null",
+                "default": "null"
+              },
+              {
+                "name": "hoverMark",
+                "field": "hoverMark",
+                "type": "Mark | null",
+                "default": "null"
+              },
+              {
+                "name": "ready",
+                "field": "ready",
+                "type": "boolean",
+                "default": "false"
+              }
+            ],
+            "properties": [
+              {
+                "name": "items",
+                "type": "ProductMenuItem[]",
+                "default": "[]",
+                "description": "The Product menu's items.",
+                "attribute": "items"
+              },
+              {
+                "name": "more",
+                "type": "ProductMenuItem[]",
+                "default": "[]",
+                "description": "The Product menu's extra links.",
+                "attribute": "more"
+              },
+              {
+                "name": "links",
+                "type": "SiteLink[]",
+                "default": "[]",
+                "attribute": "links"
+              },
+              {
+                "name": "productCurrent",
+                "type": "boolean",
+                "default": "false",
+                "description": "The Product menu is the current place.",
+                "attribute": "product-current"
+              },
+              {
+                "name": "homeHref",
+                "type": "string",
+                "default": "'/'",
+                "attribute": "home-href"
+              },
+              {
+                "name": "homeLabel",
+                "type": "string",
+                "default": "'home'",
+                "attribute": "home-label"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "logo",
+                "description": "The logo in the home link."
+              },
+              {
+                "name": "actions",
+                "description": "The bar's buttons."
+              },
+              {
+                "name": "sheet-actions",
+                "description": "The same buttons again, for the sheet on phones."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "The website header",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/site-header/Site.html",
+          "content": "<!-- The website header with the Product menu. Below 768px the links fold into the sheet behind the square button. The\n     buttons go in twice: in the bar and in the sheet. -->\n<div class=\"relative -m-8 min-h-150\">\n  <conare-site-header home-label=\"Acme home\"\n    items='[{ \"label\": \"Search\", \"desc\": \"Store documents and query them.\", \"href\": \"#search\" }, { \"label\": \"Sync\", \"desc\": \"Keep your apps in a namespace.\", \"href\": \"#sync\" }, { \"label\": \"Parse\", \"desc\": \"Read any file in full, every row and cell.\", \"href\": \"#parse\" }, { \"label\": \"Embed\", \"desc\": \"Embeddings for any vector database.\", \"href\": \"#embed\" }, { \"label\": \"Rerank\", \"desc\": \"Put the best passages first.\", \"href\": \"#rerank\" }]'\n    more='[{ \"label\": \"Benchmarks\", \"desc\": \"Accuracy you can check, losses included.\", \"href\": \"#benchmarks\" }, { \"label\": \"Price vs accuracy\", \"desc\": \"Most accurate, and the cheapest.\", \"href\": \"#price\" }]'\n    links='[{ \"label\": \"FAQ\", \"href\": \"#faq\" }, { \"label\": \"Pricing\", \"href\": \"#pricing\", \"current\": true }, { \"label\": \"Docs\", \"href\": \"#docs\" }]'>\n    <img slot=\"logo\" src=\"/conare-ds/logo/svg/primary-logo.svg\" alt=\"\" width=\"147\" height=\"24\" class=\"h-6 w-auto\">\n    <conare-button slot=\"actions\" href=\"#contact\">Contact us</conare-button>\n    <conare-pixel-button slot=\"actions\" href=\"#dashboard\">Dashboard</conare-pixel-button>\n    <conare-button slot=\"sheet-actions\" href=\"#contact\">Contact us</conare-button>\n    <conare-pixel-button slot=\"sheet-actions\" href=\"#dashboard\">Dashboard</conare-pixel-button>\n  </conare-site-header>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

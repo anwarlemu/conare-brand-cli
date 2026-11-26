@@ -1,0 +1,283 @@
+{
+  "name": "blog-card",
+  "title": "Blog card",
+  "type": "registry:ui",
+  "group": "site",
+  "description": "A post as a card: in its own ruled box that takes the paper under the pointer, a picture of cells on the grained dark panel with the category in red, then the title, its line, and who it is from and the date in ruled tags. A window can play in the picture once the card is on screen.",
+  "use_for": "The blog's list and \"More posts\" under an article.",
+  "never": [
+    "Stock photos",
+    "Titles over two lines",
+    "A window that replays on hover: it plays once"
+  ],
+  "source": "conare-web app/components/home/BlogCard.vue, app/assets/css/home.css (.blog-card, .footer-grain)",
+  "body": "The `window` slot gets `active` once the card is on screen. The website puts a benchmark's leaderboard there: an\n`eval-viz` with `:limit=\"3\"`, stretched to the 520 by 380 box and scaled with the card.",
+  "requires": [
+    "cell-burst"
+  ],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/site/BlogCard.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed, onBeforeUnmount, onMounted, ref } from 'vue'\nimport CellBurst from '@/components/visuals/CellBurst.vue'\nimport Grain from '@/components/visuals/Grain.vue'\nimport { useSeen } from '@/composables/useCellBurst'\n\n// A blog post as a card (BlogCard.vue): in its own ruled box, which takes the paper under the pointer, a picture (a\n// grained dark panel and a jumbled sheet of cells) with the category in red at its top right, then the title, its\n// line, and at the foot, each in a ruled tag, who it is from and the date. The `window` slot is what plays in the\n// picture once the card is on screen (the website puts a benchmark's leaderboard there, an EvalViz, which is stretched\n// to the box): it is laid out at one size on every card, 520 by 380, and scaled as a whole to fit, so every card's\n// window matches and none reflows. It gets `active` once 40% of the picture is on screen and stays hidden, not blank,\n// until then.\nconst props = defineProps<{ href: string, title: string, dek?: string, category: string, author?: string, date?: string, seed?: number }>()\n\nconst art = ref<HTMLElement | null>(null)\nconst seen = useSeen(art, 0.4)\nconst burstSeed = computed(() => props.seed ?? 71 + props.title.length * 13)\n\nconst VIZ_W = 520\nconst VIZ_H = 380\nconst fit = ref(0.7)\nlet observer: ResizeObserver | undefined\nonMounted(() => {\n  observer = new ResizeObserver(([entry]) => {\n    const { width, height } = entry!.contentRect\n    fit.value = Math.min((width * 0.88) / VIZ_W, (height * 0.88) / VIZ_H)\n  })\n  if (art.value) observer.observe(art.value)\n})\nonBeforeUnmount(() => observer?.disconnect())\n</script>\n\n<template>\n  <a data-ds=\"blog-card\" :href=\"href\" class=\"ds-blog-card flex w-full flex-col border border-edge p-2\">\n    <span ref=\"art\" aria-hidden=\"true\" class=\"relative grid aspect-[5/4] grid-cols-[minmax(0,1fr)] place-items-center overflow-hidden bg-ds-neutral-200 px-4 text-ds-neutral-300\">\n      <Grain />\n      <span class=\"ds-blog-tag absolute top-2.5 right-2.5 z-1 bg-home-red py-0.5 pl-0.75 text-tag-sm font-medium tracking-tag text-off-white\">{{ category }}</span>\n      <span class=\"pointer-events-none absolute inset-0 opacity-70\"><CellBurst :seed=\"burstSeed\" jumble /></span>\n      <span\n        v-if=\"$slots.window\"\n        class=\"absolute top-1/2 left-1/2 flex [&>.ds-viz]:h-full [&>.ds-viz]:max-w-none [&>.ds-viz>.ds-viz-card]:h-full\"\n        :class=\"!seen && 'invisible'\"\n        :style=\"{ width: `${VIZ_W}px`, height: `${VIZ_H}px`, transform: `translate(-50%, -50%) scale(${fit})` }\"\n      >\n        <slot name=\"window\" :active=\"seen\" />\n      </span>\n    </span>\n    <span class=\"mt-4 block px-2 text-card-title text-fg\">{{ title }}</span>\n    <span v-if=\"dek\" class=\"mt-2 block px-2 text-body leading-5.5 text-fg-muted\">{{ dek }}</span>\n    <span v-if=\"author || date\" class=\"mt-auto flex items-center justify-between gap-4 px-2 pt-6 pb-2 type-meta text-fg-faint\">\n      <span v-if=\"author\" class=\"border border-edge px-1.5 leading-5\">{{ author }}</span>\n      <span v-if=\"date\" class=\"ml-auto border border-edge px-1.5 leading-5 tabular-nums\">{{ date }}</span>\n    </span>\n  </a>\n</template>\n\n<style>\n.ds-blog-card { transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-blog-card:hover { background-color: var(--ds-color-surface-subtle); } }\n/* The category, in the section tag's red and capitals: 3px in, less the tracking on the right. */\n.ds-blog-tag { padding-right: calc(var(--ds-space-xs) - 1px - var(--ds-tracking-tag)); line-height: var(--ds-text-tag-sm-leading); text-transform: uppercase; }\n</style>\n"
+    },
+    {
+      "path": "composables/useCellBurst.ts",
+      "content": "import { onBeforeUnmount, onMounted, ref, type Ref } from 'vue'\n\n// The \"infinite cells\" geometry behind the website's art (CellBurst, Burst): a level rectangle redrawn smaller and\n// smaller as it recedes to a vanishing point at the origin, plus the seeded random source that keeps server and client\n// drawing the same thing, and the two viewport helpers the art waits on.\n\n/** A seeded random source (mulberry32), so server and client paths match. */\nexport function rng(seed: number) {\n  let s = seed >>> 0\n  return () => {\n    s = (s + 0x6D2B79F5) >>> 0\n    let t = s\n    t = Math.imul(t ^ (t >>> 15), t | 1)\n    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)\n    return ((t ^ (t >>> 14)) >>> 0) / 4294967296\n  }\n}\n\nconst r1 = (n: number) => Math.round(n * 10) / 10\n\n/**\n * One cell: the face at (x0, y0), w by h, relative to the vanishing point, with its copies `pitch` apart on screen\n * until they reach `inner` of the face's distance. `fill` is the slab's ground, laid under it so it hides what lies\n * behind; `lines` is the hatch.\n */\nexport function cellPaths(x0: number, y0: number, w: number, h: number, pitch: number, inner: number) {\n  // The ground: copies stepping back by a constant fraction, which overlap into one solid shape.\n  const dist = Math.hypot(x0 + w / 2, y0 + h / 2)\n  const step = 1 - pitch / dist\n  let fill = ''\n  for (let s = 1; s > inner; s *= step) fill += `M${r1(x0 * s)} ${r1(y0 * s)}h${r1(w * s)}v${r1(h * s)}h${r1(-w * s)}z`\n  // The hatch: each edge redrawn as it recedes, at its own step, so its copies land `pitch` apart all the way in.\n  let lines = ''\n  const edges = [\n    { c: y0, a: x0, len: w, level: true },\n    { c: y0 + h, a: x0, len: w, level: true },\n    { c: x0, a: y0, len: h, level: false },\n    { c: x0 + w, a: y0, len: h, level: false },\n  ]\n  for (const e of edges) {\n    const ds = pitch / Math.abs(e.c)\n    for (let s = 1; s > inner; s -= ds) lines += e.level ? `M${r1(e.a * s)} ${r1(e.c * s)}h${r1(e.len * s)}` : `M${r1(e.c * s)} ${r1(e.a * s)}v${r1(e.len * s)}`\n  }\n  return { fill, lines }\n}\n\n/** Halftone squares: dots 4px apart in blocks of 3 by 3, each block one size, growing towards one top corner. */\nexport const HALFTONE_DOT = 4\nexport const HALFTONE_BLOCK = 3\nconst LEVELS = [0.25, 0.45, 0.7, 0.95]\nconst r2 = (n: number) => Math.round(n * 100) / 100\n\nexport function halftone(x: number, y: number, size: number, left: boolean, rand: () => number) {\n  const n = Math.max(HALFTONE_BLOCK, Math.floor(size / HALFTONE_DOT))\n  const blocks = Math.ceil(n / HALFTONE_BLOCK)\n  const tone = Array.from({ length: blocks * blocks }, () => rand())\n  let dots = ''\n  for (let row = 0; row < n; row++) {\n    for (let col = 0; col < n; col++) {\n      const across = left ? 1 - col / n : col / n\n      const lean = (across + (1 - row / n)) / 2\n      const t = tone[Math.floor(row / HALFTONE_BLOCK) * blocks + Math.floor(col / HALFTONE_BLOCK)]!\n      const level = LEVELS[Math.min(LEVELS.length - 1, Math.floor((lean * 0.6 + t * 0.4) * LEVELS.length))]!\n      const r = (HALFTONE_DOT / 2) * level\n      const cx = x + (col + 0.5) * HALFTONE_DOT\n      const cy = y + (row + 0.5) * HALFTONE_DOT\n      dots += `M${r2(cx - r)} ${r2(cy - r)}h${r2(2 * r)}v${r2(2 * r)}h${r2(-2 * r)}z`\n    }\n  }\n  const side = n * HALFTONE_DOT\n  return { square: `M${r2(x)} ${r2(y)}h${side}v${side}h${-side}z`, dots }\n}\n\n/** True once `el` comes within `margin` of the viewport, and from then on. Never on the server. */\nexport function useNearView(el: Ref<Element | null>, margin = '400px') {\n  const near = ref(false)\n  let io: IntersectionObserver | undefined\n  onMounted(() => {\n    if (!el.value || !('IntersectionObserver' in window)) {\n      near.value = true\n      return\n    }\n    io = new IntersectionObserver(([e]) => {\n      if (!e?.isIntersecting) return\n      near.value = true\n      io?.disconnect()\n    }, { rootMargin: margin })\n    io.observe(el.value)\n  })\n  onBeforeUnmount(() => io?.disconnect())\n  return near\n}\n\n/** True once `threshold` of `el` has been on screen, and from then on: a window that plays once. */\nexport function useSeen(el: Ref<Element | null>, threshold = 0.2) {\n  const seen = ref(false)\n  let io: IntersectionObserver | undefined\n  onMounted(() => {\n    if (!el.value || !('IntersectionObserver' in window)) {\n      seen.value = true\n      return\n    }\n    io = new IntersectionObserver(([e]) => {\n      if (!e?.isIntersecting) return\n      seen.value = true\n      io?.disconnect()\n    }, { threshold })\n    io.observe(el.value)\n  })\n  onBeforeUnmount(() => io?.disconnect())\n  return seen\n}\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "On the site",
+      "center": false,
+      "half": false,
+      "path": "examples/blog-card/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport BlogCard from '@/components/site/BlogCard.vue'\nimport EvalViz, { type Eval } from '@/components/visuals/EvalViz.vue'\n// The blog's list: three posts, each with its picture of cells. The benchmark post plays its leaderboard (eval-viz, the\n// top three) once the card is on screen; the slot takes any 520 by 380 window.\nconst posts = [\n  { slug: 'retrieval-benchmark', title: 'Acme retrieval benchmark: 67.0, #1 of 9', dek: 'Search over 19,252 business document pages with 2,419 questions.', category: 'Benchmarks', date: 'October 14, 2026' },\n  { slug: 'six-languages', title: 'Six languages, one index', dek: 'The same pages, with questions asked in six languages.', category: 'Product', date: 'October 2, 2026' },\n  { slug: 'changelog-october', title: 'What changed in October', dek: 'Faster syncs, filters in search and a new usage page.', category: 'Changelog', date: 'September 30, 2026' },\n]\nconst benchmark: Eval = {\n  id: 'acme-retrieval',\n  name: 'Acme retrieval benchmark',\n  description: 'Search over 19,252 business document pages with 2,419 questions.',\n  metric: 'nDCG@10',\n  better: 'higher',\n  model: 'conare-embed-1',\n  score: 67.0,\n  rank: { n: 1, of: 9 },\n  rows: [\n    { name: 'conare-embed-1', value: 67.02, ours: true },\n    { name: 'Provider B, page images', value: 66.48 },\n    { name: 'Provider C, page text', value: 64.24 },\n    { name: 'Provider D', value: 60.64 },\n    { name: 'BM25', value: 49.68 },\n  ],\n  max: 80,\n}\n</script>\n\n<template>\n  <div class=\"grid gap-6 md:grid-cols-3\">\n    <BlogCard v-for=\"(p, n) in posts\" :key=\"p.slug\" :href=\"`#${p.slug}`\" :title=\"p.title\" :dek=\"p.dek\" :category=\"p.category\" author=\"Acme team\" :date=\"p.date\">\n      <template v-if=\"n === 0\" #window=\"{ active }\">\n        <EvalViz :item=\"benchmark\" :active=\"active\" :limit=\"3\" />\n      </template>\n    </BlogCard>\n  </div>\n</template>\n",
+      "requires": [
+        "cell-burst",
+        "eval-viz"
+      ],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/site/BlogCard.tsx",
+          "content": "'use client'\nimport { useEffect, useRef, useState, type ReactNode } from 'react'\nimport { cn } from '@/react/lib/cn'\nimport { CellBurst } from '@/react/components/visuals/CellBurst'\nimport { Grain } from '@/react/components/visuals/Grain'\nimport { useSeen } from '@/react/hooks/useCellBurst'\n\n// A blog post as a card (BlogCard.vue): in its own ruled box, which takes the paper under the pointer, a picture (a\n// grained dark panel and a jumbled sheet of cells) with the category in red at its top right, then the title, its\n// line, and at the foot, each in a ruled tag, who it is from and the date. `window` (Vue's `#window` scoped slot) is\n// what plays in the picture once the card is on screen (the website puts a benchmark's leaderboard there, an EvalViz,\n// which is stretched to the box): it is laid out at one size on every card, 520 by 380, and scaled as a whole to fit,\n// so every card's window matches and none reflows. It gets `active` once 40% of the picture is on screen and stays\n// hidden, not blank, until then.\nexport interface BlogCardProps {\n  href: string\n  title: string\n  dek?: string\n  category: string\n  author?: string\n  date?: string\n  seed?: number\n  /** What plays in the picture, given `active` once the card is on screen. */\n  window?: (slot: { active: boolean }) => ReactNode\n}\n\nconst VIZ_W = 520\nconst VIZ_H = 380\n\nexport function BlogCard({ href, title, dek, category, author, date, seed, window: win }: BlogCardProps) {\n  const art = useRef<HTMLSpanElement | null>(null)\n  const seen = useSeen(art, 0.4)\n  const burstSeed = seed ?? 71 + title.length * 13\n  const [fit, setFit] = useState(0.7)\n  useEffect(() => {\n    const observer = new ResizeObserver(([entry]) => {\n      const { width, height } = entry!.contentRect\n      setFit(Math.min((width * 0.88) / VIZ_W, (height * 0.88) / VIZ_H))\n    })\n    if (art.current) observer.observe(art.current)\n    return () => observer.disconnect()\n  }, [])\n  return (\n    <>\n      <style href=\"ds-blog-card\" precedence=\"ds\">{css}</style>\n      <a data-ds=\"blog-card\" href={href} className=\"ds-blog-card flex w-full flex-col border border-edge p-2\">\n        <span ref={art} aria-hidden=\"true\" className=\"relative grid aspect-[5/4] grid-cols-[minmax(0,1fr)] place-items-center overflow-hidden bg-ds-neutral-200 px-4 text-ds-neutral-300\">\n          <Grain />\n          <span className=\"ds-blog-tag absolute top-2.5 right-2.5 z-1 bg-home-red py-0.5 pl-0.75 text-tag-sm font-medium tracking-tag text-off-white\">{category}</span>\n          <span className=\"pointer-events-none absolute inset-0 opacity-70\"><CellBurst seed={burstSeed} jumble /></span>\n          {win && (\n            <span\n              className={cn('absolute top-1/2 left-1/2 flex [&>.ds-viz]:h-full [&>.ds-viz]:max-w-none [&>.ds-viz>.ds-viz-card]:h-full', !seen && 'invisible')}\n              style={{ width: `${VIZ_W}px`, height: `${VIZ_H}px`, transform: `translate(-50%, -50%) scale(${fit})` }}\n            >\n              {win({ active: seen })}\n            </span>\n          )}\n        </span>\n        <span className=\"mt-4 block px-2 text-card-title text-fg\">{title}</span>\n        {dek && <span className=\"mt-2 block px-2 text-body leading-5.5 text-fg-muted\">{dek}</span>}\n        {(author || date) && (\n          <span className=\"mt-auto flex items-center justify-between gap-4 px-2 pt-6 pb-2 type-meta text-fg-faint\">\n            {author && <span className=\"border border-edge px-1.5 leading-5\">{author}</span>}\n            {date && <span className=\"ml-auto border border-edge px-1.5 leading-5 tabular-nums\">{date}</span>}\n          </span>\n        )}\n      </a>\n    </>\n  )\n}\n\nexport default BlogCard\n\nconst css = `\n.ds-blog-card { transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-blog-card:hover { background-color: var(--ds-color-surface-subtle); } }\n/* The category, in the section tag's red and capitals: 3px in, less the tracking on the right. */\n.ds-blog-tag { padding-right: calc(var(--ds-space-xs) - 1px - var(--ds-tracking-tag)); line-height: var(--ds-text-tag-sm-leading); text-transform: uppercase; }\n`\n"
+        },
+        {
+          "path": "react/lib/cn.ts",
+          "content": "// Joins class names, skipping falsy ones: cn('a', on && 'b', ['c', undefined]). It does not merge conflicting\n// utilities (no tailwind-merge), as Vue's class binding does not: the library's classes are written not to compete,\n// and a className from the caller is appended after them, as Vue appends a fallthrough class.\nexport type ClassValue = string | false | null | undefined | 0 | ClassValue[]\n\nexport function cn(...values: ClassValue[]): string {\n\tconst out: string[] = []\n\tfor (const v of values) {\n\t\tif (!v) continue\n\t\tif (Array.isArray(v)) {\n\t\t\tconst s = cn(...v)\n\t\t\tif (s) out.push(s)\n\t\t}\n\t\telse out.push(v)\n\t}\n\treturn out.join(' ')\n}\n"
+        },
+        {
+          "path": "react/hooks/useCellBurst.ts",
+          "content": "'use client'\nimport { useEffect, useState, type RefObject } from 'react'\n\n// The \"infinite cells\" geometry behind the website's art (CellBurst, Burst): a level rectangle redrawn smaller and\n// smaller as it recedes to a vanishing point at the origin, plus the seeded random source that keeps server and client\n// drawing the same thing, and the two viewport helpers the art waits on.\n\n/** A seeded random source (mulberry32), so server and client paths match. */\nexport function rng(seed: number) {\n  let s = seed >>> 0\n  return () => {\n    s = (s + 0x6D2B79F5) >>> 0\n    let t = s\n    t = Math.imul(t ^ (t >>> 15), t | 1)\n    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)\n    return ((t ^ (t >>> 14)) >>> 0) / 4294967296\n  }\n}\n\n// Paths are joined with + rather than template strings: the registry's class check reads a path command followed by\n// an interpolation as a class glued to one.\nconst r1 = (n: number) => Math.round(n * 10) / 10\n\n/**\n * One cell: the face at (x0, y0), w by h, relative to the vanishing point, with its copies `pitch` apart on screen\n * until they reach `inner` of the face's distance. `fill` is the slab's ground, laid under it so it hides what lies\n * behind; `lines` is the hatch.\n */\nexport function cellPaths(x0: number, y0: number, w: number, h: number, pitch: number, inner: number) {\n  // The ground: copies stepping back by a constant fraction, which overlap into one solid shape.\n  const dist = Math.hypot(x0 + w / 2, y0 + h / 2)\n  const step = 1 - pitch / dist\n  let fill = ''\n  for (let s = 1; s > inner; s *= step) fill += 'M' + r1(x0 * s) + ' ' + r1(y0 * s) + 'h' + r1(w * s) + 'v' + r1(h * s) + 'h' + r1(-w * s) + 'z'\n  // The hatch: each edge redrawn as it recedes, at its own step, so its copies land `pitch` apart all the way in.\n  let lines = ''\n  const edges = [\n    { c: y0, a: x0, len: w, level: true },\n    { c: y0 + h, a: x0, len: w, level: true },\n    { c: x0, a: y0, len: h, level: false },\n    { c: x0 + w, a: y0, len: h, level: false },\n  ]\n  for (const e of edges) {\n    const ds = pitch / Math.abs(e.c)\n    for (let s = 1; s > inner; s -= ds) lines += e.level ? 'M' + r1(e.a * s) + ' ' + r1(e.c * s) + 'h' + r1(e.len * s) : 'M' + r1(e.c * s) + ' ' + r1(e.a * s) + 'v' + r1(e.len * s)\n  }\n  return { fill, lines }\n}\n\n/** Halftone squares: dots 4px apart in blocks of 3 by 3, each block one size, growing towards one top corner. */\nexport const HALFTONE_DOT = 4\nexport const HALFTONE_BLOCK = 3\nconst LEVELS = [0.25, 0.45, 0.7, 0.95]\nconst r2 = (n: number) => Math.round(n * 100) / 100\n\nexport function halftone(x: number, y: number, size: number, left: boolean, rand: () => number) {\n  const n = Math.max(HALFTONE_BLOCK, Math.floor(size / HALFTONE_DOT))\n  const blocks = Math.ceil(n / HALFTONE_BLOCK)\n  const tone = Array.from({ length: blocks * blocks }, () => rand())\n  let dots = ''\n  for (let row = 0; row < n; row++) {\n    for (let col = 0; col < n; col++) {\n      const across = left ? 1 - col / n : col / n\n      const lean = (across + (1 - row / n)) / 2\n      const t = tone[Math.floor(row / HALFTONE_BLOCK) * blocks + Math.floor(col / HALFTONE_BLOCK)]!\n      const level = LEVELS[Math.min(LEVELS.length - 1, Math.floor((lean * 0.6 + t * 0.4) * LEVELS.length))]!\n      const r = (HALFTONE_DOT / 2) * level\n      const cx = x + (col + 0.5) * HALFTONE_DOT\n      const cy = y + (row + 0.5) * HALFTONE_DOT\n      dots += 'M' + r2(cx - r) + ' ' + r2(cy - r) + 'h' + r2(2 * r) + 'v' + r2(2 * r) + 'h' + r2(-2 * r) + 'z'\n    }\n  }\n  const side = n * HALFTONE_DOT\n  return { square: 'M' + r2(x) + ' ' + r2(y) + 'h' + side + 'v' + side + 'h' + -side + 'z', dots }\n}\n\n/** True once `el` comes within `margin` of the viewport, and from then on. Never on the server. */\nexport function useNearView(el: RefObject<Element | null>, margin = '400px') {\n  const [near, setNear] = useState(false)\n  useEffect(() => {\n    if (!el.current || !('IntersectionObserver' in window)) {\n      setNear(true)\n      return\n    }\n    const io = new IntersectionObserver(([e]) => {\n      if (!e?.isIntersecting) return\n      setNear(true)\n      io.disconnect()\n    }, { rootMargin: margin })\n    io.observe(el.current)\n    return () => io.disconnect()\n  }, []) // eslint-disable-line react-hooks/exhaustive-deps\n  return near\n}\n\n/** True once `threshold` of `el` has been on screen, and from then on: a window that plays once. */\nexport function useSeen(el: RefObject<Element | null>, threshold = 0.2) {\n  const [seen, setSeen] = useState(false)\n  useEffect(() => {\n    if (!el.current || !('IntersectionObserver' in window)) {\n      setSeen(true)\n      return\n    }\n    const io = new IntersectionObserver(([e]) => {\n      if (!e?.isIntersecting) return\n      setSeen(true)\n      io.disconnect()\n    }, { threshold })\n    io.observe(el.current)\n    return () => io.disconnect()\n  }, []) // eslint-disable-line react-hooks/exhaustive-deps\n  return seen\n}\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "cell-burst"
+      ],
+      "api": {
+        "components": [
+          {
+            "name": "BlogCard",
+            "file": "react/components/site/BlogCard.tsx",
+            "props": [
+              {
+                "name": "href",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "title",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "dek",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "category",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "author",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "date",
+                "type": "string",
+                "required": false
+              },
+              {
+                "name": "seed",
+                "type": "number",
+                "required": false
+              },
+              {
+                "name": "window",
+                "type": "(slot: { active: boolean }) => ReactNode",
+                "required": false,
+                "description": "What plays in the picture, given `active` once the card is on screen."
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "On the site",
+          "center": false,
+          "half": false,
+          "path": "react/examples/blog-card/Site.tsx",
+          "content": "import { BlogCard } from '@/react/components/site/BlogCard'\nimport { EvalViz, type Eval } from '@/react/components/visuals/EvalViz'\n// The blog's list: three posts, each with its picture of cells. The benchmark post plays its leaderboard (eval-viz, the\n// top three) once the card is on screen; the slot takes any 520 by 380 window.\nconst posts = [\n  { slug: 'retrieval-benchmark', title: 'Acme retrieval benchmark: 67.0, #1 of 9', dek: 'Search over 19,252 business document pages with 2,419 questions.', category: 'Benchmarks', date: 'October 14, 2026' },\n  { slug: 'six-languages', title: 'Six languages, one index', dek: 'The same pages, with questions asked in six languages.', category: 'Product', date: 'October 2, 2026' },\n  { slug: 'changelog-october', title: 'What changed in October', dek: 'Faster syncs, filters in search and a new usage page.', category: 'Changelog', date: 'September 30, 2026' },\n]\nconst benchmark: Eval = {\n  id: 'acme-retrieval',\n  name: 'Acme retrieval benchmark',\n  description: 'Search over 19,252 business document pages with 2,419 questions.',\n  metric: 'nDCG@10',\n  better: 'higher',\n  model: 'conare-embed-1',\n  score: 67.0,\n  rank: { n: 1, of: 9 },\n  rows: [\n    { name: 'conare-embed-1', value: 67.02, ours: true },\n    { name: 'Provider B, page images', value: 66.48 },\n    { name: 'Provider C, page text', value: 64.24 },\n    { name: 'Provider D', value: 60.64 },\n    { name: 'BM25', value: 49.68 },\n  ],\n  max: 80,\n}\nexport default function Site() {\n  return (\n    <div className=\"grid gap-6 md:grid-cols-3\">\n      {posts.map((p, n) => (\n        <BlogCard\n          key={p.slug}\n          href={`#${p.slug}`}\n          title={p.title}\n          dek={p.dek}\n          category={p.category}\n          author=\"Acme team\"\n          date={p.date}\n          window={n === 0 ? ({ active }) => <EvalViz item={benchmark} active={active} limit={3} /> : undefined}\n        />\n      ))}\n    </div>\n  )\n}\n",
+          "registryDependencies": [
+            "cell-burst",
+            "eval-viz"
+          ],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/site/blog-card.ts",
+          "content": "import { html, nothing, type PropertyValues } from 'lit'\nimport { html as staticHtml } from 'lit/static-html.js'\nimport { DsElement, define, tag } from '@/elements/lib/element'\nimport { SeenController } from '@/elements/controllers/cell-burst'\nimport '@/elements/components/visuals/grain'\nimport '@/elements/components/visuals/cell-burst'\nimport styles from 'virtual:tw'\n\n// BlogCard.vue as <conare-blog-card>: a blog post as a card: in its own ruled box, which takes the paper under the\n// pointer, a picture (a grained dark panel and a jumbled sheet of cells) with the category in red at its top right,\n// then the title, its line, and at the foot, each in a ruled tag, who it is from and the date. The `window` slot is\n// what plays in the picture once the card is on screen (the website puts a benchmark's leaderboard there, a\n// <conare-eval-viz>, which is stretched to the box): it is laid out at one size on every card, 520 by 380, and scaled\n// as a whole to fit, so every card's window matches and none reflows. The element sets `active` (and `stretch`) on what\n// is in the slot once 40% of the picture is on screen (Vue's scoped `active`); it stays hidden, not blank, until then.\nconst VIZ_W = 520\nconst VIZ_H = 380\n\n/**\n * @summary A blog post as a card, with its picture of cells.\n * @slot window - A 520 by 380 window that plays once the card is on screen (it gets `active`).\n */\nexport class BlogCard extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = { href: {}, heading: {}, dek: {}, category: {}, author: {}, date: {}, seed: { type: Number }, fit: { state: true } }\n\n\thref = ''\n\t/** The post's title (Vue's `title`). */\n\theading = ''\n\t/** Its line. */\n\tdek?: string\n\tcategory = ''\n\tauthor?: string\n\tdate?: string\n\t/** Which cells the picture lights (by default from the title). */\n\tseed?: number\n\tprivate fit = 0.7\n\tprivate seen = new SeenController(this, () => this.renderRoot.querySelector('[data-art]'), 0.4)\n\tprivate ro?: ResizeObserver\n\n\tprotected firstUpdated(changed: PropertyValues) {\n\t\tsuper.firstUpdated(changed)\n\t\tconst art = this.renderRoot.querySelector('[data-art]')\n\t\tthis.ro = new ResizeObserver(([entry]) => {\n\t\t\tconst { width, height } = entry!.contentRect\n\t\t\tthis.fit = Math.min((width * 0.88) / VIZ_W, (height * 0.88) / VIZ_H)\n\t\t})\n\t\tif (art) this.ro.observe(art)\n\t}\n\n\tdisconnectedCallback() {\n\t\tsuper.disconnectedCallback()\n\t\tthis.ro?.disconnect()\n\t}\n\n\tprotected updated(changed: PropertyValues) {\n\t\tsuper.updated(changed)\n\t\t// Vue's scoped `active`, and the stretch its classes give the window's root.\n\t\tconst slot = this.renderRoot.querySelector<HTMLSlotElement>('slot[name=\"window\"]')\n\t\tfor (const el of slot?.assignedElements() ?? []) {\n\t\t\tel.toggleAttribute('stretch', true)\n\t\t\tel.toggleAttribute('active', this.seen.seen)\n\t\t}\n\t}\n\n\trender() {\n\t\tconst seed = this.seed ?? 71 + this.heading.length * 13\n\t\tconst win = this.hasSlot('window')\n\t\treturn html`<a data-ds=\"blog-card\" href=${this.href} class=\"ds-blog-card flex w-full flex-col border border-edge p-2\"><span data-art aria-hidden=\"true\" class=\"relative grid aspect-[5/4] grid-cols-[minmax(0,1fr)] place-items-center overflow-hidden bg-ds-neutral-200 px-4 text-ds-neutral-300\">${staticHtml`<${tag('grain')}></${tag('grain')}>`}<span class=\"ds-blog-tag absolute top-2.5 right-2.5 z-1 bg-home-red py-0.5 pl-0.75 text-tag-sm font-medium tracking-tag text-off-white\">${this.category}</span><span class=\"pointer-events-none absolute inset-0 opacity-70\">${staticHtml`<${tag('cell-burst')} seed=${seed} jumble></${tag('cell-burst')}>`}</span>${win ? html`<span class=${['absolute top-1/2 left-1/2 flex', this.seen.seen ? '' : 'invisible'].join(' ')} style=${`width: ${VIZ_W}px; height: ${VIZ_H}px; transform: translate(-50%, -50%) scale(${this.fit})`}><slot name=\"window\" @slotchange=${() => this.requestUpdate()}></slot></span>` : nothing}</span><span class=\"mt-4 block px-2 text-card-title text-fg\">${this.heading}</span>${this.dek ? html`<span class=\"mt-2 block px-2 text-body leading-5.5 text-fg-muted\">${this.dek}</span>` : nothing}${this.author || this.date ? html`<span class=\"mt-auto flex items-center justify-between gap-4 px-2 pt-6 pb-2 type-meta text-fg-faint\">${this.author ? html`<span class=\"border border-edge px-1.5 leading-5\">${this.author}</span>` : nothing}${this.date ? html`<span class=\"ml-auto border border-edge px-1.5 leading-5 tabular-nums\">${this.date}</span>` : nothing}</span>` : nothing}</a>`\n\t}\n}\n\ndefine('blog-card', BlogCard)\n"
+        },
+        {
+          "path": "elements/components/site/blog-card.css",
+          "content": "/* BlogCard.vue's <style>, as it is. */\n.ds-blog-card { transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-blog-card:hover { background-color: var(--ds-color-surface-subtle); } }\n/* The category, in the section tag's red and capitals: 3px in, less the tracking on the right. */\n.ds-blog-tag { padding-right: calc(var(--ds-space-xs) - 1px - var(--ds-tracking-tag)); line-height: var(--ds-text-tag-sm-leading); text-transform: uppercase; }\n"
+        },
+        {
+          "path": "elements/controllers/cell-burst.ts",
+          "content": "import type { ReactiveController, ReactiveControllerHost } from 'lit'\n\n// useCellBurst for elements: the \"infinite cells\" geometry behind the website's art (CellBurst, Burst): a level\n// rectangle redrawn smaller and smaller as it recedes to a vanishing point at the origin, plus the seeded random source\n// that keeps every flavor drawing the same thing, and the two viewport helpers the art waits on, as Lit controllers.\n// `el` returns the observed box (an element in the shadow root), read after the first render.\n\n/** A seeded random source (mulberry32), so server and client paths match. */\nexport function rng(seed: number) {\n  let s = seed >>> 0\n  return () => {\n    s = (s + 0x6D2B79F5) >>> 0\n    let t = s\n    t = Math.imul(t ^ (t >>> 15), t | 1)\n    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)\n    return ((t ^ (t >>> 14)) >>> 0) / 4294967296\n  }\n}\n\n// Paths are joined with + rather than template strings: the registry's class check reads a path command followed by\n// an interpolation as a class glued to one.\nconst r1 = (n: number) => Math.round(n * 10) / 10\n\n/**\n * One cell: the face at (x0, y0), w by h, relative to the vanishing point, with its copies `pitch` apart on screen\n * until they reach `inner` of the face's distance. `fill` is the slab's ground, laid under it so it hides what lies\n * behind; `lines` is the hatch.\n */\nexport function cellPaths(x0: number, y0: number, w: number, h: number, pitch: number, inner: number) {\n  // The ground: copies stepping back by a constant fraction, which overlap into one solid shape.\n  const dist = Math.hypot(x0 + w / 2, y0 + h / 2)\n  const step = 1 - pitch / dist\n  let fill = ''\n  for (let s = 1; s > inner; s *= step) fill += 'M' + r1(x0 * s) + ' ' + r1(y0 * s) + 'h' + r1(w * s) + 'v' + r1(h * s) + 'h' + r1(-w * s) + 'z'\n  // The hatch: each edge redrawn as it recedes, at its own step, so its copies land `pitch` apart all the way in.\n  let lines = ''\n  const edges = [\n    { c: y0, a: x0, len: w, level: true },\n    { c: y0 + h, a: x0, len: w, level: true },\n    { c: x0, a: y0, len: h, level: false },\n    { c: x0 + w, a: y0, len: h, level: false },\n  ]\n  for (const e of edges) {\n    const ds = pitch / Math.abs(e.c)\n    for (let s = 1; s > inner; s -= ds) lines += e.level ? 'M' + r1(e.a * s) + ' ' + r1(e.c * s) + 'h' + r1(e.len * s) : 'M' + r1(e.c * s) + ' ' + r1(e.a * s) + 'v' + r1(e.len * s)\n  }\n  return { fill, lines }\n}\n\n/** Halftone squares: dots 4px apart in blocks of 3 by 3, each block one size, growing towards one top corner. */\nexport const HALFTONE_DOT = 4\nexport const HALFTONE_BLOCK = 3\nconst LEVELS = [0.25, 0.45, 0.7, 0.95]\nconst r2 = (n: number) => Math.round(n * 100) / 100\n\nexport function halftone(x: number, y: number, size: number, left: boolean, rand: () => number) {\n  const n = Math.max(HALFTONE_BLOCK, Math.floor(size / HALFTONE_DOT))\n  const blocks = Math.ceil(n / HALFTONE_BLOCK)\n  const tone = Array.from({ length: blocks * blocks }, () => rand())\n  let dots = ''\n  for (let row = 0; row < n; row++) {\n    for (let col = 0; col < n; col++) {\n      const across = left ? 1 - col / n : col / n\n      const lean = (across + (1 - row / n)) / 2\n      const t = tone[Math.floor(row / HALFTONE_BLOCK) * blocks + Math.floor(col / HALFTONE_BLOCK)]!\n      const level = LEVELS[Math.min(LEVELS.length - 1, Math.floor((lean * 0.6 + t * 0.4) * LEVELS.length))]!\n      const r = (HALFTONE_DOT / 2) * level\n      const cx = x + (col + 0.5) * HALFTONE_DOT\n      const cy = y + (row + 0.5) * HALFTONE_DOT\n      dots += 'M' + r2(cx - r) + ' ' + r2(cy - r) + 'h' + r2(2 * r) + 'v' + r2(2 * r) + 'h' + r2(-2 * r) + 'z'\n    }\n  }\n  const side = n * HALFTONE_DOT\n  return { square: 'M' + r2(x) + ' ' + r2(y) + 'h' + side + 'v' + side + 'h' + -side + 'z', dots }\n}\n\n/** useNearView: `near` turns true once `el` comes within `margin` of the viewport, and stays. */\nexport class NearViewController implements ReactiveController {\n\tnear = false\n\tprivate io?: IntersectionObserver\n\tconstructor(private host: ReactiveControllerHost, private el: () => Element | null | undefined, private margin = '400px') {\n\t\thost.addController(this)\n\t}\n\thostConnected() {\n\t\tvoid this.host.updateComplete.then(() => {\n\t\t\tconst el = this.el()\n\t\t\tif (!el || !('IntersectionObserver' in window)) {\n\t\t\t\tthis.near = true\n\t\t\t\tthis.host.requestUpdate()\n\t\t\t\treturn\n\t\t\t}\n\t\t\tthis.io = new IntersectionObserver(([e]) => {\n\t\t\t\tif (!e?.isIntersecting) return\n\t\t\t\tthis.near = true\n\t\t\t\tthis.host.requestUpdate()\n\t\t\t\tthis.io?.disconnect()\n\t\t\t}, { rootMargin: this.margin })\n\t\t\tthis.io.observe(el)\n\t\t})\n\t}\n\thostDisconnected() {\n\t\tthis.io?.disconnect()\n\t}\n}\n\n/** useSeen: `seen` turns true once `threshold` of `el` has been on screen, and stays: a window that plays once. */\nexport class SeenController implements ReactiveController {\n\tseen = false\n\tprivate io?: IntersectionObserver\n\tconstructor(private host: ReactiveControllerHost, private el: () => Element | null | undefined, private threshold = 0.2) {\n\t\thost.addController(this)\n\t}\n\thostConnected() {\n\t\tvoid this.host.updateComplete.then(() => {\n\t\t\tconst el = this.el()\n\t\t\tif (!el || !('IntersectionObserver' in window)) {\n\t\t\t\tthis.seen = true\n\t\t\t\tthis.host.requestUpdate()\n\t\t\t\treturn\n\t\t\t}\n\t\t\tthis.io = new IntersectionObserver(([e]) => {\n\t\t\t\tif (!e?.isIntersecting) return\n\t\t\t\tthis.seen = true\n\t\t\t\tthis.host.requestUpdate()\n\t\t\t\tthis.io?.disconnect()\n\t\t\t}, { threshold: this.threshold })\n\t\t\tthis.io.observe(el)\n\t\t})\n\t}\n\thostDisconnected() {\n\t\tthis.io?.disconnect()\n\t}\n}\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/blog-card.js",
+        "elements/grain.js",
+        "elements/cell-burst.js",
+        "elements/eval-viz.js"
+      ],
+      "tag": "conare-blog-card",
+      "tags": [
+        "conare-blog-card"
+      ],
+      "dependencies": [],
+      "registryDependencies": [
+        "cell-burst"
+      ],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-blog-card",
+            "name": "BlogCard",
+            "module": "elements/blog-card.js",
+            "description": "A blog post as a card, with its picture of cells.",
+            "attributes": [
+              {
+                "name": "href",
+                "field": "href",
+                "type": "string",
+                "default": "''"
+              },
+              {
+                "name": "heading",
+                "field": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The post's title (Vue's `title`)."
+              },
+              {
+                "name": "dek",
+                "field": "dek",
+                "type": "string | undefined",
+                "description": "Its line."
+              },
+              {
+                "name": "category",
+                "field": "category",
+                "type": "string",
+                "default": "''"
+              },
+              {
+                "name": "author",
+                "field": "author",
+                "type": "string | undefined"
+              },
+              {
+                "name": "date",
+                "field": "date",
+                "type": "string | undefined"
+              },
+              {
+                "name": "seed",
+                "field": "seed",
+                "type": "number | undefined",
+                "description": "Which cells the picture lights (by default from the title)."
+              },
+              {
+                "name": "fit",
+                "field": "fit",
+                "type": "number",
+                "default": "0.7"
+              }
+            ],
+            "properties": [
+              {
+                "name": "href",
+                "type": "string",
+                "default": "''",
+                "attribute": "href"
+              },
+              {
+                "name": "heading",
+                "type": "string",
+                "default": "''",
+                "description": "The post's title (Vue's `title`).",
+                "attribute": "heading"
+              },
+              {
+                "name": "dek",
+                "type": "string | undefined",
+                "description": "Its line.",
+                "attribute": "dek"
+              },
+              {
+                "name": "category",
+                "type": "string",
+                "default": "''",
+                "attribute": "category"
+              },
+              {
+                "name": "author",
+                "type": "string | undefined",
+                "attribute": "author"
+              },
+              {
+                "name": "date",
+                "type": "string | undefined",
+                "attribute": "date"
+              },
+              {
+                "name": "seed",
+                "type": "number | undefined",
+                "description": "Which cells the picture lights (by default from the title).",
+                "attribute": "seed"
+              }
+            ],
+            "events": [],
+            "slots": [
+              {
+                "name": "window",
+                "description": "A 520 by 380 window that plays once the card is on screen (it gets `active`)."
+              }
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "On the site",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/blog-card/Site.html",
+          "content": "<!-- The blog's list: three posts, each with its picture of cells. The benchmark post plays its leaderboard (eval-viz,\n     the top three) once the card is on screen; the slot takes any 520 by 380 window. -->\n<div class=\"grid gap-6 md:grid-cols-3\">\n  <conare-blog-card href=\"#retrieval-benchmark\" heading=\"Acme retrieval benchmark: 67.0, #1 of 9\" dek=\"Search over 19,252 business document pages with 2,419 questions.\" category=\"Benchmarks\" author=\"Acme team\" date=\"October 14, 2026\">\n    <conare-eval-viz slot=\"window\" limit=\"3\" item='{\n        \"id\": \"acme-retrieval\",\n        \"name\": \"Acme retrieval benchmark\",\n        \"description\": \"Search over 19,252 business document pages with 2,419 questions.\",\n        \"metric\": \"nDCG@10\",\n        \"better\": \"higher\",\n        \"model\": \"conare-embed-1\",\n        \"score\": 67,\n        \"rank\": {\n          \"n\": 1,\n          \"of\": 9\n        },\n        \"rows\": [\n          {\n            \"name\": \"conare-embed-1\",\n            \"value\": 67.02,\n            \"ours\": true\n          },\n          {\n            \"name\": \"Provider B, page images\",\n            \"value\": 66.48\n          },\n          {\n            \"name\": \"Provider C, page text\",\n            \"value\": 64.24\n          },\n          {\n            \"name\": \"Provider D\",\n            \"value\": 60.64\n          },\n          {\n            \"name\": \"BM25\",\n            \"value\": 49.68\n          }\n        ],\n        \"max\": 80\n      }'></conare-eval-viz>\n  </conare-blog-card>\n  <conare-blog-card href=\"#six-languages\" heading=\"Six languages, one index\" dek=\"The same pages, with questions asked in six languages.\" category=\"Product\" author=\"Acme team\" date=\"October 2, 2026\"></conare-blog-card>\n  <conare-blog-card href=\"#changelog-october\" heading=\"What changed in October\" dek=\"Faster syncs, filters in search and a new usage page.\" category=\"Changelog\" author=\"Acme team\" date=\"September 30, 2026\"></conare-blog-card>\n</div>\n"
+        }
+      ]
+    }
+  }
+}

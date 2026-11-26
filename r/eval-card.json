@@ -1,0 +1,318 @@
+{
+  "name": "eval-card",
+  "title": "Eval card",
+  "type": "registry:ui",
+  "group": "site",
+  "description": "A benchmark as a card: its name, our score and rank, the top five as bars with ours in red (kept in when it ranks lower), and the way to its page. The paper comes in under the pointer.",
+  "use_for": "The evals page and a model's page.",
+  "never": [
+    "A score without its metric and rank",
+    "More than one red bar",
+    "Bars that don't start at 0"
+  ],
+  "source": "conare-web app/components/home/EvalCard.vue, app/content/evals.ts (topRows, rankLabel, formatScore), app/assets/css/home.css (.eval-card)",
+  "body": "",
+  "requires": [],
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/site/EvalCard.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed } from 'vue'\n\n// A benchmark as a card (EvalCard.vue, the evals page and a model's page): its name, our score and rank, the top\n// rows as bars, ours in red and kept in (in the last place) when it falls outside them, and the way to its page. The\n// paper comes in under the pointer. Every figure comes through props; `better` sorts the rows by its own direction.\nexport type EvalRow = { name: string, value: number, ours?: boolean, rank?: number }\n\nconst props = withDefaults(defineProps<{\n  href: string\n  name: string\n  metric: string\n  score: number\n  rank: { n: number, of: number, word?: string }\n  rows: EvalRow[]\n  max: number\n  better?: 'higher' | 'lower'\n  unit?: '%'\n  limit?: number\n  linkLabel?: string\n}>(), { better: 'higher', limit: 5, linkLabel: 'See the benchmark' })\n\nconst format = (value: number) => (props.unit === '%' ? `${value.toFixed(1)}%` : value.toFixed(1))\nconst rankLabel = computed(() => `#${props.rank.n} of ${props.rank.of}${props.rank.word ? `, ${props.rank.word}` : ''}`)\n\nconst top = computed(() => {\n  const sorted = [...props.rows].sort((a, b) => (props.better === 'higher' ? b.value - a.value : a.value - b.value))\n  let rows = sorted\n  if (props.limit && sorted.length > props.limit) {\n    rows = sorted.slice(0, props.limit)\n    const ours = sorted.find(r => r.ours)\n    if (ours && !rows.some(r => r.ours)) rows = [...rows.slice(0, props.limit - 1), ours]\n  }\n  return rows.map(r => ({ ...r, bar: { width: `${Math.min(100, (r.value / props.max) * 100)}%` } }))\n})\n</script>\n\n<template>\n  <a data-ds=\"eval-card\" :href=\"href\" class=\"ds-eval-card flex w-full flex-col bg-surface px-5 py-6 sm:px-6\">\n    <span class=\"type-heading-3 text-fg\">{{ name }}</span>\n    <span class=\"mt-3 text-heading-1 leading-none tracking-display text-fg tabular-nums\">{{ format(score) }}</span>\n    <span class=\"mt-2 type-ui text-fg-muted\">{{ metric }}<template v-if=\"better === 'lower'\">, lower is better</template> · {{ rankLabel }}</span>\n    <ol class=\"mt-6 flex flex-col gap-3\">\n      <li v-for=\"(r, i) in top\" :key=\"r.name\" class=\"grid grid-cols-[16px_minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1.5 text-ui leading-4\">\n        <span class=\"text-caption text-fg-faint tabular-nums\">{{ r.rank ?? i + 1 }}</span>\n        <span class=\"truncate\" :class=\"r.ours ? 'text-fg' : 'text-fg-muted'\">{{ r.name }}</span>\n        <span class=\"tabular-nums\" :class=\"r.ours ? 'text-fg' : 'text-fg-muted'\">{{ format(r.value) }}</span>\n        <span class=\"col-start-2 col-end-4 h-1 bg-edge\">\n          <span class=\"block h-full\" :class=\"r.ours ? 'bg-home-red' : 'bg-ds-neutral-500'\" :style=\"r.bar\" />\n        </span>\n      </li>\n    </ol>\n    <span class=\"mt-auto flex items-center gap-1.5 pt-8 type-ui text-fg-faint\">\n      {{ linkLabel }}\n      <svg width=\"10\" height=\"10\" viewBox=\"0 0 10 10\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.2\" aria-hidden=\"true\"><path d=\"M1.5 5h7M5.5 2l3 3-3 3\" /></svg>\n    </span>\n  </a>\n</template>\n\n<style>\n.ds-eval-card { transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-eval-card:hover { background: var(--ds-color-surface-subtle); } }\n</style>\n"
+    }
+  ],
+  "examples": [
+    {
+      "name": "Site",
+      "label": "On the site",
+      "center": false,
+      "half": false,
+      "path": "examples/eval-card/Site.vue",
+      "content": "<script setup lang=\"ts\">\nimport EvalCard from '@/components/site/EvalCard.vue'\n// Two benchmarks as the evals page sets them. Ours is kept in the top five, in red, wherever it ranks.\nconst retrieval = [\n  { name: 'Acme embed 1', value: 67.02, ours: true },\n  { name: 'Provider B, page images', value: 66.48 },\n  { name: 'Provider B, page text', value: 66.1 },\n  { name: 'Provider C, page images', value: 64.24 },\n  { name: 'Provider C, page text', value: 62.25 },\n  { name: 'Provider D', value: 60.64 },\n  { name: 'BM25', value: 49.68 },\n]\nconst latency = [\n  { name: 'Provider B', value: 182 },\n  { name: 'Provider C', value: 240 },\n  { name: 'Provider D', value: 251 },\n  { name: 'Provider E', value: 266 },\n  { name: 'Provider F', value: 301 },\n  { name: 'Acme rerank 1', value: 318, ours: true },\n]\n</script>\n\n<template>\n  <div class=\"grid gap-6 md:grid-cols-2\">\n    <EvalCard href=\"#retrieval\" name=\"Document retrieval\" metric=\"nDCG@10\" :score=\"67.0\" :rank=\"{ n: 1, of: 7 }\" :rows=\"retrieval\" :max=\"80\" />\n    <EvalCard href=\"#latency\" name=\"Reranking latency\" metric=\"Median ms\" better=\"lower\" :score=\"318\" :rank=\"{ n: 6, of: 6, word: 'the most accurate' }\" :rows=\"latency\" :max=\"400\" />\n  </div>\n</template>\n",
+      "requires": [],
+      "packages": []
+    }
+  ],
+  "flavors": {
+    "react": {
+      "files": [
+        {
+          "path": "react/components/site/EvalCard.tsx",
+          "content": "// A benchmark as a card (EvalCard.vue, the evals page and a model's page): its name, our score and rank, the top\n// rows as bars, ours in red and kept in (in the last place) when it falls outside them, and the way to its page. The\n// paper comes in under the pointer. Every figure comes through props; `better` sorts the rows by its own direction.\nexport type EvalRow = { name: string, value: number, ours?: boolean, rank?: number }\n\nexport interface EvalCardProps {\n  href: string\n  name: string\n  metric: string\n  score: number\n  rank: { n: number, of: number, word?: string }\n  rows: EvalRow[]\n  max: number\n  better?: 'higher' | 'lower'\n  unit?: '%'\n  limit?: number\n  linkLabel?: string\n}\n\nexport function EvalCard({ href, name, metric, score, rank, rows, max, better = 'higher', unit, limit = 5, linkLabel = 'See the benchmark' }: EvalCardProps) {\n  const format = (value: number) => (unit === '%' ? `${value.toFixed(1)}%` : value.toFixed(1))\n  const rankLabel = `#${rank.n} of ${rank.of}${rank.word ? `, ${rank.word}` : ''}`\n  const sorted = [...rows].sort((a, b) => (better === 'higher' ? b.value - a.value : a.value - b.value))\n  let picked = sorted\n  if (limit && sorted.length > limit) {\n    picked = sorted.slice(0, limit)\n    const ours = sorted.find(r => r.ours)\n    if (ours && !picked.some(r => r.ours)) picked = [...picked.slice(0, limit - 1), ours]\n  }\n  const top = picked.map(r => ({ ...r, bar: { width: `${Math.min(100, (r.value / max) * 100)}%` } }))\n  return (\n    <>\n      <style href=\"ds-eval-card\" precedence=\"ds\">{css}</style>\n      <a data-ds=\"eval-card\" href={href} className=\"ds-eval-card flex w-full flex-col bg-surface px-5 py-6 sm:px-6\">\n        <span className=\"type-heading-3 text-fg\">{name}</span>\n        <span className=\"mt-3 text-heading-1 leading-none tracking-display text-fg tabular-nums\">{format(score)}</span>\n        <span className=\"mt-2 type-ui text-fg-muted\">{metric}{better === 'lower' && ', lower is better'}{` · ${rankLabel}`}</span>\n        <ol className=\"mt-6 flex flex-col gap-3\">\n          {top.map((r, i) => (\n            <li key={r.name} className=\"grid grid-cols-[16px_minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1.5 text-ui leading-4\">\n              <span className=\"text-caption text-fg-faint tabular-nums\">{r.rank ?? i + 1}</span>\n              <span className={r.ours ? 'truncate text-fg' : 'truncate text-fg-muted'}>{r.name}</span>\n              <span className={r.ours ? 'tabular-nums text-fg' : 'tabular-nums text-fg-muted'}>{format(r.value)}</span>\n              <span className=\"col-start-2 col-end-4 h-1 bg-edge\">\n                <span className={r.ours ? 'block h-full bg-home-red' : 'block h-full bg-ds-neutral-500'} style={r.bar} />\n              </span>\n            </li>\n          ))}\n        </ol>\n        <span className=\"mt-auto flex items-center gap-1.5 pt-8 type-ui text-fg-faint\">\n          {linkLabel}\n          <svg width=\"10\" height=\"10\" viewBox=\"0 0 10 10\" fill=\"none\" stroke=\"currentColor\" strokeWidth=\"1.2\" aria-hidden=\"true\"><path d=\"M1.5 5h7M5.5 2l3 3-3 3\" /></svg>\n        </span>\n      </a>\n    </>\n  )\n}\n\nexport default EvalCard\n\nconst css = `\n.ds-eval-card { transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-eval-card:hover { background: var(--ds-color-surface-subtle); } }\n`\n"
+        }
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "components": [
+          {
+            "name": "EvalCard",
+            "file": "react/components/site/EvalCard.tsx",
+            "props": [
+              {
+                "name": "href",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "name",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "metric",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "score",
+                "type": "number",
+                "required": true
+              },
+              {
+                "name": "rank",
+                "type": "{ n: number, of: number, word?: string }",
+                "required": true
+              },
+              {
+                "name": "rows",
+                "type": "EvalRow[]",
+                "required": true
+              },
+              {
+                "name": "max",
+                "type": "number",
+                "required": true
+              },
+              {
+                "name": "better",
+                "type": "'higher' | 'lower'",
+                "required": false,
+                "default": "'higher'"
+              },
+              {
+                "name": "unit",
+                "type": "'%'",
+                "required": false
+              },
+              {
+                "name": "limit",
+                "type": "number",
+                "required": false,
+                "default": "5"
+              },
+              {
+                "name": "linkLabel",
+                "type": "string",
+                "required": false,
+                "default": "'See the benchmark'"
+              }
+            ]
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "On the site",
+          "center": false,
+          "half": false,
+          "path": "react/examples/eval-card/Site.tsx",
+          "content": "import { EvalCard } from '@/react/components/site/EvalCard'\n// Two benchmarks as the evals page sets them. Ours is kept in the top five, in red, wherever it ranks.\nconst retrieval = [\n  { name: 'Acme embed 1', value: 67.02, ours: true },\n  { name: 'Provider B, page images', value: 66.48 },\n  { name: 'Provider B, page text', value: 66.1 },\n  { name: 'Provider C, page images', value: 64.24 },\n  { name: 'Provider C, page text', value: 62.25 },\n  { name: 'Provider D', value: 60.64 },\n  { name: 'BM25', value: 49.68 },\n]\nconst latency = [\n  { name: 'Provider B', value: 182 },\n  { name: 'Provider C', value: 240 },\n  { name: 'Provider D', value: 251 },\n  { name: 'Provider E', value: 266 },\n  { name: 'Provider F', value: 301 },\n  { name: 'Acme rerank 1', value: 318, ours: true },\n]\n\nexport default function Site() {\n  return (\n    <div className=\"grid gap-6 md:grid-cols-2\">\n      <EvalCard href=\"#retrieval\" name=\"Document retrieval\" metric=\"nDCG@10\" score={67.0} rank={{ n: 1, of: 7 }} rows={retrieval} max={80} />\n      <EvalCard href=\"#latency\" name=\"Reranking latency\" metric=\"Median ms\" better=\"lower\" score={318} rank={{ n: 6, of: 6, word: 'the most accurate' }} rows={latency} max={400} />\n    </div>\n  )\n}\n",
+          "registryDependencies": [],
+          "dependencies": []
+        }
+      ]
+    },
+    "elements": {
+      "files": [
+        {
+          "path": "elements/components/site/eval-card.ts",
+          "content": "import { html, nothing } from 'lit'\nimport { DsElement, define } from '@/elements/lib/element'\nimport styles from 'virtual:tw'\n\n// EvalCard.vue as <conare-eval-card>: a benchmark as a card (the evals page and a model's page): its name, our score\n// and rank, the top rows as bars, ours in red and kept in (in the last place) when it falls outside them, and the way\n// to its page. The paper comes in under the pointer. Every figure comes through properties (`rank` and `rows` as JSON\n// attributes or properties); `better` sorts the rows by its own direction.\nexport type EvalRow = { name: string, value: number, ours?: boolean, rank?: number }\n\n/**\n * @summary A benchmark as a card: score, rank and the top rows as bars.\n */\nexport class EvalCard extends DsElement {\n\tstatic styles = [DsElement.styles, styles]\n\tstatic properties = {\n\t\thref: {},\n\t\tname: {},\n\t\tmetric: {},\n\t\tscore: { type: Number },\n\t\trank: { type: Object },\n\t\trows: { type: Array },\n\t\tmax: { type: Number },\n\t\tbetter: {},\n\t\tunit: {},\n\t\tlimit: { type: Number },\n\t\tlinkLabel: { attribute: 'link-label' },\n\t}\n\n\t/** The benchmark's page. */\n\thref = ''\n\t/** The benchmark. */\n\tname = ''\n\tmetric = ''\n\t/** Our score. */\n\tscore = 0\n\t/** Where ours ranks: { n, of, word? }. */\n\trank: { n: number, of: number, word?: string } = { n: 1, of: 1 }\n\trows: EvalRow[] = []\n\t/** The value a full bar stands for. */\n\tmax = 100\n\tbetter: 'higher' | 'lower' = 'higher'\n\tunit?: '%'\n\t/** How many rows show. */\n\tlimit = 5\n\tlinkLabel = 'See the benchmark'\n\n\tprivate format(value: number) {\n\t\treturn this.unit === '%' ? `${value.toFixed(1)}%` : value.toFixed(1)\n\t}\n\n\trender() {\n\t\tconst rank = this.rank\n\t\tconst rankLabel = `#${rank.n} of ${rank.of}${rank.word ? `, ${rank.word}` : ''}`\n\t\tconst sorted = [...this.rows].sort((a, b) => (this.better === 'higher' ? b.value - a.value : a.value - b.value))\n\t\tlet picked = sorted\n\t\tif (this.limit && sorted.length > this.limit) {\n\t\t\tpicked = sorted.slice(0, this.limit)\n\t\t\tconst ours = sorted.find((r) => r.ours)\n\t\t\tif (ours && !picked.some((r) => r.ours)) picked = [...picked.slice(0, this.limit - 1), ours]\n\t\t}\n\t\treturn html`<a data-ds=\"eval-card\" href=${this.href} class=\"ds-eval-card flex w-full flex-col bg-surface px-5 py-6 sm:px-6\"><span class=\"type-heading-3 text-fg\">${this.name}</span><span class=\"mt-3 text-heading-1 leading-none tracking-display text-fg tabular-nums\">${this.format(this.score)}</span><span class=\"mt-2 type-ui text-fg-muted\">${this.metric}${this.better === 'lower' ? ', lower is better' : nothing}${` · ${rankLabel}`}</span><ol class=\"mt-6 flex flex-col gap-3\">${picked.map((r, i) => html`<li class=\"grid grid-cols-[16px_minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1.5 text-ui leading-4\"><span class=\"text-caption text-fg-faint tabular-nums\">${r.rank ?? i + 1}</span><span class=${r.ours ? 'truncate text-fg' : 'truncate text-fg-muted'}>${r.name}</span><span class=${r.ours ? 'tabular-nums text-fg' : 'tabular-nums text-fg-muted'}>${this.format(r.value)}</span><span class=\"col-start-2 col-end-4 h-1 bg-edge\"><span class=${r.ours ? 'block h-full bg-home-red' : 'block h-full bg-ds-neutral-500'} style=\"width: ${Math.min(100, (r.value / this.max) * 100)}%\"></span></span></li>`)}</ol><span class=\"mt-auto flex items-center gap-1.5 pt-8 type-ui text-fg-faint\">${this.linkLabel}<svg width=\"10\" height=\"10\" viewBox=\"0 0 10 10\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.2\" aria-hidden=\"true\"><path d=\"M1.5 5h7M5.5 2l3 3-3 3\"></path></svg></span></a>`\n\t}\n}\n\ndefine('eval-card', EvalCard)\n"
+        },
+        {
+          "path": "elements/components/site/eval-card.css",
+          "content": "/* EvalCard.vue's <style>, as it is. */\n.ds-eval-card { transition: background-color var(--ds-duration-micro) var(--ds-easing-standard); }\n@media (hover: hover) and (pointer: fine) { .ds-eval-card:hover { background: var(--ds-color-surface-subtle); } }\n"
+        }
+      ],
+      "modules": [
+        "elements/shared.js",
+        "elements/eval-card.js"
+      ],
+      "tag": "conare-eval-card",
+      "tags": [
+        "conare-eval-card"
+      ],
+      "dependencies": [],
+      "registryDependencies": [],
+      "api": {
+        "elements": [
+          {
+            "tag": "conare-eval-card",
+            "name": "EvalCard",
+            "module": "elements/eval-card.js",
+            "description": "A benchmark as a card: score, rank and the top rows as bars.",
+            "attributes": [
+              {
+                "name": "href",
+                "field": "href",
+                "type": "string",
+                "default": "''",
+                "description": "The benchmark's page."
+              },
+              {
+                "name": "name",
+                "field": "name",
+                "type": "string",
+                "default": "''",
+                "description": "The benchmark."
+              },
+              {
+                "name": "metric",
+                "field": "metric",
+                "type": "string",
+                "default": "''"
+              },
+              {
+                "name": "score",
+                "field": "score",
+                "type": "number",
+                "default": "0",
+                "description": "Our score."
+              },
+              {
+                "name": "rank",
+                "field": "rank",
+                "type": "{ n: number; of: number; word?: string; }",
+                "default": "{ n: 1, of: 1 }",
+                "description": "Where ours ranks: { n, of, word? }."
+              },
+              {
+                "name": "rows",
+                "field": "rows",
+                "type": "EvalRow[]",
+                "default": "[]"
+              },
+              {
+                "name": "max",
+                "field": "max",
+                "type": "number",
+                "default": "100",
+                "description": "The value a full bar stands for."
+              },
+              {
+                "name": "better",
+                "field": "better",
+                "type": "\"higher\" | \"lower\"",
+                "default": "'higher'"
+              },
+              {
+                "name": "unit",
+                "field": "unit",
+                "type": "\"%\" | undefined"
+              },
+              {
+                "name": "limit",
+                "field": "limit",
+                "type": "number",
+                "default": "5",
+                "description": "How many rows show."
+              },
+              {
+                "name": "link-label",
+                "field": "linkLabel",
+                "type": "string",
+                "default": "'See the benchmark'"
+              }
+            ],
+            "properties": [
+              {
+                "name": "href",
+                "type": "string",
+                "default": "''",
+                "description": "The benchmark's page.",
+                "attribute": "href"
+              },
+              {
+                "name": "name",
+                "type": "string",
+                "default": "''",
+                "description": "The benchmark.",
+                "attribute": "name"
+              },
+              {
+                "name": "metric",
+                "type": "string",
+                "default": "''",
+                "attribute": "metric"
+              },
+              {
+                "name": "score",
+                "type": "number",
+                "default": "0",
+                "description": "Our score.",
+                "attribute": "score"
+              },
+              {
+                "name": "rank",
+                "type": "{ n: number; of: number; word?: string; }",
+                "default": "{ n: 1, of: 1 }",
+                "description": "Where ours ranks: { n, of, word? }.",
+                "attribute": "rank"
+              },
+              {
+                "name": "rows",
+                "type": "EvalRow[]",
+                "default": "[]",
+                "attribute": "rows"
+              },
+              {
+                "name": "max",
+                "type": "number",
+                "default": "100",
+                "description": "The value a full bar stands for.",
+                "attribute": "max"
+              },
+              {
+                "name": "better",
+                "type": "\"higher\" | \"lower\"",
+                "default": "'higher'",
+                "attribute": "better"
+              },
+              {
+                "name": "unit",
+                "type": "\"%\" | undefined",
+                "attribute": "unit"
+              },
+              {
+                "name": "limit",
+                "type": "number",
+                "default": "5",
+                "description": "How many rows show.",
+                "attribute": "limit"
+              },
+              {
+                "name": "linkLabel",
+                "type": "string",
+                "default": "'See the benchmark'",
+                "attribute": "link-label"
+              }
+            ],
+            "events": [],
+            "slots": [],
+            "methods": []
+          }
+        ]
+      },
+      "examples": [
+        {
+          "name": "Site",
+          "label": "On the site",
+          "center": false,
+          "half": false,
+          "path": "elements/examples/eval-card/Site.html",
+          "content": "<!-- Two benchmarks as the evals page sets them. Ours is kept in the top five, in red, wherever it ranks. -->\n<div class=\"grid gap-6 md:grid-cols-2\">\n  <conare-eval-card href=\"#retrieval\" name=\"Document retrieval\" metric=\"nDCG@10\" score=\"67.0\" rank='{ \"n\": 1, \"of\": 7 }' max=\"80\" rows='[\n    { \"name\": \"Acme embed 1\", \"value\": 67.02, \"ours\": true },\n    { \"name\": \"Provider B, page images\", \"value\": 66.48 },\n    { \"name\": \"Provider B, page text\", \"value\": 66.1 },\n    { \"name\": \"Provider C, page images\", \"value\": 64.24 },\n    { \"name\": \"Provider C, page text\", \"value\": 62.25 },\n    { \"name\": \"Provider D\", \"value\": 60.64 },\n    { \"name\": \"BM25\", \"value\": 49.68 }\n  ]'></conare-eval-card>\n  <conare-eval-card href=\"#latency\" name=\"Reranking latency\" metric=\"Median ms\" better=\"lower\" score=\"318\" rank='{ \"n\": 6, \"of\": 6, \"word\": \"the most accurate\" }' max=\"400\" rows='[\n    { \"name\": \"Provider B\", \"value\": 182 },\n    { \"name\": \"Provider C\", \"value\": 240 },\n    { \"name\": \"Provider D\", \"value\": 251 },\n    { \"name\": \"Provider E\", \"value\": 266 },\n    { \"name\": \"Provider F\", \"value\": 301 },\n    { \"name\": \"Acme rerank 1\", \"value\": 318, \"ours\": true }\n  ]'></conare-eval-card>\n</div>\n"
+        }
+      ]
+    }
+  }
+}
